@@ -35,11 +35,11 @@ namespace ves {
 
 //+PLUMEDOC VES_UTILS VES_OUTPUT_FES
 /*
-Tool to output biases and FESs for VES biases from previously obtained coefficients.
+Tool to output biases and free energy surfaces for VES biases from previously obtained coefficients.
 
-This action can be used to output to file biases and FESs for VES biases from
+This action can be used to output to file biases and free energy surfaces for VES biases from
 previously obtained coefficients. It should be used through the \ref driver and
-can only be used in postprocessing. The VES bias needs to be defined in the
+can only be used in post processing. The VES bias needs to be defined in the
 exact same way as during the simulation. At the current moment this action does
 not support dynamic target distributions (e.g. well-tempered).
 
@@ -74,10 +74,10 @@ VES_OUTPUT_FES ...
 \endplumedfile
 
 This input should be run through the driver by using a command similar to the
-following one where the trajectory/configuration file conf.gro is needed to
+following one where the trajectory/configuration file configuration.gro is needed to
 correctly define the CVs
 \verbatim
-plumed driver --plumed plumed.dat --igro conf.gro
+plumed driver --plumed plumed.dat --igro configuration.gro
 \endverbatim
 
 */
@@ -88,9 +88,9 @@ class OutputFesBias : public Action {
 public:
   static void registerKeywords(Keywords&);
   explicit OutputFesBias(const ActionOptions&);
-  void update() {}
-  void calculate() {}
-  void apply() {}
+  void update() override {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 
@@ -98,11 +98,11 @@ PLUMED_REGISTER_ACTION(OutputFesBias,"VES_OUTPUT_FES")
 
 
 void OutputFesBias::registerKeywords(Keywords& keys) {
-  keys.add("compulsory","BIAS","the label of the VES bias for to output the FESs and the bias files");
+  keys.add("compulsory","BIAS","the label of the VES bias for to output the free energy surfaces and the bias files");
   keys.add("compulsory","COEFFS_INPUT","the name of input coefficient file");
-  keys.add("optional","BIAS_OUTPUT","how often the bias(es) should be written out to file. Note that the value is given in terms of coefficent iterations.");
-  keys.add("optional","FES_OUTPUT","how often the FES(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
-  keys.add("optional","FES_PROJ_OUTPUT","how often the projections of the FES(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
+  keys.add("optional","BIAS_OUTPUT","how often the bias(es) should be written out to file. Note that the value is given in terms of coefficient iterations.");
+  keys.add("optional","FES_OUTPUT","how often the FES(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
+  keys.add("optional","FES_PROJ_OUTPUT","how often the projections of the FES(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
   //
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR DENSITY
 /*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
-the number of atoms in half the box.
+ the number of atoms in half the box.
 
 \par Examples
 
@@ -42,7 +42,7 @@ The following example calculates the number of atoms in one half of the simulati
 
 \plumedfile
 DENSITY SPECIES=1-100 LABEL=d
-AROUND ARG=d XLOWER=0.0 XUPPER=0.5 LABEL=d1
+AROUND ATOM=101 DATA=d SIGMA=0.1 XLOWER=0.0 XUPPER=0.5 LABEL=d1
 PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 \endplumedfile
 
@@ -55,11 +55,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
-  bool isDensity() const { return true; }
-  bool hasDifferentiableOrientation() const { return true; }
+  bool isPeriodic() override { return false; }
+  bool isDensity() const override { return true; }
+  bool hasDifferentiableOrientation() const override { return true; }
 //  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no,
 //                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );

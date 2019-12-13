@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,7 +51,7 @@ PlumedHandle::PlumedHandle(const char* kernel)
 // Needed on Linux to avoid namespace clashes
   mode |= RTLD_DEEPBIND;
 #endif
-  void* h=dlopen(kernel,mode);
+  void* h=::dlopen(kernel,mode);
 // try to remove the "Kernel" string.
 // needed to load old versions
   if(!h) {
@@ -59,7 +59,7 @@ PlumedHandle::PlumedHandle(const char* kernel)
     auto i=k.rfind("Kernel");
     if(i!=std::string::npos) {
       k=k.substr(0,i) + k.substr(i+6);
-      h=dlopen(k.c_str(),mode);
+      h=::dlopen(k.c_str(),mode);
     }
   }
   plumed_assert(h) << "there was a problem loading kernel "<<kernel <<"\n"<<dlerror();
@@ -122,7 +122,7 @@ PlumedHandle::~PlumedHandle() {
 #endif
 }
 
-PlumedHandle PlumedHandle::DL(const char* path) {
+PlumedHandle PlumedHandle::dlopen(const char* path) {
   return PlumedHandle(path);
 }
 

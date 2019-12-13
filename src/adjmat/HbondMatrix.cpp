@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ Adjacency matrix in which two atoms are adjacent if there is a hydrogen bond bet
 As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  These matrices can then be further
-analysed using a number of other algorithms as is detailed in \cite tribello-clustering.
+analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
 
 For this action the elements of the adjacency matrix are calculated using:
 
@@ -46,12 +46,12 @@ This expression was derived by thinking about how to detect if there is a hydrog
 if the hydrogen bond is present atoms \f$i\f$ and \f$j\f$ should be within a certain cutoff distance.  In addition, there should be a hydrogen
 within a certain cutoff distance of atom \f$i\f$ and this hydrogen should lie on or close to the vector connecting atoms \f$i\f$ and \f$j\f$.
 As such \f$\sigma_{oo}( |\mathbf{r}_{ij}| )\f$ is a \ref switchingfunction that acts on the modulus of the vector connecting atom \f$i\f$ to atom
-\f$j\f$.  The sum over \f$k\f$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  \f$\sigma_{oh}( |\mathbf{r}_{ik}| )\f$
-is a \ref switchingfunction that acts on the modulus of the vector connecting atom \f$i\f$ to atom \f$k\f$ and \f$\sigma_{\theta}( \theta_{kij} )\f$
+\f$j\f$.  The sum over \f$k\f$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  \f$\sigma_{oh}(|\mathbf{r}_{ik}|)\f$
+is a \ref switchingfunction that acts on the modulus of the vector connecting atom \f$i\f$ to atom \f$k\f$ and \f$\sigma_{\theta}(\theta_{kij})\f$
 is a \ref switchingfunction that acts on the angle between the vector connecting atoms \f$i\f$ and \f$j\f$ and the vector connecting atoms \f$i\f$ and
 \f$k\f$.
 
-It is important to note that hydrogen bonds, unlike regular bonds, are asymetric. In other words, the hydrogen atom does not sit at the
+It is important to note that hydrogen bonds, unlike regular bonds, are asymmetric. In other words, the hydrogen atom does not sit at the
 mid point between the two other atoms in this three-center bond.  As a result of this adjacency matrices calculated using \ref HBOND_MATRIX are not
 symmetric like those calculated by \ref CONTACT_MATRIX.  One consequence of this fact is that the quantities found by performing \ref ROWSUMS and
 \ref COLUMNSUMS on a square \ref HBOND_MATRIX are not the same as they would be if you performed \ref ROWSUMS and
@@ -59,8 +59,8 @@ symmetric like those calculated by \ref CONTACT_MATRIX.  One consequence of this
 
 \par Examples
 
-The following input can be used to analyse the number of hydrogen bonds each of the oxygen atoms in a box of water participates in.  Each
-water molecule can participate in a hydrogen bond in one of two ways.  It can either donate its hydrogens to the neighbouring oxygen or
+The following input can be used to analyze the number of hydrogen bonds each of the oxygen atoms in a box of water participates in.  Each
+water molecule can participate in a hydrogen bond in one of two ways.  It can either donate one of its hydrogen atom to the neighboring oxygen or
 it can accept a bond between the hydrogen of a neighboring water molecule and its own oxygen.  The input below allows you to output information
 on the number of hydrogen bonds each of the water molecules donates and accepts.  This information is output in two xyz files which each contain
 five columns of data.  The first four of these columns are a label for the atom and the x, y and z position of the oxygen.  The last column is then
@@ -71,7 +71,7 @@ mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3
 rsums: ROWSUMS MATRIX=mat MEAN
 csums: COLUMNSUMS MATRIX=mat MEAN
 DUMPMULTICOLVAR DATA=rsums FILE=donors.xyz
-DUMPMULTICOLVAR DATA=csums FILE=acceptors.x
+DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
 \endplumedfile
 
 */
@@ -94,14 +94,14 @@ public:
 /// Constructor
   explicit HBondMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
 /// This actually calculates the value of the contact function
-  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
 /// This does nothing
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
-                            const double& ood_df, const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const ;
+                            const double& ood_df, const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const;
 };
 
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
@@ -109,7 +109,7 @@ PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
 void HBondMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
-           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
+           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "

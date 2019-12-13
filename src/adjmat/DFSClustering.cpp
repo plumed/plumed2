@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ Find the connected components of the matrix using the depth first search cluster
 As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  As detailed in \cite tribello-clustering
-these matrices provide a representation of a graph and can thus can be analysed using tools from graph theory.  This particular action performs
+these matrices provide a representation of a graph and can thus can be analyzed using tools from graph theory.  This particular action performs
 a depth first search clustering to find the connected components of this graph.  You can read more about depth first search here:
 
 https://en.wikipedia.org/wiki/Depth-first_search
@@ -88,7 +88,7 @@ public:
 /// Constructor
   explicit DFSClustering(const ActionOptions&);
 /// Do the clustering
-  void performClustering();
+  void performClustering() override;
 };
 
 PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")

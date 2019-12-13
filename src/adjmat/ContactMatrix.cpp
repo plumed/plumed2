@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ Adjacency matrix in which two atoms are adjacent if they are within a certain cu
 As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  These matrices can then be further
-analysed using a number of other algorithms as is detailed in \cite tribello-clustering.
+analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
 
 For this action the elements of the contact matrix are calculated using:
 
@@ -49,7 +49,7 @@ of each other and which is zero otherwise.  The columns in this matrix are then 
 The final quantity output in the colvar file is thus the average coordination number.
 
 \plumedfile
-aa: CONTACT_MATRIX ATOMS=1-6 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66}
+mat: CONTACT_MATRIX ATOMS=1-6 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66}
 COLUMNSUMS MATRIX=mat MEAN LABEL=csums
 PRINT ARG=csums.* FILE=colvar
 \endplumedfile
@@ -73,11 +73,11 @@ public:
 /// Constructor
   explicit ContactMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
 /// This actually calculates the value of the contact function
-  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
 /// This does nothing
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
@@ -89,9 +89,8 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the \\ref switchingfunction that are available. ");
 // I added these keywords so I can test the results I get for column and row sums against output from COORDINATIONNUMBERS
 /// These  should never be used in production as I think they will be much slower than COORDINATIONNUMBERS
   keys.add("hidden","ATOMSA",""); keys.add("hidden","ATOMSB","");

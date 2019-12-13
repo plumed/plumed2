@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,12 +35,12 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR PRE
 /*
-Calculates the Paramegnetic Resonance Enhancement intensity ratio between a spinlabel atom and a list of atoms .
+Calculates the Paramagnetic Resonance Enhancement intensity ratio between a spin label atom and a list of atoms .
 
 The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
 are give as numbered GROUPA1, GROUPA2, ...
 The additional parameters needed for the calculation are given as INEPT, the inept
-time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
+time, TAUC the correlation time, OMEGA, the Larmor frequency and RTWO for the relaxation
 time.
 
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
@@ -48,8 +48,8 @@ time.
 \par Examples
 
 In the following example five PRE intensities are calculated using the distance between the
-oxigen of the spin label and the backbone hydrogens. Omega is the NMR frequency, RTWO the
-R2 for the hydrogens, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
+oxygen of the spin label and the backbone hydrogen atoms. Omega is the NMR frequency, RTWO the
+R2 for the hydrogen atoms, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
 
 \plumedfile
 PRE ...
@@ -77,6 +77,7 @@ class PRE :
 {
 private:
   bool             pbc;
+  bool             doratio;
   double           constant;
   double           inept;
   vector<double>   rtwo;
@@ -86,17 +87,17 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.addFlag("NORATIO",false,"Set to TRUE if you want to compute PRE without Intensity Ratio");
   keys.add("compulsory","INEPT","is the INEPT time (in ms).");
   keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
@@ -107,19 +108,23 @@ void PRE::registerKeywords( Keywords& keys ) {
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
            "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
+  keys.addOutputComponent("exp","PREINT","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
-  pbc(true)
+  pbc(true),
+  doratio(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
+
+  bool noratio=!doratio;
+  parseFlag("NORATIO",noratio);
+  doratio=!noratio;
 
   vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
@@ -137,15 +142,17 @@ PRE::PRE(const ActionOptions&ao):
 
   // Read in reference values
   rtwo.resize( nga.size() );
-  unsigned ntarget=0;
-  for(unsigned i=0; i<nga.size(); ++i) {
-    if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
-    ntarget++;
+  if(doratio) {
+    unsigned ntarget=0;
+    for(unsigned i=0; i<nga.size(); ++i) {
+      if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
+      ntarget++;
+    }
+    if( ntarget==0 ) {
+      parse("RTWO",rtwo[0]);
+      for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
+    } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
   }
-  if( ntarget==0 ) {
-    parse("RTWO",rtwo[0]);
-    for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
-  } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
 
   double tauc=0.;
   parse("TAUC",tauc);
@@ -156,9 +163,11 @@ PRE::PRE(const ActionOptions&ao):
   if(omega==0.) error("OMEGA must be set");
 
   inept=0.;
-  parse("INEPT",inept);
-  if(inept==0.) error("INEPT must be set");
-  inept *= 0.001; // ms2s
+  if(doratio) {
+    parse("INEPT",inept);
+    if(inept==0.) error("INEPT must be set");
+    inept *= 0.001; // ms2s
+  }
 
   const double ns2s   = 0.000000001;
   const double MHz2Hz = 1000000.;
@@ -168,21 +177,18 @@ PRE::PRE(const ActionOptions&ao):
   // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
-  bool addexp=false;
-  parseFlag("ADDEXP",addexp);
-  if(getDoScore()) addexp=true;
-
+  // Optionally add an experimental value (like with RDCs)
   vector<double> exppre;
-  if(addexp) {
-    exppre.resize( nga.size() );
-    unsigned ntarget=0;
-
-    for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
+  exppre.resize( nga.size() );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
+    if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of PREINT values");
+  if(ntarget==nga.size()) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the PREINT values");
 
   // Create neighbour lists
   nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
@@ -209,34 +215,34 @@ PRE::PRE(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponentWithDerivatives("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponentWithDerivatives("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
         string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(exppre[i]);
       }
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponent("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(exppre[i]);
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(exppre);
     Initialise(nga.size());
@@ -259,7 +265,7 @@ void PRE::calculate()
     for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=constant/static_cast<double>(nga[i]);
     string num; Tools::convert(i,num);
-    Value* val=getPntrToComponent("pre_"+num);
+    Value* val=getPntrToComponent("pre-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       // the first atom is always the same (the paramagnetic group)
@@ -280,9 +286,16 @@ void PRE::calculate()
       deriv[index+j] = -tmpir8*distance;
       if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
     }
-    const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
-    fact[i] = -ratio*(inept+1./(rtwo[i]+pre));
-    val->set(ratio);
+    double tmpratio;
+    if(!doratio) {
+      tmpratio = pre ; //prova a caso per vedere se lui da problemi
+      fact[i] = 1.; //prova a caso per vedere se lui da problemi
+    } else {
+      tmpratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+      fact[i] = -tmpratio*(inept+1./(rtwo[i]+pre));
+    }
+    const double ratio = tmpratio;
+    val->set(ratio) ;
     if(!getDoScore()) {
       setBoxDerivatives(val, fact[i]*dervir);
       for(unsigned j=0; j<nga[i]; j++) {

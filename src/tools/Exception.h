@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -256,9 +256,36 @@ public:
   }
 };
 
+/// Class representing a generic error
+class ExceptionError :
+  public Exception {
+public:
+  using Exception::Exception;
+  template<typename T>
+  ExceptionError& operator<<(const T & x) {
+    *((Exception*) this) <<x;
+    return *this;
+  }
+};
+
+/// Class representing a debug error (can only be thrown when using debug options)
+class ExceptionDebug :
+  public Exception {
+public:
+  using Exception::Exception;
+  template<typename T>
+  ExceptionDebug& operator<<(const T & x) {
+    *((Exception*) this) <<x;
+    return *this;
+  }
+};
+
+#ifdef __GNUG__
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
-#if !defined(__PRETTY_FUNCTION__)
-#define __PRETTY_FUNCTION__ ""
+#define __PLUMED_FUNCNAME __PRETTY_FUNCTION__
+#else
+// Otherwise, we use the standard C++11 variable
+#define __PLUMED_FUNCNAME __func__
 #endif
 
 /// \relates PLMD::Exception
@@ -266,12 +293,12 @@ public:
 /// Might be useful if we want to use derived exceptions that could
 /// be thrown using `throw DerivedException()<<plumed_here<<" "<<other stuff"`.
 /// It is used in the macros below to throw PLMD::Exception.
-#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PRETTY_FUNCTION__)
+#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PLUMED_FUNCNAME)
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file.
 /// Messages can be inserted with `plumed_error()<<"message"`.
-#define plumed_error() throw PLMD::Exception() << plumed_here
+#define plumed_error() throw PLMD::ExceptionError() << plumed_here
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file
@@ -302,11 +329,11 @@ public:
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_assert, but only evaluates the condition if NDEBUG is not defined.
-#define plumed_dbg_assert(test) plumed_assert(test)
+#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test)
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_massert, but only evaluates the condition if NDEBUG is not defined.
-#define plumed_dbg_massert(test,msg) plumed_assert(test) << msg
+#define plumed_dbg_massert(test,msg) plumed_dbg_assert(test) << msg
 
 #endif
 

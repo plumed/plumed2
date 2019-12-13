@@ -252,7 +252,7 @@ void VesBias::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
   keys.add("optional","TEMP","the system temperature - this is needed if the MD code does not pass the temperature to PLUMED.");
   //
-  keys.reserve("optional","COEFFS","read in the coefficents from files.");
+  keys.reserve("optional","COEFFS","read in the coefficients from files.");
   //
   keys.reserve("optional","TARGET_DISTRIBUTION","the label of the target distribution to be used.");
   keys.reserve("optional","TARGET_DISTRIBUTIONS","the label of the target distribution to be used. Here you are allows to use multiple labels.");
@@ -391,17 +391,17 @@ bool VesBias::readCoeffsFromFiles() {
   if(coeffs_fnames.size()>0) {
     plumed_massert(coeffs_fnames.size()==ncoeffssets_,"COEFFS keyword is of the wrong size");
     if(ncoeffssets_==1) {
-      log.printf("  Read in coefficents from file ");
+      log.printf("  Read in coefficients from file ");
     }
     else {
-      log.printf("  Read in coefficents from files:\n");
+      log.printf("  Read in coefficients from files:\n");
     }
     for(unsigned int i=0; i<ncoeffssets_; i++) {
       IFile ifile;
       ifile.link(*this);
       ifile.open(coeffs_fnames[i]);
       if(!ifile.FieldExist(coeffs_pntrs_[i]->getDataLabel())) {
-        std::string error_msg = "Problem with reading coefficents from file " + ifile.getPath() + ": no field with name " + coeffs_pntrs_[i]->getDataLabel() + "\n";
+        std::string error_msg = "Problem with reading coefficients from file " + ifile.getPath() + ": no field with name " + coeffs_pntrs_[i]->getDataLabel() + "\n";
         plumed_merror(error_msg);
       }
       size_t ncoeffs_read = coeffs_pntrs_[i]->readFromFile(ifile,false,false);
@@ -410,7 +410,7 @@ bool VesBias::readCoeffsFromFiles() {
         log.printf("%s (read %zu of %zu values)\n", ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
       }
       else {
-        log.printf("   coefficent %u: %s (read %zu of %zu values)\n",i,ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
+        log.printf("   coefficient %u: %s (read %zu of %zu values)\n",i,ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
       }
       ifile.close();
     }
@@ -603,11 +603,6 @@ void VesBias::disableHessian() {
     cross_aver_sampled_tmp.assign(hessian_pntrs_[i]->getSize(),0.0);
     sampled_cross_averages.push_back(cross_aver_sampled_tmp);
   }
-}
-
-
-void VesBias::apply() {
-  Bias::apply();
 }
 
 

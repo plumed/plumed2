@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,9 +58,9 @@ p.cmd("init");
 
 The following syntax instead creates a handle referring to a loaded kernel
 \verbatim
-PlumedHandle p(PlumedHandle::DL("/path/to/libplumedkernel.so");
+PlumedHandle p(PlumedHandle::dlopen("/path/to/libplumedkernel.so");
 // Alternatively:
-// auto p=PlumedHandle::DL("/path/to/libplumedkernel.so");
+// auto p=PlumedHandle::dlopen("/path/to/libplumedkernel.so");
 p.cmd("init");
 \endverbatim
 
@@ -77,7 +77,7 @@ class PlumedHandle {
 /// Default construct as nullptr
     DlHandle() {}
 /// Construct from a void*
-    DlHandle(void*h): handle(h) {}
+    explicit DlHandle(void*h): handle(h) {}
 /// Destructor will call dlclose if necessary
     ~DlHandle();
 /// Covertible to void* so that it can be used directly
@@ -118,7 +118,7 @@ public:
   PlumedHandle();
 /// Construct a PlumedHandle given the path to a kernel.
 /// It just uses the private constructor PlumedHandle(const char* path).
-  static PlumedHandle DL(const char* path);
+  static PlumedHandle dlopen(const char* path);
 /// Destructor.
 /// In case a kernel was dlopened, it dlcloses it.
 /// I make it virtual for future extensibility, though this is not necessary now.

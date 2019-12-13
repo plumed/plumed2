@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,9 +24,6 @@
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
 
-#include <string>
-#include <cmath>
-
 using namespace std;
 
 namespace PLMD {
@@ -48,7 +45,7 @@ on the type of J-coupling.
 
 This collective variable computes the J-couplings for a set of atoms defining a dihedral angle. You can specify
 the atoms involved using the \ref MOLINFO notation. You can also specify the experimental couplings using the
-ADDCOUPLINGS flag and COUPLING keywords. These will be included in the output. You must choose the type of
+ COUPLING keywords. These will be included in the output. You must choose the type of
 coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
 and SHIFT keywords. You will need to make sure you are using the correct dihedral angle:
 
@@ -63,16 +60,15 @@ of \ref METAINFERENCE .
 \par Examples
 
 In the following example we calculate the Ha-N J-coupling from a set of atoms involved in
-dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental datapoints and compute
+dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental data points and compute
 the correlation and other measures and finally print the results.
 
 \plumedfile
-
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 JCOUPLING ...
-    ADDCOUPLINGS
     TYPE=HAN
     ATOMS1=@psi-2 COUPLING1=-0.49
     ATOMS2=@psi-4 COUPLING2=-0.54
@@ -82,7 +78,7 @@ JCOUPLING ...
     LABEL=jhan
 ... JCOUPLING
 
-jhanst: STATS ARG=(jhan\.j_.*) PARARG=(jhan\.exp_.*)
+jhanst: STATS ARG=(jhan\.j-.*) PARARG=(jhan\.exp-.*)
 
 PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
 \endplumedfile
@@ -105,22 +101,20 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit JCoupling(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")
 
 void JCoupling::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered", "ATOMS", "the 4 atoms involved in each of the bonds for which you wish to calculate the J-coupling. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one J-coupling will be "
            "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS", "atoms");
-  keys.addFlag("ADDCOUPLINGS", false, "Set this flag if you want to have fixed components with the experimental values.");
   keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
   keys.add("optional", "A", "Karplus parameter A");
   keys.add("optional", "B", "Karplus parameter B");
@@ -128,7 +122,7 @@ void JCoupling::registerKeywords(Keywords& keys) {
   keys.add("optional", "SHIFT", "Angle shift in radians");
   keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
   keys.addOutputComponent("j", "default", "the calculated J-coupling");
-  keys.addOutputComponent("exp", "ADDCOUPLINGS", "the experimental J-coupling");
+  keys.addOutputComponent("exp", "COUPLING", "the experimental J-coupling");
 }
 
 JCoupling::JCoupling(const ActionOptions&ao):
@@ -186,21 +180,16 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   // Optionally add an experimental value (like with RDCs)
   vector<double> coupl;
-  bool addcoupling = false;
-  parseFlag("ADDCOUPLINGS", addcoupling);
-  if (addcoupling||getDoScore()) {
-    coupl.resize(ncoupl_);
-    unsigned ntarget = 0;
-    for (unsigned i = 0; i < ncoupl_; ++i) {
-      if (!parseNumbered("COUPLING", i+1, coupl[i])) {
-        break;
-      }
-      ntarget++;
-    }
-    if (ntarget != ncoupl_) {
-      error("found wrong number of COUPLING values");
-    }
+  coupl.resize( ncoupl_ );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<ncoupl_; ++i) {
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    ntarget++;
   }
+  bool addcoupling=false;
+  if(ntarget!=ncoupl_ && ntarget!=0) error("found wrong number of COUPLING values");
+  if(ntarget==ncoupl_) addcoupling=true;
+  if(getDoScore()&&!addcoupling) error("with DOSCORE you need to set the COUPLING values");
 
   // For custom types we allow use of custom Karplus parameters
   if (jtype_ == CUSTOM) {
@@ -271,28 +260,28 @@ JCoupling::JCoupling(const ActionOptions&ao):
   if(!getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponentWithDerivatives("j_" + num);
-      componentIsNotPeriodic("j_" + num);
+      addComponentWithDerivatives("j-" + num);
+      componentIsNotPeriodic("j-" + num);
     }
   } else {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponent("j_" + num);
-      componentIsNotPeriodic("j_" + num);
+      addComponent("j-" + num);
+      componentIsNotPeriodic("j-" + num);
     }
   }
 
   if (addcoupling||getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponent("exp_" + num);
-      componentIsNotPeriodic("exp_" + num);
-      Value* comp = getPntrToComponent("exp_" + num);
+      addComponent("exp-" + num);
+      componentIsNotPeriodic("exp-" + num);
+      Value* comp = getPntrToComponent("exp-" + num);
       comp->set(coupl[i]);
     }
   }
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(coupl);
     Initialise(ncoupl_);
@@ -301,81 +290,48 @@ JCoupling::JCoupling(const ActionOptions&ao):
   checkRead();
 }
 
-void JCoupling::calculate() {
-  if (pbc) {
-    makeWhole();
-  }
+void JCoupling::calculate()
+{
+  if (pbc) makeWhole();
+  vector<Vector> deriv(ncoupl_*6);
+  vector<double> j(ncoupl_,0.);
 
-  vector<Vector> deriv;
-  if(getDoScore()) {
-    deriv.resize(ncoupl_*6, Vector{0.,0.,0.});
-  }
-
-  const double omp_dummy = 0.0;
-  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, ncoupl_ / 6);
-  #pragma omp parallel num_threads(nt)
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     #pragma omp for
     // Loop through atoms, with steps of 6 atoms (one iteration per datapoint)
     for (unsigned r=0; r<ncoupl_; r++) {
       // Index is the datapoint index
-      const unsigned index = 6*r;
+      unsigned a0 = 6*r;
 
       // 6 atoms -> 3 vectors
-      const unsigned a0=index;
-      const unsigned a1=index+1;
-      const unsigned a2=index+2;
-      const unsigned a3=index+3;
-      const unsigned a4=index+4;
-      const unsigned a5=index+5;
-      Vector d0 = delta(getPosition(a1), getPosition(a0));
-      Vector d1 = delta(getPosition(a3), getPosition(a2));
-      Vector d2 = delta(getPosition(a5), getPosition(a4));
+      Vector d0 = delta(getPosition(a0+1), getPosition(a0));
+      Vector d1 = delta(getPosition(a0+3), getPosition(a0+2));
+      Vector d2 = delta(getPosition(a0+5), getPosition(a0+4));
 
       // Calculate dihedral with 3 vectors, get the derivatives
       Vector dd0, dd1, dd2;
       PLMD::Torsion t;
-      const double torsion = t.compute(d0, d1, d2, dd0, dd1, dd2);
+      double torsion = t.compute(d0, d1, d2, dd0, dd1, dd2);
 
       // Calculate the Karplus relation and its derivative
-      const double theta = torsion + kshift_;
-      const double cos_theta = cos(theta);
-      const double pder = ka_*cos_theta + kb_;
-      const double j = pder*cos_theta + kc_;
-      const double derj = -sin(theta)*(2.*pder - kb_);
-
-      string num; Tools::convert(r,num);
-      Value* val=getPntrToComponent("j_"+num);
-      val->set(j);
+      double theta = torsion + kshift_;
+      double cos_theta = cos(theta);
+      double sin_theta = sin(theta);
+      j[r] = ka_*cos_theta*cos_theta + kb_*cos_theta + kc_;
+      double derj = -2.*ka_*sin_theta*cos_theta - kb_*sin_theta;
 
       dd0 *= derj;
       dd1 *= derj;
       dd2 *= derj;
 
-      if(getDoScore()) {
-        setCalcData(r, j);
-        deriv[a0] =  dd0;
-        deriv[a1] = -dd0;
-        deriv[a2] =  dd1;
-        deriv[a3] = -dd1;
-        deriv[a4] =  dd2;
-        deriv[a5] = -dd2;
-      } else {
-        setAtomsDerivatives(val, a0,  dd0);
-        setAtomsDerivatives(val, a1, -dd0);
-        setAtomsDerivatives(val, a2,  dd1);
-        setAtomsDerivatives(val, a3, -dd1);
-        setAtomsDerivatives(val, a4,  dd2);
-        setAtomsDerivatives(val, a5, -dd2);
-
-        Tensor virial = -Tensor(getPosition(a0),  dd0);
-        virial -= Tensor(getPosition(a1), -dd0);
-        virial -= Tensor(getPosition(a2),  dd1);
-        virial -= Tensor(getPosition(a3), -dd1);
-        virial -= Tensor(getPosition(a4),  dd2);
-        virial -= Tensor(getPosition(a5), -dd2);
-        setBoxDerivatives(val,virial);
-      }
+      if(getDoScore()) setCalcData(r, j[r]);
+      deriv[a0] =  dd0;
+      deriv[a0+1] = -dd0;
+      deriv[a0+2] =  dd1;
+      deriv[a0+3] = -dd1;
+      deriv[a0+4] =  dd2;
+      deriv[a0+5] = -dd2;
     }
   }
 
@@ -388,27 +344,42 @@ void JCoupling::calculate() {
     Tensor virial;
     Value* val=getPntrToComponent("score");
     for (unsigned r=0; r<ncoupl_; r++) {
-      const unsigned index = 6*r;
-      const unsigned a0=index;
-      const unsigned a1=index+1;
-      const unsigned a2=index+2;
-      const unsigned a3=index+3;
-      const unsigned a4=index+4;
-      const unsigned a5=index+5;
+      const unsigned a0 = 6*r;
       setAtomsDerivatives(val, a0, deriv[a0]*getMetaDer(r));
-      setAtomsDerivatives(val, a1, deriv[a1]*getMetaDer(r));
-      setAtomsDerivatives(val, a2, deriv[a2]*getMetaDer(r));
-      setAtomsDerivatives(val, a3, deriv[a3]*getMetaDer(r));
-      setAtomsDerivatives(val, a4, deriv[a4]*getMetaDer(r));
-      setAtomsDerivatives(val, a5, deriv[a5]*getMetaDer(r));
+      setAtomsDerivatives(val, a0+1, deriv[a0+1]*getMetaDer(r));
+      setAtomsDerivatives(val, a0+2, deriv[a0+2]*getMetaDer(r));
+      setAtomsDerivatives(val, a0+3, deriv[a0+3]*getMetaDer(r));
+      setAtomsDerivatives(val, a0+4, deriv[a0+4]*getMetaDer(r));
+      setAtomsDerivatives(val, a0+5, deriv[a0+5]*getMetaDer(r));
       virial-=Tensor(getPosition(a0), deriv[a0]*getMetaDer(r));
-      virial-=Tensor(getPosition(a1), deriv[a1]*getMetaDer(r));
-      virial-=Tensor(getPosition(a2), deriv[a2]*getMetaDer(r));
-      virial-=Tensor(getPosition(a3), deriv[a3]*getMetaDer(r));
-      virial-=Tensor(getPosition(a4), deriv[a4]*getMetaDer(r));
-      virial-=Tensor(getPosition(a5), deriv[a5]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0+1), deriv[a0+1]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0+2), deriv[a0+2]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0+3), deriv[a0+3]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0+4), deriv[a0+4]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0+5), deriv[a0+5]*getMetaDer(r));
     }
     setBoxDerivatives(val, virial);
+  } else {
+    for (unsigned r=0; r<ncoupl_; r++) {
+      const unsigned a0 = 6*r;
+      string num; Tools::convert(r,num);
+      Value* val=getPntrToComponent("j-"+num);
+      val->set(j[r]);
+      setAtomsDerivatives(val, a0, deriv[a0]);
+      setAtomsDerivatives(val, a0+1, deriv[a0+1]);
+      setAtomsDerivatives(val, a0+2, deriv[a0+2]);
+      setAtomsDerivatives(val, a0+3, deriv[a0+3]);
+      setAtomsDerivatives(val, a0+4, deriv[a0+4]);
+      setAtomsDerivatives(val, a0+5, deriv[a0+5]);
+      Tensor virial;
+      virial-=Tensor(getPosition(a0), deriv[a0]);
+      virial-=Tensor(getPosition(a0+1), deriv[a0+1]);
+      virial-=Tensor(getPosition(a0+2), deriv[a0+2]);
+      virial-=Tensor(getPosition(a0+3), deriv[a0+3]);
+      virial-=Tensor(getPosition(a0+4), deriv[a0+4]);
+      virial-=Tensor(getPosition(a0+5), deriv[a0+5]);
+      setBoxDerivatives(val, virial);
+    }
   }
 }
 

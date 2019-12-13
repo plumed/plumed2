@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,7 @@
 
 //+PLUMEDOC VOLUMES INCYLINDER
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a particular, user-specified part of of the cell.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the
@@ -61,7 +60,7 @@ of radius 1.5 nm that is centered on the position of atom 101 and that has its l
 
 \plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
-d2: INCYLINDER ATOM=101 DATA=d1 DIRECTION=Z RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
+d2: INCYLINDER ATOM=101 DATA=c1 DIRECTION=Z RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
 PRINT ARG=d2.* FILE=colvar
 \endplumedfile
 
@@ -81,8 +80,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInCylinder (const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER")
@@ -91,7 +90,7 @@ void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
-  keys.add("compulsory","RADIUS","a switching function that gives the extent of the cyclinder in the plane perpendicular to the direction");
+  keys.add("compulsory","RADIUS","a switching function that gives the extent of the cylinder in the plane perpendicular to the direction");
   keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
   keys.add("compulsory","UPPER","0.0","the upper boundary on the direction parallel to the long axis of the cylinder");
   keys.reset_style("SIGMA","optional");

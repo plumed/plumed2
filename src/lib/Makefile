@@ -17,8 +17,6 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 ifeq ($(SOEXT),dylib)
-# Extra flags required to properly compile the python interface
-  PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
   SONAME_OPTION:=-Wl,-install_name
 else
   PYTHON_EXTRA_LDFLAGS:=
@@ -269,7 +267,8 @@ endif
 # copy Template.cpp file (we leave it in src/colvar/ for backward compatibility)
 	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
-	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
+# we remove the link_uninstalled= option (see https://github.com/plumed/plumed2/issues/408)
+	grep -v "^link_uninstalled=" ../config/compile_options.sh > "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifeq ($(make_static_archive),yes)
@@ -313,15 +312,15 @@ endif
 ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
-        CC="$(CC)" \
-          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
-          CXX="$(CXX)" \
-          plumedexe="../../plumed" \
-          program_name="$(program_name)" \
-          include_dir=../../../wrapper \
-          lib_dir="$(DESTDIR)$(libdir)" \
-          $(python_bin) buildPythonInterface.py build_ext -i
-	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
+          unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
+          plumed_program_name=plumed \
+          plumed_force_cython=yes \
+          plumed_version=$(VERSION) \
+          plumed_include_dir=../../../wrapper \
+          plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
+          $(python_bin) setup.py build_ext -i
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
+	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
 endif
 ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,17 +41,17 @@ private:
 public:
   explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
 /// Read in the input from a pdb
-  void read( const PDB& );
+  void read( const PDB& ) override;
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) override;
 /// Calculate
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const override;
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
-  bool pcaIsEnabledForThisReference();
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
-  void setupPCAStorage( ReferenceValuePack& mypack );
+  bool pcaIsEnabledForThisReference() override;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const override;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const override;
+  void setupPCAStorage( ReferenceValuePack& mypack ) override;
 };
 
 }

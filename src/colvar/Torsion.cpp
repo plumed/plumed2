@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,6 +55,7 @@ by using TORSION in combination with the \ref MOLINFO command.  This can be done
 syntax.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
@@ -62,7 +63,7 @@ PRINT ARG=t1,t2 FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
 
 Both of the previous examples specify that the torsion angle should be calculated based on the position of four atoms.
 For the first example in particular the assumption when the torsion is specified in this way is that there are chemical
@@ -97,7 +98,7 @@ class Torsion : public Colvar {
 public:
   explicit Torsion(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

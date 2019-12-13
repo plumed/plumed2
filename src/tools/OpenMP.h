@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,6 +30,9 @@ class OpenMP {
 
 public:
 
+/// Set number of threads that can be used by openMP
+  static void setNumThreads(const unsigned nt);
+
 /// Get number of threads that can be used by openMP
   static unsigned getNumThreads();
 
@@ -55,10 +58,10 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
   (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
 // a factor two is necessary since there is no guarantee that x is aligned
 // to cache line boundary
-  unsigned m=n/(2*getCachelineSize()*sizeof(T));
+  unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
-  if(m>numThreads) m=numThreads;
-  if(m==0) m=1;
+  if(m>=numThreads) m=numThreads;
+  else m=1;
   return m;
 }
 

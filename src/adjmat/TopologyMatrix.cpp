@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,13 +63,13 @@ public:
 /// Constructor
   explicit TopologyMatrix(const ActionOptions&);
 /// Get the number of quantities that we must compute
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
 /// This actually calculates the value of the contact function
-  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
 /// This does nothing
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 /// Calculate the contribution from one of the atoms in the third element of the pack
   void calculateForThreeAtoms( const unsigned& iat, const Vector& d1, const double& d1_len,
                                HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const ;
@@ -85,11 +85,10 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
   keys.add("atoms","ATOMS","");
-  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the \\ref switchingfunction that are available.");
   keys.add("numbered","RADIUS","");
-  keys.add("numbered","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
+  keys.add("numbered","CYLINDER_SWITCH","a switching function on \\f$(r_{ij}\\cdot r_{ik}-1)/r_{ij}\\f$");
   keys.add("numbered","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");

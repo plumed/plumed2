@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,36 +50,38 @@ namespace isdb {
 /*
 Calculates the backbone chemical shifts for a protein.
 
-The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shifts
-of the selected nuclei/residues are saved as components. Reference experimental values
-can also be stored as components. The two sets of components can then be used to calculate
-either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
-the keyword CAMSHIFT or to calculate ensemble averaged chemical shift as in \cite Camilloni:2012je
-\cite Camilloni:2013hs (see \ref ENSEMBLE, \ref STATS and \ref RESTRAINT). Finally they can
-also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip . In the current implementation there is
-no need to pass the data to \ref METAINFERENCE because \ref CS2BACKBONE can internally enable Metainference
-using the keywork DOSCORE.
+The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shift
+of the selected nuclei can be saved as components. Alternatively one can calculate either
+the CAMSHIFT score (useful as a collective variable \cite Granata:2013dk or as a scoring
+function \cite Robustelli:2010dn) or a \ref METAINFERENCE score (using DOSCORE).
+For these two latter cases experimental chemical shifts must be provided.
 
-CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
-to make it faster it is currently parallelised with \ref Openmp.
+CS2BACKBONE calculation can be relatively heavy because it often uses a large number of atoms, it can
+be run in parallel using MPI and \ref Openmp.
 
-As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it may be better to
 increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure.
 In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
-In general the system for which chemical shifts are calculated must be completly included in
+In general the system for which chemical shifts are calculated must be completely included in
 ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATADIR.
-The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of
+The system is made automatically whole unless NOPBC is used, in particular if the system is made
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
-selecting an appropriate order.
+selecting an appropriate order of the atoms. The pdb file is needed to the generate a simple topology of the protein.
+For histidine residues in protonation states different from D the HIE/HSE HIP/HSP name should be used.
+GLH and ASH can be used for the alternative protonation of GLU and ASP. Non-standard amino acids and other
+molecules are not yet supported, but in principle they can be named UNK. If multiple chains are present
+the chain identifier must be in the standard PDB format, together with the TER keyword at the end of each chain.
+Termini groups like ACE or NME should be removed from the TEMPLATE pdb because they are not recognized by
+CS2BACKBONE.
 
 In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
 file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat),
-all the six files should always be present. A chemical shift for a nucleus is calculated if a value
-greater than 0 is provided. For practical purposes the value can correspond to the experimental value.
-Residues numbers should go from 1 to N irrespectively of the numbers used in the pdb file. The first and
-last residue of each chain should be preceeded by a # character. Termini groups like ACE or NME should
-be removed from the PDB.
+add only the files for the nuclei you need, but each file should include all protein residues.
+A chemical shift for a nucleus is calculated if a value greater than 0 is provided.
+For practical purposes the value can correspond to the experimental value.
+Residues numbers should match that used in the pdb file, but must be positive, so double check the pdb.
+The first and last residue of each chain should be preceded by a # character.
 
 \verbatim
 CAshifts.dat:
@@ -89,37 +91,30 @@ CAshifts.dat:
 .
 .
 #last 0.0
-#last+1 (first) of second chain
+#first of second chain
 .
 #last of second chain
 \endverbatim
 
-The default behaviour is to store the values for the active nuclei in components (ca_#, cb_#,
-co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
-to only store the backcalculated values.
+The default behavior is to store the values for the active nuclei in components (ca-#, cb-#,
+co-#, ha-#, hn-#, nh-# and expca-#, expcb-#, expco-#, expha-#, exphn-#, exp-nh#) with NOEXP it is possible
+to only store the back-calculated values, where # includes a chain and residue number.
 
-A pdb file is needed to the generate a simple topology of the protein. For histidines in protonation
-states different from D the HIE/HSE HIP/HSP name should be used. GLH and ASH can be used for the alternative
-protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported, but in principle
-they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format,
-together with the TER keyword at the end of each chain.
+One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
+calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-One more standard file is also needed in the folder DATADIR: camshift.db. This file includes all the CamShift parameters
-and can be found in regtest/isdb/rt-cs2backbone/data/ .
-
-All the above files must be in a single folder that must be specified with the keyword DATADIR.
-
-Additional material and examples can be also found in the tutorial \ref belfast-9
+Additional material and examples can be also found in the tutorial \ref isdb-1 as well as in the cs2backbone regtests
+in the isdb folder.
 
 \par Examples
 
-In this first example the chemical shifts are used to calculate a scoring function to be used
+In this first example the chemical shifts are used to calculate a collective variable to be used
 in NMR driven Metadynamics \cite Granata:2013dk :
 
 \plumedfile
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 DATADIR=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
+cs: CS2BACKBONE ATOMS=1-2612 DATADIR=data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
@@ -128,21 +123,21 @@ In this second example the chemical shifts are used as replica-averaged restrain
 
 \plumedfile
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
-encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
-stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
+encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 
 \endplumedfile
 
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=CS.dat STRIDE=1000
 PRINT ARG=cs.score FILE=BIAS STRIDE=100
 \endplumedfile
 
@@ -409,6 +404,7 @@ class CS2Backbone : public MetainferenceBase {
     unsigned csatoms;           // fixed number of atoms used
     unsigned totcsatoms;        // number of atoms used
     unsigned res_num;           // residue number
+    unsigned chain;             // chain number
     unsigned ipos;              // index of the atom for which we are calculating the chemical shifts
     vector<unsigned> bb;        // atoms for the previous, current and next backbone
     vector<unsigned> side_chain;// atoms for the current sidechain
@@ -430,6 +426,7 @@ class CS2Backbone : public MetainferenceBase {
       csatoms(0),
       totcsatoms(0),
       res_num(0),
+      chain(0),
       ipos(0)
     {
       xd1.reserve(26);
@@ -489,24 +486,23 @@ public:
 
   explicit CS2Backbone(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
-  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system.");
+  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbor list update.");
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score.");
-  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");
+  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimental values.");
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts");
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts");
   keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts");
@@ -608,15 +604,16 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   } else {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
+      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
-        addComponent(chemicalshifts[cs].nucleus+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+num);
+        addComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
         setParameter(chemicalshifts[cs].exp_cs);
       } else {
-        addComponentWithDerivatives(chemicalshifts[cs].nucleus+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+num);
+        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
       }
     }
     if(getDoScore()) Initialise(chemicalshifts.size());
@@ -625,14 +622,15 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   if(!noexp) {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
-      addComponent("exp"+chemicalshifts[cs].nucleus+num);
-      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+num);
-      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+num);
+      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
+      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       comp->set(chemicalshifts[cs].exp_cs);
     }
   }
 
-  requestAtoms(used_atoms);
+  requestAtoms(used_atoms, false);
   setDerivatives();
   checkRead();
 }
@@ -687,12 +685,13 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
     ChemicalShift tmp_cs;
 
     tmp_cs.exp_cs = cs;
-    if(nucl=="CA")      tmp_cs.nucleus = "ca_";
-    else if(nucl=="CB") tmp_cs.nucleus = "cb_";
-    else if(nucl=="C")  tmp_cs.nucleus = "co_";
-    else if(nucl=="HA") tmp_cs.nucleus = "ha_";
-    else if(nucl=="H")  tmp_cs.nucleus = "hn_";
-    else if(nucl=="N")  tmp_cs.nucleus = "nh_";
+    if(nucl=="CA")      tmp_cs.nucleus = "ca-";
+    else if(nucl=="CB") tmp_cs.nucleus = "cb-";
+    else if(nucl=="C")  tmp_cs.nucleus = "co-";
+    else if(nucl=="HA") tmp_cs.nucleus = "ha-";
+    else if(nucl=="H")  tmp_cs.nucleus = "hn-";
+    else if(nucl=="N")  tmp_cs.nucleus = "nh-";
+    tmp_cs.chain = ichain;
     tmp_cs.res_num = resnum;
     tmp_cs.res_type_curr = frag2enum(RES);
     tmp_cs.res_type_prev = frag2enum(pdb.getResidueName(resnum-1, chains[ichain]));
@@ -981,13 +980,12 @@ void CS2Backbone::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*10>chemicalshifts.size()) nt=chemicalshifts.size()/stride/10;
-  if(nt==0) nt=1;
+  if(nt*stride*2>chemicalshifts.size()) nt=1;
 
   // a single loop over all chemical shifts
   #pragma omp parallel num_threads(nt)
   {
-    #pragma omp for
+    #pragma omp for schedule(dynamic)
     for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
       const unsigned kdx=cs*max_cs_atoms;
       const ChemicalShift *myfrag = &chemicalshifts[cs];

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,19 +67,30 @@ position. Only pairs of atoms whose distance in the reference structure is withi
 0.1 and 0.8 nm are considered.
 
 \plumedfile
-DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
+DRMSD REFERENCE=file1.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 \endplumedfile
+
+The reference file is a PDB file that looks like this
+
+\auxfile{file1.pdb}
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+END
+\endauxfile
 
 The following tells plumed to calculate a DRMSD value for a pair of molecules.
 
 \plumedfile
-DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
+DRMSD REFERENCE=file2.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8 TYPE=INTER-DRMSD
 \endplumedfile
 
 In the input reference file (file.pdb) the atoms in each of the two molecules are separated by a TER
 command as shown below.
 
-\verbatim
+\auxfile{file2.pdb}
 ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
 ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
 ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
@@ -87,7 +98,7 @@ TER
 ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
 ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
 END
-\endverbatim
+\endauxfile
 
 In this example the INTER-DRMSD type ensures that the set of distances from which the final
 quantity is computed involve one atom from each of the two molecules.  If this is replaced
@@ -107,7 +118,7 @@ class DRMSD : public Colvar {
 
 public:
   explicit DRMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -162,7 +173,12 @@ DRMSD::DRMSD(const ActionOptions&ao):
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
+  log.printf("\n");
 }
 
 // calculator

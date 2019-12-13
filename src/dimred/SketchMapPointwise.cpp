@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 
 //+PLUMEDOC DIMRED SKETCHMAP_POINTWISE
 /*
-Optimise the sketch-map stress function using a pointwise global optimisation algorithm.
+Optimize the sketch-map stress function using a pointwise global optimization algorithm.
 
 \par Examples
 
@@ -43,16 +43,16 @@ private:
   std::vector<unsigned> npoints, nfgrid;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapPointwise( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  explicit SketchMapPointwise( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapPointwise,"SKETCHMAP_POINTWISE")
 
 void SketchMapPointwise::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys );
-  keys.add("compulsory","NCYCLES","5","the number of cycles of global optimisation to attempt");
-  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
+  keys.add("compulsory","NCYCLES","5","the number of cycles of global optimization to attempt");
+  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
   keys.add("compulsory","BUFFER","1.1","grid extent for search is (max projection - minimum projection) multiplied by this value");
   keys.add("compulsory","CGRID_SIZE","10","number of points to use in each grid direction");
   keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");
@@ -71,7 +71,7 @@ SketchMapPointwise::SketchMapPointwise( const ActionOptions& ao ):
   parseVector("FGRID_SIZE",nfgrid);
   if( nfgrid[0]!=0 && nlow!=2 ) error("interpolation only works in two dimensions");
 
-  log.printf("  doing %u cycles of global optimisation sweeps\n",ncycles);
+  log.printf("  doing %u cycles of global optimization sweeps\n",ncycles);
   log.printf("  using coarse grid of points that is %u",npoints[0]);
   log.printf(" and that is %f larger than the difference between the position of the minimum and maximum projection \n",gbuf);
   for(unsigned j=1; j<npoints.size(); ++j) log.printf(" by %u",npoints[j]);

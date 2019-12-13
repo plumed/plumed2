@@ -24,6 +24,7 @@
 #include "LinearBasisSetExpansion.h"
 #include "CoeffsVector.h"
 #include "GridIntegrationWeights.h"
+#include "GridProjWeights.h"
 
 #include "cltools/CLTool.h"
 #include "cltools/CLToolRegister.h"
@@ -118,7 +119,7 @@ The corresponding pot_coeffs_input.data file is
 #!-------------------
 \endverbatim
 
-One then uses the (x,y) postion of the particle as CVs by using the \ref POSITION
+One then uses the (x,y) position of the particle as CVs by using the \ref POSITION
 action as shown in the following PLUMED input
 \plumedfile
 p: POSITION ATOM=1
@@ -133,12 +134,13 @@ PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f
 
 class MD_LinearExpansionPES : public PLMD::CLTool {
 public:
-  std::string description() const {return "MD of a one particle on a linear expansion PES";}
+  std::string description() const override {return "MD of a one particle on a linear expansion PES";}
   static void registerKeywords( Keywords& keys );
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
-  int main( FILE* in, FILE* out, PLMD::Communicator& pc);
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
   unsigned int dim;
+  std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
   double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
@@ -151,21 +153,21 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","nstep","10","The number of steps of dynamics you want to run.");
   keys.add("compulsory","tstep","0.005","The integration timestep.");
-  keys.add("compulsory","temperature","1.0","The temperature to perform the simulation at. For multiple replica you can give a seperate value for each replica.");
-  keys.add("compulsory","friction","10.","The friction of the Langevin thermostat. For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","temperature","1.0","The temperature to perform the simulation at. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","friction","10.","The friction of the Langevin thermostat. For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","random_seed","5293818","Value of random number seed.");
-  keys.add("compulsory","plumed_input","plumed.dat","The name of the plumed input file(s). For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","plumed_input","plumed.dat","The name of the plumed input file(s). For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","dimension","1","Number of dimensions, supports 1 to 3.");
-  keys.add("compulsory","initial_position","Initial position of the particle. For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","initial_position","Initial position of the particle. For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","replicas","1","Number of replicas.");
   keys.add("compulsory","basis_functions_1","Basis functions for dimension 1.");
   keys.add("optional","basis_functions_2","Basis functions for dimension 2 if needed.");
   keys.add("optional","basis_functions_3","Basis functions for dimension 3 if needed.");
-  keys.add("compulsory","input_coeffs","potential-coeffs.in.data","Filename of the input coefficent file for the potential. For multiple replica you can give a seperate value for each replica.");
-  keys.add("compulsory","output_coeffs","potential-coeffs.out.data","Filename of the output coefficent file for the potential.");
-  keys.add("compulsory","output_coeffs_fmt","%30.16e","Format of the output coefficent file for the potential. Useful for regtests.");
-  keys.add("optional","coeffs_prefactor","prefactor for multiplying the coefficents with. For multiple replica you can give a seperate value for each replica.");
-  keys.add("optional","template_coeffs_file","only generate a template coefficent file with the filename given and exit.");
+  keys.add("compulsory","input_coeffs","potential-coeffs.in.data","Filename of the input coefficient file for the potential. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","output_coeffs","potential-coeffs.out.data","Filename of the output coefficient file for the potential.");
+  keys.add("compulsory","output_coeffs_fmt","%30.16e","Format of the output coefficient file for the potential. Useful for regtests.");
+  keys.add("optional","coeffs_prefactor","prefactor for multiplying the coefficients with. For multiple replica you can give a separate value for each replica.");
+  keys.add("optional","template_coeffs_file","only generate a template coefficient file with the filename given and exit.");
   keys.add("compulsory","output_potential_grid","100","The number of grid points used for the potential and histogram output files.");
   keys.add("compulsory","output_potential","potential.data","Filename of the potential output file.");
   keys.add("compulsory","output_histogram","histogram.data","Filename of the histogram output file.");
@@ -175,6 +177,7 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
 MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
+  dim_string_prefix("dim"),
   potential_expansion_pntr(NULL)
 {
   inputdata=ifile; //commandline;
@@ -237,8 +240,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   parse("nstep",nsteps);
   double tstep;
   parse("tstep",tstep);
-  //
-  double temp;
+  // initialize to solve a cppcheck 1.86 warning
+  double temp=0.0;
   std::vector<double> temps_vec(0);
   parseVector("temperature",temps_vec);
   if(temps_vec.size()==1) {
@@ -276,7 +279,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
   else {
     if(seeds_vec.size()!=1 && seeds_vec.size()!=replicas) {
-      error("problem with random_seed keyword, for multiple replicas you should give either one value or a seperate value for each replica");
+      error("problem with random_seed keyword, for multiple replicas you should give either one value or a separate value for each replica");
     }
     if(seeds_vec.size()==1) {
       seeds_vec.resize(replicas);
@@ -340,9 +343,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       bf_keyword = bf_keyword.substr(1,bf_keyword.size()-2);
     }
     basisf_keywords[i] = bf_keyword;
-    plumed_bf->readInputLine(bf_keyword+" LABEL=dim"+is);
-    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>("dim"+is);
-    args[i] = new Value(NULL,"dim"+is,false);
+    plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
+    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
+    args[i] = new Value(NULL,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
@@ -361,7 +364,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    error("Only generating a template coefficent file - Should stop now.");
+    printf("Only generating a template coefficient file - Should stop now.");
+    return 0;
   }
 
   std::vector<std::string> input_coeffs_fnames(0);
@@ -416,6 +420,25 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_potential.open(output_potential_fname);
   potential_expansion_pntr->writeBiasGridToFile(ofile_potential);
   ofile_potential.close();
+  if(dim>1) {
+    for(unsigned int i=0; i<dim; i++) {
+      std::string is; Tools::convert(i+1,is);
+      std::vector<std::string> proj_arg(1);
+      proj_arg[0] = dim_string_prefix+is;
+      FesWeight* Fw = new FesWeight(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw);
+      proj_grid.setMinToZero();
+
+      std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
+      OFile ofile_potential_proj;
+      ofile_potential_proj.link(pc);
+      ofile_potential_proj.open(output_potential_proj_fname);
+      proj_grid.writeToFile(ofile_potential_proj);
+      ofile_potential_proj.close();
+      delete Fw;
+    }
+  }
+
 
   Grid histo_grid(*potential_expansion_pntr->getPntrToBiasGrid());
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(&histo_grid);

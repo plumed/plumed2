@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,7 +52,7 @@ file that you use during an MD simulations:
 \plumedfile
 c1: COM ATOMS=1-10
 c2: COM ATOMS=11-20
-PRINT ARG=c1,c2 FILE=colvar STRIDE=100
+DUMPATOMS ATOMS=c1,c2 FILE=coms.xyz STRIDE=100
 
 DUMPMASSCHARGE FILE=mcfile
 \endplumedfile
@@ -102,10 +102,10 @@ public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
-  void prepare();
-  void calculate() {}
-  void apply() {}
-  void update();
+  void prepare() override;
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")

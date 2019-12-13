@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ protected:
   void           setBoxDerivatives(Value*,const Tensor&);
   const Tensor & getBoxDerivatives()const;
   const double & getForce()const;
-  void apply();
+  void apply() override;
 /// Set box derivatives automatically.
 /// It should be called after the setAtomsDerivatives has been used for all
 /// single atoms.
@@ -68,7 +68,7 @@ public:
   explicit Colvar(const ActionOptions&);
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );
-  virtual unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 };
 
 inline

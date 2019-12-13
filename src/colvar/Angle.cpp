@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,7 +46,7 @@ If _three_ atoms are given, the angle is defined as:
 |{\bf r}_{21}| |{\bf r}_{23}|}\right)
 \f]
 Here \f$ {\bf r}_{ij}\f$ is the distance vector among the
-i-th and the j-th listed atom.
+\f$i\f$th and the \f$j\f$th listed atom.
 
 If _four_ atoms are given, the angle is defined as:
 \f[
@@ -89,7 +89,7 @@ class Angle : public Colvar {
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

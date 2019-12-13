@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,8 +30,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit Highest( const VesselOptions& da );
-  std::string value_descriptor();
-  bool compare( const double&, const double& );
+  std::string value_descriptor() override;
+  bool compare( const double&, const double& ) override;
 };
 
 PLUMED_REGISTER_VESSEL(Highest,"HIGHEST")
@@ -42,7 +42,7 @@ void Highest::registerKeywords( Keywords& keys ) {
 
 void Highest::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
+  keys.addOutputComponent("highest","HIGHEST","the highest of the quantities calculated by this action");
 }
 
 Highest::Highest( const VesselOptions& da ) :

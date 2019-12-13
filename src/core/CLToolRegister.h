@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -65,7 +65,7 @@ public:
 /// Returns a list of the allowed CLTools
   std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
-  bool printManual(const std::string& cltool);
+  bool printManual(const std::string& cltool,const bool& spelling);
 /// Return all the keys of this cltool
   std::vector<std::string> getKeys(const std::string& cltool)const;
 };

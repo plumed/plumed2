@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,10 +31,10 @@ namespace vatom {
 
 //+PLUMEDOC VATOM GHOST
 /*
-Calculate the absolute position of a ghost atom with fixed coordinates
-in the local reference frame formed by three atoms.
+Calculate the absolute position of a ghost atom with fixed coordinates in the local reference frame formed by three atoms.
+
 The computed ghost atom is stored as a virtual atom that can be accessed in
-an atom list through the the label for the GHOST action that creates it.
+ an atom list through the the label for the GHOST action that creates it.
 
 \par Examples
 
@@ -57,7 +57,7 @@ class Ghost:
   vector<double> coord;
 public:
   explicit Ghost(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

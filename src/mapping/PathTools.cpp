@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,7 +42,7 @@ namespace mapping {
 pathtools can be used to construct paths from pdb data
 
 The path CVs in PLUMED are curvilinear coordinates through a high dimensional vector space.
-Enhanced sampling calculations are ofen run using the progress along the paths and the distance from the path as CVs
+Enhanced sampling calculations are often run using the progress along the paths and the distance from the path as CVs
 as this provides a convenient way of defining a reaction coordinate for a complicated process.  This method is explained
 in the documentation for \ref PATH.
 
@@ -63,12 +63,12 @@ PLUMED. The way you do this with each of these tools described above is explaine
 
 \par Examples
 
-The example below shows how you can take a set of unequally spaced frames from a pdb file named inpath.pdb
+The example below shows how you can take a set of unequally spaced frames from a pdb file named in_path.pdb
 and use pathtools to make them equally spaced so that they can be used as the basis for a path CV.  The file
-containing this final path is named outpath.pdb.
+containing this final path is named final_path.pdb.
 
 \verbatim
-plumed pathtools --path inpath.pdb --metric EUCLIDEAN --out outpath.pdb
+plumed pathtools --path in_path.pdb --metric EUCLIDEAN --out final_path.pdb
 \endverbatim
 
 The example below shows how can create an initial linear path connecting the two pdb frames in start.pdb and
@@ -80,7 +80,7 @@ start.pdb to end.pdb.
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb
 \endverbatim
 
-Often the idea with path cvs is to create a path connecting some initial state A to some final state B.  You would
+Often the idea with path collective variables is to create a path connecting some initial state A to some final state B.  You would
 in this case have representative configurations from your A and B states defined in the input files to pathtools
 that we have called start.pdb and end.pdb in the example above.  Furthermore, it may be useful to have a few frames
 before your start frame and after your end frame.  You can use path tools to create these extended paths as shown below.
@@ -92,7 +92,7 @@ frame just after end.pdb.  All these frames would be equally spaced.
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb --nframes-before-start 2 --nframes-after-end 2
 \endverbatim
 
-Notice also that when you reparameterise paths you must choose two frames to fix.  Generally you chose to fix the states
+Notice also that when you re-parameterize paths you must choose two frames to fix.  Generally you chose to fix the states
 that are representative of your states A and B.  By default pathtools will fix the first and last frames.  You can, however,
 change the states to fix by taking advantage of the fixed flag as shown below.
 
@@ -126,7 +126,7 @@ void PathTools::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--metric","the measure to use to calculate the distance between frames");
   keys.add("compulsory","--out","the name of the file on which to output your path");
   keys.add("compulsory","--arg-fmt","%f","the format to use for argument values in your frames");
-  keys.add("compulsory","--tolerance","1E-4","the tolerance to use for the path reparameterization algorithm");
+  keys.add("compulsory","--tolerance","1E-4","the tolerance to use for the algorithm that is used to re-parameterize the path");
   keys.add("compulsory","--nframes-before-start","1","the number of frames to include in the path before the first frame");
   keys.add("compulsory","--nframes","1","the number of frames between the start and end frames in your path");
   keys.add("compulsory","--nframes-after-end","1","the number of frames to put after the last frame of your path");
@@ -161,7 +161,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
       fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
     } else if( fixed.size()==2 ) {
-      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
+      if( fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
       }
     } else {
@@ -253,7 +253,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // Calculate the distance between the start and the end
   MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9);
   ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
-  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
+  sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
 // And the spacing between frames
   double delr = 1.0 / static_cast<double>( nbetween );
 // Calculate the vector connecting the start to the end
@@ -290,16 +290,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
   }
 
-// double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
-// for(unsigned i=1;i<final_path.size();++i){
-//    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-//    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-//    mean+=len;
-// }
-// printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
-
-// Delete the args as we don't need them anymore
-//  for(unsigned i=0; i<args.size(); ++i) delete args[i];
   ofile.close(); return 0;
 }
 

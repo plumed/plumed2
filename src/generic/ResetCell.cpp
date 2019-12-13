@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,6 +79,16 @@ RESET_CELL TYPE=TRIANGULAR
 DUMPATOMS FILE=dump-reset.xyz ATOMS=1-20
 \endplumedfile
 
+The reference file for the FIT_TO_TEMPLATE is just a normal pdb file with the format shown below:
+
+\auxfile{ref.pdb}
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+END
+\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -94,8 +104,8 @@ class ResetCell:
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply();
+  void calculate() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(ResetCell,"RESET_CELL")
@@ -116,8 +126,7 @@ ResetCell::ResetCell(const ActionOptions&ao):
   parse("TYPE",type);
 
   log<<"  type: "<<type<<"\n";
-  if(type=="TRIANGULAR") {
-  } else error("undefined type "+type);
+  if(type!="TRIANGULAR") error("undefined type "+type);
 
   checkRead();
 }

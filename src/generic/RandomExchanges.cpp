@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -78,8 +78,8 @@ class RandomExchanges:
 public:
   static void registerKeywords( Keywords& keys );
   explicit RandomExchanges(const ActionOptions&ao);
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(RandomExchanges,"RANDOM_EXCHANGES")

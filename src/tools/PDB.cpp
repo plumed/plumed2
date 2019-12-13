@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ columns | content
 \endverbatim
 PLUMED parser is slightly more permissive than the official PDB format
 in the fact that the format of real numbers is not fixed. In other words,
-any parsable real number is ok and the dot can be placed anywhere. However,
+any real number that can be parsed is OK and the dot can be placed anywhere. However,
 __columns are interpret strictly__. A sample PDB should look like the following
 \verbatim
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
@@ -78,7 +78,7 @@ for instance in \ref RMSD and in \ref FIT_TO_TEMPLATE), the occupancy column is 
 to provide the weight of each atom in the alignment. In cases where, perhaps after alignment,
 the displacement between running coordinates and the provided PDB is computed, the beta factors
 are used as weight for the displacement.
-Since setting the weights to zero is the same as __not__ including an atom in the alignement or
+Since setting the weights to zero is the same as __not__ including an atom in the alignment or
 displacement calculation, the two following reference files would be equivalent when used in an \ref RMSD
 calculation. First file:
 \verbatim
@@ -249,20 +249,29 @@ const Tensor & PDB::getBoxVec()const {
 
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return "";
-  else return atomsymb[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Name of atom " + num + " not found" );
+    return "";
+  } else return atomsymb[p->second];
 }
 
 unsigned PDB::getResidueNumber(AtomNumber a)const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return 0;
-  else return residue[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Residue for atom " + num + " not found" );
+    return 0;
+  } else return residue[p->second];
 }
 
 std::string PDB::getResidueName(AtomNumber a) const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return "";
-  else return residuenames[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Residue for atom " + num + " not found" );
+    return "";
+  } else return residuenames[p->second];
 }
 
 unsigned PDB::size()const {
@@ -329,11 +338,11 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       AtomNumber a; unsigned resno;
       double o,b;
       Vector p;
-      Tools::convert(serial,a);
-
       {
         int result;
-        const char* errmsg = h36::hy36decode(5, serial.c_str(),5, &result);
+        auto trimmed=serial;
+        Tools::trim(trimmed);
+        const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
           plumed_merror(msg);
@@ -420,6 +429,8 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum ) return residuenames[i];
   }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " not found" );
   return "";
 }
 
@@ -427,6 +438,8 @@ std::string PDB::getResidueName(const unsigned& resnum,const std::string& chaini
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) return residuenames[i];
   }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " not found in chain " + chainid );
   return "";
 }
 
@@ -535,15 +548,23 @@ void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, con
   if( argnames.size()>0 ) ofile.printf("\n");
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {
-      ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   numbers[i].serial(), i,
+      std::array<char,6> at;
+      const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
+      plumed_assert(msg==nullptr) << msg;
+      at[5]=0;
+      ofile.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   &at[0], i,
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );
     }
   } else {
     for(unsigned i=0; i<positions.size(); ++i) {
-      ofile.printf("ATOM  %5d %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   numbers[i].serial(), mymoldat->getAtomName(numbers[i]).c_str(),
+      std::array<char,6> at;
+      const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
+      plumed_assert(msg==nullptr) << msg;
+      at[5]=0;
+      ofile.printf("ATOM  %s %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   &at[0], mymoldat->getAtomName(numbers[i]).c_str(),
                    mymoldat->getResidueName(numbers[i]).c_str(), mymoldat->getResidueNumber(numbers[i]),
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );

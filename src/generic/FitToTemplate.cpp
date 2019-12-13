@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,7 +51,7 @@ This action is used to align a molecule to a template.
 This can be used to move the coordinates stored in plumed
 so as to be aligned with a provided template in PDB format. Pdb should contain
 also weights for alignment (see the format of PDB files used e.g. for \ref RMSD).
-Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
+Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page".
 Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
@@ -80,7 +80,7 @@ this action is performed at every MD step.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding the molecules using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -120,34 +120,47 @@ FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
 DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
 \endplumedfile
 
+In both these cases the reference structure should be provided in a reference pdb file such as the one below:
+
+\auxfile{ref.pdb}
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+END
+\endauxfile
+
 In the following example you see two completely equivalent way
 to restrain an atom close to a position that is defined in the reference
-frame of an aligned molecule. It could be for instance the center of mass
-of a ligand with respect to a protein
+frame of an aligned molecule. You could for instance use this command to calculate the
+position of the center of mass of a ligand after having aligned the atoms to the reference
+frame of the protein that is determined by aligning the atoms in the protein to the coordinates
+provided in the file ref.pdb
 \plumedfile
 # center of the ligand:
-ce: CENTER ATOMS=100-110
+center: CENTER ATOMS=100-110
 
-FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
+FIT_TO_TEMPLATE REFERENCE=ref.pdb TYPE=OPTIMAL
 
 # place a fixed atom in the protein reference coordinates:
 fix: FIXEDATOM AT=1.0,1.1,1.0
 
 # take the distance between the fixed atom and the center of the ligand
-d: DISTANCE ATOMS=ce,fix
+d: DISTANCE ATOMS=center,fix
 
 # apply a restraint
 RESTRAINT ARG=d AT=0.0 KAPPA=100.0
 \endplumedfile
 
-Notice that you could have obtained an (almost) identical result adding a fictitious
-atom to `ref.pdb` with the serial number corresponding to the `ce` atom (there is no automatic way
+Notice that you could have obtained an (almost) identical result by adding a fictitious
+atom to `ref.pdb` with the serial number corresponding to the atom labelled `center` (there is no automatic way
 to get it, but in this example it should be the number of atoms of the system plus one),
 and properly setting the weights for alignment and displacement in \ref RMSD.
 There are two differences to be expected:
 (ab) \ref FIT_TO_TEMPLATE might be slower since it has to rototranslate all the available atoms and
-(b) variables employing PBCs (such as \ref DISTANCE without `NOPBC`, as in the example above)
-  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects PBCs to be already solved.
+(b) variables employing periodic boundary conditions (such as \ref DISTANCE without `NOPBC`, as in the example above)
+  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects the issues related to the periodic boundary conditions to be already solved.
 The latter means that before the \ref RMSD statement one should use \ref WRAPAROUND or \ref WHOLEMOLECULES to properly place
 the ligand.
 
@@ -182,9 +195,9 @@ class FitToTemplate:
 public:
   explicit FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply();
-  unsigned getNumberOfDerivatives() {plumed_merror("You should not call this function");};
+  void calculate() override;
+  void apply() override;
+  unsigned getNumberOfDerivatives() override {plumed_merror("You should not call this function");};
 };
 
 PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
@@ -222,6 +235,13 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
     error("missing input file " + reference );
 
   requestAtoms(pdb.getAtomNumbers());
+  log.printf("  found %z atoms in input \n",pdb.getAtomNumbers().size());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<pdb.getAtomNumbers().size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",pdb.getAtomNumbers()[i].serial());
+  }
+  log.printf("\n");
 
   std::vector<Vector> positions=pdb.getPositions();
   weights=pdb.getOccupancy();

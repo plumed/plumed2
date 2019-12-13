@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,8 +41,8 @@ public:
   explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();
 // active methods:
-  virtual void calculate();
-  virtual void prepare();
+  void calculate() override;
+  void prepare() override;
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
   static void registerKeywords( Keywords& keys );
 };

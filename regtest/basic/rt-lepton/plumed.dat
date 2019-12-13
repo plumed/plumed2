@@ -1,8 +1,11 @@
-a: DISTANCE ATOMS=1,2
+aa: POSITION ATOM=1
+a: COMBINE ARG=aa.z PERIODIC=NO
 
-# commented functions are not implemented in lepton
+f0: MATHEVAL ARG=a FUNC=x PERIODIC=NO
 
+# Not available in libmatheval, should be commented out for comparisons:
 f1: MATHEVAL ARG=a FUNC={x+sin+sin(0); sin=0} PERIODIC=NO
+
 f2: MATHEVAL ARG=a FUNC=x+pi PERIODIC=NO
 f3: MATHEVAL ARG=a FUNC=x*2 PERIODIC=NO
 f4: MATHEVAL ARG=a FUNC=x/2 PERIODIC=NO
@@ -28,26 +31,52 @@ f23: MATHEVAL ARG=a FUNC=csc(x) PERIODIC=NO
 f24: MATHEVAL ARG=a FUNC=asin(x/4) PERIODIC=NO
 f25: MATHEVAL ARG=a FUNC=acos(x/4) PERIODIC=NO
 f26: MATHEVAL ARG=a FUNC=atan(x/4) PERIODIC=NO
-# f27: MATHEVAL ARG=a FUNC=acot(x) PERIODIC=NO
-# f28: MATHEVAL ARG=a FUNC=asec(x) PERIODIC=NO
-# f29: MATHEVAL ARG=a FUNC=acsc(x) PERIODIC=NO
+f27: MATHEVAL ARG=a FUNC=acot(x) PERIODIC=NO
+f28: MATHEVAL ARG=a FUNC=asec(x) PERIODIC=NO
+f29: MATHEVAL ARG=a FUNC=acsc(x) PERIODIC=NO
 f30: MATHEVAL ARG=a FUNC=sinh(x) PERIODIC=NO
 f31: MATHEVAL ARG=a FUNC=cosh(x) PERIODIC=NO
 f32: MATHEVAL ARG=a FUNC=tanh(x) PERIODIC=NO
-# f33: MATHEVAL ARG=a FUNC=coth(x) PERIODIC=NO
-# f34: MATHEVAL ARG=a FUNC=sech(x) PERIODIC=NO
-# f35: MATHEVAL ARG=a FUNC=csch(x) PERIODIC=NO
-# f36: MATHEVAL ARG=a FUNC=asinh(x) PERIODIC=NO
-# f37: MATHEVAL ARG=a FUNC=acosh(x) PERIODIC=NO
-# f38: MATHEVAL ARG=a FUNC=atanh(x) PERIODIC=NO
-# f39: MATHEVAL ARG=a FUNC=acoth(x) PERIODIC=NO
-# f40: MATHEVAL ARG=a FUNC=asech(x) PERIODIC=NO
-# f41: MATHEVAL ARG=a FUNC=acsch(x) PERIODIC=NO
+f33: MATHEVAL ARG=a FUNC=coth(x) PERIODIC=NO
+f34: MATHEVAL ARG=a FUNC=sech(x) PERIODIC=NO
+f35: MATHEVAL ARG=a FUNC=csch(x) PERIODIC=NO
+
+f36: MATHEVAL ARG=a FUNC=asinh(x) PERIODIC=NO
+# Implementation in matheval is buggy.
+# I use this to check:
+# f36: MATHEVAL ARG=a FUNC=log(x+sqrt(1+x^2)) PERIODIC=NO
+
+f37: MATHEVAL ARG=a FUNC=acosh(x) PERIODIC=NO
+f38: MATHEVAL ARG=a FUNC=atanh(x) PERIODIC=NO
+
+f39: MATHEVAL ARG=a FUNC=acoth(x) PERIODIC=NO
+# Implementation in matheval has different assumptions than lepton.
+# I used this to check:
+# f39: MATHEVAL ARG=a FUNC=0.5*log((x+1)/(x-1)) PERIODIC=NO
+# Notice that the derivative of this function is different from the derivative of acoth with lepton in a single point (x=1).
+# derivative of acoth(x) is inf whereas derivative of 0.5*log((x+1)/(x-1)) is nan
+# Also notice that the derivative of this function in matheval is nan in (-1,+1), whereas it is defined in lepton
+
+# note: derivative of asech differs between libmatheval and lepton in a single point (x=-1)
+f40: MATHEVAL ARG=a FUNC=asech(x) PERIODIC=NO
+
+f41: MATHEVAL ARG=a FUNC=acsch(x) PERIODIC=NO
 f42: MATHEVAL ARG=a FUNC=abs(x-1.5) PERIODIC=NO
 f43: MATHEVAL ARG=a FUNC=step(x) PERIODIC=NO
 f44: MATHEVAL ARG=a FUNC=delta(x) PERIODIC=NO
-# f45: MATHEVAL ARG=a FUNC=nandelta(x) PERIODIC=NO
+f45: MATHEVAL ARG=a FUNC=nandelta(x) PERIODIC=NO
 f46: MATHEVAL ARG=a FUNC=erf(x) PERIODIC=NO
+
+f47: MATHEVAL ARG=a FUNC=atan2(1,x) PERIODIC=NO
+f48: MATHEVAL ARG=a FUNC=atan2(x,1) PERIODIC=NO
+f49: MATHEVAL ARG=a FUNC=atan2(0.5,x) PERIODIC=NO
+f50: MATHEVAL ARG=a FUNC=atan2(x,0.5) PERIODIC=NO
+
+# note: atan2 is not available in libmatheval and was validated against these expressions
+# f47: MATHEVAL ARG=a FUNC=2*atan(1/(sqrt(1+x^2)+x)) PERIODIC=NO
+# f48: MATHEVAL ARG=a FUNC=2*atan(x/(sqrt(1+x^2)+1)) PERIODIC=NO
+# f49: MATHEVAL ARG=a FUNC=2*atan(0.5/(sqrt(0.5^2+x^2)+x)) PERIODIC=NO
+# f50: MATHEVAL ARG=a FUNC=2*atan(x/(sqrt(0.5^2+x^2)+0.5)) PERIODIC=NO
 
 c1: CONSTANT VALUE=pi    # this uses the ad hoc plumed implementation (no lepton)
 c2: CONSTANT VALUE=0.5pi # this uses the ad hoc plumed implementation (no lepton)

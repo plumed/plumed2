@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,7 +60,7 @@ The radius of gyration usually makes sense when atoms used for the calculation
 are all part of the same molecule.
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding the broken entities using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -91,7 +91,7 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit Gyration(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")

@@ -1,3 +1,3 @@
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --trajectory-stride 2 --timestep 0.002 --mf_xtc trajectory.xtc --dump-forces forces --dump-forces-fmt=%.3f"
+arg="--plumed plumed.dat --timestep 0.002 --mf_xtc trajectory.xtc --dump-forces forces --dump-forces-fmt=%.2f"

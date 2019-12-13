@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@ namespace PLMD {
 /*
 Functions that are used to construct histograms
 
-Constructing histograms is something you learnt to do relatively early in life. You perform an experiment a number of times,
+Constructing histograms is something you learned to do relatively early in life. You perform an experiment a number of times,
 count the number of times each result comes up and then draw a bar graph that describes how often each of the results came up.
 This only works when there are a finite number of possible results.  If the result a number between 0 and 1 the bar chart is
 less easy to draw as there are as many possible results as there are numbers between zero and one - an infinite number.
@@ -74,7 +74,7 @@ The following variants are available.
 </table>
 
 In the above \f$H(y)\f$ is a function that is equal to one when \f$y>0\f$ and zero when \f$y \le 0\f$. \f$n\f$ is
-the dimensionality of the vector \f$\mathbf{x}\f$ and \f$V\f$ is the volume of an elipse in an \f$n\f$ dimensional
+the dimensionality of the vector \f$\mathbf{x}\f$ and \f$V\f$ is the volume of an ellipse in an \f$n\f$ dimensional
 space which is given by:
 
 \f{eqnarray*}{
@@ -86,8 +86,8 @@ In \ref METAD the normalization constants are ignored so that the value of the f
 to one.  In addition in \ref METAD we must be able to differentiate the bias in order to get forces.  This limits
 the kernels we can use in this method.  Notice also that Gaussian kernels should have infinite support.  When used
 with grids, however, they are assumed to only be non-zero over a finite range.  The difference between the
-truncated-gaussian and regular gaussian is that the trucated gaussian is scaled so that its integral over the grid
-is equal to one when it is normalised.  The integral of a regular gaussian when it is evaluated on a grid will be
+truncated-gaussian and regular gaussian is that the truncated gaussian is scaled so that its integral over the grid
+is equal to one when it is normalized.  The integral of a regular gaussian when it is evaluated on a grid will be
 slightly less that one because of the truncation of a function that should have infinite support.
 */
 //+ENDPLUMEDOC

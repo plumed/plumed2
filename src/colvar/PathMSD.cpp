@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ in input ("sss" component) and the distance from them ("zzz" component).
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding molecules with a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -58,11 +58,30 @@ p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
-timesteps and consider only the closest 8 member to the actual md snapshots.
+steps and consider only the closest 8 member to the actual md snapshots.
 
-In the REFERENCE PDB file the frames must be separated either using END or ENDMDL.
+This input must be accompanied by a REFERENCE PDB file in which the positions of each of the frames are specified
+separated using either END or ENDMDL as shown below:
+
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
+ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
+ATOM      6  OL  ALA     1      -1.201  -0.849   2.425  1.00  1.00
+ATOM      7  NL  ALA     1      -1.296   0.337   0.534  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -2.990   0.383   2.277  1.00  1.00
+ATOM      5  CLP ALA     1      -1.664  -0.085   1.831  1.00  1.00
+ATOM      6  OL  ALA     1      -0.987  -0.835   2.533  1.00  1.00
+ATOM      7  NL  ALA     1      -1.227   0.364   0.646  1.00  1.00
+END
+\endauxfile
 
 \note
 The implementation of this collective variable and of \ref PROPERTYMAP

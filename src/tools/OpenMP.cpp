@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,16 +29,37 @@
 
 namespace PLMD {
 
+
+struct OpenMPVars {
+  unsigned cacheline_size=512;
+  bool cache_set=false;
+  unsigned num_threads=1;
+  bool nt_env_set=false;
+};
+
+static OpenMPVars & getOpenMPVars() {
+  static OpenMPVars vars;
+  return vars;
+}
+
+void OpenMP::setNumThreads(const unsigned nt) {
+  getOpenMPVars().num_threads=nt;
+}
+
 unsigned OpenMP::getCachelineSize() {
-  static unsigned cachelineSize=512;
-  if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),cachelineSize);
-  return cachelineSize;
+  if(!getOpenMPVars().cache_set) {
+    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),getOpenMPVars().cacheline_size);
+    getOpenMPVars().cache_set = true;
+  }
+  return getOpenMPVars().cacheline_size;
 }
 
 unsigned OpenMP::getNumThreads() {
-  static unsigned numThreads=1;
-  if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),numThreads);
-  return numThreads;
+  if(!getOpenMPVars().nt_env_set) {
+    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),getOpenMPVars().num_threads);
+    getOpenMPVars().nt_env_set = true;
+  }
+  return getOpenMPVars().num_threads;
 }
 
 unsigned OpenMP::getThreadNum() {

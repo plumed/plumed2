@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,13 +50,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
-  virtual void resize();
+  void resize() override;
 /// Do the calcualtion
-  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
 /// Do any transformations of the value that are required
   virtual double calcTransform( const double& val, double& df ) const ;
 /// Finish the calculation of the quantity
-  virtual void finish( const std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer ) override;
 /// Finish with any transforms required
   virtual double finalTransform( const double& val, double& dv );
 };

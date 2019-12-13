@@ -25,7 +25,7 @@ the following folders:
 
 \subsection ves-lugano2017-metad-subsection-1 The system
 
-We consider the association/dissociation of NaCl in acqueous solution.
+We consider the association/dissociation of NaCl in aqueous solution.
 The dissociation barrier is expected to be around 2.5 \f$k_\mathrm{B} T\f$.
 One interesting aspect of the ion dissociation problem is that collective
 solvent motions play an important role in the transition.
@@ -104,13 +104,13 @@ gnuplot:
 pl  "./COLVAR" u 1:2 w lp,
 \endverbatim
 you will see that the ion pair is stuck in the dissociated state during the 1 ns simulation.
-It is unable to cross the \f$ \sim 5 k_\mathrm{B} T\f$ barrier located at a distance of approximately
+It is unable to cross the \f$\sim5k_\mathrm{B}T\f$ barrier located at a distance of approximately
  0.4 nm. You can also observe this behavior in the trajectory using VMD:
 \verbatim
 vmd out.dcd -psf nacl.psf
 \endverbatim
 The trajectory has been saved in unwrapped format in order to avoid bonds
-stretching from one side to the box to the other due to periodic bounday
+stretching from one side to the box to the other due to periodic boundary
 conditions. In VMD we can
 wrap the atoms without breaking the bonds and show the box using the commands:
 \verbatim
@@ -192,27 +192,27 @@ the trajectory and the effective FES.
 
 In principle the cost of a metadynamics simulation should increase as the
 simulation progresses due to the need of adding an increasing number of
-gaussians to calculate the bias. However, since a grid is used to build up the
+Gaussian kernels to calculate the bias. However, since a grid is used to build up the
 bias this effect is not observed. You can check what happens if you do not use the
 GRID_* keywords. Remember that the bins in the grid should be small enough to
-describe the changes in the bias created by the gaussians. Normally a bin of
+describe the changes in the bias created by the Gaussian kernels. Normally a bin of
 size \f$ \sigma / 5 \f$ (with \f$ \sigma \f$ the gaussian width) is small enough.
 
 \subsection ves-lugano2017-metad-subsection-4 Assess convergence
 
-One way to identify if a WT-MetaD simulation has converged is observing the
+One way to identify if a well tempered metadynamics simulation has converged is observing the
 estimated free energy surface at different times. The FES is estimated by
 using the relation (again up to an arbitrary constant):
 \f[
 	F(\mathbf{s}) = - \left ( \frac{\gamma}{\gamma-1} \right ) V(\mathbf{s},t)
 \f]
-and the bias potential is calculated as a sum of gaussians.
+and the bias potential is calculated as a sum of Gaussian kernels.
 This can be done with Plumed 2 using for instance:
 \verbatim
 plumed sum_hills --hills ../HILLS --min 0.1 --max 0.8 --bin 300 --stride 100
 \endverbatim
 Most of the flags are self explanatory. The flag --stride 100 will result in
-the FES been written every 100 gaussians, i.e. 100 ps.
+the FES been written every 100 Gaussian kernels, i.e. 100 ps.
 Inside the folder FES_calculation you will find a script run.sh that executes the sum_hills command and a gnuplot script plot.gpi that can be used typing:.
 \verbatim
 gnuplot plot.gpi
@@ -220,7 +220,7 @@ gnuplot plot.gpi
 After roughly 3 ns the free
  energy surface does not change significantly with time except for an immaterial
  constant \f$ c(t) \f$ that grows in time. This is in line with well-tempered metadynamics
-asymptotic behaviour:
+asymptotic behavior:
 \f[
 	V(\mathbf{s},t)= - \left ( 1- \frac{1}{\gamma} \right ) F(\mathbf{s}) +
 c(t).
@@ -302,7 +302,7 @@ instance if some features of the FES could not be captured by the kernels, the
 reweighting procedure will show them. This will become clearer in the VES
 tutorial.
 The scripts to perform this calculation are found in the folder ReweightDistance.
-In metadynamics quasistationary limit the weight assigned to a given
+In metadynamics quasi-stationary limit the weight assigned to a given
 configuration is \cite Tiwary_jp504920s :
 \f[
   w(\mathbf{R}) \propto  e^{\beta ( V(\mathbf{s},t) - c(t) )}.
@@ -313,7 +313,7 @@ becomes clear.
  \f$ c(t) \f$ keeps growing even after long times, reflecting the
 approximately rigid shift of the bias with time.
 Normally the first part of the trajectory is not used for reweighting since
-during this period the simulation has not reached the quasistationary limit.
+during this period the simulation has not reached the quasi-stationary limit.
 In this case we can discard the first 2 or 3 ns of simulation.
 To disregard the first 3 ns of simulation we can use sed to delete the first 15000 lines from the COLVAR file:
 \verbatim

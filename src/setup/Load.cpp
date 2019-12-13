@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,7 +40,7 @@ in which case the file is compiled first.
 \par Examples
 
 If you have a shared object named extensions.so and want to
-use the functionalities implemented in it within PLUMED you can
+use the functions implemented within it within PLUMED you can
 load it with the following syntax
 
 \plumedfile
@@ -52,7 +52,7 @@ small change to one collective variable that is already implemented
 in PLUMED, say \ref DISTANCE . Copy the file `src/colvar/Distance.cpp`
 into your work directory, rename it as `Distance2.cpp`
 and  edit it as you wish. It might be better
-to also replace any occurence of the string DISTANCE within the file
+to also replace any occurrence of the string DISTANCE within the file
 with DISTANCE2, so that both old and new implementation will be available
 with different names. Then you can compile it into a shared object using
 \verbatim

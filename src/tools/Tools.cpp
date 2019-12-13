@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -75,7 +75,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   try {
     t=lepton::Parser::parse(str).evaluate(lepton::Constants());
     return true;
-  } catch(PLMD::lepton::Exception& exc) {
+  } catch(const PLMD::lepton::Exception& exc) {
   }
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
@@ -96,7 +96,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     std::string remains; nstr>>remains;
     return remains.length()==0;
   } else if(str=="NAN") {
-    t=NAN;
+    t=std::numeric_limits<double>::quiet_NaN();
     return true;
   }
   return false;
@@ -145,7 +145,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
     if(parenthesisLevel==0) for(unsigned j=0; j<sep.length(); j++) if(line[i]==sep[j]) found=true;
 // If at parenthesis level zero (outer)
     if(!(parenthesisLevel==0 && (found||onParenthesis))) word.push_back(line[i]);
-    if(onParenthesis) word.push_back(' ');
+    //if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0) {
       if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
@@ -225,12 +225,19 @@ void Tools::trimComments(string & s) {
   s=s.substr(0,n);
 }
 
+bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2)
+{
+  return ((str1.size() == str2.size()) && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
+    return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
+  }));
+}
+
 bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
   s.clear();
   for(auto p=line.begin(); p!=line.end(); ++p) {
     if((*p).length()==0) continue;
     string x=(*p).substr(0,key.length());
-    if(x==key) {
+    if(caseInSensStringCompare(x,key)) {
       if((*p).length()==key.length())return false;
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
@@ -294,6 +301,7 @@ void Tools::interpretLabel(vector<string>&s) {
     s[0]=s[1];
     s[1]="LABEL="+s0.substr(0,l-1);
   }
+  std::transform(s[0].begin(), s[0].end(), s[0].begin(), ::toupper);
 }
 
 vector<string> Tools::ls(const string&d) {

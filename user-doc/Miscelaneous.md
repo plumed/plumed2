@@ -16,14 +16,14 @@
 
 \page comments Comments
 
-If you are an organised sort of person who likes to remember what the hell you were trying to do when you ran a 
+If you are an organized sort of person who likes to remember what the hell you were trying to do when you ran a 
 particular simulation you might find it useful to put comments in your input file.  In PLUMED you can do this as 
 comments can be added using a # sign.  On any given line everything after the # sign is ignored so 
 erm... yes add lines of comments or trailing comments to your hearts content as shown below (using Shakespeare is optional):
 
 \plumedfile
 # This is the distance between two atoms:
-DISTANCE ATOM=1,2 LABEL=d1
+d1: DISTANCE ATOMS=1,2 
 UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
 # That I, one Snout by name, present a wall.
 \endplumedfile
@@ -61,8 +61,7 @@ DISTANCES ...
 Notice that the closing `...` is followed by the word `DISTANCES`. This is optional, but might be
 useful to find more easily which is the matching start of the statement. The following is equally correct
 \plumedfile
-DISTANCES ...
-  LABEL=dist
+dist: DISTANCES ...
 # we can also insert comments here
   ATOMS1=1,300
 # multiple kewords per line are allowed
@@ -144,14 +143,14 @@ autocompletion should be installed. Otherwise, configure will look for the prese
 and, in case it is installed on the same prefix as PLUMED, also PLUMED autocompletion will be installed.
 Finally, if none of these two conditions are satisfied, autocompletion will not be enabled. You will
 have to change your bashrc file once adding the following lines:
-Now look at these lines:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
-This is what you are expected to do if for instance you have multiple versions of PLUMED installed
-concurrently using separate env modules.
-The command `plumed completion` just writes on its standard output the body of a bash function.
+The command `plumed completion` just writes on its standard output the body of a bash function that is
+then used by bash to construct the autocompletion.
+The `--no-mpi` flag makes it more likely that the command can be executed correctly e.g. when you are on the login node of a cluster and
+PLUMED was compiled with MPI but the login node does not support MPI. In other cases, it is harmless.
 The `-o default` options will make sure that if `plumed --no-mpi completion` returns an error the default bash completion
 will be used. This is what will happen if you load an older PLUMED version for which the `completion` command is not available yet.
 In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should
@@ -161,7 +160,7 @@ be able to benefit of these features without ever changing your bash configurati
 
 In case you have multiple versions of PLUMED installed in separate env modules there is nothing more to do.
 However, if you have have multiple versions of PLUMED installed with different suffixes you should
-consistently add more lines to your profile file. For instance, if you installed executables named
+consistently add more lines to your profile file. For instance, if you installed two executables named
 `plumed` and `plumed_mpi` your configuration file should look like:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
@@ -172,7 +171,7 @@ complete -F _plumed_mpi -o default plumed_mpi
 
 \page VimSyntax Using VIM syntax file
 
-For the impatients:
+For the impatient use:
 - Add the following to your .vimrc file:
 \verbatim
 " Enable syntax
@@ -192,7 +191,7 @@ For the impatients:
 :set ft=plumed
 \endverbatim
 This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
-- If you want to fold multiline statements, type
+- If you want to fold multi-line statements, type
 \verbatim
 :setlocal foldmethod=syntax
 \endverbatim
@@ -201,7 +200,7 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
   Typing `:PHelp` again (or pushing `<F2>`) you will
   close that window. With `<CTRL-W><CTRL-W>` you go back and forth between the two windows.
 - When you open a file starting with `#! FIELDS`, VIM will automatically understand it
-  is a PLUMED outpt file (VIM filetype = plumedf) and will color fields and data columns with
+  is a PLUMED output file (VIM filetype = plumedf) and will color fields and data columns with
   alternating colors. Typing `:PPlus` and `:PMinus` (or pushing `<F3>` and `<F4>`)
   you can move a highlighted column.
 
@@ -233,7 +232,7 @@ we recommend the following procedure:
 :let &runtimepath.=','.$PLUMED_VIMPATH
 \endverbatim
 
-The modulefile provided with PLUMED should set the PLUMED_VIMPATH environemnt variable
+The modulefile provided with PLUMED should set the PLUMED_VIMPATH environment variable
 to the proper path.
 Thus, when working with a given PLUMED module loaded, you should be able to
 enable to proper syntax by just typing
@@ -244,13 +243,13 @@ in VIM.
 Notice that the variable `PLUMED_VIMPATH` is also set in the `sourceme.sh` script in the build directory.
 Thus, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
 when using an installed PLUMED and when running from a just compiled copy.
-Finally, in case you have both a preinstalled PLUMED **and** you have your development version
+Finally, in case you have both a pre-installed PLUMED **and** you have your development version
 the following command would give you the optimal flexibility:
 \verbatim
 :let &runtimepath.=','.$PLUMED_VIMPATH.',/opt/local/lib/plumed/vim/'
 \endverbatim
 The environment variable `PLUMED_VIMPATH`, if set, will take the precedence.
-Otherwise, vim will resort to the hardcoded path.
+Otherwise, vim will resort to the hard coded path.
 In this case we assumed that there is a PLUMED installed in `/opt/local/` (e.g. using MacPorts),
 but you can override it sourcing a `sourceme.sh` file in the compilation directory
 or loading a PLUMED module with `module load plumed`.
@@ -274,7 +273,7 @@ Now, every time you open this file, you will see it highlighted.
 The syntax file contains a definition of all possible PLUMED actions and keywords.
 It is designed to allow for a quick validation of the PLUMED input file before running it.
 As such, all the meaningful words in the input should be highlighted:
-- Valid action names (such as `METAD`) and labels (such as `metad:` or `LABEL=metad`) will be
+- Valid action names (such as `METAD`) and labels (such as `m:` or `LABEL=m`) will be
   highlighted in the brightest way (`Type` in VIM). Those are the most important words.
 - Keyword and flag names (such as `ATOMS=` or `COMPONENTS` when part of the action \ref DISTANCE) will be highlighted with a different color
   (`Statement` in VIM).
@@ -313,6 +312,8 @@ learn more.
 In case you want to use this feature, we suggest you to put both label
 and action type on the first line of multi-line statements. E.g.
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 m: METAD ...
   ARG=d
   HEIGHT=1.0
@@ -322,10 +323,14 @@ m: METAD ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: m: METAD ...------------------------------------------------------
 \endverbatim
 and
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 METAD LABEL=m ...
   ARG=d
   HEIGHT=1.0
@@ -335,6 +340,8 @@ METAD LABEL=m ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: METAD LABEL=m ...-------------------------------------------------
 \endverbatim
 This will allow you to easily identify the folded lines by seeing the most important information,
@@ -432,7 +439,7 @@ It is also possible to highlight a specific field of the file. Typing
 :5PCol
 \endverbatim
 you will highlight the fifth field. Notice that in the `FIELDS` line (the first line of the file)
-the 7th word of the line will be highlighted, which is the one containing the name of the field.
+the seventh word of the line will be highlighted, which is the one containing the name of the field.
 This allows for easy matching of values shown
 in the file and tags provided in the `FIELDS` line.
 The highlighted column can be moved back and forth using `:PPlus` and `:PMinus`.
@@ -464,37 +471,39 @@ INCLUDE FILE=filename
 So, for example, a single "plumed.dat" file:
 
 \plumedfile
-DISTANCE ATOMS=0,1 LABEL=dist
-RESTRAINT ARG=dist
+DISTANCE ATOMS=1,2 LABEL=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 could be split up into two files as shown below:
  
 \plumedfile
-DISTANCE ATOMS=0,1 LABEL=dist
-INCLUDE FILE=toBeIncluded.dat
+DISTANCE ATOMS=1,2 LABEL=dist
+INCLUDE FILE=toBeIncluded.inc
 \endplumedfile
-plus a "toBeIncluded.dat" file
+plus a "toBeIncluded.inc" file
 \plumedfile
-RESTRAINT ARG=dist
+#SETTINGS FILENAME=toBeIncluded.inc
+# this is toBeIncluded.inc
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
-However, when you do this it is important to recognise that \ref INCLUDE is a real directive that is only resolved
+However, when you do this it is important to recognize that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
 is not possible to do things like:
 
 \plumedfile
 # this is wrong:
 DISTANCE INCLUDE FILE=options.dat
-RESTRAINT ARG=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 \page load Loading shared libraries
 
 You can introduce new functionality into PLUMED by placing it directly into the src directory and recompiling the 
 PLUMED libraries.  Alternatively, if you want to keep your code independent from the rest of PLUMED (perhaps
-so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
-in conjuction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
+so you can release it independently - we won't be offended), then you can create your own dynamic library.  To use this 
+in conjunction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
 
 \plumedfile
 LOAD FILE=library.so
@@ -514,7 +523,7 @@ very intensive development of the code of if you are running on a computer with 
 
 \page exchange-patterns Changing exchange patterns in replica exchange
 
-Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
+Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges between randomly
 chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
 
 \page special-replica-syntax Special replica syntax
@@ -529,7 +538,8 @@ file with common definitions and specific input files with replica-dependent key
 However, as of PLUMED 2.4, we introduced a simpler manner to manipulate multiple replica
 inputs with tiny differences. Look at the following example:
 
-\plumedfile
+\plumedfile 
+#SETTINGS NREPLICAS=3
 # Compute a distance
 d: DISTANCE ATOMS=1,2
 
@@ -550,6 +560,7 @@ Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and r
 The `@replicas:` keyword is not special for \ref RESTRAINT or for the `AT` keyword. Any keyword in PLUMED can accept that syntax.
 For instance, the following single input file can be used to setup a bias exchange metadynamics \cite piana simulations:
 \plumedfile
+#SETTINGS NREPLICAS=2
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=1,2
 
@@ -563,12 +574,12 @@ METAD ...
   PACE=100
   SIGMA=@replicas:0.1,0.3
   GRID_MIN=@replicas:0.0,-pi
-  GRID_MAX=@replicas:2.0,+pi
+  GRID_MAX=@replicas:2.0,pi
 ...
 # On replica 0, this means:
 #  METAD ARG=d HEIGHT=1.0 PACE=100 SIGMA=0.1 GRID_MIN=0.0 GRID_MAX=2.0
 # On replica 1, this means:
-#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
+#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=pi
 \endplumedfile
 
 This would be a typical setup for a bias exchange simulation.
@@ -580,6 +591,7 @@ If the value that should be provided for each replica is a vector, you should us
 For instance, if the restraint acts on two variables, you can use the following input:
 
 \plumedfile
+#SETTINGS NREPLICAS=3
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=10,20
 
@@ -605,6 +617,7 @@ whereas the inner ones are used to group the values corresponding to each replic
 Also notice that the last example can be split in multiple lines exploiting the fact that
 within multi-line statements (enclosed by pairs of `...`) newlines are replaced with simple spaces:
 \plumedfile
+#SETTINGS NREPLICAS=3
 d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
 RESTRAINT ...
@@ -616,11 +629,11 @@ RESTRAINT ...
     {3.0,4.0}
     {5.0,6.0}
   }
-  KAPPA=1.0
+  KAPPA=1.0,3.0
 ...
 \endplumedfile
 
-In short, whenever there are keywords that should vary across replicas, you should set them usign the `@replicas:` keyword.
+In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
@@ -630,6 +643,7 @@ You might have noticed that from time to time constants are specified using stri
 An example is the following
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200
@@ -641,6 +655,7 @@ as `0.5pi` and `-pi`. However, as of version 2.4, we use the Lepton library in o
 that we read. This means that you can also employ more complicated expressions such as `1+2` or `exp(10)`:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 RESTRAINT ARG=e1 AT=1+0.5
@@ -660,7 +675,7 @@ yet to integer numbers (e.g.: the PACE argument of \ref METAD).
 </TR>
 <TR>
 <TD WIDTH="5%"> 
-\subpage Files </TD><TD> </TD><TD> Dealing with Input/Outpt
+\subpage Files </TD><TD> </TD><TD> Dealing with Input/Output
 </TD>
 </TR>
 </TABLE>

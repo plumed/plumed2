@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,13 +49,13 @@ In other words, it is a set of points, \f$(x',y',z')\f$, in your box which have:
 p(x',y',z') = \rho
 \f]
 
-where \f$\rho\f$ is some target density.  This action caculates the distance projected on the \f$x, y\f$ or
+where \f$\rho\f$ is some target density.  This action calculates the distance projected on the \f$x, y\f$ or
 \f$z\f$ axis between the position of some test particle and this surface of constant field density.
 
 \par Examples
 
-In this example atoms 2-100 are assumed to be concentraed along some part of the \f$z\f$ axis so that you
-an interface between a liquid/solid and the vapour.  The quantity dc measures the distance between the
+In this example atoms 2-100 are assumed to be concentrated along some part of the \f$z\f$ axis so that you
+an interface between a liquid/solid and the vapor.  The quantity dc measures the distance between the
 surface at which the density of 2-100 atoms is equal to 0.2 and the position of the test particle atom 1.
 
 \plumedfile
@@ -87,14 +87,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  bool isDensity() const { return true; }
-  void calculate();
-  unsigned getNumberOfQuantities() const ;
-  bool isPeriodic() { return false; }
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  bool isDensity() const override { return true; }
+  void calculate() override;
+  unsigned getNumberOfQuantities() const override;
+  bool isPeriodic() override { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
 // We need an apply action as we are using an independent value
-  void apply();
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
@@ -107,7 +107,7 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
   keys.add("compulsory","DATA","The input base multicolvar which is being used to calculate the contour");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
@@ -115,7 +115,7 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "
            "because of periodic boundary conditions.  When we are in the contour, however, we "
-           "should have it so that the sums of the absoluate values of the distances to the two "
+           "should have it so that the sums of the absolute values of the distances to the two "
            "contours is approximately the distance between the two contours.  There can be numerical errors in these calculations, however, so "
            "we specify a small tolerance here");
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,10 +41,11 @@ PLUMED_REGISTER_ACTION(ReadAnalysisFrames,"COLLECT_FRAMES")
 void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );
   keys.remove("SERIAL"); keys.remove("USE_OUTPUT_DATA_FROM"); keys.use("ARG");
-  keys.add("atoms-1","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
+  keys.add("atoms-1","ATOMS","the atoms whose positions we are tracking for the purpose of analyzing the data");
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  ActionWithValue::useCustomisableComponents( keys );
 }
 
 ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
@@ -55,7 +56,7 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
   weights_calculated(false)
 {
   parse("CLEAR",clearstride);
-  if( clearstride!=0 ) log.printf("  clearing stored data every %d steps\n");
+  if( clearstride!=0 ) log.printf("  clearing stored data every %u steps\n",clearstride);
   // Get the names of the argumes
   argument_names.resize( getNumberOfArguments() );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i]=getPntrToArgument(i)->getName();
@@ -81,7 +82,8 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
   if( wwstr.size()>0 ) {
     log.printf("\n");
     wham_pointer = dynamic_cast<bias::ReweightBase*>( weight_vals[0]->getPntrToAction() );
-    if( !wham_pointer->buildsWeightStore() ) wham_pointer = NULL;
+    if( !wham_pointer ) wham_pointer = NULL;
+    else if( !wham_pointer->buildsWeightStore() ) wham_pointer = NULL;
     if( wham_pointer && weight_vals.size()!=1 ) error("can only extract weights from one wham object");
   } else log.printf("  weights are all equal to one\n");
   requestArguments( arg );
@@ -127,7 +129,7 @@ void ReadAnalysisFrames::calculateWeights() {
 
 void ReadAnalysisFrames::update() {
   if( getStep()==0 ) return;
-  // Delete everything we stored now that it has been analysed
+  // Delete everything we stored now that it has been analyzed
   if( clearonnextstep ) {
     my_data_stash.clear(); my_data_stash.resize(0);
     logweights.clear(); logweights.resize(0);

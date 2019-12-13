@@ -283,11 +283,15 @@ ExpressionTreeNode Operation::Erfc::differentiate(const std::vector<ExpressionTr
 }
 
 ExpressionTreeNode Operation::Step::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
-    return ExpressionTreeNode(new Operation::Constant(0.0));
+    return ExpressionTreeNode(new Operation::Delta(),children[0]);
 }
 
 ExpressionTreeNode Operation::Delta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
-    return ExpressionTreeNode(new Operation::Constant(0.0));
+    return ExpressionTreeNode(new Operation::Nandelta(), children[0]);
+}
+
+ExpressionTreeNode Operation::Nandelta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return ExpressionTreeNode(new Operation::Nandelta(), children[0]);
 }
 
 ExpressionTreeNode Operation::Square::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
@@ -370,4 +374,221 @@ ExpressionTreeNode Operation::Select::differentiate(const std::vector<Expression
     derivChildren.push_back(childDerivs[2]);
     return ExpressionTreeNode(new Operation::Select(), derivChildren);
 }
+
+#define LEPTON_CONST(x) ExpressionTreeNode(new Operation::Constant(x))
+#define LEPTON_OP1(name,x) ExpressionTreeNode(new Operation::name(),x)
+#define LEPTON_OP2(name,x,y) ExpressionTreeNode(new Operation::name(),x,y)
+#define LEPTON_ADD_CONST(x,y) ExpressionTreeNode(new Operation::AddConstant(x),y)
+
+ExpressionTreeNode Operation::Acot::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+      LEPTON_OP2(Multiply,
+        LEPTON_OP1(Negate,
+          LEPTON_OP1(Reciprocal,
+            LEPTON_ADD_CONST(1.0,
+              LEPTON_OP1(Square,children[0])
+            )
+          )
+        ),
+        childDerivs[0]
+      );
+}
+
+ExpressionTreeNode Operation::Asec::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+      LEPTON_OP2(Multiply,
+        LEPTON_OP1(Reciprocal,
+          LEPTON_OP2(Multiply,
+            LEPTON_OP1(Abs,children[0]),
+            LEPTON_OP1(Sqrt,
+              LEPTON_OP2(Subtract,
+                LEPTON_OP1(Square,children[0]),
+                LEPTON_CONST(1.0)
+              )
+            )
+          )
+        ),
+        childDerivs[0]
+      );
+}
+
+ExpressionTreeNode Operation::Acsc::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Negate,
+        LEPTON_OP1(Reciprocal,
+          LEPTON_OP2(Multiply,
+            LEPTON_OP1(Abs,children[0]),
+            LEPTON_OP1(Sqrt,
+              LEPTON_OP2(Subtract,
+                LEPTON_OP1(Square,children[0]),
+                LEPTON_CONST(1.0)
+              )
+            )
+          )
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Coth::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP2(Subtract,
+        LEPTON_CONST(1.0),
+        LEPTON_OP1(Square,
+          LEPTON_OP1(Coth,children[0])
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Sech::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Negate,
+        LEPTON_OP2(Multiply,
+          LEPTON_OP1(Tanh,children[0]),
+          LEPTON_OP1(Sech,children[0])
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Csch::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Negate,
+        LEPTON_OP2(Multiply,
+          LEPTON_OP1(Coth,children[0]),
+          LEPTON_OP1(Csch,children[0])
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Acosh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Reciprocal,
+        LEPTON_OP1(Sqrt,
+          LEPTON_OP2(Subtract,
+            LEPTON_OP1(Square,children[0]),
+            LEPTON_CONST(1.0)
+          )
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Atanh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Reciprocal,
+        LEPTON_OP2(Subtract,
+          LEPTON_CONST(1.0),
+          LEPTON_OP1(Square,children[0])
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Asinh::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Reciprocal,
+        LEPTON_OP1(Sqrt,
+          LEPTON_ADD_CONST(1.0,
+            LEPTON_OP1(Square,children[0])
+          )
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Acoth::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Reciprocal,
+        LEPTON_OP2(Subtract,
+          LEPTON_CONST(1.0),
+          LEPTON_OP1(Square,children[0])
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Asech::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Negate,
+        LEPTON_OP1(Reciprocal,
+          LEPTON_OP2(Multiply,
+            children[0],
+            LEPTON_OP2(Multiply,
+              LEPTON_ADD_CONST(1.0,
+                children[0]
+              ),
+              LEPTON_OP1(Sqrt,
+                LEPTON_OP2(Divide,
+                  LEPTON_OP2(Subtract,
+                    LEPTON_CONST(1.0),
+                    children[0]
+                  ),
+                  LEPTON_ADD_CONST(1.0,
+                    children[0]
+                  )
+                )
+              )
+            )
+          )
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Acsch::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Multiply,
+      LEPTON_OP1(Negate,
+        LEPTON_OP1(Reciprocal,
+          LEPTON_OP2(Multiply,
+            LEPTON_OP1(Square,children[0]),
+            LEPTON_OP1(Sqrt,
+              LEPTON_ADD_CONST(1.0,
+                LEPTON_OP1(Reciprocal,
+                  LEPTON_OP1(Square,children[0])
+                )
+              )
+            )
+          )
+        )
+      ),
+      childDerivs[0]
+    );
+}
+
+ExpressionTreeNode Operation::Atan2::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
+    return
+    LEPTON_OP2(Divide,
+      LEPTON_OP2(Subtract,
+        LEPTON_OP2(Multiply, children[1], childDerivs[0]),
+        LEPTON_OP2(Multiply, children[0], childDerivs[1])
+      ),
+      LEPTON_OP2(Add,
+        LEPTON_OP1(Square, children[0]),
+        LEPTON_OP1(Square, children[1])
+      )
+    );
+}
+
 }

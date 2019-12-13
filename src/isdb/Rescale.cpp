@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_BIAS RESCALE
 /*
-Rescales the value of an another action, being a Collective Variable or a Bias.
+Scales the value of an another action, being a Collective Variable or a Bias.
 
 The rescaling factor is determined by a parameter defined on a logarithmic grid of dimension NBIN in the range
 from 1 to MAX_RESCALE. The current value of the rescaling parameter is stored and shared across
@@ -50,9 +50,9 @@ The well-tempered metadynamics bias potential is written to the file BFILE every
 when restarting the simulation using the directive \ref RESTART.
 
 \note
-Additional arguments not to be rescaled, one for each bin in the rescaling parameter ladder, can be
+Additional arguments not to be scaled, one for each bin in the rescaling parameter ladder, can be
 provided at the end of the ARG list. The number of such arguments is specified by the option NOT_RESCALED.
-These arguments will be not be rescaled, but they will be
+These arguments will be not be scaled, but they will be
 considered as bias potentials and used in the computation of the Metropolis
 acceptance probability when proposing a move in the rescaling parameter. See example below.
 
@@ -64,7 +64,7 @@ the arguments will be summed across replicas, unless the NOT_SHARED option is us
 \par Examples
 
 In this example we use \ref RESCALE to implement a simulated-tempering like approach.
-The total potential energy of the system is rescaled by a parameter defined on a logarithmic grid
+The total potential energy of the system is scaled by a parameter defined on a logarithmic grid
 of 5 bins in the range from 1 to 1.5.
 A well-tempered metadynamics bias potential is used to ensure diffusion in the space of the rescaling
 parameter.
@@ -87,7 +87,7 @@ In this second example, we add to the simulated-tempering approach introduced ab
 one Parallel Bias metadynamics simulation (see \ref PBMETAD) for each value of the rescaling parameter.
 At each moment of the simulation, only one of the \ref PBMETAD
 actions is activated, based on the current value of the associated \ref SELECTOR.
-The \ref PBMETAD bias potentials are not rescaled, but just used in the calculation of
+The \ref PBMETAD bias potentials are not scaled, but just used in the calculation of
 the Metropolis acceptance probability when proposing a move in the rescaling parameter.
 
 \plumedfile
@@ -176,7 +176,7 @@ void Rescale::registerKeywords(Keywords& keys) {
   keys.add("compulsory","BSTRIDE", "stride for writing bias");
   keys.add("compulsory","BFILE", "file name for bias");
   keys.add("optional","NOT_SHARED",   "list of arguments (from 1 to N) not summed across replicas");
-  keys.add("optional","NOT_RESCALED", "these last N arguments will not be rescaled");
+  keys.add("optional","NOT_RESCALED", "these last N arguments will not be scaled");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
@@ -215,14 +215,14 @@ Rescale::Rescale(const ActionOptions&ao):
 
   // number of bias
   parse("NOT_RESCALED", nores_);
-  if(nores_>0 && nores_!=nbin) error("The number of non rescaled arguments must be equal to either 0 or the number of bins");
+  if(nores_>0 && nores_!=nbin) error("The number of non scaled arguments must be equal to either 0 or the number of bins");
 
   // maximum value of rescale
   vector<double> max_rescale;
   parseVector("MAX_RESCALE", max_rescale);
   // check dimension of max_rescale
   if(max_rescale.size()!=(getNumberOfArguments()-nores_))
-    error("Size of MAX_RESCALE array must be equal to the number of arguments that will to be rescaled");
+    error("Size of MAX_RESCALE array must be equal to the number of arguments that will to be scaled");
 
   // calculate exponents
   double igamma_max = static_cast<double>(nbin);
@@ -277,8 +277,8 @@ Rescale::Rescale(const ActionOptions&ao):
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
   log.printf("  name of the SELECTOR use for this action %s\n",selector_.c_str());
   log.printf("  number of bins in grid %u\n",nbin);
-  log.printf("  number of arguments that will not be rescaled %u\n",nores_);
-  if(nrep_>1) log.printf("  number of arguments that will not be summed across replicas %u\n",not_shared.size());
+  log.printf("  number of arguments that will not be scaled %u\n",nores_);
+  if(nrep_>1) log<<"  number of arguments that will not be summed across replicas "<<not_shared.size()<<"\n";
   log.printf("  biasfactor %f\n",biasf_);
   log.printf("  initial hills height %f\n",w0_);
   log.printf("  stride to write bias to file %u\n",Biasstride_);

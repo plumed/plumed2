@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,leptontype,nativeq} type=rational;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,cosinus,matheval,leptontype,nativeq} type=rational;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0=0.0;

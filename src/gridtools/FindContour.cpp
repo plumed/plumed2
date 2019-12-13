@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@ Find an isocontour in a smooth function.
 
 As discussed in the part of the manual on \ref Analysis PLUMED contains a number of tools that allow you to calculate
 a function on a grid.  The function on this grid might be a \ref HISTOGRAM as a function of a few collective variables
-or it might be a phase field that has been calcualted using \ref MULTICOLVARDENS.  If this function has one or two input
+or it might be a phase field that has been calculated using \ref MULTICOLVARDENS.  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three or more dimensions
 it can be difficult to visualize.
 
@@ -74,16 +74,15 @@ FCCUBIC ...
   ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 LABEL=fcc
 ... FCCUBIC
 
-tfcc: MTRANSFORM_MORE DATA=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+tfcc: MTRANSFORM_MORE DATA=fcc LOWMEM SWITCH={SMAP R_0=0.5 A=8 B=8}
 center: CENTER_OF_MULTICOLVAR DATA=tfcc
 
-MULTICOLVARDENS ...
-  DATA=tfcc ORIGIN=center DIR=xyz LABEL=dens
-  NBINS=80,80,80 BANDWIDTH=1.0,1.0,1.0 STRIDE=25
-  LABEL=dens STRIDE=1 CLEAR=1
-... MULTICOLVARDENS
+dens: MULTICOLVARDENS ...
+  DATA=tfcc ORIGIN=center DIR=xyz
+  NBINS=80,80,80 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 CLEAR=1
+...
 
-FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.dat
+FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.xyz
 \endplumedfile
 
 */
@@ -105,12 +104,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
-  bool checkAllActive() const { return gbuffer==0; }
-  void prepareForAveraging();
-  bool isPeriodic() { return false; }
-  unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishAveraging();
+  bool checkAllActive() const override { return gbuffer==0; }
+  void prepareForAveraging() override;
+  bool isPeriodic() override { return false; }
+  unsigned getNumberOfQuantities() const override { return 1 + ingrid->getDimension(); }
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  void finishAveraging() override;
 };
 
 PLUMED_REGISTER_ACTION(FindContour,"FIND_CONTOUR")

@@ -75,7 +75,7 @@ td_uni: TD_UNIFORM
 
 td_gauss: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
-td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uniform,td_gaussian
+td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uni,td_gauss
 \endplumedfile
 
 Here we employ a linear combination of a uniform and two Gaussian distribution.
@@ -95,10 +95,10 @@ TD_LINEAR_COMBINATION ...
 ... TD_LINEAR_COMBINATION
 \endplumedfile
 
-In the above example the two Gaussians are given using two separate
+In the above example the two Gaussian kernels are given using two separate
 DISTRIBUTION keywords. As the \ref TD_GAUSSIAN target distribution allows multiple
 centers is it also possible to use just one DISTRIBUTION keyword for the two
-Gaussians. This is shown in the following example which will give the
+Gaussian kernels. This is shown in the following example which will give the
 exact same result as the one above as the weights have been appropriately
 adjusted
 \plumedfile
@@ -129,19 +129,19 @@ private:
   std::vector<Grid*> grid_pntrs_;
   std::vector<double> weights_;
   unsigned int ndist_;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
 public:
   static void registerKeywords(Keywords&);
   explicit TD_LinearCombination(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   //
-  void linkVesBias(VesBias*);
-  void linkAction(Action*);
+  void linkVesBias(VesBias*) override;
+  void linkAction(Action*) override;
   //
-  void linkBiasGrid(Grid*);
-  void linkBiasWithoutCutoffGrid(Grid*);
-  void linkFesGrid(Grid*);
+  void linkBiasGrid(Grid*) override;
+  void linkBiasWithoutCutoffGrid(Grid*) override;
+  void linkFesGrid(Grid*) override;
   //
 };
 

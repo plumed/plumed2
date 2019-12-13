@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,11 +52,11 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
                                  "This Action can be used to calculate the following scalar quantities directly.  These quantities are calculated by "
                                  "employing the keywords listed below. "
                                  "These quantities can then be referenced elsewhere in the input file by using this Action's label "
-                                 "followed by a dot and the name of the quantity. Some amongst them can be calculated multiple times "
+                                 "followed by a dot and the name of the quantity. Some of them can be calculated multiple times "
                                  "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
                                  "input by using the name of the quantity followed by a numerical identifier "
                                  "e.g. <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 etc.  When doing this and, for clarity we have "
-                                 "made the label of the components customizable. As such by using the LABEL keyword in the description of the keyword "
+                                 "made it so that the user can set a particular label for each of the components. As such by using the LABEL keyword in the description of the keyword "
                                  "input you can customize the component name");
   keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
@@ -65,7 +65,7 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
                "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
                "coordination number more than four for example");
   keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
-               "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
+               "one coordination number for each of the atoms specified in SPECIESA.  Each of these coordination numbers specifies how many "
                "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
                "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "

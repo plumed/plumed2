@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,10 +92,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XAngles(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XAngles,"XANGLES")
@@ -116,9 +116,9 @@ void XAngles::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
   keys.add("optional","SWITCH","A switching function that ensures that only angles are only computed when atoms are within "
            "are within a certain fixed cutoff. The following provides information on the \\ref switchingfunction that are available.");
 }

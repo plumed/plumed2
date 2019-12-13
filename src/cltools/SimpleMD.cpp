@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ namespace cltools {
 /*
 simplemd allows one to do molecular dynamics on systems of Lennard-Jones atoms.
 
-The input to simplemd is spcified in an input file. Configurations are input and
+The input to simplemd is specified in an input file. Configurations are input and
 output in xyz format. The input file should contain one directive per line.
 The directives available are as follows:
 
@@ -77,7 +77,7 @@ plumed simplemd --help
 class SimpleMD:
   public PLMD::CLTool
 {
-  string description()const {
+  string description()const override {
     return "run lj code";
   }
 
@@ -91,7 +91,7 @@ public:
   static void registerKeywords( Keywords& keys ) {
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
-    keys.add("compulsory","friction","off","The friction (in LJ units) for the langevin thermostat that is used to keep the temperature constant");
+    keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
     keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");
     keys.add("compulsory","forcecutoff","2.5","");
@@ -99,7 +99,7 @@ public:
     keys.add("compulsory","outputfile","An output xyz file containing the final configuration of the system");
     keys.add("compulsory","nconfig","10","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
     keys.add("compulsory","nstat","1","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
-    keys.add("compulsory","maxneighbours","10000","The maximum number of neighbours an atom can have");
+    keys.add("compulsory","maxneighbours","10000","The maximum number of neighbors an atom can have");
     keys.add("compulsory","idum","0","The random number seed");
     keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
     keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
@@ -400,7 +400,7 @@ private:
 
 
 
-  virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc) {
+  int main(FILE* in,FILE*out,PLMD::Communicator& pc) override {
     int            natoms;       // number of atoms
     vector<Vector> positions;    // atomic positions
     vector<Vector> velocities;   // velocities
@@ -602,6 +602,9 @@ private:
       if((istep+1)%nstat==0)   write_statistics(statfile,istep+1,tstep,natoms,ndim,engkin,engconf,engint);
 
     }
+
+// call final plumed jobs
+    plumed->cmd("runFinalJobs");
 
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);

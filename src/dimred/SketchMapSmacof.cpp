@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 
 //+PLUMEDOC DIMRED SKETCHMAP_SMACOF
 /*
-Optimise the sketch-map stress function using the SMACOF algorithm.
+Optimize the sketch-map stress function using the SMACOF algorithm.
 
 \par Examples
 
@@ -42,8 +42,8 @@ private:
   double recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights );
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapSmacof( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  explicit SketchMapSmacof( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapSmacof,"SKETCHMAP_SMACOF")

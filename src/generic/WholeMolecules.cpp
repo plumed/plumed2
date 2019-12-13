@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,6 +29,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
+#include "tools/OpenMP.h"
 
 #include <vector>
 #include <string>
@@ -40,8 +41,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
-This action is used to rebuild molecules that can become split by the periodic
-boundary conditions.
+This action is used to rebuild molecules that can become split by the periodic boundary conditions.
 
 It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
 MD dynamics code (e.g. GROMACS) can break molecules during the calculation.
@@ -66,8 +66,8 @@ The way WHOLEMOLECULES modifies each of the listed entities is this:
 
 In this way, if an entity consists of a list of atoms such that consecutive atoms in the
 list are always closer than half a box side the entity will become whole.
-This can be usually achieved selecting consecute atoms (1-100), but it is also possible
-to skip some atoms, provided consecute chosen atoms are close enough.
+This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
+to skip some atoms, provided consecutive chosen atoms are close enough.
 
 \par Examples
 
@@ -92,6 +92,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
 \endplumedfile
@@ -105,11 +106,13 @@ class WholeMolecules:
   public ActionAtomistic
 {
   vector<vector<AtomNumber> > groups;
+  bool doref;
+  vector<Vector> refs;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")
@@ -126,12 +129,15 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
+  keys.addFlag("ADDREFERENCE", false, "Set this flag if you want to define a reference position for the first atom of each entity");
+  keys.add("numbered", "REF", "Add reference position for first atom of each entity");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao)
+  ActionAtomistic(ao),
+  doref(false)
 {
   vector<AtomNumber> merge;
   for(int i=0;; i++) {
@@ -143,6 +149,16 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     log.printf("\n");
     groups.push_back(group);
     merge.insert(merge.end(),group.begin(),group.end());
+  }
+  // read reference position of first atom of each entity
+  parseFlag("ADDREFERENCE", doref);
+  if(doref) {
+    for(int i=0; i<groups.size(); ++i) {
+      vector<double> ref;
+      parseNumberedVector("REF",i,ref);
+      refs.push_back(Vector(ref[0],ref[1],ref[2]));
+      log.printf("  reference position in entity %d : %lf %lf %lf\n",i,ref[0],ref[1],ref[2]);
+    }
   }
 
   // Read residues to align from MOLINFO
@@ -176,11 +192,27 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  for(unsigned i=0; i<groups.size(); ++i) {
-    for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      const Vector & first (getGlobalPosition(groups[i][j]));
-      Vector & second (modifyGlobalPosition(groups[i][j+1]));
-      second=first+pbcDistance(first,second);
+  if(doref) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      #pragma omp for nowait
+      for(unsigned i=0; i<groups.size(); ++i) {
+        Vector & first (modifyGlobalPosition(groups[i][0]));
+        first = refs[i]+pbcDistance(refs[i],first);
+        for(unsigned j=0; j<groups[i].size()-1; ++j) {
+          const Vector & first (getGlobalPosition(groups[i][j]));
+          Vector & second (modifyGlobalPosition(groups[i][j+1]));
+          second=first+pbcDistance(first,second);
+        }
+      }
+    }
+  } else {
+    for(unsigned i=0; i<groups.size(); ++i) {
+      for(unsigned j=0; j<groups[i].size()-1; ++j) {
+        const Vector & first (getGlobalPosition(groups[i][j]));
+        Vector & second (modifyGlobalPosition(groups[i][j+1]));
+        second=first+pbcDistance(first,second);
+      }
     }
   }
 }

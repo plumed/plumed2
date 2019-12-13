@@ -34,7 +34,34 @@ do
 done
 
 # Generate all the documentation pages from comments
-cat ../*/*/*cpp |
+{
+cat ../*/*/*cpp
+# documentation for scripts:
+for file in ../scripts/*.sh
+do
+  name=$(basename ${file%.sh})
+  cat << EOF
+//+PLUMEDOC TOOLS $name
+/*
+EOF
+  ../src/lib/plumed $name --description
+
+  cat << EOF
+
+\note This command line tool is implemented as a shell script. Its help message is pasted below:
+
+\verbatim
+EOF
+  ../src/lib/plumed --no-mpi $name --help
+  cat << EOF
+\endverbatim
+*/
+//+ENDPLUMEDOC
+EOF
+
+done
+
+} |
 awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
   if($1=="//+ENDPLUMEDOC" && inside){
      inside=0;
@@ -67,7 +94,6 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
         $2=="VOLUMES" || 
         $2=="MCOLVARF" || 
         $2=="MCOLVARB" || 
-        $2=="MCOLVARA" || 
         $2=="MATRIX" || 
         $2=="MATRIXF" || 
         $2=="CONCOMP" || 
@@ -136,7 +162,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       cmd="grep reference: " array[1]".md | sed -e 's/reference://'"
       cmd | getline reference 
       close(cmd)
-      printf "<tr><td width=%s>\\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
+      printf "<tr><td width=%s> \\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
     }
   }
 }'
@@ -200,17 +226,26 @@ fi
 # Generate links to standard tutorial pages
 for file in ./tutorials/*.txt ; do
 
-    link=`grep link: $file | sed -e 's/link://'`
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
 
 done
 
+# Generate links to old tutorial pages
+for file in ./tutorials/old_tutorials/*.txt ; do
+
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
+done
+
 # Generate links to websites
 for file in ./tutorials/*.site; do
 
-   link=`grep link: $file | sed -e 's/link://'`
+   link=`grep link: $file | sed -e 's/link://'  | sed -e 's/\@/\\\/'`
    describe=`grep description: $file | sed -e 's/description://'`
 
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
@@ -320,8 +355,8 @@ done
 sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
-for file in COLVAR MCOLVAR MFILTERS MTRANSFORMS VOLUMES DCOLVAR MCOLVARF MCOLVARB MCOLVARA ANALYSIS LANDMARKS MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
-            DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
+for file in COLVAR MCOLVAR MFILTERS MTRANSFORMS VOLUMES DCOLVAR MCOLVARF MCOLVARB ANALYSIS LANDMARKS MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
+            DICTIONARY TUTORIALS OLDTUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
             TOOLS
 do
   mv automatic/$file.list automatic/$file.1.list

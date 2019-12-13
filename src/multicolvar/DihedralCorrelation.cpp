@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,7 +46,7 @@ where the \f$\phi_i\f$ and \f$\psi\f$ values and the instantaneous values for th
 
 \par Examples
 
-The following provides an example input for the dihcor action
+The following provides an example input for the DIHCOR action
 
 \plumedfile
 DIHCOR ...
@@ -57,26 +57,27 @@ DIHCOR ...
 PRINT ARG=dih FILE=colvar STRIDE=10
 \endplumedfile
 
-In the above input we are calculating the correation between the torsion angle involving atoms 1, 2, 3 and 4 and the torsion angle
-involving atoms 5, 6, 7 and 8.	This is then added to the correlation betwene the torsion angle involving atoms 5, 6, 7 and 8 and the
+In the above input we are calculating the correlation between the torsion angle involving atoms 1, 2, 3 and 4 and the torsion angle
+involving atoms 5, 6, 7 and 8.	This is then added to the correlation between the torsion angle involving atoms 5, 6, 7 and 8 and the
 correlation angle involving atoms 9, 10, 11 and 12.
 
-Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
+Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-DIHCOR ...
+dih: DIHCOR ...
 ATOMS1=@phi-3,@psi-3
 ATOMS2=@psi-3,@phi-4
-ATOMS4=@phi-4,@psi-4
-... DIHCOR
+ATOMS3=@phi-4,@psi-4
+...
 PRINT ARG=dih FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
 
 */
 //+ENDPLUMEDOC
@@ -86,8 +87,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")

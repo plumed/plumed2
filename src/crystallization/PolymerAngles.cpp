@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,7 +27,7 @@
 Calculate a function to investigate the relative orientations of polymer angles
 
 This CV takes the vectors calculated by a \ref PLANES action as input and computes the following function
-of the relative angles, \f$\theta\f$, between the normals of pairs of input vectors:
+of the relative angles, \f$\theta\f$, between the vectors that are normal to the pairs of input vectors:
 
 \f[
 s = \frac{ 3 \cos^2 \theta - 1 }{ 2 }
@@ -70,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PolymerAngles(const ActionOptions& ao);
   double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
 PLUMED_REGISTER_ACTION(PolymerAngles,"POLYMER_ANGLES")

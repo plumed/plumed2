@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,19 +54,20 @@ where \f$\Delta G^\mathrm{solv}_i\f$ is the free energy of solvation, \f$\Delta 
 \f]
 where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolated group, \f$\lambda_i\f$ is the correlation length equal to the width of the first solvation shell and \f$R_i\f$ is the van der Waals radius of atom \f$i\f$.
 
-The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbor list with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
 
 \par Examples
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
-# We extend the cutoff by 0.2 nm and update the neighbourlist every 10 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
+# We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
+solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -80,9 +81,10 @@ PRINT ARG=solv FILE=SOLV
 class EEFSolv : public Colvar {
 private:
   bool pbc;
-  double buffer;
+  bool serial;
   double delta_g_ref;
-  unsigned stride;
+  double nl_buffer;
+  unsigned nl_stride;
   unsigned nl_update;
   vector<vector<unsigned> > nl;
   vector<vector<bool> > nlexpo;
@@ -95,27 +97,27 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit EEFSolv(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(EEFSolv,"EEFSOLV")
 
 void EEFSolv::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
-  componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("compulsory", "NL_BUFFER", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
-  keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbourlist is updated.");
+  keys.add("compulsory", "NL_BUFFER", "0.1", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
+  keys.add("compulsory", "NL_STRIDE", "40", "The frequency with which the neighbor list is updated.");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
 }
 
 EEFSolv::EEFSolv(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  buffer(0.1),
+  serial(false),
   delta_g_ref(0.),
-  stride(10),
+  nl_buffer(0.1),
+  nl_stride(40),
   nl_update(0)
 {
   vector<AtomNumber> atoms;
@@ -123,17 +125,18 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   const unsigned size = atoms.size();
   bool tcorr = false;
   parseFlag("TEMP_CORRECTION", tcorr);
-  parse("NL_BUFFER", buffer);
-  parse("NL_STRIDE", stride);
+  parse("NL_BUFFER", nl_buffer);
+  parse("NL_STRIDE", nl_stride);
 
   bool nopbc = !pbc;
   parseFlag("NOPBC", nopbc);
   pbc = !nopbc;
 
+  parseFlag("SERIAL",serial);
+
   checkRead();
 
   log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
-
 
   nl.resize(size);
   nlexpo.resize(size);
@@ -148,12 +151,14 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 void EEFSolv::update_neighb() {
   const double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
   const unsigned size = getNumberOfAtoms();
-  for (unsigned i=0; i<size; ++i) {
+
+  for (unsigned i=0; i<size; i++) {
     nl[i].clear();
     nlexpo[i].clear();
     const Vector posi = getPosition(i);
     // Loop through neighboring atoms, add the ones below cutoff
-    for (unsigned j=i+1; j<size; ++j) {
+    for (unsigned j=i+1; j<size; j++) {
+      if(parameter[i][1]==0&&parameter[j][1]==0) continue;
       const double d2 = delta(posi, getPosition(j)).modulo2();
       if (d2 < lower_c2 && j < i+14) {
         // crude approximation for i-i+1/2 interactions,
@@ -163,7 +168,7 @@ void EEFSolv::update_neighb() {
       // We choose the maximum lambda value and use a more conservative cutoff
       double mlambda = 1./parameter[i][2];
       if (1./parameter[j][2] > mlambda) mlambda = 1./parameter[j][2];
-      const double c2 = (4. * mlambda + buffer) * (4. * mlambda + buffer);
+      const double c2 = (2. * mlambda + nl_buffer) * (2. * mlambda + nl_buffer);
       if (d2 < c2 ) {
         nl[i].push_back(j);
         if(parameter[i][2] == parameter[j][2] && parameter[i][3] == parameter[j][3]) {
@@ -177,22 +182,30 @@ void EEFSolv::update_neighb() {
 void EEFSolv::calculate() {
   if(pbc) makeWhole();
   if(getExchangeStep()) nl_update = 0;
-  if (nl_update == 0) {
-    update_neighb();
-  }
+  if(nl_update==0) update_neighb();
 
   const unsigned size=getNumberOfAtoms();
   double bias = 0.0;
-  Tensor deriv_box;
+  vector<Vector> deriv(size, Vector(0,0,0));
+
+  unsigned stride;
+  unsigned rank;
+  if(serial) {
+    stride=1;
+    rank=0;
+  } else {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
+
   unsigned nt=OpenMP::getNumThreads();
-  const unsigned nn=nl.size();
-  if(nt*10>nn) nt=nn/10;
-  if(nt==0)nt=1;
+  if(nt*stride*10>size) nt=1;
+
   #pragma omp parallel num_threads(nt)
   {
-    vector<Vector> deriv_omp(size);
-    #pragma omp for reduction(+:bias)
-    for (unsigned i=0; i<size; ++i) {
+    vector<Vector> deriv_omp(size, Vector(0,0,0));
+    #pragma omp for reduction(+:bias) nowait
+    for (unsigned i=rank; i<size; i+=stride) {
       const Vector posi = getPosition(i);
       double fedensity = 0.0;
       Vector deriv_i;
@@ -202,7 +215,7 @@ void EEFSolv::calculate() {
       const double vdw_radius_i   = parameter[i][3];
 
       // The pairwise interactions are unsymmetric, but we can get away with calculating the distance only once
-      for (unsigned i_nl=0; i_nl<nl[i].size(); ++i_nl) {
+      for (unsigned i_nl=0; i_nl<nl[i].size(); i_nl++) {
         const unsigned j = nl[i][i_nl];
         const double vdw_volume_j   = parameter[j][0];
         const double delta_g_free_j = parameter[j][1];
@@ -213,73 +226,86 @@ void EEFSolv::calculate() {
         const double rij      = dist.modulo();
         const double inv_rij  = 1.0 / rij;
         const double inv_rij2 = inv_rij * inv_rij;
-        const double fact_ij  = inv_rij2 * delta_g_free_i * vdw_volume_j * INV_PI_SQRT_PI* inv_lambda_i;
-        const double fact_ji  = inv_rij2 * delta_g_free_j * vdw_volume_i * INV_PI_SQRT_PI* inv_lambda_j;
-        double deriv = 0.;
+        const double fact_ij  = inv_rij2 * delta_g_free_i * vdw_volume_j * INV_PI_SQRT_PI * inv_lambda_i;
+        const double fact_ji  = inv_rij2 * delta_g_free_j * vdw_volume_i * INV_PI_SQRT_PI * inv_lambda_j;
 
         // in this case we can calculate a single exponential
         if(!nlexpo[i][i_nl]) {
           // i-j interaction
-          if(inv_rij > 0.25*inv_lambda_i)
+          if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.)
           {
-            const double inv_lambda2_i = inv_lambda_i * inv_lambda_i;
-            const double rij_vdwr_diff = rij - vdw_radius_i;
-            const double expo = exp(-inv_lambda2_i * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo * fact_ij;
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2_i);
+            const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*fact_ij;
+            const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
+            const Vector dd    = e_deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            if(nt>1) deriv_omp[j] -= dd;
+            else deriv[j] -= dd;
           }
 
           // j-i interaction
-          if(inv_rij > 0.25*inv_lambda_j)
+          if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.)
           {
-            const double inv_lambda2_j = inv_lambda_j * inv_lambda_j;
-            const double rij_vdwr_diff = rij - vdw_radius_j;
-            const double expo = exp(-inv_lambda2_j * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo * fact_ji;
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2_j);
+            const double e_arg = (rij - vdw_radius_j)*inv_lambda_j;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*fact_ji;
+            const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_j);
+            const Vector dd    = e_deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            if(nt>1) deriv_omp[j] -= dd;
+            else deriv[j] -= dd;
           }
         } else {
           // i-j interaction
-          if(inv_rij > 0.25*inv_lambda_i)
+          if(inv_rij > 0.5*inv_lambda_i)
           {
-            const double inv_lambda2 = inv_lambda_i * inv_lambda_i;
-            const double rij_vdwr_diff = rij - vdw_radius_i;
-            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo*(fact_ij + fact_ji);
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+            const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*(fact_ij + fact_ji);
+            const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
+            const Vector dd    = e_deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            if(nt>1) deriv_omp[j] -= dd;
+            else deriv[j] -= dd;
           }
         }
 
-        const Vector dd = deriv*dist;
-        deriv_i      += dd;
-        deriv_omp[j] -= dd;
       }
-      deriv_omp[i] += deriv_i;
-      bias += - 0.5 * fedensity;
+      if(nt>1) deriv_omp[i] += deriv_i;
+      else deriv[i] += deriv_i;
+      bias += 0.5*fedensity;
     }
     #pragma omp critical
-    for(unsigned i=0; i<size; i++) {
-      setAtomsDerivatives(i, -deriv_omp[i]);
-      deriv_box += Tensor(getPosition(i), -deriv_omp[i]);
-    }
+    if(nt>1) for(unsigned i=0; i<size; i++) deriv[i]+=deriv_omp[i];
   }
 
-  setBoxDerivatives(-deriv_box);
-  setValue(delta_g_ref + bias);
+  if(!serial) {
+    comm.Sum(bias);
+    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+  }
+
+  Tensor virial;
+  for(unsigned i=0; i<size; i++) {
+    setAtomsDerivatives(i, -deriv[i]);
+    virial += Tensor(getPosition(i), -deriv[i]);
+  }
+  setBoxDerivatives(-virial);
+  setValue(delta_g_ref - bias);
 
   // Keep track of the neighbourlist updates
-  ++nl_update;
-  if (nl_update == stride) {
+  nl_update++;
+  if (nl_update == nl_stride) {
     nl_update = 0;
   }
 }
 
 void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
   vector<vector<double> > parameter_temp;
-  parameter_temp.resize(atoms.size());
+  parameter_temp.resize(atoms.size(), vector<double>(7,0));
   map<string, vector<double> > valuemap;
   map<string, map<string, string> > typemap;
   valuemap = setupValueMap();

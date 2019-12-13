@@ -5,5 +5,13 @@ except from where explicitly indicated.
 
 Authors of this software are:
 
-Omar Valsson
+- Omar Valsson
 
+The following people have contributed to this software: 
+
+- Michele Invernizzi
+  - added VES_DELTA_F
+  
+- Pablo Piaggi
+  - added TD_MULTICANONICAL 
+  - added TD_MULTITHERMAL_MULTIBARIC

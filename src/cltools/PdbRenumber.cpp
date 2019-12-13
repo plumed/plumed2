@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -65,7 +65,7 @@ For instance the following command:
 > plumed pdbrenumber --ipdb input.pdb --opdb output.pdb
 \endverbatim
 will copy file `input.pdb` to `output.pdb` replacing all the serial atoms with
-increasing numbers starting from one. Atoms past the 99999th one will be written
+increasing numbers starting from one. Atoms that have an index that is greater than 99999 will be written
 in the output PDB file in hybrid-36 code.
 
 It is possible to set a different serial number for the first atom, letting the
@@ -105,8 +105,8 @@ class PdbRenumber:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PdbRenumber(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "Modify atom numbers in a PDB, possibly using hybrid-36 coding";
   }
 };

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -108,7 +108,16 @@ Mapping::Mapping(const ActionOptions&ao):
   std::vector<Value*> req_args; interpretArgumentList( args, req_args );
   if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
   if( req_args.size()>0 ) requestArguments( req_args );
-  if( atoms.size()>0 ) requestAtoms( atoms );
+  if( atoms.size()>0 ) {
+    log.printf("  found %z atoms in input \n",atoms.size());
+    log.printf("  with indices : ");
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      if(i%25==0) log<<"\n";
+      log.printf("%d ",atoms[i].serial());
+    }
+    log.printf("\n");
+    requestAtoms( atoms );
+  }
   // Duplicate all frames (duplicates are used by sketch-map)
   // mymap->duplicateFrameList();
   // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );

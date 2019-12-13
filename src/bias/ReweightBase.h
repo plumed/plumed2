@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,14 +38,14 @@ protected:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() override { return 0; }
   virtual bool buildsWeightStore() const { return false; }
-  void calculate();
+  void calculate() override;
   virtual void calculateWeights( const unsigned& nframes ) {}
   virtual double getLogWeight() = 0;
   virtual double getWeight( const unsigned& iweight ) const { plumed_error(); }
   virtual void clearData() {}
-  void apply() {}
+  void apply() override {}
 };
 
 }

@@ -42,7 +42,7 @@ namespace ves {
 Output basis functions to file.
 
 This action can be used to write out to a grid file the values and derivatives of
-given basis functions. This is normally used for debugging when programing new
+given basis functions. This is normally used for debugging when programming new
 types of basis functions. For example, it is possible to calculate the
 derivatives numerically and compare to the analytically calculated
 derivatives.
@@ -70,10 +70,10 @@ VES_OUTPUT_BASISFUNCTIONS ...
 \endplumedfile
 
 This input should be run through the driver by using a command similar to the
-following one where the trajectory/configuration file conf.gro is needed to
+following one where the trajectory/configuration file configuration.gro is needed to
 trick the code to exit correctly.
 \verbatim
-plumed driver --plumed plumed.dat --igro conf.gro
+plumed driver --plumed plumed.dat --igro configuration.gro
 \endverbatim
 
 */
@@ -87,8 +87,8 @@ class OutputBasisFunctions :
 public:
   explicit OutputBasisFunctions(const ActionOptions&);
   TargetDistribution* setupTargetDistPntr(std::string keyword) const;
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
   static void registerKeywords(Keywords& keys);
 };
 

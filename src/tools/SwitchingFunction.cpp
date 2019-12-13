@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,8 @@
 #include <vector>
 #include <limits>
 
+#define PI 3.14159265358979323846
+
 using namespace std;
 namespace PLMD {
 
@@ -33,7 +35,7 @@ namespace PLMD {
 /*
 Functions that measure whether values are less than a certain quantity.
 
-Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$d_0\f$.
+Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$r_0\f$.
 For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.
 The various switching functions available in plumed differ in terms of how this decay is performed.
 
@@ -108,6 +110,16 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr> <tr>
+<td> COSINUS </td> <td>
+\f$
+s(r) &= 1  & if r<=d0
+s(r) &= 0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } * PI ) + 1 \right) & if d0<r<=d0+r0
+s(r) &= 0  & if r> d0+r0
+\f$
+</td> <td>
+{COSINUS R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> </td>
+</tr> <tr>
 <td> CUSTOM </td> <td>
 \f$
 s(r) = FUNC
@@ -119,7 +131,7 @@ s(r) = FUNC
 </table>
 
 Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
-Also notice that if the a `CUSTOM` switching function only depents on even powers of `x` it can be
+Also notice that if the a `CUSTOM` switching function only depends on even powers of `x` it can be
 made faster by using `x2` as a variable. For instance
 \verbatim
 {CUSTOM FUNC=1/(1+x2^3) R_0=0.3}
@@ -172,7 +184,10 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
   vector<string> data=Tools::getWords(definition);
-  if( data.size()<1 ) errormsg="missing all input for switching function";
+  if( data.size()<1 ) {
+    errormsg="missing all input for switching function";
+    return;
+  }
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
@@ -243,6 +258,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
+  else if(name=="COSINUS") type=cosinus;
   else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
     std::string func;
@@ -255,11 +271,11 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(unsigned t=0; t<lepton_ref.size(); t++) {
       try {
         lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
-      } catch(PLMD::lepton::Exception& exc) {
+      } catch(const PLMD::lepton::Exception& exc) {
         try {
           lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
           leptonx2=true;
-        } catch(PLMD::lepton::Exception& exc) {
+        } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
           lepton_ref[t]=nullptr;
@@ -275,7 +291,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
       try {
         lepton_ref_deriv[t]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference(arg);
-      } catch(PLMD::lepton::Exception& exc) {
+      } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=3*x
         lepton_ref_deriv[t]=nullptr;
@@ -317,12 +333,14 @@ std::string SwitchingFunction::description() const {
     ostr<<"cubic";
   } else if(type==tanh) {
     ostr<<"tanh";
+  } else if(type==cosinus) {
+    ostr<<"cosinus";
   } else if(type==leptontype) {
     ostr<<"lepton";
   } else {
     plumed_merror("Unknown switching function type");
   }
-  ostr<<" swiching function with parameters d0="<<d0;
+  ostr<<" switching function with parameters d0="<<d0;
   if(type==rational) {
     ostr<<" nn="<<nn<<" mm="<<mm;
   } else if(type==nativeq) {
@@ -445,6 +463,21 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
+    } else if(type==cosinus) {
+      if(rdist<=0.0) {
+// rdist = (r-r1)/(r2-r1) ; rdist<=0.0 if r <=r1
+        result=1.;
+        dfunc=0.0;
+      } else if(rdist<=1.0) {
+// rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
+        double tmpcos = cos ( rdist * PI );
+        double tmpsin = sin ( rdist * PI );
+        result = 0.5 * (tmpcos + 1.0);
+        dfunc=-0.5 * PI * tmpsin * invr0;
+      } else {
+        result=0.;
+        dfunc=0.0;
+      }
     } else if(type==leptontype) {
       const unsigned t=OpenMP::getThreadNum();
       plumed_assert(t<expression.size());

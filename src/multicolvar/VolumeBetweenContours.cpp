@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,7 @@
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a region where the density of a certain type of atom is high.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
 This collective variable can be used to determine whether colvars are within region where the density
 of a particular atom is high.  This is achieved by calculating the following function at the point where
@@ -52,7 +51,7 @@ that are specified in the DENSITY action that are within a region where the dens
 \plumedfile
 d1: DENSITY SPECIES=14401-74134:3 LOWMEM
 fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
-PRINT ARG=fi,rr.* FILE=colvar
+PRINT ARG=fi FILE=colvar
 \endplumedfile
 
 */
@@ -72,8 +71,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
@@ -81,8 +80,8 @@ PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
   keys.add("atoms","ATOMS","the atom whose positions we are constructing a field from");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
+  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
 }
 
 VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):

@@ -5,7 +5,7 @@
 
 The aim of this tutorial is to introduce users to the tutorials in the developer manual of 
 PLUMED. We will learn a little bit about the structure of the code and how this structure
-can be visualised using the tree diagrams in the developer manual.  You will then learn how
+can be visualized using the tree diagrams in the developer manual.  You will then learn how
 to implement a new collective variable in a way that uses as much of the functionality that
 is already within the code and that thus avoids the duplication of code.  Finally, you will
 learn how to write regression tests and how these can be used for continuous integration.
@@ -65,7 +65,7 @@ manual, which can be found <a href="../../developer-doc/html/index.html"> here <
 you can get to the front page of the developer manual by clicking the USER/DEVELOPER logo in the top right hand 
 corner of any page of the user manual. 
 
-One of PLUMED's nicest features for the developer is that all the code and documentation for any new PLUMED command
+One of nicest features of PLUMED for the developer is that all the code and documentation for any new PLUMED command
 all appears together in a single file.  When you come to implement a new feature it is thus relatively unlikely that 
 you will have to modify any of the files you downloaded.  Adding a new feature is simply a matter of adding one further
 cpp file containing the new method and the documentation for this method.  We are able to achieve this by exploiting 
@@ -74,7 +74,7 @@ calculate biases thus inherit from a single base class called Action.  You can r
 <a href="../../developer-doc/html/class_p_l_m_d_1_1_action.html"> here </a>.  Notice also that this page also 
 shows how all the various classes within the code inherit from this single base class.  It is perhaps worth spending a 
 little while browsing through the various branches of this tree and understanding how the classes
-at each level become increasingly specialised and thus fit for particular purposes.
+at each level become increasingly specialized and thus fit for particular purposes.
 
 Lets say you want to implement a new collective variable in PLUMED.  One way to start this task would be to write a
 new class that inherits from the <a href="../../developer-doc/html/class_p_l_m_d_1_1_colvar.html">PLMD::Colvar</a> base class.  
@@ -84,7 +84,7 @@ and follow various links on the various subject pages you will eventually get to
 for implementing a new collective variable.  If you look through the manual you can find similar pages that provide you
 with instructions for implementing new analysis methods, functions and so on.  Our suggestion when you implement 
 something new would thus be to find some similar functionality in the code, look at how it is implemented and to look
-in the developer manual at the descriptions of the classes that have been inheritted.  This process is what we will 
+in the developer manual at the descriptions of the classes that have been inherited.  This process is what we will 
 try and take you through in this short tutorial.   
 
 \section julich-devel-instruct Instructions
@@ -117,7 +117,7 @@ you should see the output that was discussed above.
 In setting up your input files you may find it useful to watch our 
 <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> introductory </a> 
 video and <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps"> this video </a> on some of the 
-features that are available in the code.  Obviously, the user manual will be indespensible as well.
+features that are available in the code.  Obviously, the user manual will be indispensable as well.
 
 \subsection new-cv Implementing a new collective variable
 
@@ -154,7 +154,7 @@ std::numeric_limits<double>::max()
 
 Write an input file that computes \f$s\f$ and outputs its value to a file called colvar and that computes both the analytical
 and numerical derivatives of \f$s\f$ and outputs this information to a file called deriv.  When outputting numbers to colvar and deriv
-you should output numbers to four and three decimal places repsectively.  You are going to run this calculation
+you should output numbers to four and three decimal places respectively.  You are going to run this calculation
 in the rt-second-shell directory that you downloaded with the tarball for this exercise so you should create this input file within
 that directory.  When you are content with your input run the calculation by typing make.  If you have done everything correctly
 you should see the output that was discussed above.
@@ -174,10 +174,10 @@ there are lots of smart people out in the world writing code (and again I am not
 tested and faster than anything that you will write so spend your time learning how it works so that you can re-use it.    
 
 - <B> Test your code </B> Notice that I set up directories that you could use to test your code for this tutorial.  Testing should always be part of your
-development workflow and coming up with ways to test your code is hard, which is why we often don't do it enough.  Also don't develop stuff in a 
+development work flow and coming up with ways to test your code is hard, which is why we often don't do it enough.  Also don't develop stuff in a 
 vacuum get in touch with people who are using the code.  You need to test your code on systems that people actually want to simulate and not 
-just on dummy problems.  In addition, you should learn to use profiling tools such as valgrind and instruments on the mac so that you can find 
-memory leaks and bottlenecks in your code.  When you start doing this properly you will realise that you cannot possibly properly maintain all the code 
+just on dummy problems.  In addition, you should learn to use profiling tools such as Valgrind and instruments on the mac so that you can find 
+memory leaks and bottlenecks in your code.  When you start doing this properly you will realize that you cannot possibly properly maintain all the code 
 that you have written and you will see clearly that you that you need to write less code.
 
 - <B> Write documentation for your code </B> Undocumented software is useless.  You need to explain how to use your code and to fill your manual with

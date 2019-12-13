@@ -6,12 +6,15 @@
 !/adjmat
 !/function
 !/analysis
+!/annfunc
 !/basic
 !/crystallization
 !/dimred
 !/eds
 !/drr
+!/logmfd
 !/mapping
+!/maze
 !/multicolvar
 !/python
 !/secondarystructure

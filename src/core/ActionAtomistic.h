@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,7 +80,7 @@ public:
 /// during the simulation, atoms will be available at the next step
 /// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
 /// LISTS OF ATOMS
-  void requestAtoms(const std::vector<AtomNumber> & a);
+  void requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep=true);
 /// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
 /// Get position of i-th atom (access by absolute AtomNumber).
@@ -178,20 +178,20 @@ public:
 
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
-  virtual void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  void   calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
 /// Numerical derivative routine to use when using Actions that inherit from BOTH
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
   virtual void retrieveAtoms();
   void applyForces();
-  void lockRequests();
-  void unlockRequests();
+  void lockRequests() override;
+  void unlockRequests() override;
   const std::set<AtomNumber> & getUnique()const;
   const std::set<AtomNumber> & getUniqueLocal()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
-  void readAtomsFromPDB( const PDB& pdb );
+  void readAtomsFromPDB( const PDB& pdb ) override;
 };
 
 inline

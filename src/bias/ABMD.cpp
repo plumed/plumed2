@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -90,7 +90,7 @@ class ABMD : public Bias {
   vector<Random> random;
 public:
   explicit ABMD(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -105,7 +105,7 @@ void ABMD::registerKeywords(Keywords& keys) {
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_min","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           " These quantities will be named with the arguments of the bias followed by "
                           "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }

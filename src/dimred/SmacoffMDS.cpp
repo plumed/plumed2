@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 
 //+PLUMEDOC DIMRED SMACOF_MDS
 /*
-Optimise the multidimensional scaling stress function using the SMACOF algorithm.
+Optimize the multidimensional scaling stress function using the SMACOF algorithm.
 
 \par Examples
 
@@ -41,8 +41,8 @@ private:
   double tol;
 public:
   static void registerKeywords( Keywords& keys );
-  SmacofMDS( const ActionOptions& );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  explicit SmacofMDS( const ActionOptions& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")
@@ -50,7 +50,7 @@ PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")
 void SmacofMDS::registerKeywords( Keywords& keys ) {
   DimensionalityReductionBase::registerKeywords( keys );
   keys.remove("NLOW_DIM");
-  keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
+  keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorithm");
   keys.add("compulsory","SMACOF_MAXCYC","1000","maximum number of optimization cycles for SMACOF algorithm");
 }
 
@@ -58,7 +58,7 @@ SmacofMDS::SmacofMDS( const ActionOptions& ao):
   Action(ao),
   DimensionalityReductionBase(ao)
 {
-  if( !dimredbase ) error("SMACOF must be initialised using output from dimensionality reduction object");
+  if( !dimredbase ) error("SMACOF must be initialized using output from dimensionality reduction object");
 
   parse("SMACOF_TOL",tol); parse("SMACOF_MAXCYC",maxloops);
   log.printf("  running smacof to convergence at %f or for a maximum of %u steps \n",tol,maxloops);

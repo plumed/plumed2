@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,18 +45,18 @@ this quantity to a file.
 
 \plumedfile
 DENSITY SPECIES=1-64 LABEL=d1
-NLINKS ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+NLINKS GROUP=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
 PRINT ARG=dd FILE=colvar
 \endplumedfile
 
-The following calculates how many pairs of neighbouring atoms in a system containg 64 atoms have
+The following calculates how many pairs of neighboring atoms in a system containing 64 atoms have
 similar dispositions for the atoms in their coordination sphere.  This calculation uses the
 dot product of the Q6 vectors on adjacent atoms to measure whether or not two atoms have the same
 ``orientation"
 
 \plumedfile
 Q6 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q6
-NLINKS ARG=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+NLINKS GROUP=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
 PRINT ARG=dd FILE=colvar
 \endplumedfile
 
@@ -76,11 +76,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const override;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(NumberOfLinks,"NLINKS")
@@ -94,7 +94,7 @@ void NumberOfLinks::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords

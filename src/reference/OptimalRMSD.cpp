@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,18 +32,18 @@ private:
   RMSD myrmsd;
 public:
   explicit OptimalRMSD(const ReferenceConfigurationOptions& ro);
-  void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
-  bool pcaIsEnabledForThisReference() { return true; }
-  void setupRMSDObject() { myrmsd.clear(); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
-  void setupPCAStorage( ReferenceValuePack& mypack ) {
+  void read( const PDB& ) override;
+  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const override;
+  bool pcaIsEnabledForThisReference() override { return true; }
+  void setupRMSDObject() override { myrmsd.clear(); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
+  void setupPCAStorage( ReferenceValuePack& mypack ) override {
     mypack.switchOnPCAOption();
     mypack.centeredpos.resize( getNumberOfAtoms() );
     mypack.displacement.resize( getNumberOfAtoms() );
     mypack.DRotDPos.resize(3,3); mypack.rot.resize(1);
   }
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const override;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const override;
 };
 
 PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
@@ -81,7 +81,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
 void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Tensor> rot(1);  Matrix<std::vector<Vector> > DRotDPos( 3, 3 );
   std::vector<Vector> centeredreference( getNumberOfAtoms() ), centeredpos( getNumberOfAtoms() ), avector( getNumberOfAtoms() );
-  double d=myrmsd.calc_PCAelements(pos,avector,rot[0],DRotDPos,direction,centeredpos,centeredreference,true);
+  myrmsd.calc_PCAelements(pos,avector,rot[0],DRotDPos,direction,centeredpos,centeredreference,true);
   unsigned nat = pos.size(); for(unsigned i=0; i<nat; ++i) direction[i] = getDisplace()[i]*( direction[i] - getReferencePosition(i) );
 }
 
@@ -94,9 +94,9 @@ double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, c
   }
   for(unsigned a=0; a<3; a++) {
     for(unsigned b=0; b<3; b++) {
+      double tmp1=0.; for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
+
       for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-        double tmp1=0.;
-        for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
         if( normalized ) mypack.addAtomDerivatives( iat, getDisplace()[iat]*mypack.DRotDPos[a][b][iat]*tmp1 );
         else mypack.addAtomDerivatives( iat, mypack.DRotDPos[a][b][iat]*tmp1 );
       }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,9 +45,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarCombine(const ActionOptions&);
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
@@ -55,8 +55,8 @@ PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
 void MultiColvarCombine::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating linear combinations for");
-  keys.add("compulsory","COEFFICIENTS","1.0","the coeficients to use for the various multicolvars");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
+  keys.add("compulsory","COEFFICIENTS","1.0","the coefficients to use for the various multicolvars");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM");
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }
 
@@ -82,7 +82,7 @@ double MultiColvarCombine::compute( const unsigned& tindex, AtomValuePack& myato
     dot += coeff[i]*tval[1];
   }
   if( !doNotCalculateDerivatives() ) {
-    MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
     for(unsigned i=0; i<coeff.size(); ++i) {
       cc[1]=coeff[i]; MultiValue& myder=getInputDerivatives( i, false, myatoms );
       splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );

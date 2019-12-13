@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ Selects an argument based on the value of a \ref SELECTOR.
 \par Examples
 
 In this example we use a simulated-tempering like approach activated by the \ref RESCALE action.
-For each value of the rescale parameter, we perform an independent Parallel Bias Metadynamics
+For each value of the scale parameter, we perform an independent Parallel Bias Metadynamics
 simulation (see \ref PBMETAD). At each moment of the simulation, only one of the \ref PBMETAD
 actions is activated, based on the current value of the associated \ref SELECTOR.
 The \ref SELECT action can then be used to print out the value of the (active) \ref PBMETAD bias potential.

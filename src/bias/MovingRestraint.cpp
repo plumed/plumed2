@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,7 +44,7 @@ V(\vec{s},t) = \frac{1}{2} \kappa(t) ( \vec{s} - \vec{s}_0(t) )^2
 
 The time dependence of \f$\kappa\f$ and \f$\vec{s}_0\f$ are specified by a list of
 STEP, KAPPA and AT keywords.  These keywords tell plumed what values \f$\kappa\f$ and \f$\vec{s}_0\f$
-should have at the time specified by the corresponding STEP keyword.  Inbetween these times
+should have at the time specified by the corresponding STEP keyword.  In between these times
 the values of \f$\kappa\f$ and \f$\vec{s}_0\f$ are linearly interpolated.
 
 Additional material and examples can be also found in the tutorial \ref belfast-5
@@ -114,7 +114,7 @@ class MovingRestraint : public Bias {
   double tot_work;
 public:
   explicit MovingRestraint(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 
@@ -125,28 +125,28 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
            "the restraint or whether it is acting on both sides (B)");
-  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "
-           "the MD step at which the restraint parameters take the values KAPPAx and ATx.");
+  keys.add("numbered","STEP","This keyword appears multiple times as STEP\\f$x\\f$ with x=0,1,2,...,n. Each value given represents "
+           "the MD step at which the restraint parameters take the values KAPPA\\f$x\\f$ and AT\\f$x\\f$.");
   keys.reset_style("STEP","compulsory");
-  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx. For intermediate times this parameter "
-           "is linearly interpolated. If no ATx is specified for STEPx then the values of AT are kept constant "
-           "during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","AT","AT\\f$x\\f$ is equal to the position of the restraint at time STEP\\f$x\\f$. For intermediate times this parameter "
+           "is linearly interpolated. If no AT\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of AT are kept constant "
+           "during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
   keys.reset_style("AT","compulsory");
-  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx. For intermediate times this "
-           "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
-           "are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","KAPPA","KAPPA\\f$x\\f$ is equal to the value of the force constants at time STEP\\f$x\\f$. For intermediate times this "
+           "parameter is linearly interpolated.  If no KAPPA\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of KAPPA\\f$x\\f$ "
+           "are kept constant during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
   keys.reset_style("KAPPA","compulsory");
   keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "these quantities will named with  the arguments of the bias followed by "
                           "the character string _cntr. These quantities give the instantaneous position "
                           "of the center of the harmonic potential.");
-  keys.addOutputComponent("_work","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_work","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _work. These quantities tell the user how much work has "
                           "been done by the potential in dragging the system along the various colvar axis.");
-  keys.addOutputComponent("_kappa","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_kappa","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _kappa. These quantities tell the user the time dependent value of kappa.");
 }

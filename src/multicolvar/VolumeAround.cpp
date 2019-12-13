@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,8 +25,7 @@
 
 //+PLUMEDOC VOLUMES AROUND
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a particular, user-specified part of of the cell.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the
@@ -58,7 +57,7 @@ that have x (in fractional coordinates) within 2.0 nm of the com of mass c1. The
 \plumedfile
 COM ATOMS=1-100 LABEL=c1
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
-AROUND DATA=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
+AROUND DATA=c ATOM=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 \endplumedfile
 
 */
@@ -77,8 +76,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeAround(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")

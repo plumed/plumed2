@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include "AtomNumber.h"
 #include <vector>
 #include <string>
+#include <cctype>
 #include <cstdio>
 #include <cmath>
 #include <limits>
@@ -71,6 +72,8 @@ public:
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
+/// compare two string in a case insensitive manner
+  static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a long double, reading it

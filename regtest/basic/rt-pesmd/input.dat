@@ -1,0 +1,7 @@
+temperature 0.1
+friction 0.1
+tstep 0.005
+dimension 1
+nstep 50
+ipos 0.1
+periodic false

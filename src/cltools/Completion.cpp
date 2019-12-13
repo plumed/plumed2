@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS completion
 /*
-Dumps the body of a bash function to be used for autocompletion.
+Dumps the body of a bash function to be used for auto completion.
 
 Users will typically not need this command.
 See more at \ref BashAutocompletion
@@ -57,8 +57,8 @@ class Completion:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "dump a function usable for programmable completion";
   }
 };

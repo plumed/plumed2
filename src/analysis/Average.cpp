@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ The ensemble average for a non-periodic, collective variable, \f$s\f$ is given b
 \f]
 
 Here the sum runs over a the trajectory and \f$s(t')\f$ is used to denote the value of the collective variable
-at time \f$t'\f$.  The final quantity evalulated is a weighted
+at time \f$t'\f$.  The final quantity evaluated is a weighted
 average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space
 sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
 
@@ -48,7 +48,7 @@ When the variable is periodic (e.g. \ref TORSION) and has a value, \f$s\f$, in \
 
 The following example calculates the ensemble average for the distance between atoms 1 and 2
 and output this to a file called COLVAR.  In this example it is assumed that no bias is acting
-on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal
+on the system and that the weights, \f$w(t')\f$ in the formulas above can thus all be set equal
 to one.
 
 \plumedfile
@@ -60,7 +60,7 @@ PRINT ARG=d1a FILE=colvar STRIDE=100
 The following example calculates the ensemble average for the torsional angle involving atoms 1, 2, 3 and 4.
 At variance with the previous example this quantity is periodic so the second formula in the above introduction
 is used to calculate the average.  Furthermore, by using the CLEAR keyword we have specified that block averages
-are to be calculated.  Consequently, after 100 steps all the information aquired thus far in the simulation is
+are to be calculated.  Consequently, after 100 steps all the information acquired thus far in the simulation is
 forgotten and the process of averaging is begun again.  The quantities output in the colvar file are thus the
 block averages taken over the first 100 frames of the trajectory, the block average over the second 100 frames
 of trajectory and so on.
@@ -73,7 +73,7 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 
 This third example incorporates a bias.  Notice that the effect the bias has on the ensemble average is removed by taking
 advantage of the \ref REWEIGHT_BIAS method.  The final ensemble averages output to the file are thus block ensemble averages for the
-unbiased canononical ensemble at a temperature of 300 K.
+unbiased canonical ensemble at a temperature of 300 K.
 
 \plumedfile
 t1: TORSION ATOMS=1,2,3,4
@@ -95,13 +95,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void calculate() {}
-  void apply() {}
-  void performOperations( const bool& from_update );
-  void finishAveraging();
-  bool isPeriodic() { return false; }
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
-  void accumulateAverage( MultiValue& myvals ) const ;
+  void calculate() override {}
+  void apply() override {}
+  void performOperations( const bool& from_update ) override;
+  void finishAveraging() override;
+  bool isPeriodic() override { return false; }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void accumulateAverage( MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")

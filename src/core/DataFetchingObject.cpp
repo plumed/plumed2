@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,8 +36,8 @@ private:
 public:
   explicit DataFetchingObjectTyped(PlumedMain&plumed);
   ~DataFetchingObjectTyped() {}
-  void setData( const std::string& key, const std::string& type, void* outval );
-  void finishDataGrab();
+  void setData( const std::string& key, const std::string& type, void* outval ) override;
+  void finishDataGrab() override;
 };
 
 std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, PlumedMain& p) {

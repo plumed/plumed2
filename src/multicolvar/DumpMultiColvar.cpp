@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -76,10 +76,10 @@ public:
   explicit DumpMultiColvar(const ActionOptions&);
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void calculateNumericalDerivatives( ActionWithValue* vv ) { plumed_error(); }
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void calculateNumericalDerivatives( ActionWithValue* vv ) override { plumed_error(); }
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")

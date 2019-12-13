@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ This can be used to output the data that has been stored in an Analysis object.
 class SketchMap : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMap( const ActionOptions& );
+  explicit SketchMap( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(SketchMap,"SKETCH_MAP")
@@ -50,9 +50,9 @@ void SketchMap::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
   keys.add("compulsory","ANNEAL_RATE","0.5","the rate at which to do the annealing");
   keys.add("compulsory","ANNEAL_STEPS","10","the number of steps of annealing to do");
-  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
+  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
 // Smap pointwise input
-  keys.add("compulsory","NCYCLES","5","the number of cycles of global optimisation to attempt");
+  keys.add("compulsory","NCYCLES","5","the number of cycles of global optimization to attempt");
   keys.add("compulsory","BUFFER","1.1","grid extent for search is (max projection - minimum projection) multiplied by this value");
   keys.add("compulsory","CGRID_SIZE","10","number of points to use in each grid direction");
   keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");

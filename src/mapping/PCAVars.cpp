@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@
 Projection on principal component eigenvectors or other high dimensional linear subspace
 
 The collective variables described in \ref dists allow one to calculate the distance between the
-instaneous structure adopted by the system and some high-dimensional, reference configuration.  The
+instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
 problem with doing this is that, as one gets further and further from the reference configuration, the
 distance from it becomes a progressively poorer and poorer collective variable.  This happens because
 the ``number" of structures at a distance \f$d\f$ from a reference configuration is proportional to \f$d^N\f$ in
@@ -64,7 +64,7 @@ of the metrics detailed on \ref dists to calculate the displacement, \f$\mathbf{
 The matrix \f$A\f$ can be found by various means including principal component analysis and normal mode analysis.  In both these methods the
 rows of \f$A\f$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian.
 
-\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitally and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
+\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitly and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
 
 \par Examples
 
@@ -81,12 +81,13 @@ PRINT ARG=pca2.* FILE=colvar2
 \endplumedfile
 
 The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
-which is refered to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
+which is referred to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
 the matrix \f$A\f$ above.  These directions can be specified by specifying a second configuration - in this case a vector will
 be constructed by calculating the displacement of this second configuration from the reference configuration.  A pdb input prepared
 in this way would look as follows:
 
-\verbatim
+\auxfile{reference.pdb}
+REMARK TYPE=OPTIMAL
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
@@ -95,6 +96,7 @@ ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
 ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
 ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
+REMARK TYPE=OPTIMAL
 ATOM      2  CH3 ACE     1      13.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      20.312  -9.928  -5.946  1.00  1.00
 ATOM      9  CA  ALA     2      18.462 -11.088  -8.986  1.00  1.00
@@ -103,9 +105,9 @@ ATOM     15  C   ALA     2      19.422   7.978 -12.536  1.00  1.00
 ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
 ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
-\endverbatim
+\endauxfile
 
-Alternatively, the second configuration can specify the components of \f$A\f$ explicitally.  In this case you need to include the
+Alternatively, the second configuration can specify the components of \f$A\f$ explicitly.  In this case you need to include the
 keyword TYPE=DIRECTION in the remarks to the pdb as shown below.
 
 \verbatim
@@ -184,12 +186,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a );
-  void calculate();
-  void apply();
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void calculate() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(PCAVars,"PCAVARS")
@@ -268,6 +270,15 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
   std::vector<std::string> args; myref->getArgumentRequests( args, false );
+  if( atoms.size()>0 ) {
+    log.printf("  found %z atoms in input \n",atoms.size());
+    log.printf("  with indices : ");
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      if(i%25==0) log<<"\n";
+      log.printf("%d ",atoms[i].serial());
+    }
+    log.printf("\n");
+  }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
 
@@ -343,7 +354,7 @@ void PCAVars::unlockRequests() {
 
 void PCAVars::calculate() {
 
-  if(!nopbc) makeWhole();
+  if(!nopbc && getNumberOfAtoms()>0) makeWhole();
 
   // Clear the reference value pack
   mypack.clear();

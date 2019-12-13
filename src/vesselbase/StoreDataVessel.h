@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -104,17 +104,17 @@ public:
 /// Get the derivatives for one of the components in the vector
   void retrieveDerivatives( const unsigned& myelem, const bool& normed, MultiValue& myvals );
 /// Do all resizing of data
-  virtual void resize();
+  void resize() override;
 ///
-  virtual std::string description() { return ""; }
+  std::string description() override { return ""; }
 /// Get the number of derivatives for the ith value
   unsigned getNumberOfDerivatives( const unsigned& );
 /// Get the size of the derivative list
   unsigned getSizeOfDerivativeList() const ;
 /// This stores the data when not using lowmem
-  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const override;
 /// Final step in gathering data
-  virtual void finish( const std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer ) override;
 /// Is a particular stored value active at the present time
   bool storedValueIsActive( const unsigned& iatom ) const ;
 /// Set the active values
@@ -122,7 +122,7 @@ public:
 /// Activate indexes (this is used at end of chain rule)
   virtual void activateIndices( ActionWithVessel* ) {}
 /// Forces on vectors should always be applied elsewhere
-  virtual bool applyForce(std::vector<double>&) { return false; }
+  bool applyForce(std::vector<double>&) override { return false; }
 ///  Get the number of data users
   unsigned getNumberOfDataUsers() const ;
 /// Get one of the ith data user

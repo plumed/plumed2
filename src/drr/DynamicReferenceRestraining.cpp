@@ -46,12 +46,13 @@ namespace drr {
 //+PLUMEDOC EABFMOD_BIAS DRR
 /*
 Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
-on one or more collective variables. This method is also
-called dynamic reference restraining(DRR) \cite Zheng2012 .
+ on one or more collective variables. This method is also
+ called dynamic reference restraining(DRR) \cite Zheng2012 . A detailed description
+ of this module can be found at \cite Chen2018 .
 
 For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$
 is attached through a spring. The fictitious variable \f$\lambda_i\f$ undergoes
-overdamped langevin dynamics jusk like \ref EXTENDED_LAGRANGIAN. The ABF
+overdamped Langevin dynamics just like \ref EXTENDED_LAGRANGIAN. The ABF
 algorithm applies bias force on \f$\lambda_i\f$. The bias force acts on
 \f$\lambda_i\f$ is the negative average spring force on \f$\lambda_i\f$, which
 enhances the sampling of \f$\lambda_i\f$.
@@ -79,7 +80,7 @@ A'(\xi^*)=\frac{{\sum_\lambda}N\left(\xi^*,\lambda\right)\left[\frac{\xi^*-\lang
 \f]
 
 The code performing UI(colvar_UIestimator.h) is contributed by Haohao Fu \cite Fu2016 .
-It may be slow. I only change the boltzmann constant and output
+It may be slow. I only change the Boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
@@ -222,7 +223,7 @@ private:
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
-  double maxFactor;
+  vector<double> maxFactors;
   UIestimator::UIestimator eabf_UI;
   Random rand;
 
@@ -245,12 +246,12 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "KAPPA", "specifies that the restraint is harmonic and "
            "what the values of the force constants on "
            "each of the variables are (default to "
-           "kbt/(GRID_SPACING)^2)");
+           "\\f$k_BT\\f$/(GRID_SPACING)^2)");
   keys.add("compulsory", "TAU", "0.5", "specifies relaxation time on each of "
            "variables are, similar to "
-           "extendedTimeConstant in Colvars");
+           "extended Time Constant in Colvars");
   keys.add("compulsory", "FRICTION", "8.0",
-           "add a friction to the variable, similar to extendedLangevinDamping "
+           "add a friction to the variable, similar to extended Langevin Damping "
            "in Colvars");
   keys.add("compulsory", "GRID_MIN", "the lower bounds for the grid (GRID_BIN "
            "or GRID_SPACING should be specified)");
@@ -300,14 +301,14 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
-    "one or multiple instances of this quantity will be refereceable "
+    "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is possible to add forces on these "
     "variable.");
   keys.addOutputComponent(
     "_vfict", "default",
-    "one or multiple instances of this quantity will be refereceable "
+    "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is NOT possible to add forces on these "
@@ -344,7 +345,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useCZARestimator(true), useUIestimator(false), textoutput(false),
-    withExternalForce(false), withExternalFict(false)
+    withExternalForce(false), withExternalFict(false),
+    maxFactors(getNumberOfArguments(), 1.0)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
@@ -386,7 +388,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   double temp = -1.0;
   parse("TEMP", temp);
   parse("FULLSAMPLES", fullsamples);
-  parse("MAXFACTOR", maxFactor);
+  parseVector("MAXFACTOR", maxFactors);
   parse("OUTPUTFREQ", outputfreq);
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
@@ -505,10 +507,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
 
   // Set up kbt for extended system
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
-  log << "eABF/DRR: The maximum scaling factor is " << maxFactor << '\n';
-  if (maxFactor > 1.0) {
-    log << "eABF/DRR: Warning! The maximum scaling factor larger than 1.0 is not recommended!" << '\n';
-  }
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   dt = getTimeStep();
   vector<double> ekbt(ndims, 0.0);
@@ -520,6 +518,15 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   }
   if (friction.size() != ndims) {
     friction.assign(ndims, 8.0);
+  }
+  if (maxFactors.size() != ndims) {
+    maxFactors.assign(ndims, 1.0);
+  }
+  for (size_t i = 0; i < ndims; ++i) {
+    log << "eABF/DRR: The maximum scaling factor [" << i << "] is " << maxFactors[i] << '\n';
+    if (maxFactors[i] > 1.0) {
+      log << "eABF/DRR: Warning! The maximum scaling factor larger than 1.0 is not recommended!" << '\n';
+    }
   }
   for (size_t i = 0; i < ndims; ++i) {
     ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
@@ -632,14 +639,14 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   if (!isRestart) {
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
-    ABFGrid = ABF(delim, ".abf", fullsamples, maxFactor, textoutput);
+    ABFGrid = ABF(delim, ".abf", fullsamples, maxFactors, textoutput);
     // Just initialize it even useCZARestimator is off.
     CZARestimator = CZAR(zdelim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
   } else {
     // ABF Parametres are not saved in binary files
     // So manully set them up
-    ABFGrid.setParameters(fullsamples, maxFactor);
+    ABFGrid.setParameters(fullsamples, maxFactors);
   }
   if (useCZARestimator) {
     log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
@@ -695,6 +702,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(outputprefix);
         if (useCZARestimator) {
           CZARestimator.writeAll(outputprefix);
+          CZARestimator.writeZCount(outputprefix);
         }
       }
     }
@@ -708,6 +716,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(textfilename);
         if (useCZARestimator) {
           CZARestimator.writeAll(textfilename);
+          CZARestimator.writeZCount(textfilename);
         }
       }
     }

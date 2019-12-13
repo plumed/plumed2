@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,7 +62,7 @@ class Sort :
 {
 public:
   explicit Sort(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -72,7 +72,7 @@ PLUMED_REGISTER_ACTION(Sort,"SORT")
 void Sort::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
-  ActionWithValue::useCustomisableComponents(keys);
+  useCustomisableComponents(keys);
 }
 
 Sort::Sort(const ActionOptions&ao):

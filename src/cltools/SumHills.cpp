@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,9 +55,9 @@ plumed sum_hills  --hills PATHTOMYHILLSFILE
 The default name for the output file will be fes.dat
 Note that starting from this version plumed will automatically detect the
 number of the variables you have and their periodicity.
-Additionally, if you use flexible hills (multivariate gaussians), plumed will understand it from the HILLS file.
+Additionally, if you use flexible hills (multivariate Gaussian kernels), plumed will understand it from the HILLS file.
 
-now sum_hills tool accepts als multiple files that will be integrated one after the other
+The sum_hills tool will also accept multiple files that will be integrated one after the other
 
 \verbatim
 plumed sum_hills  --hills PATHTOMYHILLSFILE1,PATHTOMYHILLSFILE2,PATHTOMYHILLSFILE3
@@ -98,7 +98,7 @@ You can use a --stride keyword to have a dump each bunch of hills you read
 plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE
 \endverbatim
 
-You can also have, in case of welltempered metadynamics, only the negative
+You can also have, in case of well tempered metadynamics, only the negative
 bias instead of the free energy through the keyword --negbias
 
 \verbatim
@@ -118,7 +118,7 @@ plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
 
 in this case you need a --kt to do the reweighting and then you
 need also some width (with the --sigma keyword) for the histogram calculation (actually will be done with
-gaussians, so it will be a continuous histogram)
+Gaussian kernels, so it will be a continuous histogram)
 Here the default output will be histo.dat.
 Note that also here you can have multiple input files separated by a comma.
 
@@ -190,8 +190,8 @@ class CLToolSumHills : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit CLToolSumHills(const CLToolOptions& co );
-  int main(FILE* in,FILE*out,Communicator& pc);
-  string description()const;
+  int main(FILE* in,FILE*out,Communicator& pc) override;
+  string description()const override;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist
   static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_);
@@ -208,13 +208,13 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
   keys.add("optional","--bin","the number of bins for the grid");
   keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
   keys.add("optional","--idw","specify the variables to be used for the free-energy/histogram (default is all). With --hills the other variables will be integrated out, with --histo the other variables won't be considered");
-  keys.add("optional","--outfile","specify the outputfile for sumhills");
-  keys.add("optional","--outhisto","specify the outputfile for the histogram");
+  keys.add("optional","--outfile","specify the output file for sumhills");
+  keys.add("optional","--outhisto","specify the output file for the histogram");
   keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
-  keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
+  keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with well tempered runs and flexible hills) ");
   keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
-  keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (usefull to compare results) ");
+  keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (useful to compare results) ");
   keys.add("optional","--fmt","specify the output format");
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,18 +49,18 @@ the positions (in scaled coordinates) associated with each of the multicolvars c
 \par Examples
 
 Lets suppose that you are examining the formation of liquid droplets from gas.  You may want to
-determine the center of mass of any of the droplets formed.  In doing this calculation you recognise that
+determine the center of mass of any of the droplets formed.  In doing this calculation you recognize that
 the atoms in the liquid droplets will have a higher coordination number than those in the surrounding gas.
-As you want to calculate the position of the droplets you thus recognise that these atoms with high coordination
+As you want to calculate the position of the droplets you thus recognize that these atoms with high coordination
 numbers should have a high weight in the weighted average you are using to calculate the position of the droplet.
 You can thus calculate the position of the droplet using an input like the one shown below:
 
 \plumedfile
-c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
+c1: COORDINATIONNUMBER LOWMEM SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
 cc: CENTER_OF_MULTICOLVAR DATA=c1
 \endplumedfile
 
-The first line here calclates the coordination numbers of all the atoms in the system.  The virtual atom then uses the values
+The first line here calculates the coordination numbers of all the atoms in the system.  The virtual atom then uses the values
 of the coordination numbers calculated by the action labelled c1 when it calculates the Berry Phase average described above.
 (N.B. the \f$w_i\f$ in the above expression are all set equal to 1 in this case)
 
@@ -73,7 +73,7 @@ cc: CENTER_OF_MULTICOLVAR DATA=cf
 \endplumedfile
 
 This input once again calculates the coordination numbers of all the atoms in the system.  The middle line then transforms these
-coordinations numbers to numbers between 0 and 1.  Essentially any atom with a coordination number larger than 2.0 is given a weight
+coordination numbers to numbers between 0 and 1.  Essentially any atom with a coordination number larger than 2.0 is given a weight
 of one and below this value the transformed value decays to zero.  It is these transformed coordination numbers that are used to calculate
 the Berry phase average described in the previous section.
 
@@ -92,7 +92,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit CenterOfMultiColvar(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(CenterOfMultiColvar,"CENTER_OF_MULTICOLVAR")

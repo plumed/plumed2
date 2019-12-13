@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,16 @@
 namespace PLMD {
 namespace config {
 
+// This is a fix to allow conda to correctly replace paths in binary files.
+// These functions should not be static or they will be optimized away!
+const char* plumed_root() {return "@PLUMED_ROOT@";}
+const char* plumed_soext() {return "@SOEXT@";}
+const char* plumed_htmldir() {return "@htmldir@";}
+const char* plumed_includedir() {return "@includedir@";}
+const char* plumed_program_name() {return "@program_name@";}
+
 std::string getSoExt() {
-  return "@SOEXT@";
+  return plumed_soext();
 }
 
 bool isInstalled() {
@@ -40,7 +48,7 @@ std::string getPlumedRoot() {
   char *env = std::getenv("PLUMED_ROOT");
   std::string ss;
   if( env == NULL) {
-    ss="@PLUMED_ROOT@";
+    ss=plumed_root();
   } else {
     ss=std::string( env );
   }
@@ -52,7 +60,7 @@ std::string getPlumedHtmldir() {
   char *env = std::getenv("PLUMED_HTMLDIR");
   std::string ss;
   if( env == NULL) {
-    ss="@htmldir@";
+    ss=plumed_htmldir();
   } else {
     ss=std::string( env );
   }
@@ -64,7 +72,7 @@ std::string getPlumedIncludedir() {
   char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
   if( env == NULL) {
-    ss="@includedir@";
+    ss=plumed_includedir();
   } else {
     ss=std::string( env );
   }
@@ -76,7 +84,7 @@ std::string getPlumedProgramName() {
   char *env = std::getenv("PLUMED_PROGRAM_NAME");
   std::string ss;
   if( env == NULL) {
-    ss="@program_name@";
+    ss=plumed_program_name();
   } else {
     ss=std::string( env );
   }

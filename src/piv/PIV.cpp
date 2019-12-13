@@ -20,7 +20,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/ActionWithVirtualAtom.h"
 #include "tools/NeighborList.h"
 #include "tools/SwitchingFunction.h"
-//#include "tools/Tools.h"
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 #include "tools/Stopwatch.h"
@@ -36,12 +35,15 @@ namespace PLMD
 namespace piv
 {
 
-//+PLUMEDOC COLVAR PIV
+//+PLUMEDOC PIVMOD_COLVAR PIV
 /*
-Calculates the PIV-distance: the squared Cartesian distance between the PIV \cite gallet2013structural,pipolo2017navigating
+Calculates the PIV-distance.
+
+PIV distance is the squared Cartesian distance between the PIV \cite gallet2013structural \cite pipolo2017navigating
 associated to the configuration of the system during the dynamics and a reference configuration provided
 as input (PDB file format).
 PIV can be used together with \ref FUNCPATHMSD to define a path in the PIV space.
+
 \par Examples
 
 The following example calculates PIV-distances from three reference configurations in Ref1.pdb, Ref2.pdb and Ref3.pdb
@@ -49,11 +51,12 @@ and prints the results in a file named colvar.
 Three atoms (PIVATOMS=3) with names (pdb file) A B and C are used to construct the PIV and all PIV blocks (AA, BB, CC, AB, AC, BC) are considered.
 SFACTOR is a scaling factor that multiplies the contribution to the PIV-distance given by the single PIV block.
 NLIST sets the use of neighbor lists for calculating atom-atom distances.
-The SWITCH keyword specifies the perameters of the switching function that transforms atom-atom distances.
-SORT=1 meand that the PIV block elements are sorted (SORT=0 no sorting.)
-Values for SORT, SFACTOR and Neighborlist parameters have to be specified for each block.
+The SWITCH keyword specifies the parameters of the switching function that transforms atom-atom distances.
+SORT=1 means that the PIV block elements are sorted (SORT=0 no sorting.)
+Values for SORT, SFACTOR and the neighbor list parameters have to be specified for each block.
 The order is the following: AA,BB,CC,AB,AC,BC. If ONLYDIRECT (ONLYCROSS) is used the order is AA,BB,CC (AB,AC,BC).
 The sorting operation within each PIV block is performed using the counting sort algorithm, PRECISION specifies the size of the counting array.
+
 \plumedfile
 PIV ...
 LABEL=Pivd1
@@ -342,6 +345,7 @@ PIV::PIV(const ActionOptions&ao):
     parseFlag("ONLYDIRECT",od);
     if (oc&&od) {
         error("ONLYCROSS and ONLYDIRECT are incompatible options!");
+
     }
     if(oc) {
         direct=false;
@@ -1028,6 +1032,7 @@ void PIV::calculate()
     if(Svol) {
         Fvol=cbrt(Vol0/getBox().determinant());
     }
+
 
     // This test may be run by specifying the TEST keyword as input, it pritnts rPIV and cPIV and quits
     if(test) {

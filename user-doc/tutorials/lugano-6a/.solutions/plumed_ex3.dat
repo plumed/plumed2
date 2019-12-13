@@ -1,0 +1,12 @@
+UNITS NATURAL
+# Include the file that defines our collective variable
+INCLUDE FILE=xdistances.dat
+
+# Add a restraint that ensures that the number of atoms in the left part of the box stays the same as the number of atoms
+# in the right part of the box
+ccc: CUSTOM ARG=da.right,da.left FUNC=x-y PERIODIC=NO
+RESTRAINT ARG=ccc AT=0.0 KAPPA=10
+
+# Add a moving restraint that forces the Ar atoms (1-500) to separate from the Ne atoms and to then mix again with the Ne atoms
+res: MOVINGRESTRAINT ARG=dx.between AT0=230 AT1=450 AT2=230 KAPPA0=100 STEP0=0 STEP1=50000 STEP2=100000
+PRINT ARG=da.*,dx.between,res.* FILE=colvar STRIDE=10

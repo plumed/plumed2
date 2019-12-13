@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,9 +48,9 @@ private:
   std::string filename;
 public:
   static void registerKeywords( Keywords& keys );
-  OutputPDBFile( const ActionOptions& );
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
-  void performAnalysis();
+  explicit OutputPDBFile( const ActionOptions& );
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performAnalysis() override;
 };
 
 PLUMED_REGISTER_ACTION(OutputPDBFile,"OUTPUT_ANALYSIS_DATA_TO_PDB")

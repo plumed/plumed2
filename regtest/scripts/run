@@ -79,7 +79,15 @@ mpi="$mpi -np $mpiprocs"
 
 if ! $plumed config -q has mpi
 then
-  echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+    if [ "$TRAVIS" = true ]; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+    fi
   exit 0;
 fi
 
@@ -91,7 +99,15 @@ fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-  echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
+    if [ "$TRAVIS" = true ]; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
+    fi
   exit 0;
 fi
 
@@ -100,7 +116,15 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    echo "NOT_APPLICABLE ($need NOT ENABLED)"
+    if [ "$TRAVIS" = true ]; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLICABLE ($need NOT ENABLED)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLICABLE ($need NOT ENABLED)"
+    fi
     exit 0;
   fi
 done
@@ -110,14 +134,30 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
+    if [ "$TRAVIS" = true ]; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
+    fi
     exit 0;
   fi
 done
 
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
-    echo "NOT_APPLIABLE (plumed_custom_skip)"
+    if [ "$TRAVIS" = true ]; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLIABLE (plumed_custom_skip)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLIABLE (plumed_custom_skip)"
+    fi
     exit 0;
   fi
 fi
@@ -144,6 +184,11 @@ case "$type" in
   $plumed info --configuration > Makefile.conf
   $plumed --is-installed || ln -s "$root/src" plumed
   cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+  if $plumed --is-installed ; then
+    export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+  else
+    export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+  fi
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;

@@ -43,7 +43,7 @@ p(s) =
 \, \left(\frac{s-a}{\sigma}\right)^{k-1} \, \exp\left(- \frac{1}{2} \left(\frac{s-a}{\sigma}\right)^2\right),
 \f]
 where \f$a\f$ is the minimum of the distribution that is defined on the interval \f$[a,\infty)\f$,
-the parameter \f$k\f$ (given as a postive integer larger than 1) determines how far
+the parameter \f$k\f$ (given as a positive integer larger than 1) determines how far
 the peak of the distribution is from the minimum (known as the "degrees of freedom"),
 and the parameter \f$\sigma>0\f$ determines the broadness of the distribution.
 
@@ -84,7 +84,7 @@ class TD_Chi: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Chi(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -94,8 +94,8 @@ PLUMED_REGISTER_ACTION(TD_Chi,"TD_CHI")
 void TD_Chi::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","MINIMUM","The minimum of the chi distribution.");
-  keys.add("compulsory","SIGMA","The \\f$\\sigma\\f$ parameter of the chi distribution given as a postive number.");
-  keys.add("compulsory","KAPPA","The \\f$k\\f$ parameter of the chi distribution given as postive integer larger than 1.");
+  keys.add("compulsory","SIGMA","The \\f$\\sigma\\f$ parameter of the chi distribution given as a positive number.");
+  keys.add("compulsory","KAPPA","The \\f$k\\f$ parameter of the chi distribution given as positive integer larger than 1.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");
@@ -112,13 +112,13 @@ TD_Chi::TD_Chi(const ActionOptions& ao):
   parseVector("MINIMUM",minima_);
   parseVector("SIGMA",sigma_);
   for(unsigned int k=0; k<sigma_.size(); k++) {
-    if(sigma_[k] < 0.0) {plumed_merror(getName()+": the value given in SIGMA should be postive.");}
+    if(sigma_[k] < 0.0) {plumed_merror(getName()+": the value given in SIGMA should be positive.");}
   }
 
 
   std::vector<unsigned int> kappa_int(0);
   parseVector("KAPPA",kappa_int);
-  if(kappa_int.size()==0) {plumed_merror(getName()+": some problem with KAPPA keyword, should given as postive integer larger than 1");}
+  if(kappa_int.size()==0) {plumed_merror(getName()+": some problem with KAPPA keyword, should given as positive integer larger than 1");}
   kappa_.resize(kappa_int.size());
   for(unsigned int k=0; k<kappa_int.size(); k++) {
     if(kappa_int[k] < 1) {plumed_merror(getName()+": KAPPA should be an integer 1 or higher");}

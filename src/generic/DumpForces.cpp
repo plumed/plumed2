@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,7 +45,7 @@ by specifying more than one argument. You can control the buffering of output us
 The following input instructs plumed to write a file called forces that contains
 the force acting on the distance between atoms 1 and 2.
 \plumedfile
-DISTANCE ATOM=1,2 LABEL=distance
+DISTANCE ATOMS=1,2 LABEL=distance
 DUMPFORCES ARG=distance STRIDE=1 FILE=forces
 \endplumedfile
 
@@ -60,11 +60,11 @@ class DumpForces :
   string fmt;
   OFile of;
 public:
-  void calculate() {}
+  void calculate() override {}
   explicit DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
+  void apply() override {}
+  void update() override;
   ~DumpForces();
 };
 

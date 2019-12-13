@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -116,9 +116,9 @@ public:
 
   static void registerKeywords( Keywords& keys );
 
-  void calculate() {};
-  void apply() {};
-  void update();
+  void calculate() override {};
+  void apply() override {};
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(EffectiveEnergyDrift,"EFFECTIVE_ENERGY_DRIFT")
@@ -220,8 +220,6 @@ void EffectiveEnergyDrift::update() {
     pDdStep=0;
     pGatindex = atoms.getGatindex();
     pNLocalAtoms = pGatindex.size();
-    pPositions=positions;
-    pForces=forces;
     pPositions=positions;
     pForces=forces;
     pbox=box;

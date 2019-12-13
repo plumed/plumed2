@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,9 +49,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeGradientBase(const ActionOptions&);
 /// Do jobs required before tasks are undertaken
-  void doJobsRequiredBeforeTaskList();
+  void doJobsRequiredBeforeTaskList() override;
 /// Actually do what we are asked
-  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
+  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const override;
 /// Calculate what is in the volumes
   virtual void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const=0;
 /// Setup the regions that this is based on

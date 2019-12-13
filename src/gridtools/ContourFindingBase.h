@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,9 +43,9 @@ public:
 /// Get the contour value
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
 /// Overwrite not needed stuff
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() override { return 0; }
 /// This is not periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 inline

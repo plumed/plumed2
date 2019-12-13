@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,16 +79,16 @@ This collective variable can then be use to break the rotational symmetry of a s
 Alternatively if the molecule is rigid it is possible to use the experimental data to calculate the alignment tensor and the use that to back calculate the RDCs, this is what is usually call the Single Value Decomposition approach. In this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be perfomed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
+Replica-Averaged simulations can be performed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
-Additional material and examples can be also found in the tutorial \ref belfast-9
+Additional material and examples can be also found in the tutorial \ref isdb-1
 
 \par Examples
 In the following example five N-H RDCs are defined and averaged over multiple replicas,
 their correlation is then calculated with respect to a set of experimental data and restrained.
 In addition, and only for analysis purposes, the same RDCs each single conformation are calculated
-using a Single Value Decomposition algorithm, then averaged and again compared with the experimenta data.
+using a Single Value Decomposition algorithm, then averaged and again compared with the experimental data.
 
 \plumedfile
 RDC ...
@@ -132,23 +132,23 @@ PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 
 //+PLUMEDOC ISDB_COLVAR PCS
 /*
-Calculates the Pseudocontact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
+Calculates the Pseudo-contact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
 
 The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
  and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf . While in principle the averaging
-resulting from the tumbling should remove the pseudocontact shift, in presence of the NMR magnetic field the magnatically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable PCSs and RDCs.
+resulting from the tumbling should remove the pseudo-contact shift, in presence of the NMR magnetic field the magnetically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable values for the PCS and RDC.
 
-PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
+PCS values can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be perfomed using PCSs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
+Replica-Averaged simulations can be performed using PCS values, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 \par Examples
 
-In the following example five PCSs are defined and their correlation with
+In the following example five PCS values are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
-and only for analysis purposes, the same PCSs are calculated using a Single Value
+and only for analysis purposes, the same PCS values are calculated using a Single Value
 Decomposition algorithm.
 
 \plumedfile
@@ -184,12 +184,39 @@ private:
   bool           svd;
   bool           pbc;
 
+#ifdef __PLUMED_HAS_GSL
+/// Auxiliary class to delete a gsl_vector.
+/// If used somewhere else we can move it.
+  struct gsl_vector_deleter {
+    void operator()(gsl_vector* p) {
+      gsl_vector_free(p);
+    }
+  };
+
+/// unique_ptr to a gsl_vector.
+/// Gets deleted when going out of scope.
+  typedef std::unique_ptr<gsl_vector,gsl_vector_deleter> gsl_vector_unique_ptr;
+
+/// Auxiliary class to delete a gsl_matrix.
+/// If used somewhere else we can move it.
+  struct gsl_matrix_deleter {
+    void operator()(gsl_matrix* p) {
+      gsl_matrix_free(p);
+    }
+  };
+
+/// unique_ptr to a gsl_matrix.
+/// Gets deleted when going out of scope.
+  typedef std::unique_ptr<gsl_matrix,gsl_matrix_deleter> gsl_matrix_unique_ptr;
+#endif
+
+
   void do_svd();
 public:
   explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(RDC,"RDC")
@@ -197,7 +224,6 @@ PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
@@ -206,11 +232,16 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
-  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
-  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
-  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
+  keys.addFlag("SVD",false,"Set to TRUE if you want to back calculate using Single Value Decomposition (need GSL at compilation time).");
+  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for \\ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
-  keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
+  keys.addOutputComponent("exp","SVD/COUPLING","the experimental # RDC");
+  keys.addOutputComponent("Sxx","SVD","Tensor component");
+  keys.addOutputComponent("Syy","SVD","Tensor component");
+  keys.addOutputComponent("Szz","SVD","Tensor component");
+  keys.addOutputComponent("Sxy","SVD","Tensor component");
+  keys.addOutputComponent("Sxz","SVD","Tensor component");
+  keys.addOutputComponent("Syz","SVD","Tensor component");
 }
 
 RDC::RDC(const ActionOptions&ao):
@@ -261,19 +292,19 @@ RDC::RDC(const ActionOptions&ao):
 #endif
   if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
 
-  bool addexp=false;
-  parseFlag("ADDCOUPLINGS",addexp);
-  if(getDoScore()||svd) addexp=true;
-
-  if(addexp) {
-    coupl.resize( ndata );
-    unsigned ntarget=0;
-    for(unsigned i=0; i<ndata; ++i) {
-      if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=ndata ) error("found wrong number of COUPLING values");
+  // Optionally add an experimental value
+  coupl.resize( ndata );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<ndata; ++i) {
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=ndata && ntarget!=0) error("found wrong number of COUPLING values");
+  if(ntarget==ndata) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the COUPLING values");
+  if(svd&&!addexp) error("with SVD you need to set the COUPLING values");
+
 
   // Ouput details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
@@ -292,29 +323,29 @@ RDC::RDC(const ActionOptions&ao):
   if(!getDoScore()&&!svd) {
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
+      addComponentWithDerivatives("rdc-"+num);
+      componentIsNotPeriodic("rdc-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<ndata; i++) {
         std::string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(coupl[i]);
       }
     }
   } else {
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
+      addComponentWithDerivatives("rdc-"+num);
+      componentIsNotPeriodic("rdc-"+num);
     }
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(coupl[i]);
     }
   }
@@ -328,7 +359,7 @@ RDC::RDC(const ActionOptions&ao):
     addComponent("Syz"); componentIsNotPeriodic("Syz");
   }
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(coupl);
     Initialise(coupl.size());
@@ -340,18 +371,19 @@ RDC::RDC(const ActionOptions&ao):
 void RDC::do_svd()
 {
 #ifdef __PLUMED_HAS_GSL
-  gsl_vector *rdc_vec, *S, *Stmp, *work, *bc;
-  gsl_matrix *coef_mat, *A, *V;
-  rdc_vec = gsl_vector_alloc(coupl.size());
-  bc = gsl_vector_alloc(coupl.size());
-  Stmp = gsl_vector_alloc(5);
-  S = gsl_vector_alloc(5);
-  work = gsl_vector_alloc(5);
-  coef_mat = gsl_matrix_alloc(coupl.size(),5);
-  A = gsl_matrix_alloc(coupl.size(),5);
-  V = gsl_matrix_alloc(5,5);
-  gsl_matrix_set_zero(coef_mat);
-  gsl_vector_set_zero(bc);
+  gsl_vector_unique_ptr rdc_vec(gsl_vector_alloc(coupl.size())),
+                        S(gsl_vector_alloc(5)),
+                        Stmp(gsl_vector_alloc(5)),
+                        work(gsl_vector_alloc(5)),
+                        bc(gsl_vector_alloc(coupl.size()));
+
+  gsl_matrix_unique_ptr coef_mat(gsl_matrix_alloc(coupl.size(),5)),
+                        A(gsl_matrix_alloc(coupl.size(),5)),
+                        V(gsl_matrix_alloc(5,5));
+
+  gsl_matrix_set_zero(coef_mat.get());
+  gsl_vector_set_zero(bc.get());
+
   unsigned index=0;
   vector<double> dmax(coupl.size());
   for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
@@ -367,51 +399,44 @@ void RDC::do_svd()
     double mu_x = distance[0]/d;
     double mu_y = distance[1]/d;
     double mu_z = distance[2]/d;
-    gsl_vector_set(rdc_vec,index,coupl[index]/dmax[index]);
-    gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+(mu_x*mu_x-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+(mu_y*mu_y-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+(2.0*mu_x*mu_y));
-    gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+(2.0*mu_x*mu_z));
-    gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+(2.0*mu_y*mu_z));
+    gsl_vector_set(rdc_vec.get(),index,coupl[index]/dmax[index]);
+    gsl_matrix_set(coef_mat.get(),index,0,gsl_matrix_get(coef_mat.get(),index,0)+(mu_x*mu_x-mu_z*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,1,gsl_matrix_get(coef_mat.get(),index,1)+(mu_y*mu_y-mu_z*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,2,gsl_matrix_get(coef_mat.get(),index,2)+(2.0*mu_x*mu_y));
+    gsl_matrix_set(coef_mat.get(),index,3,gsl_matrix_get(coef_mat.get(),index,3)+(2.0*mu_x*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,4,gsl_matrix_get(coef_mat.get(),index,4)+(2.0*mu_y*mu_z));
     index++;
   }
-  gsl_matrix_memcpy(A,coef_mat);
-  gsl_linalg_SV_decomp(A, V, Stmp, work);
-  gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
+  gsl_matrix_memcpy(A.get(),coef_mat.get());
+  gsl_linalg_SV_decomp(A.get(), V.get(), Stmp.get(), work.get());
+  gsl_linalg_SV_solve(A.get(), V.get(), Stmp.get(), rdc_vec.get(), S.get());
   /* tensor */
   Value* tensor;
   tensor=getPntrToComponent("Sxx");
-  double Sxx = gsl_vector_get(S,0);
+  double Sxx = gsl_vector_get(S.get(),0);
   tensor->set(Sxx);
   tensor=getPntrToComponent("Syy");
-  double Syy = gsl_vector_get(S,1);
+  double Syy = gsl_vector_get(S.get(),1);
   tensor->set(Syy);
   tensor=getPntrToComponent("Szz");
   double Szz = -Sxx-Syy;
   tensor->set(Szz);
   tensor=getPntrToComponent("Sxy");
-  double Sxy = gsl_vector_get(S,2);
+  double Sxy = gsl_vector_get(S.get(),2);
   tensor->set(Sxy);
   tensor=getPntrToComponent("Sxz");
-  double Sxz = gsl_vector_get(S,3);
+  double Sxz = gsl_vector_get(S.get(),3);
   tensor->set(Sxz);
   tensor=getPntrToComponent("Syz");
-  double Syz = gsl_vector_get(S,4);
+  double Syz = gsl_vector_get(S.get(),4);
   tensor->set(Syz);
 
-  gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
+  gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat.get(), S.get(), 0., bc.get());
   for(index=0; index<coupl.size(); index++) {
-    double rdc = gsl_vector_get(bc,index)*dmax[index];
+    double rdc = gsl_vector_get(bc.get(),index)*dmax[index];
     Value* val=getPntrToComponent(index);
     val->set(rdc);
   }
-  gsl_matrix_free(coef_mat);
-  gsl_matrix_free(A);
-  gsl_vector_free(rdc_vec);
-  gsl_vector_free(bc);
-  gsl_vector_free(Stmp);
-  gsl_vector_free(S);
-  gsl_vector_free(work);
 #endif
 }
 
@@ -427,9 +452,7 @@ void RDC::calculate()
   vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
   /* RDC Calculations and forces */
-  const double omp_dummy = 0.0;
-  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, N / 2);
-  #pragma omp parallel num_threads(nt)
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     #pragma omp for
     for(unsigned r=0; r<N; r+=2)
@@ -458,7 +481,7 @@ void RDC::calculate()
       dRDC[index][2] *= prod_z;
 
       string num; Tools::convert(index,num);
-      Value* val=getPntrToComponent("rdc_"+num);
+      Value* val=getPntrToComponent("rdc-"+num);
       val->set(rdc);
       if(!getDoScore()) {
         setBoxDerivatives(val, Tensor(distance,dRDC[index]));

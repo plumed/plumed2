@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,8 @@ namespace function {
 //+PLUMEDOC FUNCTION STATS
 /*
 Calculates statistical properties of a set of collective variables with respect to a set of reference values.
-In particular it calculates and store as components the sum of the squared deviations, the correlation, the
+
+In particular it calculates and stores as components the sum of the squared deviations, the correlation, the
 slope and the intercept of a linear fit.
 
 The reference values can be either provided as values using PARAMETERS or using value without derivatives
@@ -63,7 +64,7 @@ class Stats :
   bool upperd;
 public:
   explicit Stats(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -72,7 +73,6 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  useCustomisableComponents(keys);
   keys.use("ARG");
   keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives.");
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
@@ -131,8 +131,8 @@ Stats::Stats(const ActionOptions&ao):
     if(components) {
       for(unsigned i=0; i<parameters.size(); i++) {
         std::string num; Tools::convert(i,num);
-        addComponentWithDerivatives("sqd_"+num);
-        componentIsNotPeriodic("sqd_"+num);
+        addComponentWithDerivatives("sqd-"+num);
+        componentIsNotPeriodic("sqd-"+num);
       }
     } else {
       addComponentWithDerivatives("sqdevsum");

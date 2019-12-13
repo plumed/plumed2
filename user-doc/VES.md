@@ -11,7 +11,7 @@ based on _Variationally Enhanced Sampling_ (VES) \cite Valsson-PRL-2014.
 The VES code is developed by [Omar Valsson](http://www.valsson.info), 
 see the [homepage of the VES code](http://www.ves-code.org) for further information.
 
-The VES code is an optional module that needes to be enabled when configuring the
+The VES code is an optional module that needs to be enabled when configuring the
 compilation of PLUMED by using the '\-\-enable-modules=ves' 
 (or '\-\-enable-modules=all') flag when running the 'configure' script. 
 
@@ -95,21 +95,21 @@ Lugano, February 14-17, 2017.
 
 Metadynamics:
 
-[Enhancing Important Fluctuations: Rare Events and Metadynamics from a Conceptual Viewpoint](https://doi.org/10.1146/annurev-physchem-040215-112229), Annu. Rev. Phys. Chem. 2016
+[Enhancing Important Fluctuations: Rare Events and Metadynamics from a Conceptual Viewpoint](https://doi.org/10.1146/annurev-physchem-040215-112229), Annual Reviews in Physical Chemistry 2016
 
 
 
 Variationally Enhanced Sampling:
 
-[Variational Approach to Enhanced Sampling and Free Energy Calculations](https://doi.org/10.1103/PhysRevLett.113.090601), Phys. Rev. Lett. 2014
+[Variational Approach to Enhanced Sampling and Free Energy Calculations](https://doi.org/10.1103/PhysRevLett.113.090601), Physical Review Letters 2014
 
-[Variationally Optimized Free-Energy Flooding for Rate Calculation](https://doi.org/10.1103/PhysRevLett.115.070601), Phys. Rev. Lett. 2015
+[Variationally Optimized Free-Energy Flooding for Rate Calculation](https://doi.org/10.1103/PhysRevLett.115.070601), Physical Review Letters 2015
 
 
 
 \par Tuesday February 14
 
-\ref lugano-1 "Tutorial 1": Introduction to PLUMED and analyzing molecular simulations
+\ref marvel-1 "Tutorial 1": Introduction to PLUMED and analyzing molecular simulations
 
 \par Wednesday February 15
 
@@ -122,7 +122,7 @@ Variationally Enhanced Sampling:
 \ref ves-lugano2017-ves2 "Tutorial 4": Further on variationally enhanced sampling
 
 Tutorial 5: Advanced collective variables
-- \ref lugano-2 "Path CVs"
+- \ref marvel-2 "Path CVs"
 - \ref belfast-10 "Multicolvar"
 - \ref belfast-3 "Dimensionality reduction"
 

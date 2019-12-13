@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -64,7 +64,7 @@ PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
 void Gradient::registerKeywords( Keywords& keys ) {
   VolumeGradientBase::registerKeywords( keys );
   keys.add("atoms","ORIGIN","we will use the position of this atom as the origin in our calculation");
-  keys.add("compulsory","DIR","xyz","the directions in which we are calculating the graident.  Should be x, y, z, xy, xz, yz or xyz");
+  keys.add("compulsory","DIR","xyz","the directions in which we are calculating the gradient.  Should be x, y, z, xy, xz, yz or xyz");
   keys.add("compulsory","NBINS","number of bins to use in each direction for the calculation of the gradient");
   keys.add("compulsory","SIGMA","1.0","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");

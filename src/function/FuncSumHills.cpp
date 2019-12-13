@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,10 +40,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS
 /*
-This function is intended to be called by the command line tool sum_hills
-and it is meant to integrate a HILLS file or an HILLS file interpreted as
-a histogram i a variety of ways. Therefore it is not expected that you use this
-during your dynamics (it will crash!)
+This function is intended to be called by the command line tool sum_hills.  It is meant to integrate a HILLS file or an HILLS file interpreted as a histogram in a variety of ways. It is, therefore, not expected that you use this during your dynamics (it will crash!)
 
 In the future one could implement periodic integration during the metadynamics
 or straightforward MD as a tool to check convergence
@@ -198,7 +195,7 @@ class FuncSumHills :
   std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  void calculate(); // this probably is not needed
+  void calculate() override; // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);
 };
@@ -211,20 +208,20 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.add("optional","HILLSFILES"," source file for hills creation(may be the same as HILLS)"); // this can be a vector!
   keys.add("optional","HISTOFILES"," source file for histogram creation(may be the same as HILLS)"); // also this can be a vector!
   keys.add("optional","HISTOSIGMA"," sigmas for binning when the histogram correction is needed    ");
-  keys.add("optional","PROJ"," only with sumhills: the projection on the cvs");
-  keys.add("optional","KT"," only with sumhills: the kt factor when projection on cvs");
+  keys.add("optional","PROJ"," only with sumhills: the projection on the CVs");
+  keys.add("optional","KT"," only with sumhills: the kt factor when projection on CVs");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","INTERVAL","set monodimensional INTERVAL");
+  keys.add("optional","INTERVAL","set one dimensional INTERVAL");
   keys.add("optional","OUTHILLS"," output file for hills ");
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
   keys.add("optional","STRIDE"," stride when you do it on the fly ");
-  keys.addFlag("ISCLTOOL",true,"use via plumed commandline: calculate at read phase and then go");
+  keys.addFlag("ISCLTOOL",true,"use via plumed command line: calculate at read phase and then go");
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
-  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
+  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in well tempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");

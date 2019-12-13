@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,9 +63,9 @@ class Energy : public Colvar {
 public:
   explicit Energy(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
-  unsigned getNumberOfDerivatives();
+  void prepare() override;
+  void calculate() override;
+  unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
 

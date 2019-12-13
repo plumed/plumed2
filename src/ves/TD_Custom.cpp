@@ -57,11 +57,11 @@ best estimate of \f$F(\mathbf{s})\f$, similarly as for the
 \ref TD_WELLTEMPERED "well-tempered target distribution".
 Furthermore, the inverse temperature \f$\beta = (k_{\mathrm{B}}T)^{-1}\f$ and
 the thermal energy \f$k_{\mathrm{B}}T\f$ can be included
-by using the _beta_ and _kBT_ variables.
+by using the _beta_ and \f$k_B T\f$ variables.
 
 The target distribution will be automatically normalized over the region on
 which it is defined on. Therefore, the function given in
-FUNCTION needs to be non-negative and normalizable. The
+FUNCTION needs to be non-negative and it must be possible to normalize the function. The
 code will perform checks to make sure that this is indeed the case.
 
 
@@ -92,7 +92,7 @@ TD_CUSTOM ...
 By using the _FE_ variable the target distribution can depend on
 the free energy surface \f$F(\mathbf{s})\f$. For example,
 the following input is identical to using \ref TD_WELLTEMPERED with
-BIASFACTOR=10.
+a bias factor of 10.
 \plumedfile
 TD_CUSTOM ...
  FUNCTION=exp(-(beta/10.0)*FE)
@@ -100,11 +100,11 @@ TD_CUSTOM ...
 ... TD_CUSTOM
 \endplumedfile
 Here the inverse temperature is automatically obtained by using the _beta_
-variable. It is also possible to use the _kBT_ variable. The following
+variable. It is also possible to use the \f$k_B T\f$ variable. The following
 syntax will give the exact same results as the syntax above
 \plumedfile
 TD_CUSTOM ...
- FUNCTION=exp(-(1.0/(kBT*10.0))*FE)}
+ FUNCTION=exp(-(1.0/(kBT*10.0))*FE)
  LABEL=td
 ... TD_CUSTOM
 \endplumedfile
@@ -115,9 +115,14 @@ TD_CUSTOM ...
 
 class TD_Custom : public TargetDistribution {
 private:
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
   //
   lepton::CompiledExpression expression;
+  //
+  std::vector<double*> cv_var_lepton_refs_;
+  double* kbt_var_lepton_ref_;
+  double* beta_var_lepton_ref_;
+  double* fes_var_lepton_ref_;
   //
   std::vector<unsigned int> cv_var_idx_;
   std::vector<std::string> cv_var_str_;
@@ -133,8 +138,8 @@ private:
 public:
   static void registerKeywords( Keywords&);
   explicit TD_Custom(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   ~TD_Custom() {};
 };
 
@@ -143,7 +148,7 @@ PLUMED_REGISTER_ACTION(TD_Custom,"TD_CUSTOM")
 
 void TD_Custom::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the _kBT_ and _beta_ variables.");
+  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the \\f$k_B T\\f$ and _beta_ variables.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
 }
@@ -151,6 +156,11 @@ void TD_Custom::registerKeywords(Keywords& keys) {
 
 TD_Custom::TD_Custom(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+//
+  cv_var_lepton_refs_(0,nullptr),
+  kbt_var_lepton_ref_(nullptr),
+  beta_var_lepton_ref_(nullptr),
+  fes_var_lepton_ref_(nullptr),
 //
   cv_var_idx_(0),
   cv_var_str_(0),
@@ -201,10 +211,31 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   //
   std::sort(cv_var_idx_.begin(),cv_var_idx_.end());
   cv_var_str_.resize(cv_var_idx_.size());
+  cv_var_lepton_refs_.resize(cv_var_str_.size());
   for(unsigned int j=0; j<cv_var_idx_.size(); j++) {
     std::string str1; Tools::convert(cv_var_idx_[j]+1,str1);
     cv_var_str_[j] = cv_var_prefix_str_+str1;
+    try {
+      cv_var_lepton_refs_[j] = &expression.getVariableReference(cv_var_str_[j]);
+    } catch(PLMD::lepton::Exception& exc) {}
   }
+
+  if(use_kbt_) {
+    try {
+      kbt_var_lepton_ref_ = &expression.getVariableReference(kbt_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+  if(use_beta_) {
+    try {
+      beta_var_lepton_ref_ = &expression.getVariableReference(beta_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+  if(use_fes_) {
+    try {
+      fes_var_lepton_ref_ = &expression.getVariableReference(fes_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+
 }
 
 
@@ -226,14 +257,10 @@ void TD_Custom::updateGrid() {
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to the free energy in the target distribution");
   }
   if(use_kbt_) {
-    try {
-      expression.getVariableReference(kbt_var_str_) = 1.0/getBeta();
-    } catch(PLMD::lepton::Exception& exc) {}
+    if(kbt_var_lepton_ref_) {*kbt_var_lepton_ref_= 1.0/getBeta();}
   }
   if(use_beta_) {
-    try {
-      expression.getVariableReference(beta_var_str_) = getBeta();
-    } catch(PLMD::lepton::Exception& exc) {}
+    if(beta_var_lepton_ref_) {*beta_var_lepton_ref_= getBeta();}
   }
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
@@ -242,14 +269,10 @@ void TD_Custom::updateGrid() {
   for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
     std::vector<double> point = targetDistGrid().getPoint(l);
     for(unsigned int k=0; k<cv_var_str_.size() ; k++) {
-      try {
-        expression.getVariableReference(cv_var_str_[k]) = point[cv_var_idx_[k]];
-      } catch(PLMD::lepton::Exception& exc) {}
+      if(cv_var_lepton_refs_[k]) {*cv_var_lepton_refs_[k] = point[cv_var_idx_[k]];}
     }
     if(use_fes_) {
-      try {
-        expression.getVariableReference(fes_var_str_) = getFesGridPntr()->getValue(l);
-      } catch(PLMD::lepton::Exception& exc) {}
+      if(fes_var_lepton_ref_) {*fes_var_lepton_ref_ = getFesGridPntr()->getValue(l);}
     }
     double value = expression.evaluate();
 

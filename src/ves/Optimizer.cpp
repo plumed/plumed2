@@ -169,7 +169,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     }
   }
   else {
-    log.printf("  optimizing %u coefficent sets from following %u VES biases:\n",ncoeffssets_,nbiases_);
+    log.printf("  optimizing %u coefficient sets from following %u VES biases:\n",ncoeffssets_,nbiases_);
     for(unsigned int i=0; i<nbiases_; i++) {
       log.printf("   %s of type %s (KbT: %f) \n",bias_pntrs_[i]->getLabel().c_str(),bias_pntrs_[i]->getName().c_str(),bias_pntrs_[i]->getKbT());
     }
@@ -244,10 +244,10 @@ Optimizer::Optimizer(const ActionOptions&ao):
     }
     if(ustride_targetdist_>0) {
       if(nbiases_==1) {
-        log.printf("  the target distribution will be updated very %u coefficent iterations\n",ustride_targetdist_);
+        log.printf("  the target distribution will be updated very %u coefficient iterations\n",ustride_targetdist_);
       }
       else {
-        log.printf("  the target distribution will be updated very %u coefficent iterations for the following biases\n   ",ustride_targetdist_);
+        log.printf("  the target distribution will be updated very %u coefficient iterations for the following biases\n   ",ustride_targetdist_);
         for(unsigned int i=0; i<nbiases_; i++) {
           log.printf("%s ",bias_pntrs_[i]->getLabel().c_str());
         }
@@ -272,7 +272,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       if(!reweightfactor_calculated) {
         plumed_merror("In order to use the REWEIGHT_FACTOR_STRIDE keyword you need to enable the calculation of the reweight factor in the VES bias by using the CALC_REWEIGHT_FACTOR flag.");
       }
-      log.printf("  the reweight factor c(t) will be updated very %u coefficent iterations\n",ustride_reweightfactor_);
+      log.printf("  the reweight factor c(t) will be updated very %u coefficient iterations\n",ustride_reweightfactor_);
     }
   }
 
@@ -319,7 +319,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       parse("COEFFS_SET_ID_PREFIX",coeffssetid_prefix_);
     }
     if(coeffssetid_prefix_.size()>0) {
-      plumed_merror("COEFFS_SET_ID_PREFIX should only be given if optimizing multiple coefficent sets");
+      plumed_merror("COEFFS_SET_ID_PREFIX should only be given if optimizing multiple coefficient sets");
     }
   }
 
@@ -510,7 +510,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       else {
         for(unsigned int i=0; i<ncoeffssets_; i++) {
           size_t nread = coeffs_mask_pntrs_[i]->readFromFile(mask_fnames_in[i],true,true);
-          log.printf("  mask for coefficent set %u:\n",i);
+          log.printf("  mask for coefficient set %u:\n",i);
           log.printf("   read %zu values from file %s\n",nread,mask_fnames_in[i].c_str());
           size_t ndeactived = coeffs_mask_pntrs_[0]->countValues(0.0);
           log.printf("   deactived optimization of %zu coefficients\n",ndeactived);
@@ -733,8 +733,8 @@ Optimizer::Optimizer(const ActionOptions&ao):
   }
   else {
     for(unsigned int i=0; i<ncoeffssets_; i++) {
-      log.printf("  Output Components for coefficent set %u:\n",i);
-      std::string is=""; Tools::convert(i,is); is = "_" + coeffssetid_prefix_ + is;
+      log.printf("  Output Components for coefficient set %u:\n",i);
+      std::string is=""; Tools::convert(i,is); is = "-" + coeffssetid_prefix_ + is;
       log.printf(" ");
       if(monitor_instantaneous_gradient_) {
         addComponent("gradrms"+is); componentIsNotPeriodic("gradrms"+is);
@@ -823,9 +823,9 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","COEFFS_FILE","coeffs.data","the name of output file for the coefficients");
   keys.add("compulsory","COEFFS_OUTPUT","100","how often the coefficients should be written to file. This parameter is given as the number of iterations.");
   keys.add("optional","COEFFS_FMT","specify format for coefficient file(s) (useful for decrease the number of digits in regtests)");
-  keys.add("optional","COEFFS_SET_ID_PREFIX","suffix to add to the filename given in FILE to identfy the bias, should only be given if a single filename is given in FILE when optimizing multiple biases.");
+  keys.add("optional","COEFFS_SET_ID_PREFIX","suffix to add to the filename given in FILE to identify the bias, should only be given if a single filename is given in FILE when optimizing multiple biases.");
   //
-  keys.add("optional","INITIAL_COEFFS","the name(s) of file(s) with the initial coefficents");
+  keys.add("optional","INITIAL_COEFFS","the name(s) of file(s) with the initial coefficients");
   // Hidden keywords to output the gradient to a file.
   keys.add("hidden","GRADIENT_FILE","the name of output file for the gradient");
   keys.add("hidden","GRADIENT_OUTPUT","how often the gradient should be written to file. This parameter is given as the number of bias iterations. It is by default 100 if GRADIENT_FILE is specficed");
@@ -841,7 +841,7 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   // Keywords related to the multiple walkers, actived with the useMultipleWalkersKeywords function
   keys.reserveFlag("MULTIPLE_WALKERS",false,"if optimization is to be performed using multiple walkers connected via MPI");
   // Keywords related to the mask file, actived with the useMaskKeywords function
-  keys.reserve("optional","MASK_FILE","read in a mask file which allows one to employ different step sizes for different coefficents and/or deactive the optimization of certain coefficients (by putting values of 0.0). One can write out the resulting mask by using the OUTPUT_MASK_FILE keyword.");
+  keys.reserve("optional","MASK_FILE","read in a mask file which allows one to employ different step sizes for different coefficients and/or deactivate the optimization of certain coefficients (by putting values of 0.0). One can write out the resulting mask by using the OUTPUT_MASK_FILE keyword.");
   keys.reserve("optional","OUTPUT_MASK_FILE","Name of the file to write out the mask resulting from using the MASK_FILE keyword. Can also be used to generate a template mask file.");
   //
   keys.reserveFlag("START_OPTIMIZATION_AFRESH",false,"if the iterations should be started afresh when a restart has been triggered by the RESTART keyword or the MD code.");
@@ -851,28 +851,27 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored and quantities related to it should be outputted.");
   keys.reserve("optional","MONITOR_AVERAGES_GRADIENT_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
   //
-  keys.reserve("optional","TARGETDIST_STRIDE","stride for updating a target distribution that is iteratively updated during the optimization. Note that the value is given in terms of coefficent iterations.");
-  keys.reserve("optional","TARGETDIST_OUTPUT","how often the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
-  keys.reserve("optional","TARGETDIST_PROJ_OUTPUT","how often the projections of the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
+  keys.reserve("optional","TARGETDIST_STRIDE","stride for updating a target distribution that is iteratively updated during the optimization. Note that the value is given in terms of coefficient iterations.");
+  keys.reserve("optional","TARGETDIST_OUTPUT","how often the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
+  keys.reserve("optional","TARGETDIST_PROJ_OUTPUT","how often the projections of the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
   //
   keys.add("optional","TARGETDIST_AVERAGES_FILE","the name of output file for the target distribution averages. By default it is targetdist-averages.data.");
-  keys.add("optional","TARGETDIST_AVERAGES_OUTPUT","how often the target distribution averages should be written out to file. Note that the value is given in terms of coefficent iterations. If no value is given are the averages only written at the begining of the optimization");
+  keys.add("optional","TARGETDIST_AVERAGES_OUTPUT","how often the target distribution averages should be written out to file. Note that the value is given in terms of coefficient iterations. If no value is given are the averages only written at the beginning of the optimization");
   keys.add("hidden","TARGETDIST_AVERAGES_FMT","specify format for target distribution averages file(s) (useful for decrease the number of digits in regtests)");
   //
-  keys.add("optional","BIAS_OUTPUT","how often the bias(es) should be written out to file. Note that the value is given in terms of coefficent iterations.");
-  keys.add("optional","FES_OUTPUT","how often the FES(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
-  keys.add("optional","FES_PROJ_OUTPUT","how often the projections of the FES(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
+  keys.add("optional","BIAS_OUTPUT","how often the bias(es) should be written out to file. Note that the value is given in terms of coefficient iterations.");
+  keys.add("optional","FES_OUTPUT","how often the FES(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
+  keys.add("optional","FES_PROJ_OUTPUT","how often the projections of the FES(s) should be written out to file. Note that the value is given in terms of coefficient iterations.");
   //
-  keys.reserve("optional","REWEIGHT_FACTOR_STRIDE","stride for updating the reweighting factor c(t). Note that the value is given in terms of coefficent iterations.");
+  keys.reserve("optional","REWEIGHT_FACTOR_STRIDE","stride for updating the reweighting factor c(t). Note that the value is given in terms of coefficient iterations.");
   //
   keys.use("RESTART");
   //
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
   // Components that are always active
-  keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
-  keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
-  ActionWithValue::useCustomisableComponents(keys);
+  keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
   // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
 
 }
@@ -916,8 +915,8 @@ void Optimizer::useRestartKeywords(Keywords& keys) {
 void Optimizer::useMonitorAverageGradientKeywords(Keywords& keys) {
   keys.use("MONITOR_AVERAGE_GRADIENT");
   keys.use("MONITOR_AVERAGES_GRADIENT_EXP_DECAY");
-  keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","the root mean square value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
-  keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","the largest absolute value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
+  keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","the root mean square value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","the largest absolute value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
 }
 
 
@@ -1100,7 +1099,7 @@ void Optimizer::updateOutputComponents() {
   }
   else {
     for(unsigned int i=0; i<ncoeffssets_; i++) {
-      std::string is=""; Tools::convert(i,is); is = "_" + coeffssetid_prefix_ + is;
+      std::string is=""; Tools::convert(i,is); is = "-" + coeffssetid_prefix_ + is;
       if(!fixed_stepsize_) {
         getPntrToComponent("stepsize"+is)->set( getCurrentStepSize(i) );
       }
@@ -1172,10 +1171,10 @@ void Optimizer::readCoeffsFromFiles(const std::vector<std::string>& fnames, cons
   plumed_assert(ncoeffssets_>0);
   plumed_assert(fnames.size()==ncoeffssets_);
   if(ncoeffssets_==1) {
-    log.printf("  Read in coefficents from file ");
+    log.printf("  Read in coefficients from file ");
   }
   else {
-    log.printf("  Read in coefficents from files:\n");
+    log.printf("  Read in coefficients from files:\n");
   }
   for(unsigned int i=0; i<ncoeffssets_; i++) {
     IFile ifile;
@@ -1185,7 +1184,7 @@ void Optimizer::readCoeffsFromFiles(const std::vector<std::string>& fnames, cons
     }
     ifile.open(fnames[i]);
     if(!ifile.FieldExist(coeffs_pntrs_[i]->getDataLabel())) {
-      std::string error_msg = "Problem with reading coefficents from file " + ifile.getPath() + ": no field with name " + coeffs_pntrs_[i]->getDataLabel() + "\n";
+      std::string error_msg = "Problem with reading coefficients from file " + ifile.getPath() + ": no field with name " + coeffs_pntrs_[i]->getDataLabel() + "\n";
       plumed_merror(error_msg);
     }
     size_t ncoeffs_read = coeffs_pntrs_[i]->readFromFile(ifile,false,false);
@@ -1193,13 +1192,13 @@ void Optimizer::readCoeffsFromFiles(const std::vector<std::string>& fnames, cons
       log.printf("%s (read %zu of %zu values)\n", ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
     }
     else {
-      log.printf("   coefficent set %u: %s (read %zu of %zu values)\n",i,ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
+      log.printf("   coefficient set %u: %s (read %zu of %zu values)\n",i,ifile.getPath().c_str(),ncoeffs_read,coeffs_pntrs_[i]->numberOfCoeffs());
     }
     ifile.close();
     if(read_aux_coeffs) {
       ifile.open(fnames[i]);
       if(!ifile.FieldExist(aux_coeffs_pntrs_[i]->getDataLabel())) {
-        std::string error_msg = "Problem with reading coefficents from file " + ifile.getPath() + ": no field with name " + aux_coeffs_pntrs_[i]->getDataLabel() + "\n";
+        std::string error_msg = "Problem with reading coefficients from file " + ifile.getPath() + ": no field with name " + aux_coeffs_pntrs_[i]->getDataLabel() + "\n";
         plumed_merror(error_msg);
       }
       aux_coeffs_pntrs_[i]->readFromFile(ifile,false,false);

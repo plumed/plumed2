@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,11 +30,11 @@ Take a connected component that was found using a clustering algorithm and creat
 
 As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analysing these matrix
+or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analyzing these matrix
 we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
 and takes one of the connected components that was found during this analysis and creates a new cluster that includes all the atoms within the
 connected component that was found together that were within a certain cutoff distance of the atoms in the connected component.  This form of analysis
-has been used sucessfully in the forward flux sampling simulations described in this paper \cite gab-ice-kaolinite
+has been used successfully in the forward flux sampling simulations described in this paper \cite gab-ice-kaolinite
 
 \par Examples
 
@@ -74,25 +74,25 @@ public:
 /// Constructor
   explicit ClusterWithSurface(const ActionOptions&);
 ///
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 ///
-  unsigned getNumberOfNodes() const ;
+  unsigned getNumberOfNodes() const override;
 ///
-  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const override;
 ///
-  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const override;
 ///
-  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
+  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const override;
 ///
-  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
+  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const override;
 ///
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Do the calculation
-  void performClustering() {};
+  void performClustering() override {};
 ///
-  double  getCutoffForConnection() const ;
+  double  getCutoffForConnection() const override;
 ///
-  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const ;
+  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")

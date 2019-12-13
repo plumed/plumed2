@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -94,6 +94,19 @@ public:
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
+/// Error handler.
+/// Pointer to a function that is called an exception thrown within
+/// the library is about to leave the library.
+/// Can be used to remap exceptions in case the plumed wrapper was compiled
+/// with a different version of the C++ standard library.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+  typedef struct {
+    void* ptr;
+    void(*handler)(void* ptr,int code,const char*);
+  } plumed_error_handler;
+
+  plumed_error_handler error_handler= {NULL,NULL};
+
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
   DLLoader& dlloader=*dlloader_fwd;
@@ -225,7 +238,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   ~PlumedMain();
   /**
     Read an input file.
@@ -376,6 +389,10 @@ public:
   bool updateFlagsTop();
 /// Set end of input file
   void setEndPlumed();
+/// Call error handler.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+/// If the error handler was not set, returns false.
+  bool callErrorHandler(int code,const char* msg)const;
 };
 
 /////
@@ -445,6 +462,15 @@ inline
 void PlumedMain::setEndPlumed() {
   endPlumed=true;
 }
+
+inline
+bool PlumedMain::callErrorHandler(int code,const char* msg)const {
+  if(error_handler.handler) {
+    error_handler.handler(error_handler.ptr,code,msg);
+    return true;
+  } else return false;
+}
+
 
 }
 

@@ -1,7 +1,7 @@
 \mainpage Introduction
 
 PLUMED is a plugin that works with a large number of molecular dynamics codes (\ref codes ). 
-It can be used to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
+It can be used to analyze features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
 PLUMED can also work as a \ref tools to perform analysis on trajectories saved in most of the
 existing formats. If PLUMED is useful for your work please read and cite \cite plumed2, if you are interested in 
 the PLUMED 1 original publication please read and cite \cite plumed1 .
@@ -23,13 +23,13 @@ This is the user manual -  if you want to modify PLUMED or to understand how it 
 
 \section codes Codes interfaced with PLUMED 
 
-PLUMED can be incorporated into an MD code and used to analyse or bias a molecular dynamics run on the fly.
+PLUMED can be incorporated into an MD code and used to analyze or bias a molecular dynamics run on the fly.
 Some MD code could already include calls to the PLUMED library
 and be PLUMED-ready in its original distribution.
 As far as we know, the following MD codes can be used with PLUMED out of the box:
 - [AmberTools](http://ambermd.org/), sander module, since version 15.
 - [CP2K](http://www.cp2k.org), since Feb 2015.
-- [ESPResSo](http://espressomd.org), in a Plumedized version that can be found
+- [ESPResSo](http://espressomd.org), in a version that has been patched with PLUMED can be found
   [here](http://davidebr.github.io/espresso/).
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
 - [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
@@ -39,6 +39,8 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [VNL-ATK](https://quantumwise.com), see [this link](https://docs.quantumwise.com/tutorials/metadynamics_with_plumed/metadynamics_with_plumed.html).
 - [ABIN](https://github.com/PHOTOX/ABIN).
 - [i-pi](https://github.com/i-pi/i-pi).
+- [LAMMPS](https://lammps.sandia.gov/) since Nov 2018.
+- [Yaff](https://github.com/molmod/yaff), since Jul 2019.
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
@@ -48,9 +50,10 @@ Additionally, we provide patching procedures for the following codes:
 @CODESL@
 
 Alternatively, one
-can use PLUMED as a \ref tools for postprocessing the results from molecular dynamics 
+can use PLUMED as a \ref tools for post processing the results from molecular dynamics 
 or enhanced sampling calculations.  Notice that PLUMED can be used as an analysis tool
 also from the following packages:
 - [PLUMED-GUI](http://github.com/tonigi/vmd_plumed) is a [VMD](http://www.ks.uiuc.edu/Research/vmd/) plugin that computes PLUMED collective variables.
 - [HTMD](http://www.htmd.org/) can use PLUMED collective variables for analysis.
+- [OpenPathSampling](http://openpathsampling.org/), using the [PLUMED Wrapper for OpenPathSampling](https://e-cam.readthedocs.io/en/latest/Classical-MD-Modules/modules/OpenPathSampling/ops_plumed_wrapper/readme.html).
 

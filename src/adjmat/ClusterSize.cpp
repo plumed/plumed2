@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,10 +28,10 @@ Gives the number of atoms in the connected component
 
 As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analysing these matrix
+or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analyzing these matrix
 we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
 to output the number of atoms that are connected together in a particular connected component.  It is important to note that the quantity that is
-output by this action is not differentiable.  As such it cannot be used as a collective variable in a biased simulation.
+output by this action cannot be differentiated.  As such it cannot be used as a collective variable in a biased simulation.
 
 \par Examples
 
@@ -69,11 +69,11 @@ public:
 /// Constructor
   explicit ClusterSize(const ActionOptions&);
 ///
-  void calculate();
+  void calculate() override;
 ///
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
 ///
-  void turnOnDerivatives();
+  void turnOnDerivatives() override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterSize,"CLUSTER_NATOMS")

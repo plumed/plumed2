@@ -105,7 +105,7 @@ class TD_GeneralizedExtremeValue: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_GeneralizedExtremeValue(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -115,7 +115,7 @@ PLUMED_REGISTER_ACTION(TD_GeneralizedExtremeValue,"TD_GENERALIZED_EXTREME_VALUE"
 void TD_GeneralizedExtremeValue::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","LOCATION","The \\f$\\mu\\f$ parameter of the generalized extreme value distribution.");
-  keys.add("compulsory","SCALE","The \\f$\\sigma\\f$ parameter for the generalized extreme value distribution given as a postive number.");
+  keys.add("compulsory","SCALE","The \\f$\\sigma\\f$ parameter for the generalized extreme value distribution given as a positive number.");
   keys.add("compulsory","SHAPE","The \\f$\\xi\\f$ parameter for the generalized extreme value distribution.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");

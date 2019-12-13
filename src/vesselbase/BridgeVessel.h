@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,25 +52,25 @@ public:
 /// Does this have derivatives
   bool hasDerivatives();
 /// Resize the quantities in the vessel
-  void resize();
+  void resize() override;
 /// Get the action that reads the command in
   ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
 /// Apply some force
-  bool applyForce( std::vector<double>& forces );
+  bool applyForce( std::vector<double>& forces ) override;
 /// Should not be called
-  std::string description();
+  std::string description() override;
 /// Jobs to do before the task list starts
-  void prepare();
+  void prepare() override;
 /// Set the start of the buffer
-  void setBufferStart( unsigned& start );
+  void setBufferStart( unsigned& start ) override;
 /// This transforms the derivatives using the output value
-  MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
+  MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) override;
 /// Actually do the calculation
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const override;
 /// Finish the calculation
-  void finish( const std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer ) override;
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
 /// Set the task flags in the bridged class the same as in the original class

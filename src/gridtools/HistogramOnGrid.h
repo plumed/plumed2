@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,18 +46,18 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
-                  const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  void finish( const std::vector<double>& buffer );
+                  const std::vector<unsigned>& nbins, const std::vector<double>& spacing ) override;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
+  void finish( const std::vector<double>& buffer ) override;
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
   virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
-  unsigned getNumberOfBufferPoints() const ;
+  unsigned getNumberOfBufferPoints() const override;
   std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
   void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
-  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
+  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) override;
   bool noDiscreteKernels() const ;
-  double getFibonacciCutoff() const ;
+  double getFibonacciCutoff() const override;
 };
 
 inline

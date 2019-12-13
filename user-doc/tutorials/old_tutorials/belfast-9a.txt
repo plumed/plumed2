@@ -1,0 +1,148 @@
+/**
+\page belfast-9 Belfast tutorial: NMR restraints 
+
+\section belfast-9-aim Aims
+This tutorial is about the use of experimental data, in particular NMR data, either as collective variables or as replica-averaged
+restraints in MD simulations. While the first is a just a simple extension of what we have been already doing in previous tutorials,
+the latter is an approach that can be used to increase the quality of a force-field in describing the properties of a specific system.
+
+\subsection belfast-9-lo Learning Outcomes
+
+Once this tutorial is completed students will:
+- know why and how to use experimental data to define a collective variable 
+- know why and how to use experimental data as replica-averaged restraints in MD simulations
+
+\section belfast-9-res Resources
+
+The <a href="tutorial-resources/belfast-9a.tar.gz" download="belfast-9a.tar.gz"> tarball </a> for this project contains the following:
+- system: the files use to generate the topol?.tpr files of the first and second example (the setup is for simulations in vacuum)
+- first: an example on the use of chemical shifts as a collective variable
+- second: an example on the use of chemical shifts as replica-averaged restraints
+- third: an example on the use of RDCs (calculated with the theta-method) as replica-averaged restraints 
+
+\section belfast-9-ins Instructions
+
+\subsection belfast-9-expdata Experimental data as Collective Variables
+
+In the former tutorials it has been often discussed the possibility of measuring a distance with respect to a structure representing
+some kind of state for a system, i.e. \ref belfast-5. An alternative possibility is to use as a reference a set of experimental data
+that represent a state and measure the current deviation from the set. In plumed there are currently implemented the following NMR
+experimental observables: Chemical Shifts (only for proteins) \ref CS2BACKBONE, \ref NOE distances, \ref JCOUPLING, \ref PRE intensities, 
+and Residual Dipolar couplings/pseudo-contact shifts \ref RDC. 
+
+In the following we will write the \ref CS2BACKBONE collective variable similar to the one used in Granata et al. (2013) (while the collective
+variable is still proportional to the square sum of the deviation of the calculated and experimental chemical shifts divided by a typical
+error, the exact definition is not the same. The sum is not done anymore with a flat bottom difference and the error used are not the one
+published, so the exact result of the scoring function can be different).
+
+As a general rule, when using \ref CS2BACKBONE or other experimental restraints it is better to increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure. In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6. 
+
+\verbatim
+prot: GROUP ATOMS=1-862
+cs: CS2BACKBONE ATOMS=prot DATA=data NRES=56 CAMSHIFT 
+PRINT ARG=cs FILE=COLVAR STRIDE=100
+
+ENDPLUMED
+\endverbatim 
+
+In this case the chemical shifts are those measured for the native state of the protein and can be used, together with other CVs and Bias-Exchange
+Metadynamics, to guide the system back and forth from the native structure. The experimental chemical shifts are in six files inside the "data/"
+folder (see first example in the resources tarball), one file for each nucleus. A 0 chemical shift is used where a chemical shift doesn't exist
+(i.e. CB of GLY) or where it has not been assigned. Additionally the data folder contains:
+
+- camshift.db: this file is a parameter file for camshift, it is a standard file needed to calculate the chemical shifts from a structure
+- template.pdb: this is a pdb file for the protein we are simulating (i.e. editconf -f conf.gro -o template.pdb) where atoms are ordered in the same way in which are included in the main code and again it is used to map the atom in plumed with those in almost.
+
+This example can be executed as
+
+\verbatim
+gmx_mpi mdrun -s topol -plumed plumed
+\endverbatim
+
+\subsection belfast-9-replica Replica-Averaged Restrained Simulations 
+
+NMR data, as all the equilibrium experimental data, are the result of a measure over an ensemble of structures and over time.
+In principle a "perfect" molecular dynamics simulations, that is a simulations with a perfect force-field and a perfect sampling
+can predict the outcome of an experiments in a quantitative way. Actually in most of the cases obtaining a qualitative agreement
+is already a fortunate outcome. In order to increase the accuracy of a force field in a system dependent manner it is possible
+to add to the force-field an additional term based on the agreement with a set of experimental data. This agreement is not enforced
+as a simple restraint because this would mean to ask the system to be always in agreement with all the experimental data at the
+same time, instead the restraint is applied over an AVERAGED COLLECTIVE VARIABLE where the average is performed over multiple
+ independent simulations of the same system in the same conditions. 
+In this way the is not a single replica that must be in agreement with the experimental data but they should
+be in agreement on average. It has been shown that this approach is equivalent to solving the problem of finding a modified
+version of the force field that will reproduce the provided set of experimental data without any additional assumption on the
+data themselves.
+
+The second example included in the resources show how the amber force field can be improved in the case of protein domain GB3 using
+the native state chemical shifts a replica-averaged restraint. By the fact that replica-averaging needs the use of multiple replica
+simulated in parallel in the same conditions it is easily complemented with BIAS-EXCHANGE or MULTIPLE WALKER metadynamics to enhance
+the sampling.
+
+\verbatim
+prot: GROUP ATOMS=1-862
+cs: CS2BACKBONE ATOMS=prot DATA=data NRES=56
+enscs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*)
+stcs: STATS ARG=enscs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*),(cs\.expca_.*),(cs\.expcb_.*),(cs\.expco_.*),(cs\.expha_.*)
+res: RESTRAINT ARG=stcs.sqdevsum AT=0. KAPPA=0. SLOPE=12
+
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*),(cs\.ca_.*),(cs\.cb_.*),(cs\.co_.*),(cs\.ha_.*) FILE=CS STRIDE=1000
+PRINT ARG=res.bias FILE=COLVAR STRIDE=10
+
+ENDPLUMED
+\endverbatim
+
+with respect to the case in which chemical shifts are used to define a standard collective variable, in this case \ref CS2BACKBONE
+is a collective variable with multiple components, that are all the back calculated chemical shifts, plus all the relative experimental
+values. The keyword function \ref ENSEMBLE tells plumed to calculate the average of the arguments over the replicas (i.e. 4 replicas) 
+and the function \ref STATS compare the averaged back calculated chemical shifts with the experimental values and calculates the sum
+of the squared deviation.
+On this latter number it is possible to apply a linear \ref RESTRAINT (because the variable is already a sum of squared differences) 
+that is the new term we are adding to the underlying force field.
+
+This example can be executed as
+\verbatim
+mpiexec -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4
+\endverbatim
+
+The third example show how \ref RDC (calculated with the theta-methods) can be employed in the same way, in this case to describe the native state of Ubiquitin. In 
+particular it is possible to observe how the RDC averaged restraint applied on the correlation between the calculated and experimental 
+N-H RDCs result in the increase of the correlation of the RDCs for other bonds already on a very short time scale.
+
+\verbatim
+RDC ...
+GYROM=-72.5388
+SCALE=0.001060
+ADDCOUPLINGS
+LABEL=nh 
+ATOMS1=20,21 COUPLING1=8.17
+ATOMS2=37,38 COUPLING2=-8.271
+ATOMS3=56,57 COUPLING3=-10.489
+ATOMS4=76,77 COUPLING4=-9.871
+#continue....
+\endverbatim
+
+In this input the first four N-H RDCs are defined.
+ 
+This example can be executed as
+\verbatim
+mpiexec -np 8 gmx_mpi mdrun -s topol -plumed plumed -multi 8
+\endverbatim
+
+\section belfast-9-refer Reference
+
+1. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
+2. Cavalli, A., Camilloni, C. & Vendruscolo, M.  Molecular dynamics simulations with replica-averaged structural restraints generate structural ensembles according to the maximum entropy principle. J. Chem. Phys. 138, 094112 (2013).
+3. Camilloni, C., Cavalli, A. & Vendruscolo, M. Replica-Averaged Metadynamics. JCTC 9, 5610–5617 (2013).
+4. Roux, B. & Weare, J. On the statistical equivalence of restrained-ensemble simulations with the maximum entropy method. J. Chem. Phys. 138, 084107 (2013).
+5. Boomsma, W., Lindorff-Larsen, K. & Ferkinghoff-Borg, J. Combining Experiments and Simulations Using the Maximum Entropy Principle. PLoS Comput. Biol. 10, e1003406 (2014).
+6. Camilloni, C. & Vendruscolo M. A Tensor-Free Method for the Structural and Dynamical Refinement of Proteins using Residual Dipolar Couplings. J. PHYS. CHEM. B 119, 653 (2015).
+
+*/
+
+link: @subpage belfast-9
+
+description: NMR restraints 
+
+additional-files: belfast-9a
+

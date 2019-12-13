@@ -10,7 +10,8 @@ LDFLAGS=
 DYNAMIC_LIBS=@LIBS@ @LDFLAGS@ @OPENMP_CXXFLAGS@
 LIBS=@STATIC_LIBS@
 SOEXT=@SOEXT@
-LD=@LD@
+# LD is used only to link the plumed executable, so should be equivalent to the C++ compiler
+LD=@CXX@ @CXXFLAGS@
 LDSHARED=@LDSHARED@
 GCCDEP=@CXX@
 disable_dependency_tracking=@disable_dependency_tracking@

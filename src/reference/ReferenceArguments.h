@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -69,20 +69,20 @@ protected:
 public:
   explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the number of reference arguments
-  unsigned getNumberOfReferenceArguments() const ;
+  unsigned getNumberOfReferenceArguments() const override;
 /// Get the arguments required
-  void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
+  void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ) override;
 /// Set the positions of the refernce arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Set the positions of the reference arguments
   void moveReferenceArguments( const std::vector<double>& arg_vals );
 /// Get the value of the ith reference argument
-  double getReferenceArgument( const unsigned& i ) const ;
+  double getReferenceArgument( const unsigned& i ) const override;
 /// Return all the reference arguments
-  const std::vector<double>& getReferenceArguments() const ;
-  const std::vector<double>& getReferenceMetric();
+  const std::vector<double>& getReferenceArguments() const override;
+  const std::vector<double>& getReferenceMetric() override;
 /// Return names
-  const std::vector<std::string>& getArgumentNames();
+  const std::vector<std::string>& getArgumentNames() override;
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
   virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,9 +36,9 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
 Calculate the coordination numbers of atoms so that you can then calculate functions of the distribution of
-coordination numbers such as the minimum, the number less than a certain quantity and so on.
+ coordination numbers such as the minimum, the number less than a certain quantity and so on.
 
-To make the calculation of coordination numbers differentiable the following function is used:
+So that the calculated coordination numbers have continuous derivatives the following function is used:
 
 \f[
 s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
@@ -89,9 +89,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
@@ -105,7 +105,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
            "as done in White and Voth (see note above, default: no)");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
@@ -170,8 +170,8 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
       if(r_power > 0) {
         d = sqrt(d2); raised = pow( d, r_power - 1 );
         accumulateSymmetryFunction( 1, i, sw * raised * d,
-                                    (dfunc * d * raised + sw * r_power) * distance,
-                                    (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance),
+                                    (dfunc * d * raised + sw * r_power * raised / d) * distance,
+                                    (-dfunc * d * raised - sw * r_power * raised / d) * Tensor(distance, distance),
                                     myatoms );
       } else {
         accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );

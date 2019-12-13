@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ Calculate the distance between a pair of atoms.
 
 By default the distance is computed taking into account periodic
 boundary conditions. This behavior can be changed with the NOPBC flag.
-Moreover, single components in cartesian space (x,y, and z, with COMPONENTS)
+Moreover, single components in Cartesian space (x,y, and z, with COMPONENTS)
 or single components projected to the three lattice vectors (a,b, and c, with SCALED_COMPONENTS)
 can be also computed.
 
@@ -117,7 +117,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")

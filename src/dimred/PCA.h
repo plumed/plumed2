@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,12 +45,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCA(const ActionOptions&ao);
-  void performAnalysis();
-  void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
+  void performAnalysis() override;
+  void getProjection( const unsigned& idata, std::vector<double>& point, double& weight ) override;
   void getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& ) { plumed_error(); }
-  void setTargetDistance( const unsigned&, const double& ) { plumed_error(); }
-  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) { plumed_error(); }
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override { plumed_error(); }
+  void setTargetDistance( const unsigned&, const double& ) override { plumed_error(); }
+  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) override { plumed_error(); }
 };
 
 }

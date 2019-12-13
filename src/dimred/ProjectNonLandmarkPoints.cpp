@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@
 
 //+PLUMEDOC DIMRED PROJECT_ALL_ANALYSIS_DATA
 /*
-Find projections of all non-landmark points using the embedding calculated by a dimensionality reduction optimisation calculation.
+Find projections of all non-landmark points using the embedding calculated by a dimensionality reduction optimization calculation.
 
 \par Examples
 
@@ -47,13 +47,13 @@ private:
   double cgtol;
 /// Number of diemsions in low dimensional space
   unsigned nlow;
-/// The class that calcualtes the projection of the data that is required
+/// The class that calculates the projection of the data that is required
   DimensionalityReductionBase* mybase;
 /// Generate a projection of the ith data point - this is called in two routine
   void generateProjection( const unsigned& idat, std::vector<double>& point );
 public:
   static void registerKeywords( Keywords& keys );
-  ProjectNonLandmarkPoints( const ActionOptions& ao );
+  explicit ProjectNonLandmarkPoints( const ActionOptions& ao );
 /// Get a reference configuration (this returns the projection)
   analysis::DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
 /// Overwrite getArguments so we get arguments from underlying class
@@ -71,7 +71,7 @@ PLUMED_REGISTER_ACTION(ProjectNonLandmarkPoints,"PROJECT_ALL_ANALYSIS_DATA")
 void ProjectNonLandmarkPoints::registerKeywords( Keywords& keys ) {
   analysis::AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","PROJECTION","the projection that you wish to generate out-of-sample projections with");
-  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient optimisation");
+  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient optimization");
   keys.addOutputComponent("coord","default","the low-dimensional projections of the various input configurations");
 }
 

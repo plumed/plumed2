@@ -1,7 +1,7 @@
 \page Analysis Analysis
 
-PLUMED can be used to analyse trajectories either on the fly during an MD run or via
-postprocessing a trajectory using \ref driver.  A molecular dynamics trajectory is in essence an ordered 
+PLUMED can be used to analyze trajectories either on the fly during an MD run or via
+post processing a trajectory using \ref driver.  A molecular dynamics trajectory is in essence an ordered 
 set of configurations of atoms.  Trajectory analysis algorithms are methods that allow us to extract meaningful 
 information from this extremely high-dimensionality information.  In extracting this information much of the 
 information in the trajectory will be discarded and assumed to be irrelevant to the problem at hand.  For example, 
@@ -38,10 +38,10 @@ frequently to collect data from the trajectory.  In all these methods the output
 is a form of ensemble average.  If you are running with a bias it is thus likely that you may want 
 to reweight the trajectory frames in order to remove the effect the bias has on the static behavior
 of the system.  The following methods can thus be used to calculate weights for the various trajectory
-frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
+frames so that the final ensemble average is an average for the canonical ensemble at the appropriate 
 temperature.
 
-\section analysisbias Unbiasing and Averaging
+\section analysisbias Reweighting and Averaging
 
 @REWEIGHTING@
 
@@ -50,12 +50,12 @@ You can then calculate ensemble averages using the following actions.
 @GRIDCALC@
 
 For many of the above commands data is accumulated on the grids.  These grids can be further 
-analysed using one of the actions detailed below at some time.  
+analyzed using one of the actions detailed below at some time.  
 
 @GRIDANALYSIS@
 
 As an example the following set of commands instructs PLUMED to calculate the distance between 
-atoms 1 and 2 for every 5th frame in the trajectory and to accumulate a histogram from this data
+atoms 1 and 2 for every fifth frame in the trajectory and to accumulate a histogram from this data
 which will be output every 100 steps (i.e. when 20 distances have been added to the histogram).
 
 \plumedfile
@@ -66,7 +66,7 @@ DUMPGRID GRID=h FILE=histo STRIDE=100
 
 It is important to note when using commands such as the above the first frame in the trajectory is assumed 
 to be the initial configuration that was input to the MD code. It is thus ignored.  Furthermore, if you are 
-running with driver and you would like to analyse the whole trajectory (without specifying its length) 
+running with driver and you would like to analyze the whole trajectory (without specifying its length) 
 and then print the result you simply call \ref DUMPGRID (or any of the commands above) without a STRIDE 
 keyword as shown in the example below. 
 
@@ -96,10 +96,10 @@ use CLEAR in this case.
 PLUMED has a number of diagnostic tools that can be used to check that new Actions are working correctly: 
 
 <table align=center frame=void width=95%% cellpadding=5%%>
-<tr> <td width=5%> \subpage DUMPFORCES </td> <td>Dump the force acting on one of a values in a file.  </td> </tr>
-<tr> <td width=5%> \subpage DUMPDERIVATIVES </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
-<tr> <td width=5%> \subpage DUMPMASSCHARGE </td> <td>Dump masses and charges on a selected file.</td> </tr>
-<tr> <td width=5%> \subpage DUMPPROJECTIONS </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
+<tr> <td width=5%> \ref DUMPFORCES </td> <td>Dump the force acting on one of a values in a file.  </td> </tr>
+<tr> <td width=5%> \ref DUMPDERIVATIVES </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
+<tr> <td width=5%> \ref DUMPMASSCHARGE </td> <td>Dump masses and charges on a selected file.</td> </tr>
+<tr> <td width=5%> \ref DUMPPROJECTIONS </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
 </table>
 
 These commands allow you to test that derivatives and forces are calculated correctly
@@ -107,20 +107,20 @@ within colvars and functions.  One place where this is very useful is when you a
 not you have implemented the derivatives of a new collective variables correctly.  So for example if
 we wanted to do such a test on the distance CV we would employ an input file something like this:
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d1n: DISTANCE ATOMS=1,2 NUMERICAL_DERIVATIVES
 DUMPDERIVATIVES ARG=d1,d1n FILE=derivatives
-\endverbatim
+\endplumedfile
 
-The first of these two distance commands calculates the analytical derivtives of the distance
+The first of these two distance commands calculates the analytical derivatives of the distance
 while the second calculates these derivatives numerically.  Obviously, if your CV is implemented
 correctly these two sets of quantities should be nearly identical.
 
 \section storing Storing data for analysis
 
 All the analysis methods described in previous sections accumulate averages or output diagnostic information on the fly.
-That is to say these methods calculate something given the instantaneous positions of the atoms or the instantaenous 
+That is to say these methods calculate something given the instantaneous positions of the atoms or the instantaneous 
 values of a set of collective variables.  Many methods (e.g. dimensionality reduction and clustering) will not work like 
 this, however, as information from multiple trajectory frames is required at the point when the analysis is performed.  In other
 words the output from these types of analysis cannot be accumulated one frame at time.  When using these methods you must therefore
@@ -162,7 +162,7 @@ N.B. You can only use the two commands above when you are doing post-processing.
 \section landmarks Landmark Selection
 
 Many of the techniques described in the following sections are very computationally expensive to run on large trajectories.
-A common strategy is thus to use a landmark selection algorithm to pick a particularly-reprentative subset of trajectory
+A common strategy is thus to use a landmark selection algorithm to pick a particularly-representative subset of trajectory
 frames and to only apply the expensive analysis algorithm on these configurations.  The various landmark selection algorithms
 that are available in PLUMED are as follows
 
@@ -170,15 +170,18 @@ that are available in PLUMED are as follows
 
 In general most of these landmark selection algorithms must be used in tandem with a \ref dissimilaritym "dissimilarity matrix" object as as follows:
 
-\verbatim
-data: COLLECT_FRAMES ARG=d1 STRIDE=1
+\plumedfile
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES ARG=d1,d2,d3 STRIDE=1
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
-OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
-\endverbatim
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
+\endplumedfile
 
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
-calculated by summing the weights of all the trajectory frames in each of the landmarks Voronoi polyhedra 
+calculated by summing the weights of all the trajectory frames in each of the landmarks Voronoi polyhedron 
 (https://en.wikipedia.org/wiki/Voronoi_diagram).  The weight of each trajectory frame is one unless you are reweighting using the
 formula described in the \ref analysisbias to counteract the fact of a simulation bias or an elevated temperature.  If you are reweighting
 using these formula the weight of each of the points is equal to the exponential term in the numerator of these expressions.
@@ -201,34 +204,40 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 
 where \f$F(D_{ij})\f$ is some transformation of the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$f(d_{ij})\f$ is some transformation
 of the distance between the projection of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  \f$w_i\f$ and \f$w_j\f$ are the weights
-of configurations \f$X^i\f$ and \f$^j\f$ respectively.  These weights are caclulated using the reweighting and voronoi polyhedra approaches described in
-previous sections.  A tutorial on dimensionality reduction and how it can be used to analyse simulations can be found in the tutorial \ref belfast-3 and in 
+of configurations \f$X^i\f$ and \f$^j\f$ respectively.  These weights are calculated using the reweighting and Voronoi polyhedron approaches described in
+previous sections.  A tutorial on dimensionality reduction and how it can be used to analyze simulations can be found in the tutorial \ref lugano-5 and in 
 the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 Within PLUMED running an input to run a dimensionality reduction algorithm can be as simple as:
 
-\verbatim
-data: COLLECT_FRAMES STRIDE=1 ARG=d1
+\plumedfile
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ss1 NLOW_DIM=2
-\endverbatim
+\endplumedfile
 
 Where we have to use the \ref EUCLIDEAN_DISSIMILARITIES action here in order to calculate the matrix of dissimilarities between trajectory frames.
 We can even throw some landmark selection into this procedure and perform
 
-\verbatim
-data: COLLECT_FRAMES STRIDE=1 ARG=d1
-ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
-ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
+\plumedfile
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
+matrix: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
+ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=matrix NLANDMARKS=300
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ll2 NLOW_DIM=2
-osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=ss1 PROJECTION=smap
-\endverbatim
+osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=matrix PROJECTION=mds
+\endplumedfile
 
-Notice here that the final command allows us to caluclate the projections of all the non-landmark points that were collected by the action with
-label ss1.
+Notice here that the final command allows us to calculate the projections of all the non-landmark points that were collected by the action with
+label matrix.
 
-Dimensionality can be more complicated, however, because the stress function that calculates \f$\chi^2\f$ has to optimised rather carefully using
-a number of different algorithms.  The various algorithms that can be used to optimise this function are described below
+Dimensionality can be more complicated, however, because the stress function that calculates \f$\chi^2\f$ has to optimized rather carefully using
+a number of different algorithms.  The various algorithms that can be used to optimize this function are described below
 
 @DIMRED@
 

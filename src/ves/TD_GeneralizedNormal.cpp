@@ -48,7 +48,7 @@ are the centers of the distributions,
 parameters of the distributions,
 \f$(\beta_{1,i},\beta_{2,i},\ldots,\beta_{d,i})\f$ are the shape
 parameters of the distributions, and \f$\Gamma(x)\f$ is the
-gaamma function.
+gamma function.
 The weights \f$w_{i}\f$ are normalized to 1, \f$\sum_{i}w_{i}=1\f$.
 
 Employing \f$\beta=2\f$ results in a
@@ -107,7 +107,7 @@ class TD_GeneralizedNormal: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_GeneralizedNormal(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -144,7 +144,7 @@ TD_GeneralizedNormal::TD_GeneralizedNormal(const ActionOptions& ao):
     std::vector<double> tmp_alpha;
     if(!parseNumberedVector("ALPHA",i,tmp_alpha) ) {break;}
     for(unsigned int k=0; k<tmp_alpha.size(); k++) {
-      if(tmp_alpha[k]<=0.0) {plumed_merror(getName()+": the values given in ALPHA should be postive");}
+      if(tmp_alpha[k]<=0.0) {plumed_merror(getName()+": the values given in ALPHA should be positive");}
     }
     alphas_.push_back(tmp_alpha);
   }
@@ -152,7 +152,7 @@ TD_GeneralizedNormal::TD_GeneralizedNormal(const ActionOptions& ao):
     std::vector<double> tmp_beta;
     if(!parseNumberedVector("BETA",i,tmp_beta) ) {break;}
     for(unsigned int k=0; k<tmp_beta.size(); k++) {
-      if(tmp_beta[k]<=0.0) {plumed_merror(getName()+": the values given in BETA should be postive");}
+      if(tmp_beta[k]<=0.0) {plumed_merror(getName()+": the values given in BETA should be positive");}
     }
     betas_.push_back(tmp_beta);
   }

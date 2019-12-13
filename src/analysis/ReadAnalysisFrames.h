@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,27 +51,27 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ReadAnalysisFrames( const ActionOptions& ao );
-  void update();
+  void update() override;
 /// This does nothing
-  void performAnalysis() {}
+  void performAnalysis() override {}
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 /// Get the number of data points
-  unsigned getNumberOfDataPoints() const ;
+  unsigned getNumberOfDataPoints() const override;
 /// Get the index of the data point
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const override;
 /// Get the input arguments
-  std::vector<Value*> getArgumentList();
+  std::vector<Value*> getArgumentList() override;
 /// Have dissimilarities between thses objects been calculated
-  bool dissimilaritiesWereSet() const ;
+  bool dissimilaritiesWereSet() const override;
 /// How are dissimilarities calcualted is not known
-  std::string getDissimilarityInstruction() const ;
+  std::string getDissimilarityInstruction() const override;
 /// Get the weight of one of the objects
-  double getWeight( const unsigned& idat );
+  double getWeight( const unsigned& idat ) override;
 /// Get the reference configuration
-  DataCollectionObject & getStoredData( const unsigned& idata, const bool& calcdist );
+  DataCollectionObject & getStoredData( const unsigned& idata, const bool& calcdist ) override;
 /// Get the list of atoms that are being stored
-  const std::vector<AtomNumber>& getAtomIndexes() const ;
+  const std::vector<AtomNumber>& getAtomIndexes() const override;
 };
 
 inline

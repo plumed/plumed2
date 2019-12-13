@@ -1,6 +1,7 @@
+#! /bin/bash
 # vim:ft=awk
 if [ "$1" = --description ] ; then
-  echo "create a new collective variable from a template"
+  echo "scale parameters in a gromacs topology to implement solute or partial tempering"
   exit 0
 fi
 

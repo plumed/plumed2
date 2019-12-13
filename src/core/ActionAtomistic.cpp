@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,7 +58,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
+void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -67,10 +67,10 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
   masses.resize(nat);
   charges.resize(nat);
   int n=atoms.positions.size();
-  clearDependencies();
+  if(clearDep) clearDependencies();
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
-    if(indexes[i].index()>=n) error("atom out of range");
+    if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
@@ -189,8 +189,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
         vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
         if( moldat.size()>0 ) {
           vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
-          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-          else { error(strings[i] + " is not a label plumed knows"); }
+          ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end());
         } else {
           error("atoms specified using @ symbol but no MOLINFO was available");
         }

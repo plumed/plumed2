@@ -36,7 +36,7 @@ namespace ves {
 /*
 Averaged stochastic gradient decent with fixed step size.
 
-\par Algorithim
+\par Algorithm
 
 This optimizer updates the coefficients according to the averaged stochastic gradient decent algorithm described in ref \cite Bach-NIPS-2013. This algorithm considers two sets of coefficients, the so-called instantaneous coefficients that are updated according to the recursion formula given by
 \f[
@@ -66,17 +66,17 @@ The coefficients will be outputted to the file given by the
 COEFFS_FILE keyword. How often the coefficients are written
 to this file is controlled by the COEFFS_OUTPUT keyword.
 
-If the VES bias employes a dynamic target distribution that needes to be
+If the VES bias employs a dynamic target distribution that needs to be
 iteratively updated (e.g. \ref TD_WELLTEMPERED) \cite Valsson-JCTC-2015, you will need to specify
 the stride for updating the target distribution by using
 the TARGETDIST_STRIDE keyword where the stride
-is given in terms coefficent iterations. For example if the
+is given in terms coefficient iterations. For example if the
 MD time step is 0.02 ps and STRIDE=1000, such that the coefficients
 are updated every 2 ps, will TARGETDIST_STRIDE=500 mean that the
 target distribution will be updated every 1000 ps.
 
-The output of FESs and biases is controlled by the FES_OUTPUT and the BIAS_OUTPUT
-keywords. It is also possible to output one-dimensional projections of the FESs
+The output of the free energy surfaces and biases is controlled by the FES_OUTPUT and the BIAS_OUTPUT
+keywords. It is also possible to output one-dimensional projections of the free energy surfaces
 by using the FES_PROJ_OUTPUT keyword but for that to work you will need to select
 for which argument to do the projections by using the numbered PROJ_ARG keyword in
 the VES bias that is optimized.
@@ -87,7 +87,7 @@ It is possible to start the optimization from some initial set of
 coefficients that have been previously obtained by using the INITIAL_COEFFS
 keyword.
 
-When restarting simulations it should be sufficent to put the \ref RESTART action
+When restarting simulations it should be sufficient to put the \ref RESTART action
 in the beginning of the input files (or some MD codes the PLUMED should automatically
 detect if it is a restart run) and keep the same input as before The restarting of
 the optimization should be automatic as the optimizer will then read in the
@@ -98,14 +98,14 @@ is not used).
 
 This optimizer supports the usage of multiple walkers where different copies of the system share the same bias potential (i.e. coefficients) and cooperatively sample the averages needed for the gradient and Hessian. This can significantly help with convergence in difficult cases. It is of course best to start the different copies from different positions in CV space. To activate this option you just need to add the MULTIPLE_WALKERS flag. Note that this is only supported if the MD code support running multiple replicas connected via MPI.
 
-The optimizer supports the usage of a so-called mask file that can be used to employ different step sizes for different coefficents and/or deactive the optimization of certain coefficients (by putting values of 0.0). The mask file is read in by using the MASK_FILE keyword and should be in the same format as the coefficent file. It is possible to generate a template mask file by using the OUTPUT_MASK_FILE keyword.
+The optimizer supports the usage of a so-called mask file that can be used to employ different step sizes for different coefficients and/or deactivate the optimization of certain coefficients (by putting values of 0.0). The mask file is read in by using the MASK_FILE keyword and should be in the same format as the coefficient file. It is possible to generate a template mask file by using the OUTPUT_MASK_FILE keyword.
 
 \par Examples
 
-In the following input we emloy an averaged stochastic gradient decent with a
-fixed step size of 1.0 and update the coefficent every 1000 MD steps
-(e.g. every 2 ps if the MD time step is 0.02 ps). The coefficent are outputted
-to the coeffs.data every 50 iterations while the FES and bias is outputted
+In the following input we employ an averaged stochastic gradient decent with a
+fixed step size of 1.0 and update the coefficient every 1000 MD steps
+(e.g. every 2 ps if the MD time step is 0.02 ps). The coefficient are outputted
+to the coefficients.data every 50 iterations while the FES and bias is outputted
 to files every 500 iterations (e.g. every 1000 ps).
 \plumedfile
 phi:   TORSION ATOMS=5,7,9,15
@@ -125,7 +125,7 @@ OPT_AVERAGED_SGD ...
   STRIDE=1000
   LABEL=o1
   STEPSIZE=1.0
-  COEFFS_FILE=coeffs.data
+  COEFFS_FILE=coefficients.data
   COEFFS_OUTPUT=50
   FES_OUTPUT=500
   BIAS_OUTPUT=500
@@ -139,6 +139,7 @@ also output to a file every 2000 iterations (the TARGETDIST_OUTPUT keyword).
 Here we also employ MULTIPLE_WALKERS flag to enable the usage of
 multiple walkers.
 \plumedfile
+#SETTINGS NREPLICAS=2
 phi:   TORSION ATOMS=5,7,9,15
 psi:   TORSION ATOMS=7,9,15,17
 
@@ -164,7 +165,7 @@ OPT_AVERAGED_SGD ...
   LABEL=o1
   STEPSIZE=1.0
   MULTIPLE_WALKERS
-  COEFFS_FILE=coeffs.data
+  COEFFS_FILE=coefficients.data
   COEFFS_OUTPUT=50
   FES_OUTPUT=500
   FES_PROJ_OUTPUT=500
@@ -192,7 +193,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit Opt_BachAveragedSGD(const ActionOptions&);
   ~Opt_BachAveragedSGD();
-  void coeffsUpdate(const unsigned int c_id = 0);
+  void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
 

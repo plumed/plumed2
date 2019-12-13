@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,8 +34,8 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR XYDISTANCES
 /*
 Calculate distance between a pair of atoms neglecting the z-component.
-You can then calculate functions of the distribution of
-values such as the minimum, the number less than a certain quantity and so on.
+
+You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
@@ -44,7 +44,7 @@ to atom 5 projected in the xy-plane and the projection of the length of the vect
 the vector connecting atom 1 to atom 2 in the xy-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -55,6 +55,7 @@ PRINT ARG=d1.min
 //+PLUMEDOC MCOLVAR XZDISTANCES
 /*
 Calculate distance between a pair of atoms neglecting the y-component.
+
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
@@ -65,7 +66,7 @@ to atom 5 projected in the xz-plane and the projection of the length of the vect
 the vector connecting atom 1 to atom 2 in the xz-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -76,6 +77,7 @@ PRINT ARG=d1.min
 //+PLUMEDOC MCOLVAR YZDISTANCES
 /*
 Calculate distance between a pair of atoms neglecting the x-component.
+
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
@@ -86,7 +88,7 @@ to atom 5 in the yz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the yz-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -102,9 +104,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XYDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")
@@ -119,14 +121,14 @@ void XYDistances::registerKeywords( Keywords& keys ) {
   keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the incides of two atoms).  The eventual number of quantities calculated by this "
+           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
            "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
 }
 
 XYDistances::XYDistances(const ActionOptions&ao):

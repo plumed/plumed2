@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,9 +27,44 @@ namespace analysis {
 
 //+PLUMEDOC REWEIGHTING WHAM_WEIGHTS
 /*
-This can be used to output the data that has been stored in an Analysis object.
+Calculate and output weights for configurations using the weighted histogram analysis method.
+
+This shortcut action allows you to calculate and output weights computed using the weighted histogram
+analysis technique.  For more detail on how this technique works see \ref REWEIGHT_WHAM
 
 \par Examples
+
+The following input can be used to analyze the output from a series of umbrella sampling calculations.
+The trajectory from each of the simulations run with the different biases should be concatenated into a
+single trajectory before running the following analysis script on the concatenated trajectory using PLUMED
+driver.  The umbrella sampling simulations that will be analyzed using the script below applied a harmonic
+restraint that restrained the torsional angle involving atoms 5, 7, 9 and 15 to particular values.  The script
+below calculates the reweighting weights for each of the trajectories and then applies the binless WHAM algorithm
+to determine a weight for each configuration in the concatenated trajectory.
+
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+rp: RESTRAINT ARG=phi KAPPA=50.0 ...
+  AT=@replicas:{
+        -3.00000000000000000000
+        -2.22580645161290322584
+        -1.45161290322580645168
+        -.67741935483870967752
+        .09677419354838709664
+        .87096774193548387080
+        1.64516129032258064496
+        2.41935483870967741912
+     }
+...
+
+WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights
+\endplumedfile
+
+The script above must be run with multiple replicas using the following command:
+
+\verbatim
+mpirun -np 6 plumed driver --mf_xtc alltraj.xtc --multi 6
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -37,7 +72,7 @@ This can be used to output the data that has been stored in an Analysis object.
 class WhamWeights : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  WhamWeights( const ActionOptions& );
+  explicit WhamWeights( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(WhamWeights,"WHAM_WEIGHTS")

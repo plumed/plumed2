@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,12 +48,12 @@ where the sum over \f$i\f$ is over all the ``bridging atoms" and
 \par Examples
 
 The following example instructs plumed to calculate the number of water molecules
-that are bridging betweeen atoms 1-10 and atoms 11-20 and to print the value
+that are bridging between atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
 \plumedfile
-BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 LABEL=w1
-PRINT ARG=a1.mean FILE=colvar
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
+PRINT ARG=w1 FILE=colvar
 \endplumedfile
 
 */
@@ -68,8 +68,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Bridge(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")

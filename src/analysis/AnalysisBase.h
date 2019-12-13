@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,10 +56,10 @@ protected:
   AnalysisBase* my_input_data;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisBase(const ActionOptions&);
+  explicit AnalysisBase(const ActionOptions&);
 /// These are required because we inherit from both ActionAtomistic and ActionWithArguments
-  void lockRequests();
-  void unlockRequests();
+  void lockRequests() override;
+  void unlockRequests() override;
 /// Return the number of data points
   virtual unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
@@ -89,17 +89,17 @@ public:
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
-  bool isPeriodic() { plumed_error(); return false; }
-  unsigned getNumberOfDerivatives() { plumed_error(); return 0; }
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
+  bool isPeriodic() override { plumed_error(); return false; }
+  unsigned getNumberOfDerivatives() override { plumed_error(); return 0; }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override { plumed_error(); }
 /// Calculate and apply do nothing all analysis is done during update step
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 /// This will call the analysis to be performed
-  virtual void update();
+  void update() override;
 /// This calls the analysis to be performed in the final step of the calculation
 /// i.e. when use_all_data is true
-  virtual void runFinalJobs();
+  void runFinalJobs() override;
 };
 
 inline

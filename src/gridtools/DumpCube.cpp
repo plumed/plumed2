@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,7 +40,7 @@ action thus allows you to output a function evaluated on a grid to a Gaussian cu
 
 \par Examples
 
-The input below can be used to postprocess a trajectory.  A histogram as a function of the distance
+The input below can be used to post process a trajectory.  A histogram as a function of the distance
 between atoms 1 and 2, the distance between atom 1 and 3 and the angle between the vector connecting atoms 1 and
 2 and 1 and 3 is computed using kernel density estimation.  Once all the data contained in the trajectory has been read in and
 all the kernels have been added the resulting histogram is output to a file called histoA1.cube.  This file has the
@@ -67,14 +67,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpCube(const ActionOptions&ao);
-  void printGrid( OFile& ofile ) const ;
+  void printGrid( OFile& ofile ) const override;
 };
 
 PLUMED_REGISTER_ACTION(DumpCube,"DUMPCUBE")
 
 void DumpCube::registerKeywords( Keywords& keys ) {
   GridPrintingBase::registerKeywords( keys );
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to output");
+  keys.add("optional","COMPONENT","if your input is a vector field use this to specify the component of the input vector field for which you wish to output");
 }
 
 DumpCube::DumpCube(const ActionOptions&ao):

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,9 +38,9 @@ A \ref SELECTOR can be used for example to activate or modify a bias based on it
 \par Examples
 
 A typical example is the simulated-tempering like approach activated by \ref RESCALE.
-In this example the total potential energy of the system is rescaled
+In this example the total potential energy of the system is scaled
 by a parameter defined on a grid of dimension NBIN in the range from 1 to MAX_RESCALE.
-The value of the rescale parameter is determined by the current value of the \ref SELECTOR GAMMA.
+The value of the scaling parameter is determined by the current value of the \ref SELECTOR GAMMA.
 The value of the \ref SELECTOR is updated by a MC protocol inside the \ref RESCALE class.
 A well-tempered metadynamics potential is used to enhance sampling in the \ref SELECTOR space.
 
@@ -67,8 +67,8 @@ class Selector:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Selector(const ActionOptions&ao);
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Selector,"SELECTOR")

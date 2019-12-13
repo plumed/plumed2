@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,9 @@
 
 //+PLUMEDOC MTRANSFORMS MTRANSFORM_LESS
 /*
-This action can be useed to transform the colvar values calculated by a multicolvar using a \ref switchingfunction
+This action can be used to transform the colvar values calculated by a \ref mcolv using a \ref switchingfunction
 
-In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref switchingfunction function that
+In this action each colvar, \f$s_i\f$, calculated by \ref mcolv is transformed by a \ref switchingfunction function that
 is equal to one if the colvar is less than a certain target value and which is equal to zero otherwise.
 It is important to understand the distinction between what is done here and what is done by \ref MFILTER_LESS.
 In \ref MFILTER_LESS a weight, \f$w_i\f$ for the colvar is calculated using the \ref switchingfunction.  If one calculates the
@@ -38,7 +38,7 @@ MEAN for \ref MFILTER_LESS one is thus calculating:
 \f]
 
 where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by
-the \ref switchingfunction.  If one thus calculates a MEAN for thia action one computes:
+the \ref switchingfunction.  If one thus calculates a MEAN for this action one computes:
 
 \f[
 \mu = \frac{ \sum_{i=1}^N \simga(s_i) }{ N }
@@ -49,7 +49,7 @@ In other words, you are calculating the mean for the transformed colvar.
 \par Examples
 
 The following input gives an example of how a MTRANSFORM_LESS action can be used to duplicate
-functionality that is elsehwere in PLUMED.
+functionality that is elsewhere in PLUMED.
 
 \plumedfile
 DISTANCES ...
@@ -77,12 +77,12 @@ for \ref MULTICOLVARDENS
 
 //+PLUMEDOC MFILTERS MFILTER_LESS
 /*
-This action can be used to filter the distribution of colvar values in a multicolvar
+This action can be used to filter the distribution of colvar values in a \ref mcolv
 so that one can compute the mean and so on for only those multicolvars less than a tolerance.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.
 In this action a multicolvar is within the dynamic group if its value is less than a target.
-In practise a weight, \f$w_i\f$ is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
+In actuality a weight, \f$w_i\f$ is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
 and this weight measures the degree to which a colvar is a member of the group.  This weight is a number
 between 0 and 1 that is calculated using a \ref switchingfunction , \f$\sigma\f$.
 If one calculates a function of the set of multicolvars
@@ -116,7 +116,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterLess(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterLess,"MFILTER_LESS")
@@ -128,7 +128,7 @@ void FilterLess::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function ");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,7 +44,7 @@ class ActionWithVirtualAtom:
   std::vector<Tensor> derivatives;
   std::vector<Tensor> boxDerivatives;
   std::map<AtomNumber,Tensor> gradients;
-  void apply();
+  void apply() override;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);

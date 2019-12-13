@@ -30,7 +30,7 @@ namespace ves {
 
 //+PLUMEDOC VES_TARGETDIST TD_GAUSSIAN
 /*
-Target distribution given by a sum of Gaussians (static).
+Target distribution given by a sum of Gaussian kernels (static).
 
 Employ a target distribution that is given by a sum of multivariate Gaussian (or normal)
 distributions, defined as
@@ -62,7 +62,7 @@ numbered CENTER keywords and the standard deviations \f$\mathbf{\sigma}_{i}\f$
 using the numbered SIGMA keywords.
 
 For two arguments it is possible to employ
-[bivariate Gaussians](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
+[bivariate Gaussian kernels](https://en.wikipedia.org/wiki/Multivariate_normal_distribution)
 with correlation between arguments, defined as
 \f[
 N(\mathbf{s};\mathbf{\mu}_{i},\mathbf{\sigma}_{i},\rho_i) =
@@ -104,18 +104,18 @@ normalized to 1 over the bounded region. The code will issue a warning
 if that is needed.
 
 For periodic CVs it is generally better to use \ref TD_VONMISES "Von Mises"
-distributions instead of Gaussians as these distributions properly
+distributions instead of Gaussian kernels as these distributions properly
 account for the periodicity of the CVs.
 
 
 \par Examples
 
-One single Gaussians in one-dimension.
+One single Gaussian kernel in one-dimension.
 \plumedfile
 td: TD_GAUSSIAN CENTER1=-1.5 SIGMA1=0.8
 \endplumedfile
 
-Sum of three Gaussians in two-dimensions with equal weights as
+Sum of three Gaussian kernels in two-dimensions with equal weights as
 no weights are given.
 \plumedfile
 TD_GAUSSIAN ...
@@ -126,7 +126,7 @@ TD_GAUSSIAN ...
 ... TD_GAUSSIAN
 \endplumedfile
 
-Sum of three Gaussians in two-dimensions which
+Sum of three Gaussian kernels in two-dimensions which
 are weighted unequally. Note that weights are automatically
 normalized to 1 so that WEIGHTS=1.0,2.0,1.0 is equal to
 specifying WEIGHTS=0.25,0.50,0.25.
@@ -140,7 +140,7 @@ TD_GAUSSIAN ...
 ... TD_GAUSSIAN
 \endplumedfile
 
-Sum of two bivariate Gaussians where there is correlation of
+Sum of two bivariate Gaussian kernels where there is correlation of
 \f$\rho_{2}=0.75\f$ between the two arguments for the second Gaussian.
 \plumedfile
 TD_GAUSSIAN ...
@@ -169,7 +169,7 @@ class TD_Gaussian: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Gaussian(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -180,7 +180,7 @@ void TD_Gaussian::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("numbered","CENTER","The centers of the Gaussian distributions.");
   keys.add("numbered","SIGMA","The standard deviations of the Gaussian distributions.");
-  keys.add("numbered","CORRELATION","The correlation for two-dimensional bivariate Gaussian distributions. Only works for two arguments. The value should be between -1 and 1. If no value is given the Gaussians is considered as un-correlated (i.e. value of 0.0).");
+  keys.add("numbered","CORRELATION","The correlation for two-dimensional bivariate Gaussian distributions. Only works for two arguments. The value should be between -1 and 1. If no value is given the Gaussian kernels is considered as un-correlated (i.e. value of 0.0).");
   keys.add("optional","WEIGHTS","The weights of the Gaussian distributions. Have to be as many as the number of centers given with the numbered CENTER keywords. If no weights are given the distributions are weighted equally. The weights are automatically normalized to 1.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ protected:
 /// The (transformed) distance from each frame
   std::vector<double> fframes;
 /// Get the number of frames in the path
-  unsigned getNumberOfReferencePoints() const ;
+  unsigned getNumberOfReferencePoints() const;
 /// Finish the setup of the referenceValuePack by transfering atoms and args
   void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
@@ -76,14 +76,14 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Mapping(const ActionOptions&);
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
-  void turnOnDerivatives();
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void lockRequests();
-  void unlockRequests();
+  void turnOnDerivatives() override;
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  void lockRequests() override;
+  void unlockRequests() override;
 /// Distance from a point is never periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+  unsigned getNumberOfDerivatives() override;  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get the value of lambda for paths and property maps
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
@@ -95,7 +95,7 @@ public:
 /// Get the value of the ith property for the current frame
   double getPropertyValue( const unsigned& current, const std::string& name ) const ;
 /// Apply the forces
-  void apply();
+  void apply() override;
 };
 
 inline

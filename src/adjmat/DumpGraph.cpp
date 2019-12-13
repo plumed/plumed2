@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ namespace adjmat {
 
 //+PLUMEDOC CONCOMP DUMPGRAPH
 /*
-Write out the connnectivity of the nodes in the graph in dot format.
+Write out the connectivity of the nodes in the graph in dot format.
 
 \par Examples
 
@@ -54,17 +54,17 @@ public:
 /// Constructor
   explicit DumpGraph( const ActionOptions& );
 /// Calculate and apply do nothing
-  void calculate() {};
-  void apply() {};
+  void calculate() override {};
+  void apply() override {};
 /// Update will do the output
-  void update();
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpGraph,"DUMPGRAPH")
 
 void DumpGraph::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse");
+  keys.add("compulsory","MATRIX","the action that calculates the adjacency matrix vessel we would like to analyze");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the graph");
   keys.add("compulsory","FILE","the name of the file on which to output the data");
   keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph. "

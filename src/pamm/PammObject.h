@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,9 @@ public:
 // Explicit definitions for constructor, copy constructor and destructor
   PammObject();
   PammObject( const PammObject& );
-  PammObject operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return PammObject(); }
+/// GB: I fixed this (should return PammObject&, it was returning PammObject
+// However I am not sure the implementation makes sense.
+  PammObject& operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return *this; }
 /// Setup the Pamm object
   void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
               const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,

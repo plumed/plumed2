@@ -1,0 +1,380 @@
+/**
+\page moving Moving from PLUMED 1 to PLUMED 2
+
+Syntax in PLUMED 2 has been completely redesigned based on our experience
+using PLUMED 1, hopefully making it clearer, more flexible, and less error prone.
+The main difference is that
+whereas in PLUMED 1 lines could be inserted in any order, 
+in PLUMED 2 the order of the lines matters. This is due to a major change in 
+the internal architecture of PLUMED. In version 2, commands (or "actions") are
+executed in the order they are found in the input file.
+Because of this, you must e.g. first compute a collective variable and then print it
+later. More information can be found in the Section about \ref Syntax.
+
+Other important changes are in the way groups and units are used,
+as discussed below.
+Finally, many features appear under a different name in the new version.
+
+\section moving-Syntax New syntax
+
+We know that changing the input syntax requires a lot of work from the user
+side to update their input files. However, we believe that the new syntax is
+easier to read and that it allows for more flexibility.
+As an example, something that in PLUMED 1.3 was:
+\verbatim
+HILLS HEIGHT 0.4 W_STRIDE 600
+WELLTEMPERED SIMTEMP 300  BIASFACTOR 15
+RGYR LIST <all>
+all->
+1   5  6  7   9  11  15  16  17 19
+all<-
+TORSION LIST 5 7 9 15 SIGMA  0.1
+TORSION LIST 7 9 15 17
+PRINT W_STRIDE 100
+\endverbatim
+in PLUMED 2.x becomes:
+\plumedfile
+all:  GROUP     ATOMS=1,5,6,7,9,11,15,16,17,19
+rg:   GYRATION  ATOMS=all
+t1:   TORSION ATOMS=5,7,9,15
+METAD ...
+  LABEL=meta
+  ARG=t1 SIGMA=0.1 HEIGHT=0.4 PACE=600
+  BIASFACTOR=15 TEMP=300
+... METAD
+t2:   TORSION ATOMS=7,9,15,17
+PRINT ARG=t1,t2,meta.bias  STRIDE=100   FILE=COLVAR
+\endplumedfile
+Giving all quantities an explicit name makes the input easier to interpret.
+Additionally, all the parameters related to \ref METAD are placed on a single line
+(actually, this is done here exploiting continuation lines).
+Also notice that one can customize the name of the `COLVAR` file.
+By specifying to \ref PRINT which collective variables should be printed,
+one can easily decide what to print exactly and using which stride.
+By repeating the \ref PRINT line one can also monitor very expensive variables
+with a larger stride, just putting the result on a separate file.
+
+You might have noticed that ideas that were very difficult to implement in PLUMED 1.3
+now become immediately available. As an example, one can now apply
+concurrently several \ref METAD potentials \cite gil2015enhanced .
+
+\section moving-Groups Groups
+
+In PLUMED 1 groups (lists) were used for two tasks:
+- To provide centers of masses to collective variables such as distances, angles, etc. This is 
+  now done by defining virtual atoms using either \ref CENTER or \ref COM
+- To provide lists of atoms to collective variables such as coordination, gyration radius, etc.
+  This is now done directly in the line that defines the collective variable. 
+
+If you would still like to use groups you can use the \ref GROUP commands.  Whenever the label
+for a \ref GROUP action appears in the input it is replaced by the list of atoms that were 
+specified in the \ref GROUP.
+
+A restraint on the distance between centers of mass in PLUMED 1 was something like:
+\verbatim
+DISTANCE LIST <g1> <g2>
+g1->
+17 20 22 30
+g1<-
+g2->
+LOOP 37 40
+g2<-
+UMBRELLA CV 1 KAPPA 200 AT 1.0
+PRINT W_STRIDE 100
+\endverbatim
+The same in PLUMED 2.x reads:
+\plumedfile
+g1: COM ATOMS=17,20,22,30
+g2: COM ATOMS=37-40
+d:  DISTANCE ATOMS=g1,g2
+r:  RESTRAINT ARG=d KAPPA=200 AT=1.0
+PRINT STRIDE=100 FILE=COLVAR ARG=d,r.*
+\endplumedfile
+
+Notice that virtual atoms are very powerful tools in PLUMED 2. Actually, they can be used
+in any collective variable where normal atoms can be used, just by calling them by name.
+This allows to straightforwardly define variables such as coordination between centers
+of mass, which would have required an ad hoc implementation in PLUMED 1.
+
+In the example above you can also appreciate the advantage of calling collective variables
+by name. It is obvious here that \ref RESTRAINT is acting on distance `d`, whereas in PLUMED 1
+one had to keep track of the number of the collective variables. This was easy for a single collective variable,
+but could become cumbersome for complex input files.
+
+\section moving-Names Names in output files
+
+Another advantage of having names is that when PLUMED produces an output file
+it can insert explicit names in the file.
+Consider for example this PLUMED 1 input
+\verbatim
+DISTANCE LIST 1 2
+ANGLE    LIST 3 4 5
+PRINT W_STRIDE 100
+\endverbatim
+The first line of the COLVAR file was then
+\verbatim
+#!  FIELDS time cv1 cv2
+\endverbatim
+The equivalent input file in PLUMED 2 is
+\plumedfile
+d: DISTANCE ATOMS=1,2
+a: ANGLE    ATOMS=3,4,5
+PRINT ARG=d,a FILE=COLVAR STRIDE=100
+\endplumedfile
+The first line of the COLVAR file now is
+\verbatim
+#! FIELDS time d a
+\endverbatim
+This makes it easy to remember what's the meaning of each column of the COLVAR file
+without the need to always go back to the PLUMED input to check in which order
+the variables were declared.
+
+\section moving-Units Units
+
+In PLUMED 1 the input file of PLUMED was expected to be written using the same units
+of the MD code. This choice was made to allow users to adopt the same units they
+were used to. However, we realized later that this choice was not allowing the
+PLUMED input files to be ported between different MD code. Let's say
+that one was using this keyword with GROMACS (kj/mol - nm)
+\verbatim
+UMBRELLA CV 1 KAPPA 200 AT 1.0
+\endverbatim
+Let's assume the variable CV 1 was a distance.
+The same keyword in NAMD (kcal/mol - A) should have been converted to
+\verbatim
+UMBRELLA CV 1 KAPPA .4780 AT 10.0
+\endverbatim
+The conversion of `AT` is straightforward (1nm=10A), but the conversion on
+`KAPPA` is more error prone. This is because `KAPPA` is measured in units
+of energy divided by distance squared. Notice that a different factor should
+have been used if the CV was an angle.
+
+Learning from this, we designed PLUMED 2 in a way that units in the PLUMED input
+are independent of the MD code. Technically, this is achieved by doing the conversion
+when coordinates and forces are passed back and forth. In this way, the same
+PLUMED input could be used with GROMACS and NAMD.
+
+We decided to use as standard units in PLUMED kj/mol, nm, and ps. Perhaps
+this is because most of the developers are using GROMACS, which also
+adopts these units.
+However, we still allow
+users to change units by means of the \ref UNITS keyword.
+Since this keyword is included directly in the PLUMED input file,
+even when using personalized units the input files remains perfectly
+portable across different MD engines.
+
+\section moving-Directives Directives
+
+What follows is a list of all the documented directives of PLUMED 1 together with their 
+plumed 2 equivalents.  Be aware that the input syntax for these directives are not totally 
+equivalent.  You should read the documentation for the PLUMED 2 Action.
+
+<TABLE>
+<TR> 
+  <TD> HILLS </TD>
+  <TD> \ref METAD </TD>
+</TR>
+<TR> 
+  <TD> WELLTEMPERED </TD>
+  <TD> \ref METAD with BIASFACTOR </TD>
+</TR>
+<TR> 
+  <TD> GRID </TD>
+  <TD> \ref METAD with GRID_MIN, GRID_MAX, and GRID_BIN </TD>
+</TR>
+<TR>
+  <TD> WRITE_GRID </TD>
+  <TD> \ref METAD with GRID_WFILE, GRID_WSTRIDE </TD>
+</TR>
+<TR>
+  <TD> READ_GRID </TD>
+  <TD> \ref METAD with GRID_RFILE </TD>
+</TR>
+<TR>
+  <TD> MULTIPLE_WALKERS </TD>
+  <TD> \ref METAD with options WALKERS_ID, WALKERS_N, WALKERS_DIR, and WALKERS_RSTRIDE </TD>
+</TR>
+<TR>
+  <TD> NOHILLS </TD>
+  <TD> not needed (collective variables are not biased by default) </TD>
+</TR>
+<TR>
+  <TD> INTERVAL </TD>
+  <TD> \ref METAD with INTERVAL  </TD>
+</TR>
+<TR>
+  <TD> INVERT </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> PTMETAD </TD>
+  <TD> not needed (replica exchange detected from MD engine) </TD>
+</TR>
+<TR>
+  <TD> BIASXMD </TD>
+  <TD> not needed (replica exchange detected from MD engine);
+       one should anyway use \ref RANDOM_EXCHANGES to get the normal behavior </TD>
+</TR>
+<TR>
+  <TD> UMBRELLA </TD>
+  <TD> \ref RESTRAINT </TD>
+</TR>
+<TR>
+  <TD> STEER </TD>
+  <TD> \ref MOVINGRESTRAINT </TD>
+</TR>
+<TR>
+  <TD> STEERPLAN </TD>
+  <TD> \ref MOVINGRESTRAINT </TD>
+</TR>
+<TR>
+  <TD> ABMD </TD>
+  <TD> \ref ABMD </TD>
+</TR>
+<TR>
+  <TD> UWALL </TD>
+  <TD> \ref UPPER_WALLS </TD>
+</TR>
+<TR>
+  <TD> LWALL </TD>
+  <TD> \ref LOWER_WALLS </TD>
+</TR>
+<TR>
+  <TD> EXTERNAL </TD>
+  <TD> \ref EXTERNAL </TD>
+</TR>
+<TR>
+  <TD> COMMITMENT </TD>
+  <TD> \ref COMMITTOR </TD>
+</TR>
+<TR>
+  <TD> PROJ_GRAD </TD>
+  <TD> \ref DUMPPROJECTIONS </TD>
+</TR>
+<TR>
+  <TD> DAFED </TD>
+  <TD> a similar method using a Langevin thermostat, with \ref EXTENDED_LAGRANGIAN </TD>
+</TR>
+<TR>
+  <TD> DISTANCE </TD>
+  <TD> \ref DISTANCE  - POINT_FROM_AXIS and PROJ_ON_AXIS can be reproduced with \ref DISTANCE and \ref MATHEVAL </TD>
+</TR>
+<TR>
+  <TD> POSITION </TD>
+  <TD> \ref POSITION </TD>
+</TR>
+<TR>
+  <TD> MINDIST </TD>
+  <TD> \ref DISTANCES with keyword MIN </TD>
+</TR>
+<TR>
+  <TD> ANGLE </TD>
+  <TD> \ref ANGLE </TD>
+</TR>
+<TR>
+  <TD> TORSION </TD>
+  <TD> \ref TORSION </TD>
+</TR>
+<TR>
+  <TD> COORD </TD>
+  <TD> \ref COORDINATION </TD>
+</TR>
+<TR>
+  <TD> HBOND </TD>
+  <TD> <b> currently missing </b>, can be emulated with \ref COORDINATION </TD>
+</TR>
+<TR>
+  <TD> WATERBRIDGE </TD>
+  <TD> \ref BRIDGE </TD> 
+</TR>
+<TR>
+  <TD> RGYR </TD>
+  <TD> \ref GYRATION </TD>
+</TR>
+<TR>
+  <TD> DIPOLE </TD>
+  <TD> \ref DIPOLE </TD>
+</TR>
+<TR>
+  <TD> DIHCOR </TD>
+  <TD> \ref DIHCOR </TD>
+</TR>
+<TR>
+  <TD> ALPHABETA </TD>
+  <TD> \ref ALPHABETA </TD>
+</TR>
+<TR>
+  <TD> ALPHARMSD </TD>
+  <TD> \ref ALPHARMSD </TD>
+</TR>
+<TR>
+  <TD> ANTIBETARMSD </TD>
+  <TD> \ref ANTIBETARMSD </TD>
+</TR>
+<TR>
+  <TD> PARABETARMSD </TD>
+  <TD> \ref PARABETARMSD </TD>
+</TR>
+<TR>
+  <TD> ELSTPOT </TD>
+  <TD> currently missing, but a related quantity can be obtained with \ref DHENERGY </TD>
+</TR>
+<TR>
+  <TD> PUCKERING </TD>
+  <TD> \ref PUCKERING </TD>
+</TR>
+<TR>
+  <TD> S_PATH </TD>
+  <TD> \ref PATHMSD, s component </TD>
+</TR>
+<TR>
+  <TD> Z_PATH </TD>
+  <TD> \ref PATHMSD, z component </TD>
+</TR>
+<TR>
+  <TD> TARGETED </TD>
+  <TD> \ref RMSD </TD>
+</TR>
+<TR>
+  <TD> ENERGY </TD>
+  <TD> \ref ENERGY </TD>
+</TR>
+<TR>
+  <TD> HELIX </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> PCA </TD>
+  <TD> \ref PCARMSD </TD>
+</TR>
+<TR>
+  <TD> SPRINT </TD>
+  <TD> \ref SPRINT </TD>
+</TR>
+<TR>
+  <TD> RDF </TD>
+  <TD> \ref DISTANCES, used in combination with HISTOGRAM / BETWEEN keyword </TD>
+</TR>
+<TR>
+  <TD> ADF </TD>
+  <TD> \ref ANGLES, used in combination with HISTOGRAM / BETWEEN keyword </TD>
+</TR>
+<TR>
+  <TD> POLY </TD>
+  <TD> \ref COMBINE </TD>
+</TR>
+<TR>
+  <TD> FUNCTION </TD>
+  <TD> \ref MATHEVAL </TD>
+</TR>
+<TR>
+  <TD> ALIGN_ATOMS </TD>
+  <TD> \ref WHOLEMOLECULES </TD>
+</TR>
+</TABLE>
+
+*/
+
+link: @subpage moving
+
+description: This tutorial explains how plumed 1 input files can be translated into the new plumed 2 syntax.

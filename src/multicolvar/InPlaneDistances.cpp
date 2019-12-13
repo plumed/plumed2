@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,8 +67,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit InPlaneDistances(const ActionOptions&);
 // active methods:
-  virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute(const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
@@ -79,7 +79,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
-  keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
+  keys.add("atoms","VECTOREND","The second atom position that is used to define the normal to the plane of interest");
   keys.add("atoms-2","GROUP","The set of atoms for which you wish to calculate the in plane distance ");
 }
 
@@ -90,12 +90,12 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
-
-  // Check atoms are OK
-  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
+  setupMultiColvarBase( all_atoms );
 
   // Setup the multicolvar base
   setupMultiColvarBase( all_atoms ); readVesselKeywords();
+  // Check atoms are OK
+  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
   // And check everything has been read in correctly
   checkRead();
 

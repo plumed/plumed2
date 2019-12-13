@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ class PCARMSD : public Colvar {
   std::vector<string> pca_names;
 public:
   explicit PCARMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -63,6 +63,43 @@ PCARMSD AVERAGE=file.pdb EIGENVECTORS=eigenvectors.pdb
 \endplumedfile
 
 The input is taken so to be compatible with the output you get from g_covar utility of gromacs (suitably adapted to have a pdb input format).
+The reference configuration (file.pdb) will thus be in a file that looks something like this:
+
+\auxfile{file.pdb}
+TITLE     Average structure
+MODEL        1
+ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
+ATOM      5  CLP ALA     1       0.416  -2.033   0.132  1.00  0.00
+ATOM      6  OL  ALA     1       0.415  -2.082  -0.976  1.00  0.00
+ATOM      7  NL  ALA     1      -0.134  -1.045   0.677  1.00  0.00
+ATOM      9  CA  ALA     1      -0.774   0.053   0.003  1.00  0.00
+TER
+ENDMDL
+\endauxfile
+
+while the eigenvectors will be in a pdb file (eigenvectors.pdb) that looks something like this:
+
+\auxfile{eigenvectors.pdb}
+TITLE     frame t= -1.000
+MODEL        1
+ATOM      1  CL  ALA     1       1.194  -2.988   0.724  1.00  0.00
+ATOM      5  CLP ALA     1      -0.996   0.042   0.144  1.00  0.00
+ATOM      6  OL  ALA     1      -1.246  -0.178  -0.886  1.00  0.00
+ATOM      7  NL  ALA     1      -2.296   0.272   0.934  1.00  0.00
+ATOM      9  CA  ALA     1      -0.436   2.292   0.814  1.00  0.00
+TER
+ENDMDL
+TITLE     frame t= 0.000
+MODEL        1
+ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
+ATOM      5  CLP ALA     1      -0.774   0.053   0.003  1.00  0.00
+ATOM      6  OL  ALA     1      -0.849  -0.166  -1.034  1.00  0.00
+ATOM      7  NL  ALA     1      -2.176   0.260   0.563  1.00  0.00
+ATOM      9  CA  ALA     1       0.314   1.825   0.962  1.00  0.00
+TER
+ENDMDL
+
+\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -73,10 +110,9 @@ void PCARMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("compulsory","AVERAGE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","EIGENVECTORS","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-  //useCustomisableComponents(keys);
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
-  keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of MSD after optimal alignment ");
-  keys.addFlag("SQUARED-ROOT",false," This should be setted if you want RMSD instead of MSD ");
+  keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of mean squared displacement after optimal alignment ");
+  keys.addFlag("SQUARED_ROOT",false," This should be set if you want RMSD instead of mean squared displacement ");
 }
 
 PCARMSD::PCARMSD(const ActionOptions&ao):
@@ -90,7 +126,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   type.assign("OPTIMAL");
   string f_eigenvectors;
   parse("EIGENVECTORS",f_eigenvectors);
-  bool sq;  parseFlag("SQUARED-ROOT",sq);
+  bool sq;  parseFlag("SQUARED_ROOT",sq);
   if (sq) { squared=false; }
   parseFlag("NOPBC",nopbc);
   checkRead();
@@ -115,6 +151,12 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
 
   log.printf("  average from file %s\n",f_average.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<pdb.getAtomNumbers().size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",pdb.getAtomNumbers()[i].serial());
+  }
+  log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(nopbc) log.printf("  without periodic boundary conditions\n");
   else      log.printf("  using periodic boundary conditions\n");

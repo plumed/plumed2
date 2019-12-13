@@ -14,11 +14,17 @@ t10: TORSION ATOMS=@v2-B_3
 t11: TORSION ATOMS=@v3-B_3
 t12: TORSION ATOMS=@v4-B_3
 t13: TORSION ATOMS=@phi-2
+t13b: TORSION ATOMS=@psi-2
+t13c: TORSION ATOMS=@chi1-2
+t13d: TORSION ATOMS=@chi2-2
+t13e: TORSION ATOMS=@omega-2
 # test chain_residue syntax where chain is a number
 t14: TORSION ATOMS=@chi-5_8
 
 c: CENTER ATOMS=@back-B4
 d: CENTER ATOMS=@base-B4
+s2: CENTER ATOMS=@sidechain-2
+b2: CENTER ATOMS=@back-2
 
-PRINT ARG=t2,t3,t4,t4d,t5,t6,t7,t8,t9,t10,t12,t13,t14 FILE=COLVAR FMT=%6.3f
+PRINT ARG=t2,t3,t4,t4d,t5,t6,t7,t8,t9,t10,t12,t13,t13b,t13c,t13d,t13e,t14 FILE=COLVAR FMT=%6.3f
 

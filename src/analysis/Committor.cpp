@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ Does a committor analysis.
 \par Examples
 
 The following input monitors two torsional angles during a simulation,
-defines two basins (A and B) as a function of the two torsions and
+defines two basins (A and B) as a function of the two torsion angles and
 stops the simulation when it falls in one of the two. In the log
 file will be shown the latest values for the CVs and the basin reached.
 \plumedfile
@@ -70,8 +70,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Committor(const ActionOptions&ao);
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Committor,"COMMITTOR")
@@ -84,7 +84,7 @@ void Committor::registerKeywords( Keywords& keys ) {
   keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
   keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
   keys.reset_style("BASIN_LL","compulsory"); keys.reset_style("BASIN_UL","compulsory");
-  keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analysed");
+  keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analyzed");
   keys.add("optional","FILE","the name of the file on which to output the reached basin");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.addFlag("NOSTOP",false,"if true do not stop the simulation when reaching a basin but just keep track of it");

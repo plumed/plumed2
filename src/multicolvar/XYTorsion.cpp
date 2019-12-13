@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,8 +42,8 @@ Calculate the torsional angle around the x axis from the positive y direction.
 The following input tells plumed to calculate the angle around the x direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive y axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-XYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: XYTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.between
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -58,8 +58,8 @@ Calculate the torsional angle around the x axis from the positive z direction.
 The following input tells plumed to calculate the angle around the x direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
 the angle around the x direction between the positive z direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-XZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: XZTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.*
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -74,8 +74,8 @@ Calculate the torsional angle around the y axis from the positive x direction.
 The following input tells plumed to calculate the angle around the y direction between the positive x-direction and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive x axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-YXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: YXTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.*
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -90,8 +90,8 @@ Calculate the torsional angle around the y axis from the positive z direction.
 The following input tells plumed to calculate the angle around the y direction between the positive z-direction and the vector connecting atom 3 to atom 5 and
 the angle around the y direction between the positive z direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-YZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: YZTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.*
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -106,8 +106,8 @@ Calculate the torsional angle around the z axis from the positive x direction.
 The following input tells plumed to calculate the angle around the z direction between the positive x-direction and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive x-direction and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-ZXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: ZXTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.*
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -122,8 +122,8 @@ Calculate the torsional angle around the z axis from the positive y direction.
 The following input tells plumed to calculate the angle around the z direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
 the angle around the z direction between the positive y axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 \plumedfile
-ZYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
+d1: ZYTORSIONS ATOMS1=3,5 ATOMS2=1,2 BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
+PRINT ARG=d1.*
 \endplumedfile
 (See also \ref PRINT).
 */
@@ -141,11 +141,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XYTorsion(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return true; }
-  void retrieveDomain( std::string& min, std::string& max) { min="-pi"; max="pi"; }
+  bool isPeriodic() override { return true; }
+  void retrieveDomain( std::string& min, std::string& max) override { min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(XYTorsion,"XYTORSIONS")
@@ -161,17 +161,17 @@ void XYTorsion::registerKeywords( Keywords& keys ) {
   keys.use("MEAN"); keys.use("MIN");
   keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.add("numbered","ATOMS","the atoms involved in each of the torsions you wish to calculate. "
+  keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the incides of two atoms).  The eventual number of quantities calculated by this "
+           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
            "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
   keys.add("optional","SWITCH","A switching function that ensures that only angles are only computed when atoms are within "
            "are within a certain fixed cutoff. The following provides information on the \\ref switchingfunction that are available.");
 }

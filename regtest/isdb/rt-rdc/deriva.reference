@@ -1,4 +1,4 @@
-#! FIELDS time parameter rdca.rdc_0 rdca.rdc_1 rdca.rdc_2 rdca.rdc_3 rdcan.rdc_0 rdcan.rdc_1 rdcan.rdc_2 rdcan.rdc_3
+#! FIELDS time parameter rdca.rdc-0 rdca.rdc-1 rdca.rdc-2 rdca.rdc-3 rdcan.rdc-0 rdcan.rdc-1 rdcan.rdc-2 rdcan.rdc-3
  0.000000 0  -0.0016   0.0000   0.0000   0.0000  -0.0016   0.0000   0.0000   0.0000
  0.000000 1   0.0175   0.0000   0.0000   0.0000   0.0175   0.0000   0.0000   0.0000
  0.000000 2   0.0101   0.0000   0.0000   0.0000   0.0101   0.0000   0.0000   0.0000

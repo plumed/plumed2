@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,8 +41,8 @@ void PathMSDBase::registerKeywords(Keywords& keys) {
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
   keys.add("optional", "EPSILON", "(default=-1) the maximum distance between the close and the current structure, the positive value turn on the close structure method");
-  keys.add("optional", "LOG-CLOSE", "(default=0) value 1 enables logging regarding the close structure");
-  keys.add("optional", "DEBUG-CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
+  keys.add("optional", "LOG_CLOSE", "(default=0) value 1 enables logging regarding the close structure");
+  keys.add("optional", "DEBUG_CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
 }
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
@@ -61,10 +61,9 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parse("NEIGH_STRIDE",neigh_stride);
   parse("REFERENCE",reference);
   parse("EPSILON", epsilonClose);
-  parse("LOG-CLOSE", logClose);
-  parse("DEBUG-CLOSE", debugClose);
+  parse("LOG_CLOSE", logClose);
+  parse("DEBUG_CLOSE", debugClose);
   parseFlag("NOPBC",nopbc);
-
 
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
@@ -82,7 +81,16 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
         unsigned nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
-        if(aaa.empty()) aaa=mypdb.getAtomNumbers();
+        if(aaa.empty()) {
+          aaa=mypdb.getAtomNumbers();
+          log.printf("  found %z atoms in input \n",aaa.size());
+          log.printf("  with indices : ");
+          for(unsigned i=0; i<aaa.size(); ++i) {
+            if(i%25==0) log<<"\n";
+            log.printf("%d ",aaa[i].serial());
+          }
+          log.printf("\n");
+        }
         if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
         log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
         pdbv.push_back(mypdb);
@@ -168,7 +176,7 @@ void PathMSDBase::calculate() {
     if (firstPosClose || (posclose > epsilonClose)) {
       //set the current structure as close one for a few next steps
       if (logClose)
-        log << "PLUMED-CLOSE: new close structure, rmsd pos close " << posclose << "\n";
+        log << "PLUMED_CLOSE: new close structure, rmsd pos close " << posclose << "\n";
       rmsdPosClose.clear();
       rmsdPosClose.setReference(getPositions());
       //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
@@ -220,7 +228,8 @@ void PathMSDBase::calculate() {
           vector<Vector> ders;
           double withoutclose = opt.calculate(getPositions(), ders, true);
           float difference = fabs(withoutclose-withclose);
-          log.printf("PLUMED-CLOSE: difference original %lf - with close %lf = %lf, step %d, i %d imgVec[i].index %d \n", withoutclose, withclose, difference, getStep(), i, imgVec[i].index);
+          log<<"PLUMED-CLOSE: difference original "<<withoutclose;
+          log<<" - with close "<<withclose<<" = "<<difference<<", step "<<getStep()<<", i "<<i<<" imgVec[i].index "<<imgVec[i].index<<"\n";
         }
       }
     }

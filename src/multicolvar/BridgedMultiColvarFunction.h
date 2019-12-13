@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,43 +53,43 @@ public:
   MultiColvarBase* getPntrToMultiColvar() const ;
 /// Don't actually clear the derivatives when this is called from plumed main.
 /// They are calculated inside another action and clearing them would be bad
-  void clearDerivatives() {}
+  void clearDerivatives() override {}
 /// Check nothing impossible being done with derivatives
-  virtual void turnOnDerivatives();
+  void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 /// Get the size of the atoms with derivatives array
   unsigned getSizeOfAtomsWithDerivatives();
 /// Is the output quantity periodic
-  bool isPeriodic();
+  bool isPeriodic() override;
 /// Routines that have to be defined so as not to have problems with virtual methods
   void deactivate_task( const unsigned& taskno );
-  void calculate() {}
+  void calculate() override {}
 /// This does the task
-  void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const ;
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
   virtual void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const=0;
 /// Get the central atom position
   Vector retrieveCentralAtomPos();
 /// Get the index of the central atom
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const override;
 /// Get indicecs involved in this colvar
-  const std::vector<AtomNumber> & getAbsoluteIndexes()const ;
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const override;
 /// We need our own calculate numerical derivatives here
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void apply() {};
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  void apply() override {};
 /// Is this atom currently being copied
-  bool isCurrentlyActive( const unsigned& );
+  bool isCurrentlyActive( const unsigned& ) override;
 /// This should not be called
   Vector calculateCentralAtomPosition() { plumed_error(); }
-  double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myvals ) const override { plumed_error(); }
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const override;
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
-  void applyBridgeForces( const std::vector<double>& bb );
-  Vector getCentralAtomPos( const unsigned& curr );
-  void normalizeVector( std::vector<double>& vals ) const ;
-  void normalizeVectorDerivatives( MultiValue& myvals ) const ;
-  void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack );
+  void applyBridgeForces( const std::vector<double>& bb ) override;
+  Vector getCentralAtomPos( const unsigned& curr ) override;
+  void normalizeVector( std::vector<double>& vals ) const override;
+  void normalizeVectorDerivatives( MultiValue& myvals ) const override;
+  void getCentralAtomPack( const unsigned& basn, const unsigned& curr, CatomPack& mypack ) override;
 };
 
 inline

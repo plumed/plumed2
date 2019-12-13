@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,11 +37,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ShortcutVessel( const VesselOptions& );
-  std::string description() { return ""; }
-  void resize() { plumed_error(); }
-  void calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const { plumed_error(); }
-  void finish( const std::vector<double>& buffer ) { plumed_error(); }
-  bool applyForce( std::vector<double>& forces ) { plumed_error(); }
+  std::string description() override { return ""; }
+  void resize() override { plumed_error(); }
+  void calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const override { plumed_error(); }
+  void finish( const std::vector<double>& buffer ) override { plumed_error(); }
+  bool applyForce( std::vector<double>& forces ) override { plumed_error(); }
 };
 
 }

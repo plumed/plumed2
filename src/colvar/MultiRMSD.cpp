@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,14 +44,14 @@ class MultiRMSD : public Colvar {
 
 public:
   explicit MultiRMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
 
 using namespace std;
 
-//+PLUMEDOC DCOLVAR MULTI-RMSD
+//+PLUMEDOC DCOLVAR MULTI_RMSD
 /*
 Calculate the RMSD distance moved by a number of separated domains from their positions in a reference structure.
 
@@ -71,7 +71,7 @@ configuration.  \f$w_i\f$ is an optional weight.
 The distances for each of the domains in the above sum can be calculated using the \ref DRMSD or \ref RMSD measures or
 using a combination of these distance.  The reference configuration is specified in a pdb file like the one below:
 
-\verbatim
+\auxfile{file1.pdb}
 ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
 ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
 ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
@@ -89,7 +89,7 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 with the TER keyword being used to separate the various domains in you protein.
 
@@ -98,18 +98,18 @@ with the TER keyword being used to separate the various domains in you protein.
 
 The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
-position.  The Kearseley algorithm for each of the domains.
+position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
-The following tells plumed to calculate the RMSD distance btween the positions of
+The following tells plumed to calculate the RMSD distance between the positions of
 the atoms in the domains of reference the reference structure and their instantaneous
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
 \endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
@@ -120,7 +120,7 @@ UPPER_CUTOFF=# only pairs of atoms further than UPPER_CUTOFF are considered in t
 \endverbatim
 as shown in the following example
 
-\verbatim
+\auxfile{file2.pdb}
 REMARK NOPBC
 REMARK LOWER_CUTOFF=0.1
 REMARK UPPER_CUTOFF=0.8
@@ -141,19 +141,19 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI-RMSD")
+PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI_RMSD")
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
-  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.addFlag("SQUARED",false," This should be set if you want the mean squared displacement instead of the root mean squared displacement");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
@@ -188,6 +188,12 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
+  log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }

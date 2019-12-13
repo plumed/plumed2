@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,22 +49,22 @@ public:
 /// Retrieve the value of the connection
   double retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const ;
 /// Get the vector for task ind
-  virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
+  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const override;
 /// Add the derivatives on a connection
   void addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const ;
 /// Get vector derivatives
-  virtual MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
-  virtual unsigned getNumberOfDerivatives();
+  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const override;
+  unsigned getNumberOfDerivatives() override;
 ///  Get the number of rows/cols in the adjacency matrix vessel
-  virtual unsigned getNumberOfNodes() const ;
-  bool isPeriodic() { return false; }
-  virtual unsigned getNumberOfQuantities() const ;
+  virtual unsigned getNumberOfNodes() const;
+  bool isPeriodic() override { return false; }
+  unsigned getNumberOfQuantities() const override;
 ///
-  virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const override;
 /// No loop over tasks for ActionWithInputMatrix
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override { plumed_error(); }
 ///
-  virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const override;
 };
 
 }

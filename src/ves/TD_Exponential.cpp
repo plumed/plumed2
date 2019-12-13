@@ -77,7 +77,7 @@ class TD_Exponential: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Exponential(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -87,7 +87,7 @@ PLUMED_REGISTER_ACTION(TD_Exponential,"TD_EXPONENTIAL")
 void TD_Exponential::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","MINIMUM","The minimum of the exponential distribution.");
-  keys.add("compulsory","LAMBDA","The \\f$\\lambda\\f$ parameter of the exponential distribution given as postive number.");
+  keys.add("compulsory","LAMBDA","The \\f$\\lambda\\f$ parameter of the exponential distribution given as positive number.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");
@@ -102,7 +102,7 @@ TD_Exponential::TD_Exponential(const ActionOptions& ao):
   parseVector("MINIMUM",minima_);
   parseVector("LAMBDA",lambda_);
   for(unsigned int k=0; k<lambda_.size(); k++) {
-    if(lambda_[k] < 0.0) {plumed_merror(getName()+": the value given in LAMBDA should be postive.");}
+    if(lambda_[k] < 0.0) {plumed_merror(getName()+": the value given in LAMBDA should be positive.");}
   }
 
 

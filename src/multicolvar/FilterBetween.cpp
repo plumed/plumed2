@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,9 @@
 
 //+PLUMEDOC MTRANSFORMS MTRANSFORM_BETWEEN
 /*
-This action can be useed to transform the colvar values calculated by a multicolvar using a \ref histogrambead
+This action can be used to transform the colvar values calculated by a MultiColvar using a \ref histogrambead
 
-In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref histogrambead function that
+In this action each colvar, \f$s_i\f$, calculated by MultiColvar is transformed by a \ref histogrambead function that
 is equal to one if the colvar is within a certain range and which is equal to zero otherwise.  In other words, we
 compute:
 
@@ -46,7 +46,7 @@ MEAN for \ref MFILTER_BETWEEN one is thus calculating:
 \f]
 
 In this action by contrast the colvar is being transformed by the \ref histogrambead.  If one thus calculates a MEAN for
-thia action one computes:
+this action one computes:
 
 \f[
 \mu = \frac{ \sum_{i=1}^N f_i }{ N }
@@ -56,8 +56,8 @@ In other words, you are calculating the mean for the transformed colvar.
 
 \par Examples
 
-The following input gives an example of how a MTRANSFORM_BETWEEN action can be used to duplicate
-functionality that is elsehwere in PLUMED.
+The following input gives an example of how a \ref MTRANSFORM_BETWEEN action can be used to duplicate
+functionality that is elsewhere in PLUMED.
 
 \plumedfile
 DISTANCES ...
@@ -77,7 +77,7 @@ DISTANCES ...
 \endplumedfile
 (see \ref DISTANCES)
 
-The advantage of MTRANSFORM_BETWEEN comes, however, if you want to use transformed colvars as input
+The advantage of \ref MTRANSFORM_BETWEEN comes, however, if you want to use transformed colvars as input
 for \ref MULTICOLVARDENS
 
 */
@@ -85,12 +85,12 @@ for \ref MULTICOLVARDENS
 
 //+PLUMEDOC MFILTERS MFILTER_BETWEEN
 /*
-This action can be used to filter the colvar values calculated by a multicolvar
+This action can be used to filter the colvar values calculated by a \ref mcolv
 so that one can compute the mean and so on for only those multicolvars within a certain range.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.
 In this action a multicolvar is within the dynamic group if its value lies in a particular range.
-In practise a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
+In actuality a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
 and this weight measures the degree to which a colvar is a member of the group.  This weight is
 calculated using a \ref histogrambead so it is given by:
 
@@ -141,7 +141,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterBetween(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
@@ -151,8 +151,8 @@ void FilterBetween::registerKeywords( Keywords& keys ) {
   MultiColvarFilter::registerKeywords( keys );
   keys.add("compulsory","LOWER","the lower boundary for the range of interest");
   keys.add("compulsory","UPPER","the upper boundary for the range of interest");
-  keys.add("compulsory","SMEAR","0.5","the ammount by which to smear the value for kernel density estimation");
-  keys.add("optional","BEAD","This keywords is used if you want to employ an alternative to the function defeind above. "
+  keys.add("compulsory","SMEAR","0.5","the amount by which to smear the value for kernel density estimation");
+  keys.add("optional","BEAD","This keywords is used if you want to employ an alternative to the function defined above. "
            "The following provides information on the \\ref histogrambead that are available. "
            "When this keyword is present you no longer need the LOWER, UPPER and SMEAR keywords.");
 }

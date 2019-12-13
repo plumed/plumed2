@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,8 +36,8 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 \f]
 
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration, \f$D_i\f$.  You could calculate
-the RMSD distance or you could calculate the ammount by which a set of collective variables change.  As such this implementation
-of the propertymap allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
+of the property map allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
 the alternative implementation \ref PROPERTYMAP which is a bit faster but which only allows one to use the RMSD distance.
 
 \par Examples
@@ -55,7 +55,7 @@ PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
 The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
 points has the following format.
 
-\verbatim
+\auxfile{allv.pdb}
 REMARK X=1 Y=2
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
@@ -87,7 +87,7 @@ ATOM     17  NR  ALA     1       1.380   0.537   1.968  1.00  1.00
 ATOM     18  HR  ALA     1       0.764  -0.060   2.461  1.00  1.00
 ATOM     19  CR  ALA     1       2.431   1.195   2.683  1.00  1.00
 END
-\endverbatim
+\endauxfile
 
 */
 //+ENDPLUMEDOC

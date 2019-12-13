@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,9 @@
 
 //+PLUMEDOC MTRANSFORMS MTRANSFORM_MORE
 /*
-This action can be useed to transform the colvar values calculated by a multicolvar using one minus a \ref switchingfunction
+This action can be used to transform the colvar values calculated by a \ref mcolv using one minus a \ref switchingfunction
 
-In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref switchingfunction function that
+In this action each colvar, \f$s_i\f$, calculated by \ref mcolv is transformed by a \ref switchingfunction function that
 is equal to one if the colvar is greater than a certain target value and which is equal to zero otherwise.
 It is important to understand the distinction between what is done here and what is done by \ref MFILTER_MORE.
 In \ref MFILTER_MORE a weight, \f$w_i\f$ for the colvar is calculated using the \ref histogrambead.  If one calculates the
@@ -49,7 +49,7 @@ In other words, you are calculating the mean for the transformed colvar.
 \par Examples
 
 The following input gives an example of how a MTRANSFORM_MORE action can be used to duplicate
-functionality that is elsehwere in PLUMED.
+functionality that is elsewhere in PLUMED.
 
 \plumedfile
 DISTANCES ...
@@ -77,12 +77,12 @@ for \ref MULTICOLVARDENS
 
 //+PLUMEDOC MFILTERS MFILTER_MORE
 /*
-This action can be used to filter the distribution of colvar values in a multicolvar
+This action can be used to filter the distribution of colvar values in a \ref mcolv
 so that one can compute the mean and so on for only those multicolvars more than a tolerance.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.
 In this action a multicolvar is within the dynamic group if its value is greater than a target.
-In practise a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
+In actuality a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
 and this weight measures the degree to which a colvar is a member of the group.  This weight is
 calculated using a \ref switchingfunction , \f$\sigma\f$ so it is given by:
 
@@ -116,7 +116,7 @@ to a second coordination number calculation.  This second coordination number th
 two-coordinated atoms that each of the two-coordinated atoms is bound to.
 
 \plumedfile
-1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+c1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
 \endplumedfile
@@ -133,7 +133,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterMore(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
@@ -145,7 +145,7 @@ void FilterMore::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }

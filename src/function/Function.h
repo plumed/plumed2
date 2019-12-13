@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,9 +46,9 @@ protected:
 public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
-  void apply();
+  void apply() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 };
 
 inline

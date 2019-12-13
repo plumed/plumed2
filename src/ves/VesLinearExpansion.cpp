@@ -103,7 +103,7 @@ Internally the code uses grids to calculate the basis set averages
 over the target distribution that is needed for the gradient. The same grid is
 also used for the output files (see next section).
 The size of the grid is determined by the GRID_BINS keyword. By default it has
-100 grid points in each dimension, and generally this value should be sufficent.
+100 grid points in each dimension, and generally this value should be sufficient.
 
 \par Outputting Free Energy Surfaces and Other Files
 
@@ -118,7 +118,7 @@ For multi-dimensional case is it possible to also output projections of the
 free energy surfaces. The arguments for which to do these projections is
 specified using the numbered PROJ_ARG keywords. For these files a suffix
 indicating the projection (proj-#) will be added to the filenames.
-You will also need to specfiy the frequency of the output by using the
+You will also need to specify the frequency of the output by using the
 FES_PROJ_OUTPUT keyword within the optimizer.
 
 It is also possible to output the bias potential itself, for this the relevant
@@ -136,15 +136,15 @@ simulation while for dynamic ones you will need to specify the frequency
 of the output by using the TARGETDIST_OUTPUT and TARGETDIST_PROJ_OUTPUT
 keywords within the optimizer.
 
-It is also possible to output free energy surfaces and bias in postprocessing
+It is also possible to output free energy surfaces and bias in post processing
 by using the \ref VES_OUTPUT_FES action. However, be aware that this action
 does does not support dynamic target distribution (e.g. well-tempered).
 
 \par Static Bias
 
 It is also possible to use VES_LINEAR_EXPANSION as a static bias that uses
-previously obtained coefficents. In this case the coefficents should be
-read in from the coefficent file given in the COEFFS keyword.
+previously obtained coefficients. In this case the coefficients should be
+read in from the coefficient file given in the COEFFS keyword.
 
 \par Bias Cutoff
 
@@ -162,14 +162,14 @@ BIAS_CUTOFF_FERMI_LAMBDA keyword.
 
 In the following example we run a VES_LINEAR_EXPANSION for one CV using
 a Legendre basis functions (\ref BF_LEGENDRE) and a uniform target
-distribution as no target distribution is specified. The coefficents
+distribution as no target distribution is specified. The coefficients
 are optimized using averaged stochastic gradient descent optimizer
 (\ref OPT_AVERAGED_SGD). Within the optimizer we specify that the
-FES should be outputted to file every 500 coefficents iterations (the
+FES should be outputted to file every 500 coefficients iterations (the
 FES_OUTPUT keyword).
-Parameters that are very specfic to the problem at hand, like the
+Parameters that are very specific to the problem at hand, like the
 order of the basis functions, the interval on which the
-basis functions are defined, and the stepsize used
+basis functions are defined, and the step size used
 in the optimizer, are left unfilled.
 \plumedfile
 bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
@@ -256,7 +256,7 @@ OPT_AVERAGED_SGD ...
 \endplumedfile
 
 The optimized bias potential can then be used as a static bias for obtaining
-kinetics. For this you need read in the final coefficents from file
+kinetics. For this you need read in the final coefficients from file
 (e.g. coeffs_final.data in this case) by using the
 COEFFS keyword (also, no optimizer should be defined in the input)
 \plumedfile
@@ -287,28 +287,32 @@ private:
   LinearBasisSetExpansion* bias_expansion_pntr_;
   size_t ncoeffs_;
   Value* valueForce2_;
+  bool all_values_inside;
+  std::vector<double> bf_values;
+  bool bf_values_set;
 public:
   explicit VesLinearExpansion(const ActionOptions&);
   ~VesLinearExpansion();
-  void calculate();
-  void updateTargetDistributions();
-  void restartTargetDistributions();
+  void calculate() override;
+  void update() override;
+  void updateTargetDistributions() override;
+  void restartTargetDistributions() override;
   //
-  void setupBiasFileOutput();
-  void writeBiasToFile();
-  void resetBiasFileOutput();
+  void setupBiasFileOutput() override;
+  void writeBiasToFile() override;
+  void resetBiasFileOutput() override;
   //
-  void setupFesFileOutput();
-  void writeFesToFile();
-  void resetFesFileOutput();
+  void setupFesFileOutput() override;
+  void writeFesToFile() override;
+  void resetFesFileOutput() override;
   //
-  void setupFesProjFileOutput();
-  void writeFesProjToFile();
+  void setupFesProjFileOutput() override;
+  void writeFesProjToFile() override;
   //
-  void writeTargetDistToFile();
-  void writeTargetDistProjToFile();
+  void writeTargetDistToFile() override;
+  void writeTargetDistProjToFile() override;
   //
-  double calculateReweightFactor() const;
+  double calculateReweightFactor() const override;
   //
   static void registerKeywords( Keywords& keys );
 };
@@ -334,7 +338,10 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   nargs_(getNumberOfArguments()),
   basisf_pntrs_(0),
   bias_expansion_pntr_(NULL),
-  valueForce2_(NULL)
+  valueForce2_(NULL),
+  all_values_inside(true),
+  bf_values(0),
+  bf_values_set(false)
 {
   std::vector<std::string> basisf_labels;
   parseMultipleValues("BASIS_FUNCTIONS",basisf_labels,nargs_);
@@ -367,6 +374,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //
+  bf_values.assign(ncoeffs_,0.0);
 
 
 
@@ -410,17 +418,16 @@ void VesLinearExpansion::calculate() {
 
   std::vector<double> cv_values(nargs_);
   std::vector<double> forces(nargs_);
-  std::vector<double> coeffsderivs_values(ncoeffs_);
 
   for(unsigned int k=0; k<nargs_; k++) {
     cv_values[k]=getArgument(k);
   }
 
-  bool all_inside = true;
-  double bias = bias_expansion_pntr_->getBiasAndForces(cv_values,all_inside,forces,coeffsderivs_values);
+  all_values_inside = true;
+  double bias = bias_expansion_pntr_->getBiasAndForces(cv_values,all_values_inside,forces,bf_values);
   if(biasCutoffActive()) {
-    applyBiasCutoff(bias,forces,coeffsderivs_values);
-    coeffsderivs_values[0]=1.0;
+    applyBiasCutoff(bias,forces,bf_values);
+    bf_values[0]=1.0;
   }
   double totalForce2 = 0.0;
   for(unsigned int k=0; k<nargs_; k++) {
@@ -430,10 +437,25 @@ void VesLinearExpansion::calculate() {
 
   setBias(bias);
   valueForce2_->set(totalForce2);
-  if(all_inside) {
-    addToSampledAverages(coeffsderivs_values);
-  }
+
+  bf_values_set = true;
 }
+
+
+void VesLinearExpansion::update() {
+  if(!bf_values_set) {
+    warning("VesLinearExpansion::update() is being called without calling VesLinearExpansion::calculate() first to calculate the basis function values. This can lead to incorrect behavior.");
+  }
+  if(all_values_inside && bf_values_set) {
+    addToSampledAverages(bf_values);
+  }
+  std::fill(bf_values.begin(), bf_values.end(), 0.0);
+  bf_values_set = false;
+}
+
+
+
+
 
 
 void VesLinearExpansion::updateTargetDistributions() {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,13 +41,13 @@ protected:
 public:
   explicit DRMSD( const ReferenceConfigurationOptions& ro );
 /// This sets upper and lower bounds on distances to be used in DRMSD
-  void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) );
+  void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) ) override;
 /// Check that similar comparisons are being performed - perhaps this is needed ask Davide? GAT
 //  void check( ReferenceConfiguration* , ReferenceConfiguration* );
-  virtual void read( const PDB& );
+  void read( const PDB& ) override;
   virtual void setup_targets();
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) override;
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const override;
 };
 
 }

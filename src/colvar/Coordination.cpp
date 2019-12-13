@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,7 +41,7 @@ and is defined as
 \f]
 where \f$s_{ij}\f$ is 1 if the contact between atoms \f$i\f$ and \f$j\f$ is formed,
 zero otherwise.
-In practise, \f$s_{ij}\f$ is replaced with a switching function to make it differentiable.
+In actuality, \f$s_{ij}\f$ is replaced with a switching function so as to ensure that the calculated CV has continuous derivatives.
 The default switching function is:
 \f[
 s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
@@ -61,7 +61,7 @@ so that they actually count as "zero".
 
 \par Examples
 
-The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
+The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbor list is used to make this calculation faster, this neighbor list is updated every 100 steps.
 \plumedfile
 COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
 \endplumedfile
@@ -84,7 +84,7 @@ c1: COORDINATION GROUPA=group GROUPB=group R_0=0.3
 # Here's coordination within a single group:
 x: COORDINATION GROUPA=group R_0=0.3
 # This is just multiplying times 2 the variable x:
-c2: COMBINE ARG=x COEFFICIENTS=2
+c2: COMBINE ARG=x COEFFICIENTS=2 PERIODIC=NO
 
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
 # since it runs on half of the pairs.
@@ -103,7 +103,7 @@ public:
   explicit Coordination(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
-  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
+  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
 PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
@@ -114,7 +114,7 @@ void Coordination::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,24 +54,32 @@ To learn more about how the path is adapted we strongly recommend reading this p
 
 \par Examples
 
-The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of
+The input below provides an example that shows how the adaptive path works. The path is updated every 50 steps of
 MD based on the data accumulated during the preceding 50 time steps.
 
 \plumedfile
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=5,15 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
+pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=2,5 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 \endplumedfile
 
 In the case above the distance between frames is calculated based on the \f$x\f$ and \f$y\f$ components of the vector connecting
 atoms 1 and 2.  As such an extract from the input reference path (mypath.pdb) would look as follows:
 
-\verbatim
+\auxfile{mypath.pdb}
 REMARK ARG=d1.x,d1.y d1.x=1.12 d1.y=-.60
 END
 REMARK ARG=d1.x,d1.y d1.x=.99 d1.y=-.45
 END
-\endverbatim
+REMARK ARG=d1.x,d1.y d1.x=.86 d1.y=-.30
+END
+REMARK ARG=d1.x,d1.y d1.x=.73 d1.y=-.15
+END
+REMARK ARG=d1.x,d1.y d1.x=.60 d1.y=0
+END
+REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
+END
+\endauxfile
 
 Notice that one can also use RMSD frames in place of arguments like those above.
 
@@ -95,11 +103,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double getLambda() { return 0.0; }
-  double transformHD( const double& dist, double& df ) const ;
-  void update();
+  void calculate() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  double getLambda() override { return 0.0; }
+  double transformHD( const double& dist, double& df ) const override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
@@ -230,7 +238,8 @@ void AdaptivePath::update() {
     myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
   }
   if( (getStep()>0) && (getStep()%wstride==0) ) {
-    pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
+    pathfile<<"# PATH AT STEP "<<getStep();
+    pathfile.printf(" TIME %f \n",getTime());
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
     std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
     if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");

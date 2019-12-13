@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,8 +43,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit BondOrientation( const ActionOptions& ao );
-  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTIONS")
@@ -59,14 +59,14 @@ void BondOrientation::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
   keys.add("compulsory","NN","12","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.use("VMEAN"); keys.use("VSUM");

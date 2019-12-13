@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,8 +42,8 @@ private:
   LandmarkSelectionBase* mylandmarks;
 public:
   static void registerKeywords( Keywords& keys );
-  ReselectLandmarks( const ActionOptions& ao );
-  void selectLandmarks();
+  explicit ReselectLandmarks( const ActionOptions& ao );
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")

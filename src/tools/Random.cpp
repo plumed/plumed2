@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,6 +51,7 @@ Random::Random(const std::string & name):
 }
 
 void Random::setSeed(int idum_) {
+  if(idum_>0) idum_=-idum_;
   idum=idum_;
   incPrec=false;
 }

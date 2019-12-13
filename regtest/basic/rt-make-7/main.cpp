@@ -1,10 +1,38 @@
 #include "plumed/wrapper/Plumed.h"
+#include "plumed/tools/Communicator.h"
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 using namespace PLMD;
 
+// short test to see if MPI surrogate function do what they should
+void small_test_mpi() {
+  Communicator comm;
+  Vector x0(1,2,3),x=x0;
+  Vector y0(4,5,6),y=y0;
+  
+  plumed_assert(x[0]==x0[0] && x[1]==x0[1] && x[2]==x0[2]);
+  plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
+  comm.Sum(x);
+  plumed_assert(x[0]==x0[0] && x[1]==x0[1] && x[2]==x0[2]);
+  plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
+  comm.Allgather(x,y);
+  plumed_assert(x[0]==x0[0] && x[1]==x0[1] && x[2]==x0[2]);
+  plumed_assert(y[0]==x0[0] && y[1]==x0[1] && y[2]==x0[2]);
+  std::vector<int> count(1,3);
+  std::vector<int> displ(1,0);
+  x=x0;
+  y=y0;
+  comm.Allgatherv(y,x,count.data(),displ.data());
+  plumed_assert(x[0]==y0[0] && x[1]==y0[1] && x[2]==y0[2]);
+  plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
+}
+
 int main(){
+
+  small_test_mpi();
+
   Plumed* plumed=new Plumed;
 
   int natoms=10;
@@ -40,7 +68,7 @@ int main(){
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;
-    double bias;
+    double bias=0;
     plumed->cmd("getBias",&bias);
     ofs<<bias<<"\n";
 // first compute using regular positions:

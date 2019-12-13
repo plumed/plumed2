@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -57,7 +57,7 @@ PRINT ARG=f1.* FILE=colvar
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
-(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+(i.e. the distance between two atoms transformed with the SWITCH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
 \plumedfile
@@ -86,17 +86,16 @@ WEIGHT is the 1/(number of contacts) giving equal weight to each contact.
 When using native contact Q switch function, please cite \cite best2013
 
 \plumedfile
-# Full example available in regtest/basic/rt72/
+# The full (much-longer) example available in regtest/basic/rt72/
 
 CONTACTMAP ...
 ATOMS1=1,67 SWITCH1={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4059} WEIGHT1=0.003597
 ATOMS2=1,68 SWITCH2={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4039} WEIGHT2=0.003597
 ATOMS3=1,69 SWITCH3={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3215} WEIGHT3=0.003597
-[snip]
-ATOMS275=183,213 SWITCH275={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.355} WEIGHT275=0.003597
-ATOMS276=183,234 SWITCH276={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.428} WEIGHT276=0.003597
-ATOMS277=183,250 SWITCH277={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3832} WEIGHT277=0.003597
-ATOMS278=197,220 SWITCH278={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3827} WEIGHT278=0.003597
+ATOMS4=5,61 SWITCH4={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.4277} WEIGHT4=0.003597
+ATOMS5=5,67 SWITCH5={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3851} WEIGHT5=0.003597
+ATOMS6=5,68 SWITCH6={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3811} WEIGHT6=0.003597
+ATOMS7=5,69 SWITCH7={Q R_0=0.01 BETA=50.0 LAMBDA=1.5 REF=0.3133} WEIGHT7=0.003597
 LABEL=cmap
 SUM
 ... CONTACTMAP
@@ -118,8 +117,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
 // active methods:
-  virtual void calculate();
-  void checkFieldsAllowed() {}
+  void calculate() override;
+  void checkFieldsAllowed() override {}
 };
 
 PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")
@@ -142,7 +141,7 @@ void ContactMap::registerKeywords( Keywords& keys ) {
            "weight value for each contact.");
   keys.reset_style("SWITCH","compulsory");
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
-  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
+  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contact map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
@@ -267,8 +266,8 @@ void ContactMap::calculate() {
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     // when using components the parallelisation do not work
     stride=1;

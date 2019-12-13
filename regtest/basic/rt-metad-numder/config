@@ -1,0 +1,4 @@
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz --debug-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/trajectory.xyz"

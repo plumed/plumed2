@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,8 +58,8 @@ public:
   explicit Debug(const ActionOptions&ao);
 /// Register all the relevant keywords for the action
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply();
+  void calculate() override {}
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(Debug,"DEBUG")
@@ -70,7 +70,7 @@ void Debug::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
   keys.addFlag("logActivity",false,"write in the log which actions are inactive and which are inactive");
   keys.addFlag("logRequestedAtoms",false,"write in the log which atoms have been requested at a given time");
-  keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirity of the simulation");
+  keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirety of the simulation");
   keys.addFlag("DETAILED_TIMERS",false,"switch on detailed timers");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
 }
@@ -115,7 +115,7 @@ void Debug::apply() {
       if(p->isActive()) a++;
     };
     if(a>0) {
-      ofile.printf("activity at step %i: ",getStep());
+      ofile<<"activity at step "<<getStep()<<": ";
       for(const auto & p : actionSet) {
         if(dynamic_cast<Debug*>(p.get()))continue;
         if(p->isActive()) ofile.printf("+");
@@ -125,7 +125,7 @@ void Debug::apply() {
     };
   };
   if(logRequestedAtoms) {
-    ofile.printf("requested atoms at step %i: ",getStep());
+    ofile<<"requested atoms at step "<<getStep()<<": ";
     int* l;
     int n;
     plumed.cmd("createFullList",&n);

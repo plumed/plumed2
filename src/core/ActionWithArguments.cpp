@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,8 +37,8 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
   keys.reserve("numbered","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
                "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
                "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
-               "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
-               "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three componets "
+               "scalars calculated by all the proceeding actions in the input file are taken.  Some actions have multi-component outputs and "
+               "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three components "
                "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
                "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
                "Scalar values can also be "
@@ -104,19 +104,19 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             strcpy(&str[0],ss[k].c_str());
             const char *ppstr=&str[0];
             if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
-              log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
+              //log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
               do {
                 if (match.rm_so != -1) {	/* The regex is matching part of a string */
                   size_t matchlen = match.rm_eo - match.rm_so;
                   std::vector<char> submatch(matchlen+1);
                   strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
                   submatch[matchlen]='\0';
-                  log.printf("  subpattern %s\n", submatch.data());
+                  //log.printf("  subpattern %s\n", submatch.data());
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
                     arg.push_back(all[j]->copyOutput(putativeVal));
-                    log.printf("  Action %s added! \n",putativeVal.c_str());
+                    //log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
                 };
                 ppstr += match.rm_eo;	/* Restart from last match */
@@ -146,8 +146,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           // Take all the values from an action with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + a + str);
           }
           if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
@@ -166,8 +166,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           // Take values with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + a +str);
           }
           if( !(action->exists(c[i])) ) {
@@ -188,8 +188,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + c[i] + str );
           }
           if( !(action->exists(c[i])) ) {

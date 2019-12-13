@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ This Colvar calculates the property maps according to the work of Spiwok \cite S
 
 
 Basically it calculates
-\f{eqnarray}
+\f{eqnarray*}{
 X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 Y=\frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 \cdots\\
@@ -43,12 +43,12 @@ zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 \f}
 
 where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and
- \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+ \f$D_i(x)\f$  is the mean squared displacement after optimal alignment calculated on the pdb frames you input (see Kearsley).
 
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding molecules using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -60,30 +60,28 @@ periodic image.
 \par Examples
 
 \plumedfile
-p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
+p3: PROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
 PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
-timesteps and consider only the closest 8 member to the actual md snapshots.
+steps and consider only the closest 8 member to the actual md snapshots.
 
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
 e.g.
 
-\verbatim
+\auxfile{allv.pdb}
 REMARK X=1 Y=2
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-.......
 END
 REMARK X=2 Y=3
 ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
 ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-....
 END
-\endverbatim
+\endauxfile
 
 \note
 The implementation of this collective variable and of \ref PATHMSD

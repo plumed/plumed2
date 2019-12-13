@@ -112,7 +112,7 @@ class TD_ExponentiallyModifiedGaussian: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_ExponentiallyModifiedGaussian(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
@@ -148,7 +148,7 @@ TD_ExponentiallyModifiedGaussian::TD_ExponentiallyModifiedGaussian(const ActionO
     std::vector<double> tmp_sigma;
     if(!parseNumberedVector("SIGMA",i,tmp_sigma) ) {break;}
     for(unsigned int k=0; k<tmp_sigma.size(); k++) {
-      if(tmp_sigma[k]<=0.0) {plumed_merror(getName()+": the values given in SIGMA should be postive");}
+      if(tmp_sigma[k]<=0.0) {plumed_merror(getName()+": the values given in SIGMA should be positive");}
     }
     sigmas_.push_back(tmp_sigma);
   }
@@ -156,7 +156,7 @@ TD_ExponentiallyModifiedGaussian::TD_ExponentiallyModifiedGaussian(const ActionO
     std::vector<double> tmp_lambda;
     if(!parseNumberedVector("LAMBDA",i,tmp_lambda) ) {break;}
     for(unsigned int k=0; k<tmp_lambda.size(); k++) {
-      if(tmp_lambda[k]<=0.0) {plumed_merror(getName()+": the values given in LAMBDA should be postive");}
+      if(tmp_lambda[k]<=0.0) {plumed_merror(getName()+": the values given in LAMBDA should be positive");}
     }
     lambdas_.push_back(tmp_lambda);
   }

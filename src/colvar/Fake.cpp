@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,8 +34,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR FAKE
 /*
-This is a fake colvar container used by cltools or various other actions
-and just support input and period definition
+This is a fake colvar container used by cltools or various other actions that supports input and period definitions
 
 \par Examples
 
@@ -52,7 +51,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ColvarFake(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(ColvarFake,"FAKE")
@@ -63,6 +62,7 @@ void ColvarFake::registerKeywords( Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO,NO (one for the lower and the other for the upper boundary). For multicomponents then it is PERIODIC=mincomp1,maxcomp1,mincomp2,maxcomp2  etc ");
   keys.use("PERIODIC");
   keys.add("optional","COMPONENTS","additional components that this variable is supposed to have. Periodicity is ruled by PERIODIC keyword ");
+  useCustomisableComponents(keys);
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):

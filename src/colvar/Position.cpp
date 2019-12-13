@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,6 +61,17 @@ p: POSITION ATOM=3
 PRINT ARG=p.x,p.y,p.z
 \endplumedfile
 
+The reference position is specified in a pdb file like the one shown below
+
+\auxfile{ref.pdb}
+ATOM      3  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+END
+\endauxfile
+
 */
 //+ENDPLUMEDOC
 
@@ -72,7 +83,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(Position,"POSITION")

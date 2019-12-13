@@ -33,7 +33,7 @@
 
 namespace PLMD {
 
-class Grid;
+class GridBase;
 
 namespace ves {
 
@@ -43,7 +43,7 @@ public:
   static void convertDbl2Str(const double value,std::string& str, unsigned int precision);
   static void convertDbl2Str(const double value,std::string& str);
   // copy grid values
-  static void copyGridValues(Grid* grid_pntr_orig, Grid* grid_pntr_copy);
+  static void copyGridValues(GridBase* grid_pntr_orig, GridBase* grid_pntr_copy);
   static unsigned int getGridFileInfo(const std::string&, std::string&, std::vector<std::string>&, std::vector<std::string>&, std::vector<std::string>&, std::vector<bool>&, std::vector<unsigned int>&, bool&);
   //
   template<typename T> static std::vector<std::string> getLabelsOfAvailableActions(const ActionSet&);

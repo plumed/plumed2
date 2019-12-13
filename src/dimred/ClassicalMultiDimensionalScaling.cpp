@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 //+PLUMEDOC DIMRED CLASSICAL_MDS
 /*
 Create a low-dimensional projection of a trajectory using the classical multidimensional
-scaling algorithm.
+ scaling algorithm.
 
 Multidimensional scaling (MDS) is similar to what is done when you make a map. You start with distances
 between London, Belfast, Paris and Dublin and then you try to arrange points on a piece of paper so that the (suitably scaled)
@@ -42,8 +42,8 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 \f]
 
 where \f$D_{ij}\f$ is the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$d_{ij}\f$ is the distance between the projection
-of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  A tutorial on this approach can be used to analyse simulations
-can be found in the tutorial \ref belfast-3 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
+of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  A tutorial on this approach can be used to analyze simulations
+can be found in the tutorial \ref lugano-5 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 \par Examples
 
@@ -51,19 +51,16 @@ The following command instructs plumed to construct a classical multidimensional
 The RMSD distance between atoms 1-256 have moved is used to measure the distances in the high-dimensional space.
 
 \plumedfile
-CLASSICAL_MDS ...
-  ATOMS=1-256
-  METRIC=OPTIMAL-FAST
-  USE_ALL_DATA
-  NLOW_DIM=2
-  OUTPUT_FILE=rmsd-embed
-... CLASSICAL_MDS
+data: COLLECT_FRAMES ATOMS=1-256
+mat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
+mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=mat NLOW_DIM=2
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=mds FILE=rmsd-embed
 \endplumedfile
 
 The following section is for people who are interested in how this method works in detail. A solid understanding of this material is
 not necessary to use MDS.
 
-\section dim-sec Method of optimisation
+\section dim-sec Method of optimization
 
 The stress function can be minimized using a standard optimization algorithm such as conjugate gradients or steepest descent.
 However, it is more common to do this minimization using a technique known as classical scaling.  Classical scaling works by
@@ -152,8 +149,8 @@ Much as in PCA there are generally a small number of large eigenvalues in \f$\La
 We can safely use only the large eigenvalues and their corresponding eigenvectors to express the relationship between
 the coordinates \f$\mathbf{X}\f$.  This gives us our set of low-dimensional projections.
 
-This derivation makes a number of assumptions about the how the low dimensional points should best be arranged to minimise
-the stress. If you use an interative optimization algorithm such as SMACOF you may thus be able to find a better
+This derivation makes a number of assumptions about the how the low dimensional points should best be arranged to minimize
+the stress. If you use an interactive optimization algorithm such as SMACOF you may thus be able to find a better
 (lower-stress) projection of the points.  For more details on the assumptions made
 see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website.</a>
 */
@@ -166,7 +163,7 @@ class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")

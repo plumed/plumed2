@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,14 +60,14 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   ActionWithVessel::registerKeywords( keys );
   keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
-                                 "distance of a idealised secondary structure element. This quantity can then be referenced "
+                                 "distance of a idealized secondary structure element. This quantity can then be referenced "
                                  "elsewhere in the input by using the label of the action. However, this Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
-                                 "calculated can be referened using the label of the action followed by a dot and then the name "
+                                 "calculated can be referenced using the label of the action followed by a dot and then the name "
                                  "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "
                                  "components will be labelled <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 and so on unless you "
-                                 "exploit the fact that these labels are customizable. In particular, by using the LABEL keyword in the "
-                                 "description of you LESS_THAN function you can set name of the component that you are calculating");
+                                 "exploit the fact that these labels can be given custom labels by using the LABEL keyword in the "
+                                 "description of you LESS_THAN function that you are computing");
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):

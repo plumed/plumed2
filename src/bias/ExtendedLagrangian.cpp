@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ namespace bias {
 Add extended Lagrangian.
 
 This action can be used to create fictitious collective variables coupled to the real ones.
-Given \f$x_i\f$ the i-th argument of this bias potential, potential
+Given \f$x_i\f$ the \f$i\f$th argument of this bias potential, potential
 and kinetic contributions are added to the energy of the system as
 \f[
   V=\sum_i \frac{k_i}{2} (x_i-s_i)^2 + \sum_i \frac{\dot{s}_i^2}{2m_i}
@@ -127,8 +127,8 @@ class ExtendedLagrangian : public Bias {
   Random rand;
 public:
   explicit ExtendedLagrangian(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -142,10 +142,10 @@ void ExtendedLagrangian::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FRICTION","0.0","add a friction to the variable");
   keys.add("optional","TEMP","the system temperature - needed when FRICTION is present. If not provided will be taken from MD code (if available)");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("_fict","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_fict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is possible to add forces on these variable.");
-  keys.addOutputComponent("_vfict","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_vfict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is NOT possible to add forces on these variable.");
 }

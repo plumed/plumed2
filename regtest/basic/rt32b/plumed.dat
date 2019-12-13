@@ -1,0 +1,13 @@
+# explicitly enable python interpreter:
+MOLINFO STRUCTURE=helix.pdb
+TORSION ATOMS=@phi-4 LABEL=t1 
+TORSION ATOMS=@psi-6 LABEL=t2
+PRINT ARG=t1,t2 FILE=colvar FMT=%8.4f
+
+DUMPATOMS ATOMS=@mda:backbone FILE=test.gro
+DUMPATOMS ATOMS={@mda:{resnum 1 or resid 3:5}} FILE=test1.gro
+DUMPATOMS ATOMS={@mda:{resid 3:5} @mda:{resnum 1}} FILE=test2.gro
+DUMPATOMS ATOMS={@mdt:{protein and (backbone or resname ALA)}} FILE=test3.gro
+DUMPATOMS ATOMS={@mdt:{mass 5.5 to 20}} FILE=test4.gro
+DUMPATOMS ATOMS={@mda:{resid 3:5} @mda:{resnum 1} 1-10} FILE=test5.gro
+

@@ -53,13 +53,12 @@ in some basis set:
 \f[
 V(\mathbf{s}) = \sum\limits_{i} \alpha_i \, f_i(\mathbf{s}),
 \f]
-where \f$ f_i(\mathbf{s}) \f$ are the basis functions and the \f$
-\boldsymbol\alpha \f$ are the coefficients in the expansion.
-We then need to find the \f$ \boldsymbol\alpha \f$ that minimize \f$ \Omega
+where \f$ f_i(\mathbf{s}) \f$ are the basis functions and the \f$\boldsymbol\alpha \f$ are the coefficients in the expansion.
+We then need to find the \f$\boldsymbol\alpha \f$ that minimize \f$ \Omega
 [V] \f$. In principle one could use any optimization algorithm. In practice
 the algorithm that has become the default choice for VES is the so-called
 averaged stochastic gradient descent algorithm \cite Bach-NIPS-2013.
-In this algorithm the \f$ \boldsymbol\alpha \f$ are evolved iteratively
+In this algorithm the \f$\boldsymbol\alpha \f$ are evolved iteratively
 according to:
 \f[
 \boldsymbol\alpha^{(n+1)} = \boldsymbol\alpha^{(n)}-\mu
@@ -69,10 +68,9 @@ H(\bar{\boldsymbol\alpha}^{(n)})[\boldsymbol\alpha^{(n)}-\bar{\boldsymbol\alpha}
 \right]
 \f]
 where \f$\mu\f$ is the step size,
-\f$ \bar{\boldsymbol\alpha}^{(n)} \f$ is the running average of \f$
-\boldsymbol\alpha^{(n)} \f$ at iteration \f$ n \f$, and
-\f$ \nabla\Omega(\bar{\boldsymbol\alpha}^{(n)}) \f$ and
-\f$ H(\bar{\boldsymbol\alpha}^{(n)}) \f$
+\f$\bar{\boldsymbol\alpha}^{(n)} \f$ is the running average of \f$\boldsymbol\alpha^{(n)} \f$ at iteration \f$ n \f$, and
+\f$\nabla\Omega(\bar{\boldsymbol\alpha}^{(n)}) \f$ and
+\f$H(\bar{\boldsymbol\alpha}^{(n)}) \f$
  are the gradient and Hessian of \f$ \Omega[V] \f$ evaluated at the running
 average at iteration \f$ n \f$, respectively.
 The behavior of the coefficients will become clear in the examples below.
@@ -175,8 +173,7 @@ Now that we have set the scene, we can run our simulation using the run.sh
 script in the Example1 folder. The simulation will produce several files:
 
 - COLVAR: Just as in the metadynamics example.
-- coeffs.data : Values of the coefficients \f$ \boldsymbol\alpha \f$ and \f$
-  \bar{\boldsymbol\alpha} \f$  .
+- coeffs.data : Values of the coefficients \f$\boldsymbol\alpha \f$ and \f$\bar{\boldsymbol\alpha} \f$  .
 - bias.<bias-name>.iter-<iteration-number> : Bias potential as a function of
   \f$ \mathbf{s} \f$ at iteration <iteration-number>.
 - fes.<bias-name>.iter-<iteration-number> : FES at iteration <iteration-number>.
@@ -184,8 +181,7 @@ script in the Example1 folder. The simulation will produce several files:
 
 You can first observe how the system moves in
 the CV space in a fashion similar to metadynamics.
-Then we can see the evolution of \f$ \boldsymbol\alpha \f$ and \f$
- \bar{\boldsymbol\alpha} \f$ . The first lines of the file coeffs.data are:
+Then we can see the evolution of \f$\boldsymbol\alpha \f$ and \f$\bar{\boldsymbol\alpha} \f$ . The first lines of the file coeffs.data are:
 
 \verbatim
 #! FIELDS idx_d1 b1.coeffs b1.aux_coeffs index
@@ -233,8 +229,8 @@ Then we can see the evolution of \f$ \boldsymbol\alpha \f$ and \f$
 \endverbatim
 
 The first column are the coefficient indices, the second are the
-\f$ \bar{\boldsymbol\alpha} \f$, and the third are the
-\f$ \boldsymbol\alpha \f$. Each block in the file corresponds to a different
+\f$\bar{\boldsymbol\alpha} \f$, and the third are the
+\f$\boldsymbol\alpha \f$. Each block in the file corresponds to a different
 iteration, in this case iteration 0 and 10. We can plot the evolution of the
 coefficients using the gnuplot script plotCoeffs.gpi . The output should be similar to
 the next figure.
@@ -242,11 +238,11 @@ the next figure.
 \anchor ves-school-2017-ves1-coeffs1
 \image html ves-lugano2017-ves1_coeffs1.png "Evolution of the instantaneous and averaged coefficients with simulation time"
 
-The \f$ \boldsymbol\alpha \f$ change fast and oscillate around some mean
-value. The \f$ \bar{\boldsymbol\alpha} \f$ evolve smoothly until they stabilize
+The \f$\boldsymbol\alpha \f$ change fast and oscillate around some mean
+value. The \f$\bar{\boldsymbol\alpha} \f$ evolve smoothly until they stabilize
 around some equilibrium value. It is important to remember that the bias is a
-function of \f$ \bar{\boldsymbol\alpha} \f$ and since these evolve smoothly, so
-will the bias. Once that the \f$ \bar{\boldsymbol\alpha} \f$ have stabilized, the
+function of \f$\bar{\boldsymbol\alpha} \f$ and since these evolve smoothly, so
+will the bias. Once that the \f$\bar{\boldsymbol\alpha} \f$ have stabilized, the
 simulation can be considered converged.
 
 It is also interesting to observe how the estimation of the FES evolves in time. For this we
@@ -426,7 +422,7 @@ cp ../coeffs.data .
 \endverbatim
 
 In order to restart, the RESTART keyword must be added at the beginning of
-Plumed's input named plumed.restart.dat:
+the input file for PLUMED named plumed.restart.dat:
 \verbatim
 RESTART
 

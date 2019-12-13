@@ -164,6 +164,7 @@ void drrtool::extractdrr(const vector<string> &filename) {
     if (verbosity)
       std::cout << "Writing CZAR estimator files..." << '\n';
     czarestimator.writeAll(outputname);
+    czarestimator.writeZCount(outputname);
   }
 }
 
@@ -206,6 +207,7 @@ void drrtool::mergewindows(const vector<string> &filename) {
   string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""), [](string a, string b) {return a + b + "+";});
   mergename = mergename.substr(0, mergename.size() - 1);
   cmerged.writeAll(mergename);
+  cmerged.writeZCount(mergename);
   amerged.writeAll(mergename);
 }
 

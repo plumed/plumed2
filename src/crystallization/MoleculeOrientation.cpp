@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,16 +55,16 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculeOrientation( const ActionOptions& ao );
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const ;
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
-  void normalizeVector( std::vector<double>& vals ) const ;
-  void normalizeVectorDerivatives( MultiValue& myvals ) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const override;
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
+  void normalizeVector( std::vector<double>& vals ) const override;
+  void normalizeVectorDerivatives( MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
 
 void MoleculeOrientation::registerKeywords( Keywords& keys ) {
-  VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
+  VectorMultiColvar::registerKeywords( keys ); keys.use("MEAN"); keys.use("VMEAN");
   keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. The orientation of the molecule is equal to "
            "the vector connecting the first two atoms specified.  If a third atom is specified its position "
            "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "

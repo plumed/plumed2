@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,7 @@
 
 //+PLUMEDOC VOLUMES TETRAHEDRALPORE
 /*
-This quantity can be used to calculate functions of the distribution of collective variables
-for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the
@@ -64,7 +63,7 @@ position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation m
 \f]
 
 where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
-refererence positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and
+reference positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and
 cross product, \f$\mathbf{c}\f$, of the vectors connecting atoms 1 and 2.  A third unit vector, \f$\mathbf{p}\f$ is then found by taking the cross
 product between the cross product calculated during the first step, \f$\mathbf{c}\f$ and the bisector, \f$\mathbf{b}\f$.  From this
 second cross product \f$\mathbf{p}\f$ and the bisector \f$\mathbf{b}\f$ two new vectors are calculated using:
@@ -104,7 +103,7 @@ molecules in the tetrahedral cavity described above.  The average coordination n
 numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
 
 \plumedfile
-d1: COORDINATIONNUMBER SPECIES=20-500
+d1: COORDINATIONNUMBER SPECIES=20-500 R_0=0.1
 CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
 \endplumedfile
 
@@ -128,9 +127,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeTetrapore(const ActionOptions& ao);
   ~VolumeTetrapore();
-  void setupRegions();
-  void update();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  void update() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")

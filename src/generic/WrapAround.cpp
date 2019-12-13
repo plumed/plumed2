@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ it is required during the simulation if collective variables need atoms to be in
 
 Consider that the computational cost grows with the product
 of the size of the two lists (ATOMS and AROUND), so that this action can become very expensive.
-If you are using it to analyse a trajectory this is usually not a big problem. If you use it to
+If you are using it to analyze a trajectory this is usually not a big problem. If you use it to
 analyze a simulation on the fly, e.g. with \ref DUMPATOMS to store a properly wrapped trajectory,
 consider the possibility of using the STRIDE keyword here (with great care).
 \par Examples
@@ -129,8 +129,8 @@ each of size GROUPBY. The first atom of the group will be brought
 close to the AROUND atoms. The following atoms of the group
 will be just brought close to the first atom of the group.
 Assuming that oxygen is the first atom of each water molecules,
-in the following examples all the water oxygens will be brought
-close to the solute, and all the hydrogens will be kept close
+in the following examples all the water oxygen atoms will be brought
+close to the solute, and all the hydrogen atoms will be kept close
 to their related oxygen.
 
 \plumedfile
@@ -158,8 +158,8 @@ class WrapAround:
 public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(WrapAround,"WRAPAROUND")

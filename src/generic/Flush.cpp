@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ This command instructs plumed to flush all the open files with a user specified 
 Notice that all files are flushed anyway every 10000 steps.
 
 This
-is useful for preventing data loss that would otherwise arrise as a consequence of the code
+is useful for preventing data loss that would otherwise arise as a consequence of the code
 storing data for printing in the buffers. Notice that wherever it is written in the
 plumed input file, it will flush all the open files.
 
@@ -67,9 +67,9 @@ public:
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update() {
+  void calculate() override {}
+  void apply() override {}
+  void update() override {
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());

@@ -1,0 +1,4 @@
+include VERSION
+include include/Plumed.h
+include plumed.pyx
+include cplumed.pxd

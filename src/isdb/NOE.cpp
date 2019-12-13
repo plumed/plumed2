@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ namespace isdb {
 //+PLUMEDOC ISDB_COLVAR NOE
 /*
 Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
-or ambiguous NOE.
+ or ambiguous NOE.
 
 Each NOE is defined by two groups containing the same number of atoms, distances are
 calculated in pairs, transformed in 1/r^6, summed and saved as components.
@@ -79,15 +79,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
 
 void NOE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
@@ -98,10 +97,9 @@ void NOE::registerKeywords( Keywords& keys ) {
            "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addOutputComponent("noe","default","the # NOE");
-  keys.addOutputComponent("exp","ADDEXP","the # NOE experimental distance");
+  keys.addOutputComponent("exp","NOEDIST","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
@@ -134,21 +132,18 @@ NOE::NOE(const ActionOptions&ao):
   // Create neighbour lists
   nl.reset( new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()) );
 
-  bool addexp=false;
-  parseFlag("ADDEXP",addexp);
-  if(getDoScore()) addexp=true;
-
+  // Optionally add an experimental value (like with RDCs)
   vector<double> noedist;
-  if(addexp) {
-    noedist.resize( nga.size() );
-    unsigned ntarget=0;
-
-    for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+  noedist.resize( nga.size() );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
+    if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of NOEDIST values");
+  if(ntarget==nga.size()) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the NOEDIST values");
 
   // Ouput details of all contacts
   unsigned index=0;
@@ -169,34 +164,34 @@ NOE::NOE(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponentWithDerivatives("noe_"+num);
-      componentIsNotPeriodic("noe_"+num);
+      addComponentWithDerivatives("noe-"+num);
+      componentIsNotPeriodic("noe-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
         string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(noedist[i]);
       }
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("noe_"+num);
-      componentIsNotPeriodic("noe_"+num);
+      addComponent("noe-"+num);
+      componentIsNotPeriodic("noe-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(noedist[i]);
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(noedist);
     Initialise(nga.size());
@@ -217,7 +212,7 @@ void NOE::calculate()
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
     string num; Tools::convert(i,num);
-    Value* val=getPntrToComponent("noe_"+num);
+    Value* val=getPntrToComponent("noe-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       const unsigned i0=nl->getClosePair(index+j).first;

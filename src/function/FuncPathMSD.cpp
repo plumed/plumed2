@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,23 +41,57 @@ This is the Path Collective Variables implementation
 ( see \cite brand07 ).
 This variable computes the progress along a given set of frames that is provided
 in input ("s" component) and the distance from them ("z" component).
-It is a function of MSD that are obtained by the joint use of MSD variable and SQUARED flag
+It is a function of mean squared displacement that are obtained by the joint use of mean squared displacement variables with the SQUARED flag
 (see below).
 
 \par Examples
 
 Here below is a case where you have defined three frames and you want to
-calculate the progress alng the path and the distance from it in p1
+calculate the progress along the path and the distance from it in p1
 
 \plumedfile
-t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
-t2: RMSD REFERENCE=frame_21.dat TYPE=OPTIMAL SQUARED
-t3: RMSD REFERENCE=frame_42.dat TYPE=OPTIMAL SQUARED
+t1: RMSD REFERENCE=frame_1.pdb TYPE=OPTIMAL SQUARED
+t2: RMSD REFERENCE=frame_21.pdb TYPE=OPTIMAL SQUARED
+t3: RMSD REFERENCE=frame_42.pdb TYPE=OPTIMAL SQUARED
 p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-In this second example is shown how to define a PATH in the \ref CONTACTMAP space:
+For this input you would then define the position of the reference coordinates in three separate pdb files.  The contents of the
+file frame_1.pdb are shown below:
+
+\auxfile{frame_1.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
+END
+\endauxfile
+
+This is then frame.21.pdb:
+
+\auxfile{frame_21.pdb}
+ATOM      1  CL  ALA     1      -3.089   1.850   1.546  1.00  1.00
+ATOM      5  CLP ALA     1      -1.667   1.457   1.629  1.00  1.00
+ATOM      6  OL  ALA     1      -0.974   1.868   2.533  1.00  1.00
+ATOM      7  NL  ALA     1      -1.204   0.683   0.642  1.00  1.00
+ATOM      8  HL  ALA     1      -1.844   0.360  -0.021  1.00  1.00
+END
+\endauxfile
+
+and finally this is frame_42.pdb:
+
+\auxfile{frame_42.pdb}
+ATOM      1  CL  ALA     1      -3.257   1.605   1.105  1.00  1.00
+ATOM      5  CLP ALA     1      -1.941   1.459   0.447  1.00  1.00
+ATOM      6  OL  ALA     1      -1.481   2.369  -0.223  1.00  1.00
+ATOM      7  NL  ALA     1      -1.303   0.291   0.647  1.00  1.00
+ATOM      8  HL  ALA     1      -1.743  -0.379   1.229  1.00  1.00
+END
+\endauxfile
+
+This second example shows how to define a PATH in \ref CONTACTMAP space:
 
 \plumedfile
 CONTACTMAP ...
@@ -94,7 +128,7 @@ p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0
 PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-In this third example is shown how to define a PATH in the \ref PIV space:
+This third example shows how to define a PATH in \ref PIV space:
 
 \plumedfile
 PIV ...
@@ -183,8 +217,8 @@ class FuncPathMSD : public Function {
 public:
   explicit FuncPathMSD(const ActionOptions&);
 // active methods:
-  virtual void calculate();
-  virtual void prepare();
+  void calculate() override;
+  void prepare() override;
   static void registerKeywords(Keywords& keys);
 };
 

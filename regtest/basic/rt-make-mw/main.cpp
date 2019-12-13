@@ -4,7 +4,7 @@
 
 using namespace PLMD;
 
-void go(Plumed& p,int natoms,unsigned iw,unsigned is){
+void go(Plumed p,int natoms,unsigned iw,unsigned is){
   std::vector<double> positions(3*natoms,0.0);
   for(unsigned i=0;i<natoms;i++) positions[i]=i+iw+is;
   std::vector<double> masses(natoms,1.0);
@@ -22,10 +22,6 @@ void go(Plumed& p,int natoms,unsigned iw,unsigned is){
 }
 
 int main(){
-/*
-  This regtest uses a STL containing Plumed objects.
-  This is only possible with a c++11 compiler that implements move semantics.
-*/
   std::vector<Plumed> p;
 
   unsigned nwalkers=3;
