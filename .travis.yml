@@ -170,11 +170,7 @@ install:
 # pandas: needed by mdtraj and by plumed
   - if test "$PLUMED_CXX" ; then
       if test "$TRAVIS_OS_NAME" == "linux" ; then
-        if test "$TRAVIS_DIST" == "bionic" ; then
-            pyenv global 3.7.1 ;
-        else
-            pyenv global 3.6.3;
-        fi ;
+        pyenv global 3.6;
         pip install --user Cython ;
         pip install --user nose ;
         pip install --user numpy ;
