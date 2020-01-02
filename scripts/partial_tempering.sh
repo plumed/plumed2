@@ -40,7 +40,7 @@ plumed partial_tempering \$scale < processed.top > topol\$i.top
 WARNING: It's not very robust and there might be force-field dependent issues!
 A few tests are strongly suggested.
 
-WARNING: This script requires `gawk` to be available on your system.
+WARNING: This script requires gawk to be available on your system.
 
 1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
 grompp -o topol-unscaled.tpr
