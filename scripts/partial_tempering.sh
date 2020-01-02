@@ -40,8 +40,8 @@ plumed partial_tempering \$scale < processed.top > topol\$i.top
 WARNING: It's not very robust and there might be force-field dependent issues!
 A few tests are strongly suggested.
 
-WARNING: This script only works if the `awk` command in your system corresponds to
-GNU awk. `mawk`, that is the default on Ubuntu 19, does not work correctly.
+WARNING: This script only works if the awk command in your system corresponds to
+GNU awk. mawk, that is the default on Ubuntu 19, does not work correctly.
 
 1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
 grompp -o topol-unscaled.tpr
