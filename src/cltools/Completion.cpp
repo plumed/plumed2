@@ -78,6 +78,7 @@ Completion::Completion(const CLToolOptions& co ):
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   static const char completion [] = {
 #include "completion.xxd"
+// cppcheck-suppress syntaxError
     , 0x00
   };
   fprintf(out,"local cmds=\"help -h --help");
