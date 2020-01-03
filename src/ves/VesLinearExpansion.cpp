@@ -394,12 +394,12 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   setTargetDistAverages(bias_expansion_pntr_->TargetDistAverages());
   //
   if(coeffs_read && biasCutoffActive()) {
-    updateTargetDistributions();
+    VesLinearExpansion::updateTargetDistributions();
   }
   //
   if(coeffs_read) {
-    setupBiasFileOutput();
-    writeBiasToFile();
+    VesLinearExpansion::setupBiasFileOutput();
+    VesLinearExpansion::writeBiasToFile();
   }
 
   addComponent("force2"); componentIsNotPeriodic("force2");
