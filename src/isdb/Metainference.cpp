@@ -29,9 +29,8 @@
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include <cmath>
-#include <ctime>
+#include <chrono>
 #include <numeric>
-#include <sys/time.h>
 
 using namespace std;
 
@@ -843,10 +842,9 @@ Metainference::Metainference(const ActionOptions&ao):
 
   // initialize random seed
   unsigned iseed;
-  struct timespec ts;
   if(master) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts)+replica_;
   } else {
     iseed = 0;
   }
@@ -856,8 +854,8 @@ Metainference::Metainference(const ActionOptions&ao):
   random[0].setSeed(-iseed);
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    iseed = static_cast<unsigned>(ts.tv_nsec);
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts);
     if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
     comm.Bcast(iseed,0);
     // this is used for scale and offset sampling and acceptance
@@ -865,8 +863,8 @@ Metainference::Metainference(const ActionOptions&ao):
   }
   // this is used for random chunk of sigmas, and it is different for each replica
   if(master) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts)+replica_;
   } else {
     iseed = 0;
   }
