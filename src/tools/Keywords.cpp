@@ -577,7 +577,7 @@ void Keywords::printKeyword( const std::string& key, Log& log ) const {
 
 std::string Keywords::getTooltip( const std::string& name ) const {
   std::size_t dd=name.find_first_of("0123456789"); std::string kname=name.substr(0,dd);
-  if( !exists(kname) ) plumed_merror("could not find " + name ); 
+  if( !exists(kname) ) return "<b> could not find this keyword </b>"; 
   std::string mystring, docstr = documentation.find(kname)->second;
   if( types.find(kname)->second.isCompulsory() ) {
       mystring += "<b>compulsory keyword ";
@@ -669,6 +669,13 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
+   if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
+
+   bool found=false;
+   for(unsigned i=0; i<cnames.size(); ++i) {
+     if( name==cnames[i] ) found=true;
+   } 
+   if( !found ) plumed_merror("could not find output component named " + name );
    return cdocs.find(name)->second;
 }
 

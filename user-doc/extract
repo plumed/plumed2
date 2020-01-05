@@ -4,8 +4,9 @@ source ../sourceme.sh
 
 # initial cleanup
 rm -f errors
-rm -rf automatic
+rm -rf automatic example-check
 mkdir automatic
+mkdir example-check
 
 
 # Check for files that register actions with no documentation
@@ -333,6 +334,8 @@ echo "</table>" >> automatic/MODULES.list
 # Generate all the documentation from keywords
 for file in automatic/*.tmp
 do
+  # Test the example input files
+  ./test_examples $file
   flag=${file#automatic/}
   flag=${flag/.tmp}
   if grep -q '//+PLUMEDOC INTERNAL' $file 1>/dev/null 2>/dev/null ; then

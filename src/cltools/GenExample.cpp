@@ -78,6 +78,8 @@ void GenExample::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
   keys.add("compulsory","--out","example.html","the file on which to output the example in html");
   keys.add("compulsory","--name","ppp","the name to use for this particular input");
+  keys.add("compulsory","--status","nobadge","whether or not the input file works");
+  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
 }
 
 GenExample::GenExample(const CLToolOptions& co ):
@@ -88,21 +90,46 @@ GenExample::GenExample(const CLToolOptions& co ):
 
 int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
 
+// set up for multi replica driver:
+  int multi=0; parse("--multi",multi);
+  Communicator intracomm; Communicator intercomm;
+  if(multi) {
+    int ntot=pc.Get_size(); int nintra=ntot/multi;
+    if(multi*nintra!=ntot) error("invalid number of processes for multi environment");
+    pc.Split(pc.Get_rank()/nintra,pc.Get_rank(),intracomm);
+    pc.Split(pc.Get_rank()%nintra,pc.Get_rank(),intercomm);
+  } else {
+    intracomm.Set_comm(pc.Get_comm());
+  }  
+
   std::string version="master"; if( config::getVersion()!="2.6") version=config::getVersion();
-  PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; 
-  myplumed.cmd("setRealPrecision",&rr); myplumed.cmd("setNatoms",&natoms); myplumed.cmd("init");
-  std::string fname, egname, outfile; parse("--plumed",fname); parse("--name",egname); parse("--out",outfile);
+  PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
+  myplumed.cmd("setRealPrecision",&rr); 
+  if(Communicator::initialized()) {
+    if(multi) {
+      if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
+    }
+    myplumed.cmd("setMPIComm",&intracomm.Get_comm());
+  }
+  myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
+  std::string fname, egname, outfile, status; parse("--plumed",fname); 
+  parse("--name",egname); parse("--out",outfile); parse("--status",status);
   IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile);
   ofile<<"<div style=\"width: 90%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
   ofile<<"<div style=\"width: 5%; float:left\">";
   ofile<<"<img src=\"https://img.shields.io/badge/"<<version<<"-";
-  ofile<<"passing-green";
+  if(status=="working") ofile<<"passing-green";
+  else if(status=="broken") ofile<<"failed-red";
+  else if(status=="loads") ofile<<"with-LOAD-yellow";
+  else if(status=="incomplete") ofile<<"incomplete-yellow";
+  else error("unknown status");
   ofile<<".svg\" alt=\"tested on "<<version<<"\" />";
   ofile<<"</div> <pre style=\"width: 97%;\" class=\"fragment\">\n"; 
-  std::vector<std::string> labellist, words; 
+  std::vector<std::string> labellist, words; bool endplumed=false; 
   while( Tools::getParsedLine(ifile, words, false) ) {
      if( words.empty() ) continue; 
-     if( words[0]=="#" ) {
+     if( words[0].find("#")!=std::string::npos || endplumed ) {
          ofile<<"<span style=\"color:blue\">"<<words[0];
          for(unsigned i=1; i<words.size(); ++i) ofile<<" "<<words[i];
          ofile<<"</span>"<<std::endl;;
@@ -116,6 +143,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          }
          // Print the keyword in use in the action
          std::string action = interpreted[0]; myinputline += interpreted[0] + " ";
+         if( action=="ENDPLUMED" ) endplumed=true;
          Keywords keys; actionRegister().getKeywords( interpreted[0], keys );
          // Handle conversion of action names to links
          std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c){ return std::tolower(c); });
@@ -139,15 +167,16 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
                 else ofile<<"\n   "; 
                 continue; 
              } 
-             if( interpreted[i]=="#" ) { trailingcomment=true; ofile<<"<span style=\"color:blue\">"; }
+             if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; ofile<<"<span style=\"color:blue\">"; }
 
              if( !trailingcomment ) {
                  std::size_t eq=interpreted[i].find_first_of("=");
                  if( eq!=std::string::npos ) {
                     std::string keyword=interpreted[i].substr(0,eq), rest=interpreted[i].substr(eq+1); 
                     ofile<<"<div class=\"tooltip\">"<<keyword<<"<div class=\"right\">"<<keys.getTooltip(keyword)<<"<i></i></div></div>";
-                    if( Tools::getWords(rest).size()>1 ) {
-                        ofile<<"={"<<rest<<"}"; myinputline += keyword + "=" + "{" + rest + "} ";
+                    if( rest.find_first_of("{")!=std::string::npos ) {
+                        std::size_t pos = 0;  while ((pos = rest.find("@newline",pos)) != std::string::npos) { rest.replace(pos, 8, "\n"); pos++; }
+                        ofile<<"="<<rest<<" "; myinputline += keyword + "=" + rest + " ";
                     } else {
                         std::vector<std::string> args=Tools::getWords(rest,"\t\n ,"); ofile<<"=";
                         for(unsigned i=0;i<args.size();++i) {
@@ -171,7 +200,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          }
          if( trailingcomment ) ofile<<"</span>";
          // This builds the hidden content that tells the user about what is calculated
-         if( lab.length()>0 ) {
+         if( status=="working" ) {
             ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\">";
             ofile<<"The "<<interpreted[0]<<" action with label <b>"<<lab<<"</b>";
             myplumed.readInputLine( myinputline );
@@ -184,8 +213,17 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
                    ofile<<"<tr><td width=\"5%%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>\n";
                    unsigned ncomp = av->getNumberOfComponents();
                    for(unsigned k=0; k<ncomp; ++k ) {
-                       std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of(".");
-                       ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>"<<keys.getOutputComponentDescription(myname.substr(dot+1))<<"</td></tr>";
+                       std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of("."); 
+                       std::string tname=myname.substr(dot+1); std::size_t und=tname.find_first_of("_"); std::size_t hyph=tname.find_first_of("-");
+                       if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
+                       ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>";
+                       if( und!=std::string::npos ) {
+                           ofile<<keys.getOutputComponentDescription(tname.substr(und))<<" This particular component measures this quantity for the input CV named ";
+                           ofile<<tname.substr(0,und);
+                       } else if( hyph!=std::string::npos ) {
+                           ofile<<keys.getOutputComponentDescription(tname.substr(0,hyph))<<"  This is the "<<tname.substr(hyph+1)<<"th of these quantities"; 
+                       } else ofile<<keys.getOutputComponentDescription(tname);
+                       ofile<<"</td></tr>";
                    } 
                    ofile<<"</table>\n";
                 }
@@ -195,6 +233,8 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
                 else if( interpreted[0]=="GROUP" ) ofile<<" defines a group of atoms so that they can be referred to later in the input";
             }
             ofile<<"</span>"<<std::endl; 
+         } else if( status!="working" ) {
+            ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\"> You cannot view the components that are calculated by each action for this input file. Sorry </span>"<<std::endl;
          } else ofile<<std::endl;
      }
   }

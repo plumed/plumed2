@@ -119,7 +119,7 @@ bool Tools::convert(const string & str,string & t) {
   return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis) {
+vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
   plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
@@ -137,7 +137,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   for(unsigned i=0; i<line.length(); i++) {
     bool found=false;
     bool onParenthesis=false;
-    if(line[i]==openpar || line[i]==closepar) onParenthesis=true;
+    if( (line[i]==openpar || line[i]==closepar) && delete_parenthesis ) onParenthesis=true;
     if(line[i]==closepar) {
       parenthesisLevel--;
       plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
@@ -172,7 +172,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments
     if(trimcomments) trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line,NULL,&parlevel);
+    vector<string> w=getWords(line,NULL,&parlevel,"{",trimcomments);
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
@@ -192,7 +192,8 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments
     }
     mergenext=(parlevel>0);
     if(!inside)break;
-    if(!trimcomments) words.push_back("@newline");
+    if(!trimcomments && parlevel==0) words.push_back("@newline");
+    else if(!trimcomments) words[words.size()-1] += " @newline";
   }
   plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;

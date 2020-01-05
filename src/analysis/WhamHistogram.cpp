@@ -46,6 +46,7 @@ the configurations visited and their weights.  This histogram is then converted 
 to a file called fes.dat
 
 \plumedfile
+#SETTINGS NREPLICAS=8
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 rp: RESTRAINT ARG=phi KAPPA=50.0 ...
@@ -69,7 +70,7 @@ DUMPGRID GRID=fes FILE=fes.dat
 The script above must be run with multiple replicas using the following command:
 
 \verbatim
-mpirun -np 6 plumed driver --mf_xtc alltraj.xtc --multi 6
+mpirun -np 8 plumed driver --mf_xtc alltraj.xtc --multi 8
 \endverbatim
 
 */

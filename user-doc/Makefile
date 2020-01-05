@@ -17,8 +17,6 @@ else
 all:
 ifeq ($(make_doc),yes)
 	make_pdfdoc=$(make_pdfdoc) ./extract
-	# check examples in input file:
-	#./go-example-check
 	make_pdfdoc=$(make_pdfdoc) ./go-doxygen
 	cp *png html/
 	./report_errors
@@ -29,4 +27,4 @@ spelling:
 	./go-spelling
 
 clean:
-	rm -fr html latex automatic *~ *PP.txt *PP.md errors manual.pdf regtests
+	rm -fr example-check html latex automatic *~ *PP.txt *PP.md errors manual.pdf regtests
