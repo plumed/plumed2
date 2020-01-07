@@ -125,6 +125,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -n "$PLUMED_CXX" ; then
       brew update > /dev/null ;
       brew install ccache ;
+      brew install gawk ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
   - if [[ "$TRAVIS_DIST" == xenial ]] || [[ "$TRAVIS_DIST" == bionic ]] ; then
