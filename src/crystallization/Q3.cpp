@@ -173,6 +173,8 @@ public:
   explicit Q3( const ActionOptions& ao );
 };
 
+// For some reason, this is not seen correctly by cppcheck
+// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(Q3,"Q3")
 typedef LocalSteinhardt<Q3> LOCAL_Q3;
 PLUMED_REGISTER_ACTION(LOCAL_Q3,"LOCAL_Q3")

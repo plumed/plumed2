@@ -31,7 +31,7 @@ matrix:
     os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.88
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.90
   - name: External blas with internal lapack, including asmjit
     os: linux
     if: branch =~ ^test- OR type IN(pull_request)

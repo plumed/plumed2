@@ -62,9 +62,9 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
       log.printf("  clearing grid every %u steps \n",clearstride);
     }
   }
-  if( getNumberOfArguments()>0 ) {
+  if( ActionWithAveraging::getNumberOfArguments()>0 ) {
     my_analysis_object=dynamic_cast<analysis::AnalysisBase*>( getPntrToArgument(0)->getPntrToAction() );
-    for(unsigned i=1; i<getNumberOfArguments(); i++) {
+    for(unsigned i=1; i<ActionWithAveraging::getNumberOfArguments(); i++) {
       if( my_analysis_object && my_analysis_object->getLabel()!=(getPntrToArgument(i)->getPntrToAction())->getLabel() ) {
         error("all arguments should be from one single analysis object");
       }
