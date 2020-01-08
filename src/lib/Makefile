@@ -262,7 +262,7 @@ endif
 # vim syntax file
 	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
-	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
+	if test -f ../../vim/scripts.vim ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/vim" && cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
