@@ -62,7 +62,7 @@ automatically assigned to Martini pseudo atoms using the MARTINI flag.
 The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
-if the ARRAYFIRE libraries are installed and correctly linked. 
+if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
