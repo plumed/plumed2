@@ -52,7 +52,7 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculates SAXS scattered intensity using either the Debye equation or the harmonic sphere approximation.
+Calculates SAXS scattered intensity using either the Debye equation.
 
 Intensities are calculated for a set of scattering length set using QVALUE keywords that are numbered starting from 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
@@ -62,11 +62,8 @@ automatically assigned to Martini pseudo atoms using the MARTINI flag.
 The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
-if the ARRAYFIRE libraries are installed and correctly linked (). Alternatively we an implementation based on Bessel functions,
-BESSEL flag. This is very fast for small q values because a short expansion is enough.
-An automatic choice is made for which q Bessel are used and for which the calculation is done by Debye. If one wants to force
-all q values to be calculated using Bessel function this can be done using FORCE_BESSEL.
-Irrespective of the method employed, \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+if the ARRAYFIRE libraries are installed and correctly linked. 
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 in the following example the saxs intensities for a martini model are calculated. structure factors
