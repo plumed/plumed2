@@ -352,7 +352,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=6;
+        *(static_cast<int*>(val))=7;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -553,6 +553,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      /* ADDED WITH API==7 */
       case cmd_convert:
       {
         double v;
