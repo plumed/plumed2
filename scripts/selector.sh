@@ -44,7 +44,7 @@ def select_vmdexec(vmdexec,selection):
     import os
     try:
         bufferlines=int(os.environ['PLUMED_VMD_BUFFERLINES'])
-    except:
+    except KeyError:
         bufferlines=1000
         
     print("puts 'NEXT'",file=vmdexec.stdin)
