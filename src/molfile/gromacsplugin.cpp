@@ -48,7 +48,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  *
  *      $RCSfile: gromacsplugin.C,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.52 $       $Date: 2016/11/28 05:01:54 $
+ *      $Revision: 1.54 $       $Date: 2017/05/20 05:37:53 $
  *
  ***************************************************************************/
 
@@ -273,7 +273,11 @@ static int write_gro_timestep(void *v, const molfile_timestep_t *ts) {
   for (i=0; i<gmx->natoms; i++)
   {
      fprintf(gmx->mf->f, "%5d%-5s%5s%5d%8.3f%8.3f%8.3f",
-             atom->resid, atom->resname, atom->name, i+1,
+             atom->resid, atom->resname, atom->name,
+             (i+1) % 100000, // GRO format only supports indices up to 99999
+                             // but since GROMACS ignores indices, modular
+                             // arithmetic prevents formatting problems for 
+                             // very large structures
              pos[0] / ANGS_PER_NM, pos[1] / ANGS_PER_NM, pos[2] / ANGS_PER_NM);
      if(vel)
      {
@@ -521,15 +525,19 @@ static int read_trr_timestep(void *v, int natoms, molfile_timestep_t *ts) {
             mdio_errmsg(mdio_errno()));
     return MOLFILE_ERROR;
   }
-  if (mdts.natoms != natoms) {
+  if (mdts.natoms != gmx->natoms) {
     fprintf(stderr, "gromacsplugin) Timestep in file contains wrong number of atoms\n");
-    fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, natoms);
+    fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, gmx->natoms);
     mdio_tsfree(&mdts);
     return MOLFILE_ERROR;
   }
 
   if (ts) {
-    memcpy(ts->coords, mdts.pos, 3 * sizeof(float) * gmx->natoms);
+    if (mdts.pos) 
+      memcpy(ts->coords, mdts.pos, 3 * sizeof(float) * gmx->natoms);
+    else 
+      printf("gromacsplugin) Warning: skipping empty timestep!\n");
+
     if (mdts.box) {
       ts->A = mdts.box->A;
       ts->B = mdts.box->B;
@@ -659,7 +667,7 @@ static void close_trr_write(void *v) {
 }
 
 #define GROMACS_PLUGIN_MAJOR_VERSION 1
-#define GROMACS_PLUGIN_MINOR_VERSION 2 
+#define GROMACS_PLUGIN_MINOR_VERSION 3 
 
 //
 // plugin registration stuff below

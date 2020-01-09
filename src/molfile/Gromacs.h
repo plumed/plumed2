@@ -47,7 +47,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  * RCS INFORMATION:
  *      $RCSfile: Gromacs.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.34 $       $Date: 2016/11/28 05:01:53 $
+ *      $Revision: 1.36 $       $Date: 2020/01/09 16:21:28 $
  ***************************************************************************/
 
 /*
@@ -1431,25 +1431,26 @@ static int trx_string(md_file *mf, char *str, int max) {
 // Reads in a timestep frame from the .trX file and returns the
 // data in a timestep structure. Returns NULL on error.
 static int trx_timestep(md_file *mf, md_ts *ts) {
-	int i;
+  int i;
   float x[3], y[3], z[3];
-	trx_hdr *hdr;
+  trx_hdr *hdr;
 
-	if (!mf || !ts) return mdio_seterror(MDIO_BADPARAMS);
-	if (mf->fmt != MDFMT_TRJ && mf->fmt != MDFMT_TRR)
-		return mdio_seterror(MDIO_WRONGFORMAT);
+  if (!mf || !ts) return mdio_seterror(MDIO_BADPARAMS);
+  if (mf->fmt != MDFMT_TRJ && mf->fmt != MDFMT_TRR)
+    return mdio_seterror(MDIO_WRONGFORMAT);
 
-	// Read the header
-	if (trx_header(mf) < 0) return -1;
+  // Read the header
+  if (trx_header(mf) < 0) return -1;
 
-	// We need some data from the trX header
-	hdr = mf->trx;
-	if (!hdr) return mdio_seterror(MDIO_BADPARAMS);
+  // We need some data from the trX header
+  hdr = mf->trx;
+  if (!hdr) return mdio_seterror(MDIO_BADPARAMS);
 
-	if (hdr->box_size) { // XXX need to check value of box_size!!
-		if (trx_rvector(mf, x) < 0) return -1;
-		if (trx_rvector(mf, y) < 0) return -1;
-		if (trx_rvector(mf, z) < 0) return -1;
+  if (hdr->box_size) { // XXX need to check value of box_size!!
+    if (trx_rvector(mf, x) < 0) return -1;
+    if (trx_rvector(mf, y) < 0) return -1;
+    if (trx_rvector(mf, z) < 0) return -1;
+
     // Allocate the box and convert the vectors.
     ts->box = (md_box *) malloc(sizeof(md_box));
     if (mdio_readbox(ts->box, x, y, z) < 0) {
@@ -1457,56 +1458,57 @@ static int trx_timestep(md_file *mf, md_ts *ts) {
       ts->box = NULL;
       return -1;
     }
-	}
+  }
 
-	if (hdr->vir_size) {
-		if (trx_rvector(mf, NULL) < 0) return -1;
-		if (trx_rvector(mf, NULL) < 0) return -1;
-		if (trx_rvector(mf, NULL) < 0) return -1;
-	}
+  if (hdr->vir_size) {
+    if (trx_rvector(mf, NULL) < 0) return -1;
+    if (trx_rvector(mf, NULL) < 0) return -1;
+    if (trx_rvector(mf, NULL) < 0) return -1;
+  }
 
-        if (hdr->pres_size) {
-                if (trx_rvector(mf, NULL) < 0) return -1;
-                if (trx_rvector(mf, NULL) < 0) return -1;
-                if (trx_rvector(mf, NULL) < 0) return -1;
-        }
+  if (hdr->pres_size) {
+    if (trx_rvector(mf, NULL) < 0) return -1;
+    if (trx_rvector(mf, NULL) < 0) return -1;
+    if (trx_rvector(mf, NULL) < 0) return -1;
+  }
 
-        if (hdr->x_size) {
-                ts->pos = (float *) malloc(sizeof(float) * 3 * hdr->natoms);
-                if (!ts->pos) return mdio_seterror(MDIO_BADMALLOC);
+  if (hdr->x_size) {
+    ts->pos = (float *) malloc(sizeof(float) * 3 * hdr->natoms);
+    if (!ts->pos) 
+      return mdio_seterror(MDIO_BADMALLOC);
 
-		ts->natoms = hdr->natoms;
+    ts->natoms = hdr->natoms;
+    for (i = 0; i < hdr->natoms; i++) {
+      if (trx_rvector(mf, &ts->pos[i * 3]) < 0) {
+        mdio_tsfree(ts, 1);
+        return -1;
+      }
 
-		for (i = 0; i < hdr->natoms; i++) {
-			if (trx_rvector(mf, &ts->pos[i * 3]) < 0) {
-				mdio_tsfree(ts, 1);
-				return -1;
-			}
-			ts->pos[i * 3] *= ANGS_PER_NM;
-			ts->pos[i * 3 + 1] *= ANGS_PER_NM;
-			ts->pos[i * 3 + 2] *= ANGS_PER_NM;
-		}
-        }
+      ts->pos[i * 3    ] *= ANGS_PER_NM;
+      ts->pos[i * 3 + 1] *= ANGS_PER_NM;
+      ts->pos[i * 3 + 2] *= ANGS_PER_NM;
+    }
+  }
 
-        if (hdr->v_size) {
-		for (i = 0; i < hdr->natoms; i++) {
-			if (trx_rvector(mf, NULL) < 0) {
-				mdio_tsfree(ts, 1);
-				return -1;
-			}
-		}
-        }
+  if (hdr->v_size) {
+    for (i = 0; i < hdr->natoms; i++) {
+      if (trx_rvector(mf, NULL) < 0) {
+        mdio_tsfree(ts, 1);
+        return -1;
+      }
+    }
+  }
 
-        if (hdr->f_size) {
-		for (i = 0; i < hdr->natoms; i++) {
-			if (trx_rvector(mf, NULL) < 0) {
-				mdio_tsfree(ts, 1);
-				return -1;
-			}
-		}
-        }
+  if (hdr->f_size) {
+    for (i = 0; i < hdr->natoms; i++) {
+      if (trx_rvector(mf, NULL) < 0) {
+        mdio_tsfree(ts, 1);
+        return -1;
+      }
+    }
+  }
 
-	return mdio_seterror(MDIO_SUCCESS);
+  return mdio_seterror(MDIO_SUCCESS);
 }
 
 

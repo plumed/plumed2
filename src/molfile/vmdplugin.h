@@ -51,7 +51,7 @@ namespace molfile{
  *
  *      $RCSfile: vmdplugin.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.33 $       $Date: 2015/10/29 05:10:54 $
+ *      $Revision: 1.35 $       $Date: 2020/10/16 07:50:56 $
  *
  ***************************************************************************/
 
@@ -98,8 +98,8 @@ namespace molfile{
 /*@}*/
 
 
-/** "WIN32" is defined on both WIN32 and WIN64 platforms... */
-#if (defined(WIN32)) 
+/** Detect compilations targeting Windows x86 and x64 platforms */
+#if (defined(WIN32) || defined(WIN64) || defined(_MSC_VER)) 
 #define WIN32_LEAN_AND_MEAN
 }
 }
@@ -186,7 +186,7 @@ typedef struct {
 /**
  * Use this macro to initialize the abiversion member of each plugin
  */
-#define vmdplugin_ABIVERSION  17
+#define vmdplugin_ABIVERSION  18
 
 /*@{*/
 /** Use this macro to indicate a plugin's thread-safety at registration time */
