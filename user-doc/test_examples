@@ -24,17 +24,18 @@ if [ $neg -gt 0 ] ; then
    # Now split the examples found into the set of example input files in the documentation
    sline=0
    for ((i=1;i<=$neg;++i)) ; do
+        ffname=$(printf "%02d" $i)
         eline=`grep -n ">>END OF EXAMPLE>>" example-check/$fname.dat | head -n $i | tail -n 1 | awk '{print $1}' | sed -e 's/:>>END//g'`
-        head -n $(($eline-1)) example-check/$fname.dat | tail -n $(($eline-1-$sline)) > example-check/$fname/$i.dat
-        wrongc=`grep "this is wrong" example-check/$fname/$i.dat | wc -l | awk '{print $1}'`
+        head -n $(($eline-1)) example-check/$fname.dat | tail -n $(($eline-1-$sline)) > example-check/$fname/$ffname.dat
+        wrongc=`grep "this is wrong" example-check/$fname/$ffname.dat | wc -l | awk '{print $1}'`
         if [ $wrongc -gt 0 ] ; then
-             rm example-check/$fname/$i.dat
+             rm example-check/$fname/$ffname.dat
         else
            # This deals with include files
-           hasname=`grep "#SETTINGS" example-check/$fname/$i.dat | grep "FILENAME=" | wc -l | awk '{print $1}'`
+           hasname=`grep "#SETTINGS" example-check/$fname/$ffname.dat | grep "FILENAME=" | wc -l | awk '{print $1}'`
            if [ $hasname -gt 0 ] ; then
-                filename=`grep "#SETTINGS" example-check/$fname/$i.dat  | awk '{for(i=1;i<=NF;++i){if(match($i,"FILENAME=")){print $i}}}' | sed -e 's/FILENAME=//'`
-                mv example-check/$fname/$i.dat example-check/$fname/$filename
+                filename=`grep "#SETTINGS" example-check/$fname/$ffname.dat  | awk '{for(i=1;i<=NF;++i){if(match($i,"FILENAME=")){print $i}}}' | sed -e 's/FILENAME=//'`
+                mv example-check/$fname/$ffname.dat example-check/$fname/$filename
            fi
         fi
         sline=$eline
@@ -60,7 +61,6 @@ fi
 rm example-check/$fname.dat
 echo Extracted examples from $infile
 
-egn=0
 cd example-check/$fname
 for file in *.dat ; do
    # echo Checking example named $dir/$file
@@ -79,7 +79,8 @@ for file in *.dat ; do
    fi
 
    # Now running test with PLUMED
-   echo Testing example $egn for $infile
+   egn=`echo $file | cut -c1-2`
+   echo Testing example $egn in $file for $infile
    nload=`grep "LOAD" $file | wc -l | awk '{print $1}'`
    if [ $nload -eq 0 ] && [ $nfill -eq 0 ] ; then
        hasrep=0
@@ -99,16 +100,15 @@ for file in *.dat ; do
            nerr=1
        fi
        if [ $nerr -gt 0 ] ; then
-           awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n==eg){ n++; print $0 " broken DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
+           awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " broken DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
        else 
-           awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n==eg){ n++; print $0 " working DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
+           awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " working DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
        fi
    elif [ $nload -gt 0 ] ; then
-       awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n==eg){ n++; print $0 " loads DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
+       awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " loads DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
    elif [ $nfill -gt 0 ] ; then
-       awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n==eg){ n++; print $0 " incomplete DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
+       awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " incomplete DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
    fi
-   egn=$(($egn+1))
    mv ../../$infile.e ../../$infile
 done
 

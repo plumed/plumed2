@@ -162,11 +162,11 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          for(unsigned i=1; i<interpreted.size(); ++i) {
              if( interpreted[i]=="@newline" && i==1 ) { ofile<<"...\n   "; continue; } 
              else if( interpreted[i]=="@newline" ) { 
-                if( trailingcomment ) ofile<<"</span>"; 
+                if( trailingcomment ) { ofile<<"</span>"; trailingcomment=false; }
                 if( interpreted[i+1]=="..." ) ofile<<"\n";
                 else ofile<<"\n   "; 
                 continue; 
-             } 
+             } else if( interpreted[i]==action ) continue;
              if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; ofile<<"<span style=\"color:blue\">"; }
 
              if( !trailingcomment ) {

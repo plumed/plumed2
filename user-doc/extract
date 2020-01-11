@@ -419,6 +419,7 @@ file=${f%.$extension}
 # then grep out the special strings
 
 cp $f ${file}PP.$extension
+./test_examples ${file}PP.$extension
 
 for kk in $keywords
 do
