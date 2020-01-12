@@ -26,6 +26,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithVirtualAtom.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "tools/IFile.h"
@@ -52,7 +53,7 @@ tool outside those scripts the input is specified using the following command li
 
 The following generates an example based on the contents of the plumed file plumed.dat
 \verbatim
-plumed gen_example --plumed plumed.dat
+plumed gen_example --plumed plumed.dat --status working
 \endverbatim
 
 
@@ -62,6 +63,11 @@ plumed gen_example --plumed plumed.dat
 class GenExample:
   public CLTool
 {
+private:
+  int multi;
+  std::string status, version;
+  Communicator intracomm; 
+  Communicator intercomm;
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenExample(const CLToolOptions& co );
@@ -69,6 +75,7 @@ public:
   string description()const override {
     return "construct an example for the manual that users can interact with";
   }
+  void printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile );
 };
 
 PLUMED_REGISTER_CLTOOL(GenExample,"gen_example")
@@ -83,7 +90,10 @@ void GenExample::registerKeywords( Keywords& keys ) {
 }
 
 GenExample::GenExample(const CLToolOptions& co ):
-  CLTool(co)
+  CLTool(co),
+  multi(0),
+  status("nobadge"),
+  version("master")
 {
   inputdata=commandline;
 }
@@ -91,8 +101,7 @@ GenExample::GenExample(const CLToolOptions& co ):
 int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
 
 // set up for multi replica driver:
-  int multi=0; parse("--multi",multi);
-  Communicator intracomm; Communicator intercomm;
+  parse("--multi",multi);
   if(multi) {
     int ntot=pc.Get_size(); int nintra=ntot/multi;
     if(multi*nintra!=ntot) error("invalid number of processes for multi environment");
@@ -102,7 +111,93 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     intracomm.Set_comm(pc.Get_comm());
   }  
 
-  std::string version="master"; if( config::getVersion()!="2.6") version=config::getVersion();
+  if( config::getVersion()!="2.6") version=config::getVersion();
+  std::string fname, egname, outfile; parse("--plumed",fname); 
+  parse("--name",egname); parse("--out",outfile); parse("--status",status);
+  IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile); std::vector<bool> shortcuts;
+  bool hasshortcuts=false, endplumed=false; std::vector<std::vector<std::string> > input; std::vector<std::string> words; 
+  while( Tools::getParsedLine(ifile, words, false) ) { 
+     input.push_back( words ); shortcuts.push_back( false );
+     if( words.empty() || words[0].find("#")!=std::string::npos || endplumed ) continue;
+     std::vector<std::string> interpreted( words ); Tools::interpretLabel(interpreted);
+     if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; continue; }
+     Keywords keys; actionRegister().getKeywords( interpreted[0], keys );
+     if( status=="working" && keys.exists("IS_SHORTCUT") ) hasshortcuts=shortcuts[shortcuts.size()-1]=true;
+  }
+  ifile.close();
+  if( hasshortcuts ) {
+     ofile<<"<div style=\"width: 80%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
+     ofile<<"<div style=\"width: 10%; float:left\"><button type=\"button\" id=\""<<egname<<"_button\" onclick=\'swapInput(\""<<egname<<"\")\'>contract shortcuts</button></div>";
+  } else {
+     ofile<<"<div style=\"width: 90%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
+  }
+  ofile<<"<div style=\"width: 10%; float:left\">";
+  ofile<<"<img src=\"https://img.shields.io/badge/"<<version<<"-";
+  if(status=="working") ofile<<"passing-green";
+  else if(status=="broken") ofile<<"failed-red";
+  else if(status=="loads") ofile<<"with-LOAD-yellow";
+  else if(status=="incomplete") ofile<<"incomplete-yellow";
+  else error("unknown status");
+  ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
+  if( hasshortcuts ) {
+      // Write out the short version of the input
+      ofile<<"<div style=\"width: 100%; float:left\" id=\"input_"<<egname<<"\"></div>"<<std::endl; 
+      ofile<<"<script type=\"text/javascript\">\n";
+      ofile<<"if (window.addEventListener) { // Mozilla, Netscape, Firefox\n";
+      ofile<<"    window.addEventListener('load', "<<egname<<"Load, false);\n";
+      ofile<<"} else if (window.attachEvent) { // IE\n";
+      ofile<<"    window.attachEvent('onload', "<<egname<<"Load);\n";
+      ofile<<"}\n";
+      ofile<<"function "<<egname<<"Load(event) {\n";
+      ofile<<"       swapInput(\""<<egname<<"\");\n";
+      ofile<<"}\n";
+      ofile<<"</script>\n";
+      ofile<<"<span style=\"display:none;\" id=\""<<egname<<"short\">"; 
+      printExampleInput( input, egname + "short", egname, ofile );
+      ofile<<"</span>"<<std::endl;
+      // Write out long version of the input
+      ofile<<"<span style=\"display:none;\" id=\""<<egname<<"long\">";
+      std::vector<std::vector<std::string> > long_input; 
+      PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
+      myplumed.cmd("setRealPrecision",&rr); 
+      if(Communicator::initialized()) {
+        if(multi) {
+          if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+          myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
+        }
+        myplumed.cmd("setMPIComm",&intracomm.Get_comm());
+      }
+      myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
+      for(unsigned ll=0;ll<input.size();++ll) {
+         if( input[ll].empty() || input[ll][0].find("#")!=std::string::npos || endplumed ) { long_input.push_back( input[ll] ); continue; }
+         std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
+         if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; } 
+         Keywords keys; actionRegister().getKeywords( interpreted[0], keys ); std::string lab, myinputline;
+         if( Tools::parse(interpreted, "LABEL", lab ) ) myinputline = lab + ": ";
+         myinputline += interpreted[0] + " "; bool trailingcomment=false;
+         for(unsigned i=1;i<interpreted.size();++i) {
+             if( trailingcomment && interpreted[i]=="@newline") { trailingcomment=false; continue; }
+             if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; continue; }
+             if( interpreted[i]=="@newline" || interpreted[i]=="..." ) continue; 
+             std::size_t pos = 0;  while ((pos = interpreted[i].find("@newline",pos)) != std::string::npos) { interpreted[i].replace(pos, 8, "\n"); pos++; }
+             myinputline += interpreted[i] + " ";
+         }
+         if( status=="working" && keys.exists("IS_SHORTCUT") ) {
+             myplumed.readInputLine( myinputline ); 
+             ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
+             plumed_assert( as ); std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+             for(unsigned i=0;i<shortcut_commands.size();++i) {
+                 std::vector<std::string> words = Tools::getWords( shortcut_commands[i] ); long_input.push_back( words );
+             }   
+         } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
+      }
+      printExampleInput( long_input, egname + "long", egname, ofile );
+      ofile<<"</span>"<<std::endl;
+  } else printExampleInput( input, egname, egname, ofile );
+  ofile.close(); return 0;
+}
+
+void GenExample::printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile ) {  
   PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
   myplumed.cmd("setRealPrecision",&rr); 
   if(Communicator::initialized()) {
@@ -113,32 +208,20 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     myplumed.cmd("setMPIComm",&intracomm.Get_comm());
   }
   myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
-  std::string fname, egname, outfile, status; parse("--plumed",fname); 
-  parse("--name",egname); parse("--out",outfile); parse("--status",status);
-  IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile);
-  ofile<<"<div style=\"width: 90%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
-  ofile<<"<div style=\"width: 5%; float:left\">";
-  ofile<<"<img src=\"https://img.shields.io/badge/"<<version<<"-";
-  if(status=="working") ofile<<"passing-green";
-  else if(status=="broken") ofile<<"failed-red";
-  else if(status=="loads") ofile<<"with-LOAD-yellow";
-  else if(status=="incomplete") ofile<<"incomplete-yellow";
-  else error("unknown status");
-  ofile<<".svg\" alt=\"tested on "<<version<<"\" />";
-  ofile<<"</div> <pre style=\"width: 97%;\" class=\"fragment\">\n"; 
-  std::vector<std::string> labellist, words; bool endplumed=false; 
-  while( Tools::getParsedLine(ifile, words, false) ) {
-     if( words.empty() ) continue; 
-     if( words[0].find("#")!=std::string::npos || endplumed ) {
-         ofile<<"<span style=\"color:blue\">"<<words[0];
-         for(unsigned i=1; i<words.size(); ++i) ofile<<" "<<words[i];
+  std::vector<std::string> labellist; bool endplumed=false; 
+  ofile<<"<pre style=\"width: 97%;\" class=\"fragment\">\n";
+  for(unsigned ll=0;ll<input.size();++ll) {
+     if( input[ll].empty() ) { ofile<<"\n"; continue; } 
+     if( input[ll][0].find("#")!=std::string::npos || endplumed ) {
+         ofile<<"<span style=\"color:blue\">"<<input[ll][0];
+         for(unsigned i=1; i<input[ll].size(); ++i) ofile<<" "<<input[ll][i];
          ofile<<"</span>"<<std::endl;;
      } else {
          // Interpret the label if this needs to be done
-         std::vector<std::string> interpreted( words ); Tools::interpretLabel(interpreted); std::string lab, myinputline;
+         std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted); std::string lab, myinputline;
          // Now read in the label
          if( Tools::parse(interpreted,"LABEL",lab) ) {
-             ofile<<"<b name=\""<<egname<<lab<<"\" onclick=\'showPath(\""<<egname<<"\",\""<<egname<<lab<<"\")\'>"<<lab<<": </b>";
+             ofile<<"<b name=\""<<egname<<lab<<"\" onclick=\'showPath(\""<<divname<<"\",\""<<egname<<lab<<"\")\'>"<<lab<<": </b>";
              labellist.push_back(lab); myinputline = lab + ": ";
          }
          // Print the keyword in use in the action
@@ -245,7 +328,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          } else ofile<<std::endl;
      }
   }
-  ofile<<"</pre>\n"; ofile.close(); return 0;
+  ofile<<"</pre>\n";
 }
 
 } // End of namespace
