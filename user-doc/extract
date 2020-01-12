@@ -231,6 +231,12 @@ for file in ./tutorials/*.txt ; do
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
+    # This tests the examples in the tutorials
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname
+    ./test_examples automatic/$fname
 
 done
 
@@ -241,6 +247,13 @@ for file in ./tutorials/old_tutorials/*.txt ; do
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
+    # This tests the examples in the tutorials
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname 
+    ./test_examples automatic/$fname
+
 done
 
 # Generate links to websites
@@ -250,6 +263,12 @@ for file in ./tutorials/*.site; do
    describe=`grep description: $file | sed -e 's/description://'`
 
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
+   # This tests the examples in the tutorials
+   splits=`echo $file | sed -e 's/\// /g'`
+   nf=`echo $splits | awk '{print NF}'`
+   fname=`echo $splits | awk -v n=$nf '{print $n}'`
+   cp $file automatic/$fname 
+   ./test_examples automatic/$fname
 
 done
 

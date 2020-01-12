@@ -166,6 +166,10 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
                 if( interpreted[i+1]=="..." ) ofile<<"\n";
                 else ofile<<"\n   "; 
                 continue; 
+             } else if( interpreted[i]=="__FILL__" ) {
+                if( status!="incomplete" ) error("found __FILL__ statement but status is " + status);
+                ofile<<"<span style=\"background-color:yellow\">__FILL__</span>";
+                continue;
              } else if( interpreted[i]==action ) continue;
              if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; ofile<<"<span style=\"color:blue\">"; }
 
@@ -174,7 +178,10 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
                  if( eq!=std::string::npos ) {
                     std::string keyword=interpreted[i].substr(0,eq), rest=interpreted[i].substr(eq+1); 
                     ofile<<"<div class=\"tooltip\">"<<keyword<<"<div class=\"right\">"<<keys.getTooltip(keyword)<<"<i></i></div></div>";
-                    if( rest.find_first_of("{")!=std::string::npos ) {
+                    if( rest=="__FILL__" ) {
+                        if( status!="incomplete" ) error("found __FILL__ statement but status is " + status);
+                        ofile<<"=<span style=\"background-color:yellow\">__FILL__</span>";
+                    } else if( rest.find_first_of("{")!=std::string::npos ) {
                         std::size_t pos = 0;  while ((pos = rest.find("@newline",pos)) != std::string::npos) { rest.replace(pos, 8, "\n"); pos++; }
                         ofile<<"="<<rest<<" "; myinputline += keyword + "=" + rest + " ";
                     } else {
