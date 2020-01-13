@@ -327,6 +327,7 @@ EDS::EDS(const ActionOptions&ao):
   kbt_(0.0),
   multi_prop_(-1.0),
   lm_mixing_par_(0.1),
+  virial_scaling_(0.),
   pseudo_virial_sum_(0.0),
   value_force2_(NULL)
 {
@@ -457,7 +458,7 @@ EDS::EDS(const ActionOptions&ao):
   }
 
   if (b_mean && !b_freeze_) {
-    error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
+    error("EDS keyword MEAN can only be used along with keyword FREEZE");
   }
 
   if(in_restart_name_ != "") {
