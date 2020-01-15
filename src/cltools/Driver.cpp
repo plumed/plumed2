@@ -386,6 +386,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep
   ts_in.coords=NULL;
+  ts_in.velocities=NULL;
   ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 
