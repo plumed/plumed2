@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,7 +51,7 @@ This action is used to align a molecule to a template.
 This can be used to move the coordinates stored in plumed
 so as to be aligned with a provided template in PDB format. Pdb should contain
 also weights for alignment (see the format of PDB files used e.g. for \ref RMSD).
-Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
+Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page".
 Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
@@ -80,7 +80,7 @@ this action is performed at every MD step.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding the molecules using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -126,7 +126,7 @@ frame of an aligned molecule. It could be for instance the center of mass
 of a ligand with respect to a protein
 \plumedfile
 # center of the ligand:
-ce: CENTER ATOMS=100-110
+center: CENTER ATOMS=100-110
 
 FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
 
@@ -134,20 +134,20 @@ FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
 fix: FIXEDATOM AT=1.0,1.1,1.0
 
 # take the distance between the fixed atom and the center of the ligand
-d: DISTANCE ATOMS=ce,fix
+d: DISTANCE ATOMS=center,fix
 
 # apply a restraint
 RESTRAINT ARG=d AT=0.0 KAPPA=100.0
 \endplumedfile
 
 Notice that you could have obtained an (almost) identical result adding a fictitious
-atom to `ref.pdb` with the serial number corresponding to the `ce` atom (there is no automatic way
+atom to `ref.pdb` with the serial number corresponding to the atom labelled `center` (there is no automatic way
 to get it, but in this example it should be the number of atoms of the system plus one),
 and properly setting the weights for alignment and displacement in \ref RMSD.
 There are two differences to be expected:
 (ab) \ref FIT_TO_TEMPLATE might be slower since it has to rototranslate all the available atoms and
-(b) variables employing PBCs (such as \ref DISTANCE without `NOPBC`, as in the example above)
-  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects PBCs to be already solved.
+(b) variables employing periodic boundary conditions (such as \ref DISTANCE without `NOPBC`, as in the example above)
+  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects the issues related to the periodic boundary conditions to be already solved.
 The latter means that before the \ref RMSD statement one should use \ref WRAPAROUND or \ref WHOLEMOLECULES to properly place
 the ligand.
 

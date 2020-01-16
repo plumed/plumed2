@@ -39,6 +39,7 @@ void PairEntropy::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","");
   keys.add("atoms-2","GROUPA","");
   keys.add("atoms-2","GROUPB","");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","MAXR","the maximum distance to use for the rdf"); 
   keys.add("optional","DENSITY","the reference density to use for the pair entropy");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");

@@ -4,7 +4,7 @@
 \section belfast-3-aims Aims
 
 The aim of this tutorial is to consolidate the material that was covered during
-\ref belfast-1 and \ref belfast-2 on analysing trajectories using collective variables
+\ref belfast-1 and \ref belfast-2 on analyzing trajectories using collective variables
 and path collective variables.  We will then build on this material by showing how 
 you can use the multidimensional scaling algorithm to automate the process of finding
 collective variables.
@@ -24,11 +24,11 @@ The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> t
 
 - trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All calculations with plumed driver use this trajectory.
 - trajectory-short.pdb : the same trajectory in pdb format, this can be loaded with VMD 
-- template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
+- template.pdb : a single frame from the trajectory that can be used in conjunction with the \ref MOLINFO command
 
 \section belfast-3-instructions Instructions
 
-\subsection belfast-3-vis-traj Visualising the trajectory
+\subsection belfast-3-vis-traj Visualizing the trajectory
 
 The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file contains some
 frames from a simulation of a 16 residue protein.  As a start point then lets load this trajectory with vmd and have a look
@@ -65,7 +65,7 @@ is this trajectory sampling from?  What can we tell from looking at this traject
 
 If your answers to the questions at the end of the above paragraph are I don't know that is good.  We can tell very little
 by just looking at a trajectory.  In fact the whole point of the tutorials I referenced at the start of this one was to find ways of analyzing trajectories precisely
-so that we are not put in this position of staring at trajetories mystified!
+so that we are not put in this position of staring at trajectories mystified!
 
 \subsection belfast-3-gismo Installing GISMO
 
@@ -78,12 +78,12 @@ to open GISMO can be found under Extensions>Analysis>GISMO.
 
 \subsection belfast-3-cvs Finding collective variables
 
-Right so lets come up with some CVs to analyse this trajectory with.  As some of you may know we can understand the conformation of proteins
-by looking at the Ramachandran angles.  For those of you who don't know here is a Wikkepedia article:
+Right so lets come up with some CVs to analyze this trajectory with.  As some of you may know we can understand the conformation of proteins
+by looking at the Ramachandran angles.  For those of you who don't know here is a Wikipedia article:
 
 http://en.wikipedia.org/wiki/Ramachandran_plot
 
-Our protein has 32 ramachandran angles.  We'll come back to that.  For the time being pick out a couple that you think might be useful 
+Our protein has 32 Ramachandran angles.  We'll come back to that.  For the time being pick out a couple that you think might be useful 
 and construct a plumed input to calculate them and print them to a file.  You will need to use the \ref TORSION and \ref PRINT commands 
 in order to do this.  Once you have created your plumed input use driver to calculate the torsional angles using the following command:
 
@@ -91,8 +91,8 @@ in order to do this.  Once you have created your plumed input use driver to calc
 plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz
 \endverbatim 
 
-If you have done this correctly you should have an output file containing your torsional angles.  We can use vmd+GISMO to visualise
-the relationship between the ramachandran angles and the atomic configurations.  To do this first load the trajectory in VMD:
+If you have done this correctly you should have an output file containing your torsional angles.  We can use vmd+GISMO to visualize
+the relationship between the Ramachandran angles and the atomic configurations.  To do this first load the trajectory in VMD:
 
 \verbatim
 vmd trajectory-short.pdb
@@ -107,7 +107,7 @@ What can you conclude from this exercise.  Do the CV values of the various frame
 Do points in different clusters correspond to structures that look the same or different?  Are there similar looking structures 
 clustered together or are they always far apart? What can we conclude about the various basins in the free energy landscape
 that have been explored in this trajectory?  How many are there?  Would your estimate be the same if you tried the above estimate
-with a different pair of ramachandran angles? 
+with a different pair of Ramachandran angles? 
 
 \subsection belfast-3-dim-red Dimensionality reduction
 
@@ -115,17 +115,17 @@ What we have done in most of the other exercises here is seek out a function tha
 dimensional vector, where \f$N\f$ is the number of atoms.  This function then outputs a single number - the value of the collective variable -
 that tells us where in a low dimensional space we should project that configuration.  Problems can arise because this collective-variable function 
 is many-to-one.  As you have hopefully seen in the previous exercise markedly different configurations of the protein can actually have quite
-similar values of a particular ramachandran angle.
+similar values of a particular Ramachandran angle.
 
-We are going to spend the rest of this session introducing an alternative approach to this bussiness of finding collective variables.  In this alternative
+We are going to spend the rest of this session introducing an alternative approach to this business of finding collective variables.  In this alternative
 approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find its
 low dimensional projection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
 vectors of atom positions) and try to find a sensible set of projections for these configurations.  We already touched on this idea earlier when we looked at
 paths.  Our assumption, when we introduced this idea, was that we could find an ordered set of high-dimensional configurations that represented the 
-transtion pathway the system takes as it crossed a barrier and changed between two particularly interesting configurations. Lets say we have a path defined by 
+transition pathway the system takes as it crossed a barrier and changed between two particularly interesting configurations. Lets say we have a path defined by 
 four reference configurations - this implies that to travel between the configurations at the start and the end of this path you have to pass through 
 configuration 1, then configuration 2, then configuration 3 and then configuration 4. This ordering means that the numbers 1 through 4 constitute sensible
-projections of these high-dimensional configurations.  The numbers 1 through 4 all lie on a single cartesian axis - a low-dimensional space.
+projections of these high-dimensional configurations.  The numbers 1 through 4 all lie on a single Cartesian axis - a low-dimensional space.
 
 The problem when it comes to applying this idea to the data that we have in the trajectory-short trajectory is that we have no information on the "order" of
 these points. We have not been told that this trajectory represents the transition between two interesting points in phase space  and thus we cannot apply the
@@ -150,28 +150,28 @@ You should then run this calculation using the following command:
 plumed driver --ixyz trajectory-short.xyz --plumed plumed.dat
 \endverbatim
 
-This should generate an output file called rmsd-embed.  You should now be able to use VMD+GISMO to visualise this output.  
+This should generate an output file called rmsd-embed.  You should now be able to use VMD+GISMO to visualize this output.  
 Do the CV values of the various frames appear in clusters in the plane? 
 Do points in different clusters correspond to structures that look the same or different?  Are there similar looking structures
 clustered together or are they always far apart? What can we conclude about the various basins in the free energy landscape
 that have been explored in this trajectory?  How many are there? Do you think this gives you a fuller picture of the 
-trajectory than the ones you obtained by considering ramachandran angles?
+trajectory than the ones you obtained by considering Ramachandran angles?
 
 \section belfast-3-extensions Extensions
 
-As discussed in the previous section this approach to trajectory analysis works by calcalating distances between pairs of atomic configurations.
+As discussed in the previous section this approach to trajectory analysis works by calculating distances between pairs of atomic configurations.
 Projections corresponding to these configurations are then generated in the low dimensional space in a way that tries to preserve these 
 pairwise distances.  There are, however, an infinite number of ways of calculating the distance between two high-dimensional configurations.
 In the previous section we used the RMSD distance but you could equally use the DRMSD distance.  You could even try calculating a large number
 of collective variables for each of the high-dimensional points and seeing how much these all changed. You can use these different types of distances
 with the \ref CLASSICAL_MDS action that was introduced in the previous section.  If you have time less at the end of the session read the manual
-for the \ref CLASSICAL_MDS action and see if you can calculate an MDS projection using an alternative defintion of the distances between configurations.
-Some suggestions to try in order of increasing difficulty: DRMSD, how much the full set of 32 ramachandran angles change and the change in the
+for the \ref CLASSICAL_MDS action and see if you can calculate an MDS projection using an alternative definition of the distances between configurations.
+Some suggestions to try in order of increasing difficulty: DRMSD, how much the full set of 32 Ramachandran angles change and the change in the
  contact map 
 
 \section belfast-3-further Further Reading
 
-There is a growing community of people using these ideas to analyse trajectory data. Some start points for investigating their work in more detail
+There is a growing community of people using these ideas to analyze trajectory data. Some start points for investigating their work in more detail
 are:
 
 - http://epfl-cosmo.github.io/sketchmap/index.html?page=main

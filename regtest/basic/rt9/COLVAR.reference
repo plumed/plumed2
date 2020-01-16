@@ -1,4 +1,4 @@
-#! FIELDS time ang1 ang2 uwall.bias lwall.bias uwall.force2 lwall.force2
+#! FIELDS time ang1 ang2 @9.bias @19.bias uwall_force2 lwall_force2
  0.000000  0.356  0.059  0.062 16.714  4.935 76827.763
  0.050000  0.377  0.114  0.119  5.952  9.505 16326.651
  0.100000  0.381  0.158  0.131  2.005 10.488 3191.662

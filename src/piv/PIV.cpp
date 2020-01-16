@@ -36,7 +36,7 @@ namespace PLMD
 namespace piv
 {
 
-//+PLUMEDOC COLVAR PIV
+//+PLUMEDOC PIVMOD_COLVAR PIV
 /*
 Calculates the PIV-distance.
 
@@ -52,9 +52,9 @@ and prints the results in a file named colvar.
 Three atoms (PIVATOMS=3) with names (pdb file) A B and C are used to construct the PIV and all PIV blocks (AA, BB, CC, AB, AC, BC) are considered.
 SFACTOR is a scaling factor that multiplies the contribution to the PIV-distance given by the single PIV block.
 NLIST sets the use of neighbor lists for calculating atom-atom distances.
-The SWITCH keyword specifies the perameters of the switching function that transforms atom-atom distances.
-SORT=1 meand that the PIV block elements are sorted (SORT=0 no sorting.)
-Values for SORT, SFACTOR and Neighborlist parameters have to be specified for each block.
+The SWITCH keyword specifies the parameters of the switching function that transforms atom-atom distances.
+SORT=1 means that the PIV block elements are sorted (SORT=0 no sorting.)
+Values for SORT, SFACTOR and the neighbor list parameters have to be specified for each block.
 The order is the following: AA,BB,CC,AB,AC,BC. If ONLYDIRECT (ONLYCROSS) is used the order is AA,BB,CC (AB,AC,BC).
 The sorting operation within each PIV block is performed using the counting sort algorithm, PRECISION specifies the size of the counting array.
 
@@ -229,15 +229,15 @@ void PIV::registerKeywords( Keywords& keys )
            "Details of the various switching "
            "functions you can use are provided on \\ref switchingfunction.");
   keys.add("compulsory","PRECISION","the precision for approximating reals with integers in sorting.");
-  keys.add("compulsory","REF_FILE","PDB file name that contains the i-th reference structure.");
+  keys.add("compulsory","REF_FILE","PDB file name that contains the \\f$i\\f$th reference structure.");
   keys.add("compulsory","PIVATOMS","Number of atoms to use for PIV.");
   keys.add("compulsory","SORT","Whether to sort or not the PIV block.");
-  keys.add("compulsory","ATOMTYPES","The atomtypes to use for PIV.");
+  keys.add("compulsory","ATOMTYPES","The atom types to use for PIV.");
   keys.add("optional","SFACTOR","Scale the PIV-distance by such block-specific factor");
   keys.add("optional","VOLUME","Scale atom-atom distances by the cubic root of the cell volume. The input volume is used to scale the R_0 value of the switching function. ");
-  keys.add("optional","UPDATEPIV","Frequency (timesteps) at which the PIV is updated.");
+  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated.");
   keys.addFlag("TEST",false,"Print the actual and reference PIV and exit");
-  keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as secified in the Pdb file");
+  keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as specified in the Pdb file");
   keys.addFlag("ONLYCROSS",false,"Use only cross-terms (A-B, A-C, B-C, ...) in PIV");
   keys.addFlag("ONLYDIRECT",false,"Use only direct-terms (A-A, B-B, C-C, ...) in PIV");
   keys.addFlag("DERIVATIVES",false,"Activate the calculation of the PIV for every class (needed for numerical derivatives).");
@@ -698,7 +698,7 @@ PIV::PIV(const ActionOptions&ao):
           lmt1+=1;
         }
       }
-      log.printf("       |%10i|%15i|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
+      log.printf("       |%10i|%15zu|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
     }
   }
 
@@ -805,7 +805,7 @@ void PIV::calculate()
           lmt1+=1;
         }
       }
-      log.printf("       |%10i|%15i|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
+      log.printf("       |%10i|%15zu|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
     }
     log << "\n";
   }

@@ -43,121 +43,91 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   ActionWithValue(ao),
-  ncol_args(0),
-  nspAa(0),
-  nspAb(0)
+  ncol_args(0)
 {
   bool readgroup=false; unsigned inargs=0; std::vector<std::string> g_name; std::vector<Value*> args;
   for(unsigned i=1;; ++i) {
     if( !parseNumberedVector("GROUP",i,g_name) ) { break; }
-    if( i==1 ) nspAa=nspAb=g_name.size();
-    else if( g_name.size()!=nspAa ) error("input to all GROUP keywords should have the same number of arguments");
-    readgroup=true; unsigned jnargs=0;
-    for(unsigned j=0;j<g_name.size();++j) { 
-        args.push_back( convertStringToValue(g_name[j]) );
-        if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
-        if( args[0]->getRank()==0 ) {
-          if( args[args.size()-1]->getRank()!=0 ) error("all arguments should have same shape");
-        } else if( i==1 ) inargs += args[args.size()-1]->getShape()[0];
-        else jnargs += args[args.size()-1]->getShape()[0]; 
+    readgroup=true; std::vector<Value*> gargs; interpretArgumentList( g_name, gargs );
+    unsigned jnargs=0; arg_ends.push_back( args.size() );
+    for(unsigned j=0;j<gargs.size();++j) {
+        args.push_back( gargs[j] );
+        if( i==1 ) inargs += gargs[j]->getNumberOfValues( getLabel() );
+        else jnargs += gargs[j]->getNumberOfValues( getLabel() );
     }
     if( i!=1 && inargs!=jnargs ) error("all arguments should have same shape");
   }
   if( readgroup ) {
+    arg_ends.push_back( args.size() );
     log.printf("  calculating square vector product matrix \n");
-    for(unsigned i=0; i<args.size(); ++i) log.printf("  %dth component of vectors for vector product is %s\n", i+1,args[i]->getName().c_str() );
+    for(unsigned i=0; i<args.size(); ++i) log.printf("  %dth component of vectors for vector product is %s\n", i+1,args[i]->getOutputDescription( getLabel() ).c_str() );
   }
   if( !readgroup ) {
     std::vector<std::string> ga_name, gb_name; unsigned inargs=0;
     log.printf("  calculating rectangular vector product matrix \n");
     for(unsigned i=1;; ++i) {
       if( !parseNumberedVector("GROUPA",i,ga_name) ) { break; }
-      if( i==1 ) nspAa=ga_name.size(); 
-      else if( ga_name.size()!=nspAa ) error("input to all GROUPA keywords should have the same number of arguments");
-      unsigned jnargs=0;
-      for(unsigned j=0;j<ga_name.size();++j) {
-          args.push_back( convertStringToValue(ga_name[j]) );
-          if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
-          if( args[0]->getRank()==0 ) {
-            if( args[args.size()-1]->getRank()!=0 ) error("all arguments to GROUPA should have same shape");
-          } else if( i==1 ) inargs += args[args.size()-1]->getShape()[0];
-          else jnargs += args[args.size()-1]->getShape()[0];
+      std::vector<Value*> gargs; interpretArgumentList( ga_name, gargs );
+      unsigned jnargs=0; arg_ends.push_back( args.size() );
+      for(unsigned j=0;j<gargs.size();++j) {
+          args.push_back( gargs[j] );
+          if( i==1 ) inargs += gargs[j]->getNumberOfValues( getLabel() );
+          else jnargs += gargs[j]->getNumberOfValues( getLabel() );
       }
       if( i!=1 && inargs!=jnargs ) error("all arguments to GROUPA should have same shape");
-      log.printf("  %dth component of vectors in rows of vector product matrix is %s", i, ga_name[0].c_str() );
-      for(unsigned j=1;j<ga_name.size();++j) log.printf(" %s", ga_name[j].c_str() );
+      log.printf("  %dth component of vectors in rows of vector product matrix is %s", i, gargs[0]->getOutputDescription( getLabel() ).c_str() );
+      for(unsigned j=1;j<gargs.size();++j) log.printf(" %s", gargs[j]->getOutputDescription( getLabel() ).c_str() );
       log.printf("\n");
     }
-    log.printf("\n"); ncol_args = args.size(); inargs=0;
+    log.printf("\n"); ncol_args = arg_ends.size(); inargs=0;
     log.printf("  calculating dot matrix between with columns : \n");
     for(unsigned i=0; i<ncol_args; ++i) {
       if( !parseNumberedVector("GROUPB",i+1,gb_name) ) error("every GROUPA must have a matching GROUPB keyword");
-      if( i==0 ) nspAb=gb_name.size(); 
-      else if( gb_name.size()!=nspAb ) error("input to all GROUPB keywords should have the same number of arguments");
-      unsigned jnargs=0;
-      for(unsigned j=0;j<gb_name.size();++j) {
-          args.push_back( convertStringToValue(gb_name[j]) );
-          if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
-          if( args[ncol_args]->getRank()==0 ) {
-            if( args[args.size()-1]->getRank()!=0 ) error("all arguments to GROUPB should have same shape");
-          } else if( i==0 ) inargs += args[args.size()-1]->getShape()[0];
-          else jnargs += args[args.size()-1]->getShape()[0];
+      std::vector<Value*> gargs; interpretArgumentList( gb_name, gargs );
+      unsigned jnargs=0; arg_ends.push_back( args.size() );
+      for(unsigned j=0;j<gargs.size();++j) {
+          args.push_back( gargs[j] );
+          if( i==0 ) inargs += gargs[j]->getNumberOfValues( getLabel() );
+          else jnargs += gargs[j]->getNumberOfValues( getLabel() );
       }
       if( i!=0 && inargs!=jnargs ) error("all arguments to GROUPB should have same shape");
-      log.printf("  %dth component of vectors in columns of vector product matrix is %s", i+1, gb_name[0].c_str() );
-      for(unsigned j=1;j<gb_name.size();++j) log.printf(" %s", gb_name[j].c_str() );
+      log.printf("  %dth component of vectors in columns of vector product matrix is %s", i+1, gargs[0]->getOutputDescription( getLabel() ).c_str() );
+      for(unsigned j=1;j<gargs.size();++j) log.printf(" %s", gargs[j]->getOutputDescription( getLabel() ).c_str() );
       log.printf("\n"); 
     }
+    arg_ends.push_back( args.size() );
   }
   if( args.size()==0 ) error("no arguments were read in use GROUP or GROUPA and GROUPB");
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
   std::vector<unsigned> shape(2);
-  if( args[0]->getRank()==0 ) {
-    addTaskToList(0); shape[0]=shape[1]=1;
-  } else {
-    unsigned tnum=0;
-    for(unsigned j=0;j<nspAa;++j) {
-        for(unsigned i=0; i<args[j]->getShape()[0]; ++i){ addTaskToList(tnum); tnum++; }
-    }
-    unsigned cnum=0;
-    for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) cnum += args[j]->getShape()[0];
-    shape[0]=tnum; shape[1]=cnum;
+  unsigned tnum=0;
+  for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
+      for(unsigned i=0; i<args[j]->getNumberOfValues( getLabel() ); ++i){ addTaskToList(tnum); tnum++; }
   }
-  requestArguments( args, false );
   // And create the matrix to hold the dot products
-  addValue( shape ); // if( readgroup ) getPntrToComponent(0)->setSymmetric( true );    /// Is this right though???
-  if( args[0]->getRank()==0 ) narg_derivatives = getNumberOfArguments();
-  else if( ncol_args>0 ) {
-    unsigned tnum=0; for(unsigned j=0;j<nspAa;++j) tnum += args[j]->getShape()[0];
-    unsigned cnum=0; for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) cnum += args[j]->getShape()[0];
-    narg_derivatives = ( tnum + cnum ) * getNumberOfArguments() / ( nspAa + nspAb ); 
-  } else { 
-    unsigned tnum=0; for(unsigned j=0;j<nspAa;++j) tnum += args[j]->getShape()[0];
-    narg_derivatives = tnum * getNumberOfArguments() / nspAa;
+  unsigned cnum=0;
+  for(unsigned j=arg_ends[ncol_args];j<arg_ends[ncol_args+1];++j) cnum += args[j]->getNumberOfValues( getLabel() );
+  shape[0]=tnum; shape[1]=cnum; addValue( shape ); requestArguments( args, false );
+
+  if( ncol_args>0 ) narg_derivatives = ( tnum + cnum ) * ncol_args; 
+  else narg_derivatives = tnum * ( arg_ends.size() - 1 );
+
+  // Now do some stuff for time series
+  bool timeseries=getPntrToArgument(0)->isTimeSeries();
+  if( timeseries ) {
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          if( !getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+      }
+  } else {
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+      }
   }
 }
 
-Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
-  std::size_t dot=name.find_first_of("."); unsigned nargs=0; std::vector<Value*> args;
-  if( dot!=std::string::npos ) {
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
-    if( !action ) {
-      std::string str=" (hint! the actions in this ActionSet are: ";
-      str+=plumed.getActionSet().getLabelList()+")";
-      error("cannot find action named " + name + str);
-    }
-    action->interpretDataLabel( name, this, nargs, args );
-  } else {
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name );
-    if( !action ) {
-      std::string str=" (hint! the actions in this ActionSet are: ";
-      str+=plumed.getActionSet().getLabelList()+")";
-      error("cannot find action named " + name + str);
-    }
-    action->interpretDataLabel( name, this, nargs, args );
-  }
-  plumed_assert( args.size()==1 );
-  return args[0];
+unsigned VectorProductMatrix::getNumberOfDerivatives() const {
+  if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + narg_derivatives;
+  return narg_derivatives;
 }
 
 bool VectorProductMatrix::canBeAfterInChain( ActionWithValue* av ) const {
@@ -189,19 +159,27 @@ void VectorProductMatrix::calculate() {
   runAllTasks();
 }
 
+void VectorProductMatrix::update() {
+  if( skipUpdate() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+}
+
+void VectorProductMatrix::runFinalJobs() {
+  if( skipUpdate() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  resizeForFinalTasks(); runAllTasks();
+}
+
 void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
 
-  unsigned nargs=getNumberOfArguments() / nspAa; 
-  if( ncol_args>0 ) nargs = getNumberOfArguments() / (nspAa+nspAb);
-  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+  unsigned nargs=arg_ends.size()-1; if( ncol_args>0 ) nargs = ncol_args; 
+
+  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  unsigned invals;
-  if( getPntrToArgument(0)->getRank()==0 ) invals = 1;
-  else {
-    invals = 0; for(unsigned i=0;i<nspAa;++i) invals += getPntrToArgument(i)->getShape()[0];
-  }
+  unsigned invals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) invals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+
   for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = ind + i*invals; nmat_ind++; }
   if( getNumberOfAtoms()>0 ) {
     matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind+0;
@@ -221,8 +199,9 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
   }
 
   // Now loop over all atoms in coordination sphere
-  unsigned start_n=0; if(  ncol_args>0 ) { start_n = getFullNumberOfTasks(); myvals.setNumberOfIndicesInFirstBlock( start_n ); }
-  unsigned size_v = 1; if( getPntrToArgument(ncol_args)->getRank()>0 ) size_v = getPntrToArgument(ncol_args)->getShape()[0];
+  unsigned start_n=0, size_v = 0; 
+  if(  ncol_args>0 ) { start_n = getFullNumberOfTasks(); myvals.setNumberOfIndicesInFirstBlock( start_n ); }
+  for(unsigned i=arg_ends[ncol_args];i<arg_ends[ncol_args+1];++i) size_v += getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
 
   for(unsigned i=0; i<size_v; ++i) {
     // Don't do i==j
@@ -237,46 +216,18 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
 }
 
 bool VectorProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned invals, jnvals; invals = jnvals = 1;
-  if( getPntrToArgument(0)->getRank()>0 ) {
-      invals=0; for(unsigned i=0;i<nspAa;++i) invals +=  getPntrToArgument(i)->getShape()[0];
-      jnvals=invals; 
-  }
+  unsigned invals, jnvals; 
+  invals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) invals += getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
 
-  unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments() / nspAa;
+  unsigned jindex=index2, jind_start = 0, nargs=arg_ends.size()-1; if( ncol_args>0 ) nargs = ncol_args;
   if( ncol_args>0 ) {
-    nargs = getNumberOfArguments() / (nspAa+nspAb); jnvals = 1; 
-    if( getPntrToArgument(nspAa*ncol_args)->getRank()>0 ) {
-        jnvals = 0; for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) jnvals += getPntrToArgument(j)->getShape()[0];
-    }
-    jindex = index2 - getFullNumberOfTasks();
-    jind_start = nargs*invals;
-  }
+    nargs = ncol_args; jindex = index2 - getFullNumberOfTasks(); jind_start = nargs*invals;  
+    jnvals = 0; for(unsigned j=arg_ends[ncol_args];j<arg_ends[ncol_args+1];++j) jnvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+  } else jnvals = invals;
 
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
   for(unsigned i=0; i<nargs; ++i) {
-    unsigned jindex1=index1, kindex=nspAa*i; 
-    for(unsigned j=0;j<nspAa;++j) {
-        if( getPntrToArgument(kindex)->getRank()==0 ) {
-            if( jindex1<1 ){ break; }
-            jindex1 -= 1; kindex++;
-        } else {
-            if( jindex1<getPntrToArgument(kindex)->getShape()[0] ){ break; }
-            jindex1 -= getPntrToArgument(kindex)->getShape()[0]; kindex++;
-        }
-    }
-    args1[i] = getPntrToArgument(kindex)->get( jindex1 );
-    unsigned jindex2=jindex, kindex2=nspAa*ncol_args + nspAb*i;
-    for(unsigned j=0;j<nspAb;++j) {
-        if( getPntrToArgument(kindex2)->getRank()==0 ) {
-            if( jindex2<1 ){ break; }
-            jindex2 -= 1; kindex2++;
-        } else {
-            if( jindex2<getPntrToArgument(kindex2)->getShape()[0] ){ break; }
-            jindex2 -= getPntrToArgument(kindex2)->getShape()[0]; kindex2++;
-        }
-    }
-    args2[i] = getPntrToArgument(kindex2)->get( jindex2 );
+    args1[i] = retrieveRequiredArgument( i, index1 ); args2[i] = retrieveRequiredArgument( ncol_args + i, jindex );
   }
 
   double val = computeVectorProduct( index1, index2, args1, args2, der1, der2, myvals );

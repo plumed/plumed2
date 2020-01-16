@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,6 +79,14 @@ PRINT ARG=a FILE=COLVAR1
 PRINT ARG=b FILE=COLVAR2
 \endplumedfile
 
+This final example instructs plumed to calculate all the angles in the first coordination
+spheres of the atoms. The bins for a normalized histogram of the distribution is then output
+
+\plumedfile
+ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
+PRINT ARG=a1.* FILE=colvar
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC
@@ -95,10 +103,10 @@ void Angles::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
   keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
-  keys.add("atoms-2","GROUPB","When used in conjuction with GROUPA this keyword instructs plumed "
+  keys.add("atoms-2","GROUPB","When used in conjunction with GROUPA this keyword instructs plumed "
            "to calculate all distinct angles involving one atom from GROUPA "
            "and two atoms from GROUPB. The atom from GROUPA is the central atom.");
-  keys.add("atoms-3","GROUPC","This must be used in conjuction with GROUPA and GROUPB.  All angles "
+  keys.add("atoms-3","GROUPC","This must be used in conjunction with GROUPA and GROUPB.  All angles "
            "involving one atom from GROUPA, one atom from GROUPB and one atom from "
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");

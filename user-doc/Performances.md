@@ -7,14 +7,18 @@ variables, bias, on-the-fly analysis, etc in a way that is compatible with a num
 different molecular dynamics codes. This means that there cannot be a single 
 strategy to speed up all the possible calculations. 
 
-PLUMED makes use of MPI and OpenMP to parallelise some of its functions, try to always
-compile it with these features enabled. Furthermore, newer compilers with proper optimisation 
-flags can provide a drammatic boost to performances.
+\ref performance-optimization "Here" 
+you can find a step-by-step tutorial on optimizing PLUMED performances, discussing some of the topics
+below in more detail and using practical examples.
 
-PLUMED collects atoms from an external code and sends back forces, so it is key to minimise
+PLUMED makes use of MPI and OpenMP to parallelize some of its functions, try to always
+compile it with these features enabled. Furthermore, newer compilers with proper optimization 
+flags can provide a dramatic boost to performances.
+
+PLUMED collects atoms from an external code and sends back forces, so it is key to minimize
 the effect of PLUMED on highly parallel calculations to keep to the minimum the number of atoms 
 used by PLUMED at every calculation step. The less is the number of atoms you need to send 
-to PLUMED the less will be the overhead in the comunication between PLUMED and the code.
+to PLUMED the less will be the overhead in the communication between PLUMED and the code.
 
 In the following you can find specific strategies for specific calculations, these could
 help in taking the most by using PLUMED for your simulations.
@@ -35,13 +39,13 @@ Since version 4.6.x GROMACS can run in an hybrid mode making use of both
 your CPU and your GPU (either using CUDA or OpenCL for newer versions of
 GROMACS). The calculation of the short-range non-bonded interactions is 
 performed on the GPU while long-range and bonded interactions are at the
-same time calculated on the CPU. By varing the cut-off for short-range
-interactions GROMACS can optimise the balance between GPU/CPU loading 
+same time calculated on the CPU. By varying the cut-off for short-range
+interactions GROMACS can optimize the balance between GPU/CPU loading 
 and obtain amazing performances.
 
 GROMACS patched with PLUMED takes into account PLUMED in its load-balancing, 
 adding the PLUMED timings to the one resulting from bonded interactions and long-
-range interactions. This means that the CPU/GPU balance will be optimised 
+range interactions. This means that the CPU/GPU balance will be optimized 
 automatically to take into account PLUMED!  
 
 It is important to notice that the optimal setup to use GROMACS alone
@@ -143,20 +147,20 @@ Whenever you have a multicolvar action such as:
 COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=1. D_MAX=3.0} MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
 \endplumedfile
 
-You will get a collosal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
+You will get a colossal speedup by specifying the D_MAX keyword in all switching functions that act on distances.
 D_MAX tells PLUMED that the switching function is strictly zero if the distance is greater than this value.  As a result
-PLUMED knows that it does not need to calculate these zero terms in what are essentially sums with a very lage number of terms.
+PLUMED knows that it does not need to calculate these zero terms in what are essentially sums with a very large number of terms.
 In fact when D_MAX is set PLUMED uses linked lists when calculating these coordination numbers, which is what 
 gives you such a dramatic increase in performance.
 
-\page Neighbour Neighbour Lists
+\page Neighbour Neighbor Lists
 
-Collective variables that can be speed up making us of neighbour lists:
+Collective variables that can be speed up making us of neighbor lists:
 - \ref COORDINATION
 - \ref DHENERGY
 - \ref PATHMSD
 
-By tuning the cut-off for the neighbour list and the frequency for the recalculation of the list it is
+By tuning the cut-off for the neighbor list and the frequency for the recalculation of the list it is
 possible to balance between accuracy and performances.
 
 Notice that for \ref COORDINATION and \ref DHENERGY using a neighbor list could imply that a smaller
@@ -165,7 +169,7 @@ number of atoms are requested to the host MD engine. This is typically true when
 When the neighbor list is used, only the water atoms close to the ligand will be requested at each step.
 
 \warning
-Notice that the calculation of the neighbour list is not not parallelized for \ref COORDINATION and \ref DHENERGY.
+Notice that the calculation of the neighbor list is not not parallelized for \ref COORDINATION and \ref DHENERGY.
 As a consequence, if you run
 with many processors and/or OpenMP threads, the neighbor list might even make the calculation slower.
 
@@ -192,20 +196,20 @@ or as well
 mdrun -plumed -ntomp 8
 \endverbatim
 
-In the first case the number of OpenMP threads used by plumed is 8 while the one used by gromacs can be 1 or something else, this is usually suboptimal.
+In the first case the number of OpenMP threads used by plumed is 8 while the one used by gromacs can be 1 or something else, this is usually sub optimal.
 In the second case GROMACS and plumed will use the same number of OpenMP threads.
 
 Notice that:
 - This option is likely to improve the performance, but could also slow down
   the code in some case.
-- Results could be slightly different because of numerical roundoff and
+- Results could be slightly different because of numerical round off and
   different order in summations. This should be harmless.
 - The optimum number of threads is not necessary "all of them", nor should be
   equal to the number of threads used to parallelize MD.
-- Only a few CVs are parallelized with opemMP (currently, \ref COORDINATION and
+- Only a few CVs are parallelized with openMP (currently, \ref COORDINATION and
   \ref DHENERGY).
 - You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
-  by default 512, to set the size of cachelines on your machine. This is used
+  by default 512, to set the size of cache lines on your machine. This is used
   by PLUMED to decrease the number of threads to be used in each loop so as to
   avoid clashes in memory access. This variable is expected to affect
   performance only, not results.
@@ -214,8 +218,8 @@ Notice that:
 \page Secondary Secondary Structure
 
 Secondary Structure collective variables (\ref ALPHARMSD, \ref PARABETARMSD and \ref ANTIBETARMSD)
-can be particulary demanding if you want to calculate them for all the residues of a protein. 
-This is particularty true for the calculation of beta structures.
+can be particularly demanding if you want to calculate them for all the residues of a protein. 
+This is particularly true for the calculation of beta structures.
 
 The FIRST thing to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
 STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
@@ -230,37 +234,10 @@ At last, try to reduce the number of residues in the calculation.
 
 In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "switching functions",
 notice that these functionalities depend on the lepton library included in PLUMED.
-This library replace libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
-However, you can make it even faster using a [just-in-time compilater](https://github.com/asmjit/asmjit.git).
-Currently, this is an experimental feature, so use it with care.
-
-In order to enable it you should first install asmjit.
-\verbatim
-git clone https://github.com/asmjit/asmjit.git
-cd asmjit
-git checkout 673dcefa # this is a specific version
-mkdir build
-cd build
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$prefix ../
-make -j 4
-make install
-\endverbatim
-
-Notice that you should set the prefix correctly so that PLUMED can find it at configure time.
-In the example asmjit is installed on `/usr/local` but you might be willing to install it somewhere else.
-On a Mac, you might also have to use `install_name_tool` to fix its path
-\verbatim
-install_name_tool -id $prefix/lib/libasmgit.dylib $prefix/lib/libasmgit.dylib
-\endverbatim
-
-Also notice that a specific version of asmjit is required.
-The version supported by PLUMED is more recent than the version originally supported by the Lepton library.
-In case you find troubles and want to experiment with older versions, write on the mailing list
-or check the Lepton implementation for older asmjit releases by doing `cd src/lepton; gitk`.
-If on your system a more recent version of the asmjit library is already installed, you might have to make
-sure that PLUMED finds the correct version, both at compilation and run time.
-
-Then, configure PLUMED using this additional flag:
+This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
+However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
+As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED. In order to enable it
+it is sufficient to use a specific flag in configure:
 \verbatim
 ./configure --enable-asmjit
 make
@@ -269,30 +246,40 @@ make install
 
 You are done!
 
+Once ASMJIT has been configured, you can disable it at runtime setting the environment variable
+`PLUMED_USE_ASMJIT`:
+\verbatim
+export PLUMED_USE_ASMJIT=no
+\endverbatim
+
+
 In some case using a custom expression is almost as fast as using a hard-coded
 function. For instance, with an input like this one:
-\verbatim
+\plumedfile
 ...
 c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
-dfast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
+d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
 ...
-\endverbatim
+\endplumedfile
 I (GB) obtained the following timings (on a Macbook laptop):
 \verbatim
 ...
 PLUMED: 4A  1 c                                          108     0.126592     0.001172     0.000701     0.002532
-PLUMED: 4A  2 dfast                                      108     0.135210     0.001252     0.000755     0.002623
+PLUMED: 4A  2 d_fast                                      108     0.135210     0.001252     0.000755     0.002623
 ...
 \endverbatim
 
-Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction).
+Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction), which
+avoids an unnecessary square root calculation (this is done automatically by the hard-coded switching functions
+when you use only even powers). The asmjit calculation (`d_fast`) takes less than 10% more than the hard-coded
+one (`c`).
 
 \page Time Time your Input
 
 Once you have prepared your plumed input file you can run a test simulation, or use driver, 
 to see which collective variable, function, bias or analysis is consuming more time and can 
 thus be the target for a different definition (use less atoms, change relevant parameters,
-or just use somenthing else)
+or just use something else)
 
 To have an accurate timing of your input you can use the \ref DEBUG DETAILED_TIMERS.
   

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "tools/KernelFunctions.h"
 #include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "tools/IFile.h"
@@ -28,9 +27,9 @@
 
 //+PLUMEDOC MCOLVARF PAMM
 /*
-Probabilistic analysis of molecular mofifs.
+Probabilistic analysis of molecular motifs.
 
-Probabilistic analysis of molecular motifs (PAMM) was introduced in this paper \cite{pamm}.
+Probabilistic analysis of molecular motifs (PAMM) was introduced in this paper \cite pamm.
 The essence of this approach involves calculating some large set of collective variables
 for a set of atoms in a short trajectory and fitting this data using a Gaussian Mixture Model.
 The idea is that modes in these distributions can be used to identify features such as hydrogen bonds or
@@ -38,7 +37,7 @@ secondary structure types.
 
 The assumption within this implementation is that the fitting of the Gaussian mixture model has been
 done elsewhere by a separate code.  You thus provide an input file to this action which contains the
-means, covariances and weights for a set of Gaussian kernels, \f$\{ \phi \}\f$.  The values and
+means, covariance matrices and weights for a set of Gaussian kernels, \f$\{ \phi \}\f$.  The values and
 derivatives for the following set of quantities is then computed:
 
 \f[
@@ -46,14 +45,14 @@ s_k = \frac{ \phi_k}{ \sum_i \phi_i }
 \f]
 
 Each of the \f$\phi_k\f$ is a Gaussian function that acts on a set of quantities calculated within
-a \ref mcolv.  These might be \ref TORSIONS, \ref DISTANCES, \ref ANGLES or any one of the many
+a \ref mcolv .  These might be \ref TORSIONS, \ref DISTANCES, \ref ANGLES or any one of the many
 symmetry functions that are available within \ref mcolv actions.  These quantities are then inserted into
 the set of \f$n\f$ kernels that are in the the input file.   This will be done for multiple sets of values
 for the input quantities and a final quantity will be calculated by summing the above \f$s_k\f$ values or
 some transformation of the above.  This sounds less complicated than it is and is best understood by
 looking through the example given below.
 
-\warning Mixing periodic and aperiodic \ref mcolv actions has not been tested
+\warning Mixing \ref mcolv actions that are periodic with variables that are not periodic has not been tested
 
 \par Examples
 
@@ -77,21 +76,21 @@ The best place to start our explanation is to look at the contents of the cluste
       0.6      1.0      +1.0      0.1     -0.03   -0.03   0.1
 \endverbatim
 
-This files contains the parameters of two two-dimensional Gaussian functions.  Each of these Gaussians has a weight, \f$w_k\f$,
-a vector that specifies the position of its centre, \f$\mathbf{c}_k\f$, and a covariance matrix, \f$\Sigma_k\f$.  The \f$\phi_k\f$ functions that
+This files contains the parameters of two two-dimensional Gaussian functions.  Each of these Gaussian kernels has a weight, \f$w_k\f$,
+a vector that specifies the position of its center, \f$\mathbf{c}_k\f$, and a covariance matrix, \f$\Sigma_k\f$.  The \f$\phi_k\f$ functions that
 we use to calculate our PAMM components are thus:
 
 \f[
 \phi_k = \frac{w_k}{N_k} \exp\left( -(\mathbf{s} - \mathbf{c}_k)^T \Sigma^{-1}_k (\mathbf{s} - \mathbf{c}_k) \right)
 \f]
 
-In the above \f$N_k\f$ is a normalisation factor that is calculated based on \f$\Sigma\f$.  The vector \f$\mathbf{s}\f$ is a vector of quantities
+In the above \f$N_k\f$ is a normalization factor that is calculated based on \f$\Sigma\f$.  The vector \f$\mathbf{s}\f$ is a vector of quantities
 that are calculated by the \ref TORSIONS actions.  This vector must be two dimensional and in this case each component is the value of a
 torsion angle.  If we look at the two \ref TORSIONS actions in the above we are calculating the \f$\phi\f$ and \f$\psi\f$ backbone torsional
 angles in a protein (Note the use of \ref MOLINFO to make specification of atoms straightforward).  We thus calculate the values of our
-2 \f$ \{ \phi \} \f$  kernels 3 times.  The first time we use the \f$\phi\f$ and \f$\psi\f$ angles in the 2nd resiude of the protein,
-the second time it is the \f$\phi\f$ and \f$\psi\f$ angles of the 3rd residue of the protein and the third time it is the \f$\phi\f$ and \f$\psi\f$ angles
-of the 4th residue in the protein.  The final two quantities that are output by the print command, p.mean-1 and p.mean-2, are the averages
+2 \f$ \{ \phi \} \f$  kernels 3 times.  The first time we use the \f$\phi\f$ and \f$\psi\f$ angles in the second residue of the protein,
+the second time it is the \f$\phi\f$ and \f$\psi\f$ angles of the third residue of the protein and the third time it is the \f$\phi\f$ and \f$\psi\f$ angles
+of the fourth residue in the protein.  The final two quantities that are output by the print command, p.mean-1 and p.mean-2, are the averages
 over these three residues for the quantities:
 \f[
 s_1 = \frac{ \phi_1}{ \phi_1 + \phi_2 }
@@ -121,6 +120,7 @@ void PAMM::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DATA","the vectors from which the pamm coordinates are calculated");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
+  keys.add("compulsory","KERNELS","all","which kernels are we computing the PAMM values for");
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
@@ -128,23 +128,24 @@ PAMM::PAMM(const ActionOptions& ao) :
 Action(ao),
 ActionShortcut(ao)
 {
-  // Must get list of input value names
-  std::vector<std::string> valnames; parseVector("DATA",valnames);
+   // Must get list of input value names
+   std::vector<std::string> valnames; parseVector("DATA",valnames);
+   // Create input values
+   std::string argstr=""; 
+   for(unsigned j=0;j<valnames.size();++j) { 
+       std::string jstr; Tools::convert(j+1,jstr); argstr += " ARG" + jstr + "=" + valnames[j];
+   }
+
    // Create actions to calculate all pamm kernels
-   unsigned nkernels = 0; 
+   unsigned nkernels = 0;  double h;
    std::string fname; parse("CLUSTERS",fname); 
    IFile ifile; ifile.open(fname); ifile.allowIgnoredFields();
    for(unsigned k=0;; ++k) {
-      std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
-      if( !kk ) break ;
-      std::string num; Tools::convert( k+1, num );
-      std::string kinput = getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED KERNEL=" + kk->getInputString();
-      for(unsigned j=0;j<valnames.size();++j){ 
-          std::string jstr; Tools::convert(j+1,jstr); kinput += " ARG" + jstr + "=" + valnames[j];
-      }
-      readInputLine(kinput); nkernels++;
-      // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
-      ifile.scanField();
+      if( !ifile.scanField("height",h) ) break;
+      // Create a kernel for this cluster
+      std::string num, wstr, ktype; Tools::convert( k+1, num ); Tools::convert(h,wstr); ifile.scanField("kerneltype",ktype);
+      readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED" + argstr  + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr + " TYPE=" + ktype );
+      nkernels++; ifile.scanField();
    }
    ifile.close();
 
@@ -160,11 +161,20 @@ ActionShortcut(ao)
    readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=x+" + regparam + " PERIODIC=NO");   
    
    // And now compute all the pamm kernels
+   std::string kchoice; parse("KERNELS",kchoice);
    std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
-   for(unsigned k=0;k<nkernels;++k) {
-       std::string num; Tools::convert( k+1, num );
-       readInputLine( getShortcutLabel() + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");  
-       multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
+   if( kchoice=="all" ) {
+       for(unsigned k=0;k<nkernels;++k) {
+           std::string num; Tools::convert( k+1, num );
+           readInputLine( getShortcutLabel() + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");  
+           multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
+       }
+   } else {
+       std::vector<std::string> awords=Tools::getWords(kchoice,"\t\n ,"); Tools::interpretRanges( awords );
+       for(unsigned k=0;k<awords.size();++k) {
+          readInputLine( getShortcutLabel() + "-" + awords[k] + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + awords[k] + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");     
+          multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + awords[k], getShortcutLabel() + "-" + awords[k], "", keymap, this ); 
+       }
    }
 }
 

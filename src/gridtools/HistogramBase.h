@@ -38,17 +38,20 @@ class HistogramBase :
 {
 private:
   std::vector<double> forcesToApply;
+  void setNumberOfKernels();
+  void buildTasksFromBasedOnRankOfInputData();
   void retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const ;
 protected:
   double norm;
   unsigned heights_index, numberOfKernels;
   bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
+  void createTaskList();
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
   static void histogramKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
-  static void createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action );
+  static void createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_inp, ActionShortcut* action );
   static void readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void createAveragingObject( const std::string& ilab, const std::string& olab,
                                      const std::map<std::string,std::string>& keymap, ActionShortcut* action );
@@ -60,13 +63,15 @@ public:
   virtual double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const = 0;
   virtual void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
   void calculate();
+  void update();
+  void runFinalJobs();
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   virtual void completeGridObjectSetup()=0;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();
   void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
-  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const = 0;
+  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const = 0;
 };
 
 }

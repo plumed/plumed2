@@ -4,7 +4,7 @@
 \section belfast-1-aims Aims
 
 The aim of this tutorial is to introduce the users to the plumed syntax. We will go through the writing of
-simple collective variable and we will use them to analyse a trajectory in terms of probabilty distributions
+simple collective variable and we will use them to analyze a trajectory in terms of probability distributions
 and free energy.
 
 \section belfast-1-lo Learning Outcomes
@@ -12,14 +12,14 @@ and free energy.
 Once this tutorial is completed students will:
 
 - Know how to write a simple plumed input file 
-- Know how to analyse a trajectory using plumed
+- Know how to analyze a trajectory using plumed
 
 \section belfast-1-resources Resources
 
 The <a href="tutorial-resources/belfast-1.tar.gz" download="belfast-1.tar.gz"> tarball </a> for this project contains the following files:
 
 - trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All calculations with plumed driver use this trajectory.
-- template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
+- template.pdb : a single frame from the trajectory that can be used in conjunction with the \ref MOLINFO command
 
 \section belfast-1-instructions Instructions
 
@@ -31,14 +31,14 @@ plumed --help
 \endverbatim
 
 some of the listed options report about the plumed available functionalities, other can be used to tell plumed to do something:
-from analysing a trajectory to patch the source code of a MD code and so on. All the commands have further options that can
+from analyzing a trajectory to patch the source code of a MD code and so on. All the commands have further options that can
 be seen using plumed command --help, i.e.:
 
 \verbatim
 plumed driver --help
 \endverbatim
 
-In the following we are going to see how to write an input file for plumed2 that can be used to analyse a trajectory.
+In the following we are going to see how to write an input file for plumed2 that can be used to analyze a trajectory.
 
 \subsection belfast-1-units A note on units
 By default the PLUMED inputs and outputs quantities in the following units:
@@ -54,7 +54,7 @@ If you want to change these units you can do this using the \ref UNITS keyword.
 A typical input file for PLUMED input is composed by specification of one or more CVs, the printout frequency and a termination line.
 Comments are denoted with a # and the termination of the input for PLUMED is marked with the keyword ENDPLUMED. Whatever it follows is ignored by PLUMED. You can introduce blank lines. They are not interpreted by PLUMED.
 
-In the following input we will analyse the \ref DISTANCE between the two terminal carbons of a 16 residues peptide, and we will \ref PRINT the results
+In the following input we will analyze the \ref DISTANCE between the two terminal carbons of a 16 residues peptide, and we will \ref PRINT the results
 in file named COLVAR.
 
 \verbatim
@@ -69,7 +69,7 @@ ENDPLUMED
 here I can write what I want it won't be read.
 \endverbatim
 
-Now we can use this simple input file to analyse the trajectory included in the RESOURCES:
+Now we can use this simple input file to analyze the trajectory included in the RESOURCES:
 
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz --length-units 0.1
@@ -139,8 +139,8 @@ ranges of atoms can be defined with a stride which can also be negative:
 3. ATOMS=from,to:by (i.e.: 251-256:2)
 4. ATOMS=to,from:-by (i.e.: 256-251:-2)
 
-Now by plotting the content of the COLVAR file we can compare the behaviour in this trajectory of both the terminal carbons
-as well as of the centre of masses of the terminal residues.
+Now by plotting the content of the COLVAR file we can compare the behavior in this trajectory of both the terminal carbons
+as well as of the center of masses of the terminal residues.
 
 \verbatim
 gnuplot
@@ -153,7 +153,7 @@ vmd template.pdb trajectory-short.xyz
 \endverbatim
  
 Virtual atoms can be used in place of standard atoms everywhere an atom can be given as input, they can also be used together
-with standard atoms. So for example we can analyse the \ref TORSION angle for a set of Virtual and Standard atoms:
+with standard atoms. So for example we can analyze the \ref TORSION angle for a set of Virtual and Standard atoms:
 
 \verbatim
 first: CENTER ATOMS=1-6
@@ -166,7 +166,7 @@ ENDPLUMED
 \endverbatim
 
 The above CV don't look smart to learn something about the system we are looking at. In principle CV are used to reduce the complexity
-of a system by looking at a small number of properties that could be enough to rationalise its behaviour. 
+of a system by looking at a small number of properties that could be enough to rationalize its behavior. 
 
 Now try to write a collective variable that measures the Radius of Gyration of the system: \ref GYRATION.
 
@@ -185,7 +185,7 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 Sometimes it can be useful to calculate properties of many similar collective variables at the same time, for example one can be interested
 in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
 of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \ref mcolv.)
-Here we are going to analyse the distances between CA carbons along the chain:
+Here we are going to analyze the distances between CA carbons along the chain:
 
 \verbatim
 ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
@@ -202,7 +202,7 @@ we have defined four collective variables that are calculated using the distance
 collective variables are stored as components of the defined action 'dd': dd.mean, dd.min, dd.max,
 dd.moment-2.
 
-The infrastracture of multicolvar has been used to develop many PLUMED2 collective variables as
+The infrastructure of multicolvar has been used to develop many PLUMED2 collective variables as
 for example the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).
 
 \verbatim
@@ -228,7 +228,7 @@ with a probability
 \f]
 where \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
 
-It is possible to analyse the above probabilty as a function of one or more collective variable \f$ s(q)\f$:
+It is possible to analyze the above probability as a function of one or more collective variable \f$ s(q)\f$:
 
 \f[
   P(s)\propto \int dq  e^{-\frac{U(q)}{kb_BT}} \delta(s-s(q))
@@ -246,7 +246,7 @@ system along that CV. Estimating the probability distribution of the conformatio
 'sampling'.
 
 In order to estimate a probability distribution one needs to make \ref HISTOGRAM from the calculated CVs.
-PLUMED2 includes the possibility of histogramming data both on the fly as well as a posteriori as we
+PLUMED2 includes the possibility of constructing a histogram from data both on the fly as well as a posteriori as we
 are going to do now.
 
 \verbatim
@@ -279,8 +279,8 @@ in PLUMED.
 The above input tells PLUMED to accumulate the two collective variables on a GRID. In addition the 
 probability can be converted to a free-energy using the \ref CONVERT_TO_FES method and then use
 \ref DUMPGRID to write it.
-Histograms can be accumulated in a smoother way by using a KERNEL function, a kernel is a normalised function, 
-for example a normalised gaussian is the default kernel in PLUMED, that is added to the histogram centered in the position of the data. 
+Histograms can be accumulated in a smoother way by using a KERNEL function, a kernel is a normalized function, 
+for example a normalized gaussian is the default kernel in PLUMED, that is added to the histogram centered in the position of the data. 
 Estimating a probability density using kernels can in principle give more accurate results, on the other hand in 
 addition to the choice of the binning one has to choose a parameter that is the WIDTH of the kernel function. 
 As a rule of thumb: the grid spacing should be smaller (i.e. one half or less) than the BANDWIDTH
@@ -301,8 +301,8 @@ DUMPGRID GRID=hh FILE=histo
 ENDPLUMED
 \endverbatim
 
-If you have time less at the end of the session read the manual and look for alternative collective variables to analyse the
-trajectory. Furthemore try to play with the \ref HISTOGRAM parameters to see the effect of using KERNEL in analysing data.
+If you have time less at the end of the session read the manual and look for alternative collective variables to analyze the
+trajectory. Furthermore try to play with the \ref HISTOGRAM parameters to see the effect of using KERNEL in analyzing data.
 
 */
 

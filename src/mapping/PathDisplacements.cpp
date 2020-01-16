@@ -138,7 +138,10 @@ PathDisplacements::PathDisplacements(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
   // And create a value to hold the displacements
   std::vector<unsigned> shape(2); shape[0]=nrows; shape[1]=ncols;
-  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->clearDerivatives();
+  addValue( shape ); setNotPeriodic(); 
+  getPntrToOutput(0)->alwaysStoreValues(); 
+  getPntrToOutput(0)->setShape( shape ); 
+  getPntrToOutput(0)->clearDerivatives();
 }
 
 unsigned PathDisplacements::getNumberOfDerivatives() const {
@@ -201,11 +204,13 @@ void PathDisplacements::update() {
   wsum[iclose1] += weight1; wsum[iclose2] += weight2;
 
   // Update numbers in values
-  unsigned kclose2 = iclose2*ncols;
-  for(unsigned i=0;i<ncols;++i) {
-      getPntrToOutput(0)->set( kclose1+i, displacements(iclose1,i) / wsum[iclose1] );
-      getPntrToOutput(0)->set( kclose2+i, displacements(iclose2,i) / wsum[iclose2] );
+  if( wsum[iclose1] > epsilon ) {
+      for(unsigned i=0;i<ncols;++i) getPntrToOutput(0)->set( kclose1+i, displacements(iclose1,i) / wsum[iclose1] );
   } 
+  if( wsum[iclose2] > epsilon ) { 
+      unsigned kclose2 = iclose2*ncols;
+      for(unsigned i=0;i<ncols;++i) getPntrToOutput(0)->set( kclose2+i, displacements(iclose2,i) / wsum[iclose2] );
+  }
 
   // Clear if required
   if( (getStep()>0 && clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;

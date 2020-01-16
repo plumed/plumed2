@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,7 +47,7 @@ namespace bias {
 
 //+PLUMEDOC BIAS METAD
 /*
-Used to performed MetaDynamics on one or more collective variables.
+Used to performed metadynamics on one or more collective variables.
 
 In a metadynamics simulations a history dependent bias composed of
 intermittently added Gaussian functions is added to the potential \cite metad.
@@ -67,7 +67,7 @@ The free energy can be reconstructed from a metadynamics calculation because the
 by:
 
 \f[
-V(\vec{s}) = -F(\vec(s))
+V(\vec{s}) = -F(\vec{s})
 \f]
 
 During post processing the free energy can be calculated in this way using the \ref sum_hills
@@ -75,7 +75,7 @@ utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics
 calculation increases with the length of the simulation as one has to, at every step, evaluate
-the values of a larger and larger number of Gaussians. To avoid this issue you can
+the values of a larger and larger number of Gaussian kernels. To avoid this issue you can
 store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
@@ -91,7 +91,7 @@ case one can first save a GRID using GRID_WFILE (and GRID_WSTRIDE) and at a late
 it using GRID_RFILE.
 
 Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
-varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
+variant of metadynamics the heights of the Gaussian hills are scaled at each step so the bias is now
 given by:
 
 \f[
@@ -106,27 +106,27 @@ Also notice that with well-tempered metadynamics the HILLS file does not contain
 but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
-Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
-in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
+Note that you can use here also the flexible Gaussian approach  \cite Branduardi:2012dl
+in which you can adapt the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
-gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero
 outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only
-to the free energy for s > sw, the history dependent potential is still updated according to the above
-equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also
-if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the
-force on the system in the region s > sw comes from both metadynamics and the force field, in the region
-s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that
+to the free energy for s > boundary, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussian kernels are added also
+if s < boundary, as the tails of these Gaussian kernels influence VG in the relevant region s > boundary. In this way, the
+force on the system in the region s > boundary comes from both metadynamics and the force field, in the region
+s < boundary only from the latter. This approach allows obtaining a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Note that:
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
-- The interval limit sw in a region where the free energy derivative is not large;
-- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should
-  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
+- The interval limit boundary in a region where the free energy derivative is not large;
+- If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
 
 As a final note, since version 2.0.2 when the system is outside of the selected interval the force
 is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
@@ -135,19 +135,18 @@ for replica exchange methods to be computed correctly.
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 
-The c(t) reweighting factor can also be calculated on the fly using the equations
+The \f$c(t)\f$ reweighting factor can also be calculated on the fly using the equations
 presented in \cite Tiwary_jp504920s.
-The expression used to calculate c(t) follows directly from using Eq. 12 in
-Eq. 3 in \cite Tiwary_jp504920s and gives smoother results than equivalent Eqs. 13
-and Eqs. 14 in that paper. The c(t) is given by the rct component while the bias
-normalized by c(t) is given by the rbias component (rbias=bias-ct) which can be used
+The expression used to calculate \f$c(t)\f$ follows directly from Eq. 3 in \cite Tiwary_jp504920s,
+where \f$F(\vec{s})=-\gamma/(\gamma-1) V(\vec{s})\f$.
+This gives smoother results than equivalent Eqs. 13 and Eqs. 14 in that paper.
+The \f$c(t)\f$ is given by the rct component while the bias
+normalized by \f$c(t)\f$ is given by the rbias component (rbias=bias-rct) which can be used
 to obtain a reweighted histogram.
-The calculation of c(t) is enabled by using the keyword REWEIGHTING_NGRID where the grid used for the
-calculation is specified.   This grid should have a size that is equal or larger than the grid given in GRID_BIN./
-By default c(t) is updated every 50 Gaussian hills but this
-can be changed by using the REWEIGHTING_NHILLS keyword.
-This option can only be employed together with Well-Tempered Metadynamics and requires that
-a grid is used.
+The calculation of \f$c(t)\f$ is enabled by using the keyword CALC_RCT.
+By default \f$c(t)\f$ is updated every time the bias changes, but if this slows down the simulation
+the keyword RCT_USTRIDE can be set to a value higher than 1.
+This option requires that a grid is used.
 
 Additional material and examples can be also found in the tutorials:
 
@@ -174,8 +173,8 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 (See also \ref DISTANCE \ref PRINT).
 
 \par
-If you use adaptive Gaussians, with diffusion scheme where you use
-a Gaussian that should cover the space of 20 timesteps in collective variables.
+If you use adaptive Gaussian kernels, with diffusion scheme where you use
+a Gaussian that should cover the space of 20 time steps in collective variables.
 Note that in this case the histogram correction is needed when summing up hills.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
@@ -185,7 +184,7 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endplumedfile
 
 \par
-If you use adaptive Gaussians, with geometrical scheme where you use
+If you use adaptive Gaussian kernels, with geometrical scheme where you use
 a Gaussian that should cover the space of 0.05 nm in Cartesian space.
 Note that in this case the histogram correction is needed when summing up hills.
 \plumedfile
@@ -196,7 +195,7 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endplumedfile
 
 \par
-When using adaptive Gaussians you might want to limit how the hills width can change.
+When using adaptive Gaussian kernels you might want to limit how the hills width can change.
 You can use SIGMA_MIN and SIGMA_MAX keywords.
 The sigmas should specified in terms of CV so you should use the CV units.
 Note that if you use a negative number, this means that the limit is not set.
@@ -234,30 +233,29 @@ one update and the other. Since version 2.2.5, hills files are automatically
 flushed every WALKERS_RSTRIDE steps.
 
 \par
-The c(t) reweighting factor can be calculated on the fly using the equations
+The \f$c(t)\f$ reweighting factor can be calculated on the fly using the equations
 presented in \cite Tiwary_jp504920s as described above.
-This is enabled by using the keyword REWEIGHTING_NGRID where the grid used for
-the calculation is set. The number of grid points given in REWEIGHTING_NGRID
-should be equal or larger than the number of grid points given in GRID_BIN.
+This is enabled by using the keyword CALC_RCT,
+and can be done only if the bias is defined on a grid.
 \plumedfile
 METAD ...
  LABEL=metad
  ARG=phi,psi SIGMA=0.20,0.20 HEIGHT=1.20 BIASFACTOR=5 TEMP=300.0 PACE=500
  GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=150,150
- REWEIGHTING_NGRID=150,150
- REWEIGHTING_NHILLS=20
+ CALC_RCT
+ RCT_USTRIDE=10
 ... METAD
 \endplumedfile
-Here we have asked that the calculation is performed every 20 hills by using
-REWEIGHTING_NHILLS keyword. If this keyword is not given the calculation will
-by default be performed every 50 hills. The c(t) reweighting factor will be given
+Here we have asked that the calculation is performed every 10 hills deposition by using
+RCT_USTRIDE keyword. If this keyword is not given, the calculation will
+by default be performed every time the bias changes. The \f$c(t)\f$ reweighting factor will be given
 in the rct component while the instantaneous value of the bias potential
-normalized using the c(t) reweighting factor is given in the rbias component
-[rbias=bias-c(t)] which can be used to obtain a reweighted histogram or
+normalized using the \f$c(t)\f$ reweighting factor is given in the rbias component
+[rbias=bias-rct] which can be used to obtain a reweighted histogram or
 free energy surface using the \ref HISTOGRAM analysis.
 
 \par
-The kinetics of the transitions between basins can also be analysed on the fly as
+The kinetics of the transitions between basins can also be analyzed on the fly as
 in \cite PRL230602. The flag ACCELERATION turn on accumulation of the acceleration
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
@@ -300,14 +298,14 @@ You can also provide a target distribution using the keyword TARGET
 \cite white2015designing
 \cite marinelli2015ensemble
 \cite gil2016empirical
-The TARGET should be a grid containing a free-energy (i.e. the -kbT*log of the desired target distribution).
-Gaussians will then be scaled by a factor
+The TARGET should be a grid containing a free-energy (i.e. the -\f$k_B\f$T*log of the desired target distribution).
+Gaussian kernels will then be scaled by a factor
 \f[
 e^{\beta(\tilde{F}(s)-\tilde{F}_{max})}
 \f]
 Here \f$\tilde{F}(s)\f$ is the free energy defined on the grid and \f$\tilde{F}_{max}\f$ its maximum value.
 Notice that we here used the maximum value as in ref \cite gil2016empirical
-This choice allows to avoid exceedingly large Gaussians to be added. However,
+This choice allows to avoid exceedingly large Gaussian kernels to be added. However,
 it could make the Gaussian too small. You should always choose carefully the HEIGHT parameter
 in this case.
 The grid file should be similar to other PLUMED grid files in that it should contain
@@ -315,7 +313,7 @@ both the target free-energy and its derivatives.
 
 Notice that if you wish your simulation to converge to the target free energy you should use
 the DAMPFACTOR command to provide a global tempering \cite dama2014well
-Alternatively, if you use a BIASFACTOR yout simulation will converge to a free
+Alternatively, if you use a BIASFACTOR your simulation will converge to a free
 energy that is a linear combination of the target free energy and of the intrinsic free energy
 determined by the original force field.
 
@@ -377,7 +375,7 @@ private:
     Gaussian(const vector<double> & center,const vector<double> & sigma,double height, bool multivariate ):
       center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
       // to avoid troubles from zero element in flexible hills
-      for(unsigned i=0; i<invsigma.size(); ++i) abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.;
+        for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
     }
   };
   struct TemperingSpecs {
@@ -427,9 +425,9 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
-  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
+  bool flying;
   bool acceleration;
   double acc;
   double acc_restart_mean_;
@@ -444,9 +442,9 @@ private:
   double lowI_;
   bool doInt_;
   bool isFirstStep;
-  double reweight_factor;
-  vector<unsigned> rewf_grid_;
-  unsigned rewf_ustride_;
+  bool calc_rct_;
+  double reweight_factor_;
+  unsigned rct_ustride_;
   double work_;
   long int last_step_warn_grid;
 
@@ -480,9 +478,9 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the \\f$c(t)\\f$ reweighting factor [rbias=bias-c(t)]."
+  keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the \\f$c(t)\\f$ reweighting factor [rbias=bias-rct]."
                           "This component can be used to obtain a reweighted histogram.");
-  keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor \\f$c(t)\\f$.");
+  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor \\f$c(t)\\f$.");
   keys.addOutputComponent("work","default","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
@@ -494,37 +492,35 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify temp");
   keys.add("optional","RECT","list of bias factors for all the replicas");
-  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
+  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(\\f$k_B\\f$T*DAMPFACTOR)");
   for (size_t i = 0; i < n_tempering_options_; i++) {
     registerTemperingKeywords(tempering_names_[i][0], tempering_names_[i][1], keys);
   }
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","REWEIGHTING_NGRID","calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-c(t)]."
-           "Here you should specify the number of grid points required in each dimension."
-           "The number of grid points should be equal or larger to the number of grid points given in GRID_BIN."
-           "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","REWEIGHTING_NHILLS","how many Gaussian hills should be deposited between calculating the c(t) reweighting factor."
-           "The default is to do this every 50 hills.");
+  keys.addFlag("CALC_RCT",false,"calculate the \\f$c(t)\\f$ reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
+               "This method is not compatible with metadynamics not on a grid.");
+  keys.add("optional","RCT_USTRIDE","the update stride for calculating the \\f$c(t)\\f$ reweighting factor."
+           "The default 1, so \\f$c(t)\\f$ is updated every time the bias is updated.");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
-  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
+  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
@@ -533,7 +529,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
   keys.addFlag("CALC_TRANSITION_BIAS", false, "Set to TRUE if you want to compute a metadynamics transition bias V*(t)");
-  keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
+  keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELL followed by an integer. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
   keys.addFlag("FREQUENCY_ADAPTIVE",false,"Set to TRUE if you want to enable frequency adaptive metadynamics such that the frequency for hill addition to change dynamically based on the acceleration factor.");
   keys.add("optional","FA_UPDATE_FREQUENCY","the frequency for updating the hill addition pace in frequency adaptive metadynamics, by default this is equal to the value given in PACE");
   keys.add("optional","FA_MAX_PACE","the maximum hill addition frequency allowed in frequency adaptive metadynamics. By default there is no maximum value.");
@@ -546,7 +542,7 @@ void MetaD::registerKeywords(Keywords& keys) {
 const std::string MetaD::tempering_names_[1][2] = {{"TT", "transition tempered"}};
 
 void MetaD::registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys) {
-  keys.add("optional", name_stem + "BIASFACTOR", "use " + name + " metadynamics with this biasfactor.  Please note you must also specify temp");
+  keys.add("optional", name_stem + "BIASFACTOR", "use " + name + " metadynamics with this bias factor.  Please note you must also specify temp");
   keys.add("optional", name_stem + "BIASTHRESHOLD", "use " + name + " metadynamics with this bias threshold.  Please note you must also specify " + name_stem + "BIASFACTOR");
   keys.add("optional", name_stem + "ALPHA", "use " + name + " metadynamics with this hill size decay exponent parameter.  Please note you must also specify " + name_stem + "BIASFACTOR");
 }
@@ -579,8 +575,9 @@ MetaD::MetaD(const ActionOptions& ao):
 // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
   isFirstStep(true),
-  reweight_factor(0.0),
-  rewf_ustride_(1),
+  calc_rct_(false),
+  reweight_factor_(0.0),
+  rct_ustride_(1),
   work_(0),
   last_step_warn_grid(0)
 {
@@ -592,7 +589,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  Uses Geometry-based hills width: sigma must be in distance units and only one sigma is needed\n");
     adaptive_=FlexibleBin::geometry;
   } else if(adaptiveoption=="DIFF") {
-    log.printf("  Uses Diffusion-based hills width: sigma must be in timesteps and only one sigma is needed\n");
+    log.printf("  Uses Diffusion-based hills width: sigma must be in time steps and only one sigma is needed\n");
     adaptive_=FlexibleBin::diffusion;
   } else if(adaptiveoption=="NONE") {
     adaptive_=FlexibleBin::none;
@@ -615,7 +612,7 @@ MetaD::MetaD(const ActionOptions& ao):
     // if adaptive then the number must be an integer
     if(adaptive_==FlexibleBin::diffusion) {
       if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ) {
-        error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");
+        error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of time steps\n");
       }
     }
     // here evtl parse the sigma min and max values
@@ -781,18 +778,12 @@ MetaD::MetaD(const ActionOptions& ao):
   if(!grid_&&gridfilename_.length()> 0) error("To write a grid you need first to define it!");
   if(!grid_&&gridreadfilename_.length()>0) error("To read a grid you need first to define it!");
 
-  if(grid_) {
-    parseVector("REWEIGHTING_NGRID",rewf_grid_);
-    if(rewf_grid_.size()>0 && rewf_grid_.size()!=getNumberOfArguments()) {
-      error("size mismatch for REWEIGHTING_NGRID keyword");
-    } else if(rewf_grid_.size()==getNumberOfArguments()) {
-      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-        if( !getPntrToArgument(j)->isPeriodic() ) rewf_grid_[j] += 1;
-      }
-    }
-    if(adaptive_==FlexibleBin::diffusion || adaptive_==FlexibleBin::geometry) warning("reweighting has not been proven to work with adaptive Gaussians");
-    rewf_ustride_=50; parse("REWEIGHTING_NHILLS",rewf_ustride_);
-  }
+  // Reweighting factor rct
+  parseFlag("CALC_RCT",calc_rct_);
+  if (calc_rct_)
+    plumed_massert(grid_,"CALC_RCT is supported only if bias is on a grid");
+  parse("RCT_USTRIDE",rct_ustride_);
+
   if(dampfactor_>0.0) {
     if(!grid_) error("With DAMPFACTOR you should use grids");
   }
@@ -968,11 +959,11 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
 
-  if( rewf_grid_.size()>0 ) {
+  if(calc_rct_) {
     addComponent("rbias"); componentIsNotPeriodic("rbias");
     addComponent("rct"); componentIsNotPeriodic("rct");
-    log.printf("  the c(t) reweighting factor will be calculated every %u hills\n",rewf_ustride_);
-    getPntrToComponent("rct")->set(reweight_factor);
+    log.printf("  The c(t) reweighting factor will be calculated every %u hills\n",rct_ustride_);
+    getPntrToComponent("rct")->set(reweight_factor_);
   }
   addComponent("work"); componentIsNotPeriodic("work");
 
@@ -1029,7 +1020,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  calculation on the fly of the transition bias V*(t)\n");
     addComponent("transbias");
     componentIsNotPeriodic("transbias");
-    log.printf("  Number of transition wells %d\n", transitionwells_.size());
+    log<<"  Number of transition wells "<<transitionwells_.size()<<"\n";
     if (transitionwells_.size() == 0) error("Calculating the transition bias on the fly requires definition of at least one transition well");
     // Check that a grid is in use.
     if (!grid_) error(" transition barrier finding requires a grid for the bias");
@@ -1213,7 +1204,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
-  if(getRestart() && rewf_grid_.size()>0 ) computeReweightingFactor();
+  if(getRestart() && calc_rct_) computeReweightingFactor();
   // Calculate all special bias quantities desired if restarting with nonzero bias.
   if(getRestart() && calc_max_bias_) {
     max_bias_ = BiasGrid_->getMaxValue();
@@ -1287,8 +1278,8 @@ MetaD::MetaD(const ActionOptions& ao):
                     "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
                           "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
-  if(rewf_grid_.size()>0) log<<plumed.cite(
-                                 "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
+  if(calc_rct_) log<<plumed.cite(
+                       "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
   if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
           "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   if(rect_biasf_.size()>0 && walkers_mpi) log<<plumed.cite(
@@ -1511,11 +1502,15 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     }
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
+    if( runInSerial() ) { stride=1; rank=0; }
+
     for(unsigned i=rank; i<hills_.size(); i+=stride) {
       bias+=evaluateGaussian(cv,hills_[i],der);
     }
-    comm.Sum(bias);
-    if(der) comm.Sum(der,getNumberOfArguments());
+    if( !runInSerial() ) {
+        comm.Sum(bias);
+        if(der) comm.Sum(der,getNumberOfArguments());
+    }
   } else {
     if(der) {
       vector<double> vder(getNumberOfArguments());
@@ -1684,7 +1679,7 @@ void MetaD::calculate()
   }
 
   setBias(ene);
-  if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
+  if(calc_rct_) getPntrToComponent("rbias")->set(ene - reweight_factor_);
   // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
     acc += static_cast<double>(getStride()) * exp(ene/(kbt_));
@@ -1845,12 +1840,12 @@ void MetaD::update() {
   }
   // Recalculate special bias quantities whenever the bias has been changed by the update.
   bool bias_has_changed = (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0));
-  if(getStep()%(stride_*rewf_ustride_)==0 && nowAddAHill && rewf_grid_.size()>0 ) computeReweightingFactor();
+  if (calc_rct_ && bias_has_changed && getStep()%(stride_*rct_ustride_)==0) computeReweightingFactor();
   if (calc_max_bias_ && bias_has_changed) {
     max_bias_ = BiasGrid_->getMaxValue();
     getPntrToComponent("maxbias")->set(max_bias_);
   }
-  if (calc_transition_bias_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+  if (calc_transition_bias_ && bias_has_changed) {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
   }
@@ -1934,48 +1929,35 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
 
 void MetaD::computeReweightingFactor()
 {
-  if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
-
-  if(biasf_==1.0) {
-// in this case we have no bias, so reweight factor is 0.0
+  if(biasf_==1.0) { // in this case we have no bias, so reweight factor is 0.0
     getPntrToComponent("rct")->set(0.0);
     return;
   }
 
-  // Recover the minimum values for the grid
-  unsigned ncv=getNumberOfArguments();
-  unsigned ntotgrid=1;
-  std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv );
-  for(unsigned j=0; j<ncv; ++j) {
-    Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
-    Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
-    grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( rewf_grid_[j] );
-    if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j];
-    ntotgrid *= rewf_grid_[j];
+  double Z_0=0; //proportional to the integral of exp(-beta*F)
+  double Z_V=0; //proportional to the integral of exp(-beta*(F+V))
+  double minusBetaF=biasf_/(biasf_-1.)/kbt_;
+  double minusBetaFplusV=1./(biasf_-1.)/kbt_;
+  if (biasf_==-1.0) { //non well-tempered case
+    minusBetaF=1;
+    minusBetaFplusV=0;
+  }
+  const double big_number=minusBetaF*BiasGrid_->getMaxValue(); //to avoid exp overflow
+
+  const unsigned rank=comm.Get_rank();
+  const unsigned stride=comm.Get_size();
+  for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
+    const double val=BiasGrid_->getValue(t);
+    Z_0+=std::exp(minusBetaF*val-big_number);
+    Z_V+=std::exp(minusBetaFplusV*val-big_number);
+  }
+  if (stride>1) {
+    comm.Sum(Z_0);
+    comm.Sum(Z_V);
   }
 
-  // Now sum over whole grid
-  reweight_factor=0.0;
-  std::unique_ptr<double[]> der(new double[ncv]);
-  std::vector<unsigned> t_index( ncv );
-  double sum1=0.0; double sum2=0.0;
-  double afactor = biasf_ / (kbt_*(biasf_-1.0)); double afactor2 = 1.0 / (kbt_*(biasf_-1.0));
-  unsigned rank=comm.Get_rank(), stride=comm.Get_size();
-  for(unsigned i=rank; i<ntotgrid; i+=stride) {
-    t_index[0]=(i%rewf_grid_[0]);
-    unsigned kk=i;
-    for(unsigned j=1; j<ncv-1; ++j) { kk=(kk-t_index[j-1])/rewf_grid_[i-1]; t_index[j]=(kk%rewf_grid_[i]); }
-    if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/rewf_grid_[ncv-2]);
-
-    for(unsigned j=0; j<ncv; ++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j];
-
-    double currentb=getBiasAndDerivatives(vals,der.get());
-    sum1 += exp( afactor*currentb );
-    sum2 += exp( afactor2*currentb );
-  }
-  comm.Sum( sum1 ); comm.Sum( sum2 );
-  reweight_factor = kbt_ * std::log( sum1/sum2 );
-  getPntrToComponent("rct")->set(reweight_factor);
+  reweight_factor_=kbt_*std::log(Z_0/Z_V);
+  getPntrToComponent("rct")->set(reweight_factor_);
 }
 
 double MetaD::getTransitionBarrierBias() {

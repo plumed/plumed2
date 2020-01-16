@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,12 +30,12 @@ Find an isocontour by searching along either the x, y or z direction.
 
 As discussed in the part of the manual on \ref Analysis PLUMED contains a number of tools that allow you to calculate
 a function on a grid.  The function on this grid might be a \ref HISTOGRAM as a function of a few collective variables
-or it might be a phase field that has been calcualted using \ref MULTICOLVARDENS.  If this function has one or two input
+or it might be a phase field that has been calculated using \ref MULTICOLVARDENS.  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three dimensions it can be
 difficult to visualize.
 
 This action provides one tool for visualizing these functions.  It can be used to search for a set of points on a contour
-wher the function takes a particular value.  In other words, for the function \f$f(x,y,z)\f$ this action would find a set
+where the function takes a particular value.  In other words, for the function \f$f(x,y,z)\f$ this action would find a set
 of points \f$\{x_c,y_c,z_c\}\f$ that have:
 
 \f[
@@ -46,14 +46,14 @@ where \f$c\f$ is some constant value that is specified by the user.  The points 
 that run parallel to the \f$x\f$, \f$y\f$ or \f$z\f$ axis of the simulation cell.  The result is, therefore, a two dimensional
 function evaluated on a grid that gives us the height of the interface as a function of two coordinates.
 
-It is important to note that this action can only be used to detect countours in three dimensional functions.  In addition, this action will fail to
+It is important to note that this action can only be used to detect contours in three dimensional functions.  In addition, this action will fail to
 find the full set of contour  points if the contour does not have the same topology as an infinite plane.  If you are uncertain that the isocontours in your
 function have the appropriate topology you should use \ref FIND_CONTOUR in place of \ref FIND_CONTOUR_SURFACE.
 
 
 \par Examples
 
-The input shown below was used to analyse the results from a simulation of an interface between solid and molten Lennard Jones.  The interface between
+The input shown below was used to analyze the results from a simulation of an interface between solid and molten Lennard Jones.  The interface between
 the solid and the liquid was set up in the plane perpendicular to the \f$z\f$ direction of the simulation cell.   The input below calculates something
 akin to a Willard-Chandler dividing surface \cite wcsurface between the solid phase and the liquid phase.  There are two of these interfaces within the
 simulation box because of the periodic boundary conditions but we were able to determine that one of these two surfaces lies in a particular part of the
@@ -107,8 +107,8 @@ public:
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void jobsAfterLoop();
 };
 
@@ -154,7 +154,9 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( gridobject.getDimension()-1 ); addValueWithDerivatives( shape ); setNotPeriodic();
+  std::vector<unsigned> shape( gridobject.getDimension()-1 ); 
+  addValueWithDerivatives( shape ); setNotPeriodic();
+  getPntrToOutput(0)->alwaysStoreValues();
 }
 
 void FindContourSurface::finishOutputSetup() {
@@ -297,9 +299,9 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), minp );
 }
 
-void FindContourSurface::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
+void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                            const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( valindex==0 ); unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
   unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }
 

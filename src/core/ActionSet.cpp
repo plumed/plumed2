@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,24 +40,12 @@ void ActionSet::clearDelete() {
   clear();
 }
 
-
-std::string ActionSet::getLabelList() const {
-  std::string outlist;
+ActionShortcut* ActionSet::getShortcutActionWithLabel( const std::string& s ) const {
   for(const auto & p : (*this)) {
-    outlist+=dynamic_cast<Action*>(p.get())->getLabel()+" ";
-  };
-  return  outlist;
+      ActionShortcut* sc=dynamic_cast<ActionShortcut*>(p.get()); 
+      if( sc && sc->shortcutlabel==s ) return sc;
+  }
+  return NULL;
 }
-
-std::vector<std::string> ActionSet::getLabelVector() const {
-  std::vector<std::string> outlist;
-  for(const auto & p : (*this)) {
-    outlist.push_back(dynamic_cast<Action*>(p.get())->getLabel());
-  };
-  return  outlist;
-}
-
-
-
 
 }

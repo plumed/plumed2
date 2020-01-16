@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -149,6 +149,9 @@ private:
 /// An array containing values that were passed from the MD code to PLUMED
   std::vector<std::unique_ptr<Value>> values;
 
+/// Records which of the input values are fixed
+  std::map<std::string,bool> fixed_vals;
+
 /// Object containing data we would like to grab and pass back
   std::unique_ptr<DataFetchingObject> mydatafetcher;
 
@@ -242,7 +245,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   ~PlumedMain();
   /**
     Read an input file.
@@ -399,6 +402,12 @@ public:
   bool callErrorHandler(int code,const char* msg)const;
 /// Get pointer to value that was passed from MD code to PLUMED
   Value* getPntrToValue( const std::string& name );
+/// Interpret the data request from one of the values that are pased from the MD code to PLUMED
+  void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
+/// Is the value with this name fixed in the input
+  bool valueIsFixed( const std::string& name ) const ;
+/// Get the name of the MD engine that called PLUMED
+  std::string getMDEngine() const ;
 };
 
 /////

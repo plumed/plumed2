@@ -1,0 +1,10 @@
+#
+d1: POSITION ATOM=1
+rr: METAD ARG=d1.x,d1.y BIASFACTOR=5 HEIGHT=1.0 TEMP=120.279047 SIGMA=0.1,0.1 PACE=1
+PRINT ARG=d1.x,d1.y,rr.bias FMT=%8.4f FILE=colvar STRIDE=1
+
+rw: REWEIGHT_BIAS ARG=rr.bias TEMP=120.279047  # This is the inverse of boltzmann's constant in kJ mol-1
+cc: COLLECT_FRAMES ARG=d1.x,d1.y LOGWEIGHTS=rw STRIDE=10
+it: ITRE ARG=cc.logweights TEMP=120.279047 MAXITER=10
+PRINT ARG=cc.logweights FILE=logweights_14.matx FMT=%8.4f
+PRINT ARG=it FILE=finalweights_14 FMT=%8.4f

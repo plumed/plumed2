@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,9 +39,11 @@ Value::Value():
   norm(1.0),
   hasForce(false),
   hasDeriv(true),
+  istimeseries(false),
   shape(std::vector<unsigned>()),
   alwaysstore(false),
   storedata(true),
+  neverstore(false),
   columnsums(false),
   symmetric(false),
   bufstart(0),
@@ -64,7 +66,10 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
+  istimeseries(false),
   alwaysstore(false),
+  storedata(true),
+  neverstore(false),
   columnsums(false),
   symmetric(false),
   bufstart(0),
@@ -75,6 +80,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  if( ss.size()>0 ) storedata=false;
   setShape( ss );
 }
 
@@ -82,14 +88,13 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
 
-  if( ss.size()>0 && !alwaysstore ) storedata=false;
-  else storedata=true;
-
-  if( shape.size()>0 ) data.resize(getSize());
-  else if( hasDeriv ) data.resize( 1 +  action->getNumberOfDerivatives() );
-  else data.resize(1);
-  unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-  inputForces.resize( fsize );
+  if( (hasDeriv || storedata || istimeseries || created_in_plumedmain) && shape.size()>0 ) {
+     data.resize(getSize()); unsigned fsize=1; 
+     for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+     inputForces.resize(fsize); 
+  } else if( hasDeriv ) {
+     data.resize( 1 +  action->getNumberOfDerivatives() ); inputForces.resize(1);
+  } else if( shape.size()==0 ) { data.resize(1); inputForces.resize(1); }
 }
 
 void Value::setupPeriodicity() {
@@ -104,16 +109,36 @@ void Value::setupPeriodicity() {
 }
 
 void Value::buildDataStore( const std::string& actlabel ) {
-  bool found=false;
+  if( neverstore ) return ;
+  bool found=false; 
   for(unsigned i=0; i<store_data_for.size(); ++i) {
     if( actlabel==store_data_for[i].first ) found=true;
   }
   if( !found ) store_data_for.push_back( std::pair<std::string,int>(actlabel,-1) );
   storedata=true;
+  if( getRank()>0 && !hasDeriv ) {
+      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+      if( fsize!=inputForces.size() ) inputForces.resize(fsize);
+  }
 }
 
 void Value::alwaysStoreValues() {
-  alwaysstore=true; storedata=true;
+  plumed_assert( !neverstore); alwaysstore=true; storedata=true;
+  if( getRank()>0 && !hasDeriv ) {
+      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+      if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
+  }
+}
+
+void Value::makeTimeSeries() {
+  plumed_assert( shape.size()==1 ); istimeseries=true;
+  unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
+}
+
+void Value::neverStoreValues() {
+  plumed_assert( !alwaysstore ); neverstore=true;
 }
 
 void Value::buildColumnSums() {
@@ -141,12 +166,14 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
   std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
   for(unsigned i=0; i<shape.size()-1; ++i) {
     std::size_t dot = indstr.find_first_of(".");
-    if( dot==std::string::npos ) action->error("invalid specification for element of value"); 
+    if( dot==std::string::npos && action ) action->error("invalid specification for element of value"); 
+    else if( dot==std::string::npos ) plumed_merror("invalid specification for element of value");
     Tools::convert( indstr.substr(0,dot), indices[i] );
     indices[i] -= 1; indstr=indstr.substr(dot+1);
   }
   Tools::convert( indstr, indices[indices.size()-1] ); indices[indices.size()-1] -= 1;
-  if( getIndex(indices)>=getNumberOfValues( action->getLabel() ) ) action->error("action does not have this many components");
+  std::size_t dot = name.find_first_of("."); std::string aname=name; if( dot!=std::string::npos ) aname = name.substr(0,dot);
+  if( getIndex(indices)>=getNumberOfValues(aname) ) action->error("action does not have this many components");
   userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
 
@@ -341,6 +368,11 @@ bool Value::usingAllVals( const std::string& alabel ) const {
 double Value::getRequiredValue(  const std::string& alabel, const unsigned& num  ) const {
   if( usingAllVals(alabel) ) return get(num);
   return get( userdata.find(alabel)->second[num].first );
+}
+
+void Value::addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  ) {
+  if( usingAllVals(alabel) ) addForce( num, ff );
+  else addForce( userdata.find(alabel)->second[num].first, ff );
 }
 
 void Value::getRequiredValue(  const std::string& alabel, const unsigned& num, std::vector<double>& args ) const {

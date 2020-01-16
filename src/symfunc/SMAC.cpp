@@ -69,9 +69,14 @@ ActionShortcut(ao)
 // Now need the Gaussians
   std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
   for(unsigned i=1;; ++i) {
-    std::string kstr_inpt, istr; Tools::convert( i, istr );
+    std::string kstr_inpt, istr, kern_str; Tools::convert( i, istr );
     if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }
-    readInputLine( getShortcutLabel() + "_kf" + istr + ": KERNEL ARG1=" + getShortcutLabel() + "_tpmat KERNEL={" + kstr_inpt +"}"); 
+    std::vector<std::string> words = Tools::getWords(kstr_inpt); 
+    if( words[0]=="GAUSSIAN" ) kern_str="gaussian";
+    else if( words[0]=="TRIANGULAR" ) kern_str="triangular";
+    else error("unknown kernel type");
+    std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
+    readInputLine( getShortcutLabel() + "_kf" + istr + ": KERNEL ARG1=" + getShortcutLabel() + "_tpmat CENTER=" + center + " SIGMA=" + var + " TYPE=" + kern_str );
     kmap_input += " ARG" + istr + "=" + getShortcutLabel() + "_kf" + istr;
   }
   readInputLine( kmap_input );

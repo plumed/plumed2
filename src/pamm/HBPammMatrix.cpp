@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,6 @@
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
-#include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
 
 //+PLUMEDOC MATRIX HBPAMM_MATRIX
@@ -41,16 +40,16 @@ namespace pamm {
 
 class HBPammMatrix : public adjmat::AdjacencyMatrixBase {
 private:
-  unsigned ndonor_types;
   double regulariser;
-  enum {dah,adh,hda} order=dah;
-  std::vector<KernelFunctions*> kernels;
+  Tensor incoord_to_hbcoord;
+  std::vector<double> weight;
+  std::vector<Vector> centers;
+  std::vector<Tensor> kmat;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit HBPammMatrix(const ActionOptions&);
-  ~HBPammMatrix();
 ///
   double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
 };
@@ -63,112 +62,89 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
                                       "adh (acceptor/donor/hydrogens) or hda (hydrogens/donor/hydrogens");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
+  keys.add("compulsory","GAUSS_CUTOFF","6.25","the cutoff at which to stop evaluating the kernel function is set equal to sqrt(2*x)*(max(adc)+cov(adc))");
 }
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   Action(ao),
   AdjacencyMatrixBase(ao)
 {
-  std::string sorder; parse("ORDER",sorder);
+  double DP2CUTOFF; parse("GAUSS_CUTOFF",DP2CUTOFF); std::string sorder; parse("ORDER",sorder);
   if( sorder=="dah" ) {
-     order = dah;
+     incoord_to_hbcoord(0,0)=1; incoord_to_hbcoord(0,1)=-1; incoord_to_hbcoord(0,2)=0; 
+     incoord_to_hbcoord(1,0)=1; incoord_to_hbcoord(1,1)=1; incoord_to_hbcoord(1,2)=0;
+     incoord_to_hbcoord(2,0)=0; incoord_to_hbcoord(2,1)=0; incoord_to_hbcoord(2,2)=1;
      log.printf("  GROUPA is list of donor atoms \n");
   } else if( sorder=="adh" ) {
-     order = adh;
+     incoord_to_hbcoord(0,0)=-1; incoord_to_hbcoord(0,1)=1; incoord_to_hbcoord(0,2)=0;
+     incoord_to_hbcoord(1,0)=1; incoord_to_hbcoord(1,1)=1; incoord_to_hbcoord(1,2)=0;
+     incoord_to_hbcoord(2,0)=0; incoord_to_hbcoord(2,1)=0; incoord_to_hbcoord(2,2)=1;
      log.printf("  GROUPA is list of acceptor atoms \n");
   } else if( sorder=="hda" ) {
-     order = hda;
+     incoord_to_hbcoord(0,0)=-1; incoord_to_hbcoord(0,1)=0; incoord_to_hbcoord(0,2)=1;
+     incoord_to_hbcoord(1,0)=1; incoord_to_hbcoord(1,1)=0; incoord_to_hbcoord(1,2)=1;
+     incoord_to_hbcoord(2,0)=0; incoord_to_hbcoord(2,1)=1; incoord_to_hbcoord(2,2)=0;
      log.printf("  GROUPA is list of hydrogen atoms \n");
   } else plumed_error();
   // Read in the regularisation parameter
   parse("REGULARISE",regulariser);
-  // Create a vector of pos
-  std::vector<Value*> pos; std::vector<std::string> valnames(3);
-  for(unsigned i=0;i<3;++i) pos.push_back( new Value() );
-  // Create the kernels
-  valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc"; 
+
   // Read in the kernels
-  std::string fname; parse("CLUSTERS", fname);
-  IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); kernels.resize(0);
+  double sqr2pi = sqrt(2*pi); double sqrt2pi3 = sqr2pi*sqr2pi*sqr2pi;
+  std::string fname; parse("CLUSTERS", fname); double sfmax=0, ww; Vector cent; Tensor covar;
+  IFile ifile; ifile.open(fname); ifile.allowIgnoredFields();
   for(unsigned k=0;; ++k) {
-    std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
-    if( !kk ) break ;
-    kk->normalize( pos );
-    kernels.emplace_back( kk.release() ); 
-    // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
+    if( !ifile.scanField("height",ww) ) break;
+    ifile.scanField("ptc",cent[0]); ifile.scanField("ssc",cent[1]); ifile.scanField("adc",cent[2]); 
+    ifile.scanField("sigma_ptc_ptc",covar[0][0]); ifile.scanField("sigma_ptc_ssc",covar[0][1]); ifile.scanField("sigma_ptc_adc",covar[0][2]);
+    covar[1][0] = covar[0][1]; ifile.scanField("sigma_ssc_ssc",covar[1][1]); ifile.scanField("sigma_ssc_adc",covar[1][2]); 
+    covar[2][0] = covar[0][2]; covar[2][1] = covar[1][2]; ifile.scanField("sigma_adc_adc",covar[2][2]);
+    weight.push_back( ww / ( sqrt2pi3 * sqrt(covar.determinant()) ) );
+    centers.push_back( cent ); kmat.push_back( covar.inverse() );
+
+    Vector eigval; Tensor eigvec; diagMatSym( covar, eigval, eigvec );
+    unsigned ind_maxeval=0; double max_eval=eigval[0];
+    for(unsigned i=1;i<3;++i) {
+        if( eigval[i]>max_eval ) { max_eval=eigval[i]; ind_maxeval=i; }
+    }
+    double rcut = cent[2] + sqrt(2.0*DP2CUTOFF)*fabs(sqrt(max_eval)*eigvec(2,ind_maxeval));  
+    if( rcut > sfmax ) sfmax = rcut;
     ifile.scanField();
   }
-  ifile.close(); for(unsigned i=0;i<3;++i) delete pos[i];
-
-  // Find cutoff for link cells
-  double sfmax=0;
-  for(unsigned k=0;k<kernels.size();++k) {
-      double rcut = kernels[k]->getCenter()[2] + kernels[k]->getContinuousSupport()[2];
-      if( rcut>sfmax ) sfmax = rcut;
-  }
-  setLinkCellCutoff( false, sfmax );
-}
-
-HBPammMatrix::~HBPammMatrix() {
-  for(unsigned k=0;k<kernels.size();++k) delete kernels[k];
+  ifile.close(); setLinkCellCutoff( false, sfmax );
 }
 
 double HBPammMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector doo = pbcDistance( pos1, pos2 ); double doom = doo.modulo();
+  Vector ddij, ddik, ddin, in_dists, hb_pamm_dists, hb_pamm_ders, real_ders;  
+  ddin = pbcDistance( pos1, pos2 ); in_dists[2] = ddin.modulo();
 
-  std::vector<Value*> pos; 
-  for(unsigned i=0;i<3;++i) {
-      pos.push_back( new Value() ); pos[i]->setNotPeriodic();
-  }
-
-  double pref=1,tot=0; std::vector<double> der(3), dderiv(3), tder(3);
+  double tot=0; Vector disp, der, tmp_der;
   for(unsigned i=0; i<natoms; ++i) {
-    Vector dij = getPosition(i,myvals); double dijm = dij.modulo();
-    Vector dik = pbcDistance( pos2, getPosition(i,myvals) ); double dikm=dik.modulo();
-    if( dikm<epsilon ) continue; 
+    ddij = getPosition(i,myvals); in_dists[0] = ddij.modulo();
+    ddik = pbcDistance( pos2, getPosition(i,myvals) ); in_dists[1] = ddik.modulo();
+    if( in_dists[1]<epsilon ) continue;
 
-    if( order==dah ) {
-        pos[0]->set( dijm - dikm ); pos[1]->set( dijm + dikm ); pos[2]->set( doom ); pref=+1;
-    } else if( order==adh ) {
-        pos[0]->set( dikm - dijm ); pos[1]->set( dijm + dikm ); pos[2]->set( doom ); pref=-1;
-    } else if( order==hda ) {
-        pos[0]->set( doom - dijm ); pos[1]->set( doom + dijm ); pos[2]->set( dikm );
-    }
-    double vv = kernels[0]->evaluate( pos, der ); 
-    double denom = regulariser + vv; for(unsigned j=0;j<3;++j) dderiv[j] = der[j];
-    for(unsigned k=1;k<kernels.size();++k) {
-        denom += kernels[k]->evaluate( pos, tder );
-        for(unsigned j=0;j<3;++j) dderiv[j] += tder[j];
+    hb_pamm_dists = matmul( incoord_to_hbcoord, in_dists ); 
+    disp = hb_pamm_dists - centers[0]; der = matmul( kmat[0], disp );
+    double vv = weight[0]*exp( -dotProduct( disp, der ) / 2. ); der *= -vv; 
+
+    double denom = regulariser + vv; for(unsigned j=0;j<3;++j) hb_pamm_ders[j] = der[j];
+    for(unsigned k=1;k<weight.size();++k) {
+        disp = hb_pamm_dists - centers[k]; tmp_der = matmul( kmat[k], disp );
+        double tval = weight[k]*exp( -dotProduct( disp, tmp_der ) / 2. );
+        denom += tval; hb_pamm_ders += -tmp_der*tval;
     }
     double vf = vv / denom; tot += vf;
-    for(unsigned j=0;j<3;++j) der[j] = der[j] / denom - vf*dderiv[j]/denom;
+    // Now get derivatives 
+    real_ders = matmul( der / denom - vf*hb_pamm_ders/denom, incoord_to_hbcoord );
 
-    // And finish the calculation
-    if( order==dah || order==adh ) {
-        addAtomDerivatives( 0, pref*((-der[0])/dijm)*dij, myvals );
-        addAtomDerivatives( 1, pref*((+der[0])/dikm)*dik, myvals );
-        addThirdAtomDerivatives( i, pref*((+der[0])/dijm)*dij - pref*((+der[0])/dikm)*dik, myvals );
-        addBoxDerivatives( pref*((-der[0])/dijm)*Tensor(dij,dij) - pref*((-der[0])/dikm)*Tensor(dik,dik), myvals );
-        addAtomDerivatives( 0, ((-der[1])/dijm)*dij, myvals );
-        addAtomDerivatives( 1, ((-der[1])/dikm)*dik, myvals );
-        addThirdAtomDerivatives( i, ((+der[1])/dijm)*dij + ((+der[1])/dikm)*dik, myvals );
-        addBoxDerivatives( ((-der[1])/dijm)*Tensor(dij,dij) + ((-der[1])/dikm)*Tensor(dik,dik), myvals );
-        addAtomDerivatives( 0, ((-der[2])/doom)*doo, myvals );
-        addAtomDerivatives( 1, ((+der[2])/doom)*doo, myvals );
-        addBoxDerivatives( ((-der[2])/doom)*Tensor(doo,doo), myvals );
-    } else if( order==hda ) { 
-        addAtomDerivatives( 0, ((-der[0])/doom)*doo - ((-der[0])/dijm)*dij, myvals );
-        addAtomDerivatives( 1, ((+der[0])/doom)*doo, myvals );
-        addThirdAtomDerivatives( i, -((+der[0])/dijm)*dij, myvals );
-        addBoxDerivatives( ((-der[0])/doom)*Tensor(doo,doo) - ((-der[0])/dijm)*Tensor(dij,dij), myvals );
-        addAtomDerivatives( 0, ((-der[1])/doom)*doo + ((-der[1])/dijm)*dij, myvals );
-        addAtomDerivatives( 1, ((+der[1])/doom)*doo, myvals );
-        addThirdAtomDerivatives( i, ((+der[1])/dijm)*dij, myvals );
-        addBoxDerivatives( ((-der[1])/doom)*Tensor(doo,doo) + ((-der[1])/dijm)*Tensor(dij,dij), myvals );
-        addAtomDerivatives( 1, ((-der[2])/dikm)*dik, myvals );
-        addThirdAtomDerivatives( i, ((+der[2])/dikm)*dik, myvals );
-        addBoxDerivatives( ((-der[2])/dikm)*Tensor(dik,dik), myvals );
-    }
+    // And add the derivatives to the underlying atoms
+    addAtomDerivatives( 0, -(real_ders[0]/in_dists[0])*ddij - (real_ders[2]/in_dists[2])*ddin, myvals );
+    addAtomDerivatives( 1, -(real_ders[1]/in_dists[1])*ddik + (real_ders[2]/in_dists[2])*ddin, myvals );    
+    addThirdAtomDerivatives( i, (real_ders[0]/in_dists[0])*ddij + (real_ders[1]/in_dists[1])*ddik, myvals );
+    addBoxDerivatives( -(real_ders[0]/in_dists[0])*Tensor( ddij, ddij )
+                       -(real_ders[1]/in_dists[1])*Tensor( ddik, ddik ) 
+                       -(real_ders[2]/in_dists[2])*Tensor( ddin, ddin ), myvals );
   }
   return tot;
 }

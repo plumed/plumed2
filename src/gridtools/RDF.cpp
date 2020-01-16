@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "RDF.h"
 #include "KDE.h"
-#include "tools/KernelFunctions.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -42,6 +41,7 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("atoms-2","GROUPA","");
   keys.add("atoms-2","GROUPB","");
   keys.add("compulsory","MAXR","the maximum distance to use for the rdf"); 
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
 }
@@ -63,10 +63,8 @@ ActionShortcut(ao)
   if( kernel=="DISCRETE" ) { 
     cutoff = maxr; kernel_data="KERNEL=DISCRETE"; 
   } else { 
-    parse("BANDWIDTH",bandwidth); kernel_data="KERNEL=" + kernel + " BANDWIDTH=" + bandwidth;
-    std::vector<double> bw(1,0), center(1,0); Tools::convert( bandwidth, bw[0] ); 
-    KernelFunctions kk( center, bw, kernel, "DIAGONAL", 1.0 ); std::vector<double> support( kk.getContinuousSupport() ); 
-    double fcut; Tools::convert( maxr, fcut ); Tools::convert( fcut + support[0], cutoff );
+    parse("BANDWIDTH",bandwidth); double rcut; parse("CUTOFF",rcut); kernel_data="KERNEL=" + kernel + " BANDWIDTH=" + bandwidth;
+    double bw; Tools::convert( bandwidth, bw ); double fcut; Tools::convert( maxr, fcut ); Tools::convert( fcut + sqrt(2.0*rcut)*bw, cutoff );
   }
 
   // Create contact matrix

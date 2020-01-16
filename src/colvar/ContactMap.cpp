@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -57,7 +57,7 @@ PRINT ARG=f1.* FILE=colvar
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
-(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+(i.e. the distance between two atoms transformed with the SWITCH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
 \plumedfile
@@ -263,8 +263,8 @@ void ContactMap::calculate() {
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if( runInSerial() ) {
     // when using components the parallelisation do not work
     stride=1;

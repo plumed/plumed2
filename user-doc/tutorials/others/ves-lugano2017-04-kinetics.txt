@@ -2,7 +2,7 @@
 \page ves-lugano2017-kinetics MARVEL-VES tutorial (Lugano Feb 2017): Kinetics
 
 \section ves-lugano2017-kinetics-aims Aims
-The aim of this tutorial is to introduce the use of VES for obtaining kinetic information of activated processes. We will learn how to set up a biased simulation using a fixed flooding potential acting on a relevant slow degree of freedom. We can then rescale the accelerated MD time in a post-processing procedure.
+The aim of this tutorial is to introduce the use of VES for obtaining kinetic information of activated processes. We will learn how to set up a biased simulation using a fixed flooding potential acting on a relevant slow degree of freedom. We can then scale the accelerated MD time in a post-processing procedure.
 
 \section ves-lugano2017-kinetics-lo Learning Outcomes
 
@@ -39,7 +39,7 @@ The <a href="tutorial-resources/ves-lugano2017-kinetics.tar.gz" download="ves-lu
 
 \subsection ves-lugano2017-kinetics-exercise-1A Exercise 1A. Preliminary investigation using VES
 
-As an example of an activated process in materials science, we will work with the Stone-Wales transformation in a carbon nanotube. The  <a href="tutorial-resources/ves-lugano2017-kinetics.tar.gz" download="ves-lugano2017-kinetics.tar.gz"> tarball </a> for this project contains the inputs neccessary to run a simulation in LAMMPS for a 480 atom carbon nanotube. We use the AIREBO (Adaptive Intermolecular Reactive Empirical Bond Order) force field parameters which can approximately describe C-C bond breakage and formation at reasonable computational cost. For CVs we can use the coordination number in PLUMED to measure the number of covalent bonds among different groups of atoms. The transformation involves breaking two C-C bonds and forming two alternative C-C bonds.A definition of these CVs as well as the relevant C-C bonds are depicted in Figure \ref stone-wales. We prepare a PLUMED input file as follows.
+As an example of an activated process in materials science, we will work with the Stone-Wales transformation in a carbon nanotube. The  <a href="tutorial-resources/ves-lugano2017-kinetics.tar.gz" download="ves-lugano2017-kinetics.tar.gz"> tarball </a> for this project contains the inputs necessary to run a simulation in LAMMPS for a 480 atom carbon nanotube. We use the AIREBO (Adaptive Intermolecular Reactive Empirical Bond Order) force field parameters which can approximately describe C-C bond breakage and formation at reasonable computational cost. For CVs we can use the coordination number in PLUMED to measure the number of covalent bonds among different groups of atoms. The transformation involves breaking two C-C bonds and forming two alternative C-C bonds.A definition of these CVs as well as the relevant C-C bonds are depicted in Figure \ref stone-wales. We prepare a PLUMED input file as follows.
 
 \plumedfile
 # set distance units to angstrom, time to ps, and energy to eV
@@ -206,7 +206,7 @@ velocity      all create 1700.  495920
 Choose a different 6 digit random number and repeat Exercise 2. How does the escape time compare to what you obtained before? Repeat the procedure several times with different velocity seeds to get a distribution of first passage times. Make sure you launch each simulation from a separate directory and keep all COLVAR files as you will need them in the next section where we will analyze the transition times.
 
 \subsection ves-lugano2017-kinetics-exercise-3 Exercise 3. Post processing to obtain unbiased estimate for the transition rate
-In the previous section you generated several trajectories with different first passage times. However, these times need to be re-weighted to correct for the bias potential. We can rescale the time according to the hyperdynamics formula
+In the previous section you generated several trajectories with different first passage times. However, these times need to be re-weighted to correct for the bias potential. We can scale the time according to the hyperdynamics formula
 
 \f[
   t^{*} = \Delta t_{MD} \sum_i^{n} e^{\beta V(s)}

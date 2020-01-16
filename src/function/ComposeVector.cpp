@@ -34,6 +34,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit ComposeVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
+  bool canChainFromThisAction() const { return false; }
   void calculate();
   void apply();
 };
@@ -50,8 +51,9 @@ Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao)
 { 
-  std::vector<unsigned> shape(1); shape[0]=getNumberOfArguments();
-  addValue( shape ); setNotPeriodic();
+  std::vector<unsigned> shape(1); shape[0]=getNumberOfScalarArguments();
+  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->buildDataStore( getLabel() );
+  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
 }
 
 unsigned ComposeVector::getNumberOfDerivatives() const {
@@ -59,11 +61,12 @@ unsigned ComposeVector::getNumberOfDerivatives() const {
 }
 
 void ComposeVector::calculate() {
-  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToOutput(0)->set(i, getPntrToArgument(i)->get(0) );
+  for(unsigned i=0;i<getNumberOfScalarArguments();++i) getPntrToOutput(0)->set(i, getArgumentScalar(i) );
 }
 
 void ComposeVector::apply() {
-
+  Value* val=getPntrToOutput(0);
+  for(unsigned i=0;i<getNumberOfScalarArguments();++i) setForceOnScalarArgument( i, val->getForce(i) ); 
 }
 
 }

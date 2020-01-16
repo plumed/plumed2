@@ -1,3 +1,8 @@
+#ifdef __PLUMED_LIBCXX11
+// In order to correctly catch the thrown C++11 exceptions,
+// we notify the Plumed wrapper that those exceptions are recognized by the compiler.
+#define __PLUMED_WRAPPER_LIBCXX11 1
+#endif
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
@@ -144,6 +149,66 @@ int main(){
 
 // this should fail
     test_this(ofs,plumed,"setMasses",&masses[0]);
+  }
+
+  {
+    PLMD::Plumed p;
+
+#define TEST_STD(type) try { p.cmd("throw", #type " msg"); } catch (type & e ) { plumed_assert(std::string(e.what())== #type " msg"); }
+    TEST_STD(std::logic_error);
+    TEST_STD(std::invalid_argument);
+    TEST_STD(std::domain_error);
+    TEST_STD(std::length_error);
+    TEST_STD(std::out_of_range);
+    TEST_STD(std::runtime_error);
+    TEST_STD(std::range_error);
+    TEST_STD(std::overflow_error);
+    TEST_STD(std::underflow_error);
+
+#define TEST_STD_NOMSG(type) try { p.cmd("throw", #type);} catch (type & e ) { }
+    TEST_STD_NOMSG(std::bad_cast);
+#ifdef __PLUMED_LIBCXX11
+    TEST_STD_NOMSG(std::bad_weak_ptr);
+    TEST_STD_NOMSG(std::bad_function_call);
+#endif
+    TEST_STD_NOMSG(std::bad_typeid);
+    TEST_STD_NOMSG(std::bad_alloc);
+#ifdef __PLUMED_LIBCXX11
+    TEST_STD_NOMSG(std::bad_array_new_length);
+#endif
+    TEST_STD_NOMSG(std::bad_exception);
+
+
+    try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
+    }
+    try { p.cmd("throw","PLMD::ExceptionError msg"); } catch (PLMD::Plumed::ExceptionError &e) {
+    }
+    try { p.cmd("throw","PLMD::ExceptionDebug msg"); } catch (PLMD::Plumed::ExceptionDebug &e) {
+    }
+    try { p.cmd("throw","PLMD::lepton::Exception msg"); } catch (PLMD::Plumed::LeptonException &e) {
+      plumed_assert(std::string(e.what())=="PLMD::lepton::Exception msg");
+    }
+#ifdef __PLUMED_LIBCXX11
+    try { p.cmd("throw","std::system_error std::generic_category 100"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==100)<<" value="<<e.code().value();
+      plumed_assert(e.code().category()==std::generic_category());
+    }
+    try { p.cmd("throw","std::system_error std::system_category 200"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==200);
+      plumed_assert(e.code().category()==std::system_category());
+    }
+    try { p.cmd("throw","std::system_error std::iostream_category 300"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==300);
+      plumed_assert(e.code().category()==std::iostream_category());
+    }
+    try { p.cmd("throw","std::system_error std::future_category 400"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==400);
+      plumed_assert(e.code().category()==std::future_category());
+    }
+#endif
+    try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
+    }
+
   }
 
   return 0;

@@ -28,7 +28,7 @@ In the former tutorials it has been often discussed the possibility of measuring
 some kind of state for a system, i.e. \ref belfast-5. An alternative possibility is to use as a reference a set of experimental data
 that represent a state and measure the current deviation from the set. In plumed there are currently implemented the following NMR
 experimental observables: Chemical Shifts (only for proteins) \ref CS2BACKBONE, \ref NOE distances, \ref JCOUPLING, \ref PRE intensities, 
-and Residual Dipolar couplings/pseudocontact shifts \ref RDC. 
+and Residual Dipolar couplings/pseudo-contact shifts \ref RDC. 
 
 In the following we will write the \ref CS2BACKBONE collective variable similar to the one used in Granata et al. (2013) (while the collective
 variable is still proportional to the square sum of the deviation of the calculated and experimental chemical shifts divided by a typical
@@ -71,7 +71,7 @@ same time, instead the restraint is applied over an AVERAGED COLLECTIVE VARIABLE
  independent simulations of the same system in the same conditions. 
 In this way the is not a single replica that must be in agreement with the experimental data but they should
 be in agreement on average. It has been shown that this approach is equivalent to solving the problem of finding a modified
-version of the force field that will reproduce the provided set of experimental data withouth any additional assumption on the
+version of the force field that will reproduce the provided set of experimental data without any additional assumption on the
 data themselves.
 
 The second example included in the resources show how the amber force field can be improved in the case of protein domain GB3 using
@@ -93,7 +93,7 @@ ENDPLUMED
 \endverbatim
 
 with respect to the case in which chemical shifts are used to define a standard collective variable, in this case \ref CS2BACKBONE
-is a collective variable with multiple components, that are all the backcalculated chemical shifts, plus all the relative experimental
+is a collective variable with multiple components, that are all the back calculated chemical shifts, plus all the relative experimental
 values. The keyword function \ref ENSEMBLE tells plumed to calculate the average of the arguments over the replicas (i.e. 4 replicas) 
 and the function \ref STATS compare the averaged back calculated chemical shifts with the experimental values and calculates the sum
 of the squared deviation.

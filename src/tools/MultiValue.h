@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -84,6 +84,8 @@ public:
   const std::vector<unsigned>& getIndices() const ;
 /// Tempory matrix indices
   void setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind );
+  unsigned getNumberOfMatrices() const ;
+  unsigned getNumberOfColumns() const ;
   unsigned getNumberOfMatrixIndices( const unsigned& nmat ) const ;
   std::vector<unsigned>& getMatrixIndices( const unsigned& nmat );
   std::vector<Vector>& getFirstAtomVector();
@@ -388,6 +390,16 @@ unsigned MultiValue::getSymfuncTemporyIndex() const {
 inline
 std::vector<double>& MultiValue::getSymfuncTemporyDerivatives( const unsigned& ind ) {
   plumed_dbg_assert( ind<symfunc_tmp_derivs.size() ); return symfunc_tmp_derivs[ind];
+}
+
+inline
+unsigned MultiValue::getNumberOfMatrices() const {
+  return matrix_element_nind.size();
+}
+
+inline
+unsigned MultiValue::getNumberOfColumns() const {
+  return nmatrix_cols;
 }
 
 }

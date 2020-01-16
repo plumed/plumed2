@@ -33,6 +33,7 @@ namespace bias {
 
 class ReweightWellTempered : public ReweightBase {
 private:
+  bool fixed_height;
   double logheight, deltaT;
 public:
   static void registerKeywords(Keywords&);
@@ -45,6 +46,7 @@ PLUMED_REGISTER_ACTION(ReweightWellTempered,"REWEIGHT_WELLTEMPERED")
 void ReweightWellTempered::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");
   keys.add("optional","ARG","the biases that must be taken into account when reweighting");
+  keys.addFlag("FIXED_HEIGHT",false,"do not do well tempered heights");
   keys.add("compulsory","BIASFACTOR","the well tempered factor");
   keys.add("compulsory","HEIGHT","the initial heights of the Guassians");
 }
@@ -53,12 +55,17 @@ ReweightWellTempered::ReweightWellTempered(const ActionOptions&ao):
   Action(ao),
   ReweightBase(ao)
 {
-  double biasf, height; parse("BIASFACTOR",biasf); parse("HEIGHT",height);
-  log.printf("  initial weights are %f and bias factor is set equal to %f \n", height, biasf );
-  deltaT = simtemp*(biasf - 1.0); logheight = std::log( height );
+  parseFlag("FIXED_HEIGHT",fixed_height); double height; parse("HEIGHT",height);
+  if( !fixed_height ) {
+      double biasf; parse("BIASFACTOR",biasf); deltaT = simtemp*(biasf - 1.0);
+      log.printf("  initial weights are %f and bias factor is set equal to %f \n", height, biasf );
+  } else log.printf("  weights are %f and well tempered is not being used \n", height );
+  logheight = std::log( height );
 }
 
 double ReweightWellTempered::getLogWeight() {
+  if( fixed_height ) return logheight;
+
   if( getNumberOfArguments()==0 ) error("bias was not set in input");
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgumentScalar(i);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,8 +38,8 @@ are averaged separately. The average is stored in a component labelled <em>label
 \par Examples
 
 The following input tells plumed to calculate the chemical shifts for four
-different proteins in the same simulation box then average them, calcualated
-the sum of the squared deviation with respect to the experiemntal values and
+different proteins in the same simulation box then average them, calculated
+the sum of the squared deviation with respect to the experimental values and
 applies a linear restraint.
 \plumedfile
 MOLINFO STRUCTURE=data/template.pdb
@@ -95,8 +95,15 @@ void LocalEnsemble::registerKeywords(Keywords& keys) {
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
   Function(ao)
-{
-  addValueWithDerivatives();
+{  
+  std::vector<std::string> period; parseVector("PERIODIC",period);
+  std::vector<unsigned> shape; shape.resize(0);
+  for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+      std::string num; Tools::convert(i+1,num);
+      ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
+      else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+  }
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }
 

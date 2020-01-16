@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionShortcut.h"
+#include "ActionRegister.h"
+#include "ActionWithValue.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 
@@ -68,12 +70,52 @@ const std::string & ActionShortcut::getShortcutLabel() const {
 std::string ActionShortcut::convertInputLineToString() {
   std::string output;
   for(auto p=line.begin(); p!=line.end(); ++p) {
-      if( (*p).find("= " )!=std::string::npos ) {
+      if( (*p).find(" " )!=std::string::npos ) {
           std::size_t eq = (*p).find_first_of("=");
-          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+2) + "}";  
+          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+1) + "}";  
       } else output += " " + (*p);
   } 
   line.resize(0); return output;
+}
+
+void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& arg ) const {
+  std::size_t dot=mystr.find_first_of('.'); std::string a=mystr.substr(0,dot); std::string name=mystr.substr(dot+1);
+  // Retrieve the keywords for the shortcut
+  Keywords skeys; actionRegister().getKeywords( getName(), skeys );
+  std::vector<std::string> out_comps( skeys.getAllOutputComponents() ); unsigned carg = nargs; 
+  // Now get the output components
+  if( name=="*" ) {
+      for(unsigned k=0; k<out_comps.size(); ++k) {
+          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
+          if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
+          else {
+             for(unsigned j=1;; ++j) {
+                 std::string numstr; Tools::convert( j, numstr );
+                 ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
+                 if(!act) break;
+                 act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
+             }
+          }
+      }
+  } else {
+      for(unsigned k=0; k<out_comps.size(); ++k) {
+          if( name.find(out_comps[k])!=std::string::npos ) {
+              if( name==out_comps[k] ) {
+                   ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
+                   action->interpretDataLabel( a + "_" + name, myuser, nargs, arg );
+              } else { 
+                   for(unsigned j=1;; ++j) {
+                       std::string numstr; Tools::convert( j, numstr );
+                       if( name==out_comps[k] + numstr ) {
+                           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name + numstr );
+                           action->interpretDataLabel( a + "_" + name + numstr, myuser, nargs, arg ); break;
+                       }
+                   }
+              }
+              break;
+          }
+      }
+  }
 }
 
 }

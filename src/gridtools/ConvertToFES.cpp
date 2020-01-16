@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "function/Function.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
@@ -39,7 +39,7 @@ The free energy calculated on a grid is output by this action and can be printed
 
 \par Examples
 
-This is a typical example showing how CONVERT_TO_FES might be used when postprocessing a trajectory.
+This is a typical example showing how CONVERT_TO_FES might be used when post processing a trajectory.
 The input below calculates the free energy as a function of the distance between atom 1 and atom 2.
 This is done by accumulating a histogram as a function of this distance using kernel density estimation
 and the HISTOGRAM action.  All the data within this trajectory is used in the construction of this
@@ -59,43 +59,34 @@ DUMPGRID GRID=ff FILE=fes.dat
 namespace PLMD {
 namespace gridtools {
 
-class ConvertToFES : public function::Function {
-private:
-  double simtemp;
+class ConvertToFES : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
-  function::Function::registerKeywords( keys ); keys.use("ARG");
+  ActionShortcut::registerKeywords( keys ); 
+  keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
-  Function(ao)
+  ActionShortcut(ao)
 {
-  simtemp=0.; parse("TEMP",simtemp);
+  double simtemp=0.; parse("TEMP",simtemp); 
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
   else simtemp=plumed.getAtoms().getKbT();
   if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
-  // Sanity checks on input to convert to FES
-  if( getNumberOfArguments()!=1 ) error("should only have one argument");
-  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
+  std::vector<std::string> argv; parseVector("ARG",argv);
+  if( argv.size()!=1 ) error("should only have one argument");
 
-  // And value
-  addValueWithDerivatives();
-}
-
-void ConvertToFES::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  addValue(0, -simtemp*std::log(args[0]), myvals );
-  if( args[0]>0 ) addDerivative( 0, 0, -(simtemp/args[0]), myvals );
-  else addDerivative( 0, 0, 0, myvals );
+  std::string str_temp; Tools::convert( simtemp, str_temp );
+  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
 }
 
 }

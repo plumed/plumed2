@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "tools/Pdb.h"
+#include "tools/PDB.h"
 #include "Path.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
@@ -51,7 +51,7 @@ To learn more about how the path is adapted we strongly recommend reading this p
 
 \par Examples
 
-The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of
+The input below provides an example that shows how the adaptive path works. The path is updated every 50 steps of
 MD based on the data accumulated during the preceding 50 time steps.
 
 \plumedfile
@@ -138,7 +138,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
       if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
       std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt); 
       for(unsigned i=0;i<nframes;++i) { std::string num; Tools::convert( i+1, num ); pframes += " CONFIG" + num + "=" + getShortcutLabel() + "_ref" + num; }
-      readInputLine("PRINT STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + pframes );
+      readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + pframes );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }

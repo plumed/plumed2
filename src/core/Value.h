@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,12 +72,14 @@ private:
   std::string name;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// Is this value a time series
+  bool istimeseries;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
 /// This is used by actions that always store data.  They cannot operate without storing all values
   bool alwaysstore;
 /// Are we storing the data
-  bool storedata;
+  bool storedata, neverstore;
   std::vector<std::pair<std::string,int> > store_data_for;
 /// Are we taking column sums
   bool columnsums;
@@ -174,7 +176,10 @@ public:
   static double projection(const Value&,const Value&);
 /// Build the store of data
   void buildDataStore( const std::string& actlabel );
+  void makeTimeSeries();
+  bool isTimeSeries() const ;
   void alwaysStoreValues();
+  void neverStoreValues();
   void buildColumnSums();
 ///
   unsigned getRank() const ;
@@ -200,6 +205,8 @@ public:
   bool usingAllVals( const std::string& alabel ) const ;
 ///
   double getRequiredValue(  const std::string& alabel, const unsigned& num  ) const ;
+///
+  void addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  );
 ///
   void getRequiredValue( const std::string& alabel, const unsigned& num, std::vector<double>& args ) const ;
 ///
@@ -377,6 +384,11 @@ inline
 double Value::getMaxMinusMin()const {
   plumed_dbg_assert( periodicity==periodic );
   return max_minus_min;
+}
+
+inline
+bool Value::isTimeSeries() const {
+  return istimeseries;
 }
 
 }

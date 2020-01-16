@@ -63,6 +63,7 @@ SphericalKDE::SphericalKDE(const ActionOptions&ao):
   std::vector<bool> ipbc( getNumberOfDerivatives(), false );
   double fib_cutoff = std::log( epsilon / von_misses_norm ) / von_misses_concentration;
   gridobject.setup( "fibonacci", ipbc, nbins, fib_cutoff ); checkRead();
+  createTaskList();
 
   // Setup the grid
   std::vector<unsigned> shape(3); shape[0]=nbins; shape[1]=shape[2]=1;
@@ -111,7 +112,7 @@ void SphericalKDE::addKernelToGrid( const double& height, const std::vector<doub
 }
 
 void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args,
-                                    const double& height, std::vector<double>& forces ) const {
+                                    const unsigned& htask, const double& height, std::vector<double>& forces ) const {
   std::vector<double> gpoint( args.size() );
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
@@ -119,28 +120,9 @@ void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigne
     gridobject.getGridPointCoordinates( neighbors[i], gpoint );
     double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
     double fforce = getPntrToOutput(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-    if( heights_index==2  ) forces[ args.size()*numberOfKernels + itask ] += newval*fforce / height;
+    if( heights_index==2  ) forces[ args.size()*numberOfKernels + htask ] += newval*fforce / height;
     unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += numberOfKernels; }
   }
-}
-
-class SphericalKDEShortcut : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit SphericalKDEShortcut(const ActionOptions&);
-};
-
-PLUMED_REGISTER_ACTION(SphericalKDEShortcut,"SPHERICAL_KDE")
-    
-void SphericalKDEShortcut::registerKeywords( Keywords& keys ) {
-  SphericalKDE::registerKeywords( keys ); 
-}
-
-SphericalKDEShortcut::SphericalKDEShortcut(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{
-  HistogramBase::createKDEObject( getShortcutLabel(), "SPHERICAL_KDE", this );
 }
 
 }

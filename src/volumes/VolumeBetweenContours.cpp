@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
-#include "tools/KernelFunctions.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/LinkCells.h"
 #include "ActionVolume.h"
@@ -30,8 +29,7 @@
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a region where the density of a certain type of atom is high.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
 This collective variable can be used to determine whether colvars are within region where the density
 of a particular atom is high.  This is achieved by calculating the following function at the point where
@@ -66,11 +64,12 @@ namespace volumes {
 class VolumeInEnvelope : public ActionVolume {
 private:
   LinkCells mylinks;
-  std::unique_ptr<KernelFunctions> kernel;
+  double gvol;
   std::vector<std::unique_ptr<Value>> pos;
   std::vector<Vector> ltmp_pos;
   std::vector<unsigned> ltmp_ind;
-  SwitchingFunction sfunc;
+  std::vector<double> bandwidth;
+  SwitchingFunction sfunc, switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
@@ -88,6 +87,7 @@ void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
 }
 
 VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
@@ -107,15 +107,16 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
   if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
   log.printf("  density at atom must be larger than %s \n", ( sfunc.description() ).c_str() );
 
-  std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
+  std::vector<double> pp(3,0.0); bandwidth.resize(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) );
-  std::vector<Value*> fargs; kernel->normalize( fargs );
-  for(unsigned i=0; i<3; ++i) { pos.emplace_back(new Value()); pos[i]->setNotPeriodic(); }
-  std::vector<double> csupport( kernel->getContinuousSupport() );
-  double maxs = csupport[0];
-  for(unsigned i=1; i<csupport.size(); ++i) {
-    if( csupport[i]>maxs ) maxs = csupport[i];
+  std::string errors2; switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH RETURN_DERIV", errors2 );
+  if( errors2.length()!=0 ) error("problem reading switching function description " + errors2);
+  double det=1; for(unsigned i=0; i<bandwidth.size(); ++i) det*=bandwidth[i]*bandwidth[i];
+  gvol=1.0; if( getKernelType()=="gaussian" ) gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
+  else error("cannot use kernel other than gaussian");
+  double dp2cutoff; parse("CUTOFF",dp2cutoff); double maxs =  sqrt(2*dp2cutoff)*bandwidth[0];
+  for(unsigned j=1; j<bandwidth.size(); ++j) {
+    if( sqrt(2*dp2cutoff)*bandwidth[j]>maxs ) maxs=sqrt(2*dp2cutoff)*bandwidth[j];
   }
   checkRead(); requestAtoms(atoms); mylinks.setCutoff( maxs );
 }
@@ -136,10 +137,11 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
 
   for(unsigned i=1; i<natoms; ++i) {
     Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
-    for(unsigned j=0; j<3; ++j) pos[j]->set( dist[j] );
-    value += kernel->evaluate( pos_ptr, der, true );
+    double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; } 
+    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol;
+    double tmp = dfunc / gvol; 
     for(unsigned j=0; j<3; ++j) {
-      derivatives[j] -= der[j]; refders[ indices[i] ][j] += der[j]; tder[j]=der[j];
+      derivatives[j] -= tmp*der[j]; refders[ indices[i] ][j] += tmp*der[j]; tder[j]=tmp*der[j];
     }
     vir -= Tensor( tder, dist );
   }

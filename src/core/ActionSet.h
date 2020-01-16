@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionSet_h
 
 #include "Action.h"
+#include "ActionShortcut.h"
 #include <memory>
 
 namespace PLMD {
@@ -62,9 +63,18 @@ public:
   template <class T>
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
+/// Only classes that can be dynamic casted to T are reported
+  template <class T>
   std::string getLabelList() const;
 /// get the labels in the form of a vector of strings
+/// Only classes that can be dynamic casted to T are reported
+  template <class T>
   std::vector<std::string> getLabelVector() const;
+/// Get the final action in the set of a particular type
+  template<class T>
+  T getFinalActionOfType() const;  
+/// Get any shortcuts with this shortcut label 
+  ActionShortcut* getShortcutActionWithLabel( const std::string& s ) const ;
 };
 
 /////
@@ -97,6 +107,35 @@ std::vector<Action*> ActionSet::selectNot()const {
     if(!t) ret.push_back(p.get());
   };
   return ret;
+}
+
+template <class T>
+std::string ActionSet::getLabelList() const {
+  std::string outlist;
+  for(const auto & p : (*this)) {
+    if(dynamic_cast<T>(p.get())) outlist+=p->getLabel()+" ";
+  };
+  return  outlist;
+}
+
+
+template <class T>
+std::vector<std::string> ActionSet::getLabelVector() const {
+  std::vector<std::string> outlist;
+  for(const auto & p : (*this)) {
+    if(dynamic_cast<T>(p.get())) outlist.push_back(p->getLabel());
+  };
+  return  outlist;
+}
+
+template <class T>
+T ActionSet::getFinalActionOfType() const {
+  for(int i=(*this).size()-1;i>=0;--i) {
+      T t=dynamic_cast<T>( (*this)[i].get() );
+      if(t) return t;
+  }
+  plumed_merror("could not find final action of appropriate type");
+  return NULL;
 }
 
 }

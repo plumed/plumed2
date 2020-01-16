@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,6 +32,7 @@ Action used to create a command that expands to multiple PLMD::Action commands w
 */
 class ActionShortcut :
   public virtual Action {
+friend class ActionSet;
 private:
   std::string shortcutlabel;
 public:
@@ -44,6 +45,8 @@ public:
   const std::string & getShortcutLabel() const ;
 /// Take everything that was input to this action and convert it to a string
   std::string convertInputLineToString();
+/// This sorts out the reading of arguments from shortcuts
+  void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) const ;
 /// It is a shortcut it should never need to be activated
   void activate() {}
 /// Do nothing.

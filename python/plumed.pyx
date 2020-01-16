@@ -25,37 +25,50 @@
 #
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
-import numpy as np
-cimport numpy as np
+
+from cpython cimport array
+import array
+
+try:
+     import numpy as np
+     HAS_NUMPY=True
+except ImportError:
+     HAS_NUMPY=False
 
 cdef class Plumed:
-     cdef cplumed.plumed c_plumed
-     def __cinit__(self):
-         self.c_plumed = cplumed.plumed_create()   #new cplumed.Plumed()
+     cdef cplumed.Plumed c_plumed
+     def __cinit__(self,kernel=None):
+         cdef bytes py_kernel
+         cdef char* ckernel
+         if kernel is None:
+            self.c_plumed=cplumed.Plumed.makeValid()
+            if not self.c_plumed.valid():
+                 raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
+         else:
+            py_kernel= kernel.encode()
+            ckernel = py_kernel
+            self.c_plumed=cplumed.Plumed.dlopen(ckernel)
+            if not self.c_plumed.valid():
+                 raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
-         cplumed.plumed_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
-     def __dealloc__(self): 
-         cplumed.plumed_finalize(self.c_plumed)
-
+         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
      def cmd_ndarray_int(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val )
+         self.c_plumed.cmd( ckey, <void*>&val )
      cdef cmd_int(self, ckey, int val):
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val)
-
+         self.c_plumed.cmd( ckey, <void*>&val)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval 
-         cdef np.int_t[:] ibuffer
-         cdef np.float64_t[:] dbuffer
+         cdef array.array ar
          if val is None :
-            cplumed.plumed_cmd( self.c_plumed, ckey, NULL )
+            self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
             if key=="getDataRank" :
                raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
@@ -64,16 +77,25 @@ cdef class Plumed:
             if key=="getBias" :
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val) 
-         elif isinstance(val, np.ndarray) : 
+         elif HAS_NUMPY and isinstance(val, np.ndarray) : 
             if( val.dtype=="float64" ):
                self.cmd_ndarray_real(ckey, val)
             elif( val.dtype=="int64" ) : 
                self.cmd_ndarray_int(ckey, val)
             else :
                raise ValueError("ndarrys should be float64 or int64")
+         elif isinstance(val, array.array) : 
+            if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8): 
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            elif( (val.typecode=="i" or val.typecode=="I") ) :
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            else :
+               raise ValueError("ndarrays should be double (size=8) or int")
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
-              cplumed.plumed_cmd( self.c_plumed, ckey, <void*>cval )
+              self.c_plumed.cmd( ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))

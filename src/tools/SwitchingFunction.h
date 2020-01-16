@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -83,8 +83,12 @@ class SwitchingFunction {
   std::vector<lepton::CompiledExpression> expression_deriv;
   std::vector<double*> lepton_ref;
   std::vector<double*> lepton_ref_deriv;
+/// Return the derivative rather than deriv/distance
+  bool returnderiv=false;
 /// Set to true for fast rational functions (depending on x**2 only)
   bool fastrational=false;
+/// Set to true for kernel functions
+  bool fastgaussian=false;
 /// Set to true if lepton only uses x2
   bool leptonx2=false;
 public:

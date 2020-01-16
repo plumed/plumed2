@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,12 +38,14 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionWithValue(ao),
   boxDerivatives(3)
 {
-  index=atoms.addVirtualAtom(this);
-  log.printf("  serial associated to this virtual atom is %u\n",index.serial());
+  if( getName()!="GYRATION_TENSOR" ) {
+      index=atoms.addVirtualAtom(this);
+      log.printf("  serial associated to this virtual atom is %u\n",index.serial());
+  }
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom() {
-  atoms.removeVirtualAtom(this);
+  if( getName()!="GYRATION_TENSOR" ) atoms.removeVirtualAtom(this);
 }
 
 void ActionWithVirtualAtom::apply() {

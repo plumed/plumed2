@@ -43,58 +43,13 @@ JCOUPLING ...
     LABEL=jncg
 ... JCOUPLING
 
-# xGxAWxASx
-JCOUPLING ...
-    NOPBC
-    NUMERICAL_DERIVATIVES
-    TYPE=HAN
-    ATOMS1=@psi-2
-    ATOMS2=@psi-4
-    ATOMS3=@psi-5
-    ATOMS4=@psi-7
-    ATOMS5=@psi-8
-    LABEL=djhan
-... JCOUPLING
 
-# xxAAWAASS
-JCOUPLING ...
-    NOPBC
-    NUMERICAL_DERIVATIVES
-    TYPE=HAHN
-    ATOMS1=@psi-2
-    ATOMS2=@psi-3
-    ATOMS3=@psi-4
-    ATOMS4=@psi-5
-    ATOMS5=@psi-6
-    ATOMS6=@psi-7
-    ATOMS7=@psi-8
-    LABEL=djhahn
-... JCOUPLING
+PRINT ARG=(jhan\..*),(jhahn\..*),(jccg\..*),(jncg\..*) STRIDE=1 FILE=COLVAR FMT=%.4f
 
-# xxxxWxxxx
-JCOUPLING ...
-    NOPBC
-    NUMERICAL_DERIVATIVES
-    TYPE=CCG
-    ATOMS1=67,47,49,52
-    LABEL=djccg
-... JCOUPLING
-
-# xxxxWxxxx
-JCOUPLING ...
-    NOPBC
-    NUMERICAL_DERIVATIVES
-    TYPE=NCG
-    ATOMS1=47,49,52,53
-    LABEL=djncg
-... JCOUPLING
-
-PRINT ARG=(jhan\..*),(jhahn\..*),(jccg\..*),(jncg\..*) STRIDE=1 FILE=COLVAR
-
-DUMPDERIVATIVES ARG=jhan.*,djhan.*   STRIDE=1 FILE=deriv-jhan  FMT=%8.3f
-DUMPDERIVATIVES ARG=jhahn.*,djhahn.* STRIDE=1 FILE=deriv-jhahn FMT=%8.3f
-DUMPDERIVATIVES ARG=jccg.*,djccg.*   STRIDE=1 FILE=deriv-jccg  FMT=%8.3f
-DUMPDERIVATIVES ARG=jncg.*,djncg.*   STRIDE=1 FILE=deriv-jncg  FMT=%8.3f
+DUMPDERIVATIVES ARG=jhan.*  STRIDE=1 FILE=deriv-jhan  FMT=%8.2f
+DUMPDERIVATIVES ARG=jhahn.* STRIDE=1 FILE=deriv-jhahn FMT=%8.2f
+DUMPDERIVATIVES ARG=jccg.*  STRIDE=1 FILE=deriv-jccg  FMT=%8.2f
+DUMPDERIVATIVES ARG=jncg.*  STRIDE=1 FILE=deriv-jncg  FMT=%8.2f
 
 FLUSH STRIDE=100
 

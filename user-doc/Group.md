@@ -18,7 +18,7 @@ In addition, there are a few shortcuts that can be used:
 - `@mdatoms` indicate all the physical atoms present in the MD engine (e.g. `DUMPATOMS ATOMS=@mdatoms`).
 - `@allatoms` indicates all atoms, including \ref vatoms "those defined only in PLUMED" (e.g. `DUMPATOMS ATOMS=@allatoms`).
 
-The list of the virtual atoms defined in PLUMED can be obtained dy difference with `GROUP ATOMS=@allatoms REMOVE=@mdatoms`.
+The list of the virtual atoms defined in PLUMED can be obtained by using the command `GROUP ATOMS=@allatoms REMOVE=@mdatoms`.
 
 Other shortcuts are available if you loaded the structure of the molecule using the \ref MOLINFO command.
 
@@ -28,7 +28,7 @@ DUMPATOMS ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5 FILE=test.xyz
 \endplumedfile
 
 Some collective variable must accept a fixed number of atoms, for example a \ref DISTANCE is calculated
-using two atoms only, an \ref ANGLE is calcuated using either 3 or 4 atoms and \ref TORSION is calculated using 4 atoms.
+using two atoms only, an \ref ANGLE is calculated using either 3 or 4 atoms and \ref TORSION is calculated using 4 atoms.
 
 Additional material and examples can be also found in the tutorial \ref belfast-1. 
 
@@ -45,7 +45,7 @@ in the same manner as they would be treated in the host code.  In some codes thi
 you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
 periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
 work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
-in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
+in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this problem - the user specifies
 in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
 using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be achieved using the \subpage WHOLEMOLECULES command.
 

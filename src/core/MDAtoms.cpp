@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,49 +53,49 @@ class MDAtomsTyped:
   std::map<std::string,T*> extraCVForce;
 public:
   MDAtomsTyped();
-  void setm(void*m);
-  void setc(void*m);
-  void setBox(void*);
-  void setp(void*p);
-  void setVirial(void*);
-  void setf(void*f);
-  void setp(void*p,int i);
-  void setf(void*f,int i);
-  void setUnits(const Units&,const Units&);
-  void setExtraCV(const std::string &name,void*p) {
+  void setm(void*m) override;
+  void setc(void*m) override;
+  void setBox(void*) override;
+  void setp(void*p) override;
+  void setVirial(void*) override;
+  void setf(void*f) override;
+  void setp(void*p,int i) override;
+  void setf(void*f,int i) override;
+  void setUnits(const Units&,const Units&) override;
+  void setExtraCV(const std::string &name,void*p) override {
     extraCV[name]=static_cast<T*>(p);
   }
-  void setExtraCVForce(const std::string &name,void*p) {
+  void setExtraCVForce(const std::string &name,void*p) override {
     extraCVForce[name]=static_cast<T*>(p);
   }
-  double getExtraCV(const std::string &name) {
+  double getExtraCV(const std::string &name) override {
     return static_cast<double>(*extraCV[name]);
   }
-  void updateExtraCVForce(const std::string &name,double f) {
+  void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name]+=static_cast<T>(f);
   }
-  void MD2double(const void*m,double&d)const {
+  void MD2double(const void*m,double&d)const override {
     d=double(*(static_cast<const T*>(m)));
   }
-  void double2MD(const double&d,void*m)const {
+  void double2MD(const double&d,void*m) const override {
     *(static_cast<T*>(m))=T(d);
   }
-  Vector getMDforces(const unsigned index)const {
+  Vector getMDforces(const unsigned index) const override {
     Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
     return force/scalef;
   }
-  void getBox(Tensor &)const;
-  void getPositions(const vector<int>&index,vector<Vector>&positions)const;
-  void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions)const;
-  void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
-  void getLocalPositions(std::vector<Vector>&p)const;
-  void getMasses(const vector<int>&index,vector<double>&)const;
-  void getCharges(const vector<int>&index,vector<double>&)const;
-  void updateVirial(const Tensor&)const;
-  void updateForces(const vector<int>&index,const vector<Vector>&);
-  void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces);
-  void rescaleForces(const vector<int>&index,double factor);
-  unsigned  getRealPrecision()const;
+  void getBox(Tensor &) const override;
+  void getPositions(const vector<int>&index,vector<Vector>&positions) const override;
+  void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions) const override;
+  void getPositions(unsigned j,unsigned k,vector<Vector>&positions) const override;
+  void getLocalPositions(std::vector<Vector>&p) const override;
+  void getMasses(const vector<int>&index,vector<double>&) const override;
+  void getCharges(const vector<int>&index,vector<double>&) const override;
+  void updateVirial(const Tensor&) const override;
+  void updateForces(const vector<int>&index,const vector<Vector>&) override;
+  void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) override;
+  void rescaleForces(const vector<int>&index,double factor) override;
+  unsigned  getRealPrecision()const override;
 };
 
 template <class T>

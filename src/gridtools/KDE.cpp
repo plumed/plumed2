@@ -20,10 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KDE.h"
+#include "tools/OpenMP.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
-#include "core/ActionShortcut.h"
+#include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -201,8 +202,9 @@ void KDE::registerKeywords( Keywords& keys ) {
   HistogramBase::registerKeywords( keys );
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
+  keys.add("compulsory","METRIC","the inverse covariance to use for the kernels that are added to the grid");
+  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
+  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.addFlag("IGNORE_IF_OUT_OF_RANGE",false,"if a kernel is outside of the range of the grid it is safe to ignore");
@@ -212,12 +214,11 @@ void KDE::registerKeywords( Keywords& keys ) {
 KDE::KDE(const ActionOptions&ao):
   Action(ao),
   HistogramBase(ao),
-  kernel(NULL),
   firststep(false),
+  fixed_width(false),
   ignore_out_of_bounds(false),
   gmin( getNumberOfDerivatives() ),
-  gmax( getNumberOfDerivatives() ),
-  bandwidth( getNumberOfDerivatives() )
+  gmax( getNumberOfDerivatives() )
 {
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
   for(unsigned i=0; i<gmin.size(); ++i) {
@@ -266,10 +267,27 @@ KDE::KDE(const ActionOptions&ao):
   }
   if( firststep && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
 
-  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
-  parse("KERNEL",kerneltype); if( kerneltype!="DISCRETE" ) parseVector("BANDWIDTH",bandwidth);
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); parse("CUTOFF",dp2cutoff);
+  parse("KERNEL",kerneltype); 
+  if( kerneltype!="DISCRETE" ) {
+      std::vector<std::string> bandwidth(1); parseVector("METRIC",bandwidth);
+      std::vector<Value*> bw_args; interpretArgumentList( bandwidth, bw_args );
+      if( bw_args[0]->hasDerivatives() ) error("bandwidth should not have derivatives");
+      if( bw_args[0]->getRank()==1 && bw_args[0]->getNumberOfValues( getLabel() )!=getNumberOfDerivatives() ) error("size of bandwidth vector is incorrect");
+      if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");
+      log.printf("  bandwidths are taken from : %s \n", bandwidth[0].c_str() );
+      std::vector<Value*> args( getArguments() ); args.push_back( bw_args[0] );
+      requestArguments( args, true );
+  }
+  createTaskList();
+
+  if( kerneltype.find("bin")==std::string::npos && kerneltype!="DISCRETE" ) {
+     std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH RETURN_DERIV", errors ); 
+     if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  }
+
   if( nbin.size()!=getNumberOfDerivatives() && gspacing.size()!=getNumberOfDerivatives() ) error("GRID_BIN or GRID_SPACING must be set");
-  if( kerneltype.find("-bin")!=std::string::npos ) cval.resize( gmin.size() );
+  cval.resize( gmin.size() );
 
   parseFlag("IGNORE_IF_OUT_OF_RANGE",ignore_out_of_bounds);
   if( ignore_out_of_bounds ) log.printf("  ignoring kernels that are outside of grid \n");
@@ -286,31 +304,57 @@ KDE::KDE(const ActionOptions&ao):
   if( !firststep ) {
     gridobject.setBounds( gmin, gmax, nbin, gspacing );
     std::vector<unsigned> shape( gridobject.getNbin(true) );
-    addValueWithDerivatives( shape ); setupNeighborsVector();
+    for(unsigned i=0; i<gmin.size(); ++i) {
+        grid_diff_value.push_back( Value() );
+        if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
+        else grid_diff_value[i].setNotPeriodic();
+    }
+    addValueWithDerivatives( shape ); 
+    if( kerneltype!="DISCRETE" ) {
+        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
+        if(as) { fixed_width=true; setupNeighborsVector(); }
+    }
   } else {
     std::vector<unsigned> shape( getNumberOfDerivatives(), 1 );
     addValueWithDerivatives( shape );
   }
 }
 
-KDE::~KDE() {
-  if( kernel ) delete kernel;
-}
-
 void KDE::setupNeighborsVector() {
   if( kerneltype!="DISCRETE" ) {
-    std::vector<double> point(gmin.size(), 0), support(gmin.size(),0);
+    std::vector<double> support(gmin.size(),0); nneigh.resize( gmin.size() ); 
     if( kerneltype.find("bin")!=std::string::npos ) {
-      std::size_t dd = kerneltype.find("-bin"); nneigh.resize( gmin.size() );
+      std::size_t dd = kerneltype.find("-bin"); 
       HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
-      for(unsigned i=0; i<point.size(); ++i) {
-        bead.set( 0, gridobject.getGridSpacing()[i], bandwidth[i] );
-        support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
-      }
+      Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+      if( bw_arg->getRank()<2 ) {
+          for(unsigned i=0; i<support.size(); ++i) {
+            bead.set( 0, gridobject.getGridSpacing()[i], 1./sqrt(bw_arg->get(i)) );
+            support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
+          } 
+      } else plumed_error();
     } else {
-      KernelFunctions kernel( point, bandwidth, kerneltype, "DIAGONAL", 1.0 ); kernel.normalize( getArguments() );
-      nneigh=kernel.getSupport( gridobject.getGridSpacing() );
-      for(unsigned i=0; i<support.size(); ++i) support[i] = kernel.getContinuousSupport()[i];
+      Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+      if( bw_arg->getRank()<2 ) {
+          for(unsigned i=0; i<support.size(); ++i) {
+             support[i] = sqrt(2.0*dp2cutoff)*(1.0/sqrt(bw_arg->get(i)));
+             nneigh[i] = static_cast<unsigned>( ceil( support[i] / gridobject.getGridSpacing()[i] ) );
+          }
+      } else if( bw_arg->getRank()==2 ) {
+          Matrix<double> metric(support.size(),support.size()); unsigned k=0;
+          for(unsigned i=0;i<support.size();++i) {
+              for(unsigned j=0;j<support.size();++j) { metric(i,j)=bw_arg->get(k); k++; }
+          }
+          Matrix<double> myautovec(support.size(),support.size()); std::vector<double> myautoval(support.size()); 
+          diagMat(metric,myautoval,myautovec); double maxautoval=1/myautoval[0]; unsigned ind_maxautoval=0; 
+          for(unsigned i=1; i<support.size(); i++) {
+            double neweig=1/myautoval[i]; if(neweig>maxautoval) { maxautoval=neweig; ind_maxautoval=i; }
+          }
+          for(unsigned i=0; i<support.size(); i++) {
+            support[i] = sqrt(2.0*dp2cutoff)*fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
+            nneigh[i] = static_cast<unsigned>( ceil( support[i] / gridobject.getGridSpacing()[i] ) );
+          }
+      } else plumed_error();
     }
     for(unsigned i=0; i<gridobject.getDimension(); ++i) {
       double fmax, fmin; Tools::convert( gridobject.getMin()[i], fmin ); Tools::convert( gridobject.getMax()[i], fmax );
@@ -333,6 +377,9 @@ void KDE::completeGridObjectSetup() {
         // And convert to strings for bin and bmax
         Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
       }
+      grid_diff_value.push_back( Value() );
+      if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
+      else grid_diff_value[i].setNotPeriodic();
     }
     // And setup the grid object
     gridobject.setBounds( gmin, gmax, nbin, gspacing );
@@ -343,10 +390,13 @@ void KDE::completeGridObjectSetup() {
       for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
     }
     // And setup the neighbors
-    setupNeighborsVector();
+    if( kerneltype!="DISCRETE" ) {
+        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
+        if(as) { fixed_width=true; setupNeighborsVector(); }
+    }
     // And never do this again
     firststep=false;
-  }
+  } else if( !fixed_width ) setupNeighborsVector();
 }
 
 void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -367,10 +417,10 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
     unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
     argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
-    if( gridobject.getMin().size()>0 ) {
+    if( isdists && gridobject.getMin().size()>0 ) {
       Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
       Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
-    }
+    } else if( gridobject.getMin().size()>0 ) { min[i] = gridobject.getMin()[i]; max[i] = gridobject.getMax()[i]; }
     if( nbin.size()>0 ) out_nbin[i]=nbin[i];
     if( gspacing.size()>0 ) spacing[i]=units*gspacing[i];
     pbc[i]=gridobject.isPeriodic(i);
@@ -381,11 +431,9 @@ void KDE::buildSingleKernel( std::vector<unsigned>& tflags, const double& height
   if( kerneltype=="DISCRETE" ) {
     for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
     tflags[ gridobject.getIndex( args ) ] = 1; return;
-  } else if( kerneltype.find("bin")!=std::string::npos ) {
+  } else { 
     cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
-  } else {
-    kernel = new KernelFunctions( args, bandwidth, kerneltype, "DIAGONAL", height ); kernel->normalize( getArguments() );
-  }
+  } 
   unsigned num_neigh; std::vector<unsigned> neighbors;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   for(unsigned i=0; i<num_neigh; ++i) tflags[ neighbors[i] ] = 1;
@@ -396,29 +444,43 @@ double KDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::
 
   if( kerneltype.find("bin")!=std::string::npos ) {
     double val=cheight; std::size_t dd = kerneltype.find("-bin");
-    HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
+    HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) ); Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
     for(unsigned j=0; j<args.size(); ++j) {
       if( gridobject.isPeriodic(j) ) {
         double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
         Tools::convert( gmax[j], ucoord ); bead.isPeriodic( lcoord, ucoord );
       } else bead.isNotPeriodic();
-      bead.set( args[j], args[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
+      if( bw_arg->getRank()<2 ) bead.set( args[j], args[j]+gridobject.getGridSpacing()[j], 1/sqrt(bw_arg->get(j)) );
+      else if( bw_arg->getRank()==2 ) plumed_error();
       double contr = bead.calculateWithCutoff( cval[j], der[j] );
       val = val*contr; der[j] = der[j] / contr;
     }
     for(unsigned j=0; j<args.size(); ++j) der[j] *= val; return val;
   } else {
-    std::vector<Value*> vv;
-    for(unsigned i=0; i<der.size(); ++i) {
-      vv.push_back( new Value() );
-      if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
-      else vv[i]->setNotPeriodic();
-      vv[i]->set( args[i] );
-    }
-    double val = kernel->evaluate( vv, der, true );
-    for(unsigned i=0; i<der.size(); ++i) delete vv[i];
-    return val;
+    return evaluateKernel( args, cval, cheight, der );
   }
+}
+
+double KDE::evaluateKernel( const std::vector<double>& gpoint, const std::vector<double>& args, const double& height, std::vector<double>& der ) const {
+  double r2=0, hval = height; Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+  if( bw_arg->getRank()<2 ) {
+      for(unsigned j=0; j<der.size(); ++j) {
+         double tmp = -grid_diff_value[j].difference( gpoint[j], args[j] );
+         der[j] = tmp*bw_arg->get(j); r2 += tmp*der[j]; 
+      }
+  } else if( bw_arg->getRank()==2 ) {
+      for(unsigned j=0; j<der.size(); ++j) {
+          der[j]=0; double dp_j, dp_k; dp_j = -grid_diff_value[j].difference( gpoint[j], args[j] );  
+          for(unsigned k=0; k<der.size(); ++k ) {
+              if(j==k) dp_k = dp_j;
+              else dp_k = -grid_diff_value[k].difference( gpoint[k], args[k] );
+              der[j] += bw_arg->get(j*der.size()+k)*dp_k; r2 += dp_j*dp_k*bw_arg->get(j*der.size()+k);
+          }
+      }
+  } else plumed_error();
+  double dval, val=hval*switchingFunction.calculateSqr( r2, dval ); 
+  dval *= hval; for(unsigned j=0; j<der.size(); ++j) der[j] *= dval;
+  return val;
 }
 
 void KDE::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
@@ -435,26 +497,18 @@ void KDE::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
 
 double KDE::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args,
                                      const double& height, std::vector<double>& der ) const {
-  double val=height; std::vector<double> contr( args.size() );
-  for(unsigned j=0; j<args.size(); ++j) {
-    bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
-    contr[j] = bead[j].calculateWithCutoff( args[j], der[j] );
-    val = val*contr[j];
-  }
+  double val=height; std::vector<double> contr( args.size() ); Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+  if( bw_arg->getRank()<2 ) {
+      for(unsigned j=0; j<args.size(); ++j) {
+        bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], 1/sqrt(bw_arg->get(j)) );
+        contr[j] = bead[j].calculateWithCutoff( args[j], der[j] );
+        val = val*contr[j];
+      }
+  } else plumed_error();
   for(unsigned j=0; j<args.size(); ++j) {
     if( fabs(contr[j])>epsilon ) der[j] *= val / contr[j];
   }
   return val;
-}
-
-KernelFunctions* KDE::setupValuesAndKernel( const std::vector<double>& args, const double& height, std::vector<Value*>& vv ) const {
-  for(unsigned i=0; i<args.size(); ++i) {
-    vv.push_back( new Value() );
-    if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
-    else vv[i]->setNotPeriodic();
-  }
-  KernelFunctions* kk=new KernelFunctions( args, bandwidth, kerneltype, "DIAGONAL", height ); kk->normalize( getArguments() );
-  return kk;
 }
 
 void KDE::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
@@ -478,18 +532,15 @@ void KDE::addKernelToGrid( const double& height, const std::vector<double>& args
       for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += val*der[j];
     }
   } else {
-    std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
     for(unsigned i=0; i<num_neigh; ++i) {
-      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-      for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
-      buffer[ bufstart + neighbors[i]*(1+der.size()) ] += kk->evaluate( vv, der, true );
-      for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += der[j];
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint ); 
+      buffer[ bufstart + neighbors[i]*(1+der.size()) ] += evaluateKernel( gpoint, args, height, der );               
+      for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += der[j]; 
     }
-    delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }
 }
 
-void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const {
+void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const {
   plumed_assert( kerneltype!="DISCRETE" );
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
@@ -499,39 +550,17 @@ void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask,
     for(unsigned i=0; i<num_neigh; ++i) {
       gridobject.getGridPointCoordinates( neighbors[i], gpoint );
       double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+      if( heights_index==2 ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += numberOfKernels; }
     }
   } else {
-    std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
     for(unsigned i=0; i<num_neigh; ++i) {
-      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-      for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
-      double val = kk->evaluate( vv, der, true ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint ); 
+      double val = evaluateKernel( gpoint, args, height, der ), fforce = getPntrToOutput(0)->getForce( neighbors[i] );
+      if( heights_index==2 ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
     }
-    delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }
-}
-
-class KDEShortcut : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit KDEShortcut(const ActionOptions&);
-};
-    
-PLUMED_REGISTER_ACTION(KDEShortcut,"KDE")
-    
-void KDEShortcut::registerKeywords( Keywords& keys ) {
-  HistogramBase::registerKeywords( keys );
-}
-
-KDEShortcut::KDEShortcut(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{
-  HistogramBase::createKDEObject( getShortcutLabel(), "KDE", this );
 }
 
 }

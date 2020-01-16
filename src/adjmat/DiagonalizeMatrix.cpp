@@ -37,6 +37,7 @@ private:
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
   std::vector<double> forcesToApply;
+  void diagonalizeMatrix();
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -45,6 +46,8 @@ public:
   unsigned getNumberOfDerivatives() const { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
 /// Do the calculation
   void calculate();
+  void update();
+  void runFinalJobs();
 ///
   void apply();
 };
@@ -80,7 +83,7 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
       desired_vectors.resize(1); desired_vectors[0]=ivec;
     } else if( eigv[0]=="all") {
       desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
-      for(unsigned i=0; i<eigv.size(); ++i) desired_vectors[i] = i + 1;
+      for(unsigned i=0; i<desired_vectors.size(); ++i) desired_vectors[i] = i + 1;
     } else error("input to VECTOR keyword should be list of numbers or all");
   }
 
@@ -98,11 +101,13 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] );
   eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
   // Now request the arguments to make sure we store things we need
-  std::vector<Value*> args( getArguments() ); requestArguments(args, false );
-  forcesToApply.resize( evec_shape[0]*evec_shape[0] );
+  std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(1);  
+  requestArguments(args, false ); forcesToApply.resize( evec_shape[0]*evec_shape[0] );
 }
 
-void DiagonalizeMatrix::calculate() {
+void DiagonalizeMatrix::diagonalizeMatrix() {
+  if( getPntrToArgument(0)->getShape()[0]==0 ) return ;
+
   // Retrieve the matrix from input
   unsigned k = 0;
   for(unsigned i=0; i<mymatrix.nrows(); ++i) {
@@ -130,6 +135,22 @@ void DiagonalizeMatrix::calculate() {
       }
     }
   }
+}
+
+void DiagonalizeMatrix::calculate() {
+  diagonalizeMatrix();
+}
+
+void DiagonalizeMatrix::update() {
+  if( skipUpdate() ) return;
+  diagonalizeMatrix();
+}
+
+void DiagonalizeMatrix::runFinalJobs() {
+  if( skipUpdate() ) return;
+  unsigned nvals=getPntrToArgument(0)->getShape()[0]; resizeForFinalTasks();
+  mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); eigvecs.resize( nvals, nvals );
+  diagonalizeMatrix();
 }
 
 void DiagonalizeMatrix::apply() {

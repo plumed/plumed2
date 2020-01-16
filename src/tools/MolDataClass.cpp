@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -324,21 +324,81 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum+1,chainid));
       } else if( name=="chi1" && !isTerminalGroup("protein",resname) ) {
-        if ( resname=="GLY" || resname=="ALA" || resname=="SFO" ) plumed_merror("chi-1 is not defined for Alanine, Glycine and SFO");
+        if ( resname=="GLY" || resname=="ALA" || resname=="SFO" ) plumed_merror("chi-1 is not defined for ALA, GLY and SFO");
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));
-        if(resname=="ILE"||resname=="VAL")
+        if(resname=="ILE"||resname=="VAL") {
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG1",resnum,chainid));
-        else if(resname=="CYS")
+        } else if(resname=="CYS") {
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("SG",resnum,chainid));
-        else if(resname=="THR")
+        } else if(resname=="THR") {
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG1",resnum,chainid));
-        else if(resname=="SER")
+        } else if(resname=="SER") {
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG",resnum,chainid));
-        else
+        } else {
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
+        }
+      } else if( name=="chi2" && !isTerminalGroup("protein",resname) ) {
+        if ( resname=="GLY" || resname=="ALA" || resname=="SFO" || resname=="CYS" || resname=="SER" ||
+             resname=="THR" || resname=="VAL" ) plumed_merror("chi-2 is not defined for ALA, GLY, CYS, SER, THR, VAL and SFO");
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));
+
+        if(resname=="ILE") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG1",resnum,chainid));
+        } else {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
+        }
+        if(resname=="ASN" || resname=="ASP") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OD1",resnum,chainid));
+        } else if(resname=="HIS") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("ND1",resnum,chainid));
+        } else if(resname=="LEU" || resname=="PHE" || resname=="TRP" || resname=="TYR") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CD1",resnum,chainid));
+        } else if(resname=="MET") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("SD",resnum,chainid));
+        } else {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CD",resnum,chainid));
+        }
+      } else if( name=="chi3" && !isTerminalGroup("protein",resname) ) {
+        if (!( resname=="ARG" || resname=="GLN" || resname=="GLU" || resname=="LYS" ||
+               resname=="MET" )) plumed_merror("chi-3 is defined only for ARG, GLN, GLU, LYS and MET");
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
+
+        if(resname=="MET") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("SD",resnum,chainid));
+        } else {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CD",resnum,chainid));
+        }
+        if(resname=="GLN" || resname=="GLU") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OE1",resnum,chainid));
+        } else if(resname=="LYS" || resname=="MET") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CE",resnum,chainid));
+        } else {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NE",resnum,chainid));
+        }
+      } else if( name=="chi4" && !isTerminalGroup("protein",resname) ) {
+        if (!( resname=="ARG" || resname=="LYS" )) plumed_merror("chi-4 is defined only for ARG and LYS");
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CD",resnum,chainid));
+
+        if(resname=="ARG") {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NE",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CZ",resnum,chainid));
+        } else {
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CE",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NZ",resnum,chainid));
+        }
+      } else if( name=="chi5" && !isTerminalGroup("protein",resname) ) {
+        if (!( resname=="ARG" )) plumed_merror("chi-5 is defined only for ARG");
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CD",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NE",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CZ",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NH1",resnum,chainid));
       } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
+
     } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)) {
       std::string basetype;
       if(resname.find_first_of("A")!=std::string::npos) basetype+="A";

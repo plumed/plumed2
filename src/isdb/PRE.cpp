@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,12 +35,12 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR PRE
 /*
-Calculates the Paramegnetic Resonance Enhancement intensity ratio between a spinlabel atom and a list of atoms .
+Calculates the Paramagnetic Resonance Enhancement intensity ratio between a spin label atom and a list of atoms .
 
 The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
 are give as numbered GROUPA1, GROUPA2, ...
 The additional parameters needed for the calculation are given as INEPT, the inept
-time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
+time, TAUC the correlation time, OMEGA, the Larmor frequency and RTWO for the relaxation
 time.
 
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
@@ -48,8 +48,8 @@ time.
 \par Examples
 
 In the following example five PRE intensities are calculated using the distance between the
-oxigen of the spin label and the backbone hydrogens. Omega is the NMR frequency, RTWO the
-R2 for the hydrogens, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
+oxygen of the spin label and the backbone hydrogen atoms. Omega is the NMR frequency, RTWO the
+R2 for the hydrogen atoms, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
 
 \plumedfile
 PRE ...
@@ -107,7 +107,7 @@ void PRE::registerKeywords( Keywords& keys ) {
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
            "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
   keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
@@ -236,7 +236,7 @@ PRE::PRE(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(exppre);
     Initialise(nga.size());

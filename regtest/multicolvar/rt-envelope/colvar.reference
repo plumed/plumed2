@@ -1,4 +1,4 @@
-#! FIELDS time fi rr.bias rr.force2
+#! FIELDS time fi rr_bias rr_force2
  0.000000   0.9861   0.0010   0.0193
  1.000000   0.9935   0.0002   0.0042
  2.000000   0.9943   0.0002   0.0032

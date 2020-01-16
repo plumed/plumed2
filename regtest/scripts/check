@@ -41,7 +41,7 @@ do
     fullname='<a href="'"$file"'">'"$file"'</a>'
   fi
   if grep -q NOT_APPLICABLE $file ; then
-    ((notapp++))
+    ((notapp++));
     echo + test $dir NOT APPLICABLE >> $file1
     echo + check file $fullname for more information >> $file1
   elif grep -q FAILURE $file ; then

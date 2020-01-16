@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
   keys.setComponentsIntroduction("By default the value of the calculated quantity can be referenced elsewhere in the "
                                  "input file by using the label of the action.  Alternatively this Action can be used "
                                  "to calculate the following quantities by employing the keywords listed "
-                                 "below.  These quanties can be referenced elsewhere in the input by using this Action's "
+                                 "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
@@ -50,14 +50,14 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
 }
 
 void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quanties can "
+  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
                                  "be referenced elsewhere in the input by using this Action's label followed by a "
                                  "dot and the name of the quantity required from the list below.");
 }
 
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
-                                 "actions input file.  However, in addition to these customizable components the "
+                                 "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
 }
 
@@ -65,12 +65,15 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
   noderiv(true),
   numericalDerivatives(false),
-  no_openmp(false),
+  no_openmp(plumed.getMDEngine()=="plumed"),
   serial(false),
   timers(false),
   nactive_tasks(0),
+  thisAsActionWithArguments(NULL),
+  thisAsActionWithVatom(NULL),
   action_to_do_before(NULL),
-  action_to_do_after(NULL)
+  action_to_do_after(NULL),
+  atom_action_to_do_after(NULL)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
@@ -160,7 +163,9 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act; act->action_to_do_before=this;
+  action_to_do_after=act; 
+  atom_action_to_do_after=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
+  act->action_to_do_before=this;
   return true;
 }
 
@@ -244,9 +249,9 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     if( !allowComponentsAndValue() ) plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
@@ -261,9 +266,9 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
@@ -350,10 +355,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
     // args.push_back( values[0] );
     values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr==getLabel() + ".*" ) {
-    // Retrieve all scalar values
-    if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );
-    // This interprets scalar values for many shortcuts
-    interpretDotStar( myuser->getLabel(), nargs, args );
+    plumed_assert( !action_to_do_after );
+    for(unsigned i=0; i<values.size(); ++i ) values[i]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name
     copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
@@ -372,6 +375,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
 }
 
 void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
+  if( !thisAsActionWithArguments ) thisAsActionWithArguments = dynamic_cast<const ActionWithArguments*>( this );
+  if( !thisAsActionWithVatom ) thisAsActionWithVatom=dynamic_cast<const ActionWithVirtualAtom*>( this );
   fullTaskList.push_back( taskCode ); taskFlags.push_back(0);
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
@@ -409,7 +414,8 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
   // And now do stuff for the next action in the chain
   if( action_to_do_after ) {
       // Retrieve the atoms for tasks in the stream
-      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); if( aa ) aa->retrieveAtoms();
+      // ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
+      if( atom_action_to_do_after ) atom_action_to_do_after->retrieveAtoms();
       // And set up the task list for the next one
       action_to_do_after->selectActiveTasks( actionLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
   }
@@ -458,6 +464,8 @@ void ActionWithValue::runAllTasks() {
   // Get the total number of streamed quantities that we need
   unsigned nquantities = 0, ncols=0, nmatrices=0;
   getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
+  // This needs to be separate from StreamedQuntities as the above
+  // has to be const in order to be called from rerunTask
   setupVirtualAtomStashes( nquantities );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
@@ -537,8 +545,8 @@ void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ) aa->getNumberOfStashedInputArguments( nquants );
+  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( thisAsActionWithArguments ) thisAsActionWithArguments->getNumberOfStashedInputArguments( nquants );
 
   for(unsigned i=0; i<values.size(); ++i) {
     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
@@ -566,15 +574,15 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   // Do matrix element task
   bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ) {
+  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( thisAsActionWithArguments ) {
     if( actionInChain() ) {
       // Now check if the task takes a matrix as input - if it does do it
-      bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+      bool do_this_task = ((thisAsActionWithArguments->getPntrToArgument(0))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
 #ifdef DNDEBUG
       if( do_this_task ) {
-        for(unsigned i=1; i<aa->getNumberOfArguments(); ++i) {
-          plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+        for(unsigned i=1; i<thisAsActionWithArguments->getNumberOfArguments(); ++i) {
+          plumed_dbg_assert( (thisAsActionWithArguments->getPntrToArgument(i))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
         }
       }
 #endif
@@ -631,13 +639,41 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
 
 }
 
+void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                         const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( !values[valindex]->hasDeriv && values[valindex]->getRank()>0 );
+  unsigned sind = values[valindex]->streampos;
+  // This looks after storing for matrices
+  if( values[valindex]->getRank()==2 ) {
+    unsigned ncols = values[valindex]->getShape()[1];
+    unsigned vindex = bufstart + code*ncols; unsigned matind = values[valindex]->getPositionInMatrixStash();
+    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+    }
+    // This looks after sums over columns of matrix
+  } else if ( values[valindex]->getRank()==1 && values[valindex]->columnsums ) {
+    unsigned vindex = bufstart; unsigned matind = values[valindex]->getPositionInMatrixStash();
+    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+    } 
+ // This looks after storing in all other cases
+  } else {
+    unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );
+    unsigned vindex = bufstart + code*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
+    buffer[vindex] += myvals.get(sind);
+  }
+} 
+
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
   if( isActive() ) {
     for(unsigned i=0; i<values.size(); ++i) {
-      unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart;
+      unsigned bufstart = values[i]->bufstart;
       if( values[i]->getRank()==0 ) {
         plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-        buffer[bufstart] += myvals.get(sind);
+        unsigned sind = values[i]->streampos; buffer[bufstart] += myvals.get(sind);
         if( values[i]->hasDerivatives() ) {
           unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
           for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
@@ -646,37 +682,14 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
             buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
           }
         }
-        // This looks after grids
-      } else if( values[i]->hasDerivatives() ) {
-        gatherGridAccumulators( taskCode, myvals, bufstart, buffer );
+        // This looks after storing of data
       } else if( values[i]->storedata ) {
-        // This looks after storing for matrices
-        if( values[i]->getRank()==2 && !values[i]->hasDeriv ) {
-          unsigned ncols = values[i]->getShape()[1];
-          unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
-          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-            plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
-            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-          }
-          // This looks after sums over columns of matrix
-        } else if ( values[i]->getRank()==1 && values[i]->columnsums ) {
-          unsigned vindex = bufstart; unsigned matind = values[i]->getPositionInMatrixStash();
-          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-          }
-          // This looks after storing in all other cases
-        } else {
-          unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
-          unsigned vindex = bufstart + taskCode*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
-          buffer[vindex] += myvals.get(sind);
-        }
+        gatherStoredValue( i, taskCode, myvals, bufstart, buffer ); 
       }
     }
     // Special method for dealing with centers
-    const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
-    if( av ) av->gatherForVirtualAtom( myvals, buffer );
+    // const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
+    if(thisAsActionWithVatom) thisAsActionWithVatom->gatherForVirtualAtom( myvals, buffer );
   }
 
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
@@ -757,7 +770,9 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
 
     // Now determine how big the multivalue needs to be
     unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
-    unsigned nquants=0, ncols=0, nmatrices=0; av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+    unsigned nquants=0, ncols=0, nmatrices=0; 
+    av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+    av->setupVirtualAtomStashes( nquants );
     #pragma omp parallel num_threads(nt)
     {
       std::vector<double> omp_forces;

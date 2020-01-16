@@ -39,6 +39,18 @@ void run(Communicator& comm){
   dump(comm,ofs,a);
 
   reset(comm,a);
+  comm.Prod(&a[0],a.size());
+  dump(comm,ofs,a);
+
+  reset(comm,a);
+  comm.Max(&a[0],a.size());
+  dump(comm,ofs,a);
+
+  reset(comm,a);
+  comm.Min(&a[0],a.size());
+  dump(comm,ofs,a);
+
+  reset(comm,a);
   comm.Bcast(&a[0],a.size(),0);
   dump(comm,ofs,a);
 

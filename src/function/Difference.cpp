@@ -22,6 +22,7 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
+#include "core/PlumedMain.h"
 #include "core/ActionSetup.h"
 
 #include <cmath>
@@ -61,14 +62,21 @@ Difference::Difference(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
+  if( !getPntrToArgument(0)->getPntrToAction() ) {
+      if( plumed.valueIsFixed( getPntrToArgument(0)->getName() ) ) error("fixed variable should be second argument to difference");
+  }
   if( arg_ends.size()!=3 ) error("difference can only take two arguments as input");
   if( getPntrToArgument(0)->isPeriodic() ) {
-      ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
-      if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 
-      if( !as ) {
-          std::string min0, max0; getPntrToArgument(0)->getDomain( min0, max0 );
-          std::string min1, max1; getPntrToArgument(1)->getDomain( min1, max1 );
-          if( min0!=min0 || max0!=max1 ) error("domain for input variables should be the same");
+      if( !getPntrToArgument(1)->getPntrToAction() ) {
+          if( !getPntrToArgument(1)->isPeriodic() && !plumed.valueIsFixed( getPntrToArgument(1)->getName() ) ) error("period for input variables should be the same");
+      } else {
+          ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
+          if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 
+          if( !as ) {
+              std::string min0, max0; getPntrToArgument(0)->getDomain( min0, max0 );
+              std::string min1, max1; getPntrToArgument(1)->getDomain( min1, max1 );
+              if( min0!=min0 || max0!=max1 ) error("domain for input variables should be the same");
+          }
       }
   } else if( getPntrToArgument(1)->isPeriodic() ) {
       ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );

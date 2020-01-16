@@ -74,9 +74,9 @@ EnvironmentalSimilarity::EnvironmentalSimilarity(const ActionOptions&ao):
 void EnvironmentalSimilarity::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
   for(unsigned i=0; i<environment.size(); ++i) {
     Vector diff = delta( distance, environment[i] );
-    double mod2 = diff.modulo2(); double expf = exp( -mod2 / sig2 );
+    double mod2 = diff.modulo2(); double expf = exp( -mod2 / (4*sig2) ) / environment.size();
     addToValue( 0, val*expf, myvals ); addWeightDerivative( 0, expf, myvals );
-    addVectorDerivatives( 0, 2*(val/sig2)*expf*diff, myvals );
+    addVectorDerivatives( 0, 0.5*(val/sig2)*expf*diff, myvals );
   }
 }
 

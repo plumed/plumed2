@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -136,6 +136,7 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
 
   if( tcut<0 ) tcut=lcut;
   if( nl_cut>0 ) linkcells.setCutoff( nl_cut ); else linkcells.setCutoff( lcut );
+  if( linkcells.getCutoff()<std::numeric_limits<double>::max() ) log.printf("  set link cell cutoff to %f \n", linkcells.getCutoff() );
   threecells.setCutoff( tcut );
 }
 
@@ -151,7 +152,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
       for(unsigned i=0; i<ablocks.size(); ++i) ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
       linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
       // Set the number of neighbors to zero for all ranks
-      nlist.assign(getFullNumberOfTasks(),0);  
+      nlist.assign(nlist.size(),0);
       // Now get stuff to do parallel implementation
       unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
@@ -299,15 +300,17 @@ void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myva
 
 void AdjacencyMatrixBase::updateMatrixIndices( const std::vector<unsigned> & indices, MultiValue& myvals ) const {
   plumed_assert( !doNotCalculateDerivatives() );
-  unsigned natoms = myvals.getNumberOfIndices(), nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-  std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) );
-  plumed_dbg_assert( mat_indices.size()>=(3*getNumberOfAtoms()+9) );
-  myvals.setNumberOfMatrixIndices( nmat, 3*natoms+9 );
-  for(unsigned i=0; i<natoms; ++i) {
-    mat_indices[3*i+0] = 3*indices[i]; mat_indices[3*i+1] = 3*indices[i]+1; mat_indices[3*i+2]=3*indices[i]+2;
+  unsigned natoms = myvals.getNumberOfIndices(); 
+  for(unsigned i=0; i<getNumberOfComponents(); ++i ) {
+      unsigned nmat = getPntrToOutput(i)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) );
+      plumed_dbg_assert( mat_indices.size()>=(3*getNumberOfAtoms()+9) ); myvals.setNumberOfMatrixIndices( nmat, 3*natoms+9 );
+      for(unsigned i=0; i<natoms; ++i) {
+        mat_indices[3*i+0] = 3*indices[i]; mat_indices[3*i+1] = 3*indices[i]+1; mat_indices[3*i+2]=3*indices[i]+2;
+      }
+      unsigned nbase=3*natoms, vbase=3*getNumberOfAtoms();
+      for(unsigned i=0; i<9; ++i) mat_indices[nbase+i] = vbase + i;
   }
-  unsigned nbase=3*natoms, vbase=3*getNumberOfAtoms();
-  for(unsigned i=0; i<9; ++i) mat_indices[nbase+i] = vbase + i;
 }
 
 bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {

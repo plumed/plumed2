@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,6 +30,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "Atoms.h"
+#include "AverageBase.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 
@@ -58,7 +59,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
+void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -67,7 +68,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
   masses.resize(nat);
   charges.resize(nat);
   int n=atoms.positions.size();
-  clearDependencies();
+  if(clearDep) clearDependencies();
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) error("atom out of range");
@@ -216,8 +217,13 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
           }
       }
     }
-    ActionSetup* as=plumed.getActionSet().selectWithLabel<ActionSetup*>(strings[i]); 
-    if( !ok && (!as || getName()!="PRINT") ) error("it was not possible to interpret atom name " + strings[i]);
+    ActionSetup* as=plumed.getActionSet().selectWithLabel<ActionSetup*>(strings[i]); bool safe=false;
+    if( !as ) { 
+      AverageBase* ab=plumed.getActionSet().selectWithLabel<AverageBase*>(strings[i]); 
+      if( ab ) safe=true;
+    } else safe=true;
+    if( !ok && ( !safe || getName()!="PRINT") ) { error("it was not possible to interpret atom name " + strings[i]); }
+    else if( ok && safe && getName()=="PRINT" ) strings.erase(strings.begin()+i); 
     // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }
@@ -299,8 +305,11 @@ void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
 }
 
-void ActionAtomistic::makeWhole() {
-  for(unsigned j=0; j<positions.size()-1; ++j) {
+void ActionAtomistic::makeWhole( const unsigned start, const unsigned end ) {
+  plumed_dbg_assert( start>=0 && end<=positions.size() );
+  unsigned ss=0, ff=positions.size();
+  if( start>0 ) ss = start; if( end>0 ) ff = end; 
+  for(unsigned j=ss; j<ff-1; ++j) {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,11 +66,14 @@ of the PLMD::Action.  Perhaps unsurprisingly, when you manipulate the <b> compon
 PLMD::Action you should use <b> the routines with the word component in the name. </b>
 */
 
+class ActionAtomistic;
 class ActionWithArguments;
+class ActionWithVirtualAtom;
 
 class ActionWithValue :
   public virtual Action
 {
+  friend class AverageBase;
   friend class ActionWithArguments;
 private:
 /// An array containing the values for this action
@@ -102,10 +105,15 @@ private:
   std::vector<unsigned> taskFlags;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// A pointer to this but with actionWithArgument so we can avoid lots of dynamic_cast
+  const ActionWithArguments* thisAsActionWithArguments;
+/// A pointer to this but with actionWithVirtualAtom so we can avoid lots of dynamic_cast
+  const ActionWithVirtualAtom* thisAsActionWithVatom;
 /// Action that must be done before this one
   ActionWithValue* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithValue* action_to_do_after;
+  ActionAtomistic* atom_action_to_do_after;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
 ////
@@ -172,8 +180,6 @@ public:
 /// Retrieve all the scalar values calculated in the loop
   void retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 ///
-  virtual void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {}
-///
   const std::vector<unsigned>& getCurrentTasks() const ;
 protected:
 /// Get a pointer to the output value
@@ -226,6 +232,8 @@ public:
   int getNumberOfComponents() const ;
 ///
   bool actionInChain() const ;
+///
+  virtual bool canChainFromThisAction() const { return true; }
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
@@ -235,7 +243,7 @@ public:
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
-  bool checkNumericalDerivatives() const ;
+  bool checkNumericalDerivatives() const override;
 /// This forces the class to use numerical derivatives
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields
@@ -268,8 +276,8 @@ public:
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-  virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                                       const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }
+  virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                  const unsigned& bufstart, std::vector<double>& buffer ) const ; 
 /// This one calculates matrix elements
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///

@@ -1,4 +1,4 @@
-#! FIELDS time a1_mean i1_mean b.bias b.force2
+#! FIELDS time a1_mean i1_mean b_bias b_force2
  0.000000  1.46818  1.26022  0.35960  7.19194
  0.050000  1.46181  1.27437  0.34272  6.85443
  0.100000  1.32753  1.26481  0.08132  1.62647

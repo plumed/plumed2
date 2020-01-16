@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SetupReferenceBase.h"
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
@@ -68,12 +69,19 @@ SetupReferenceBase(ao)
    }
    double tstep=1.0; p.cmd("setTimestep",&tstep);
    // Now read the PLUMED command that we have to execute
-   std::string inp; parse("INPUT",inp); const char* cinp=inp.c_str();
+   std::string inp; parse("INPUT",inp); 
    std::vector<std::string> input=Tools::getWords(inp);
    if( input.size()==1 && !actionRegister().check(input[0]) ) {
-       p.cmd("setPlumedDat",cinp); p.cmd("init");
+       const char* cinp=inp.c_str(); p.cmd("setPlumedDat",cinp); p.cmd("init");
    } else {
-       p.cmd("init"); p.cmd("readInputLine",cinp);
+       p.cmd("init"); std::string remainder = inp; 
+       while( remainder.find(";")!=std::string::npos ) { 
+            std::size_t semi = remainder.find_first_of(';'); 
+            std::string rem = remainder.substr(0,semi); 
+            const char* cinp=rem.c_str(); p.cmd("readInputLine",cinp);
+            remainder = remainder.substr(semi+1);
+       }
+       const char* cinp=remainder.c_str(); p.cmd("readInputLine",cinp);
    }
    // Setup the positions and masses using the indices from the read input
    int istep=0; p.cmd("setStep",&istep);
@@ -91,9 +99,7 @@ SetupReferenceBase(ao)
    }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value
-   ActionWithValue* fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[p.getActionSet().size()-1].get() );
-   if( !fav ) error("final value should calculate relevant value that you want as reference");
-   // if( fav->getNumberOfComponents()!=1 ) error("final action in input should have one component");
+   ActionWithValue* fav = p.getActionSet().getFinalActionOfType<ActionWithValue*>();
    std::vector<unsigned> nvals( fav->getNumberOfComponents() ); 
    std::vector<std::vector<double> > data( fav->getNumberOfComponents() );
    std::vector<std::vector<unsigned> > shapes( fav->getNumberOfComponents() );
@@ -104,6 +110,7 @@ SetupReferenceBase(ao)
        std::vector<long> ishape( rank ); shapes[i].resize( rank ); 
        p.cmd("getDataShape " + name, &ishape[0] );
        nvals[i]=1; for(unsigned j=0;j<ishape.size();++j){ shapes[i][j]=ishape[j]; nvals[i] *= shapes[i][j]; } 
+       if( nvals[i]==1 ) shapes[i].resize(0);
        data[i].resize( nvals[i] ); p.cmd("setMemoryForData " + name, &data[i][0] );
    }
    // Do the calculation using the Plumed object
@@ -132,7 +139,7 @@ SetupReferenceBase(ao)
    // And set it to what was calculated
    for(unsigned i=0;i<fav->getNumberOfComponents();++i) { 
        log.printf("  setup %d reference values for value %s \n", nvals[i], getPntrToComponent(i)->getName().c_str() );
-       for(unsigned j=0;j<nvals[i];++j) getPntrToComponent(i)->set( j, data[i][j] ); 
+       for(unsigned j=0;j<nvals[i];++j) getPntrToComponent(i)->set( j, data[i][j] );
    } 
    // Create a fake task list -- this ensures derivatives are looked at correctly
    unsigned maxtask=shapes[0][0];

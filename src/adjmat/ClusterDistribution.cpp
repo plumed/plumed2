@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,8 +44,8 @@ that atoms with a high value for the local q6 Steinhardt parameter have with oth
 value for the local q6 Steinhardt parameter is then computed.  A contact matrix is then computed that measures
 whether atoms atoms \f$i\f$ and \f$j\f$ have a high value for this coordination number and if they are within
 3.6 nm of each other.  The connected components of this matrix are then found using a depth first clustering
-algorithm on the corresponding graph. The number of componets in this graph that contain more than 27 atoms is then computed.
-As discussed in \cite tribello-clustering this input was used to analyse the formation of a polycrystal of GeTe from amorphous
+algorithm on the corresponding graph. The number of components in this graph that contain more than 27 atoms is then computed.
+As discussed in \cite tribello-clustering this input was used to analyze the formation of a polycrystal of GeTe from amorphous
 GeTe.
 
 \plumedfile
@@ -78,8 +78,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
-/// Interpret the * keyword for this action
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
@@ -132,10 +130,6 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   // Create a group for this action so we can associate atoms to these weights easily
   const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
   plumed.getAtoms().insertGroup( getLabel(), m->second );
-}
-
-void ClusterDistribution::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

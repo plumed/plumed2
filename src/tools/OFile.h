@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -215,7 +215,7 @@ public:
 /// bck.0.analysis.1.<filename> and bck.0.<filename>
   void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name);
+  OFile& open(const std::string&name) override;
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
@@ -257,7 +257,7 @@ public:
 /// Rewind a file
   OFile&rewind();
 /// Flush a file
-  virtual FileBase&flush();
+  FileBase&flush() override;
 /// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
   OFile&enforceRestart();

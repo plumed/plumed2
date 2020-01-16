@@ -92,8 +92,8 @@ awk -v plus=$plus 'BEGIN{
 
 } > $file.tmp
 
-case "$file" in
-(*h)
+if [[ "$file" == *h && ! "$file" == asmjit_apibegin.h && ! "$file" == asmjit_apiend.h ]] ; then
+# if [[ "$file" == *h ]] ; then 
 ff="${file//./_}"
 guard="__PLUMED_${dir}_${ff}"
 
@@ -120,7 +120,7 @@ if(!found) print "#endif"
 }' $file.tmp > $file.tmp2
 mv $file.tmp2 $file.tmp
 
-esac
+fi
 
 if cmp -s $file $file.tmp ; then
   echo 

@@ -72,7 +72,7 @@ p.cmd("setNatoms",num_atoms)
 p.cmd("setLogFile","test.log")
 p.cmd("init")
 p.cmd("readInputLine","cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={COSINE R_0=4.5} COMPONENTS")
-t1 = create_plumed_var( p, "beh2.g2", "GSYMFUNC_TWOBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={TYPE=g2 LABEL=g2 NU=1 CENTER=3}" ) 
+t1 = create_plumed_var( p, "beh2.g2", "GSYMFUNC_TWOBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={FUNC=exp(-(x-3)^2) LABEL=g2}" ) 
 t2 = create_plumed_var( p, "beh3.g4", "GSYMFUNC_THREEBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={TYPE=g4 LABEL=g4 LAMBDA=2.0 NU=0.1 ZETA=2} SWITCH={COSINE R_0=4.5}" )
  
 # Read in the correct answers that were calculated directly using PLUMED

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -116,17 +116,17 @@ void ActionWithInputGrid::doTheCalculation() {
 }
 
 void ActionWithInputGrid::calculate() {
-  if( hasAverageAsArgument() || actionInChain() ) return ;
+  if( actionInChain() ) return ;
   doTheCalculation();
 }
 
 void ActionWithInputGrid::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   doTheCalculation();
 }
 
 void ActionWithInputGrid::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   doTheCalculation();
 }
 

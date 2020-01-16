@@ -38,7 +38,7 @@ The exercise are of increasing difficulties, inputs are partially provided for t
 
 \section trieste-6-ex-1 Exercise 1: analysis of the BARD1 complex simulation 
 
-The BARD1 complex is a heterodimer composed by two domains of 112 and 117 residues each. 
+The BARD1 complex is a hetero-dimer composed by two domains of 112 and 117 residues each. 
 The system is represented at coarse-grained level using the MARTINI force field.
 
 \anchor trieste-6-bard1
@@ -64,7 +64,7 @@ However, we encourage all the users to experiment at least with the following CV
 1) \ref RMSD and/or \ref DRMSD from the native state
 
 The following line can be added to the `plumed.dat` file to calculate the \ref RMSD on the beads
-representing the backbone aminoacids:
+representing the backbone amino acids:
 
 \plumedfile
 rmsd: RMSD REFERENCE=bard1_rmsd.pdb TYPE=OPTIMAL
@@ -112,7 +112,7 @@ dih: TORSION ATOMS=__FILL__
 
 \section trieste-6-ex-2 Exercise 2: analysis of the cmyc-urea simulation
 
-Cmyc is a small disordered peptide made of 11 aminoacid. In solution, cmyc adopts
+Cmyc is a small disordered peptide made of 11 amino acid. In solution, cmyc adopts
 a variety of different, but equally populated conformations. 
 In the TARBALL of this exercise, we provide a long MD simulation of cmyc in presence
 of a single molecule of urea. 
@@ -127,7 +127,7 @@ The users are expected to:
 - characterize the conformational ensemble of cmyc by calculating free-energies as a function of different CVs.
 - calculate the fraction of bound and unbound molecules of urea by defining suitable CVs to measure
   the position of urea relative to cmyc.
-- find the cmyc aminoacids that bind urea the most and the least.
+- find the cmyc amino acids that bind urea the most and the least.
 - calculate the ensemble averages of different experimental CVs.
 
 \warning Be careful that the original trajectory might be broken by PBC!
@@ -155,7 +155,7 @@ urea: GROUP ATOMS=192,193,194,197
 mindist: DISTANCES GROUPA=cmyc GROUPB=urea MIN={BETA=50.}
 \endplumedfile
 
-For estimating the cmyc aminoacid that bind the most and the least urea, we leave the users the choice of the best
+For estimating the cmyc amino acid that bind the most and the least urea, we leave the users the choice of the best
 strategy. 
 
 For the calculation of ensemble averages of experimental CVs, we suggest to use:

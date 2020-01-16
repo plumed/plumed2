@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,6 +71,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
+  keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
@@ -99,11 +100,6 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
 // destructor needed to delete forward declarated objects
-}
-
-void SecondaryStructureRMSD::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + "_lessthan");
-  if( action ) (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ) {

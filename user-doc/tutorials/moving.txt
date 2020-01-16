@@ -2,7 +2,7 @@
 \page moving Moving from PLUMED 1 to PLUMED 2
 
 Syntax in PLUMED 2 has been completely redesigned based on our experience
-using PLUMED 1, hopefully makeing it clearer, more flexible, and less error prone.
+using PLUMED 1, hopefully making it clearer, more flexible, and less error prone.
 The main difference is that
 whereas in PLUMED 1 lines could be inserted in any order, 
 in PLUMED 2 the order of the lines matters. This is due to a major change in 
@@ -158,7 +158,7 @@ We decided to use as standard units in PLUMED kj/mol, nm, and ps. Perhaps
 this is because most of the developers are using GROMACS, which also
 adopts these units.
 However, we still allow
-the personalization of units by means of the \ref UNITS keyword.
+users to change units by means of the \ref UNITS keyword.
 Since this keyword is included directly in the PLUMED input file,
 even when using personalized units the input files remains perfectly
 portable across different MD engines.
@@ -166,7 +166,7 @@ portable across different MD engines.
 \section moving-Directives Directives
 
 What follows is a list of all the documented directives of PLUMED 1 together with their 
-plumed 2 equivalents.  Be aware that the input syntaxes for these directives are not totally 
+plumed 2 equivalents.  Be aware that the input syntax for these directives are not totally 
 equivalent.  You should read the documentation for the PLUMED 2 Action.
 
 <TABLE>

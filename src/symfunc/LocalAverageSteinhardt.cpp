@@ -91,6 +91,9 @@ public:
   explicit LocalAverageSteinhardt(const ActionOptions&);
 };
 
+PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q1")
+PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q3")
+PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q4")
 PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q6")
 
 void LocalAverageSteinhardt::registerKeywords( Keywords& keys ) {

@@ -76,16 +76,33 @@ using namespace std;
     using namespace asmjit;
 #endif
 
+bool lepton::useAsmJit() {
+#ifdef __PLUMED_HAS_ASMJIT
+  static const bool use=[](){
+    if(auto s=std::getenv("PLUMED_USE_ASMJIT")) {
+      auto ss=std::string(s);
+      if(ss=="yes") return true;
+      if(ss=="no") return false;
+      throw Exception("PLUMED_USE_ASMJIT variable is set to " + ss + "; should be yes or no");
+    }
+    return true; // by default use asmjit
+  }();
+  return use;
+#else
+  return false;
+#endif
+}
+
 AsmJitRuntimePtr::AsmJitRuntimePtr()
 #ifdef __PLUMED_HAS_ASMJIT
-  : ptr(new asmjit::JitRuntime)
+  : ptr(useAsmJit()?new asmjit::JitRuntime:nullptr)
 #endif
 {}
 
 AsmJitRuntimePtr::~AsmJitRuntimePtr()
 {
 #ifdef __PLUMED_HAS_ASMJIT
-  delete static_cast<asmjit::JitRuntime*>(ptr);
+  if(useAsmJit()) delete static_cast<asmjit::JitRuntime*>(ptr);
 #endif
 }
 
@@ -102,7 +119,7 @@ CompiledExpression::CompiledExpression(const ParsedExpression& expression) : jit
             maxArguments = operation[i]->getNumArguments();
     argValues.resize(maxArguments);
 #ifdef __PLUMED_HAS_ASMJIT
-    generateJitCode();
+    if(useAsmJit()) generateJitCode();
 #endif
 }
 
@@ -194,13 +211,16 @@ double& CompiledExpression::getVariableReference(const string& name) {
 }
 
 void CompiledExpression::setVariableLocations(map<string, double*>& variableLocations) {
-    variablePointers = variableLocations;
+  variablePointers = variableLocations;
+  static const bool asmjit=useAsmJit();
+  if(asmjit) {
 #ifdef __PLUMED_HAS_ASMJIT
     // Rebuild the JIT code.
     
     if (workspace.size() > 0)
         generateJitCode();
-#else
+#endif
+  } else {
     // Make a list of all variables we will need to copy before evaluating the expression.
     
     variablesToCopy.clear();
@@ -209,13 +229,14 @@ void CompiledExpression::setVariableLocations(map<string, double*>& variableLoca
         if (pointer != variablePointers.end())
             variablesToCopy.push_back(make_pair(&workspace[iter->second], pointer->second));
     }
-#endif
+  }
 }
 
 double CompiledExpression::evaluate() const {
+    static const bool asmjit=useAsmJit();
 #ifdef __PLUMED_HAS_ASMJIT
-    return ((double (*)()) jitCode)();
-#else
+    if(asmjit) return ((double (*)()) jitCode)();
+#endif
     for (int i = 0; i < variablesToCopy.size(); i++)
         *variablesToCopy[i].first = *variablesToCopy[i].second;
 
@@ -232,7 +253,6 @@ double CompiledExpression::evaluate() const {
         }
     }
     return workspace[workspace.size()-1];
-#endif
 }
 
 #ifdef __PLUMED_HAS_ASMJIT

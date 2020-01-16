@@ -70,10 +70,6 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   setNotPeriodic();
 }
 
-void ActionVolume::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
-}
-
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   std::vector<AtomNumber> all_atoms( getAbsoluteIndexes() );
   for(unsigned i=0; i<a.size(); ++i) all_atoms.push_back( a[i] );

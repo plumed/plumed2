@@ -114,8 +114,9 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  done_with_matrix_comput(true),
-  usecols(false)
+  usecols(false),
+  nderivatives(0),
+  done_with_matrix_comput(true)
 {
   if( keywords.exists("USECOLS") ) {
     parseFlag("USECOLS",usecols);
@@ -123,13 +124,16 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   }
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action");
-  alabels[0]=(wval[0]->getPntrToAction())->getLabel();
-  ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
-  if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+  if( wval[0]->getPntrToAction() ) {
+      alabels[0]=(wval[0]->getPntrToAction())->getLabel();
+      ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
+      if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+      nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
+  }
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
-  nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
 
   if( keywords.exists("VECTORS") ) {
+    if( !wval[0]->getPntrToAction() ) error("using weights from input matrix not available with vectors");
     for(unsigned i=1; i<=3; ++i) {
       std::vector<Value*> vecs; parseArgumentList("VECTORS",i,vecs);
       if( vecs.size()!=1 ) error("keywords VECTORS should be provided with the label of a single action");
@@ -139,9 +143,13 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
           error("mismatched shapes of matrices in input");
         }
       } else if( wval[0]->getRank()==1 && wval[0]->getShape()[0]!=vecs[0]->getShape()[0] ) error("mismatched shapes of vectors in input");
-      if( (wval[0]->getPntrToAction())->getLabel()!=(vecs[0]->getPntrToAction())->getLabel() ) {
-        error("found mismatched vectors and weights in input to symmetry function - current not available, please email plumed list");
+      // This checks if the weights come from a different action than the vectors
+      bool found=false;
+      for(unsigned j=0;j<wval.size();++j) {
+          if( wval[j]->getPntrToAction()->getLabel()==vecs[0]->getPntrToAction()->getLabel() ) { found=true; break; }
       }
+      if( !found ) nderivatives += (vecs[0]->getPntrToAction())->getNumberOfDerivatives();
+
       if( ((wval[0]->getPntrToAction())->getActionThatCalculates())->getLabel()!=((vecs[0]->getPntrToAction())->getActionThatCalculates())->getLabel() ) {
         error("found mismatched vectors and weights in input to symmetry function (2nd version) - current not available, please email plumed list");
       }
@@ -170,14 +178,12 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()==2 ) {
     for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) addTaskToList(i);
   }
-  if( !usecols && plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ) {
-    const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
-    plumed.getAtoms().insertGroup( getLabel(), m->second );
+  if( !usecols && wval[0]->getPntrToAction() ) {
+    if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ) {
+        const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
+        plumed.getAtoms().insertGroup( getLabel(), m->second );
+    }
   }
-}
-
-void SymmetryFunctionBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void SymmetryFunctionBase::addValueWithDerivatives() {
@@ -266,19 +272,19 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
               unsigned ostrn = getPntrToOutput(i)->getPositionInStream();
               for(unsigned k=0; k<myvals.getNumberActive(my_w); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_w,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_x); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_x,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_y); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_y,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[2] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_z); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_z,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
               }
               tmp_w[wstart+jind]=tmp_x[wstart+jind]=tmp_y[wstart+jind]=tmp_z[wstart+jind]=0;
               wstart += getPntrToArgument(0)->getShape()[1];
@@ -321,6 +327,22 @@ void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
       myvals.updateIndex( ostrn, mat_indices[i] );
     }
+  }
+  if( getNumberOfArguments()>1 ) {
+    if( arg_deriv_starts[1]>0 && getPntrToArgument(1)->getRank()==2 ) {
+       istrn = getPntrToArgument(1)->getPositionInMatrixStash();
+       std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+       for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
+         for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+           unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+           myvals.updateIndex( ostrn, arg_deriv_starts[1] + mat_indices[i] );
+         }
+       }   
+    }
+    // It would be easy enough to extend to allow vector components to come from different actions.  This will 
+    // likely be of no use to anyone though so for the moment I just have this assert to prevent people from doing
+    // wrong things.
+    plumed_dbg_assert( arg_deriv_starts[2]==arg_deriv_starts[1] && arg_deriv_starts[3]==arg_deriv_starts[1] ); 
   }
 }
 

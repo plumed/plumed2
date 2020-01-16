@@ -46,6 +46,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SetupReferenceBase(const ActionOptions&ao);
   ~SetupReferenceBase();
+  bool canChainFromThisAction() const { return false; }
   void activate() {} 
   void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const { return 0; }
