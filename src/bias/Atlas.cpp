@@ -50,6 +50,7 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","GRID_MAX","the maximum value to use for all the grids");
   keys.add("compulsory","GRID_BIN","the number of bins to use for all the grids");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
+  keys.add("compulsory","WALL","the force constant of the wall applied outside the GMM");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
@@ -142,29 +143,32 @@ ActionShortcut(ao)
   }
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
-  std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; } 
-  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1); 
+  std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
+  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1);
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
-  // Build the histograms for the bias potential 
+  // Build the histograms for the bias potential
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
-      std::string num; Tools::convert( k+1, num ); 
-      if( neigv[k]==0 ) { 
+      std::string num; Tools::convert( k+1, num );
+      readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " FUNC=log(x) PERIODIC=NO");
+      readInputLine(getShortcutLabel() + "_w_wtfact-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" + 
+                    num + " FUNC=x+y PERIODIC=NO");
+      if( neigv[k]==0 ) {
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
           readInputLine( getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov ARG1=" + getShortcutLabel() + "_dist-" + num + "," +
-                         getShortcutLabel() + "_pdist-" + num + " HEIGHTS=" + getShortcutLabel() + "_height GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + grid_nbins + truncflag1 ); 
+                         getShortcutLabel() + "_pdist-" + num + " HEIGHTS=" + getShortcutLabel() + "_height GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + grid_nbins + truncflag1 );
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
-          // Convert the bandwidth to something constant actions 
+          // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this );
           std::string gminstr=" GRID_MIN=-" + gmax, gmaxstr=" GRID_MAX=" + gmax, gbinstr=" GRID_BIN=" + grid_nbins;
-          std::string input = getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov HEIGHTS=" + getShortcutLabel() + "_height" + 
+          std::string input = getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov HEIGHTS=" + getShortcutLabel() + "_height" +
                " ARG1=" + getShortcutLabel() + "_proj1-" + num;
           for(unsigned i=1;i<neigv[k];++i) {
               std::string eignum; Tools::convert( i+1, eignum );
               input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
-              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins; 
+              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins;
           }
           if( resid[k] ) {
               std::string eignum; Tools::convert( neigv[k]+1, eignum );
@@ -175,7 +179,7 @@ ActionShortcut(ao)
       }
       // This accumulates the bias in each bin
       readInputLine( getShortcutLabel() + "_histo-" + num + ": AVERAGE ARG=" + getShortcutLabel() + "_kde-" + num + " NORMALIZATION=false " +
-                     "STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
+                     "STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_w_wtfact-" + num);
       // Evaluate the bias potential for each basin
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
   }
@@ -187,8 +191,15 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_bias-" + num + " ARG2=" +
                      getShortcutLabel() + "_wkernel-" + num + " FUNC=x*y PERIODIC=NO");
   }
+  // And compute the wkernel outside the GMM
+  readInputLine( getShortcutLabel() + "_ext_wkernel: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=" + regparam + "/(x+" + regparam + ") PERIODIC=NO");
+
+  // And calculate the external wall potential
+  std::string wall; parse("WALL",wall);
+  readInputLine( getShortcutLabel() + "_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + wall + "*x/(1-x) PERIODIC=NO");
+
   // This is for the sum of these quantities
-  std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_wbias-1";
+  std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_wall," + getShortcutLabel() + "_wbias-1";
   for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); combstr += "," + getShortcutLabel() + "_wbias-" + num; }
   // And the final bias
   readInputLine( combstr ); readInputLine("BIASVALUE ARG=" + getShortcutLabel() );
