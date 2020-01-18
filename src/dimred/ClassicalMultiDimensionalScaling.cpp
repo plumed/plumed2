@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 
 where \f$D_{ij}\f$ is the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$d_{ij}\f$ is the distance between the projection
 of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  A tutorial on this approach can be used to analyze simulations
-can be found in the tutorial \ref belfast-3 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
+can be found in the tutorial \ref lugano-5 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 \par Examples
 
@@ -51,12 +51,10 @@ The following command instructs plumed to construct a classical multidimensional
 The RMSD distance between atoms 1-256 have moved is used to measure the distances in the high-dimensional space.
 
 \plumedfile
-CLASSICAL_MDS ...
-  ATOMS=1-256
-  METRIC=OPTIMAL-FAST
-  NLOW_DIM=2
-  OUTPUT_FILE=rmsd-embed
-... CLASSICAL_MDS
+data: COLLECT_FRAMES ATOMS=1-256
+mat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
+mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=mat NLOW_DIM=2
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=mds FILE=rmsd-embed
 \endplumedfile
 
 The following section is for people who are interested in how this method works in detail. A solid understanding of this material is
@@ -165,7 +163,7 @@ class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")

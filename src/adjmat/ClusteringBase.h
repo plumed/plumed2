@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,11 +42,11 @@ public:
 /// Constructor
   explicit ClusteringBase(const ActionOptions&);
 /// This checks whether derivatives can be computed given the base multicolvar
-  void turnOnDerivatives();
+  void turnOnDerivatives() override;
 /// Are these two atoms connected
   bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// Do the clustering
   virtual void performClustering()=0;
 /// Get the number of clusters that have been found
@@ -54,7 +54,7 @@ public:
 /// Get the atoms in one of the clusters
   virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
-  void apply() {}
+  void apply() override {}
 /// Get the cutoff
   virtual double getCutoffForConnection() const ;
 };

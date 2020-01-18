@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -150,7 +150,7 @@ public:
   ~MultiColvarBase() {}
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives
-  void turnOnDerivatives();
+  void turnOnDerivatives() override;
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
@@ -158,17 +158,17 @@ public:
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Is it safe to use multithreading
-  bool threadSafe() const { return !(mybasemulticolvars.size()>0); }
+  bool threadSafe() const override { return !(mybasemulticolvars.size()>0); }
 /// Do some setup before the calculation
-  void prepare();
+  void prepare() override;
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
-  void retrieveAtoms();
+  void retrieveAtoms() override;
 /// Do the calculation
-  virtual void calculate();
+  void calculate() override;
 /// Calculate numerical derivatives
-  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
 /// Perform one of the tasks
-  virtual void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 /// Update the active atoms
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This gets the position of an atom for the link cell setup
@@ -178,9 +178,9 @@ public:
 /// This is replaced once we have a function to calculate the cv
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const=0;
 /// Apply the forces from this action
-  virtual void apply();
+  void apply() override;
 /// Get the number of derivatives for this action
-  virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+  unsigned getNumberOfDerivatives() override;  // N.B. This is replacing the virtual function in ActionWithValue
 /// Checks if an task is being performed at the present time
   virtual bool isCurrentlyActive( const unsigned& code );
 /// Add some derivatives to a particular component of a particular atom
@@ -200,7 +200,7 @@ public:
 /// This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector() {}
 /// Ensure that derivatives are only calculated when needed
-  bool doNotCalculateDerivatives() const ;
+  bool doNotCalculateDerivatives() const override;
 /// Get the icolv th base multicolvar
   MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
 /// Get the number of base multicolvars

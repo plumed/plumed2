@@ -298,11 +298,16 @@ public:
       double fullSamples = 500.0, double maxFactor = 1.0,
       bool initializeTable = true)
     : DRRForceGrid(p_dimensions, p_suffix, initializeTable),
-      mFullSamples(fullSamples), mMaxFactor(maxFactor) {}
+      mFullSamples(fullSamples), mMaxFactors(p_dimensions.size(), maxFactor) {}
+  ABF(const vector<DRRAxis> &p_dimensions, const string &p_suffix,
+      double fullSamples, const vector<double>& maxFactors,
+      bool initializeTable = true)
+    : DRRForceGrid(p_dimensions, p_suffix, initializeTable),
+      mFullSamples(fullSamples), mMaxFactors(maxFactors) {}
   // Provide a setter for ABF parametres (fullsamples, maxfactor)
-  void setParameters(double fullSamples, double maxFactor) {
+  void setParameters(double fullSamples, const vector<double>& maxFactors) {
     mFullSamples = fullSamples;
-    mMaxFactor = maxFactor;
+    mMaxFactors = maxFactors;
   }
   // Store the "instantaneous" spring force of a point and get ABF bias forces.
   bool store_getbias(const vector<double> &pos,
@@ -314,7 +319,7 @@ public:
 private:
   // Parametres for calculate bias force
   double mFullSamples;
-  double mMaxFactor;
+  vector<double> mMaxFactors;
   // Boost serialization
   friend class boost::serialization::access;
   template <typename Archive>
@@ -334,6 +339,7 @@ public:
   double getkbt() const { return kbt; }
   void setkbt(double p_kbt) { kbt = p_kbt; }
   static CZAR mergewindow(const CZAR &cWA, const CZAR &cWB);
+  void writeZCount(const string &filename) const;
   ~CZAR() {}
 
 private:

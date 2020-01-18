@@ -233,7 +233,7 @@ At last, try to reduce the number of residues in the calculation.
 \page Lepton Making lepton library faster
 
 In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "switching functions",
-notice that these functionalities depend on the lepton library included in PLUMED.
+notice that these commands depend on the lepton library that is included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
 As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED. In order to enable it
@@ -254,12 +254,10 @@ export PLUMED_USE_ASMJIT=no
 
 
 In some case using a custom expression is almost as fast as using a hard-coded
-function. For instance, with an input like this one:
+function. For instance, with an input that contained the following lines:
 \plumedfile
-...
 c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
 d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
-...
 \endplumedfile
 I (GB) obtained the following timings (on a Macbook laptop):
 \verbatim

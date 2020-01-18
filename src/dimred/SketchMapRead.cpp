@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,14 +53,14 @@ private:
   std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapRead( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
-  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
-  unsigned getNumberOfDataPoints() const ;
-  std::vector<Value*> getArgumentList();
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
-  double getDissimilarity( const unsigned& i, const unsigned& j );
-  double getWeight( const unsigned& idata );
+  explicit SketchMapRead( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
+  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist ) override;
+  unsigned getNumberOfDataPoints() const override;
+  std::vector<Value*> getArgumentList() override;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const override;
+  double getDissimilarity( const unsigned& i, const unsigned& j ) override;
+  double getWeight( const unsigned& idata ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapRead,"SKETCHMAP_READ")
@@ -73,6 +73,7 @@ void SketchMapRead::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","the file containing the sketch-map projection");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
+  useCustomisableComponents(keys);
 }
 
 SketchMapRead::SketchMapRead( const ActionOptions& ao ):

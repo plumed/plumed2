@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,6 +45,7 @@ void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  ActionWithValue::useCustomisableComponents( keys );
 }
 
 ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
@@ -81,7 +82,8 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
   if( wwstr.size()>0 ) {
     log.printf("\n");
     wham_pointer = dynamic_cast<bias::ReweightBase*>( weight_vals[0]->getPntrToAction() );
-    if( !wham_pointer->buildsWeightStore() ) wham_pointer = NULL;
+    if( !wham_pointer ) wham_pointer = NULL;
+    else if( !wham_pointer->buildsWeightStore() ) wham_pointer = NULL;
     if( wham_pointer && weight_vals.size()!=1 ) error("can only extract weights from one wham object");
   } else log.printf("  weights are all equal to one\n");
   requestArguments( arg );

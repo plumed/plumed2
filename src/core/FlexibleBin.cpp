@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -98,44 +98,37 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
 void FlexibleBin::update(bool nowAddAHill) {
   unsigned ncv=paction->getNumberOfArguments();
   unsigned dimension=ncv*(ncv+1)/2;
-  // this is done all the times from scratch. It is not an accumulator
-  unsigned  k=0;
-  unsigned i;
-  vector<double> cv;
   vector<double> delta;
-  // if you use this below then the decay is in time units
-  //double decay=paction->getTimeStep()/sigma;
-  // to be consistent with the rest of the program: everything is better to be in timesteps
+  vector<double> cv;
   double decay=1./sigma;
+  // this is done all the times from scratch. It is not an accumulator
   // here update the flexible bin according to the needs
   switch (type) {
   // This should be called every time
   case diffusion:
-    //
+    // if you use this below then the decay is in time units
+    //double decay=paction->getTimeStep()/sigma;
+    // to be consistent with the rest of the program: everything is better to be in timesteps
     // THE AVERAGE VALUE
-    //
     // beware: the pbc
     delta.resize(ncv);
-    for(i=0; i<ncv; i++)cv.push_back(paction->getArgument(i));
+    for(unsigned i=0; i<ncv; i++) cv.push_back(paction->getArgument(i));
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(ncv);
-      for(i=0; i<ncv; i++)average[i]=cv[i];
+      for(unsigned i=0; i<ncv; i++) average[i]=cv[i];
     } else { // accumulate
-      for(i=0; i<ncv; i++) {
+      for(unsigned i=0; i<ncv; i++) {
         delta[i]=paction->difference(i,average[i],cv[i]);
         average[i]+=decay*delta[i];
         average[i]=paction->bringBackInPbc(i,average[i]); // equation 8 of "Metadynamics with adaptive Gaussians"
       }
-
     }
-    //
     // THE VARIANCE
-    //
     if(variance.size()==0) {
       variance.resize(dimension,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
     } else {
-      k=0;
-      for(i=0; i<ncv; i++) {
+      unsigned k=0;
+      for(unsigned i=0; i<ncv; i++) {
         for(unsigned j=i; j<ncv; j++) { // upper diagonal loop
           variance[k]+=decay*(delta[i]*delta[j]-variance[k]);
           k++;
@@ -144,31 +137,25 @@ void FlexibleBin::update(bool nowAddAHill) {
     }
     break;
   case geometry:
-    //
     //this calculates in variance the \nabla CV_i \dot \nabla CV_j
-    //
     variance.resize(dimension);
-    //cerr<< "Doing geometry "<<endl;
     // now the signal for retrieving the gradients should be already given by checkNeedsGradients.
     // here just do the projections
     // note that the call  checkNeedsGradients() in BiasMetaD takes care of switching on the call to gradients
     if (nowAddAHill) { // geometry is sync with hill deposition
-      //cerr<< "add a hill "<<endl;
-      k=0;
+      unsigned k=0;
       for(unsigned i=0; i<ncv; i++) {
         for(unsigned j=i; j<ncv; j++) {
           // eq 12 of "Metadynamics with adaptive Gaussians"
           variance[k]=sigma*sigma*(paction->getProjection(i,j));
           k++;
         }
-      };
-    };
+      }
+    }
     break;
   default:
-    cerr<< "This flexible bin is not recognized  "<<endl;
-    exit(1)	;
+    plumed_merror("This flexible bin method is not recognized");
   }
-
 }
 
 vector<double> FlexibleBin::getMatrix() const {
@@ -180,18 +167,16 @@ vector<double> FlexibleBin::getMatrix() const {
 /// in case of gradient based: update only when you add the hill
 void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
   // this is done all the times from scratch. It is not an accumulator
+  // here update the flexible bin according to the needs
   vector<double> cv;
   vector<double> delta;
   // if you use this below then the decay is in time units
   // to be consistent with the rest of the program: everything is better to be in timesteps
   double decay=1./sigma;
-  // here update the flexible bin according to the needs
   switch (type) {
   // This should be called every time
   case diffusion:
-    //
     // THE AVERAGE VALUE
-    //
     delta.resize(1);
     cv.push_back(paction->getArgument(iarg));
     if(average.size()==0) { // initial time: just set the initial vector
@@ -202,9 +187,7 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
       average[0]+=decay*delta[0];
       average[0]=paction->bringBackInPbc(iarg,average[0]); // equation 8 of "Metadynamics with adaptive Gaussians"
     }
-    //
     // THE VARIANCE
-    //
     if(variance.size()==0) {
       variance.resize(1,0.); // nonredundant members dimension=ncv*(ncv+1)/2;
     } else {
@@ -212,9 +195,7 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
     }
     break;
   case geometry:
-    //
     //this calculates in variance the \nabla CV_i \dot \nabla CV_j
-    //
     variance.resize(1);
     // now the signal for retrieving the gradients should be already given by checkNeedsGradients.
     // here just do the projections
@@ -225,8 +206,7 @@ void FlexibleBin::update(bool nowAddAHill, unsigned iarg) {
     }
     break;
   default:
-    cerr<< "This flexible bin is not recognized  "<<endl;
-    exit(1)	;
+    plumed_merror("This flexible bin is not recognized");
   }
 }
 

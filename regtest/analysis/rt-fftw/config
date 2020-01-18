@@ -1,0 +1,4 @@
+type=driver
+plumed_needs="fftw"
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz trajectory.xyz"

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,7 +71,7 @@ mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3
 rsums: ROWSUMS MATRIX=mat MEAN
 csums: COLUMNSUMS MATRIX=mat MEAN
 DUMPMULTICOLVAR DATA=rsums FILE=donors.xyz
-DUMPMULTICOLVAR DATA=csums FILE=acceptors.x
+DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
 \endplumedfile
 
 */
@@ -94,14 +94,14 @@ public:
 /// Constructor
   explicit HBondMatrix(const ActionOptions&);
 /// Create the ith, ith switching function
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
 /// This actually calculates the value of the contact function
-  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
 /// This does nothing
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 ///
   double calculateForThree( const unsigned& iat, const unsigned& ano, const unsigned& dno, const Vector& ood,
-                            const double& ood_df, const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const ;
+                            const double& ood_df, const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const;
 };
 
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")

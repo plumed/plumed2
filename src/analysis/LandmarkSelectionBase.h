@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,22 +45,22 @@ protected:
   void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  LandmarkSelectionBase( const ActionOptions& ao );
+  explicit LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
-  unsigned getNumberOfDataPoints() const ;
+  unsigned getNumberOfDataPoints() const override;
 /// Return the index of the data point in the base class
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const override;
 /// Get the weight
-  double getWeight( const unsigned& idata );
+  double getWeight( const unsigned& idata ) override;
 /// Get a reference configuration
-  DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
+  DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist ) override;
 /// Select landmark configurations
-  void performAnalysis();
+  void performAnalysis() override;
   virtual void selectLandmarks()=0;
 /// Get the squared dissimilarity between two reference configurations
-  double getDissimilarity( const unsigned& i, const unsigned& j );
+  double getDissimilarity( const unsigned& i, const unsigned& j ) override;
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
 inline

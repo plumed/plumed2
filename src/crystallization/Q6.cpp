@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -156,7 +156,7 @@ are done with those of all the other atoms in the system.  The final quantity is
 Q6 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6a
 Q6 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6b
 
-LOCAL_Q6 SPECIES=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w4
+LOCAL_Q6 SPECIES=q6a,q6b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w6
 PRINT ARG=w6.* FILE=colvar
 \endplumedfile
 
@@ -172,6 +172,8 @@ public:
   explicit Q6( const ActionOptions& ao );
 };
 
+// For some reason, this is not seen correctly by cppcheck
+// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(Q6,"Q6")
 typedef LocalSteinhardt<Q6> LOCAL_Q6;
 PLUMED_REGISTER_ACTION(LOCAL_Q6,"LOCAL_Q6")

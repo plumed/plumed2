@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,7 +105,7 @@ public:
 /// Setup the grid if it is a fibonacci grid on the surface of a sphere
   void setupFibonacciGrid( const unsigned& np );
 /// Get a description of the grid to output to the log
-  std::string description();
+  std::string description() override;
 /// Convert an index into indices
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 ///  Flatten the grid and get the grid index for a point
@@ -124,7 +124,7 @@ public:
 /// Set the values and derivatives of a particular element
   void setValueAndDerivatives( const unsigned&, const unsigned&, const double&, const std::vector<double>& );
 /// Set the size of the buffer equal to nper*npoints
-  virtual void resize();
+  void resize() override;
 /// Get the number of points in the grid
   unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
@@ -167,9 +167,9 @@ public:
 /// Get the extent of the grid in one of the axis
   double getGridExtent( const unsigned& i ) const ;
 /// Copy data from the action into the grid
-  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
 /// Finish the calculation
-  virtual void finish( const std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer ) override;
 /// This ensures that Gaussian cube fies are in correct units
   void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
@@ -191,7 +191,7 @@ public:
 /// Was a force added to the grid
   bool wasForced() const ;
 /// And retrieve the forces
-  bool applyForce( std::vector<double>& fforces );
+  bool applyForce( std::vector<double>& fforces ) override;
 };
 
 inline

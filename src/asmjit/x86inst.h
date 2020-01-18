@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 #ifndef __PLUMED_asmjit_x86inst_h
 #define __PLUMED_asmjit_x86inst_h
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -2540,5 +2542,6 @@ ASMJIT_INLINE const X86Inst::ISignature* X86Inst::CommonData::getISignatureEnd()
 
 // [Guard]
 #endif // _ASMJIT_X86_X86INST_H
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT
 #endif

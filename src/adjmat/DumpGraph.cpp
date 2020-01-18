@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,10 +54,10 @@ public:
 /// Constructor
   explicit DumpGraph( const ActionOptions& );
 /// Calculate and apply do nothing
-  void calculate() {};
-  void apply() {};
+  void calculate() override {};
+  void apply() override {};
 /// Update will do the output
-  void update();
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpGraph,"DUMPGRAPH")

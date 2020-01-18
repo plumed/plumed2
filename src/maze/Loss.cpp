@@ -44,7 +44,7 @@ The loss function is the following:
 r_i^{-\alpha}\text{e}^{-\beta r_i^{-\gamma}},
 \f]
 where \f$N_p\f$ is the number of ligand-protein atom pairs, \f$r\f$
-is a rescaled distance between the \f$i\f$th pair, and \f$\alpha,
+is a re-scaled distance between the \f$i\f$th pair, and \f$\alpha,
 \beta, \gamma\f$ are the positive parameters defined in that order by
 the PARAMS keyword.
 

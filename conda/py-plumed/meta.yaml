@@ -1,0 +1,49 @@
+{% set name = "py-plumed" %}
+{% set version = environ['VERSION'] %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  skip: True  # [win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - make
+  host:
+    - python
+    - pip
+    - cython
+  run:
+    - plumed
+    - python
+
+test:
+  imports:
+    - plumed
+  commands:
+    - python -c "import plumed; p=plumed.Plumed(); print(p)"
+
+about:
+  home: http://www.plumed.org/
+  license: LGPL-3.0
+  license_family: GPL
+  license_file: COPYING.LESSER
+  summary: 'Python wrappers for plumed library'
+  description: |
+    PLUMED is an open source library for free energy calculations in
+    molecular systems which works together with some of the most
+    popular molecular dynamics engines.
+  doc_url: https://www.plumed.org/doc
+  dev_url: https://github.com/plumed/plumed2
+
+extra:
+  recipe-maintainers:
+    - GiovanniBussi

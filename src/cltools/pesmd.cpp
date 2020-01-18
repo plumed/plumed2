@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,7 +99,7 @@ namespace PLMD {
 namespace cltools {
 
 class PesMD  : public PLMD::CLTool {
-  string description() const {
+  string description() const override {
     return "Langevin dynamics on PLUMED energy landscape";
   }
 public:
@@ -165,7 +165,7 @@ private:
 
 public:
 
-  int main( FILE* in, FILE* out, PLMD::Communicator& pc) {
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override {
     std::string plumedin; std::vector<double> ipos;
     double temp, tstep, friction; bool lperiod;
     int dim, nsteps, seed; std::vector<double> periods;
@@ -212,7 +212,7 @@ public:
     double tke=0;
     for(int i=0; i<nat; ++i) {
       for(int j=0; j<3; ++j) {
-        if( 3*i+j>dim ) break;
+        if( 3*i+j>dim-1 ) break;
         tke += 0.5*velocities[i][j]*velocities[i][j];
       }
     }
@@ -241,7 +241,7 @@ public:
       double lrand=sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[0][k];
@@ -251,7 +251,7 @@ public:
       // First step of velocity verlet
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
           positions[1+j][k] = positions[1+j][k] + tstep*velocities[j][k];
         }
@@ -274,7 +274,7 @@ public:
       // Second step of velocity verlet
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
         }
       }
@@ -284,7 +284,7 @@ public:
       lrand=sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
@@ -294,7 +294,7 @@ public:
       tke=0;
       for(int i=0; i<nat; ++i) {
         for(int j=0; j<3; ++j) {
-          if( 3*i+j>dim ) break;
+          if( 3*i+j>dim-1 ) break;
           tke += 0.5*velocities[i][j]*velocities[i][j];
         }
       }

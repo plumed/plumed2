@@ -29,6 +29,14 @@ ATOMS5=4,10 SWITCH5={RATIONAL R_0=0.5 D_MAX=2.6 NOSTRETCH}
 LABEL=c
 ... CONTACTMAP
 
+MOVINGRESTRAINT ...
+ ARG=c.contact-1
+ STEP0=0      AT0=1.  KAPPA0=100.0
+ STEP1=5000   AT1=5.
+ LABEL=steer 
+... MOVINGRESTRAINT
+
+
 PRINT ...
   ARG=a,b,c.contact-1,c.contact-5
   FILE=colvar

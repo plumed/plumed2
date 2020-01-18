@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,9 +38,9 @@ public:
 /// Creator of keywords
   static void registerKeywords( Keywords& keys );
 /// Do nothing.
-  void calculate() {}
+  void calculate() override {}
 /// Do nothing.
-  void apply() {}
+  void apply() override {}
 };
 
 }

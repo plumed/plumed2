@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,12 +95,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const { return 2; }
-  bool checkAllActive() const { return gbuffer==0; }
-  void clearAverage();
-  void prepareForAveraging();
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishAveraging();
+  unsigned getNumberOfQuantities() const override { return 2; }
+  bool checkAllActive() const override { return gbuffer==0; }
+  void clearAverage() override;
+  void prepareForAveraging() override;
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  void finishAveraging() override;
 };
 
 PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")

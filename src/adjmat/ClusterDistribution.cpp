@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,11 +41,11 @@ value for the local q6 Steinhardt parameter is then computed.  A contact matrix 
 whether atoms atoms \f$i\f$ and \f$j\f$ have a high value for this coordination number and if they are within
 3.6 nm of each other.  The connected components of this matrix are then found using a depth first clustering
 algorithm on the corresponding graph. The number of components in this graph that contain more than 27 atoms is then computed.
-As discussed in \cite tribello-clustering this input was used to analyze the formation of a polycrystal of GeTe from amorphous
+As discussed in \cite tribello-clustering an input similar to this one was used to analyze the formation of a polycrystal of GeTe from amorphous
 GeTe.
 
 \plumedfile
-q6: Q6 SPECIES=1-32768 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
+q6: Q6 SPECIES=1-300 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
 lq6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
 flq6: MFILTER_MORE DATA=lq6 SWITCH={GAUSSIAN D_0=0.19 R_0=0.01 D_MAX=0.2}
 cc: COORDINATIONNUMBER SPECIES=flq6 SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
@@ -75,9 +75,9 @@ public:
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION")

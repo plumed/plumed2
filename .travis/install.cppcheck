@@ -22,7 +22,7 @@ native="$($CC -march=native -Q --help=target | grep march= | awk '{print $2}')"
 # the object file should not be recycled
 
 git checkout $version
-make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-DNDEBUG -O2 -march="$native" -mtune="$native" -Wunreachable-code" PREFIX="$HOME/opt"
+make -j 4 install MATCHCOMPILER=yes FILESDIR="$HOME/opt/share/cppcheck" HAVE_RULES=yes CXXFLAGS="-DNDEBUG -O2 -march="$native" -mtune="$native" -Wall -Wno-sign-compare -Wno-unused-function" PREFIX="$HOME/opt"
 cd ../
 
 cppcheck --version

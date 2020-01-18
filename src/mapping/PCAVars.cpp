@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,7 +86,8 @@ the matrix \f$A\f$ above.  These directions can be specified by specifying a sec
 be constructed by calculating the displacement of this second configuration from the reference configuration.  A pdb input prepared
 in this way would look as follows:
 
-\verbatim
+\auxfile{reference.pdb}
+REMARK TYPE=OPTIMAL
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
@@ -95,6 +96,7 @@ ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
 ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
 ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
+REMARK TYPE=OPTIMAL
 ATOM      2  CH3 ACE     1      13.932 -14.718  -6.016  1.00  1.00
 ATOM      5  C   ACE     1      20.312  -9.928  -5.946  1.00  1.00
 ATOM      9  CA  ALA     2      18.462 -11.088  -8.986  1.00  1.00
@@ -103,7 +105,7 @@ ATOM     15  C   ALA     2      19.422   7.978 -12.536  1.00  1.00
 ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
 ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
-\endverbatim
+\endauxfile
 
 Alternatively, the second configuration can specify the components of \f$A\f$ explicitly.  In this case you need to include the
 keyword TYPE=DIRECTION in the remarks to the pdb as shown below.
@@ -184,12 +186,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a );
-  void calculate();
-  void apply();
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void calculate() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(PCAVars,"PCAVARS")
@@ -268,6 +270,15 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
   std::vector<std::string> args; myref->getArgumentRequests( args, false );
+  if( atoms.size()>0 ) {
+    log.printf("  found %z atoms in input \n",atoms.size());
+    log.printf("  with indices : ");
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      if(i%25==0) log<<"\n";
+      log.printf("%d ",atoms[i].serial());
+    }
+    log.printf("\n");
+  }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
 
@@ -343,7 +354,7 @@ void PCAVars::unlockRequests() {
 
 void PCAVars::calculate() {
 
-  if(!nopbc) makeWhole();
+  if(!nopbc && getNumberOfAtoms()>0) makeWhole();
 
   // Clear the reference value pack
   mypack.clear();

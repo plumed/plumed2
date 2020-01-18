@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,13 +70,32 @@ The values of \f$s\f$ and \f$z\f$ can then be referenced using the gspath and gz
 \par Examples
 
 In the example below the path is defined using RMSD distance from frames.
-The reference frames in the path are defined in the pdb file.  In this frame
-each configuration in the path is separated by a line containing just the word END.
 
 \plumedfile
 p1: PATH REFERENCE=file.pdb TYPE=OPTIMAL LAMBDA=500.0
-PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+PRINT ARG=p1.spath,p1.zpath STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
+
+The reference frames in the path are defined in the pdb file shown below.  In this frame
+each configuration in the path is separated by a line containing just the word END.
+
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
+ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
+ATOM      6  OL  ALA     1      -1.201  -0.849   2.425  1.00  1.00
+ATOM      7  NL  ALA     1      -1.296   0.337   0.534  1.00  1.00
+END
+ATOM      1  CL  ALA     1      -2.990   0.383   2.277  1.00  1.00
+ATOM      5  CLP ALA     1      -1.664  -0.085   1.831  1.00  1.00
+ATOM      6  OL  ALA     1      -0.987  -0.835   2.533  1.00  1.00
+ATOM      7  NL  ALA     1      -1.227   0.364   0.646  1.00  1.00
+END
+\endauxfile
 
 In the example below the path is defined using the values of two torsional angles (t1 and t2).
 In addition, the \f$s\f$ and \f$z\f$ are calculated using the geometric expressions described
@@ -90,55 +109,20 @@ PRINT ARG=pp.* FILE=colvar
 \endplumedfile
 
 Notice that the LAMBDA parameter is not required here as we are not calculating \f$s\f$ and \f$s\f$
-using the algebraic formulae defined earlier.  The positions of the frames in the path are defined
+using the algebraic formulas defined earlier.  The positions of the frames in the path are defined
 in the file epath.pdb.  An extract from this file looks as shown below.
 
-\verbatim
+\auxfile{epath.pdb}
 REMARK ARG=t1,t2 t1=-4.25053  t2=3.88053
 END
 REMARK ARG=t1,t2 t1=-4.11     t2=3.75
 END
 REMARK ARG=t1,t2 t1=-3.96947  t2=3.61947
 END
-\endverbatim
+\endauxfile
 
 The remarks in this pdb file tell PLUMED the labels that are being used to define the position in the
 high dimensional space and the values that these arguments have at each point on the path.
-
-The following input instructs PLUMED to calculate the values of the path collective variables.  The frames that make up this
-path are defined in the file all.pdb and all distances are measured using the OPTIMAL metric that is discussed in the manual
-page on \ref RMSD.
-
-\plumedfile
-p2: PATH REFERENCE=all.pdb LAMBDA=69087
-PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar
-\endplumedfile
-
-If you wish to use collective variable values in the definition of your path you would use an input file with something like this:
-
-\plumedfile
-d1: DISTANCE ATOMS=1,2
-d2: DISTANCE ATOMS=3,4a
-p2: PATH REFERENCE=mypath.pdb LAMBDA=2 TYPE=EUCLIDEAN
-PRINT ARG=p2.spath,p2.zpath STRIDE=1 FILE=colvar
-\endplumedfile
-
-The corresponding pdb file containing the  definitions of the frames in the path would then look like this:
-
-\verbatim
-DESCRIPTION: a defintiion of a PATH
-REMARK TYPE=EUCLIDEAN
-REMARK ARG=d1,d2
-REMARK d1=1.0 d2=1.0
-END
-REMARK TYPE=EUCLIDEAN
-REMARK ARG=d1,d2
-REMARK d1=2.0 d2=2.0
-END
-\endverbatim
-
-For each frame in the path you must specify the arguments that should be used to calculate the distance between the instantaneous configuration
-of the system and the reference configurations together with the values that these arguments take in each of the reference configurations.
 
 */
 //+ENDPLUMEDOC

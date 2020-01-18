@@ -1,8 +1,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2015-2018
+Copyright (c) 2019
 National Institute of Advanced Industrial Science and Technology (AIST), Japan.
 This file contains module for LogMFD method proposed by Tetsuya Morishita(AIST).
-then written by Mizuho information and Research Institute, Inc.
 
 The LogMFD module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -151,7 +150,7 @@ With the MF evaluated using the PD approach, reconstructing free energy profiles
 
 Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski non-equilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with LAMMPS, Gromacs, and NAMD.
 
-\section Thermostat Using LogMFD with a thermostat /PD
+\section Thermostat Using LogMFD/PD with a thermostat
 
 Introducing a thermostat on \f${\bf X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f${\bf q}\f$ and \f${\bf X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f${\bf X}\f$.
 
@@ -218,7 +217,7 @@ to the fictitious dynamical variables in LogMFD/PD.
 
 plumed.dat
 \plumedfile
-UNITS TIME=fs LENGTH=1.0 ENERGY=kcal/mol Mass=1.0 CHARGE=1.0
+UNITS TIME=fs LENGTH=1.0 ENERGY=kcal/mol MASS=1.0 CHARGE=1.0
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -248,9 +247,9 @@ to execute a LogMFD run with Gromacs-MD.
 Here TOPO/topol0.tpr is an input file
 which contains atomic coordinates and Gromacs parameters.
 
-\plumedfile
+\verbatim
 gmx_mpi mdrun -s TOPO/topol0.tpr -plumed
-\endplumedfile
+\endverbatim
 
 This command will output files named logmfd.out and replica.out.
 
@@ -258,7 +257,7 @@ The output file logmfd.out records free energy and all fictitious dynamical vari
 
 logmfd.out
 
-\plumedfile
+\verbatim
 # LogMFD
 # CVs : phi psi
 # Mass for CV particles : 5000000.000000000 5000000.000000000
@@ -270,13 +269,13 @@ logmfd.out
        2       4.99836196     308.26124159       0.00000000       0.00000000      -2.85588436       0.00035005       4.71247605       2.79233863       0.00035000      -0.00532474
        3       4.99743572     308.28344595       0.00000000       0.00000000      -2.85570932       0.00035007       5.34358230       2.79251363       0.00035000      -0.05119816
 ...
-\endplumedfile
+\endverbatim
 
 The output file replica.out records all collective variables at every MFD step.
 
 replica.out
 
-\plumedfile
+\verbatim
 # Replica No. 0 of 1.
 # 1:iter_md, 2:work, 3:weight,
 # 4:phi(q)
@@ -285,7 +284,7 @@ replica.out
        2   -1.638105e-03     1.000000e+00       -2.80893462       2.79211039
        3   -2.564398e-03     1.000000e+00       -2.80244854       2.79182665
 ...
-\endplumedfile
+\endverbatim
 
 \subsection Example-LogPD Example of LogPD
 
@@ -293,9 +292,9 @@ Use the following command line to execute a LogPD run using two MD replicas (not
 Here TOPO/topol0.tpr and TOPO/topol1.tpr are input files
 which contain atomic coordinates of each replica and Gromacs parameters.
 
-\plumedfile
+\verbatim
 mpirun -np 2 gmx_mpi mdrun -s TOPO/topol -plumed -multi 2
-\endplumedfile
+\endverbatim
 
 This command will output files named logmfd.out, replica.out.0 and replica.out.1.
 
@@ -303,7 +302,7 @@ The output file logmfd.out records free energy and all fictitious dynamical vari
 
 logmfd.out
 
-\plumedfile
+\verbatim
 # LogPD, replica parallel of LogMFD
 # number of replica : 2
 # CVs : phi psi
@@ -316,14 +315,14 @@ logmfd.out
        2       5.00476934     308.10774854       0.00000000       0.00000000      -0.95919679       0.00034989     -11.20093553       0.78941467       0.00034999      -3.21098229
        3       5.00702463     308.05376594       0.00000000       0.00000000      -0.95902187       0.00034983     -10.81712171       0.78958965       0.00034998      -2.07196718
 ...
-\endplumedfile
+\endverbatim
 
 
 The output file replica.out.0 records all collective variables of replica No.0 at every MFD step.
 
 replica.out.0
 
-\plumedfile
+\verbatim
 # Replica No. 0 of 2.
 # 1:iter_md, 2:work, 3:weight,
 # 4:phi(q)
@@ -332,13 +331,13 @@ replica.out.0
        2    3.466179e-03     5.010942e-01       -1.05020764       0.78731283
        3    4.927870e-03     5.017619e-01       -1.04968867       0.79635198
 ...
-\endplumedfile
+\endverbatim
 
 The output file replica.out.1 records all collective variables of replica No.1 at every MFD step.
 
 replica.out.1
 
-\plumedfile
+\verbatim
 # Replica No. 1 of 2.
 # 1:iter_md, 2:work, 3:weight,
 # 4:phi(q)
@@ -347,7 +346,7 @@ replica.out.1
        2    6.075530e-03     4.989058e-01       -1.09264741       0.72681448
        3    9.129358e-03     4.982381e-01       -1.08517238       0.74084241
 ...
-\endplumedfile
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -1116,9 +1115,7 @@ double LogMFD::calcFlog() {
   const double ekin = calcEkin();
   double pot;
 
-  if( false ) {
-  }
-  else if (thermostat == "NVE") {
+  if (thermostat == "NVE") {
     pot = hlog - ekin;
   }
   else if (thermostat == "NVT") {

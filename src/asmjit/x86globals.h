@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 #ifndef __PLUMED_asmjit_x86globals_h
 #define __PLUMED_asmjit_x86globals_h
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -528,5 +530,6 @@ static ASMJIT_INLINE int tlogIf(int cond, int a, int b) noexcept { return (cond 
 
 // [Guard]
 #endif // _ASMJIT_X86_X86GLOBALS_H
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT
 #endif

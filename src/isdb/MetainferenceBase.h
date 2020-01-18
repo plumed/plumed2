@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -103,7 +103,6 @@ private:
   // Monte Carlo stuff
   std::vector<Random> random;
   unsigned MCsteps_;
-  unsigned MCstride_;
   long unsigned MCaccept_;
   long unsigned MCacceptScale_;
   long unsigned MCacceptFT_;
@@ -157,18 +156,21 @@ private:
                      const double scale, const double offset);
   double getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                       const double scale, const double offset);
-  void   setMetaDer(const unsigned index, const double der);
-  double getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void setMetaDer(const unsigned index, const double der);
+  void getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   double getCalcData(const unsigned index);
   void get_weights(double &fact, double &var_fact);
   void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
   void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
   void do_regression_zero(const std::vector<double> &mean);
-  void doMonteCarlo(const std::vector<double> &mean);
+  void moveTilde(const std::vector<double> &mean_, double old_energy);
+  void moveScaleOffset(const std::vector<double> &mean_, double old_energy);
+  void moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow);
+  double doMonteCarlo(const std::vector<double> &mean);
 
 
 public:
@@ -190,12 +192,12 @@ public:
   void setDerivatives();
   double getMetaDer(const unsigned index);
   void writeStatus();
-  void turnOnDerivatives();
-  unsigned getNumberOfDerivatives();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a );
-  void apply();
+  void turnOnDerivatives() override;
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void apply() override;
   void setArgDerivatives(Value *v, const double &d);
   void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
   void setBoxDerivatives(Value*v, const Tensor&d);

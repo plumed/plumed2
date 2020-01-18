@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -352,7 +352,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=6;
+        *(static_cast<int*>(val))=7;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -553,6 +553,14 @@ void PlumedMain::cmd(const std::string & word,void*val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      /* ADDED WITH API==7 */
+      case cmd_convert:
+      {
+        double v;
+        plumed_assert(words.size()==2);
+        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+      }
+      break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
@@ -580,7 +588,8 @@ void PlumedMain::init() {
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
      <<"compiled on " <<config::getCompilationDate() << " at " << config::getCompilationTime() << "\n";
-  log<<"Please cite this paper when using PLUMED ";
+  log<<"Please cite these papers when using PLUMED ";
+  log<<cite("The PLUMED consortium, Nat. Methods 16, 670 (2019)");
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed.org\n";

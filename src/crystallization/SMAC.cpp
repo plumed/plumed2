@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -130,8 +130,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SMAC(const ActionOptions& ao);
   double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
-  double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
+  double calculateCoordinationPrefactor( const double& coord, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(SMAC,"SMAC")

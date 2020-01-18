@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,7 +55,7 @@ PRINT ARG=p2.X,p2.Y,p2.zpath STRIDE=1 FILE=colvar
 The additional input file for this calculation, which contains the reference frames and the values of X and Y at these reference
 points has the following format.
 
-\verbatim
+\auxfile{allv.pdb}
 REMARK X=1 Y=2
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
@@ -87,7 +87,7 @@ ATOM     17  NR  ALA     1       1.380   0.537   1.968  1.00  1.00
 ATOM     18  HR  ALA     1       0.764  -0.060   2.461  1.00  1.00
 ATOM     19  CR  ALA     1       2.431   1.195   2.683  1.00  1.00
 END
-\endverbatim
+\endauxfile
 
 */
 //+ENDPLUMEDOC

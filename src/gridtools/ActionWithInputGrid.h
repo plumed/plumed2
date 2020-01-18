@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,11 +40,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  virtual void clearAverage();
-  virtual void prepareForAveraging();
+  void clearAverage() override;
+  void prepareForAveraging() override;
   virtual bool checkAllActive() const { return true; }
-  virtual void performOperations( const bool& from_update );
-  virtual void apply() {};
+  void performOperations( const bool& from_update ) override;
+  void apply() override {};
 };
 
 inline

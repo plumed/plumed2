@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 #ifndef __PLUMED_asmjit_codebuilder_h
 #define __PLUMED_asmjit_codebuilder_h
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -937,5 +939,6 @@ public:
 // [Guard]
 #endif // !ASMJIT_DISABLE_BUILDER
 #endif // _ASMJIT_BASE_CODEBUILDER_H
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT
 #endif

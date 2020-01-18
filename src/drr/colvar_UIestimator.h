@@ -191,7 +191,7 @@ public:
     temp.resize(dimension);
   }
 
-  const T inline get_value(const std::vector<double> & x)
+  T inline get_value(const std::vector<double> & x)
   {
     return vector[convert_x(x)];
   }

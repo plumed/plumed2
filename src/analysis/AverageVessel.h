@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,10 +36,10 @@ public:
 /// Constructor
   explicit AverageVessel( const vesselbase::VesselOptions& );
 /// Set the size of the data vessel
-  void resize();
+  void resize() override;
 /// This does nothing
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  std::string description() { return ""; }
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
+  std::string description() override { return ""; }
 /// Accumulate the average
   void accumulate( const double& weight, const double& val );
 /// Get the average value

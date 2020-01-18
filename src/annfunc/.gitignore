@@ -1,0 +1,4 @@
+core/**
+deps/**
+function/**
+*.o

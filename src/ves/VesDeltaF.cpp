@@ -114,9 +114,15 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   bool isFirstStep_;
+  bool afterCalculate_;
+
+//prob
+  double tot_prob_;
+  std::vector<double> prob_;
+  std::vector< std::vector<double> > der_prob_;
 
 //local basins
-  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of Grid::create
+  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of GridBase::create
   std::vector<double> norm_;
 
 //optimizer-related stuff
@@ -155,9 +161,9 @@ private:
   inline unsigned get_index(const unsigned, const unsigned) const;
 
 public:
-  VesDeltaF(const ActionOptions&);
-  void calculate();
-  void update();
+  explicit VesDeltaF(const ActionOptions&);
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -203,6 +209,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 VesDeltaF::VesDeltaF(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
+  , afterCalculate_(false)
   , mean_counter_(0)
   , av_counter_(0)
   , work_(0)
@@ -233,7 +240,15 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     fes_names.push_back(filename);
     IFile gridfile;
     gridfile.open(filename);
-    grid_p_.push_back(Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true));
+    auto g=GridBase::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
+// we assume this cannot be sparse. in case we want it to be sparse, some of the methods
+// that are available only in Grid should be ported to GridBase
+    auto gg=dynamic_cast<Grid*>(g.get());
+// if this throws, g is deleted
+    plumed_assert(gg);
+// release ownership in order to transfer it to emplaced pointer
+    g.release();
+    grid_p_.emplace_back(gg);
   }
   plumed_massert(grid_p_.size()>1,"at least 2 basins must be defined, starting from FILE_F0");
   alpha_size_=grid_p_.size()-1;
@@ -470,7 +485,9 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   if(inv_gamma_>0)
     log<<plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
 
-//set initial value for tg averages and rct
+//last initializations
+  prob_.resize(grid_p_.size());
+  der_prob_.resize(grid_p_.size(),std::vector<double>(getNumberOfArguments()));
   update_tg_and_rct();
 }
 
@@ -482,35 +499,40 @@ void VesDeltaF::calculate()
   for(unsigned s=0; s<ncv; s++)
     cv[s]=getArgument(s);
 //get probabilities for each basin, and total one
-  std::vector<double> prob(grid_p_.size());
-  std::vector< std::vector<double> > der_prob(grid_p_.size(),std::vector<double>(ncv));
   for(unsigned n=0; n<grid_p_.size(); n++)
-    prob[n]=grid_p_[n]->getValueAndDerivatives(cv,der_prob[n]);
-  double tot_prob=prob[0];
+    prob_[n]=grid_p_[n]->getValueAndDerivatives(cv,der_prob_[n]);
+  tot_prob_=prob_[0];
   for(unsigned i=0; i<alpha_size_; i++)
-    tot_prob+=prob[i+1]*exp_alpha_[i];
+    tot_prob_+=prob_[i+1]*exp_alpha_[i];
 
 //update bias and forces: V=-(1-inv_gamma_)*fes
-  setBias((1-inv_gamma_)/beta_*std::log(tot_prob));
+  setBias((1-inv_gamma_)/beta_*std::log(tot_prob_));
   for(unsigned s=0; s<ncv; s++)
   {
-    double dProb_dCV_s=der_prob[0][s];
+    double dProb_dCV_s=der_prob_[0][s];
     for(unsigned i=0; i<alpha_size_; i++)
-      dProb_dCV_s+=der_prob[i+1][s]*exp_alpha_[i];
-    setOutputForce(s,-(1-inv_gamma_)/beta_/tot_prob*dProb_dCV_s);
+      dProb_dCV_s+=der_prob_[i+1][s]*exp_alpha_[i];
+    setOutputForce(s,-(1-inv_gamma_)/beta_/tot_prob_*dProb_dCV_s);
   }
+  afterCalculate_=true;
+}
+
+void VesDeltaF::update()
+{
 //skip first step to sync getTime() and av_counter_, as in METAD
   if(isFirstStep_)
   {
     isFirstStep_=false;
     return;
   }
+  plumed_massert(afterCalculate_,"VesDeltaF::update() must be called after VesDeltaF::calculate() to work properly");
+  afterCalculate_=false;
 
 //calculate derivatives for ensemble averages
   std::vector<double> dV_dAlpha(alpha_size_);
   std::vector<double> d2V_dAlpha2(sym_alpha_size_);
   for(unsigned i=0; i<alpha_size_; i++)
-    dV_dAlpha[i]=-(1-inv_gamma_)/tot_prob*prob[i+1]*exp_alpha_[i];
+    dV_dAlpha[i]=-(1-inv_gamma_)/tot_prob_*prob_[i+1]*exp_alpha_[i];
   for(unsigned i=0; i<alpha_size_; i++)
   {
     d2V_dAlpha2[get_index(i,i)]=-beta_*dV_dAlpha[i];
@@ -530,14 +552,12 @@ void VesDeltaF::calculate()
     }
   }
 //update work
-  double prev_tot_prob=prob[0];
+  double prev_tot_prob=prob_[0];
   for(unsigned i=0; i<alpha_size_; i++)
-    prev_tot_prob+=prob[i+1]*prev_exp_alpha_[i];
-  work_+=(1-inv_gamma_)/beta_*std::log(tot_prob/prev_tot_prob);
-}
+    prev_tot_prob+=prob_[i+1]*prev_exp_alpha_[i];
+  work_+=(1-inv_gamma_)/beta_*std::log(tot_prob_/prev_tot_prob);
 
-void VesDeltaF::update()
-{
+//update coefficients
   if(av_counter_==av_stride_)
   {
     update_alpha();

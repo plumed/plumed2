@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -69,7 +69,7 @@ class MatrixColumnSums : public ActionWithInputMatrix {
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixColumnSums(const ActionOptions&);
-  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MatrixColumnSums,"COLUMNSUMS")

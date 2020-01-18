@@ -129,7 +129,7 @@ do
 # -maxwarn is often needed because box could be charged
   grompp_mpi_d  -maxwarn 1 -o topol$i.tpr -f grompp$i.mdp -p topol$i.top
 done
-mpirun -np $nrep gmx_mpi mdrun_d -v -plumed plumed.dat -multi $nrep -replex 100 -nsteps 15000000 -hrex
+mpirun -np $nrep gmx_mpi mdrun_d -v -plumed plumed.dat -multi $nrep -replex 100 -nsteps 15000000 -hrex -dlb no
 \endverbatim
 
 Notice that total cell could be charged. This happens whenever the scaled portion of the system
@@ -156,6 +156,9 @@ Warnings:
   unnoticed errors in the final results.
 - Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
   GROMACS is going to change nstlist automatically, be sure that it still divides replex.
+- It seems that when using multiple processes per replica it is necessary to switch off
+  dynamic load balancing (`-dlb no`) otherwise the simulation could crash randomly,
+  see \issue{410}.
 - Option -hrex requires also option -plumed. If you do not care about plumed, just provide an empty
   plumed.dat file.
 - It should work correctly if replicas have different force-field, temperature, lambda, pressure,

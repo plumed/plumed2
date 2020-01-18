@@ -24,6 +24,7 @@
 #include "LinearBasisSetExpansion.h"
 #include "CoeffsVector.h"
 #include "GridIntegrationWeights.h"
+#include "GridProjWeights.h"
 
 #include "cltools/CLTool.h"
 #include "cltools/CLToolRegister.h"
@@ -133,12 +134,13 @@ PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f
 
 class MD_LinearExpansionPES : public PLMD::CLTool {
 public:
-  std::string description() const {return "MD of a one particle on a linear expansion PES";}
+  std::string description() const override {return "MD of a one particle on a linear expansion PES";}
   static void registerKeywords( Keywords& keys );
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
-  int main( FILE* in, FILE* out, PLMD::Communicator& pc);
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
   unsigned int dim;
+  std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
   double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
@@ -175,6 +177,7 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
 MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
+  dim_string_prefix("dim"),
   potential_expansion_pntr(NULL)
 {
   inputdata=ifile; //commandline;
@@ -340,9 +343,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       bf_keyword = bf_keyword.substr(1,bf_keyword.size()-2);
     }
     basisf_keywords[i] = bf_keyword;
-    plumed_bf->readInputLine(bf_keyword+" LABEL=dim"+is);
-    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>("dim"+is);
-    args[i] = new Value(NULL,"dim"+is,false);
+    plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
+    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
+    args[i] = new Value(NULL,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
@@ -361,7 +364,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    error("Only generating a template coefficient file - Should stop now.");
+    printf("Only generating a template coefficient file - Should stop now.");
+    return 0;
   }
 
   std::vector<std::string> input_coeffs_fnames(0);
@@ -416,6 +420,25 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_potential.open(output_potential_fname);
   potential_expansion_pntr->writeBiasGridToFile(ofile_potential);
   ofile_potential.close();
+  if(dim>1) {
+    for(unsigned int i=0; i<dim; i++) {
+      std::string is; Tools::convert(i+1,is);
+      std::vector<std::string> proj_arg(1);
+      proj_arg[0] = dim_string_prefix+is;
+      FesWeight* Fw = new FesWeight(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw);
+      proj_grid.setMinToZero();
+
+      std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
+      OFile ofile_potential_proj;
+      ofile_potential_proj.link(pc);
+      ofile_potential_proj.open(output_potential_proj_fname);
+      proj_grid.writeToFile(ofile_potential_proj);
+      ofile_potential_proj.close();
+      delete Fw;
+    }
+  }
+
 
   Grid histo_grid(*potential_expansion_pntr->getPntrToBiasGrid());
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(&histo_grid);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -94,10 +94,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Angles(const ActionOptions&);
 /// Updates neighbor list
-  virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
-  bool isPeriodic() { return false; }
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")

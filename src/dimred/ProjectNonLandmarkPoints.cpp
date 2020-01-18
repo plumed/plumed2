@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,7 +53,7 @@ private:
   void generateProjection( const unsigned& idat, std::vector<double>& point );
 public:
   static void registerKeywords( Keywords& keys );
-  ProjectNonLandmarkPoints( const ActionOptions& ao );
+  explicit ProjectNonLandmarkPoints( const ActionOptions& ao );
 /// Get a reference configuration (this returns the projection)
   analysis::DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
 /// Overwrite getArguments so we get arguments from underlying class

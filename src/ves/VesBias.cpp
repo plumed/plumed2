@@ -606,11 +606,6 @@ void VesBias::disableHessian() {
 }
 
 
-void VesBias::apply() {
-  Bias::apply();
-}
-
-
 std::string VesBias::getCoeffsSetLabelString(const std::string& type, const unsigned int coeffs_id) const {
   std::string label_prefix = getLabel() + ".";
   std::string label_postfix = "";

@@ -39,6 +39,16 @@
 import numpy as np
 import plumed
 import os
+from contextlib import contextmanager
+
+@contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(newdir)
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
 def read_xyz(filename):
    xyz = open(filename)
@@ -68,8 +78,7 @@ def create_plumed_var( p, name, command ):
    p.cmd("setMemoryForData " + name, data )
    return data
 
-def test():
-    os.chdir('test/')
+def runtest():
     os.system('rm -f bck.*')
     # Output to four decimal places only
     np.set_printoptions(precision=4)
@@ -151,6 +160,10 @@ def test():
             if abs(data)>1E-4 : of.write("MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON")
     
     of.close()
+
+def test():
+    with cd('test/'):
+        runtest()
 
 if __name__ == "__main__":
     test()
