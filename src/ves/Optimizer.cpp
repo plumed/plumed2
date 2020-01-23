@@ -1041,10 +1041,7 @@ void Optimizer::update() {
       }
     }
     increaseIterationCounter();
-    updateOutputComponents();
-    for(unsigned int i=0; i<ncoeffssets_; i++) {
-      writeOutputFiles(i);
-    }
+
     if(ustride_targetdist_>0 && getIterationCounter()%ustride_targetdist_==0) {
       for(unsigned int i=0; i<nbiases_; i++) {
         if(dynamic_targetdists_[i]) {
@@ -1058,7 +1055,10 @@ void Optimizer::update() {
       }
     }
 
-
+    updateOutputComponents();
+    for(unsigned int i=0; i<ncoeffssets_; i++) {
+      writeOutputFiles(i);
+    }
     //
     if(isBiasOutputActive() && getIterationCounter()%getBiasOutputStride()==0) {
       writeBiasOutputFiles();
