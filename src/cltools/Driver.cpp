@@ -344,6 +344,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   bool debug_grex=parse("--debug-grex",fakein);
   int  grex_stride=0;
   FILE*grex_log=NULL;
+// call fclose when fp goes out of scope
+  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> grex_log_deleter(grex_log,deleter);
+
   if(debug_grex) {
     if(noatoms) error("must have atoms to debug_grex");
     if(multi<2)  error("--debug_grex needs --multi with at least two replicas");
@@ -353,7 +357,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     parse("--debug-grex-log",file);
     if(file.length()>0) {
       file+="."+n;
-      grex_log=fopen(file.c_str(),"w");
+      grex_log=std::fopen(file.c_str(),"w");
+      grex_log_deleter.reset(grex_log);
     }
   }
 
@@ -381,17 +386,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::string trajectory_fmt;
 
   bool use_molfile=false;
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   molfile_plugin_t *api=NULL;
-  void *h_in=NULL;
-  molfile_timestep_t ts_in; // this is the structure that has the timestep
-// a std::vector<float> with the same scope as ts_in
-// it is necessary in order to store the pointer to ts_in.coords
-  std::vector<float> ts_in_coords;
-  ts_in.coords=ts_in_coords.data();
-  ts_in.velocities=NULL;
-  ts_in.A=-1; // we use this to check whether cell is provided or not
-#endif
 
 // Read in an xyz file
   std::string trajectoryFile(""), pdbfile(""), mcfile("");
@@ -429,7 +424,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       if(traj_trr.length()>0) nn++;
       if(nn>1) {
         std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
-        if(grex_log)fclose(grex_log);
         return 1;
       }
     }
@@ -455,7 +449,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     if(trajectoryFile.length()==0&&!parseOnly) {
       std::fprintf(stderr,"ERROR: missing trajectory data\n");
-      if(grex_log)fclose(grex_log);
       return 1;
     }
     std::string lengthUnits(""); parse("--length-units",lengthUnits);
@@ -492,6 +485,27 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     parse("--natoms",command_line_natoms);
 
   }
+
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+  auto mf_deleter=[api](void* h_in) {
+    if(h_in) {
+      std::unique_ptr<std::lock_guard<std::mutex>> lck;
+      if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
+      api->close_file_read(h_in);
+    }
+  };
+  void *h_in=NULL;
+  std::unique_ptr<void,decltype(mf_deleter)> h_in_deleter(h_in,mf_deleter);
+
+  molfile_timestep_t ts_in; // this is the structure that has the timestep
+// a std::vector<float> with the same scope as ts_in
+// it is necessary in order to store the pointer to ts_in.coords
+  std::vector<float> ts_in_coords;
+  ts_in.coords=ts_in_coords.data();
+  ts_in.velocities=NULL;
+  ts_in.A=-1; // we use this to check whether cell is provided or not
+#endif
+
 
 
   if(debug_dd && debug_pd) error("cannot use debug-dd and debug-pd at the same time");
@@ -534,7 +548,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
 
   FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
+
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+  std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
+
+  auto xdr_deleter=[](xdrfile::XDRFILE* xd) { if(xd) xdrfile::xdrfile_close(xd); };
+
   xdrfile::XDRFILE* xd=NULL;
+
+  std::unique_ptr<xdrfile::XDRFILE,decltype(xdr_deleter)> xd_deleter(xd,xdr_deleter);
+
   if(!noatoms&&!parseOnly) {
     if (trajectoryFile=="-")
       fp=in;
@@ -543,14 +566,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         std::string n;
         Tools::convert(intercomm.Get_rank(),n);
         std::string testfile=FileBase::appendSuffix(trajectoryFile,"."+n);
-        FILE* tmp_fp=fopen(testfile.c_str(),"r");
-        if(tmp_fp) { fclose(tmp_fp); trajectoryFile=testfile;}
+        FILE* tmp_fp=std::fopen(testfile.c_str(),"r");
+        // no exceptions here
+        if(tmp_fp) { std::fclose(tmp_fp); trajectoryFile=testfile;}
       }
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
         std::unique_ptr<std::lock_guard<std::mutex>> lck;
         if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
+        h_in_deleter.reset(h_in);
         if(natoms==MOLFILE_NUMATOMS_UNKNOWN) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
           else error("this file format does not provide number of atoms; use --natoms on the command line");
@@ -560,6 +585,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #endif
       } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
         xd=xdrfile::xdrfile_open(trajectoryFile.c_str(),"r");
+        xd_deleter.reset(xd);
         if(!xd) {
           std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           std::fprintf(stderr,"%s\n",msg.c_str());
@@ -568,7 +594,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(trajectory_fmt=="xdr-xtc") xdrfile::read_xtc_natoms(&trajectoryFile[0],&natoms);
         if(trajectory_fmt=="xdr-trr") xdrfile::read_trr_natoms(&trajectoryFile[0],&natoms);
       } else {
-        fp=fopen(trajectoryFile.c_str(),"r");
+        fp=std::fopen(trajectoryFile.c_str(),"r");
+        fp_deleter.reset(fp);
         if(!fp) {
           std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           std::fprintf(stderr,"%s\n",msg.c_str());
@@ -582,7 +609,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         Tools::convert(pc.Get_rank(),n);
         dumpforces+="."+n;
       }
-      fp_forces=fopen(dumpforces.c_str(),"w");
+      fp_forces=std::fopen(dumpforces.c_str(),"w");
+      fp_forces_deleter.reset(fp_forces);
     }
     if(debugforces.length()>0) {
       if(Communicator::initialized() && pc.Get_size()>1) {
@@ -1078,19 +1106,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     step+=stride;
   }
   if(!parseOnly) p.cmd("runFinalJobs");
-
-  if(fp_forces) fclose(fp_forces);
-  if(debugforces.length()>0) fp_dforces.close();
-  if(fp && fp!=in)fclose(fp);
-  if(xd) xdrfile::xdrfile_close(xd);
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-  if(h_in) {
-    std::unique_ptr<std::lock_guard<std::mutex>> lck;
-    if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
-    api->close_file_read(h_in);
-  }
-#endif
-  if(grex_log) fclose(grex_log);
 
   return 0;
 }

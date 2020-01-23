@@ -227,8 +227,12 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
-  FILE* fp=fopen(reference.c_str(),"r");
+  FILE* fp=this->fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
+
+  // call fclose when exiting this block
+  auto deleter=[this](FILE* f) { this->fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   // Read all reference configurations
   // MultiReferenceBase myframes( "", false );
@@ -258,7 +262,6 @@ PCAVars::PCAVars(const ActionOptions& ao):
       break;
     }
   }
-  fclose(fp);
 
   if( nfram<=1 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
