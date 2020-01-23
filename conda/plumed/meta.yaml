@@ -21,6 +21,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - llvm-openmp  # [osx]
+    - make
 # xxd is provided by package vim and used during build
     - vim  # [linux]
   host:
