@@ -155,12 +155,15 @@ install:
 # install lcov
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.14 ; fi
 # install numpy and cython for python interface
-# only for linux and homebrew (no macports)
+# only for linux
+# with homebrew I currently have problem in installing python so I leave it out
   - if test "$PLUMED_CXX" ; then
-      sudo pip install --upgrade pip ;
-      sudo pip install numpy ;
-      sudo pip install Cython ;
-      sudo pip install nose ;
+      if test "$TRAVIS_OS_NAME" == "linux" ; then
+        pyenv global 3.6;
+        pip install --user Cython ;
+        pip install --user numpy ;
+        pip install --user nose ;
+      fi ;
     fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
@@ -265,7 +268,9 @@ script:
       done
     fi
   - if test "$PLUMED_CXX" ; then
-        nosetests -v -w python ;
+        if test "$TRAVIS_OS_NAME" == "linux" ; then
+            nosetests -v -w python ;
+        fi ;
     fi
 
 # CPPCHECK:
