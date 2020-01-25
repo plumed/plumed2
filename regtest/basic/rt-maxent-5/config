@@ -1,3 +1,3 @@
 mpiprocs=6
 type=driver
-arg="--plumed plumed.dat --mf_xtc traj.xtc --dump-forces forces --multi 3 --dump-forces-fmt=%8.4f --debug-dd yes"
+arg="--plumed plumed.dat --mf_xtc traj.xtc --dump-forces forces --multi 3 --dump-forces-fmt=%8.2f --debug-dd yes"

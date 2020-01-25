@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -150,11 +150,9 @@ This option requires that a grid is used.
 
 Additional material and examples can be also found in the tutorials:
 
-- \ref belfast-6
-- \ref belfast-7
-- \ref belfast-8
+- \ref lugano-3
 
-Notice that at variance with PLUMED 1.3 it is now straightforward to apply concurrent metadynamics
+Concurrent metadynamics
 as done e.g. in Ref. \cite gil2015enhanced . This indeed can be obtained by using the METAD
 action multiple times in the same input file.
 
@@ -238,6 +236,9 @@ presented in \cite Tiwary_jp504920s as described above.
 This is enabled by using the keyword CALC_RCT,
 and can be done only if the bias is defined on a grid.
 \plumedfile
+phi: TORSION ATOMS=1,2,3,4
+psi: TORSION ATOMS=5,6,7,8
+
 METAD ...
  LABEL=metad
  ARG=phi,psi SIGMA=0.20,0.20 HEIGHT=1.20 BIASFACTOR=5 TEMP=300.0 PACE=500
@@ -322,22 +323,29 @@ DISTANCE ATOMS=3,5 LABEL=d1
 METAD ...
  LABEL=t1
  ARG=d1 SIGMA=0.05 TAU=200 DAMPFACTOR=100 PACE=250
- GRID_MIN=0 GRID_MAX=2 GRID_BIN=200
- TARGET=dist.dat
+ GRID_MIN=1.14 GRID_MAX=1.32 GRID_BIN=6
+ TARGET=dist.grid
 ... METAD
 
 PRINT ARG=d1,t1.bias STRIDE=100 FILE=COLVAR
 \endplumedfile
 
-The header in the file dist.dat for this calculation would read:
+The file dist.dat for this calculation would read:
 
-\verbatim
+\auxfile{dist.grid}
 #! FIELDS d1 t1.target der_d1
-#! SET min_d1 0
-#! SET max_d1 2
-#! SET nbins_d1  200
+#! SET min_d1 1.14
+#! SET max_d1 1.32
+#! SET nbins_d1  6
 #! SET periodic_d1 false
-\endverbatim
+   1.1400   0.0031   0.1101
+   1.1700   0.0086   0.2842
+   1.2000   0.0222   0.6648
+   1.2300   0.0521   1.4068
+   1.2600   0.1120   2.6873
+   1.2900   0.2199   4.6183
+   1.3200   0.3948   7.1055
+\endauxfile
 
 Notice that BIASFACTOR can also be chosen as equal to 1. In this case one will perform
 unbiased sampling. Instead of using HEIGHT, one should provide the TAU parameter.
@@ -395,7 +403,7 @@ private:
   vector<Gaussian> hills_;
   OFile hillsOfile_;
   OFile gridfile_;
-  std::unique_ptr<Grid> BiasGrid_;
+  std::unique_ptr<GridBase> BiasGrid_;
   bool storeOldGrids_;
   int wgridstride_;
   bool grid_;
@@ -406,7 +414,7 @@ private:
   double dampfactor_;
   struct TemperingSpecs tt_specs_;
   std::string targetfilename_;
-  std::unique_ptr<Grid> TargetGrid_;
+  std::unique_ptr<GridBase> TargetGrid_;
   double kbt_;
   int stride_;
   bool welltemp_;
@@ -468,10 +476,10 @@ private:
 
 public:
   explicit MetaD(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override;
 };
 
 PLUMED_REGISTER_ACTION(MetaD,"METAD")
@@ -1106,7 +1114,7 @@ MetaD::MetaD(const ActionOptions& ao):
       error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
     }
     std::string funcl=getLabel() + ".bias";
-    BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
+    BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1196,7 +1204,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(targetfilename_.length()>0) {
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
-    TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
+    TargetGrid_=GridBase::create(funcl,getArguments(),gridfile,false,false,true);
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1994,7 +2002,6 @@ double MetaD::getTransitionBarrierBias() {
   }
 }
 
-
 void MetaD::updateFrequencyAdaptiveStride() {
   plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
   plumed_massert(acceleration,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
@@ -2007,6 +2014,14 @@ void MetaD::updateFrequencyAdaptiveStride() {
     current_stride=fa_max_stride_;
   }
   getPntrToComponent("pace")->set(current_stride);
+}
+
+bool MetaD::checkNeedsGradients()const
+{
+  if(adaptive_==FlexibleBin::geometry) {
+    if(getStep()%stride_==0 && !isFirstStep) return true;
+    else return false;
+  } else return false;
 }
 
 }

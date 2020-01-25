@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -165,6 +165,8 @@ public:
   const std::vector<std::string>& getAllOutputComponents() const ;
 /// Get the keyword that tells PLUMED to calculate this particular quantity
   bool getKeywordForThisOutput( const std::string& oname, std::string& keyname ) const ;
+/// Remove a component with a particular name from the keywords
+  void removeComponent( const std::string& name );
 /// Reference to keys
   std::vector<std::string> getKeys() const { return keys; }
 };

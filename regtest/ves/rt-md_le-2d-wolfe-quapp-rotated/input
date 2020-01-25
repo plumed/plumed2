@@ -1,0 +1,21 @@
+nstep             100
+tstep             0.005
+temperature       1.0
+friction          10.0
+random_seed       4525
+plumed_input      plumed.dat
+dimension         2
+replicas          1
+basis_functions_1 BF_POWERS ORDER=4 MINIMUM=-3.0 MAXIMUM=+3.0
+basis_functions_2 BF_POWERS ORDER=4 MINIMUM=-3.0 MAXIMUM=+3.0
+input_coeffs       pot_coeffs_input.data
+output_coeffs      pot_coeffs_output.data
+output_coeffs_fmt  %22.8e
+initial_position   -1.174,+1.477
+output_potential        potential.data
+output_potential_grid   150
+output_histogram        histogram.data
+
+# Wolfe-Quapp potential rotated by an angle -0.15*pi 
+# Used in https://doi.org/10.1021/acs.jctc.9b00032 
+# Potential coeffs taken from https://www.plumed-nest.org/eggs/19/000/

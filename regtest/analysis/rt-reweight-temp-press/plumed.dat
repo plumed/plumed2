@@ -1,0 +1,35 @@
+# vim:ft=plumed
+energy: READ FILE=COLVAR-READ VALUES=energy  IGNORE_TIME
+vol: READ FILE=COLVAR-READ VALUES=vol  IGNORE_TIME
+b1: READ FILE=COLVAR-READ VALUES=b1.bias  IGNORE_TIME
+
+# Shift energy and volume
+rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
+renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
+
+bias_weights: REWEIGHT_BIAS TEMP=300 ARG=b1.bias
+# Change T at constant volume
+temp_press_weights1: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 ENERGY=renergy
+# WRONG: temp_press_weights2: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 ENERGY=renergy VOLUME=rvol # Extra VOLUME
+
+# Change T at constant pressure
+temp_press_weights3: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 PRESSURE=0.06022140857 ENERGY=renergy VOLUME=rvol
+# WRONG: temp_press_weights4: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 PRESSURE=0.06022140857 ENERGY=renergy # VOLUME missing
+# WRONG: temp_press_weights5: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 ENERGY=renergy VOLUME=rvol # PRESSURE missing
+# WRONG: temp_press_weights6: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 ENERGY=renergy # PRESSURE and VOLUME missing. This will not raise an error!
+
+# Change P at constant temperature
+temp_press_weights7: REWEIGHT_TEMP_PRESS TEMP=300 PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 VOLUME=rvol
+# WRONG: temp_press_weights8: REWEIGHT_TEMP_PRESS PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 VOLUME=rvol # TEMP missing
+# WRONG: temp_press_weights9: REWEIGHT_TEMP_PRESS TEMP=300 PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 ENERGY=renergy VOLUME=rvol # Extra ENERGY
+# WRONG: temp_press_weights10: REWEIGHT_TEMP_PRESS PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 ENERGY=renergy VOLUME=rvol # Extra ENERGY and TEMP missing.
+
+# Change T and P
+temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=300 REWEIGHT_TEMP=350 PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 ENERGY=renergy VOLUME=rvol
+
+# Ensemble average of the volume at 350 K and 300 MPa
+avg_vol: AVERAGE ARG=vol LOGWEIGHTS=bias_weights,temp_press_weights
+# Ensemble average of the density at 350 K and 300 MPa
+avg_density: CUSTOM ARG=avg_vol FUNC=256.0/x PERIODIC=NO
+
+PRINT ARG=energy,vol,temp_press_weights,avg_density FILE=COLVAR STRIDE=1

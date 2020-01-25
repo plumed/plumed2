@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,9 +47,9 @@ class ExtraCV : public Colvar {
 public:
   explicit ExtraCV(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
-  unsigned getNumberOfDerivatives();
+  void prepare() override;
+  void calculate() override;
+  unsigned getNumberOfDerivatives() const override;
   static void registerKeywords( Keywords& keys );
 };
 
@@ -78,7 +78,7 @@ void ExtraCV::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
 }
 
-unsigned ExtraCV::getNumberOfDerivatives() {
+unsigned ExtraCV::getNumberOfDerivatives() const {
   return 1;
 }
 

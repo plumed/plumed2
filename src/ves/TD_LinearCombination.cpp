@@ -75,7 +75,7 @@ td_uni: TD_UNIFORM
 
 td_gauss: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
-td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uniform,td_gaussian
+td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uni,td_gauss
 \endplumedfile
 
 Here we employ a linear combination of a uniform and two Gaussian distribution.
@@ -129,19 +129,19 @@ private:
   std::vector<Grid*> grid_pntrs_;
   std::vector<double> weights_;
   unsigned int ndist_;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
 public:
   static void registerKeywords(Keywords&);
   explicit TD_LinearCombination(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   //
-  void linkVesBias(VesBias*);
-  void linkAction(Action*);
+  void linkVesBias(VesBias*) override;
+  void linkAction(Action*) override;
   //
-  void linkBiasGrid(Grid*);
-  void linkBiasWithoutCutoffGrid(Grid*);
-  void linkFesGrid(Grid*);
+  void linkBiasGrid(Grid*) override;
+  void linkBiasWithoutCutoffGrid(Grid*) override;
+  void linkFesGrid(Grid*) override;
   //
 };
 

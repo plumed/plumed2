@@ -51,6 +51,7 @@ Scaling is approximately linear.
 Now you can run GROMACS with PLUMED using the following input file
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=conf.pdb
 # @water and @hydrogens are special groups introduce in PLUMED 2.5!
 wat: GROUP ATOMS=@water
@@ -130,6 +131,7 @@ The recommended procedure is to first perform a simulation where you compute you
 For instance:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=conf.pdb
 wat: GROUP ATOMS=@water
 ow:  GROUP ATOMS=@water REMOVE=@hydrogens
@@ -175,7 +177,7 @@ PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
 \endplumedfile
 
 Now measure the speed of your simulation. You should see some overhead due to PLUMED.
-You can now try to use multiple-time-stepping \cite{Ferrarotti2015}.
+You can now try to use multiple-time-stepping \cite Ferrarotti2015.
 To do so add a `STRIDE` option to the \ref RESTRAINT line.
 You can also use the \ref EFFECTIVE_ENERGY_DRIFT action to print a kind of "total energy drift" due to the application
 of the PLUMED bias. In molecular dynamics simulation you usually monitor the drift in the total energy in order to choose the
@@ -214,10 +216,11 @@ Using a `STRIDE=2` instead the effective energy will be very stable
 
 
 Let's try to perform a metadynamics simulation biasing the coordination number and
-the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite{cunha2017unraveling},
+the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite cunha2017unraveling,
 although we use here a shorter deposition pace in order to artificially increase the computational cost.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=conf.pdb
 wat: GROUP ATOMS=@water
 ow:  GROUP ATOMS=@water REMOVE=@hydrogens
@@ -249,6 +252,7 @@ for((i=0;i<=10000;i++)) ; do echo "$var" ; done | awk '{if($1!="#!") print $1,$2
 
 Now modify your `plumed.dat` file so that it will read the `HILLS_long` file:
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=conf.pdb
 wat: GROUP ATOMS=@water
 ow:  GROUP ATOMS=@water REMOVE=@hydrogens
@@ -265,7 +269,7 @@ Run your simulation and check the timing. Which is the most expensive action now
 The standard solution to the problem above is to use a grid to store the Gaussian functions.
 In this manner, at the first step PLUMED will take some time to put all the Gaussian functions
 on the grid, but subsequent calculations of the force will be much faster, since they will just
-require a grid lookup (rather than a sum over the history).
+require that the action look up the value on the grid (rather than a sum over the history).
 
 Time the simulation using the following lines to perform METAD:
 \plumedfile
@@ -289,6 +293,7 @@ Let's see what happens using the GPU. In this case the first couple of thousands
 GROMACS tries to optimize the GPU load, so we should run a longer simulation to estimate the simulation speed.
 For simplicity, use the following `plumed.dat` file:
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=conf.pdb
 DEBUG DETAILED_TIMERS

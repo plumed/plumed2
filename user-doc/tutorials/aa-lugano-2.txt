@@ -1,0 +1,462 @@
+/**
+\page lugano-2 Lugano tutorial: Using restraints 
+
+\section lugano-2-aims Aims
+
+The aim of this tutorial is to introduce the users to the use of constant biases in PLUMED and their
+application to perform a simple Umbrella Sampling WHAM simulation. 
+
+\section lugano-2-objectives Objectives
+
+- Apply a restraint on a simulations over one or more collective variables 
+- Understand the effect of a restraint on the acquired statistics
+- Perform a simple un-biasing of a restrained simulation
+- Add an external potential in the form of an analytical or numerical function
+- Perform an Umbrella Sampling WHAM simulation
+
+\section lugano-2-resources Resources
+
+The \tarball{lugano-2} for this tutorial contains the following files:
+- diala.pdb: a PDB file for alanine dipeptide in vacuo
+- topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
+- run_us.sh: a script to perform a serial US wham simulation
+- wham.py: a script to perform the WHAM analysis
+- do_fes.py: a script to generate fes from CV and weights
+
+Also notice that the `.solutions` direction of the tarball contains correct input files for the exercises.
+This tutorial has been tested with version 2.5. 
+
+\section lugano-2-intro Introduction
+
+PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually referred as \ref Bias. In the following we will see how to apply a constant bias potential with PLUMED. It is preferable to run each exercise in a separate folder.
+
+\hidden{Summary of theory}
+\subsection lugano-2-theory-biased-sampling Biased sampling
+
+A system at temperature \f$ T\f$ samples 
+conformations from the canonical ensemble:
+\f[
+  P(q)\propto e^{-\frac{U(q)}{k_BT}}
+\f].
+Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
+Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
+in terms of a few collective variables (see \ref lugano-1 ).
+The probability distribution for a CV \f$ s\f$ is 
+\f[
+  P(s)\propto \int dq  e^{-\frac{U(q)}{k_BT}} \delta(s-s(q))
+\f]
+This probability can be expressed in energy units as a free energy landscape \f$ F(s) \f$:
+\f[
+  F(s)=-k_B T \log P(s)
+\f].
+
+Now we would like to modify the potential by adding a term that depends on the CV only.
+That is, instead of using \f$ U(q) \f$, we use \f$ U(q)+V(s(q))\f$.
+There are several reasons why one would like to introduce this potential. One is to
+avoid that the system samples some un-desired portion of the conformational space.
+As an example, imagine  that you want to study dissociation of a complex of two molecules.
+If you perform a very long simulation you will be able to see association and dissociation.
+However, the typical time required for association will depend on the size of the simulation
+box. It could be thus convenient to limit the exploration to conformations where the 
+distance between the two molecules is lower than a given threshold. This could be done
+by adding a bias potential on the distance between the two molecules.
+Another example
+is the simulation of a portion of a large molecule taken out from its initial context.
+The fragment alone could be unstable, and one might want to add additional
+potentials to keep the fragment in place. This could be done by adding
+a bias potential on some measure of the distance from the experimental structure
+(e.g. on root-mean-square deviation).
+
+Whatever CV we decide to bias, it is very important to recognize which is the
+effect of this bias and, if necessary, remove it a posteriori.
+The biased distribution  of the CV will be
+\f[
+  P'(s)\propto \int dq  e^{-\frac{U(q)+V(s(q))}{k_BT}} \delta(s-s(q))\propto e^{-\frac{V(s(q))}{k_BT}}P(s)
+\f]
+and the biased free energy landscape
+\f[
+  F'(s)=-k_B T \log P'(s)=F(s)+V(s)+C
+\f]
+Thus, the effect of a bias potential on the free energy is additive. Also notice the presence
+of an undetermined constant \f$ C \f$. This constant is irrelevant for what concerns free-energy differences
+and barriers, but will be important later when we will learn the weighted-histogram method.
+Obviously the last equation can be inverted so as to obtain the original, unbiased free-energy 
+landscape from the biased one just subtracting the bias potential
+\f[
+  F(s)=F'(s)-V(s)+C
+\f]
+
+Additionally, one might be interested in recovering the distribution of an arbitrary
+observable. E.g., one could add a bias on the distance between two molecules and be willing to
+compute the unbiased distribution of some torsional angle. In this case
+there is no straightforward relationship that can be used, and one has to go back to
+the relationship between the microscopic probabilities:
+\f[
+  P(q)\propto P'(q) e^{\frac{V(s(q))}{k_BT}}
+\f]
+The consequence of this expression is that one can obtained any kind of unbiased
+information from a biased simulation just by weighting every sampled conformation
+with a weight
+\f[
+  w\propto e^{\frac{V(s(q))}{k_BT}}
+\f]
+That is, frames that have been explored
+in spite of a high (disfavoring) bias potential \f$ V \f$ will be counted more
+than frames that has been explored with a less disfavoring bias potential.
+
+\endhidden
+
+We will make use as a toy-model of alanine dipeptide: we will see how we can use an iterative approach to build a constant bias to speed up the sampling.
+
+\note Create a folder for each exercise and use sub-folders if you want to run the same simulation with multiple choices for the parameters
+
+\section lugano-2-ex-1 Exercise 1: Preliminary run with alanine dipeptide
+
+Alanine dipeptide is characterized by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
+alanine dipeptide using a standard MD simulation, then instead of using the free energy as an external potential we will try to fit the potential using
+gnuplot and add a bias using an analytical function of a collective variable with \ref CUSTOM and \ref BIASVALUE .
+
+As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
+
+This is an example input file to calculate the phi and psi angles on the fly and accumulate two 1D histograms from which calculating the free energy.
+
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi FILE=colvar.dat STRIDE=50
+\endplumedfile
+
+run it with gromacs as
+
+\verbatim
+gmx mdrun -s topol -plumed plumed.dat -nb cpu -v
+\endverbatim
+
+from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Ideally we would like to speed up the sampling
+of regions that are not visited spontaneously by MD. We have multiple possibilities. One option could be to use as a bias the opposite of the accumulated free-energy using \ref EXTERNAL .
+Another option can be to fit the FES and use the fit. This is what we will do, but first of all take a look at the fes accumulated in time.
+
+\verbatim
+>gnuplot
+plot for [i=0:9] 'analysis.'.i.'.fes_phi' u 1:2 w l t''.i
+rep 'fes_phi' u 1:2 w l t'final'
+plot for [i=0:9] 'analysis.'.i.'.fes_psi' u 1:2 w l t''.i
+rep 'fes_psi' u 1:2 w l t'final'
+\endverbatim
+
+So first we need to fit the opposite of the free energy as a function of phi in the region explored with a periodic function, because of the gaussian like look
+of the minima we can fit it using <a href="https://en.wikipedia.org/wiki/Von_Mises_distribution"> the von Mises distribution</a>. In gnuplot
+
+\verbatim
+>gnuplot
+gnuplot>plot 'fes_phi' u 1:(-$2) w l
+\endverbatim
+
+Now find a value such as the fes is always positive, e.g. ~38
+
+\verbatim
+gnuplot>plot 'fes_phi' u 1:(-$2+38) w l
+gnuplot>f(x)=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))
+gnuplot>k1=2
+gnuplot>k2=2
+gnuplot>fit [-2.9:-0.7] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
+gnuplot>rep f(x)
+\endverbatim
+
+The function and the resulting parameters can be used to run a new biased simulation:
+
+\section lugano-2-ex-2 Exercise 2: First biased run with alanine dipeptide
+
+To the above file we add a few lines to define using \ref CUSTOM a function of the angle phi.
+
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+
+CUSTOM ...
+ARG=phi 
+LABEL=doubleg
+FUNC=exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))
+PERIODIC=NO
+... CUSTOM 
+
+b: BIASVALUE ARG=doubleg
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
+\endplumedfile
+
+It is now possible to run a second simulation and observe the new behavior. The system quickly explores a new minimum. While a quantitative estimate of the free energy difference of the old and new regions
+is out of the scope of the current exercise what we can do is to add a new von Mises function centered in the new minimum with a comparable height, in this way we can hope to facilitate a back and forth
+transition along the phi collective variable. Look at the old and new free energy and add a third exponential function to \ref CUSTOM centered in the new minimum.
+
+\verbatim
+gnuplot> plot 'fes_phi' u 1:(-$2+38) w l
+gnuplot> f(x)=exp(k3*cos(x-a3))
+gnuplot>k3=2
+gnuplot> fit [0.3:1.8] f(x) 'fes_phi' u 1:(-$2+38) via k3,a3
+\endverbatim
+
+We can now run a third simulation where both regions are biased.
+
+\section lugano-2-ex-3 Exercise 3: Second biased run with alanine dipeptide
+
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+
+CUSTOM ...
+ARG=phi 
+LABEL=tripleg
+FUNC=exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))
+PERIODIC=NO
+... CUSTOM 
+
+b: BIASVALUE ARG=tripleg
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
+\endplumedfile
+
+With this third simulation it should be possible to visit both regions as a function on the phi torsion. The resulting free energy is now reporting about the biased simulation
+is flatter than the former even if not flat everywhere. Now it is possible to reweight the sampling
+and obtain a better free energy estimate along phi.
+
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+
+MATHEVAL ...
+ARG=phi 
+LABEL=tripleg
+FUNC=__FILL__
+PERIODIC=NO
+... MATHEVAL
+
+b: BIASVALUE ARG=tripleg
+as: REWEIGHT_BIAS ARG=b.bias
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+ffphi: CONVERT_TO_FES GRID=hhphi STRIDE=100000
+ffpsi: CONVERT_TO_FES GRID=hhpsi STRIDE=100000
+
+DUMPGRID GRID=ffphi FILE=ffphi.dat
+DUMPGRID GRID=ffpsi FILE=ffpsi.dat
+
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
+\endplumedfile
+
+Of notice that the reweighting is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
+on phi on the free energy of psi. For a single simulation with a constant bias the reweighting is simple, the weight of each frame is exp(+bias(cv(t))/kt). So it is possible to 
+perform the reweighting by hand at any time.
+
+Now you have performed an original Umbrella Sampling calculation. This is not particularly easy to setup nor robust, even if from a modern
+perspective it is a very rough implementation of \ref METAD
+
+In the next exercise we will perform a WHAM Umbrella Sampling simulation.
+
+\section lugano-2-ex-4 Exercise 4: WHAM Umbrella Sampling
+
+In this case we will run many simulations with a strong harmonic restraint centered around specific values of phi in such a way to cover all possible values, keep each simulation
+close to its specific value, allow for overlap between neighbor simulations, i.e. simulations centered around consecutive phi values. The simulation can be either performed in parallel
+by preparing starting configurations close to each value or sequentially, extracting a good starting conformation from the former simulations. In the specific case of alanine dipeptide
+we can even just start always from the same configuration and let the bias quickly move it close to the target values.
+
+To run the simulation in scalar you can make use of the provided bash script that is:
+
+\verbatim
+for AT in -3.00  -2.75 -2.50 -2.25 -2.00 -1.75 -1.50 -1.25 -1.00 -0.75 -0.50 -0.25 0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.25 2.50 2.75 3.00
+do
+
+cat >plumed.dat << EOF
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+#
+# Impose an umbrella potential on CV 1
+# with a spring constant of 250 kjoule/mol
+# at fixed points along phi 
+#
+restraint-phi: RESTRAINT ARG=phi KAPPA=250.0 AT=$AT
+# monitor the two variables and the bias potential from the two restraints
+PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
+EOF
+
+gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -c cout$AT.gro -nb cpu
+
+done
+\endverbatim 
+
+you can run it using 
+
+\verbatim
+./run_us.sh
+\endverbatim
+
+Plotting the phi collective variable for all replica you will see that each simulation has explored a well defined region of the conformation space as defined by phi.
+To perform the WHAM merging of the windows we need to
+1) collect all the frames
+\verbatim
+gmx trjcat -f traj*.xtc -cat -o concatenated.xtc
+\endverbatim
+2) calculate the values for all employed biases applied on each frame
+for this we can write a plumed-wham.dat file including all the biases used in the former simulations:
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+
+RESTRAINT ARG=phi KAPPA=250.0 AT=-3.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=3.00
+
+PRINT ARG=*.bias FILE=biases.dat STRIDE=10
+PRINT ARG=phi FILE=allphi.dat STRIDE=10
+\endplumedfile
+
+\verbatim
+plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat
+\endverbatim
+
+3) run the iterative WHAM optimization and get a weight per frame
+\verbatim
+python wham.py biases.dat 25 2.49
+\endverbatim
+
+where 25 is the number of windows and 2.49 is the temperature in energy unit. After some time
+the result is a file weight.dat with one weight per frame that can be used to calculate any possible property of the system.
+For example the free energy profile along phi.
+
+To do so edit the weight.dat file to add 3 blank lines and then
+\verbatim
+paste allphi.dat weights.dat | grep -v \# > allphi-w.dat
+python do_fes.py allphi-w.dat 1 -3.1415 3.1415 50 2.49 fes.dat
+\endverbatim
+
+the resulting profile will be disappointing, error estimate and convergence will be discussed in the following tutorials,
+but clearly simulations are too short. A more advanced approach would be to use the configurations obtained from the former
+simulations to generate multiple replicas and then perform the US again for longer time and possible in parallel. The syntax
+is presented in the following but the exercise is possible only if plumed is compiled with mpi
+
+\section lugano-2-ex-5 Exercise 5: WHAM Umbrella Sampling in parallel (optional)
+
+Here we use the "replica" syntax of plumed to write a single plumed input file for all the windows:
+
+\plumedfile
+#SETTINGS FILENAME=plumed.dat MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# this is plumed.dat
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+#
+# Impose an umbrella potential on CV 1
+# with a spring constant of 250 kjoule/mol
+# at fixed points along phi 
+#
+restraint-phi: RESTRAINT ...
+    ARG=phi KAPPA=250.0
+    AT=@replicas:{
+    -3.00 -2.75 -2.50 -2.25 
+    -2.00 -1.75 -1.50 -1.25 
+    -1.00 -0.75 -0.50 -0.25 
+     0.00 0.25 0.50 0.75 
+     1.00 1.25 1.50 1.75 
+     2.00 2.25 2.50 2.75 3.00
+} ...
+# monitor the two variables and the bias potential from the restraint
+PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
+\endplumedfile
+
+The \@replicas syntax allow to define different values for a variable for the different replicas.
+
+\verbatim
+mpiexec -np 25 gmx_mpi -s topol -plumed plumed.dat -multi 25 -replex 100 -nb cpu -nsteps 100000 
+\endverbatim
+
+In this case we run 25 parallel simulations and we also try to perform replica-exchange between neighbor replicas.
+
+Once the simulation is finished the trajectories can be concatenated and analyzed with WHAM making use of the plumed native implementation: 
+
+\verbatim
+gmx_mpi trjcat -f traj*.xtc -o concatenated.xtc -cat
+\endverbatim
+
+Write a new plumed-wham.dat
+
+\plumedfile
+INCLUDE FILE=plumed.dat
+  h1: WHAM_HISTOGRAM ...
+     ARG=phi BIAS=restraint-phi.bias TEMP=300
+     GRID_MIN=-pi GRID_MAX=pi GRID_BIN=100
+     BANDWIDTH=0.1
+...
+  fes1: CONVERT_TO_FES TEMP=300 GRID=h1
+  DUMPGRID GRID=fes1 FILE=fes1.dat
+\endplumedfile
+
+And again use the \ref driver in parallel:
+
+\verbatim
+mpiexec -np 25 plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat --multi 25
+\endverbatim
+*/
+
+link: @subpage lugano-2
+
+description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
+
+additional-files: lugano-2

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,8 +50,8 @@ private:
   void setReferenceConfiguration();
 public:
   explicit RMSD(const ActionOptions&);
-  virtual void calculate();
-  void apply();
+  virtual void calculate() override;
+  void apply() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -157,6 +157,17 @@ position.  The Kearsley algorithm is used so this is done optimally.
 RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 \endplumedfile
 
+The reference configuration is specified in a pdb file that will have a format similar to the one shown below:
+
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
+END
+\endauxfile
+
 ...
 
 */
@@ -175,6 +186,8 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.addFlag("UNORMALIZED",false,"by default the mean sequare deviation or root mean square deviation is calculated.  If this option is given no averaging is done");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
+  keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
+  keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
 }
 
 RMSD::RMSD(const ActionOptions&ao):

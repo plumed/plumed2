@@ -77,7 +77,7 @@ from within the plumed2 directory.
 \subsection lyon-simplemd Using PLUMED as an MD code
 
 PLUMED is primarily used as a plugin to other larger molecular dynamics codes.  Mainly for software testing and educational purposes, however, we do have an MD code with a rather
-limited set of functionalities within PLUMED.  You can run this code by issuing the command:
+limited set of options within PLUMED.  You can run this code by issuing the command:
 
 \verbatim
 plumed simplemd < in 
@@ -225,7 +225,7 @@ gnuplot or some other plotting package. </b>
 \hidden{Example time series}
 
 \anchor lyon-time-series
-\image html lyon-time-series.png "Time series for the second and third moments of the distribution of coordination numbers for two trajectories of Lennard Jones 7.  The time series on the left was computed from a trajectory that was performed at \f$k_B T = 0.2 \epsilon\f$, while the two time series on the right were computed at a temperature of \f$k_B T = 0.1 \epsilon\f$.  You can see that at the higher temperature there are jumps between distinct minima in the energy landscape.  At the lower temperature, however, the system remains trapped in a single basin in the energy lanscape"
+\image html lyon-time-series.png "Time series for the second and third moments of the distribution of coordination numbers for two trajectories of Lennard Jones 7.  The time series on the left was computed from a trajectory that was performed at a temperature of 0.2, while the two time series on the right were computed at a temperature of 0.1.  You can see that at the higher temperature there are jumps between distinct minima in the energy landscape.  At the lower temperature, however, the system remains trapped in a single basin in the energy lanscape"
 
 \endhidden
 
@@ -264,7 +264,7 @@ you are going to have to use many more time steps than you did in previous exerc
 configuration space is explored at this lower temperature
 
 \anchor lyon-lj7-fes
-\image html lyon-histograms-highT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at \f$k_B T = 0.2 \epsilon\f$ (left) and \f$k_B T = 0.1 \epsilon\f$."
+\image html lyon-histograms-highT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at a temperature of 0.2 (left) and at a temperature of 0.1."
 
 \endhidden
 
@@ -278,7 +278,7 @@ in a lower temperature simulation.  The fact that the histogram shows that the p
 is not converged.  The free energy will thus look like the one shown below instead of looking like the one in the previous hidden section:
 
 \anchor lyon-lj7-fes2
-\image html lyon-histograms-lowT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at \f$k_B T = 0.2 \epsilon\f$ (left) and \f$k_B T = 0.1 \epsilon\f$."
+\image html lyon-histograms-lowT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at a temperature of 0.2 (left) and at a temperature of 0.1."
   
 \endhidden
 

@@ -1,7 +1,7 @@
 #! /bin/bash
 # vim:ft=awk
 if [ "$1" = --description ] ; then
-  echo "create a new collective variable from a template"
+  echo "scale parameters in a gromacs topology to implement solute or partial tempering"
   exit 0
 fi
 
@@ -40,6 +40,8 @@ plumed partial_tempering \$scale < processed.top > topol\$i.top
 WARNING: It's not very robust and there might be force-field dependent issues!
 A few tests are strongly suggested.
 
+WARNING: This script requires gawk to be available on your system.
+
 1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
 grompp -o topol-unscaled.tpr
 grompp -pp
@@ -69,7 +71,7 @@ if [ "$1" == --gromacs4 ] ; then
   shift
 fi
 
-awk -v scale=$1 -v gromacs5=$gromacs5 '
+gawk -v scale=$1 -v gromacs5=$gromacs5 '
 BEGIN{
   combrule=1;
 }

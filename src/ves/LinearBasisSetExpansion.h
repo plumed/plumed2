@@ -45,6 +45,7 @@ class VesBias;
 
 
 class LinearBasisSetExpansion {
+  LinearBasisSetExpansion& operator=(const LinearBasisSetExpansion&) = delete;
 private:
   std::string label_;
   //

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -228,7 +228,7 @@ private:
     Gaussian(const vector<double> & center,const vector<double> & sigma, double height, bool multivariate):
       center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
       // to avoid troubles from zero element in flexible hills
-      for(unsigned i=0; i<invsigma.size(); ++i) abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.;
+        for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
     }
   };
   vector<double> sigma0_;
@@ -237,7 +237,7 @@ private:
   vector< vector<Gaussian> > hills_;
   vector<std::unique_ptr<OFile>> hillsOfiles_;
   vector<std::unique_ptr<OFile>> gridfiles_;
-  vector<std::unique_ptr<Grid>> BiasGrids_;
+  vector<std::unique_ptr<GridBase>> BiasGrids_;
   bool    grid_;
   double  height0_;
   double  biasf_;
@@ -278,10 +278,10 @@ private:
 
 public:
   explicit PBMetaD(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override;
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
@@ -630,7 +630,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       gmin_t[0] = gmin[i];
       gmax_t[0] = gmax[i];
       gbin_t[0] = gbin[i];
-      std::unique_ptr<Grid> BiasGrid_;
+      std::unique_ptr<GridBase> BiasGrid_;
       // Read grid from file
       if(gridreadfilenames_.size()>0) {
         IFile gridfile;
@@ -641,7 +641,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           error("The GRID file you want to read: " + gridreadfilenames_[i] + ", cannot be found!");
         }
         string funcl = getLabel() + ".bias";
-        BiasGrid_=Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
+        BiasGrid_=GridBase::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
         }
@@ -1167,6 +1167,15 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
   } else {
     return false;
   }
+
+}
+
+bool PBMetaD::checkNeedsGradients()const
+{
+  if(adaptive_==FlexibleBin::geometry) {
+    if(getStep()%stride_==0 && !isFirstStep) return true;
+    else return false;
+  } else return false;
 }
 
 }

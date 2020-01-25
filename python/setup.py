@@ -33,13 +33,19 @@ import platform
 from distutils.sysconfig import get_config_var
 from distutils.version import LooseVersion
 
+if sys.version_info < (3,):
+    raise ImportError("PLUMED 2.6 only supports Python 3")
 
 def is_platform_mac():
     return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
     copyfile("../VERSION","VERSION")
-    copyfile("../src/wrapper/Plumed.h","Plumed.h")
+    try:
+        os.mkdir("include")
+    except OSError:
+        pass
+    copyfile("../src/wrapper/Plumed.h","include/Plumed.h")
 
 plumedname = os.getenv("plumed_program_name")
 if plumedname is None:
@@ -80,7 +86,7 @@ def readme():
 try:
     include_dirs=[os.environ["plumed_include_dir"]]
 except KeyError:
-    include_dirs=["."]
+    include_dirs=["./include"]
 
 # allow one to force using cython with env var plumed_force_cython=yes
 USE_CYTHON = False
@@ -119,7 +125,7 @@ ext_modules=[Extension(
   )]
 
 if USE_CYTHON:
-    ext_modules=cythonize(ext_modules)
+    ext_modules=cythonize(ext_modules,language_level=3)
 
 setup(
   name=plumedname,
@@ -133,8 +139,6 @@ setup(
           'Topic :: Scientific/Engineering :: Chemistry',
           'Topic :: Scientific/Engineering :: Physics',
           'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
@@ -144,5 +148,6 @@ setup(
   url='http://www.plumed.org',
   ext_modules = ext_modules,
   zip_safe=False,
-  test_suite='nose.collector'
+  test_suite='nose.collector',
+  python_requires='>=3'
 )

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,7 +80,7 @@ class LocalEnsemble :
 {
 public:
   explicit LocalEnsemble(const ActionOptions&);
-  void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
+  void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override ;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -90,6 +90,7 @@ PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC"); //ActionWithValue::useCustomisableComponents(keys);
+  keys.addOutputComponent("arg","default","the output arguments");
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
@@ -100,9 +101,9 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   std::vector<unsigned> shape; shape.resize(0);
   for(unsigned i=0; i<arg_ends.size()-1; ++i) {
       std::string num; Tools::convert(i+1,num);
-      ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
-      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
-      else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+      ActionWithValue::addComponentWithDerivatives( "arg-" + num, shape );
+      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg-" + num );
+      else if(period.size()==2) componentIsPeriodic("arg-" + num, period[0], period[1]);
   }
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }

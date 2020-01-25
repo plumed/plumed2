@@ -19,7 +19,7 @@ long_description    ${description} They allow the plumed library to be directly 
 homepage            http://www.plumed.org
 @_FETCH_@
 
-python.versions     27 36 37
+python.versions     36 37
 
 # when building from a git repository, we cannot set worksrcdir otherwise
 # the whole repo is cloned at that position. We thus explicitly set worksrcdir
@@ -47,7 +47,8 @@ if {${name} ne ${subport}} {
     depends_lib-append   path:${prefix}/lib/libplumedKernel.dylib:plumed
 
     depends_test-append port:py${python.version}-nose \
-                        port:py${python.version}-numpy
+                        port:py${python.version}-numpy \
+                        port:py${python.version}-pandas
 
     test.cmd            nosetests-${python.branch}
     test.target

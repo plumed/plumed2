@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -84,17 +84,17 @@ protected:
 public:
   explicit ReferenceAtoms( const ReferenceConfigurationOptions& ro );
 /// This returns the number of reference atom positions
-  unsigned getNumberOfReferencePositions() const ;
+  unsigned getNumberOfReferencePositions() const override;
 /// Get the reference positions
-  const std::vector<Vector> & getReferencePositions() const ;
+  const std::vector<Vector> & getReferencePositions() const override;
 /// This allows us to use a single pos array with RMSD objects using different atom indexes
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
-  virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false );
+  void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ) override;
 /// Set the positions of the reference atoms
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
 /// Return all atom indexes
-  const std::vector<AtomNumber>& getAbsoluteIndexes();
+  const std::vector<AtomNumber>& getAbsoluteIndexes() override;
 /// This returns how many atoms there should be
   unsigned getNumberOfAtoms() const ;
 /// Displace the positions of the reference atoms a bit

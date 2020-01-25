@@ -45,12 +45,12 @@ QVALUE14=0.41
 QVALUE15=0.44
 ...
 
-PRINT ARG=(saxs\.q_.*) FILE=colvar STRIDE=1
-PRINT ARG=(saxsb\.q_.*) FILE=colvarb STRIDE=1
+PRINT ARG=(saxs\.q-.*) FILE=colvar STRIDE=1
+PRINT ARG=(saxsb\.q-.*) FILE=colvarb STRIDE=1
 
-BIASVALUE ARG=saxsb.q_0
+BIASVALUE ARG=saxsb.q-0
 
-DUMPDERIVATIVES ARG=(saxs\.q_.*) FILE=forces FMT=%.4f
-DUMPDERIVATIVES ARG=(saxsb\.q_.*) FILE=forcesb FMT=%.4f
+DUMPDERIVATIVES ARG=(saxs\.q-.*) FILE=forces FMT=%.4f
+DUMPDERIVATIVES ARG=(saxsb\.q-.*) FILE=forcesb FMT=%.4f
 
 ENDPLUMED

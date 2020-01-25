@@ -1,0 +1,4 @@
+mpiprocs=2 
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 1 --idlp4 HISTORY --dump-forces forces --dump-forces-fmt=%10.6f"
+extra_files="../../trajectories/dlp4/HISTORY"

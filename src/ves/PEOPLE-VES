@@ -9,5 +9,9 @@ Authors of this software are:
 
 The following people have contributed to this software: 
 
-- Michele Invernizzi (added VES_DELTA_F)
-
+- Michele Invernizzi
+  - added VES_DELTA_F
+  
+- Pablo Piaggi
+  - added TD_MULTICANONICAL 
+  - added TD_MULTITHERMAL_MULTIBARIC

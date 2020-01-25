@@ -36,6 +36,9 @@ void ReadReferenceCluster::registerKeywords( Keywords& keys ) {
   keys.add("optional","REFERENCE","a file containing information on the reference cluster.");
   keys.add("compulsory","NUMBER","1","if there are multiple clusters in the input file which structure would you like to read in here");
   keys.add("hidden","READ_ARG","this is used by pathtool to get the arguments that must be read in");
+  keys.addOutputComponent("center","default","the position of the center of the cluster in CV space");
+  keys.addOutputComponent("variance","SIGMA","the vector of variances for the CVs that describes the extent of the cluster");
+  keys.addOutputComponent("covariance","COVAR","the covariance matrix for the CVs that describes the extent of the cluster");
 }
 
 ReadReferenceCluster::ReadReferenceCluster(const ActionOptions&ao):

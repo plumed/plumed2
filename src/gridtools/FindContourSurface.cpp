@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,10 +105,10 @@ public:
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
-  unsigned getNumberOfDerivatives() const ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  unsigned getNumberOfDerivatives() const override;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
+                          const unsigned& bufstart, std::vector<double>& buffer ) const override;
   void jobsAfterLoop();
 };
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018,2019 The plumed team
+   Copyright (c) 2018-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -57,8 +57,8 @@ class Completion:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "dump a function usable for programmable completion";
   }
 };
@@ -78,6 +78,7 @@ Completion::Completion(const CLToolOptions& co ):
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   static const char completion [] = {
 #include "completion.xxd"
+// cppcheck-suppress syntaxError
     , 0x00
   };
   fprintf(out,"local cmds=\"help -h --help");

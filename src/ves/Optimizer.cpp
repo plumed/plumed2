@@ -670,6 +670,9 @@ Optimizer::Optimizer(const ActionOptions&ao):
       if(targetdist_output_stride_%ustride_targetdist_!=0) {
         plumed_merror("the value given in TARGETDIST_OUTPUT doesn't make sense, it should be multiple of TARGETDIST_STRIDE");
       }
+      if(targetdist_output_stride_%coeffs_wstride_!=0) {
+        plumed_merror("the value given in TARGETDIST_OUTPUT doesn't make sense, it should be multiple of COEFFS_OUTPUT");
+      }
 
       targetdist_output_active_=true;
       for(unsigned int i=0; i<nbiases_; i++) {
@@ -734,7 +737,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   else {
     for(unsigned int i=0; i<ncoeffssets_; i++) {
       log.printf("  Output Components for coefficient set %u:\n",i);
-      std::string is=""; Tools::convert(i,is); is = "_" + coeffssetid_prefix_ + is;
+      std::string is=""; Tools::convert(i,is); is = "-" + coeffssetid_prefix_ + is;
       log.printf(" ");
       if(monitor_instantaneous_gradient_) {
         addComponent("gradrms"+is); componentIsNotPeriodic("gradrms"+is);
@@ -760,6 +763,15 @@ Optimizer::Optimizer(const ActionOptions&ao):
 
 Optimizer::~Optimizer() {
   //
+  for(unsigned int i=0; i<ncoeffssets_; i++) {
+    if(coeffsOFiles_.size()>0 && getIterationCounter()%coeffs_wstride_!=0) {
+      coeffs_pntrs_[i]->writeToFile(*coeffsOFiles_[i],aux_coeffs_pntrs_[i],false);
+    }
+    if(targetdist_averagesOFiles_.size()>0 && iter_counter%targetdist_averages_wstride_!=0) {
+      targetdist_averages_pntrs_[i]->writeToFile(*targetdist_averagesOFiles_[i]);
+    }
+  }
+  //
   if(!isTargetDistOutputActive()) {
     for(unsigned int i=0; i<nbiases_; i++) {
       if(dynamic_targetdists_[i]) {
@@ -769,8 +781,21 @@ Optimizer::~Optimizer() {
       }
     }
   }
-  else if(isTargetDistOutputActive() && getIterationCounter()%getTargetDistOutputStride()!=0) {
+  //
+  if(isBiasOutputActive() && getIterationCounter()%getBiasOutputStride()!=0) {
+    writeBiasOutputFiles();
+  }
+  if(isFesOutputActive() && getIterationCounter()%getFesOutputStride()!=0) {
+    writeFesOutputFiles();
+  }
+  if(isFesProjOutputActive() && getIterationCounter()%getFesProjOutputStride()!=0) {
+    writeFesProjOutputFiles();
+  }
+  if(isTargetDistOutputActive() && getIterationCounter()%getTargetDistOutputStride()!=0) {
     writeTargetDistOutputFiles();
+  }
+  if(isTargetDistProjOutputActive() && getIterationCounter()%getTargetDistProjOutputStride()!=0) {
+    writeTargetDistProjOutputFiles();
   }
   //
   for(unsigned int i=0; i<aux_coeffs_pntrs_.size(); i++) {
@@ -872,7 +897,6 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   // Components that are always active
   keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
   keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
-  ActionWithValue::useCustomisableComponents(keys);
   // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
 
 }
@@ -1041,10 +1065,7 @@ void Optimizer::update() {
       }
     }
     increaseIterationCounter();
-    updateOutputComponents();
-    for(unsigned int i=0; i<ncoeffssets_; i++) {
-      writeOutputFiles(i);
-    }
+
     if(ustride_targetdist_>0 && getIterationCounter()%ustride_targetdist_==0) {
       for(unsigned int i=0; i<nbiases_; i++) {
         if(dynamic_targetdists_[i]) {
@@ -1058,7 +1079,10 @@ void Optimizer::update() {
       }
     }
 
-
+    updateOutputComponents();
+    for(unsigned int i=0; i<ncoeffssets_; i++) {
+      writeOutputFiles(i);
+    }
     //
     if(isBiasOutputActive() && getIterationCounter()%getBiasOutputStride()==0) {
       writeBiasOutputFiles();
@@ -1100,7 +1124,7 @@ void Optimizer::updateOutputComponents() {
   }
   else {
     for(unsigned int i=0; i<ncoeffssets_; i++) {
-      std::string is=""; Tools::convert(i,is); is = "_" + coeffssetid_prefix_ + is;
+      std::string is=""; Tools::convert(i,is); is = "-" + coeffssetid_prefix_ + is;
       if(!fixed_stepsize_) {
         getPntrToComponent("stepsize"+is)->set( getCurrentStepSize(i) );
       }

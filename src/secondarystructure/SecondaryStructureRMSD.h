@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -77,11 +77,11 @@ public:
   static void expandShortcut( const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action );
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
-  unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-  void calculate();
-  void performTask( const unsigned&, MultiValue& ) const ;
-  void apply();
+  unsigned getNumberOfDerivatives() const override ;
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void calculate() override;
+  void performTask( const unsigned&, MultiValue& ) const override;
+  void apply() override;
 };
 
 inline

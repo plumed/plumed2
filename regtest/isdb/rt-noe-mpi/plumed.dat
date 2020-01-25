@@ -1,33 +1,31 @@
 NOE ...
 GROUPA1=1,3 GROUPB1=2,2 NOEDIST1=0.5
 GROUPA2=5 GROUPB2=7 NOEDIST2=0.4
-ADDEXP
 LABEL=prova
 ... NOE
 NOE ...
 GROUPA1=1,3 GROUPB1=2,2 NOEDIST1=0.5
 GROUPA2=5 GROUPB2=7 NOEDIST2=0.4
-ADDEXP
 LABEL=prova2
 ... NOE
 
 test: DISTANCE ATOMS=5,7
 
-enoe: ENSEMBLE ARG=(prova\.noe_.*)
-enoe2: ENSEMBLE ARG=(prova2\.noe_.*) POWER=-0.16667
+enoe: ENSEMBLE ARG=(prova\.noe-.*)
+enoe2: ENSEMBLE ARG=(prova2\.noe-.*) POWER=-0.16667
 
-inver1: COMBINE ARG=enoe.prova.noe_0 POWERS=-0.16667 PERIODIC=NO
-inver2: COMBINE ARG=enoe.prova.noe_1 POWERS=-0.16667 PERIODIC=NO
+inver1: COMBINE ARG=enoe.prova.noe-0 POWERS=-0.16667 PERIODIC=NO
+inver2: COMBINE ARG=enoe.prova.noe-1 POWERS=-0.16667 PERIODIC=NO
 
-st1: STATS ARG=inver1,inver2 PARARG=(prova\.exp_.*) SQDEVSUM
-st2: STATS ARG=enoe2.* PARARG=(prova2\.exp_.*) SQDEVSUM
+st1: STATS ARG=inver1,inver2 PARARG=(prova\.exp-.*) SQDEVSUM
+st2: STATS ARG=enoe2.* PARARG=(prova2\.exp-.*) SQDEVSUM
 
 RESTRAINT ARG=st1.*,st2.* AT=0,0 SLOPE=1,1 KAPPA=0,0
 
-DUMPFORCES ARG=(prova\.noe_.*),(prova2\.noe_.*) STRIDE=1 FILE=forces
+DUMPFORCES ARG=(prova\.noe-.*),(prova2\.noe-.*) STRIDE=1 FILE=forces
 
 
-PRINT ARG=inver1,inver2,test,(prova\.exp_.*),st1.*,st2.* FILE=COLVAR STRIDE=1
+PRINT ARG=inver1,inver2,test,(prova\.exp-.*),st1.*,st2.* FILE=COLVAR STRIDE=1
 
 d1: DISTANCE ATOMS=1,10
 d2: DISTANCE ATOMS=2,20

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,7 +71,7 @@ mat: HBOND_MATRIX ATOMS=1-192:3 HYDROGENS=2-192:3,3-192:3 SWITCH={RATIONAL R_0=3
 rsums: ROWSUMS MATRIX=mat MEAN
 csums: COLUMNSUMS MATRIX=mat MEAN
 DUMPMULTICOLVAR DATA=rsums FILE=donors.xyz
-DUMPMULTICOLVAR DATA=csums FILE=acceptors.x
+DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
 \endplumedfile
 
 */
@@ -91,7 +91,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit HbondMatrix(const ActionOptions&);
 // active methods:
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(HbondMatrix,"HBOND_MATRIX")

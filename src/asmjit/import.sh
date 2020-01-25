@@ -19,7 +19,6 @@ sed "s|/x86/|/|" |
 sed "s/::asmjit/::PLMD::asmjit/" |
 sed "s/defined(ASMJIT_EMBED)/1/" |
 sed "s/define FIXUP_GPB(REG_OP, REG_ID, ...)/define FIXUP_GPB(REG_OP, REG_ID)/" | # this is giving too many warnings on travis-ci
-grep -v "bool-operation" | # this is giving too many warnings on travis-ci
 cat > $move
 done
 

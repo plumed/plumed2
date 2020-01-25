@@ -1,0 +1,638 @@
+/**
+\page marvel-1 MARVEL tutorial: Analyzing CVs
+
+\section marvel-1-aims Aims
+
+The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
+and print simple collective variables. We will then discuss how we can use PLUMED to analyze a trajectory by calculating ensemble 
+averages, histograms and free energy surfaces. 
+
+\section marvel-1-lo Learning Outcomes
+
+Once this tutorial is completed students will:
+
+- Know how to write PLUMED input files that can be used to calculate and print collective variables.
+- Be able to calculate a collective variable that take the position of center of mass as input.
+- Know how to write a PLUMED input file that can be used to calculate an ensemble average.
+- Know how to write a PLUMED input file that can be used to calculate a histogram.  Students will also learn how this histogram can be converted into a free energy surface.   
+
+\section marvel-1-resources Resources
+
+The <a href="tutorial-resources/marvel-1.tar.gz" download="marvel-1.tar.gz"> tarball </a> for this project contains the following files:
+
+- trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All the calculations with plumed driver that will be performed during this tutorial will use this trajectory.
+- template.pdb : a single frame from the trajectory that can be used in conjunction with the \ref MOLINFO command
+- in : An input file for the simplemd code that forms part of PLUMED 
+- input.xyz : A configuration file for Lennard-Jones solid with an FCC solid structure
+
+\section marvel-1-instructions Instructions
+
+PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
+Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
+the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
+If you are using the code in this way you can, once PLUMED is compiled, run the plumed executable by issuing the command:
+
+\verbatim
+plumed <instructions>
+\endverbatim
+
+Let's start by getting a feel for the range of calculations that we can use PLUMED to perform.  Issue the following command now:
+
+\verbatim
+plumed --help 
+\endverbatim
+
+What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
+to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
+tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
+using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
+
+\verbatim
+plumed driver --help
+\endverbatim
+
+As you can see we can do a number of things with plumed driver.  For all of these options, however, we are going to need to write 
+a PLUMED input file.  Before we get on to writing input files for PLUMED there is information \ref codes here which provides details 
+on what the other PLUMED tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
+now or you might prefer to return after you have finished the exercises here.
+
+\subsection marvel-1-units The PLUMED internal units
+
+By default the PLUMED inputs and outputs quantities in the following units:
+
+- Energy - kJ/mol
+- Length - nanometers
+- Time - picoseconds
+
+If you want to change these units you can do this using the \ref UNITS keyword. 
+
+\subsection marvel-1-introinput Introduction to the PLUMED input file
+
+Many input files for PLUMED provides specifications for one or more CVs.  These specifications are then followed by an instruction to PLUMED
+to \ref PRINT these CVs and a termination line.
+Comments are denoted with a # and the termination of the input for PLUMED is marked with the keyword ENDPLUMED. Any words that 
+follow the ENDPLUMED line are ignored by PLUMED. You can also introduce blank lines as these will not be interpreted by PLUMED.
+
+The following input can be used analyze the \ref DISTANCE between the two terminal carbons of a 16 residues peptide. The \ref PRINT 
+command after the \ref DISTANCE command ensures that the results (i.e. the distances calculated) are printed into the file named COLVAR.
+
+\verbatim
+#my first PLUMED input:
+e2edist: DISTANCE ATOMS=2,253 
+
+#printout frequency
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR 
+
+#endofinput 
+ENDPLUMED
+here I can write what I want it won't be read.
+\endverbatim
+
+Let's use this simple input file to analyze the trajectory included in the RESOURCES.  To do so copy the input above into a file called 
+plumed.dat and then issue the command below:
+
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz --length-units 0.1
+\endverbatim
+
+Notice the --length-units 0.1 flag here.  This tells PLUMED to convert the positions in the xyz file here, which are in Angstroms, into nm, which
+remember are \ref marvel-1-units  
+
+When this command finishes running you should have a file called COLVAR. If you look at it's contents (using the command more COLVAR for instance) you will 
+find that the first two lines read:
+
+\verbatim 
+#! FIELDS time e2edist 
+ 0.000000 2.5613161
+\endverbatim
+
+The first line of the COLVAR files tells you what values are in each of the columns.  The remaining lines then tell you the values these quantities took
+in the various trajectory frames.  We can plot this data using gnuplot (or our favorite graphing program) by issuing the following commands:
+
+\verbatim
+gnuplot
+p 'COLVAR' u 1:2 w l
+\endverbatim
+
+What this graph shows is the value of the distance that we calculated using PLUMED as a function of time.  As you can see the distance fluctuates about
+as the atoms in our system move about in accordance with the various forces that act upon them.
+
+Right so hopefully that wasn't too hard.  What we are going to next is we are going to try to understand the input file that we have written a bit better.
+
+\subsection marvel-1-io The PLUMED input syntax
+
+The input file that we issued in the last section looked something like this:
+
+\verbatim
+e2edist: DISTANCE ATOMS=2,253
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR
+\endverbatim
+
+What happens if we reverse the order of the two commands in the input file.  In other words, what would have happened if we had run with an input file that 
+looked like this:
+
+\verbatim
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR
+e2edist: DISTANCE ATOMS=2,253
+\endverbatim
+
+Run the input file above using the commands described in the previous section to find out.
+
+If everything is working correctly the input above should crash with the following error message:
+
+\verbatim
++++ Internal PLUMED error
++++ file Action.cpp, line 234
++++ message: ERROR in input to action PRINT with label @0 : cannot find action named e2edist (hint! the actions in this ActionSet are: )
+\endverbatim
+
+Take a moment to read that error message and to try to think what it might mean before reading on.
+
+To understand the error lets look at the correct input again:
+
+\verbatim
+e2edist: DISTANCE ATOMS=2,253
+PRINT ARG=e2edist STRIDE=1 FILE=COLVAR
+\endverbatim
+
+You should think of the PLUMED input syntax as a kind of scripting language with commands and variables.  The first line in the above file
+thus tells PLUMED to calculate the distance between atoms 2 and 253 and <b> to store the value of this distance in a variable called e2edist </b>.
+The fact that this quantity is stored in a variable is important as it ensures that we can access this quantity when we come to issue commands 
+later in the input file.  So in the second line above we print a quantity.  What quantity should be printed? e2edist - the distance between atom 2 and atom 253. Easy!
+
+So why does the second input, that has the order of these two commands reversed, not work?  Well the variable e2edist has to be defined before it can be used
+because in PLUMED the commands are executed in the same order as they are defined in the input file. We thus cannot do anything with e2edist (i.e. \ref PRINT it)
+without first explaining how it is calculated.
+
+This input demonstrates the key idea of the PLUMED syntax.  Quantities calculated by commands such as \ref DISTANCE are given labels (e2edist) so that 
+they can be reused when performing other commands.  This idea is discussed in more depth in the following video https://www.youtube.com/watch?v=PxJP16qNCYs.  
+If you understand this idea though you are 90% of the way to understanding how to used PLUMED.  Well done. 
+
+\subsection marvel-1-com Center of mass positions
+
+When calculating many collective variables it is useful to not think in terms of calculating them directly based on the positions of a number of atoms.
+It is useful to instead think of them as being calculated from the position of one or more virtual atoms whose positions are generated based on the position
+of a collection of other atoms.  For example you might want to calculate the distance between the center of masses of two molecules.  In this case it is useful
+to calculate the two positions of the centers of mass first and to then calculate the distance between the centers of mass.  The PLUMED input that you would use
+for such a calculation reflects this way of thinking.  An example of a PLUMED input that can be used to perform this sort of calculation is shown below: 
+
+\verbatim
+
+first: CENTER ATOMS=1,2,3,4,5,6
+last: CENTER ATOMS=251-256
+
+e2edist: DISTANCE ATOMS=2,253
+comdist: DISTANCE ATOMS=first,last
+
+PRINT ARG=e2edist,comdist STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+Make a PLUMED input containing the above input and execute it on the trajectory that you downloaded at the start of the exercise by making use of the commands
+in section \ref marvel-1-introinput
+
+Before we turn to analyzing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
+instructs PLUMED to do.  It tells PLUMED to:
+
+1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 6;
+2. calculate the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 251 to 256;
+3. calculate the distance between atoms 2 and 253 and saves it in 'e2edist';
+4. calculate the distance between the two atoms 'first' and 'last' and saves it in 'comdist';
+5. print the content of 'e2edist' and 'comdist' in the file COLVAR
+
+Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
+
+1. ATOMS=1,2,3,4,5,6 is the explicit list of the atoms we need
+2. ATOMS=251-256 is the range of atoms needed
+
+Notice also that ranges of atoms can be defined with a stride which can also be negative as shown by the commands below, which are both equivalent:
+
+3. ATOMS=from,to:by (i.e.: 251-256:2)
+4. ATOMS=to,from:-by (i.e.: 256-251:-2)
+
+Lets now return to the business of analyzing what was output by the calculation.  Lets begin by looking at the contents of the COLVAR file that was output.
+When you do so you should find that the first few lines of this file read:
+
+\verbatim
+#! FIELDS time e2edist comdist
+ 0.000000 2.516315 2.464043
+\endverbatim
+
+Notice that at variance with the file that was output in the previous section we now have three columns of numbers in the output file.  Given the \ref PRINT
+command that we used in the input to this calculation though this new behavior makes a lot of sense.
+
+Lets now plot contents of the COLVAR file so we can compare the behavior of the distance between the two terminal carbons and the distance between the 
+centers of the mass of the two terminal residues in this trajectory (these two distances are what the above input is calculating).  To plot this data
+issue the following commands:
+
+\verbatim
+gnuplot
+p 'COLVAR' u 1:2 w l, '' u 1:3 w l
+\endverbatim
+
+Given what you observe for the behavior of these two distance what do you now expect to see in the trajectory? Let's look at the trajectory to see if 
+we are right.  To look at the trajectory issue the following commands: 
+
+\verbatim
+vmd template.pdb trajectory-short.xyz 
+\endverbatim
+
+Lets summarize what we have learned from these sections thus far.  We have seen that:
+
+- PLUMED provides a simple syntax that can be used to calculate the \ref DISTANCE between any pair of atoms in our system.
+- PLUMED also allows us to calculate the positions of virtual atom (e.g. \ref CENTER) and that we can calculate the \ref DISTANCE between these quantities.
+- Calculating these quantities is useful because it allows us to simplify the high-dimensional information contained in a trajectory.
+
+Now, obviously, PLUMED can do much more than calculate the distances between pairs of atoms as we will start to see that in the following sections.  
+
+\subsection marvel-1-torsions Calculating torsion angles
+
+In the previous sections we have seen how we can use PLUMED to calculate distances and how by plotting these distances we can begin to simplify the 
+high dimensional data contained in a trajectory.  Obviously, calculating a \ref DISTANCE is not always the best way to simplify the information contained 
+in a trajectory and we often find we have to work with other more-complex quantities.  PLUMED thus started as a library that was used to gather all the various 
+implementations people had written for different collective variables (CVs) that people had used to "analyze" trajectories over the years (analyze is in 
+inverted commas here because, as you will see if you continue to use PLUMED, we use CVs to do much more than simply analyze trajectories).  
+Now we will not have time to go over all the quantities that can be calculated in this tutorial.  Once you understand the basic principles, however, you 
+should be able to use the manual to work out how to calculate other quantities of interest.  With this in mind then lets learn how to calculate 
+a \ref TORSION.  As with \ref DISTANCE the atoms that we specify in our \ref TORSION command can be real or virtual.  In the example below two
+real atoms and a virtual atom are used:  
+
+\verbatim
+first: CENTER ATOMS=1-6
+last: CENTER ATOMS=251-256
+cvtor: TORSION ATOMS=first,102,138,last
+
+PRINT ARG=cvtor STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
+described in section \ref marvel-1-introinput then plot the CV output using gnuplot.
+
+As you can hopefully see calculating \ref TORSION values and other CVs is no more difficult than calculating \ref DISTANCE values.  In fact it is 
+easier as generally when you calculate the torsion angles of a protein you often wish to calculate particular, named torsion angles (i.e. the \f$\phi\f$ and \f$\psi\f$
+angles).  The \ref MOLINFO command makes it particularly easy to do this.  For instance suppose that you want to calculate and print the \f$\phi\f$ angle
+in the sixth residue of the protein and the \f$\psi\f$ angle in the eighth residue of the protein.  You can do so using the following input:
+
+\verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
+MOLINFO STRUCTURE=template.pdb
+phi6: TORSION ATOMS=@phi-6
+psi8: TORSION ATOMS=@psi-8
+PRINT ARG=phi6,psi8 FILE=colvar
+\endverbatim
+
+Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
+described in section \ref marvel-1-introinput then plot the CV output using gnuplot.  Notice that you will need the template.pdb file you downloaded 
+at the start of this exercise in order for this to run.
+
+\subsection marvel-1-gyration An exercise with the radius of gyration
+
+Lets now see if you can use everything you have learned to setup a PLUMED input file of your own.  What I would like you to do is to write
+a PLUMED input file that measures the Radius of Gyration \ref GYRATION for the configurations in each of the frames in the trajectory that
+you downloaded at the start of this exercise.  This radius of gyration will be calculated using the positions of all the atoms in that trajectory.
+
+NOTE: if what you need for one or more variables is a long list of atoms and not a virtual atom you can use the keyword \ref GROUP.
+A GROUP can be defined using ATOMS in the same way we saw before, in addition it is also possible to define a GROUP by reading a 
+GROMACS index file.
+
+\verbatim
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+\endverbatim
+
+Now 'ca' is not a virtual atom but a simple list of atoms.
+
+\subsection marvel-1-multicol Coordination numbers
+
+In the previous sections we have learned how PLUMED can be used to calculate simple functions of atomic positions such as the 
+\ref DISTANCE between pairs of atoms.  As discussed here (https://www.youtube.com/watch?v=iDvZmbWE5ps) many of the more complicated 
+collective variables that we use to analyze simulations can be calculated by computing these simple quantities multiple times for different
+sets of atoms.  That is to say we can calculate many more complicated collective variables using:
+
+\f[
+s = \sum_i g[ f(\{\mathbf{X}_i\}) ]
+\f] 
+
+Here \f$g\f$ is a function of a scalar and \f$f\f$ is a function that takes in the positions of a set of atoms \f$\{\mathbf{X}\}\f$ and outputs
+a scalar.  The sum then runs over the different sets of atoms from which the quantity \f$f\f$ can be calculated.  This is all rather abstract 
+so lets make it more concrete by considering an example.  Suppose that we want to calculate the coordination number of atom \f$k\f$.  What we 
+need to do is:
+
+1. We need to calculate the distance between atom \f$k\f$ and every atom in the system that is not atom \f$k\f$.  This will be the set of sets of atoms that we have to perform the sum above on.  Furthermore, the function \f$f\f$ in the above will be Pythagoras theorem, which is the function we use to calculate the distance between a pair of atoms. 
+2. We need to transform the distances calculated by a switching function (\f$f\f$ in the above) that is equal to one if the distance is less than or equal to the typical length of a chemical bond and zero otherwise.
+
+Lets thus use PLUMED to calculate the coordination number of atom 9.  We can do this as follows:
+
+\verbatim
+d1: DISTANCES GROUPA=9 GROUPB=1-8,10-256 LESS_THAN={RATIONAL D_0=0.16 R_0=0.01 D_MAX=0.2}
+PRINT ARG=d1.* FILE=colvar
+\endverbatim  
+
+Copy this input file to a PLUMED input file. Before using it to analyze the trajectory that you downloaded at the start of the exercise using the commands 
+described in section \ref marvel-1-introinput try to guess what value this coordination number will take.  Hint: what element is atom 9? 
+
+Now see if you can adjust the above input to calculate the coordination number of atom 5.  What is the coordination number of this atom and why does it take 
+this value?
+
+\subsection marvel-1-multicol2 Multicolvar
+
+In the previous section we exploited a feature of PLUMED known as multicolvar when calculating the coordination number.  When using this feature
+we are not confined to simply calculating coordination numbers.  For instance the input below allows us to calculate a number of distances and to then
+calculate the mean of the distribution of distances, the minimum distance in the distribution, the maximum distance in the distribution and the second
+moment of the distribution (the variance).  
+
+\verbatim
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+dd: DISTANCES GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2
+
+PRINT ARG=dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+Try to copy this input now and to use it to analyze the trajectory you downloaded at the start of the exercise using the commands 
+described in section \ref marvel-1-introinput.  
+
+Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED collective variables. 
+One interesting example is the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).  You can use the input 
+below to calculate the degree of anti-beta secondary structure in each of the trajectory frames by copying this input to a PLUMED input file
+and by exploiting the commands to run driver that were described in section \ref marvel-1-introinput. 
+
+\verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
+MOLINFO STRUCTURE=template.pdb
+abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
+
+PRINT ARG=abeta.lessthan STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+We can do a large number of other things with multicolvar.  If you are interested this topic is described in more detail in the tutorial:
+\ref belfast-10.
+
+\subsection marvel-1-averagesintro Understanding the need for ensemble averages
+
+In the previous sections we have learned how we can use PLUMED to calculate collective variables from simulation trajectories and have seen how,
+by plotting how these collective variables change as a function of time, we can get a handle on what happens during the trajectory.  Generally
+this level of analysis is not sufficient for us to publish a paper about the simulations we have run, however.  In this section we are going to
+run some molecular dynamics simulations in order to understand why. 
+
+You are going to need to do the following set of things in order to do this exercise:
+
+1. Take the two files you downloaded at the start of this exercise that are called called in and input.xyz and place them in a directory.
+2. In the same directory write an input file for PLUMED called plumed.dat that calculates and prints the distance between atoms 2 and 3 to a file called colvar.
+3. Run simplemd by issuing the command:
+
+\verbatim
+plumed simplemd < in
+\endverbatim
+
+4. Open the file called input.xyz and modify the z-coordinate of the 1st atom.  It should currently be equal to zero.  Set it equal to 0.1.
+5. Run simplemd again using the command above.
+6. Plot the colvar files output during the two calculations using:
+
+\verbatim
+gnuplot
+p 'colvar' w l, 'bck.0.colvar' w l
+\endverbatim
+
+If you have done everything correctly you should see that the values of the distance in the early parts of the simulation are similar but that 
+the values of the distance in the two simulations are very different by the end of the simulations.
+
+Allow me to explain what we have just done.  \ref simplemd is a tool for running molecular dynamics using the 
+<a href="http://en.wikipedia.org/wiki/Lennard-Jones_potential"> Lennard-Jones </a> potential.  We have thus just run
+two very similar molecular dynamics calculations.  The only difference between these two calculations was in the 
+z-coordinate of the first atom in the input structure.  The initial velocities of all the atoms were the same and the initial 
+positions of all other atoms were identical.  In spite of these similarities, however, the trajectories that we obtain in the two calculations
+are very different.   This is important as it tells us that the time series of CV values that we get from a single MD simulation is (in and of itself) 
+not particularly valuable as we would have got a completely different time series of values if we had run the calculation with only a slightly different
+input structure.  We should, therefore, <b> think of the trajectory output from a molecular dynamics simulations as a time series of random variables </b>
+and analyze it accordingly.
+
+The justification for thinking of a trajectory as a time series of random variables is based on statistical mechanics which tells us that a system 
+with a constant number of atoms and a constant volume evolving at a fixed temperature has a probability:
+
+\f[
+P(q)\propto e^{-\frac{U(q)}{k_B T}}
+\f]    
+
+of being in a microstate \f$q\f$ with internal energy \f$U(q)\f$ as discussed and explained in the videos that can be found on the following pages:
+
+- http://gtribello.github.io/mathNET/PRINCIPLE_OF_EQUAL_APRIORI_PROBABILITIES.html 
+- http://gtribello.github.io/mathNET/GENERALIZED_PARTITION_FUNCTION.html
+- http://gtribello.github.io/mathNET/CANONICAL_ENSEMBLE.html
+
+Now, and as already explained above, given that each microstate is sampled with this particular probability it makes sense to think of the microstates,
+and by extension the collective variables values that we calculate from these microstates, as random variables.  We can thus define the ensemble average 
+for a particular collective variable, \f$A\f$, using:
+
+\f[
+\langle A \rangle = \int A(q) P(q) \textrm{d}q 
+\f]
+
+where the integral here runs over all possible microstates, \f$A(q)\f$ is the function that allows us to calculate the value of the CV from the positions of the atoms in
+ microstate \f$q\f$ and where \f$P(q)\f$ is the "probability" (as it appears in an integral it is, strictly speaking, a probability density) of being in microstate \f$q\f$ which 
+was introduced above.  For more information on this business of random variables and ensemble averages (or expectations) check out the videos that can be found on the 
+following pages:
+
+- http://gtribello.github.io/mathNET/RANDOM_VARIABLES.html
+- http://gtribello.github.io/mathNET/EXPECTATION.html
+
+Instead of using the formula for the ensemble average given above we can estimate an ensemble averages by taking a time series of random variables (like our trajectory) 
+adding all the values of the random variable together (in our case the CV values in each of the trajectory frames) and dividing by the number of random variables that 
+were added together.  This works because of results known as the law of large numbers and the central limit theorem, which you can find videos on here:
+
+- http://gtribello.github.io/mathNET/LAW_OF_LARGE_NUMBERS.html 
+- http://gtribello.github.io/mathNET/CENTRAL_LIMIT_THEOREM.html
+
+Alternatively, we can justify this way of analyzing our trajectory by thinking of the set of sampled frames as random variables generated from Markov chain.  
+These mathematical objects are discussed here:
+  
+- http://gtribello.github.io/mathNET/MARKOV_PROPERTY.html
+- http://gtribello.github.io/mathNET/CHAPMAN_KOLMOGOROV_RELATION.html
+- http://gtribello.github.io/mathNET/TRANSIENT_RECURRENT_STATES.html
+- http://gtribello.github.io/mathNET/STATIONARY_DIST_MARKOV.html
+ 
+Regardless, however, and as we will see in the following section we can estimate ensemble averages of collective variables using:
+
+\f[
+\langle A \rangle \approx \frac{1}{T} \sum_{t} A[q(t)]
+\f]
+
+where the sum runs over the set of \f$T\f$ microstates, \f$q(t)\f$, in our trajectory and where \f$A[q(t)]\f$ is the function that is used to calculate the value 
+of the collective variable from the positions of the atoms in the microstate.  When we do so we find that the values of the ensemble averages from different 
+trajectories are reasonably consistent and certainly much more consistent than the set of instantaneous CV values.
+
+\subsection marvel-1-averages Calculating ensemble averages using PLUMED
+
+Repeat the steps from the previous section that were used to run the two MD calculations with slightly different input configurations.  This time, however, your 
+PLUMED input should look like this:
+
+\verbatim
+d1: DISTANCE ATOMS=2,3
+d1a: AVERAGE ARG=d1 STRIDE=10
+PRINT ARG=d1,d1a FILE=colvar STRIDE=10
+\endverbatim 
+
+If you now plot the values of the CV output from these two calculations together with the estimates of the ensemble averages using something like the commands below:
+
+\verbatim
+gnuplot
+p 'colvar' u 1:2 w l, '' u 1:3 w l, 'bck.0.colvar' u 1:2 w l, '' u 1:3 w l
+\endverbatim
+
+You should see that, although the instantaneous values of the CVs differ greatly in the two simulations, the average values of the CVs are relatively similar for both 
+simulations.  
+
+Lets discuss the \ref AVERAGE command that we have added here and what this does.  In essence it accumulates the sum of all the distances calculated by the 
+\ref DISTANCE command labelled d1.  When it comes time to output this accumulated average (every 10 trajectory steps) this accumulated sum is divided by the number of 
+trajectory frames that have been summed in calculated the current sum.   In other words, the average allows us to compute the following quantity:
+
+\f[
+a = \frac{1}{N} \sum_{i=1}^N d(t_i)
+\f]
+
+where \f$d(t_i)\f$ is the value of the distance at time \f$t_i\f$.  Now you may reasonably ask: what the keyword STRIDE=10 is doing in this command?  
+Well this is telling PLUMED to only add distances into the accumulated average every 10 steps.  In other words, when calculating the average we are 
+disregarding the value of the distance in frames 1,2,3,4,5,6,7,8 and 9.  Why are we disregarding this information though?  Well because there are correlations
+between the values the CV takes in two adjacent trajectory frames.  Ideally, we want the values of the distance we are averaging to be independent and
+identical random variables.   
+
+Before we move on to calculating histograms and free energy surfaces I have a little challenge for you.  If you are able to answer the following question then you 
+really understand what the \ref AVERAGE command is doing.  Try running the calculation above using the following input:
+
+\verbatim
+d1: DISTANCE ATOMS=2,3
+d1a: AVERAGE ARG=d1 STRIDE=10 CLEAR=10
+PRINT ARG=d1,d1a FILE=colvar STRIDE=10
+\endverbatim
+
+Based on what you see when you plot the colvar file and the information on the page about the \ref AVERAGE command what is the CLEAR=10 keyword telling PLUMED to do?
+
+\subsection marvel-1-histograms Calculating histograms
+
+Most of the time, we are not really interested in calculating ensemble averages for particular collective variables.  What we would really like 
+is the probability that the collective variable takes a particular value or set of values.  In other words, and as discussed in the following video,
+we would like the probability as a function of collective variable value:
+
+- https://www.youtube.com/watch?v=-1NLaqOJKS0
+
+We can calculate approximate histograms like these using PLUMED.  Furthermore, and as discussed in the video below, when we do this what we are really doing 
+is we are calculating multiple ensemble averages at once:
+
+- http://gtribello.github.io/mathNET/histogram-video.html 
+
+To calculate these ensemble averages we must make use of the \ref HISTOGRAM command.  An input file for a calculation of this sort is provided below.  Use this
+input now and the input files for simple MD from the previous two sections to calculate the histogram of \ref DISTANCE values that are explored in these 
+trajectories.
+
+\verbatim
+d1: DISTANCE ATOMS=2,3
+histogram: HISTOGRAM ARG=d1 BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 STRIDE=10
+DUMPGRID GRID=histogram FILE=histo STRIDE=25000
+\endverbatim
+
+You can plot the histogram output from this simulation using:
+
+\verbatim
+gnuplot
+p 'histo' w l
+\endverbatim
+
+You should see that there is a large peak in the histogram at around 2.0 indicating that this is the value of the distance that the atoms were most likely to
+have during the course of the simulation.  N.B. The histogram is unlikely to be converged with a trajectory this short.
+
+Lets now look at the syntax of the \ref HISTOGRAM command.  The first thing to note is the similarities between what is done with this command
+and what is done with the \ref AVERAGE command.  Once again we have a STRIDE keyword for \ref HISTOGRAM (and a CLEAR keyword for that matter) 
+that tells us how often data should be added to to the accumulated averages.  Furthermore, in both these commands we have an additional instruction
+with its own STRIDE keyword (\ref PRINT for \ref AVERAGE and \ref DUMPGRID for \ref HISTOGRAM) that tells us how frequently the accumulated averages 
+should be output to human readable files.
+
+A substantial difference between these two input files is the object the label histogram refers to.  In all previous examples the label of an action has referred to a
+scalar quantity that was calculated by that action.  In the example above, however, the label histogram refers to the function accumulated on a grid that is evaluated
+by the \ref HISTOGRAM command.  This is why we cannot print this quantity using \ref PRINT - it is not a simple scalar valued function anymore.  As you become more
+familiar with PLUMED you will find that these labels can refer to a range of different types of mathematical object.  
+
+Lets now see if we can bring together everything we have learned in this tutorial in order to analyze the protein trajectory that was downloaded at the start of 
+the exercise.
+
+\subsection marvel-1-analysis A histogram for the protein trajectory
+
+We are going to calculate the \ref HISTOGRAM from our protein trajectory as a function of two different collective variables:
+\ref ANTIBETARMSD and the average distance between the ca atoms of our protein backbone.  The input that allows us to 
+calculate perform this analysis is shown below:
+
+\verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
+# Read in protein structure template
+MOLINFO STRUCTURE=template.pdb
+# Calculate collective variables
+abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+DISTANCES GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2 LABEL=dd
+# Print instaneous values of collective variables
+PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+# Accumulate histogram of collective variables
+hh: HISTOGRAM ARG=abeta.lessthan,dd.mean KERNEL=DISCRETE GRID_MIN=0,0.8 GRID_MAX=4,1.2 GRID_BIN=40,40
+# Output histogram - N.B. when we are running with driver we can not provide a STRIDE.  
+# The histogram will then only be output once all the trajectory frames have been read in and analyzed
+DUMPGRID GRID=hh FILE=histo
+\endverbatim
+
+Try running the input above on the trajectory that you downloaded at the start of this exercise by using the commands detailed in section \ref marvel-1-introinput.
+You can plot the two dimensional histogram output using the following commands:
+
+\verbatim
+gnuplot
+set pm3d map
+sp 'histo' w pm3d
+\endverbatim
+
+If you do so though, you will probably find that the structure in the histogram, \f$H(s)\f$, is a bit difficult to visualize because the probability changes 
+from point to point by multiple
+orders of magnitude.  This is why we often convert the histogram, \f$H(s)\f$, to a free energy surface, \f$F(s)\f$, using:
+
+\f[
+F(s) = -k_B T \ln H(s)
+\f]
+
+If you want to use PLUMED to output the free energy rather than the histogram you need to use the \ref CONVERT_TO_FES command as shown below:
+
+\verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
+# Read in protein structure template
+MOLINFO STRUCTURE=template.pdb
+# Calculate collective variables
+abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+DISTANCES GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2 LABEL=dd
+# Print instaneous values of collective variables
+PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
+# Accumulate histogram of collective variables
+hh: HISTOGRAM ARG=abeta.lessthan,dd.mean KERNEL=DISCRETE GRID_MIN=0,0.8 GRID_MAX=4,1.2 GRID_BIN=40,40
+fes: CONVERT_TO_FES GRID=hh TEMP=300
+# Output free energy - N.B. when we are running with driver we can not provide a STRIDE.
+# The histogram will then only be output once all the trajectory frames have been read in and analyzed
+DUMPGRID GRID=fes FILE=fes.dat
+\endverbatim
+
+Notice though that even when we do this complicated looking calculation we are still, underneath it all, calculating functions of a large number of ensemble averages.
+
+\section marvel-1-conc Conclusions and further work
+
+If you have worked through all of this tutorial make sure that you have understood it by ensuring that you understand what the list of learning outcomes
+in section \ref marvel-1-lo means and that you can use PLUMED to perform all these tasks.  In terms of further work you should investigate issues related 
+to the convergence of estimates of ensemble averages such as block averaging.  You might like to investigate how long your simulations have to be in order 
+to obtain reliable estimates of the ensemble average for a collective variable and reliable estimates for the free energy as a function of a collective variable.
+Alternatively, you might like to explore other collective variables that could be used to analyze the protein trajectory that you have worked on in this tutorial.
+
+*/
+
+link: @subpage marvel-1
+
+description: This tutorial explains how to use PLUMED to analyze CVs
+
+additional-files: marvel-1
