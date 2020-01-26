@@ -48,6 +48,7 @@ public:
   virtual unsigned getNumberOfDerivatives() const ;
   virtual void finishOutputSetup() = 0;
   virtual void jobsAfterLoop() {}
+  virtual void runTheCalculation() { plumed_error(); }
   void calculate() override;
   virtual void apply() override {};
   void update();

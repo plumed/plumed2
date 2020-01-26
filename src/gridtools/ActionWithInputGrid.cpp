@@ -111,8 +111,8 @@ void ActionWithInputGrid::setupGridObject() {
 
 void ActionWithInputGrid::doTheCalculation() {
   if( firststep ) { setupGridObject(); firststep=false; finishOutputSetup(); }
-  runAllTasks();
-  jobsAfterLoop();
+  if( getFullNumberOfTasks()>0 ) { runAllTasks(); jobsAfterLoop(); }
+  else runTheCalculation();
 }
 
 void ActionWithInputGrid::calculate() {
