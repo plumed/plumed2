@@ -1438,10 +1438,9 @@ Optional Features:
   --enable-asmjit         enable search for asmjit, default: no
   --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
-  --enable-af_ocl         enable arrayfire_opencl, default: search for
-                          arrayfire
-  --enable-af_cuda        enable arrayfire_cuda, default: search for arrayfire
-  --enable-af_cpu         enable arrayfire_cpu, default: search for arrayfire
+  --enable-af_ocl         enable search for arrayfire_ocl, default: no
+  --enable-af_cuda        enable search for arrayfire_cuda, default: no
+  --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -3206,7 +3205,7 @@ if test "${enable_af_ocl+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_ocl" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_ocl=true ;;
              (no)  af_ocl=false ;;
   esac
@@ -3224,7 +3223,7 @@ if test "${enable_af_cuda+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cuda" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cuda=true ;;
              (no)  af_cuda=false ;;
   esac
@@ -3242,7 +3241,7 @@ if test "${enable_af_cpu+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cpu" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cpu=true ;;
              (no)  af_cpu=false ;;
   esac
