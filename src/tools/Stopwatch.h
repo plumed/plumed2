@@ -351,8 +351,6 @@ Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept 
       }
       else watch->pause();
     }
-// cppcheck complains about this:
-// cppcheck-suppress uselessAssignmentPtrArg
     watch=handler.watch;
     stop=handler.stop;
     handler.watch=nullptr;
