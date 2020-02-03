@@ -165,13 +165,15 @@ This will make sure timers are written also in case of a premature end.
 
 class Log;
 
+/// Return an empty string.
+/// Inline static so that it can store a static variable (for quicker access)
+/// without adding a unique global symbol to a library including this header file.
+inline static const std::string & StopwatchEmptyString() noexcept {
+  const static std::string s;
+  return s;
+}
+
 class Stopwatch {
-/// Simple function returning an empty string.
-/// Used to simplify Stopwatch interface.
-  static const std::string & emptyString() {
-    static std::string s;
-    return s;
-  }
 
 public:
 /// Forward declaration
@@ -263,23 +265,23 @@ public:
 // Destructor.
   ~Stopwatch();
 /// Start timer named "name"
-  Stopwatch& start(const std::string&name=emptyString());
+  Stopwatch& start(const std::string&name=StopwatchEmptyString());
 /// Stop timer named "name"
-  Stopwatch& stop(const std::string&name=emptyString());
+  Stopwatch& stop(const std::string&name=StopwatchEmptyString());
 /// Pause timer named "name"
-  Stopwatch& pause(const std::string&name=emptyString());
+  Stopwatch& pause(const std::string&name=StopwatchEmptyString());
 /// Dump all timers on an ostream
   friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
 /// Start with exception safety, then stop.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// stops the watch. This allows Stopwatch to be started and stopped in
 /// an exception safe manner.
-  Handler startStop(const std::string&name=emptyString());
+  Handler startStop(const std::string&name=StopwatchEmptyString());
 /// Start with exception safety, then pause.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// pauses the watch. This allows Stopwatch to be started and paused in
 /// an exception safe manner.
-  Handler startPause(const std::string&name=emptyString());
+  Handler startPause(const std::string&name=StopwatchEmptyString());
 };
 
 inline
