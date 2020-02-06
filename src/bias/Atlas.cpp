@@ -80,7 +80,7 @@ ActionShortcut(ao)
      if( meig>0 ) {
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
          readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_kernel-" + num + "_ref" +
-                        " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_ref.covariance VECTORS=" + seig + "}");
+                          " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_ref.covariance VECTORS=" + seig + "}");
      }
      // Store the weights as we will use these when constructing the bias later in the input
      weights.push_back(h); ifile.scanField();
@@ -206,10 +206,43 @@ ActionShortcut(ao)
   for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); combstr += "," + getShortcutLabel() + "_wbias-" + num; }
   // And the final bias
   readInputLine( combstr ); readInputLine("BIASVALUE ARG=" + getShortcutLabel() );
+
+  // Print the theta values to the THETA file
+  std::string theta_str = "PRINT FILE=THETA FMT=%8.12f STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_wkernel-1" ;
+  for(unsigned k=1;k<weights.size();++k) {
+    std::string num; Tools::convert( k+1, num );
+    theta_str += "," + getShortcutLabel() + "_wkernel-" + num;
+  }
+  theta_str += "," + getShortcutLabel() + "_ext_wkernel";
+  readInputLine( theta_str );
+
+  // Print the reduced CVs to a file
+  std::string cvs_str = "PRINT FILE=LOWD_CVS FMT=%8.12f STRIDE="+pacestr+" ARG=";
+  for(unsigned k=0;k<weights.size();++k) {
+    std::string num; Tools::convert( k+1, num );
+    if( neigv[k]==0 ) {
+      cvs_str += getShortcutLabel() + "_pdist-" + num + ",";
+    } else {
+      for(unsigned i=0;i<neigv[k];++i) {
+        std::string eignum; Tools::convert( i+1, eignum );
+        cvs_str +=  getShortcutLabel() + "_proj" + eignum + "-" + num + ",";
+      }
+      if( resid[k] ) {
+        cvs_str +=  getShortcutLabel() + "_resid-" + num + ",";
+      }
+    }
+  }
+
+  readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_wtfact" + " FUNC=exp(x)");
+  cvs_str += getShortcutLabel() + "_wtheight";
+  readInputLine( cvs_str );
+
   // Complete setup of the well tempered weights
   std::vector<std::string> args(1); args[0] = getShortcutLabel();
   ReweightBase* rwb = plumed.getActionSet().selectWithLabel<ReweightBase*>( getShortcutLabel() + "_wtfact" );
   plumed_assert( rwb ); rwb->setArguments( args );
+
+
 }
 
 }
