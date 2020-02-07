@@ -1027,7 +1027,7 @@ namespace PLMD {
   as inline static so that it can store a static variable (for quicker access)
   without adding a unique global symbol to a library including this header file.
 */
-inline static const bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
   static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
   return res;
 }
