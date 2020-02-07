@@ -172,6 +172,11 @@ script:
       ccache -s ;
     fi
 
+# test symbols
+  - if test "$PLUMED_CXX" ; then
+      make nmcheck ;
+    fi
+
 # build using macports
   - if test -n "$PLUMED_MACPORTS" ; then
       travis_wait sudo port -N -k install $PLUMED_MACPORTS ;
