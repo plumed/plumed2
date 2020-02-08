@@ -48,6 +48,7 @@ protected:
   bool clearnorm, save_all_bias;
   unsigned clearstride;
   unsigned n_real_args;
+  std::vector<AtomNumber> mygroup;
   std::vector<double> align, displace;
 /// This is used to setup the components for the actions that store data
   void setupComponents( const unsigned& nreplicas );
@@ -60,10 +61,12 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
+  ~AverageBase();
   void clearDerivatives( const bool& force=false ) {}
   void turnOnBiasHistory();
   virtual void resizeValues() {}
   unsigned getNumberOfDerivatives() const ;
+  unsigned getNumberOfVirtualAtoms() const ;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
@@ -83,7 +86,7 @@ public:
   virtual void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) = 0;
   std::string getStrideClearAndWeights() const ;
   std::string getAtomsData() const ;
-  virtual AtomNumber getAtomNumber(const AtomNumber& num ) const { plumed_merror("No virtual atoms " + getLabel() ); }
+  AtomNumber getAtomNumber(const AtomNumber& num ) const ;
   virtual unsigned getNumberOfStoredWeights() const { plumed_merror("Cannot use matrix store with this action"); }
   virtual void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
   virtual void storeRecomputedBias( const unsigned& itime, const unsigned& jframe, const double& data ) { plumed_error(); }
@@ -97,6 +100,11 @@ unsigned AverageBase::getNumberOfAtomsToAverage() const {
 inline
 Vector AverageBase::getReferencePosition(const unsigned& i ) {
   return myrmsd.getReference()[i];
+}
+
+inline
+unsigned AverageBase::getNumberOfVirtualAtoms() const {
+  return getNumberOfAtoms();
 }
 
 }

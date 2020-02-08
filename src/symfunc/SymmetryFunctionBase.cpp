@@ -342,7 +342,9 @@ void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
     // It would be easy enough to extend to allow vector components to come from different actions.  This will 
     // likely be of no use to anyone though so for the moment I just have this assert to prevent people from doing
     // wrong things.
-    plumed_dbg_assert( arg_deriv_starts[2]==arg_deriv_starts[1] && arg_deriv_starts[3]==arg_deriv_starts[1] ); 
+#ifndef DNDEBUG
+    if( arg_deriv_starts.size()==4 ) plumed_dbg_assert( arg_deriv_starts[2]==arg_deriv_starts[1] && arg_deriv_starts[3]==arg_deriv_starts[1] );
+#endif
   }
 }
 

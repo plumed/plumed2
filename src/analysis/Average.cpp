@@ -94,12 +94,10 @@ class Average : public AverageBase {
 private:
   enum {t,f,ndata} normalization;
   double lbound, pfactor;
-  std::vector<AtomNumber> mygroup;
   std::vector<Vector> displacements;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  AtomNumber getAtomNumber(const AtomNumber& anum ) const ;
   void resizeValues();
   bool allowComponentsAndValue() const { return true; }
   void clearAccumulatedData();
@@ -153,22 +151,10 @@ Average::Average( const ActionOptions& ao):
        if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
      }
   } else if( getNumberOfAtoms()>0 ) {
-      for(unsigned i=0;i<getNumberOfAtomsToAverage();++i) {
-          AtomNumber index = atoms.addVirtualAtom( this ); mygroup.push_back( index );
-      }
-      atoms.insertGroup( getLabel(), mygroup ); displacements.resize( mygroup.size() );
-      for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
-
+      displacements.resize( mygroup.size() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
       std::vector<unsigned> shape(1); shape[0]=3*getNumberOfAtoms(); addValue( shape ); setNotPeriodic();
   } else error("found nothing to average in input");
 }
-
-AtomNumber Average::getAtomNumber(const AtomNumber& anum ) const {
-  for(unsigned i=0;i<mygroup.size();++i) {
-      if( anum==mygroup[i] ) return getAbsoluteIndex(i);
-  }    
-  plumed_error(); return getAbsoluteIndex(0);
-} 
 
 void Average::resizeValues() {
   if( n_real_args==0 ) return;
@@ -202,7 +188,7 @@ void Average::accumulateNorm( const double& lweight ) {
 }
 
 void Average::accumulateValue( const double& lweight, const std::vector<double>& dval ) {
-  plumed_dbg_assert( dval.size()==0 ); double cweight = exp( lweight );
+  plumed_dbg_assert( dval.size()==1 ); double cweight = exp( lweight );
   if( getPntrToArgument(0)->isPeriodic() ) {
       Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
       double tval = ( dval[0] - lbound ) / pfactor;
