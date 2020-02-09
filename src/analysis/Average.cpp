@@ -106,6 +106,7 @@ public:
   void accumulateValue( const double& cweight, const std::vector<double>& val );
   void setReferenceConfig();
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
+  void transferDataToValue() {}
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -150,6 +151,7 @@ Average::Average( const ActionOptions& ao):
        setNotPeriodic();
        if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
      }
+     nvals=0; for(unsigned i=0;i<n_real_args;++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
   } else if( getNumberOfAtoms()>0 ) {
       displacements.resize( mygroup.size() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
       std::vector<unsigned> shape(1); shape[0]=3*getNumberOfAtoms(); addValue( shape ); setNotPeriodic();

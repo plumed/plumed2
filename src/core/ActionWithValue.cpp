@@ -355,7 +355,6 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
     // args.push_back( values[0] );
     values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr==getLabel() + ".*" ) {
-    plumed_assert( !action_to_do_after );
     for(unsigned i=0; i<values.size(); ++i ) values[i]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name

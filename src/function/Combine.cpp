@@ -114,15 +114,15 @@ Combine::Combine(const ActionOptions&ao):
     if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("should only specify one non-scalar argument in input to ARG keyword");
 
     coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
-    if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+    if(coefficients.size()>1 && coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
       error("Size of COEFFICIENTS array should be the same as number for arguments");
 
     parameters.resize(getNumberOfScalarArguments()); parseVector("PARAMETERS",parameters);
-    if(parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+    if(parameters.size()>1 && parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
       error("Size of PARAMETERS array should be the same as number for arguments");
 
     powers.resize(getNumberOfScalarArguments()); parseVector("POWERS",powers);
-    if(powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+    if(powers.size()>1 && powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
       error("Size of POWERS array should be the same as number for arguments");
   } else {
     parseVector("COEFFICIENTS",coefficients);
@@ -186,7 +186,8 @@ Combine::Combine(const ActionOptions&ao):
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
   if( args.size()==1 && !numberedkeys ) {
-    unsigned ind = myvals.getTaskIndex(); plumed_dbg_assert( ind<parameters.size() );
+    unsigned ind = myvals.getTaskIndex(); if( parameters.size()==1 ) ind=0;
+    plumed_dbg_assert( ind<parameters.size() );
     double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
     combine = coefficients[ind]*pow(cv,powers[ind]);
     addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals );

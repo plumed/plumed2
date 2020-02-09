@@ -112,11 +112,12 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + "_wham: WHAM ARG=" + getShortcutLabel() + "_collect.logweights " + tempstr );
   // Input for COLLECT_FRAMES
-  std::string arg; parse("ARG",arg);
-  readInputLine( getShortcutLabel() + "_data: COLLECT_FRAMES ARG=" + arg + " STRIDE=" + stride );
+  std::vector<std::string> args; parseVector("ARG",args); std::string argstr;
+  for(unsigned i=0;i<args.size();++i) { std::string num; Tools::convert(i+1,num); argstr += "ARG" + num + "=" + args[i]; }
+  readInputLine( getShortcutLabel() + "_data: COLLECT_FRAMES " + argstr + " STRIDE=" + stride );
   // This retrieves the arguments for the histogram
   AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>( getShortcutLabel() + "_data" );
-  plumed_assert( mydata ); std::string argstr; unsigned anum=1;
+  plumed_assert( mydata ); argstr=""; unsigned anum=1;
   for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
       std::string thislab = mydata->copyOutput(i)->getName();
       if( thislab.find("logweights")==std::string::npos ) {

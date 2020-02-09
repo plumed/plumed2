@@ -43,9 +43,12 @@ private:
   std::vector<double> data;
   std::vector<Vector> atom_pos, der, direction, centeredpos, centeredreference;
 /// Calculate the current bias at this position
-  double computeCurrentBiasForData( const std::vector<double>& data );
+  double computeCurrentBiasForData( const std::vector<double>& data, const bool& runserial );
 protected:
+  unsigned nvals;
+  std::vector<unsigned> task_counts;
   bool clearnorm, save_all_bias;
+  unsigned task_start;
   unsigned clearstride;
   unsigned n_real_args;
   std::vector<AtomNumber> mygroup;
@@ -62,7 +65,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
   ~AverageBase();
-  void clearDerivatives( const bool& force=false ) {}
+  void clearDerivatives( const bool& force=false );
   void turnOnBiasHistory();
   virtual void resizeValues() {}
   unsigned getNumberOfDerivatives() const ;
@@ -77,6 +80,7 @@ public:
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
   void calculate(); 
+  void finishComputations( const std::vector<double>& buf );
   void apply() {}
   void update();
   virtual void accumulateNorm( const double& cweight ) = 0 ;
@@ -90,6 +94,7 @@ public:
   virtual unsigned getNumberOfStoredWeights() const { plumed_merror("Cannot use matrix store with this action"); }
   virtual void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
   virtual void storeRecomputedBias( const unsigned& itime, const unsigned& jframe, const double& data ) { plumed_error(); }
+  virtual void transferDataToValue() = 0;
 };
 
 inline

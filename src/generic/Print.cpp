@@ -166,7 +166,7 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()>0 ) { timeseries=true; break; }
       }
       if( timeseries ) {
           unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );

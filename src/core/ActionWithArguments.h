@@ -65,6 +65,8 @@ protected:
   unsigned getNumberOfScalarArguments() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
   unsigned setupActionInChain( const unsigned& argstart ) ;
+/// Should we skip running calculate for this action
+  bool skipCalculate() const ;
 /// Should we skip running update for this action
   bool skipUpdate() const ;
 /// Resize all the values for the final task

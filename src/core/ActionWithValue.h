@@ -126,7 +126,6 @@ private:
 /// Retrieve the forces for a particualr task
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void clearAllForcesInChain();
-  void finishComputations( const std::vector<double>& buf );
   bool checkForGrids() const ;
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
@@ -282,6 +281,8 @@ public:
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///
   virtual void gatherForces( const unsigned& task_index, const MultiValue& myvals, std::vector<double>& forces ) const ;
+///
+  virtual void finishComputations( const std::vector<double>& buf );
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///

@@ -26,6 +26,7 @@
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
 #include "gridtools/KDEShortcut.h"
+#include "MetadShortcut.h"
 #include "ReweightBase.h"
 
 namespace PLMD {
@@ -47,8 +48,8 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SIGMA","the widths of the Gaussians that we are using");
   keys.add("compulsory","HEIGHT","the heights of the hills that should be added");
   keys.add("compulsory","BIASFACTOR","the bias factor for the well tempered metadynamics");
-  keys.add("compulsory","GRID_MAX","the maximum value to use for all the grids");
-  keys.add("compulsory","GRID_BIN","the number of bins to use for all the grids");
+  keys.add("optional","GRID_MAX","the maximum value to use for all the grids");
+  keys.add("optional","GRID_BIN","the number of bins to use for all the grids");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("compulsory","WALL","the force constant of the wall applied outside the GMM");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
@@ -144,51 +145,44 @@ ActionShortcut(ao)
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
-  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1);
+  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
+  if( gmax.size()>0 && grid_nbins.size()==0 ) error("you must set GRID_BIN if you set GRID_MAX");
+  if( grid_nbins.size()>0 && gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");  
   // Build the histograms for the bias potential
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
-      std::string num; Tools::convert( k+1, num );
+      std::string num; Tools::convert( k+1, num ); targs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
       readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " FUNC=log(x) PERIODIC=NO");
-      readInputLine(getShortcutLabel() + "_w_wtfact-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" + 
+      readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" + 
                     num + " FUNC=x+y PERIODIC=NO");
       if( neigv[k]==0 ) {
+          targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
-          readInputLine( getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov ARG1=" + getShortcutLabel() + "_dist-" + num + "," +
-                         getShortcutLabel() + "_pdist-" + num + " HEIGHTS=" + getShortcutLabel() + "_height GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + grid_nbins + truncflag1 );
+          if( gmax.size()>0 ) { tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins ); }
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
           // Convert the bandwidth to something constant actions
-          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this );
-          std::string gminstr=" GRID_MIN=-" + gmax, gmaxstr=" GRID_MAX=" + gmax, gbinstr=" GRID_BIN=" + grid_nbins;
-          std::string input = getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov HEIGHTS=" + getShortcutLabel() + "_height" +
-               " ARG1=" + getShortcutLabel() + "_proj1-" + num;
-          for(unsigned i=1;i<neigv[k];++i) {
-              std::string eignum; Tools::convert( i+1, eignum );
-              input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
-              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins;
+          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
+          for(unsigned i=0;i<neigv[k];++i) { 
+              std::string eignum; Tools::convert( i+1, eignum ); 
+              targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
+              if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
           }
-          if( resid[k] ) {
-              std::string eignum; Tools::convert( neigv[k]+1, eignum );
-              input += " ARG" + eignum + "=" + getShortcutLabel() + "_resid-" + num;
-              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins;
-          }
-          readInputLine( input + " " + gminstr + " " + gmaxstr + " " + gbinstr );
+          if( resid[k] ) { 
+              targs.push_back( getShortcutLabel() + "_resid-" + num );
+              if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
+          } 
       }
-      // This accumulates the bias in each bin
-      readInputLine( getShortcutLabel() + "_histo-" + num + ": AVERAGE ARG=" + getShortcutLabel() + "_kde-" + num + " NORMALIZATION=false " +
-                     "STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_w_wtfact-" + num);
-      // Evaluate the bias potential for each basin
-      readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
+      MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, truncflag1, truncflag2, this );
   }
 
   // Normalize the weights for each of the kernels and compute the final bias
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num );
       // And the bias due to each basin (product of bias due to basin and kernel weight)
-      readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_bias-" + num + " ARG2=" +
+      readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_bias ARG2=" +
                      getShortcutLabel() + "_wkernel-" + num + " FUNC=x*y PERIODIC=NO");
   }
   // And compute the wkernel outside the GMM

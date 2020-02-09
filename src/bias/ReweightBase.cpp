@@ -45,7 +45,7 @@ ReweightBase::ReweightBase(const ActionOptions&ao):
   else simtemp=plumed.getAtoms().getKbT();
   if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
   // Create something to hold the weight
-  addValue(); setNotPeriodic();
+  addValueWithDerivatives(); setNotPeriodic();
 }
 
 void ReweightBase::update() {

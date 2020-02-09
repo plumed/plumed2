@@ -41,14 +41,18 @@ public:
   unsigned getNumberOfStoredWeights() const ;
   void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data );
   void storeRecomputedBias( const unsigned& ipoint, const unsigned& jframe, const double& data );
-  void runFinalJobs();
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const {}
+  void transferDataToValue();
 };
 
 PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 
 void CollectFrames::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys ); ActionWithValue::useCustomisableComponents( keys );
-  keys.add("optional","ARG","the data that you would like to collect to analyze later");
+  keys.add("numbered","ARG","the data that you would like to collect to analyze later");
   keys.addOutputComponent("posx","ATOMS","these values store the x components of the atoms");
   keys.addOutputComponent("posy","ATOMS","these values store the y components of the atoms"); 
   keys.addOutputComponent("posz","ATOMS","these values store the z components of the atoms");
@@ -69,7 +73,7 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
       }
   }
   // Setup the components
-  setupComponents( 1 ); 
+  setupComponents( 1 );
 }
 
 void CollectFrames::accumulateNorm( const double& cweight ) {
@@ -128,16 +132,33 @@ void CollectFrames::retrieveDataPoint( const unsigned& ipoint, const unsigned& j
   }
 }
 
+void CollectFrames::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+   // Add any new tasks to the list
+   actionsThatSelectTasks.push_back( getLabel() );
+   unsigned nstart = getFullNumberOfTasks(), ndata = getPntrToOutput(0)->getShape()[0];
+   for(unsigned i=nstart;i<ndata;++i) addTaskToList(i);  
+   // Now switch on the relevant tasks
+   for(unsigned i=task_start;i<tflags.size();++i) tflags[i]=1; 
+}
+
+void CollectFrames::performTask( const unsigned& current, MultiValue& myvals ) const {
+  for(unsigned j=0;j<getNumberOfComponents();++j) {
+      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+      myvals.setValue( ostrn, getPntrToOutput(j)->get(current) );
+  }
+}
+
 void CollectFrames::storeRecomputedBias( const unsigned& ipoint, const unsigned& jframe, const double& biases ) {
   if( clearstride>0 ) {
       Value* bval=getPntrToOutput(getNumberOfComponents()-1);
-      bval->set( bval->getShape()[0]*(ndata_for_norm+jframe) + ipoint + jframe, biases ); 
+      if( task_counts.size()>0 ) plumed_error();
+      else bval->set( bval->getShape()[0]*(ndata_for_norm+jframe) + ipoint + jframe, biases ); 
   } else {
       off_diag_bias.push_back( biases );
   }
 }
 
-void CollectFrames::runFinalJobs() {
+void CollectFrames::transferDataToValue() {
   transferCollectedDataToValue( alldata, allweights, off_diag_bias );
 }
 

@@ -133,7 +133,7 @@ void Value::alwaysStoreValues() {
 }
 
 void Value::makeTimeSeries() {
-  plumed_assert( shape.size()==1 ); istimeseries=true;
+  plumed_assert( shape.size()<=1 ); istimeseries=true;
   unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
 }
 
@@ -371,6 +371,7 @@ double Value::getRequiredValue(  const std::string& alabel, const unsigned& num 
 }
 
 void Value::addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  ) {
+  if( istimeseries ) return;
   if( usingAllVals(alabel) ) addForce( num, ff );
   else addForce( userdata.find(alabel)->second[num].first, ff );
 }
