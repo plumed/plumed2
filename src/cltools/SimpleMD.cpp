@@ -195,13 +195,8 @@ private:
       fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
       exit(1);
     }
-
-// call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
-    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
-
-    int ret=fscanf(fp,"%1000d",&natoms);
-    if(ret==0) plumed_error() <<"Error reading number of atoms from file "<<inputfile;
+    fscanf(fp,"%1000d",&natoms);
+    fclose(fp);
   }
 
   void read_positions(const string& inputfile,int natoms,vector<Vector>& positions,double cell[3]) {
@@ -212,21 +207,15 @@ private:
       fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
       exit(1);
     }
-// call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
-    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
-
     char buffer[256];
     char atomname[256];
-    char* cret=fgets(buffer,256,fp);
-    if(cret==nullptr) plumed_error() <<"Error reading buffer from file "<<inputfile;
-    int ret=fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
-    if(ret==0) plumed_error() <<"Error reading cell line from file "<<inputfile;
+    fgets(buffer,256,fp);
+    fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
     for(int i=0; i<natoms; i++) {
-      ret=fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
+      fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
 // note: atomname is read but not used
-      if(ret==0) plumed_error() <<"Error reading atom line from file "<<inputfile;
     }
+    fclose(fp);
   }
 
   void randomize_velocities(const int natoms,const int ndim,const double temperature,const vector<double>&masses,vector<Vector>& velocities,Random&random) {
