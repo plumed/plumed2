@@ -257,7 +257,12 @@ script:
        CONDA_LABEL=nightly ;
     fi
 # build conda package
-  - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
+  - if test -n "$PLUMED_CONDA" ; then
+       curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci &&
+       source ./conda-ci install &&
+       source ./conda-ci install-conda-build &&
+       VERSION="$CONDA_VERSION" make -C conda ;
+    fi
 
 # build docker container
   - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
