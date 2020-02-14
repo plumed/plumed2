@@ -1,5 +1,5 @@
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "colvar/Colvar.h"
+#include "colvar/ActionRegister.h"
 #include <string>
 #include <cmath>
 #include <cassert>
@@ -18,32 +18,66 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR FPS
 /*
-This colvar evaluates the position of an atom with respect to a given line.
+FPS implements the Funnel-Metadynamics (FM) technique in PLUMED 2. Please read the FM \cite FM \cite FM-protocol
+papers to better understand the notions hereby reported.
 
-By default FPS is computed taking into account periodic
-boundary conditions. This behavior can be changed with the NOPBC flag.
-FPS is divided in 2 components (linepos and linedist) which evaluate
-the distance from a given point and the altitude from the line, in order to
-inform the Funnel if to apply or not the potential. The point has to be the
-COM of the molecule you want to move inside the funnel and it has to be ONE!
+This colvar evaluates the position of a ligand of interest with respect to a given line, built from the two points
+A and B, and should be used together with the \ref FUNNEL bias.
+The constructed line represents the axis of the funnel-shape restraint potential, which should be placed so
+as to include the portion of a macromolecule (i.e., protein, DNA, etc.) that should be explored.
+Since it is important that the position of the line is updated based on the motion of the macromolecule during
+the simulation, this colvar incorporates an alignment method. The latter uses the TYPE=OPTIMAL option to remove
+motions due to rotation and translation of the macromolecule with respect to a reference structure, which is
+provided by the user. In order to accomplish the task, an optimal alignment matrix is calculated using the
+Kearsley \cite kearsley algorithm.
+The reference structure should be given as a pdb file, containing only the atoms of the macromolecule or a
+selection of them (e.g., the protein CA atoms of secondary structures). In contrast to the methods reported in
+the \ref dists, the values reported in the occupancy and beta-factor columns of the pdb file are not important
+since they will be overwritten and replaced by the value 1.00 during the procedure. It is important to understand
+that all atoms in the file will be used for the alignment, even if they display 0.00 in the occupancy column.
 
-Inside the colvar it will be created a rotation matrix using a reference
-given by the user. This matrix is applied for every step of metadynamics
-and it will align the frame to my reference. Afterwards, linepos and linedist
-will be computed and re-rotated again, using the transpose of the previous
-matrix, to fit with the correct derivatives.
+The ligand can be represented by one single atom or the center of mass (COM) of a group of atoms that should be
+provided by the user.
+
+By default FPS is computed taking into account periodic boundary conditions. Since PLUMED 2.5, molecules are
+rebuilt using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. We note that this action is local
+to this colvar, thus it does not modify the coordinates stored in PLUMED. Moreover, FPS requires an ANCHOR atom
+to be specified in order to facilitate the reconstruction of periodic boundary conditions. This atom should be the
+closest macromolecule's atom to the ligand and it should reduce the risk of ligand "warping" in the simulation box.
+Nevertheless, we highly recommend to add to the PLUMED input file a custom line of \ref WHOLEMOLECULES, in order to
+be sure of reconstructing the ligand together with the macromolecule (please look the examples). In this case, the user
+can use the NOPBC flag to turn off the internal periodic boundary condition reconstruction.
+
+FPS is divided in two components (fps.lp and fps.ld) which evaluate the projection of the ligand along the funnel line
+and the distance from it, respectively. The values attributed to these two components are then used together with the
+potential file created by the \ref FUNNEL bias to define if the ligand is within or not in the funnel-shape restraint
+potential. In the latter case, the potential will force the ligand to enter within the funnel boundaries.
 
 \par Examples
 
-The following input tells plumed to print the FPS components for the COM of a ligand.
-As input we give a reference structure, which is the structure used for alignment,
-the atom of the molecule we want to track and 2 points in the cartesian space (x,y,z)
-to draw an imaginary line where the funnel will be constructed.
-\verbatim
-ligand: COM ATOMS=2446,2447,2448,2449,2451
-fps: FPS REFERENCE=protein.pdb LIGAND=ligand POINTS= 5.3478,-0.7278,2.4746,7.3785,6.7364,-9.3624
+The following input tells plumed to print the FPS components for the COM of a ligand. The inputs are a reference structure,
+which is the structure used for the alignment, the COM of the molecule we want to track, and 2 points in the cartesian space
+(i.e., x, y, and z) to draw the line representing the funnel axis.
+\plumedfile
+lig: COM ATOMS=2446,2447,2448,2449,2451
+fps: FPS REFERENCE=protein.pdb LIGAND=lig POINTS=5.3478,-0.7278,2.4746,7.3785,6.7364,-9.3624
 PRINT ARG=fps.lp,fps.ld
-\endverbatim
+\endplumedfile
+
+It is recommended to add a line to force the reconstruction of the periodic boundary conditions. In the following example,
+\ref WHOLEMOLECULES was added to make sure that the ligand was reconstructed together with the protein. The list contains
+all the atoms reported in the start.pdb file followed by the ANCHOR atom and the ligand. All atoms should be contained in the
+same entity and the correct order.
+\plumedfile
+WHOLEMOLECULES ENTITY0=54,75,212,228,239,258,311,328,348,372,383,402,421,463,487,503,519,657,674,690,714,897,914,934,953,964,
+974,985,1007,1018,1037,1247,1264,1283,1302,1324,1689,1708,1727,1738,1962,1984,1994,2312,2329,2349,2467,2490,2500,2517,2524,2536,
+2547,2554,2569,2575,2591,2607,2635,2657,2676,2693,2700,2719,2735,2746,2770,2777,2788,2795,2805,2815,2832,2854,2868,2898,2904,
+2911,2927,2948,2962,2472,3221,3224,3225,3228,3229,3231,3233,3235,3237
+lig: COM ATOMS=3221,3224,3225,3228,3229,3231,3233,3235,3237
+fps: FPS LIGAND=lig REFERENCE=start.pdb ANCHOR=2472 POINTS=4.724,5.369,4.069,4.597,5.721,4.343
+PRINT ARG=fps.lp,fps.ld
+\endplumedfile
+
 */
 //+ENDPLUMEDOC
 
@@ -54,21 +88,21 @@ class FPS : public Colvar {
   std::vector<AtomNumber> ligand_com;
   std::vector<AtomNumber> anchor;
   std::vector<AtomNumber> numbers;
-//  bool components;
   bool pbc;
   PLMD::RMSD* alignment;
   PLMD::PDB* pdb;
   bool squared;
 private:
-  // Placing it in private to not risk to call something with the same name somewhere else
   vector<double> points;
 public:
   explicit FPS(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
+// I need a method in RMSDCoreCalc and these were requested
   std::vector<double> align;
   std::vector<double> displace;
+// It is written no more desctructors, but an expert said it's necessary for imported variables (pdb and alignment) or else memory leak
   ~FPS();
 };
 
@@ -80,10 +114,10 @@ void FPS::registerKeywords(Keywords& keys){
         Colvar::registerKeywords( keys );
         keys.add("compulsory","REFERENCE","a file in pdb format containing the structure you would like to align.");
         keys.add("atoms","LIGAND","This MUST be a single atom, normally the COM of the ligand");
-        keys.add("atoms","ANCHOR","Atom picked to maintain the correct ligand during all the simulation");
-        keys.add("compulsory","POINTS","6 values that define 2 points where we construct the line.");
-        keys.addFlag("SQUARED-ROOT",false,"Maintained to use the function already implemented, but to no use");
-        keys.addOutputComponent("lp","default","the position on the funnel line");
+        keys.add("atoms","ANCHOR","Closest protein atom to the ligand, picked to avoid pbc problems during the simulation");
+        keys.add("compulsory","POINTS","6 values defining x, y, and z of the 2 points used to construct the line. The order should be A_x,A_y,A_z,B_x,B_y,B_z.");
+        keys.addFlag("SQUARED-ROOT",false,"Used to initialize the creation of the alignment variable");
+        keys.addOutputComponent("lp","default","the position along the funnel line");
         keys.addOutputComponent("ld","default","the distance from the funnel line");
 }
 
@@ -165,7 +199,7 @@ void FPS::calculate(){
     Vector centerreference;
     Vector centerpositions;
 
-    // Created only to give the correct object to calc_Funnelelements
+    // Created only to give the correct object to calc_FitElements
     std::vector<Vector> sourceAllPositions;
     std::vector<Vector> sourcePositions;
 
@@ -179,17 +213,22 @@ void FPS::calculate(){
     Vector p2 = VectorGeneric<3>(points[3],points[4],points[5]);
     Vector s = p2 - p1;
 
-    // Function slightly different from the real one which is calc_PCAelements
-    // note that the rotation matrix provided is positions to reference
-    // remember that the only part that needs to be provided is 
-    double rmsd=alignment->calc_FitElements( sourcePositions, Rotation , drotdpos , buffer, centerpositions, squared);
+    // I call the method calc_FitElements that initializes all feature that I need
+    // except for centerreference that I need to calculate from scratch
+    // Buffer has no meaning but I had to fulfill the requirements of calc_FitElements
+    double rmsd = alignment->calc_FitElements( sourcePositions, Rotation , drotdpos , buffer, centerpositions, squared);
 
+    // To Plumed developers: it would be interesting to make the functions to calculate centers of mass public or protected
+    centerreference.zero(); for(unsigned i=0; i<pdb->size(); i++) {centerreference+=pdb->getPositions()[i]*align[i]/align.size();}
+
+    /*
     // I cancelled the additional lines in the library of RMSD.h, thus I am missing the center of the reference
     // Creating variable kito to extract only the center of the reference, since no method is calling
     // function getReferenceCenter()
     PLMD::RMSDCoreData* kito; kito = new RMSDCoreData(align,displace,sourcePositions,pdb->getPositions());
     centerreference = kito->getReferenceCenter();
     delete kito;
+    */
 
     // DEBUG
 /*    log.printf(" RMSD: %13.6lf\n",rmsd );

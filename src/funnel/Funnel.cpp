@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Bias.h"
-#include "ActionRegister.h"
+#include "bias/Bias.h"
+#include "bias/ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
@@ -29,6 +29,7 @@
 #include "core/ActionSet.h"
 #include "tools/FileBase.h"
 #include <memory>
+#include "core/PlumedMain.h"
 
 using namespace std;
 
@@ -36,6 +37,78 @@ using namespace std;
 namespace PLMD{
 namespace bias{
 
+//+PLUMEDOC BIAS FUNNEL
+/*
+Calculate a funnel-shape restraint potential that is defined on a grid that is read during the setup.
+If the input file is not already present, it will create one with the name specified in the FILE flag.
+The potential has a two-dimensional resolution since it has been devised to be used with the two
+components of \ref FPS (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
+attached to a cylindrical one. The user can customize the shape of both the sections by modifying a
+number of flags. In particular the cone section of the funnel is calculated with the following formula:
+
+\f[
+MAX_Z=R_{cyl} + tg_{alpha} * (z_{cc} - MIN_S)
+\f]
+
+where  \f$ MAX_Z \f$ is the radius of the cone base,  \f$ R_{cyl} \f$ is the radius of the cylinder part,
+\f$ tg_{alpha} \f$ is the angle regulating how steep the cone is, \f$ z_{cc} \f$ is the switching point
+between cone and cylinder, and \f$ MIN_S \f$ is the lowest possible value assumed by fps.lp of \ref FPS.
+As for the cylinder, it starts from the value of \f$ z_{cc} \f$ and stops at the value of \f$ MAX_S \f$
+with a section of \f$ pi*r_{cyl}^2 \f$.
+
+There is the option of transforming the cone region into a sphere with the use of the SPHERE flag. In this
+case, the new shape will have a radius of \f$ z_{cc} \f$. It might be necessary tuning the SAFETY option
+to select how much the potential extends from the sphere.
+
+\par Examples
+
+The following is an input for a calculation with a funnel potential that is defined in the file BIAS
+and that acts on the collective variables defined by FPS.
+\plumedfile
+lig: COM ATOMS=3221,3224,3225,3228,3229,3231,3233,3235,3237
+fps: FPS LIGAND=lig REFERENCE=start.pdb ANCHOR=2472 POINTS=4.724,5.369,4.069,4.597,5.721,4.343
+
+FUNNEL ARG=fps.lp,fps.ld ZCC=1.8 ALPHA=0.55 RCYL=0.1 MINS=-0.5 MAXS=3.7 KAPPA=35100 NBINS=500 NBINZ=500 FILE=BIAS LABEL=funnel
+\endplumedfile
+
+The BIAS will then look something like this:
+\auxfile{BIAS}
+#! FIELDS fps.lp fps.ld funnel.bias der_fps.lp der_fps.ld
+#! SET min_fps.lp -0.500000
+#! SET max_fps.lp 3.700000
+#! SET nbins_fps.lp 500.000000
+#! SET periodic_fps.lp false
+#! SET min_fps.ld 0.000000
+#! SET max_fps.ld 1.510142
+#! SET nbins_fps.ld 500.000000
+#! SET periodic_fps.ld false
+    -0.500000      0.000000      0.000000      0.000000      0.000000
+    -0.500000      0.003020      0.000000      0.000000      0.000000
+    -0.500000      0.006041      0.000000      0.000000      0.000000
+    -0.500000      0.009061      0.000000      0.000000      0.000000
+    -0.500000      0.012081      0.000000      0.000000      0.000000
+    -0.500000      0.015101      0.000000      0.000000      0.000000
+\endauxfile
+
+The Funnel potential should always be used in combination with the collective variable  \ref FPS, since it
+is constructed to take as inputs fps.lp and fps.ld (the former linepos and linedist of Funnel-Metadynamics
+\cite FM).  In the first block of data the value of fps.lp (the value in the first column) is kept fixed
+and the value of the function is given at 500 equally spaced values for fps.ld between 0 and 1.51. In
+the second block of data fps.lp is fixed at \f$-0.5 + \frac{4.2}{500}\f$ and the value of the function
+is given at 500 equally spaced values for fps.ld between 0 and 1.51. In the third block of data the same
+is done but fps.lp is fixed at \f$-0.5 + \frac{8.4}{100}\f$ and so on until you get to the five hundredth
+block of data where fps.lp is fixed at \f$3.7\f$.
+
+It is possible to switch the shape of the cone region, transforming it in a sphere, with the flag SPHERE.
+\plumedfile
+lig: COM ATOMS=545,546,547,548,549,550,551,552,553
+fps: FPS LIGAND=lig REFERENCE=ref.pdb ANCHOR=52 POINTS=2.793,3.696,3.942,3.607,4.298,3.452
+
+FUNNEL ARG=fps.lp,fps.ld ZCC=4.0 RCYL=0.1 MINS=0.2 MAXS=4.9 KAPPA=100000 NBINS=500 NBINZ=500 SPHERE SAFETY=1.0 FILE=BIAS LABEL=funnel
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
 class Funnel : public Bias{
 
 private:
@@ -85,26 +158,26 @@ void Funnel::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-  keys.addFlag("SPHERE",false, "Shape of your potential");
+  keys.addFlag("SPHERE",false, "The Funnel potential including the binding site can be spherical instead of a cone");
   keys.add("compulsory","SCALE","1.0","a factor that multiplies the external potential, useful to invert free energies");
-// che sia roba vecchia?
+// old stuff?
   //  componentsAreNotOptional(keys);
   //  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 
   //Defining optional arguments
-  keys.add("optional","NBINS","NBINS");
-  keys.add("optional","NBINZ","NBINZ");
-  keys.add("optional","MINS","MINS");
-  keys.add("optional","KAPPA","KAPPA");
-  keys.add("optional","RCYL","RCYL");
-  keys.add("optional","SAFETY","SAFETY");
-  keys.add("optional","SLOPE","SLOPE");
-  keys.add("optional","ALPHA","ALPHA");
+  keys.add("optional","NBINS","number of bins along fps.lp");
+  keys.add("optional","NBINZ","number of bins along fps.ld");
+  keys.add("optional","MINS","minimum value assumed by fps.lp, if the ligand is able to go beyond this value the simulation will crash");
+  keys.add("optional","KAPPA","constant to be used for the funnel-shape restraint potential");
+  keys.add("optional","RCYL","radius of the cylindrical section");
+  keys.add("optional","SAFETY","To be used in case the SPHERE flag is chosen, it regulates how much the potential extends (in nm)");
+  keys.add("optional","SLOPE","Adjust the behavior of the potential outside the funnel, greater values than 1.0 will tend to push the ligand more towards the cylinder and vice versa");
+  keys.add("optional","ALPHA","angle to change the width of the cone section");
   //Defining compulsory arguments
-  keys.add("compulsory","MAXS","MAXS");
-  keys.add("compulsory","ZCC","ZCC");
-  keys.add("compulsory","FILE","Name of the Funnel potential file for unlimited funnel works -cit");
-  keys.addFlag("WALKERS_MPI",false,"There is a problem with gromacs walkers");
+  keys.add("compulsory","MAXS","MAXS","maximum value assumed by fps.lp");
+  keys.add("compulsory","ZCC","ZCC","switching point between cylinder and cone");
+  keys.add("compulsory","FILE","name of the Funnel potential file");
+  keys.addFlag("WALKERS_MPI",false,"To be used when gromacs + multiple walkers are used");
 }
 
 // Old version 2.3
@@ -172,6 +245,22 @@ ALPHA(1.413)
 //  int rank = plumed.comm.Get_rank();
   IFile I_hate_this;
   bool do_exist=I_hate_this.FileExist(file);
+
+  if(walkers_mpi){
+	  if(comm.Get_rank()==0 && multi_sim_comm.Get_rank()==0){
+		  if(!do_exist){
+		      createBIAS(RCYL, ZCC, ALPHA, KAPPA, MINS, MAXS, NBINS, NBINZ, safety, sphere, slope, funcl, file);
+		  }
+	  } multi_sim_comm.Barrier();
+  } else {
+	  if(comm.Get_rank()==0){
+		  if(!do_exist){
+			  createBIAS(RCYL, ZCC, ALPHA, KAPPA, MINS, MAXS, NBINS, NBINZ, safety, sphere, slope, funcl, file);
+		  }
+	  }
+  }
+
+  /*
   if(comm.Get_rank()==0){
 	  if(multi_sim_comm.Get_rank()==0 && walkers_mpi){
 		  if(!do_exist){
@@ -184,6 +273,7 @@ ALPHA(1.413)
 	  }
 	  if(walkers_mpi) multi_sim_comm.Barrier();
   }
+  */
   comm.Barrier();
 
 // read grid
@@ -196,6 +286,7 @@ ALPHA(1.413)
   }
   comm.Barrier();
   if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
+  log<<"  Bibliography "<<plumed.cite("Limongelli, Bonomi, and Parrinello, PNAS 110, 6358 (2013)")<<"\n";
 }
 
 
