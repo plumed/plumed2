@@ -1,3 +1,11 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2019-2020 The VES code team
+
+   This file is part of funnel code module.
+
+   The FM code respects the CC BY-NC license. 
+   Users are free to download, adapt and use the code as long as it is not for commercial purposes.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
 #include "colvar/ActionRegister.h"
 #include <string>
