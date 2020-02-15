@@ -92,26 +92,26 @@ PRINT ARG=fps.lp,fps.ld
 
 class FPS : public Colvar {
 
-    // Those are arrays that I created for the colvar
-    std::vector<AtomNumber> ligand_com;
-    std::vector<AtomNumber> anchor;
-    std::vector<AtomNumber> numbers;
-    bool pbc;
-    PLMD::RMSD* alignment;
-    PLMD::PDB* pdb;
-    bool squared;
+  // Those are arrays that I created for the colvar
+  std::vector<AtomNumber> ligand_com;
+  std::vector<AtomNumber> anchor;
+  std::vector<AtomNumber> numbers;
+  bool pbc;
+  PLMD::RMSD* alignment;
+  PLMD::PDB* pdb;
+  bool squared;
 private:
-    vector<double> points;
+  vector<double> points;
 public:
-    explicit FPS(const ActionOptions&);
+  explicit FPS(const ActionOptions&);
 // active methods:
-    virtual void calculate();
-    static void registerKeywords(Keywords& keys);
+  virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 // I need a method in RMSDCoreCalc and these were requested
-    std::vector<double> align;
-    std::vector<double> displace;
+  std::vector<double> align;
+  std::vector<double> displace;
 // It is written no more desctructors, but an expert said it's necessary for imported variables (pdb and alignment) or else memory leak
-    ~FPS();
+  ~FPS();
 };
 
 using namespace std;
@@ -119,208 +119,208 @@ using namespace std;
 PLUMED_REGISTER_ACTION(FPS,"FPS")
 
 void FPS::registerKeywords(Keywords& keys) {
-    Colvar::registerKeywords( keys );
-    keys.add("compulsory","REFERENCE","a file in pdb format containing the structure you would like to align.");
-    keys.add("atoms","LIGAND","This MUST be a single atom, normally the COM of the ligand");
-    keys.add("atoms","ANCHOR","Closest protein atom to the ligand, picked to avoid pbc problems during the simulation");
-    keys.add("compulsory","POINTS","6 values defining x, y, and z of the 2 points used to construct the line. The order should be A_x,A_y,A_z,B_x,B_y,B_z.");
-    keys.addFlag("SQUARED-ROOT",false,"Used to initialize the creation of the alignment variable");
-    keys.addOutputComponent("lp","default","the position along the funnel line");
-    keys.addOutputComponent("ld","default","the distance from the funnel line");
+  Colvar::registerKeywords( keys );
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the structure you would like to align.");
+  keys.add("atoms","LIGAND","This MUST be a single atom, normally the COM of the ligand");
+  keys.add("atoms","ANCHOR","Closest protein atom to the ligand, picked to avoid pbc problems during the simulation");
+  keys.add("compulsory","POINTS","6 values defining x, y, and z of the 2 points used to construct the line. The order should be A_x,A_y,A_z,B_x,B_y,B_z.");
+  keys.addFlag("SQUARED-ROOT",false,"Used to initialize the creation of the alignment variable");
+  keys.addOutputComponent("lp","default","the position along the funnel line");
+  keys.addOutputComponent("ld","default","the distance from the funnel line");
 }
 
 FPS::FPS(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),
-    pbc(true),squared(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true),squared(true)
 {
-    string reference;
-    parse("REFERENCE",reference);
-    string type;
-    type.assign("OPTIMAL");
-    parseAtomList("LIGAND",ligand_com);
-    if(ligand_com.size()!=1)
-        error("Number of specified atoms should be one, normally the COM of the ligand");
-    parseVector("POINTS",points);
-    bool nopbc=!pbc;
-    parseFlag("NOPBC",nopbc);
-    pbc=!nopbc;
-    bool sq;
-    parseFlag("SQUARED-ROOT",sq);
-    if (sq) {
-        squared=false;
-    }
-    parseAtomList("ANCHOR",anchor);
-    checkRead();
+  string reference;
+  parse("REFERENCE",reference);
+  string type;
+  type.assign("OPTIMAL");
+  parseAtomList("LIGAND",ligand_com);
+  if(ligand_com.size()!=1)
+    error("Number of specified atoms should be one, normally the COM of the ligand");
+  parseVector("POINTS",points);
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
+  bool sq;
+  parseFlag("SQUARED-ROOT",sq);
+  if (sq) {
+    squared=false;
+  }
+  parseAtomList("ANCHOR",anchor);
+  checkRead();
 
-    pdb = new PDB();
+  pdb = new PDB();
 
-    // read everything in ang and transform to nm if we are not in natural units
-    if( !pdb->read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
-        error("missing input file " + reference );
+  // read everything in ang and transform to nm if we are not in natural units
+  if( !pdb->read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
+    error("missing input file " + reference );
 
-    alignment = new RMSD();
+  alignment = new RMSD();
 
-    bool remove_com=true;
-    bool normalize_weights=true;
-    // here displace is a simple vector of ones
-    align=pdb->getOccupancy();
-    for(unsigned i=0; i<align.size(); i++) {
-        align[i]=1.;
-    } ;
-    displace=pdb->getBeta();
-    for(unsigned i=0; i<displace.size(); i++) {
-        displace[i]=1.;
-    } ;
-    // reset again to reimpose uniform weights (safe to disable this)
-    alignment->set(align,displace,pdb->getPositions(),type,remove_com,normalize_weights);
+  bool remove_com=true;
+  bool normalize_weights=true;
+  // here displace is a simple vector of ones
+  align=pdb->getOccupancy();
+  for(unsigned i=0; i<align.size(); i++) {
+    align[i]=1.;
+  } ;
+  displace=pdb->getBeta();
+  for(unsigned i=0; i<displace.size(); i++) {
+    displace[i]=1.;
+  } ;
+  // reset again to reimpose uniform weights (safe to disable this)
+  alignment->set(align,displace,pdb->getPositions(),type,remove_com,normalize_weights);
 
 
 
-    // Array with inside both the structure to align and the atom to be aligned
-    numbers=pdb->getAtomNumbers();
-    numbers.push_back(anchor[0]);
-    numbers.push_back(ligand_com[0]);
+  // Array with inside both the structure to align and the atom to be aligned
+  numbers=pdb->getAtomNumbers();
+  numbers.push_back(anchor[0]);
+  numbers.push_back(ligand_com[0]);
 
-    log.printf("  average from file %s\n",reference.c_str());
-    log.printf("  method for alignment : %s \n",type.c_str() );
+  log.printf("  average from file %s\n",reference.c_str());
+  log.printf("  method for alignment : %s \n",type.c_str() );
 
-    if(pbc) log.printf("  using periodic boundary conditions\n");
-    else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
 
-    addComponentWithDerivatives("lp");
-    componentIsNotPeriodic("lp");
-    addComponentWithDerivatives("ld");
-    componentIsNotPeriodic("ld");
+  addComponentWithDerivatives("lp");
+  componentIsNotPeriodic("lp");
+  addComponentWithDerivatives("ld");
+  componentIsNotPeriodic("ld");
 
-    requestAtoms( numbers );
+  requestAtoms( numbers );
 
 }
 
 FPS::~FPS() {
-    delete alignment;
-    delete pdb;
+  delete alignment;
+  delete pdb;
 }
 
 // calculator
 void FPS::calculate() {
 
-    if(pbc) makeWhole();
+  if(pbc) makeWhole();
 
-    Tensor Rotation;
-    Matrix<std::vector<Vector> > drotdpos(3,3);
-    std::vector<Vector> alignedpos;
-    std::vector<Vector> centeredpos;
-    std::vector<Vector> centeredref;
-    std::vector<Vector> ddistdpos;
+  Tensor Rotation;
+  Matrix<std::vector<Vector> > drotdpos(3,3);
+  std::vector<Vector> alignedpos;
+  std::vector<Vector> centeredpos;
+  std::vector<Vector> centeredref;
+  std::vector<Vector> ddistdpos;
 
-    std::vector<Vector> buffer;
+  std::vector<Vector> buffer;
 
-    Vector centerreference;
-    Vector centerpositions;
+  Vector centerreference;
+  Vector centerpositions;
 
-    // Created only to give the correct object to calc_FitElements
-    std::vector<Vector> sourceAllPositions;
-    std::vector<Vector> sourcePositions;
+  // Created only to give the correct object to calc_FitElements
+  std::vector<Vector> sourceAllPositions;
+  std::vector<Vector> sourcePositions;
 
-    // SourcePositions contains only the coordinates of the COM of the ligand, we need only this point
-    sourceAllPositions=getPositions();
-    sourcePositions=sourceAllPositions;
-    sourcePositions.resize(sourcePositions.size()-2);// just the protein
+  // SourcePositions contains only the coordinates of the COM of the ligand, we need only this point
+  sourceAllPositions=getPositions();
+  sourcePositions=sourceAllPositions;
+  sourcePositions.resize(sourcePositions.size()-2);// just the protein
 
-    // The two points that define the axis : this can be moved in the initialization
-    Vector p1 = VectorGeneric<3>(points[0],points[1],points[2]);
-    Vector p2 = VectorGeneric<3>(points[3],points[4],points[5]);
-    Vector s = p2 - p1;
+  // The two points that define the axis : this can be moved in the initialization
+  Vector p1 = VectorGeneric<3>(points[0],points[1],points[2]);
+  Vector p2 = VectorGeneric<3>(points[3],points[4],points[5]);
+  Vector s = p2 - p1;
 
-    // I call the method calc_FitElements that initializes all feature that I need
-    // except for centerreference that I need to calculate from scratch
-    // Buffer has no meaning but I had to fulfill the requirements of calc_FitElements
-    double rmsd = alignment->calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
+  // I call the method calc_FitElements that initializes all feature that I need
+  // except for centerreference that I need to calculate from scratch
+  // Buffer has no meaning but I had to fulfill the requirements of calc_FitElements
+  double rmsd = alignment->calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
 
-    // To Plumed developers: it would be interesting to make the functions to calculate centers of mass public or protected
-    centerreference.zero();
-    for(unsigned i=0; i<pdb->size(); i++) {
-        centerreference+=pdb->getPositions()[i]*align[i]/align.size();
-    }
+  // To Plumed developers: it would be interesting to make the functions to calculate centers of mass public or protected
+  centerreference.zero();
+  for(unsigned i=0; i<pdb->size(); i++) {
+    centerreference+=pdb->getPositions()[i]*align[i]/align.size();
+  }
 
-    /*
-    // I cancelled the additional lines in the library of RMSD.h, thus I am missing the center of the reference
-    // Creating variable kito to extract only the center of the reference, since no method is calling
-    // function getReferenceCenter()
-    PLMD::RMSDCoreData* kito; kito = new RMSDCoreData(align,displace,sourcePositions,pdb->getPositions());
-    centerreference = kito->getReferenceCenter();
-    delete kito;
-    */
+  /*
+  // I cancelled the additional lines in the library of RMSD.h, thus I am missing the center of the reference
+  // Creating variable kito to extract only the center of the reference, since no method is calling
+  // function getReferenceCenter()
+  PLMD::RMSDCoreData* kito; kito = new RMSDCoreData(align,displace,sourcePositions,pdb->getPositions());
+  centerreference = kito->getReferenceCenter();
+  delete kito;
+  */
 
-    // DEBUG
-    /*    log.printf(" RMSD: %13.6lf\n",rmsd );
-        log.printf(" cpos: %13.6lf %13.6lf %13.6lf\n",centerpositions[0],centerpositions[1],centerpositions[2] );
-        log.printf(" Rotation: %13.6lf %13.6lf %13.6lf\n",Rotation[0][0],Rotation[0][1],Rotation[0][2] );
-        log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[1][0],Rotation[1][1],Rotation[1][2] );
-        log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[2][0],Rotation[2][1],Rotation[2][2] );
-    */
+  // DEBUG
+  /*    log.printf(" RMSD: %13.6lf\n",rmsd );
+      log.printf(" cpos: %13.6lf %13.6lf %13.6lf\n",centerpositions[0],centerpositions[1],centerpositions[2] );
+      log.printf(" Rotation: %13.6lf %13.6lf %13.6lf\n",Rotation[0][0],Rotation[0][1],Rotation[0][2] );
+      log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[1][0],Rotation[1][1],Rotation[1][2] );
+      log.printf("           %13.6lf %13.6lf %13.6lf\n",Rotation[2][0],Rotation[2][1],Rotation[2][2] );
+  */
 
-    // the position is   Rot(ligand-com_prot_md)+ com_prot_ref
-    Vector ligand_centered =getPositions().back()-centerpositions;
-    Vector ligand_aligned =matmul(Rotation,ligand_centered);
-    Vector v = ligand_aligned +centerreference -p1;
+  // the position is   Rot(ligand-com_prot_md)+ com_prot_ref
+  Vector ligand_centered =getPositions().back()-centerpositions;
+  Vector ligand_aligned =matmul(Rotation,ligand_centered);
+  Vector v = ligand_aligned +centerreference -p1;
 
-    // DEBUG
+  // DEBUG
 //    log.printf(" ligando: %13.6lf %13.6lf %13.6lf\n",getPositions().back()[0],getPositions().back()[1],getPositions().back()[2] );
 
-    //Projection vector v onto s
+  //Projection vector v onto s
 
-    Vector prj = (dotProduct(s,v)/dotProduct(s,s))*s;
-    const double prj_length = prj.modulo() ;
-    const double inv_prj_length = 1.0/prj_length;
+  Vector prj = (dotProduct(s,v)/dotProduct(s,s))*s;
+  const double prj_length = prj.modulo() ;
+  const double inv_prj_length = 1.0/prj_length;
 
-    Vector height = v - prj;
-    const double prj_height = height.modulo() ;
-    const double inv_prj_height = 1.0/prj_height;
+  Vector height = v - prj;
+  const double prj_height = height.modulo() ;
+  const double inv_prj_height = 1.0/prj_height;
 
-    // derivative of the prj: only on the com of the ligand
-    Vector der_prj;
-    der_prj=s/s.modulo();
+  // derivative of the prj: only on the com of the ligand
+  Vector der_prj;
+  der_prj=s/s.modulo();
 
-    // derivative of the height: only on the com of the ligand
-    Vector der_height(inv_prj_height*(height[0]-(s[0]/s.modulo2())*dotProduct(height,s)),
-                      inv_prj_height*(height[1]-(s[1]/s.modulo2())*dotProduct(height,s)),
-                      inv_prj_height*(height[2]-(s[2]/s.modulo2())*dotProduct(height,s)));
+  // derivative of the height: only on the com of the ligand
+  Vector der_height(inv_prj_height*(height[0]-(s[0]/s.modulo2())*dotProduct(height,s)),
+                    inv_prj_height*(height[1]-(s[1]/s.modulo2())*dotProduct(height,s)),
+                    inv_prj_height*(height[2]-(s[2]/s.modulo2())*dotProduct(height,s)));
 
-    Value* valuelp=getPntrToComponent("lp");
-    Value* valueld=getPntrToComponent("ld");
-    valuelp->set(dotProduct(s,v)/s.modulo()); // this includes the sign
-    valueld->set(prj_height);
+  Value* valuelp=getPntrToComponent("lp");
+  Value* valueld=getPntrToComponent("ld");
+  valuelp->set(dotProduct(s,v)/s.modulo()); // this includes the sign
+  valueld->set(prj_height);
 
-    // DEBUG
+  // DEBUG
 //    log.printf(" Dopo: %13.6lf  %13.6lf\n",dotProduct(s,v)/s.modulo(),prj_height );
 
-    setAtomsDerivatives(valuelp,getNumberOfAtoms()-1,matmul(transpose(Rotation),der_prj));
-    setAtomsDerivatives(valueld,getNumberOfAtoms()-1,matmul(transpose(Rotation),der_height));
+  setAtomsDerivatives(valuelp,getNumberOfAtoms()-1,matmul(transpose(Rotation),der_prj));
+  setAtomsDerivatives(valueld,getNumberOfAtoms()-1,matmul(transpose(Rotation),der_height));
 
-    Vector der_h;
-    Vector der_l;
-    double weight=1./float(getNumberOfAtoms()-2.);
+  Vector der_h;
+  Vector der_l;
+  double weight=1./float(getNumberOfAtoms()-2.);
 
-    for(unsigned iat=0; iat<getNumberOfAtoms()-2; iat++) {
-        der_h.zero();
-        der_l.zero();
-        for(unsigned a=0; a<3; a++) {
-            for(unsigned b=0; b<3; b++) {
-                for(unsigned g=0; g<3; g++) {
-                    der_h[a]+=der_height[b]*drotdpos[b][g][iat][a]*ligand_centered[g];
-                    der_l[a]+=der_prj[b]*drotdpos[b][g][iat][a]*ligand_centered[g];
-                }
-                der_h[a]-=der_height[b]*Rotation[b][a]*weight;
-                der_l[a]-=der_prj[b]*Rotation[b][a]*weight;
-            }
+  for(unsigned iat=0; iat<getNumberOfAtoms()-2; iat++) {
+    der_h.zero();
+    der_l.zero();
+    for(unsigned a=0; a<3; a++) {
+      for(unsigned b=0; b<3; b++) {
+        for(unsigned g=0; g<3; g++) {
+          der_h[a]+=der_height[b]*drotdpos[b][g][iat][a]*ligand_centered[g];
+          der_l[a]+=der_prj[b]*drotdpos[b][g][iat][a]*ligand_centered[g];
         }
-        setAtomsDerivatives(valuelp,iat,der_l);
-        setAtomsDerivatives(valueld,iat,der_h);
+        der_h[a]-=der_height[b]*Rotation[b][a]*weight;
+        der_l[a]-=der_prj[b]*Rotation[b][a]*weight;
+      }
     }
+    setAtomsDerivatives(valuelp,iat,der_l);
+    setAtomsDerivatives(valueld,iat,der_h);
+  }
 
-    setBoxDerivativesNoPbc(valuelp);
-    setBoxDerivativesNoPbc(valueld);
+  setBoxDerivativesNoPbc(valuelp);
+  setBoxDerivativesNoPbc(valueld);
 
 }
 
