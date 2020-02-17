@@ -30,7 +30,7 @@ namespace funnel {
 Calculate a funnel-shape restraint potential that is defined on a grid that is read during the setup.
 If the input file is not already present, it will create one with the name specified in the FILE flag.
 The potential has a two-dimensional resolution since it has been devised to be used with the two
-components of \ref FPS (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
+components of \ref FUNNEL_FPS (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
 attached to a cylindrical one. The user can customize the shape of both the sections by modifying a
 number of flags. In particular the cone section of the funnel is calculated with the following formula:
 

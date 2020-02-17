@@ -90,7 +90,7 @@ PRINT ARG=fps.lp,fps.ld
 //+ENDPLUMEDOC
 
 
-class FPS : public Colvar {
+class FUNNEL_FPS : public Colvar {
 
   // Those are arrays that I created for the colvar
   std::vector<AtomNumber> ligand_com;
@@ -103,7 +103,7 @@ class FPS : public Colvar {
 private:
   vector<double> points;
 public:
-  explicit FPS(const ActionOptions&);
+  explicit FUNNEL_FPS(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
@@ -111,14 +111,14 @@ public:
   std::vector<double> align;
   std::vector<double> displace;
 // It is written no more desctructors, but an expert said it's necessary for imported variables (pdb and alignment) or else memory leak
-  ~FPS();
+  ~FUNNEL_FPS();
 };
 
 using namespace std;
 
-PLUMED_REGISTER_ACTION(FPS,"FPS")
+PLUMED_REGISTER_ACTION(FUNNEL_FPS,"FPS")
 
-void FPS::registerKeywords(Keywords& keys) {
+void FUNNEL_FPS::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a file in pdb format containing the structure you would like to align.");
   keys.add("atoms","LIGAND","This MUST be a single atom, normally the COM of the ligand");
@@ -129,7 +129,7 @@ void FPS::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("ld","default","the distance from the funnel line");
 }
 
-FPS::FPS(const ActionOptions&ao):
+FUNNEL_FPS::FUNNEL_FPS(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),squared(true)
 {
@@ -196,13 +196,13 @@ FPS::FPS(const ActionOptions&ao):
 
 }
 
-FPS::~FPS() {
+FUNNEL_FPS::~FUNNEL_FPS() {
   delete alignment;
   delete pdb;
 }
 
 // calculator
-void FPS::calculate() {
+void FUNNEL_FPS::calculate() {
 
   if(pbc) makeWhole();
 
