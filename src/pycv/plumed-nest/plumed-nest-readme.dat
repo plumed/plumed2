@@ -1,0 +1,13 @@
+ENDPLUMED
+
+This is a placeholder file. This PLUMED-NEST entry documents the PYCV
+module, which provides the PYTHONCV and PYTHONFUNCTION actions. Since
+the module requires compilation and linking, automated tests can not
+be run against the official distributions.
+
+Please refer to the following links:
+
+ * Project page: https://giorginolab.github.io/plumed2-pycv/
+ * Software: https://github.com/giorginolab/plumed2-pycv
+ * Paper: http://doi.org/10.21105/joss.01773
+

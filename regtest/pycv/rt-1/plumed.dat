@@ -1,0 +1,10 @@
+# LOAD FILE=PythonCV.dylib
+
+cv1: PYTHONCV ATOMS=1,4 IMPORT=pycv FUNCTION=cv1
+
+cv1n: DISTANCE ATOMS=1,4
+
+PRINT FILE=colvar.out ARG=*
+
+
+

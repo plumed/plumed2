@@ -11,7 +11,7 @@ matrix:
     os: linux
     dist: bionic
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes PYCV=yes
   - name: Run all tests and scan coverage
     os: linux
     dist: trusty
@@ -193,7 +193,9 @@ install:
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 # arrayfire
-  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi 
+  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi
+# PYCV requirements
+  - if test "$PYCV" == yes; then ./.travis/install.pycv.prereqs ; export PYTHON_BIN=$(which python3) ; fi
 # macports related stuff
 # configure macports
   - if test -n "$PLUMED_MACPORTS" ; then

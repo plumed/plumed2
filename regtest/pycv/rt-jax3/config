@@ -1,0 +1,7 @@
+# This is the same example of three atoms on an arc checked with the
+# symbolic calculations notebook.
+
+type=driver
+arg="--plumed plumed.dat --ixyz arc3.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+PLUMED_ALLOW_SKIP_ON_TRAVIS=yes
+plumed_modules=pycv
