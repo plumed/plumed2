@@ -24,9 +24,9 @@ using namespace std;
 namespace PLMD {
 namespace funnel {
 
-//+PLUMEDOC COLVAR FPS
+//+PLUMEDOC COLVAR FUNNEL_PS
 /*
-FPS implements the Funnel-Metadynamics (FM) technique in PLUMED 2. Please read the FM \cite FM \cite FM-protocol
+FUNNEL_PS implements the Funnel-Metadynamics (FM) technique in PLUMED 2. Please read the FM \cite FM \cite FM-protocol
 papers to better understand the notions hereby reported.
 
 This colvar evaluates the position of a ligand of interest with respect to a given line, built from the two points
@@ -47,23 +47,23 @@ that all atoms in the file will be used for the alignment, even if they display 
 The ligand can be represented by one single atom or the center of mass (COM) of a group of atoms that should be
 provided by the user.
 
-By default FPS is computed taking into account periodic boundary conditions. Since PLUMED 2.5, molecules are
+By default FUNNEL_PS is computed taking into account periodic boundary conditions. Since PLUMED 2.5, molecules are
 rebuilt using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. We note that this action is local
-to this colvar, thus it does not modify the coordinates stored in PLUMED. Moreover, FPS requires an ANCHOR atom
+to this colvar, thus it does not modify the coordinates stored in PLUMED. Moreover, FUNNEL_PS requires an ANCHOR atom
 to be specified in order to facilitate the reconstruction of periodic boundary conditions. This atom should be the
 closest macromolecule's atom to the ligand and it should reduce the risk of ligand "warping" in the simulation box.
 Nevertheless, we highly recommend to add to the PLUMED input file a custom line of \ref WHOLEMOLECULES, in order to
 be sure of reconstructing the ligand together with the macromolecule (please look the examples). In this case, the user
 can use the NOPBC flag to turn off the internal periodic boundary condition reconstruction.
 
-FPS is divided in two components (fps.lp and fps.ld) which evaluate the projection of the ligand along the funnel line
+FUNNEL_PS is divided in two components (fps.lp and fps.ld) which evaluate the projection of the ligand along the funnel line
 and the distance from it, respectively. The values attributed to these two components are then used together with the
 potential file created by the \ref FUNNEL bias to define if the ligand is within or not in the funnel-shape restraint
 potential. In the latter case, the potential will force the ligand to enter within the funnel boundaries.
 
 \par Examples
 
-The following input tells plumed to print the FPS components for the COM of a ligand. The inputs are a reference structure,
+The following input tells plumed to print the FUNNEL_PS components for the COM of a ligand. The inputs are a reference structure,
 which is the structure used for the alignment, the COM of the molecule we want to track, and 2 points in the cartesian space
 (i.e., x, y, and z) to draw the line representing the funnel axis.
 \plumedfile
