@@ -68,7 +68,7 @@ which is the structure used for the alignment, the COM of the molecule we want t
 (i.e., x, y, and z) to draw the line representing the funnel axis.
 \plumedfile
 lig: COM ATOMS=2446,2447,2448,2449,2451
-fps: FPS REFERENCE=protein.pdb LIGAND=lig POINTS=5.3478,-0.7278,2.4746,7.3785,6.7364,-9.3624
+fps: FUNNEL_PS REFERENCE=protein.pdb LIGAND=lig POINTS=5.3478,-0.7278,2.4746,7.3785,6.7364,-9.3624
 PRINT ARG=fps.lp,fps.ld
 \endplumedfile
 
@@ -82,7 +82,7 @@ WHOLEMOLECULES ENTITY0=54,75,212,228,239,258,311,328,348,372,383,402,421,463,487
 2547,2554,2569,2575,2591,2607,2635,2657,2676,2693,2700,2719,2735,2746,2770,2777,2788,2795,2805,2815,2832,2854,2868,2898,2904,
 2911,2927,2948,2962,2472,3221,3224,3225,3228,3229,3231,3233,3235,3237
 lig: COM ATOMS=3221,3224,3225,3228,3229,3231,3233,3235,3237
-fps: FPS LIGAND=lig REFERENCE=start.pdb ANCHOR=2472 POINTS=4.724,5.369,4.069,4.597,5.721,4.343
+fps: FUNNEL_PS LIGAND=lig REFERENCE=start.pdb ANCHOR=2472 POINTS=4.724,5.369,4.069,4.597,5.721,4.343
 PRINT ARG=fps.lp,fps.ld
 \endplumedfile
 
@@ -90,7 +90,7 @@ PRINT ARG=fps.lp,fps.ld
 //+ENDPLUMEDOC
 
 
-class FUNNEL_FPS : public Colvar {
+class FUNNEL_PS : public Colvar {
 
   // Those are arrays that I created for the colvar
   std::vector<AtomNumber> ligand_com;
@@ -103,7 +103,7 @@ class FUNNEL_FPS : public Colvar {
 private:
   vector<double> points;
 public:
-  explicit FUNNEL_FPS(const ActionOptions&);
+  explicit FUNNEL_PS(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
@@ -111,14 +111,14 @@ public:
   std::vector<double> align;
   std::vector<double> displace;
 // It is written no more desctructors, but an expert said it's necessary for imported variables (pdb and alignment) or else memory leak
-  ~FUNNEL_FPS();
+  ~FUNNEL_PS();
 };
 
 using namespace std;
 
-PLUMED_REGISTER_ACTION(FUNNEL_FPS,"FPS")
+PLUMED_REGISTER_ACTION(FUNNEL_PS,"FUNNEL_PS")
 
-void FUNNEL_FPS::registerKeywords(Keywords& keys) {
+void FUNNEL_PS::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a file in pdb format containing the structure you would like to align.");
   keys.add("atoms","LIGAND","This MUST be a single atom, normally the COM of the ligand");
@@ -129,7 +129,7 @@ void FUNNEL_FPS::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("ld","default","the distance from the funnel line");
 }
 
-FUNNEL_FPS::FUNNEL_FPS(const ActionOptions&ao):
+FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),squared(true)
 {
@@ -196,13 +196,13 @@ FUNNEL_FPS::FUNNEL_FPS(const ActionOptions&ao):
 
 }
 
-FUNNEL_FPS::~FUNNEL_FPS() {
+FUNNEL_PS::~FUNNEL_PS() {
   delete alignment;
   delete pdb;
 }
 
 // calculator
-void FUNNEL_FPS::calculate() {
+void FUNNEL_PS::calculate() {
 
   if(pbc) makeWhole();
 

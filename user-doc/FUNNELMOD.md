@@ -24,7 +24,7 @@ An example of input file can be found on <a href="https://www.plumed-nest.org/eg
 
 ## Module Contents
 
-The funnel module is composed of a collective variable that calculates the position of a ligand with respect to a line and a potential that creates a funnel-shape restraint centered on the line (\ref FUNNEL_FPS and \ref FUNNEL, respectively).
+The funnel module is composed of a collective variable that calculates the position of a ligand with respect to a line and a potential that creates a funnel-shape restraint centered on the line (\ref FUNNEL_PS and \ref FUNNEL, respectively).
 
 - \subpage funnel_cv
 - \subpage funnel_bias
@@ -39,4 +39,4 @@ The following list contains descriptions of the collective variables developed f
 
 The following list contains descriptions of biases developed for the PLUMED-FUNNEL module. They should be used in combination with the collective variable to calculate the position relative to the funnel-shape restraint potential and Metadynamics to enable Funnel-Metadynamics.
 
-@FUNNEL_FPS@
+@FUNNEL_PS@
