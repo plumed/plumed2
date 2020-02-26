@@ -19,14 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_bias_ReweightBase_h
-#define __PLUMED_bias_ReweightBase_h
+#ifndef __PLUMED_core_ReweightBase_h
+#define __PLUMED_core_ReweightBase_h
 
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
+#include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 
 namespace PLMD {
-namespace bias {
 
 class ReweightBase :
   public ActionWithValue,
@@ -46,6 +45,5 @@ public:
   void update() override;
 };
 
-}
 }
 #endif

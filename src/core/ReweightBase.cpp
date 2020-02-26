@@ -20,11 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReweightBase.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "PlumedMain.h"
+#include "Atoms.h"
 
 namespace PLMD {
-namespace bias {
 
 void ReweightBase::registerKeywords(Keywords& keys) {
   Action::registerKeywords( keys );
@@ -57,5 +56,4 @@ void ReweightBase::setArguments( const std::vector<std::string>& c ) {
   std::vector<Value*> arg; interpretArgumentList(c,arg); requestArguments(arg,false);
 }
 
-}
 }

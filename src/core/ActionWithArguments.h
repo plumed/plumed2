@@ -41,6 +41,7 @@ This is used in PLMD::Function and PLMD::Bias
 */
 
 class AverageBase;
+class ReweightBase;
 
 class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
@@ -50,6 +51,7 @@ private:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
   AverageBase* theAverageInArguments;
+  ReweightBase* theReweightBase;
   const ActionWithValue* thisAsActionWithValue;
   ActionWithValue* getFirstNonStream();
   Value* getArgumentForScalar(const unsigned n) const ;

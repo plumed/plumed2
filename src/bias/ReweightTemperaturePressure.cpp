@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "ReweightBase.h"
+#include "core/ReweightBase.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_TEMP_PRESS
 /*

@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ReweightBase.h"
+#include "core/ReweightBase.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_METAD
 /*

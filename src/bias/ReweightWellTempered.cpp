@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ReweightBase.h"
+#include "core/ReweightBase.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_WELLTEMPERED
@@ -38,7 +38,6 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightWellTempered(const ActionOptions&ao);
-  void calculate();
   double getLogWeight();
 };
 
@@ -62,10 +61,6 @@ ReweightWellTempered::ReweightWellTempered(const ActionOptions&ao):
       log.printf("  initial weights are %f and bias factor is set equal to %f \n", height, biasf );
   } else log.printf("  weights are %f and well tempered is not being used \n", height );
   logheight = std::log( height );
-}
-
-void ReweightWellTempered::calculate() {
-  setValue( getLogWeight() );
 }
 
 double ReweightWellTempered::getLogWeight() {

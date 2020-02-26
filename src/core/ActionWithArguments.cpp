@@ -28,6 +28,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "AverageBase.h"
+#include "ReweightBase.h"
 #include <iostream>
 #ifdef __PLUMED_HAS_CREGEX
 #include <cstring>
@@ -265,12 +266,16 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           name=fullname;
         }
         AverageBase* av = dynamic_cast<AverageBase*>( arguments[i]->getPntrToAction() );
+        ReweightBase* rb = dynamic_cast<ReweightBase*>( arguments[i]->getPntrToAction() );
         if( av ) { 
-            theAverageInArguments=av; arguments[i]->buildDataStore( getLabel() );
+            plumed_assert( !rb ); theAverageInArguments=av; arguments[i]->buildDataStore( getLabel() );
+        } else if( rb ) {
+            theReweightBase=rb;
         } else {
             ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
             if( aa ) {
                 if( aa->theAverageInArguments ) theAverageInArguments=aa->theAverageInArguments;
+                if( aa->theReweightBase ) theReweightBase=aa->theReweightBase;
             }
         } 
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
@@ -476,6 +481,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   allrankzero(true),
   lockRequestArguments(false),
   theAverageInArguments(NULL),
+  theReweightBase(NULL),
   thisAsActionWithValue(NULL),
   numberedkeys(false),
   done_over_stream(false)
@@ -709,15 +715,17 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
 }
 
 bool ActionWithArguments::skipCalculate() const {
-  if( theAverageInArguments ) return true;
+  if( theAverageInArguments || theReweightBase ) return true;
   return false;
 }
 
 bool ActionWithArguments::skipUpdate() const {
   // If there is no average in the arguments calculation is done in calculate
-  if( !theAverageInArguments ) return true;
+  if( !theAverageInArguments && !theReweightBase ) return true;
   // Redo calculation in update if there is an average in the arguments
-  return !theAverageInArguments->isActive();
+  if( theAverageInArguments ) return !theAverageInArguments->isActive();
+  // Redo calculation in update if there is an reweight in the arguments
+  return !theReweightBase->isActive();
 }
 
 unsigned ActionWithArguments::getNumberOfArgumentsPerTask() const {

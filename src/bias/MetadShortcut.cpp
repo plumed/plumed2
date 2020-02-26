@@ -26,7 +26,7 @@
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
 #include "gridtools/KDEShortcut.h"
-#include "ReweightBase.h"
+#include "core/ReweightBase.h"
 
 namespace PLMD {
 namespace bias {
