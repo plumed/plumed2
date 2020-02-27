@@ -41,6 +41,7 @@ void CalculateReferenceValue::registerKeywords( Keywords& keys ) {
   SetupReferenceBase::registerKeywords( keys );
   keys.add("compulsory","CONFIG","the label of the READ_CONFIG command for which we are doing this calculation");
   keys.add("compulsory","INPUT","the file to use as input to PLUMED");
+  ActionWithValue::useCustomisableComponents(keys);
 }
 
 CalculateReferenceValue::CalculateReferenceValue(const ActionOptions&ao):

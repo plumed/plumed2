@@ -45,6 +45,7 @@ void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys ); keys.remove("ONESHOT"); keys.remove("USECOLS");
   keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
   keys.add("compulsory","SWITCH","the switching function that acts on the distance between atom j and atom k in the G4 symmetry function");
+  ActionWithValue::useCustomisableComponents( keys );
 }
 
 ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):

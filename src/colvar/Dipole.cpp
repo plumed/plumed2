@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,7 +51,7 @@ The following tells plumed to calculate the dipole of the group of atoms contain
 the atoms from 1-10 and print it every 5 steps
 \plumedfile
 d: DIPOLE GROUP=1-10
-PRINT FILE=output STRIDE=5 ARG=5
+PRINT FILE=output STRIDE=5 ARG=d
 \endplumedfile
 
 \attention
@@ -69,7 +69,7 @@ class Dipole : public Colvar {
   bool nopbc;
 public:
   explicit Dipole(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

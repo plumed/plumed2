@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,6 +29,7 @@
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "setup/SetupReferenceBase.h"
+#include "tools/h36.h"
 
 using namespace std;
 
@@ -104,17 +105,19 @@ class Print :
   double dot_connection_cutoff;
   std::vector<std::vector<AtomNumber> > reference_atoms;
   bool isInTargetRange( const std::vector<double>& argvals ) const ;
+private:
+  void printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const ;
 public:
-  void calculate() {}
-  void prepare();
+  void calculate() override {}
+  void prepare() override;
   explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  void runFinalJobs();
-  void unlockRequests() { ActionWithArguments::unlockRequests(); ActionAtomistic::unlockRequests(); }
-  void lockRequests() { ActionWithArguments::lockRequests(); ActionAtomistic::lockRequests(); }
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
+  void apply() override {}
+  void update() override;
+  void runFinalJobs() override;
+  void unlockRequests() override { ActionWithArguments::unlockRequests(); ActionAtomistic::unlockRequests(); }
+  void lockRequests() override { ActionWithArguments::lockRequests(); ActionAtomistic::lockRequests(); }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override { plumed_error(); }
   ~Print();
 };
 
@@ -163,7 +166,7 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()>0 ) { timeseries=true; break; }
       }
       if( timeseries ) {
           unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
@@ -655,7 +658,6 @@ void Print::update() {
     std::string descr2="%s=%-" + fmt.substr(psign+1) + " "; 
     if( arg_ends.size()>0 ) {
        if( description.length()>0 ) opdbf.printf("# %s AT STEP %d TIME %f \n", description.c_str(), getStep(), getTime() ); 
-       double lenunits = atoms.getUnits().getLength()/0.1;
        for(unsigned i=0;i<reference_atoms.size();++i) {
            if( getNumberOfArguments()>0 ) {
                for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
@@ -670,9 +672,8 @@ void Print::update() {
                    } else if( description=="PCA" && reference_atoms[0].size()>0 ) {
                        plumed_massert( thisarg->getNumberOfValues(getLabel())==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
                        for(unsigned k=0;k<reference_atoms[0].size();++k) {
-                           opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                                        reference_atoms[0][k].serial(), k,
-                                        lenunits*thisarg->get(3*k+0), lenunits*thisarg->get(3*k+1), lenunits*thisarg->get(3*k+2), getMass(k), getCharge(k) );
+                           Vector pos; pos[0]=thisarg->get(3*k+0); pos[1]=thisarg->get(3*k+1); pos[2]=thisarg->get(3*k+2); 
+                           printAtom( opdbf, reference_atoms[0][k].serial(), pos, getMass(k), getCharge(k) );
                        }
                    } else {
                        opdbf.printf("REMARK ");
@@ -698,11 +699,7 @@ void Print::update() {
                }
            }
            for(unsigned j=0;j<reference_atoms[i].size();++j) {
-               Vector pos=getPosition(nn); 
-               opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                            reference_atoms[i][j].serial(), j,
-                            lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(nn), getCharge(nn) ); 
-               nn++;
+               Vector pos=getPosition(nn); printAtom( opdbf, reference_atoms[i][j].serial(), pos, getMass(nn), getCharge(nn) ); nn++;
            }
            opdbf.printf("END\n");
        }
@@ -730,15 +727,12 @@ void Print::update() {
                Value* thisarg=getPntrToArgument(argnums[k]); opdbf.printf( descr2.c_str(), (thisarg->getName()).c_str(), thisarg->get(j) ); 
            }
            opdbf.printf("\n");
-           double lenunits = atoms.getUnits().getLength()/0.1;
            Vector pos; unsigned npos = posnums.size() / 3;
            for(unsigned k=0;k<npos;++k) {
                pos[0]=getPntrToArgument(posnums[3*k+0])->get(j);
                pos[1]=getPntrToArgument(posnums[3*k+1])->get(j);
                pos[2]=getPntrToArgument(posnums[3*k+2])->get(j);
-               opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                            k, k,
-                            lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], 1.0, 1.0 );
+               printAtom( opdbf, k, pos, 1.0, 1.0 );
            }
            opdbf.printf("END\n");
        }
@@ -750,6 +744,13 @@ void Print::update() {
 void Print::runFinalJobs() {
   if( !printAtEnd ) return ;
   printAtEnd=false; retrieveAtoms(); update();
+}
+
+void Print::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const {
+  std::array<char,6> at; const char* msg = h36::hy36encode(5,anum,&at[0]);
+  plumed_assert(msg==nullptr) << msg; at[5]=0; double lunits = atoms.getUnits().getLength()/0.1;
+  opdbf.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+               &at[0], anum, lunits*pos[0], lunits*pos[1], lunits*pos[2], m, q );
 }
 
 Print::~Print() {

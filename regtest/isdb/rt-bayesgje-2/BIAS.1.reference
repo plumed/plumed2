@@ -1,4 +1,4 @@
-#! FIELDS time spe.score spe.biasDer spe.weight spe.scale spe.acceptScale spe.acceptSigma spe.sigmaMean_0 spe.sigma_0 spe.sigmaMean_1 spe.sigma_1 spe.sigmaMean_2 spe.sigma_2 spe.sigmaMean_3 spe.sigma_3
+#! FIELDS time spe.score spe.biasDer spe.weight spe.scale spe.acceptScale spe.acceptSigma spe.sigmaMean-0 spe.sigma-0 spe.sigmaMean-1 spe.sigma-1 spe.sigmaMean-2 spe.sigma-2 spe.sigmaMean-3 spe.sigma-3
  0.000000 1237664.615494 -15079.215417 0.500000 1.000000 1.000000 1.000000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000
  0.005000 1282282.853218 7229.287393 0.500000 1.000000 1.000000 1.000000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000
  0.010000 1314787.382477 -14094.777445 0.501349 1.000000 1.000000 1.000000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000 0.001000 0.010000

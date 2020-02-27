@@ -38,8 +38,9 @@ public:
   void accumulateNorm( const double& cweight ); 
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
-  void runFinalJobs();
+  void transferDataToValue();
 };
 
 PLUMED_REGISTER_ACTION(CollectReplicas,"COLLECT_REPLICAS")
@@ -93,7 +94,7 @@ void CollectReplicas::accumulateValue( const double& cweight, const std::vector<
   // Now accumulate average
   if( clearstride>0 ) {
       for(unsigned k=0; k<nreplicas; k++) {
-          for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, datap[k*dval.size()+j] );
+          for(unsigned j=0;j<dval.size();++j) getPntrToOutput(j)->set( ndata, datap[k*dval.size()+j] );
           ndata++;
       }
       // Start filling the data set again from scratch
@@ -101,9 +102,16 @@ void CollectReplicas::accumulateValue( const double& cweight, const std::vector<
       plumed_dbg_assert( ndata_for_norm==ndata );
   } else {
       for(unsigned k=0; k<nreplicas; k++) {
-          for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = datap[k*dval.size()+j];
+          for(unsigned j=0;j<dval.size();++j) data[j] = datap[k*dval.size()+j];
           alldata.push_back( data );
       }
+  }
+}
+
+void CollectReplicas::performTask( const unsigned& current, MultiValue& myvals ) const { 
+  for(unsigned j=0;j<getNumberOfComponents();++j) {
+      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+      myvals.setValue( ostrn, getPntrToOutput(j)->get(current) );
   }
 }
 
@@ -111,7 +119,7 @@ void CollectReplicas::accumulateAtoms( const double& cweight, const std::vector<
   plumed_error();
 }
 
-void CollectReplicas::runFinalJobs() {
+void CollectReplicas::transferDataToValue() {
   transferCollectedDataToValue( alldata, allweights, off_diag_bias );
 }
 

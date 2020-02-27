@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -195,7 +195,7 @@ class FuncSumHills :
   std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ; // this probably is not needed
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override; // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);
 };

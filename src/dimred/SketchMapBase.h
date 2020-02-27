@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,9 +49,9 @@ protected:
   double mixparam;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapBase( const ActionOptions& );
+  explicit SketchMapBase( const ActionOptions& );
 /// This starts the process of calculating the projections
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 /// This finishes the process of calculating the prjections
   virtual void minimise( Matrix<double>& )=0;
 /// Apply the low dimensional switching function to the value val
@@ -61,11 +61,11 @@ public:
 /// Set the target distance and from it calculate the target value for the switching function
 /// This target vector is used when we use calculateStress when finding the projections of individual points.
 /// For example this function is used in PLMD::dimred::ProjectOutOfSample
-  void setTargetDistance( const unsigned& idata, const double& dist );
+  void setTargetDistance( const unsigned& idata, const double& dist ) override;
 /// Calculate the pointwise stress on one point when it is located at p.
 /// This function makes use of the distance data in dtargets and ftargets
 /// It is used in PLMD::dimred::ProjectOutOfSample and in pointwise optimisation
-  double calculateStress( const std::vector<double>& p, std::vector<double>& d );
+  double calculateStress( const std::vector<double>& p, std::vector<double>& d ) override;
 /// Calculate the total stress when the projections are placed at point p.  Notice
 /// this is a vectorized version of the matrix of projections
   double calculateFullStress( const std::vector<double>& p, std::vector<double>& d );

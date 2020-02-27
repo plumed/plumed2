@@ -34,8 +34,6 @@ namespace symfunc {
 
 class TwoBodyGFunctions : public SymmetryFunctionBase {
 private:
-  // std::vector<unsigned> ftypes;
-  // std::vector<double> center, nu, kappa;
   std::vector<SwitchingFunction> functions;
 public:
   static void registerKeywords( Keywords& keys );

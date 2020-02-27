@@ -43,7 +43,7 @@ SAXS ...
 # Uncomment the following keyword to activate METAINF
 # saxsbias: BIASVALUE ARG=(saxsdata\.score) STRIDE=10
 # STATISTICS
-statcg: STATS ARG=(saxsdata\.q_.*) PARARG=(saxsdata\.exp_.*)
+statcg: STATS ARG=(saxsdata\.q-.*) PARARG=(saxsdata\.exp-.*)
 
 # PRINT
 
@@ -51,5 +51,5 @@ statcg: STATS ARG=(saxsdata\.q_.*) PARARG=(saxsdata\.exp_.*)
 # PRINT ARG=(saxsdata\.score),(saxsdata\.biasDer),(saxsdata\.weight),(saxsdata\.scale),(saxsdata\.offset),(saxsdata\.acceptSigma),(saxsdata\.sigma.*) STRIDE=500 FILE=BAYES.SAXS
 
 # change stride if you are using METAINFERENCE
-PRINT ARG=(saxsdata\.q_.*) STRIDE=1 FILE=SAXSINT
+PRINT ARG=(saxsdata\.q-.*) STRIDE=1 FILE=SAXSINT
 PRINT ARG=statcg.corr STRIDE=1 FILE=ST.SAXSCG

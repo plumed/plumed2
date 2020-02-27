@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ dAC: DISTANCE ATOMS=10,15
 diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
-METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
+METAD ARG=diff SIGMA=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
 \endplumedfile
 (see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
 Notice that forces applied to diff will be correctly propagated
@@ -75,7 +75,7 @@ CUSTOM ...
   LABEL=theta
   ARG=d1.x,d1.y,d1.z,d2.x,d2.y,d2.z
   VAR=ax,ay,az,bx,by,bz
-  FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz))
+  FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz)))
   PERIODIC=NO
 ... CUSTOM
 PRINT ARG=theta
@@ -93,7 +93,7 @@ distance is larger than 0.5. You can do it with
 d: DISTANCE ATOMS=10,15
 m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
-PRINT ARG=d,n FILE=checkme
+PRINT ARG=d,m FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 \endplumedfile
 (see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
@@ -178,9 +178,9 @@ class Custom :
   std::string func;
 public:
   explicit Custom(const ActionOptions&);
-  bool writeInGraph( std::string& exline ) const ;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
+  bool writeInGraph( std::string& exline ) const override;
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -202,7 +202,7 @@ Just replace \ref CUSTOM with \ref MATHEVAL.
 d: DISTANCE ATOMS=10,15
 m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
-PRINT ARG=d,n FILE=checkme
+PRINT ARG=d,m FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 \endplumedfile
 (see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)

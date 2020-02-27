@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -74,7 +74,7 @@ class SimpleCubic : public SymmetryFunctionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SimpleCubic(const ActionOptions&);
-  void compute( const double& val, const Vector& dir, MultiValue& myvals ) const ;
+  void compute( const double& val, const Vector& dir, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(SimpleCubic,"SIMPLECUBIC_MATINP")

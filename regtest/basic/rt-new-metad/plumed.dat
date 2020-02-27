@@ -1,0 +1,18 @@
+mu1: DISTANCE ATOMS=1,10
+vol: VOLUME 
+
+md: NEW_METAD ARG=mu1,vol SIGMA=0.1,0.2 HEIGHT=1.0 PACE=10 TEMP=300 
+
+PRINT ...
+  STRIDE=1
+  ARG=mu1,vol,md_bias 
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+FLUSH STRIDE=10
+
+rw: REWEIGHT_BIAS ARG=md_bias TEMP=300
+cc: COLLECT_FRAMES ARG1=mu1 ARG2=vol LOGWEIGHTS=rw STRIDE=10
+it: ITRE ARG=cc.logweights TEMP=300
+PRINT ARG=cc.logweights FILE=logweights.matx FMT=%8.4f
+PRINT ARG=it FILE=finalweights FMT=%8.4f

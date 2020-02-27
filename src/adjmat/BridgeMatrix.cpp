@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,8 +51,8 @@ that are bridging between atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
 \plumedfile
-BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 LABEL=w1
-PRINT ARG=a1.mean FILE=colvar
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
+PRINT ARG=w1 FILE=colvar
 \endplumedfile
 
 */
@@ -67,7 +67,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit BridgeMatrix(const ActionOptions&);
 // active methods:
-  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(BridgeMatrix,"BRIDGE_MATRIX")

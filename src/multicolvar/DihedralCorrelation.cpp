@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,12 +66,13 @@ can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-DIHCOR ...
+dih: DIHCOR ...
 ATOMS1=@phi-3,@psi-3
 ATOMS2=@psi-3,@phi-4
-ATOMS4=@phi-4,@psi-4
-... DIHCOR
+ATOMS3=@phi-4,@psi-4
+...
 PRINT ARG=dih FILE=colvar STRIDE=10
 \endplumedfile
 
@@ -86,7 +87,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHEDRAL_CORRELATION")

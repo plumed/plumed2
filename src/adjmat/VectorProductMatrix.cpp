@@ -116,11 +116,11 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   bool timeseries=getPntrToArgument(0)->isTimeSeries();
   if( timeseries ) {
       for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( !getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+          if( !getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
       }
   } else {
       for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+          if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
       }
   }
 }
@@ -155,7 +155,7 @@ void VectorProductMatrix::unlockRequests() {
 void VectorProductMatrix::calculateNumericalDerivatives( ActionWithValue* a ) { plumed_error(); }
 
 void VectorProductMatrix::calculate() {
-  if( actionInChain() ) return;
+  if( actionInChain() || skipCalculate() ) return;
   runAllTasks();
 }
 

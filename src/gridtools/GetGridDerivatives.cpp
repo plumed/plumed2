@@ -54,6 +54,10 @@ PLUMED_REGISTER_ACTION(GetGridDerivatives,"GET_GRID_DERIVATIVES")
 
 void GetGridDerivatives::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
+  keys.addOutputComponent("_der","default","The vectors containing the derivatives of the grid with respect to each grid variable. "
+                          "One or multiple instances of this object can be referenced elsewhere in the input file.  "
+                          "these quantities will named with the arguments for the relevant grid followed by "
+                          "the character string _der.");
 }
 
 GetGridDerivatives::GetGridDerivatives(const ActionOptions&ao):
@@ -71,7 +75,7 @@ GetGridDerivatives::GetGridDerivatives(const ActionOptions&ao):
   (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
   // And create the components
   for(unsigned i=0;i<shape.size();++i) {
-      addComponentWithDerivatives( "d_" + argn[i], shape ); componentIsNotPeriodic( "d_" + argn[i] ); getPntrToOutput(i)->alwaysStoreValues(); 
+      addComponentWithDerivatives( argn[i] + "_der", shape ); componentIsNotPeriodic( argn[i] + "_der" ); getPntrToOutput(i)->alwaysStoreValues(); 
   }
 }
 

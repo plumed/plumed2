@@ -1,5 +1,6 @@
-ang1: ANGLE ATOMS=2,6,3
-ang2: ANGLE ATOMS=2,6,7,3
+angle atoms=2,6,3 label=ang1
+ang2: AnglE ATOMS=2,6,7,3
+anglE ATOMS=2,6,7,3
 
 RESTRAINT ...
   ARG=ang2
@@ -9,7 +10,7 @@ RESTRAINT ...
 
 PRINT ...
   STRIDE=10
-  ARG=ang1,ang2
+  arg=ang1,ang2
   FILE=COLVAR FMT=%6.3f
 ... PRINT
 

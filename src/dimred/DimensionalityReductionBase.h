@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ protected:
   DimensionalityReductionBase* dimredbase;
 public:
   static void registerKeywords( Keywords& keys );
-  DimensionalityReductionBase( const ActionOptions& );
+  explicit DimensionalityReductionBase( const ActionOptions& );
 /// Get the ith data point (this returns the projection)
   virtual void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
 /// Actually perform the analysis

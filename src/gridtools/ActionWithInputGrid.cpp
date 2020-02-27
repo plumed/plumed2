@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -111,8 +111,8 @@ void ActionWithInputGrid::setupGridObject() {
 
 void ActionWithInputGrid::doTheCalculation() {
   if( firststep ) { setupGridObject(); firststep=false; finishOutputSetup(); }
-  runAllTasks();
-  jobsAfterLoop();
+  if( getFullNumberOfTasks()>0 ) { runAllTasks(); jobsAfterLoop(); }
+  else runTheCalculation();
 }
 
 void ActionWithInputGrid::calculate() {

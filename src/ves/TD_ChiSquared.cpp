@@ -84,7 +84,7 @@ class TD_ChiSquared: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_ChiSquared(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 

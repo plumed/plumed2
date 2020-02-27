@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,7 +49,7 @@ When the variable is periodic (e.g. \ref TORSION) and has a value, \f$s\f$, in \
 
 The following example calculates the ensemble average for the distance between atoms 1 and 2
 and output this to a file called COLVAR.  In this example it is assumed that no bias is acting
-on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal
+on the system and that the weights, \f$w(t')\f$ in the formulas above can thus all be set equal
 to one.
 
 \plumedfile
@@ -94,12 +94,10 @@ class Average : public AverageBase {
 private:
   enum {t,f,ndata} normalization;
   double lbound, pfactor;
-  std::vector<AtomNumber> mygroup;
   std::vector<Vector> displacements;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  AtomNumber getAtomNumber(const AtomNumber& anum ) const ;
   void resizeValues();
   bool allowComponentsAndValue() const { return true; }
   void clearAccumulatedData();
@@ -108,6 +106,7 @@ public:
   void accumulateValue( const double& cweight, const std::vector<double>& val );
   void setReferenceConfig();
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
+  void transferDataToValue() {}
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -152,23 +151,12 @@ Average::Average( const ActionOptions& ao):
        setNotPeriodic();
        if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
      }
+     nvals=0; for(unsigned i=0;i<n_real_args;++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
   } else if( getNumberOfAtoms()>0 ) {
-      for(unsigned i=0;i<getNumberOfAtomsToAverage();++i) {
-          AtomNumber index = atoms.addVirtualAtom( this ); mygroup.push_back( index );
-      }
-      atoms.insertGroup( getLabel(), mygroup ); displacements.resize( mygroup.size() );
-      for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
-
+      displacements.resize( mygroup.size() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
       std::vector<unsigned> shape(1); shape[0]=3*getNumberOfAtoms(); addValue( shape ); setNotPeriodic();
   } else error("found nothing to average in input");
 }
-
-AtomNumber Average::getAtomNumber(const AtomNumber& anum ) const {
-  for(unsigned i=0;i<mygroup.size();++i) {
-      if( anum==mygroup[i] ) return getAbsoluteIndex(i);
-  }    
-  plumed_error(); return getAbsoluteIndex(0);
-} 
 
 void Average::resizeValues() {
   if( n_real_args==0 ) return;
@@ -202,7 +190,7 @@ void Average::accumulateNorm( const double& lweight ) {
 }
 
 void Average::accumulateValue( const double& lweight, const std::vector<double>& dval ) {
-  plumed_dbg_assert( dval.size()==0 ); double cweight = exp( lweight );
+  plumed_dbg_assert( dval.size()==1 ); double cweight = exp( lweight );
   if( getPntrToArgument(0)->isPeriodic() ) {
       Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
       double tval = ( dval[0] - lbound ) / pfactor;

@@ -1,0 +1,9 @@
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES ATOMS=@nonhydrogens
+
+# This should output the atomic positions for the frames that were collected to a pdb file called traj.pdb
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=cc FILE=traj.pdb

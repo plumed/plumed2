@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ReweightBase.h"
+#include "core/ReweightBase.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_BIAS
@@ -72,8 +72,8 @@ class ReweightBias : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBias(const ActionOptions&ao);
-  void calculate();
-  double getLogWeight();
+  void calculate() override;
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")

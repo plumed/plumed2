@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,12 +95,22 @@ Function::Function(const ActionOptions&ao):
                 if( getPntrToArgument(arg_ends[i])->getNumberOfValues( getLabel() )==1 ) {
                     ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
                     if(!as) hasscalar=true; else getPntrToArgument(arg_ends[i])->buildDataStore( getLabel() );
-                } else hasrank=true;
+                } else {
+                    AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
+                    if(!ab) hasrank=true;
+                }
             } else hasrank=true;
+        }
+        // Check if we are using not all the values in an average base 
+        if( !hasrank ) {
+            for(unsigned i=0; i<getNumberOfArguments(); ++i ) {
+                AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(i)->getPntrToAction() );
+                if( ab ) { if( !getPntrToArgument(i)->usingAllVals(getLabel()) ) hasrank=true; }
+            }
         }
     }
     if( hasscalar && hasrank ) {
-      unsigned nscalars=0;
+      unsigned nscalars=0; done_over_stream=false;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getNumberOfValues( getLabel() )==1 ) nscalars++;
         else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
@@ -350,6 +360,17 @@ void Function::evaluateAllFunctions() {
 }
 
 void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  unsigned nstart = getFullNumberOfTasks(), ndata = 0; 
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  }
+  if( nstart<ndata ) { 
+      for(unsigned i=nstart;i<ndata;++i) addTaskToList(i); 
+      std::vector<unsigned> shape(1); shape[0]=ndata; 
+      for(unsigned i=0;i<getNumberOfComponents();++i) {
+          if( getPntrToOutput(i)->getRank()==1 && !getPntrToOutput(i)->hasDerivatives() ) getPntrToOutput(i)->setShape( shape );
+      }
+  }
   bool safeToChain=true;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       Action* myact = getPntrToArgument(i)->getPntrToAction();
@@ -437,7 +458,17 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           }
         }
         if( distinct_arguments[i].second==0 ) der_start += distinct_arguments[i].first->getNumberOfDerivatives();
+        else if( getPntrToArgument(jvalind)->isTimeSeries() ) der_start++;
         else der_start += getPntrToArgument(jvalind)->getNumberOfValues(getLabel());
+      }
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->getRank()==0 ) { 
+              for(unsigned j=0; j<getNumberOfComponents(); ++j) { 
+                  unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                  myvals.updateIndex( ostrn, der_start );
+              }
+              der_start++;
+          } 
       }
     } else if( (matinp && matout && myvals.inVectorCall()) ) {
       unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,13 +52,13 @@ public:
 /// Constructor
   explicit ClusteringBase(const ActionOptions&);
 /// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const { return 0; }
+  unsigned getNumberOfDerivatives() const override { return 0; }
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// Do the clustering
   virtual void performClustering()=0;
 /// Do nothing for apply here
-  void apply() {}
+  void apply() override {}
 };
 
 inline

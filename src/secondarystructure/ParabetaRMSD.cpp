@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,6 +71,7 @@ The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=beta.pdb
 pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
 \endplumedfile
@@ -78,6 +79,7 @@ pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
 Here the same is done use RMSD instead of DRMSD
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
@@ -249,7 +251,7 @@ public:
 PLUMED_REGISTER_ACTION(ParabetaRMSDShortcut,"PARABETARMSD")
 
 void ParabetaRMSDShortcut::registerKeywords( Keywords& keys ) {
-  ParabetaRMSD::registerKeywords( keys );
+  ParabetaRMSD::registerKeywords( keys ); keys.removeComponent("struct");
 }
 
 ParabetaRMSDShortcut::ParabetaRMSDShortcut(const ActionOptions&ao):
@@ -262,7 +264,7 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + ": PARABETARMSD_CALC " + convertInputLineToString() );
   if( ltmap.length()>0 ) {
       // Create the lowest line
-      readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1  ARG2=" + getShortcutLabel() + ".struct-2");
+      readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1 ARG2=" + getShortcutLabel() + ".struct-2" );
       // Create the less than object
       SecondaryStructureRMSD::expandShortcut( getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
   }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018,2019 The plumed team
+   Copyright (c) 2018-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -219,9 +219,9 @@ Caliber::Caliber(const ActionOptions&ao):
 
   for(unsigned i=0; i<narg; i++) {
     std::string num; Tools::convert(i,num);
-    addComponent("x0_"+num); componentIsNotPeriodic("x0_"+num); x0comp.push_back(getPntrToComponent("x0_"+num));
-    addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num); kcomp.push_back(getPntrToComponent("kappa_"+num));
-    addComponent("mean_"+num); componentIsNotPeriodic("mean_"+num); mcomp.push_back(getPntrToComponent("mean_"+num));
+    addComponent("x0-"+num); componentIsNotPeriodic("x0-"+num); x0comp.push_back(getPntrToComponent("x0-"+num));
+    addComponent("kappa-"+num); componentIsNotPeriodic("kappa-"+num); kcomp.push_back(getPntrToComponent("kappa-"+num));
+    addComponent("mean-"+num); componentIsNotPeriodic("mean-"+num); mcomp.push_back(getPntrToComponent("mean-"+num));
   }
 
   if(doregres_zero_) {

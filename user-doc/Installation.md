@@ -78,7 +78,7 @@ PLUMED is made up of modules. Some of them are on by default, some others aren't
 Since version 2.3, the activation of modules should be made during configuration using the `--enable-modules`
 option (see \ref mymodules).
 
-Notice that some functionalities of PLUMED depend on external
+Notice that some of the methods within PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim
@@ -375,8 +375,8 @@ possible kinds of innocuous errors:
 
 \attention
 Even though we regularly perform tests on [Travis-CI](http://travis-ci.org/plumed/plumed2),
-it is possible that aggressive optimizations or even architecture dependent features
-trigger bugs that did not show up on travis. So please always perform regtests when you install
+it is possible that aggressive optimization or even architecture dependent features
+trigger bugs that did not show up on travis. So please always perform the regtests when you install
 PLUMED.
 
 Notice that the compiled executable, which now sits in 'src/lib/plumed', relies
@@ -453,7 +453,7 @@ the following things:
 - use the "plumed" executable from the command line. This is also possible before installing.
 - link against the PLUMED library using the "-lplumed" flag for the linker. This allows
   one to use PLUMED library in general purpose programs
-- use the PLUMED internal functionalities (C++ classes) including
+- use PLUMED internal functionality (C++ classes) including
   header files such as "#include <plumed/tools/Vector.h>". This is useful as it may be expedient to
   exploit the PLUMED library in general purpose programs
 
@@ -628,18 +628,28 @@ gromacs once for all and combine it with your working version of PLUMED.
 
 \section Installation-conda Installing PLUMED with conda
 
-If you use the conda package manager you can install a precompiled PLUMED binary using the following command:
+If you use the conda package manager you can install a pre-compiled PLUMED binary using the following command:
 \verbatim
-> conda install -c plumed/label/testing plumed
+> conda install -c conda-forge plumed
+\endverbatim
+Similarly, the python wrappers can be installed with
+\verbatim
+> conda install -c conda-forge py-plumed
 \endverbatim
 
-\warning Currently this is a test version. Starting with PLUMED 2.5.2 it will be possible to download
-the latest official release.
+These packages are part of [conda-forge](https://anaconda.org/conda-forge) and as such should be binary compatible
+with other codes from the same distribution. Notice that it should also be possible to combine the installed
+plumed kernel with an MD code compiled outside of conda (or within a different conda environment)
+if plumed is linked in runtime mode.
+The only variable that you need to set in order to access to the installed plumed kernel is
+`PLUMED_KERNEL` (e.g., `export PLUMED_KERNEL=/conda/prefix/lib/libplumedKernel.so`).
 
 Notice that binaries are only available for Linux and MacOS and that they have a limited number of features.
-In particular, they do not support MPI, nor the other optional libraries used by PLUMED, and do not
-include optional modules. However, they can be used to quickly install a working PLUMED version
-without the need to have a compiler.
+In particular, they do not support MPI and do not include optional modules.
+However, they can be used to quickly install a working PLUMED version without the need to have a compiler.
+
+Notice that there are additional conda packages on the [plumed](https://anaconda.org/plumed/plumed) channel.
+Those packages are for testing only.
 
 \section installingonacluster Installing PLUMED on a cluster
 

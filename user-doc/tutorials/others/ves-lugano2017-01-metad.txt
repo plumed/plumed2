@@ -104,7 +104,7 @@ gnuplot:
 pl  "./COLVAR" u 1:2 w lp,
 \endverbatim
 you will see that the ion pair is stuck in the dissociated state during the 1 ns simulation.
-It is unable to cross the \f$ \sim 5 k_\mathrm{B} T\f$ barrier located at a distance of approximately
+It is unable to cross the \f$\sim5k_\mathrm{B}T\f$ barrier located at a distance of approximately
  0.4 nm. You can also observe this behavior in the trajectory using VMD:
 \verbatim
 vmd out.dcd -psf nacl.psf

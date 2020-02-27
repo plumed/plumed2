@@ -76,8 +76,8 @@ ActionShortcut(ao)
       // Replace dots in argument names so they can be used as action names
       std::size_t dot=args[i].find("."); if( dot!=std::string::npos ) nargs[i]=args[i].substr(0,dot) + "_" + args[i].substr(dot+1);
       // Now compute the unperturbed mean force
-      readInputLine( getShortcutLabel() + "_uforce_" + nargs[i] + ": MATHEVAL ARG1=" + getShortcutLabel() + "_fmetad.d_" + args[i] + 
-                                          " ARG2=" + getShortcutLabel() + "_fpforce.d_" + args[i] + " ARG3=" + getShortcutLabel() + "_pforce FUNC=-x-y/z PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_uforce_" + nargs[i] + ": MATHEVAL ARG1=" + getShortcutLabel() + "_fmetad." + args[i] + "_der" + 
+                                          " ARG2=" + getShortcutLabel() + "_fpforce." + args[i] + "_der ARG3=" + getShortcutLabel() + "_pforce FUNC=-x-y/z PERIODIC=NO");
       // And compute the quantity that must be incremeted over the simulation
       readInputLine( getShortcutLabel() + "_mforce_" + nargs[i] + ": MATHEVAL PERIODIC=NO FUNC=x*y ARG1=" + getShortcutLabel() + "_uforce_" + nargs[i] + 
                                           " ARG2=" + getShortcutLabel() + "_pforce");  

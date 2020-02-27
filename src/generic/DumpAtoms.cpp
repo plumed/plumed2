@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -88,6 +88,7 @@ action. However, this latter choice will affect all your input and output.
 The following input is very similar but dumps a .gro (gromacs) file,
 which also contains atom and residue names.
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 # this is required to have proper atom names:
 MOLINFO STRUCTURE=reference.pdb
 # if omitted, atoms will have "X" name...
@@ -141,9 +142,9 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override ;
 };
 
 PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
@@ -247,13 +248,13 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   requestAtoms(atoms);
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
-    names.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
+    log<<"  MOLINFO DATA found, using proper atom names \n";
+    names.resize(atoms.size(),"");
+    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat[0]->getPDBsize()) names[i]=moldat[0]->getAtomName(atoms[i]);
     residueNumbers.resize(atoms.size());
-    for(unsigned i=0; i<residueNumbers.size(); ++i) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
+    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
     residueNames.resize(atoms.size());
-    for(unsigned i=0; i<residueNames.size(); ++i) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
+    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
   }
 }
 

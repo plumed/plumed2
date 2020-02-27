@@ -139,6 +139,7 @@ also output to a file every 2000 iterations (the TARGETDIST_OUTPUT keyword).
 Here we also employ MULTIPLE_WALKERS flag to enable the usage of
 multiple walkers.
 \plumedfile
+#SETTINGS NREPLICAS=2
 phi:   TORSION ATOMS=5,7,9,15
 psi:   TORSION ATOMS=7,9,15,17
 
@@ -192,7 +193,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit Opt_BachAveragedSGD(const ActionOptions&);
   ~Opt_BachAveragedSGD();
-  void coeffsUpdate(const unsigned int c_id = 0);
+  void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
 

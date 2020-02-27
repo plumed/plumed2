@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -631,15 +631,15 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 }
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customizable")!=std::string::npos ) return true;
+  if( custom && cstring.find("customized")!=std::string::npos ) return true;
 
-  std::string sname; std::size_t num=name.find_first_of("-");
-  if( num!=std::string::npos ) sname=name.substr(0,num);
-  else {
-    std::size_t num2=name.find_first_of("_");
-    if( num2!=std::string::npos ) sname=name.substr(num2);
-    else sname=name;
-  }
+  std::string sname;
+  std::size_t num=name.find_first_of("-");
+  std::size_t num2=name.find_last_of("_");
+
+  if( num2!=std::string::npos ) sname=name.substr(num2);
+  else if( num!=std::string::npos ) sname=name.substr(0,num);
+  else sname=name;
 
   for(unsigned i=0; i<cnames.size(); ++i) {
     if( sname==cnames[i] ) return true;
@@ -654,6 +654,21 @@ const std::vector<std::string>& Keywords::getAllOutputComponents() const {
 bool Keywords::getKeywordForThisOutput( const std::string& oname, std::string& keyname ) const {
   if( !exists(ckey.find(oname)->second) ) return false;
   keyname = ckey.find(oname)->second; return true;
+}
+
+void Keywords::removeComponent( const std::string& name ) {
+  bool found=false; unsigned j=0, n=0;
+
+  while(true) {
+    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
+    if(j<cnames.size()) {
+      cnames.erase(cnames.begin()+j);
+      found=true;
+    } else break;
+  }
+  // Delete documentation, type and so on from the description
+  cdocs.erase(name); ckey.erase(name);
+  plumed_massert(found,"You are trying to remove " + name + " a component that isn't there");
 }
 
 }

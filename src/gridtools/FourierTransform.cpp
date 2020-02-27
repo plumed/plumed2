@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,7 +59,7 @@ The default values of these parameters are: \f$a=1\f$ and \f$b=1\f$.
 The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x\neq N_y\f$):
 
 \plumedfile
-FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1 FILE=fourier.dat
+FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1
 \endplumedfile
 
 */
@@ -72,6 +72,7 @@ private:
   std::vector<std::string> gname;
   bool real_output, store_norm;
   std::vector<int> fourier_params;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
@@ -79,10 +80,12 @@ public:
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
 #ifndef __PLUMED_HAS_FFTW
-  void calculate() {}
+  void runTheCalculation() override {}
 #else
-  void calculate();
+  void runTheCalculation() override;
 #endif
 };
 
@@ -94,6 +97,8 @@ void FourierTransform::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
            "A=0: normalize by the square root of the number of data (one forward and followed by backward FFT recover the original data). ");
+  keys.addOutputComponent("real","FT_TYPE","the real part of the function");
+  keys.addOutputComponent("imag","FT_TYPE","the imaginary part of the function");
 }
 
 FourierTransform::FourierTransform(const ActionOptions&ao):
@@ -150,8 +155,8 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
   (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
   if( gtype=="fibonacci" ) error("cannot fourier transform fibonacci grids");
-  for(unsigned i=0; i<argn.size(); ++i) gname[i] = "k_" + argn[i];
-  gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
+  for(unsigned i=0; i<argn.size(); ++i) gname[i] = argn[i];
+  gridcoords.setup( "flat", ipbc, 0, 0.0 ); checkRead();
 #endif
 }
 
@@ -161,14 +166,12 @@ void FourierTransform::finishOutputSetup() {
   for(unsigned i=0; i<gridobject.getDimension(); ++i) {
     smin[i]=gridobject.getMin()[i]; smax[i]=gridobject.getMax()[i];
     // Compute k-grid extents
-    double dmin, dmax;
+    double dmin, dmax; snbins[i]=gridobject.getNbin(false)[i];
     Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
     dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
     Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
-
-    snbins[i]=gridobject.getNbin(false)[i];
   }
-  gridobject.setBounds( smin, smax, snbins, fspacing );
+  gridcoords.setBounds( smin, smax, snbins, fspacing );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
 }
 
@@ -178,16 +181,25 @@ void FourierTransform::getInfoForGridHeader( std::string& gtype, std::vector<std
   gtype="flat";
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
     argn[i] = gname[i];
-    if( gridobject.getMin().size()>0 ) {
-      min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMin()[i];
+    if( gridcoords.getMin().size()>0 ) {
+      min[i]=gridcoords.getMin()[i]; max[i]=gridcoords.getMax()[i];
     }
-    if( gridobject.getNbin(false).size()>0 ) out_nbin[i]=gridobject.getNbin(false)[i];
-    pbc[i]=gridobject.isPeriodic(i);
+    if( gridcoords.getNbin(false).size()>0 ) out_nbin[i]=gridcoords.getNbin(false)[i];
+    pbc[i]=gridcoords.isPeriodic(i);
   }
 }
 
+void FourierTransform::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  gridcoords.getGridPointCoordinates( ind, indices, coords );
+}
+
+void FourierTransform::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
+  if( coords.size()!=gridcoords.getDimension() ) coords.resize( gridcoords.getDimension() );
+  gridcoords.getGridPointCoordinates( ind, coords );
+}
+
 #ifdef __PLUMED_HAS_FFTW
-void FourierTransform::calculate() {
+void FourierTransform::runTheCalculation() {
   // *** CHECK CORRECT k-GRID BOUNDARIES ***
   //log<<"Real grid boundaries: \n"
   //    <<"  min_x: "<<mygrid->getMin()[0]<<"  min_y: "<<mygrid->getMin()[1]<<"\n"
@@ -196,15 +208,11 @@ void FourierTransform::calculate() {
   //    <<"  min_x: "<<ft_min[0]<<"  min_y: "<<ft_min[1]<<"\n"
   //    <<"  max_x: "<<ft_max[0]<<"  max_y: "<<ft_max[1]<<"\n";
 
-
-
   // Get the size of the input data arrays (to allocate FFT data)
-  std::vector<unsigned> N_input_data( gridobject.getNbin(true) );
+  std::vector<unsigned> N_input_data( gridcoords.getNbin(true) );
   size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
-
   // FFT arrays
   std::vector<std::complex<double> > input_data(fft_dimension), fft_data(fft_dimension);
-
 
   // Fill real input with the data on the grid
   std::vector<unsigned> ind( getPntrToArgument(0)->getRank() );
@@ -229,7 +237,7 @@ void FourierTransform::calculate() {
   }
 
   // Save FT data to output grid
-  std::vector<unsigned> N_out_data ( gridobject.getNbin() );
+  std::vector<unsigned> N_out_data ( gridobject.getNbin(true) );
   std::vector<unsigned> out_ind ( getPntrToArgument(0)->getRank() );
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) {
     gridcoords.getIndices( i, out_ind );
@@ -239,14 +247,14 @@ void FourierTransform::calculate() {
       if (!store_norm) ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
       else ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
       // Set the value
-      getPntrToComponent(0, ft_value );
+      getPntrToComponent(0)->set( i, ft_value);
     } else {
       double ft_value_real, ft_value_imag;
       ft_value_real=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].real() / norm;
       ft_value_imag=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].imag() / norm;
       // Set values
-      getPntrToComponent(0, ft_value_real);
-      getPntrToComponent(1, ft_value_imag);
+      getPntrToComponent(0)->set( i, ft_value_real );
+      getPntrToComponent(1)->set( i, ft_value_imag );
     }
   }
 

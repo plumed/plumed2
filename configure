@@ -733,6 +733,7 @@ enable_cregex
 enable_dlopen
 enable_rtld_default
 enable_chdir
+enable_subprocess
 enable_getcwd
 enable_execinfo
 enable_gsl
@@ -1424,11 +1425,13 @@ Optional Features:
                           yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
-                          yes
+                          no
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-chdir          enable search for chdir function, default: yes
+  --enable-subprocess     enable search for functions needed to manage a
+                          subprocess, default: yes
   --enable-getcwd         enable search for getcwd function, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
@@ -1436,7 +1439,7 @@ Optional Features:
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
-  --enable-fftw           enable search for fftw, default: no
+  --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
   --enable-af_ocl         enable arrayfire_opencl, default: search for
                           arrayfire
@@ -2972,7 +2975,7 @@ if test "${enable_readdir_r+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
   esac
 else
-  case "yes" in
+  case "no" in
              (yes) readdir_r=true ;;
              (no)  readdir_r=false ;;
   esac
@@ -3047,6 +3050,24 @@ else
   case "yes" in
              (yes) chdir=true ;;
              (no)  chdir=false ;;
+  esac
+
+fi
+
+
+
+subprocess=
+# Check whether --enable-subprocess was given.
+if test "${enable_subprocess+set}" = set; then :
+  enableval=$enable_subprocess; case "${enableval}" in
+             (yes) subprocess=true ;;
+             (no)  subprocess=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-subprocess" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) subprocess=true ;;
+             (no)  subprocess=false ;;
   esac
 
 fi
@@ -3170,7 +3191,7 @@ if test "${enable_fftw+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-fftw" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) fftw=true ;;
              (no)  fftw=false ;;
   esac
@@ -7646,6 +7667,89 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&2;}
 
 fi
 
+if test $subprocess == true ; then
+
+    found=ko
+    __PLUMED_HAS_SUBPROCESS=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
+$as_echo_n "checking subprocess with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
+$as_echo_n "checking subprocess without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_SUBPROCESS 1" >>confdefs.h
+
+      __PLUMED_HAS_SUBPROCESS=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 if test $getcwd == true ; then
 
     found=ko
@@ -8892,8 +8996,8 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (setuptools, cython, subprocess, os, shutil)" >&5
-$as_echo_n "checking support for required python modules (setuptools, cython, subprocess, os, shutil)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)" >&5
+$as_echo_n "checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)... " >&6; }
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -8903,6 +9007,8 @@ import os.path
 import sys
 from shutil import copyfile
 from Cython.Build import cythonize
+if sys.version_info < (3,):
+    raise ImportError('PLUMED 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

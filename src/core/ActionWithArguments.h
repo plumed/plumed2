@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,6 +41,7 @@ This is used in PLMD::Function and PLMD::Bias
 */
 
 class AverageBase;
+class ReweightBase;
 
 class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
@@ -50,6 +51,7 @@ private:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
   AverageBase* theAverageInArguments;
+  ReweightBase* theReweightBase;
   const ActionWithValue* thisAsActionWithValue;
   ActionWithValue* getFirstNonStream();
   Value* getArgumentForScalar(const unsigned n) const ;
@@ -65,6 +67,8 @@ protected:
   unsigned getNumberOfScalarArguments() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
   unsigned setupActionInChain( const unsigned& argstart ) ;
+/// Should we skip running calculate for this action
+  bool skipCalculate() const ;
 /// Should we skip running update for this action
   bool skipUpdate() const ;
 /// Resize all the values for the final task

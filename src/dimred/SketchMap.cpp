@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018,2019 The plumed team
+   Copyright (c) 2018-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ This can be used to output the data that has been stored in an Analysis object.
 class SketchMap : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMap( const ActionOptions& );
+  explicit SketchMap( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(SketchMap,"SKETCH_MAP")

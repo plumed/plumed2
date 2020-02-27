@@ -1,0 +1,2 @@
+type=driver
+arg="--ixyz traj.xyz --plumed plumed.dat --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces forces.num"

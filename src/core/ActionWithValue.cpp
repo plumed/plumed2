@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -243,8 +243,8 @@ Value* ActionWithValue::getPntrToValue() {
 
 void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
-    warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-            "registerKeywords as described in the developer docs.");
+    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+                  "registerKeywords as described in the developer docs.");
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -260,8 +260,8 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
-    warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-            "registerKeywords as described in the developer doc.");
+    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+                  "registerKeywords as described in the developer doc.");
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -355,7 +355,6 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
     // args.push_back( values[0] );
     values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr==getLabel() + ".*" ) {
-    plumed_assert( !action_to_do_after );
     for(unsigned i=0; i<values.size(); ++i ) values[i]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name

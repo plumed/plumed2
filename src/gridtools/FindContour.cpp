@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -73,16 +73,15 @@ FCCUBIC ...
   ALPHA=27 PHI=0.0 THETA=-1.5708 PSI=-2.35619 LABEL=fcc
 ... FCCUBIC
 
-tfcc: MTRANSFORM_MORE DATA=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+tfcc: MTRANSFORM_MORE DATA=fcc LOWMEM SWITCH={SMAP R_0=0.5 A=8 B=8}
 center: CENTER_OF_MULTICOLVAR DATA=tfcc
 
-MULTICOLVARDENS ...
-  DATA=tfcc ORIGIN=center DIR=xyz LABEL=dens
-  NBINS=80,80,80 BANDWIDTH=1.0,1.0,1.0 STRIDE=25
-  LABEL=dens STRIDE=1 CLEAR=1
-... MULTICOLVARDENS
+dens: MULTICOLVARDENS ...
+  DATA=tfcc ORIGIN=center DIR=xyz
+  NBINS=80,80,80 BANDWIDTH=1.0,1.0,1.0 STRIDE=1 CLEAR=1
+...
 
-FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.dat
+FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.xyz
 \endplumedfile
 
 */
@@ -99,8 +98,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   void finishOutputSetup();
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ); 
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override; 
+  void performTask( const unsigned& current, MultiValue& myvals ) const override;
   void jobsAfterLoop();
 };
 

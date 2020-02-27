@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,8 +48,9 @@ public:
   virtual unsigned getNumberOfDerivatives() const ;
   virtual void finishOutputSetup() = 0;
   virtual void jobsAfterLoop() {}
-  void calculate();
-  virtual void apply() {};
+  virtual void runTheCalculation() { plumed_error(); }
+  void calculate() override;
+  virtual void apply() override {};
   void update();
   void runFinalJobs();
 };

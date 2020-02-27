@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -133,7 +133,7 @@ void Value::alwaysStoreValues() {
 }
 
 void Value::makeTimeSeries() {
-  plumed_assert( shape.size()==1 ); istimeseries=true;
+  plumed_assert( shape.size()<=1 ); istimeseries=true;
   unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
 }
 
@@ -371,6 +371,7 @@ double Value::getRequiredValue(  const std::string& alabel, const unsigned& num 
 }
 
 void Value::addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  ) {
+  if( istimeseries ) return;
   if( usingAllVals(alabel) ) addForce( num, ff );
   else addForce( userdata.find(alabel)->second[num].first, ff );
 }
