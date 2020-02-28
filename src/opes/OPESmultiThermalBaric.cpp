@@ -74,8 +74,8 @@ private:
   double shiftC_;
   double current_bias_;
 
-  std::vector< std::vector<double> > integration_weights_;
   double border_weight_;
+  double tot_steps_;
 
   bool calc_work_;
   double work_;
@@ -119,7 +119,7 @@ void OPESmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
-  keys.add("optional","BORDER_WEIGHT","specify the border weight for the integral, e.g. 0.5 for trapz. -1 is a shortcut for simpson");
+  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -184,9 +184,6 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
     plumed_massert(pres_==pres_p_[0],"if MIN_PRESSURE = MAX_PRESSURE, they should be equal to PRESSURE");
 
 //set other stuff
-  border_weight_=1;
-  parse("BORDER_WEIGHT",border_weight_);
-
   parse("PACE",stride_);
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
@@ -194,20 +191,13 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   steps_pres_=0;
   parse("STEPS_TEMP",steps_beta_);
   parse("STEPS_PRESSURE",steps_pres_);
-  if(border_weight_==-1 && steps_beta_>2 && steps_beta_%2==0)
-  {
-    log.printf("  (for Simpson's integration STEPS_TEMP should be odd, increasing it by one)\n");
-    steps_beta_++;
-  }
-  if(border_weight_==-1 && steps_pres_>2 && steps_pres_%2==0)
-  {
-    log.printf("  (for Simpson's integration STEPS_PRESSURE should be odd, increasing it by one)\n");
-    steps_pres_++;
-  }
   if(steps_beta_!=0 && steps_pres_!=0)
     obs_steps_=1;
   obs_ene_.resize(obs_steps_);
   obs_vol_.resize(obs_steps_);
+
+  border_weight_=1;
+  parse("BORDER_WEIGHT",border_weight_);
 
 //deltaFs file
   parse("FILE",deltaFsFileName_);
@@ -385,31 +375,33 @@ void OPESmultiThermalBaric::calculate()
 
   const double ene=getArgument(0);
   const double vol=getArgument(1);
-  long double integral=0;
-  long double der_integral_ene=0;
-  long double der_integral_vol=0;
+  long double sum=0;
+  long double der_sum_ene=0;
+  long double der_sum_vol=0;
   for(unsigned i=rank_; i<steps_beta_; i+=NumParallel_)
   {
     for(unsigned j=0; j<steps_pres_; j++)
     {
-      const long double add_ij=integration_weights_[i][j]*get_weight(beta_p_[i],ene,pres_p_[j],vol,deltaF_[i][j]);
-      integral+=add_ij;
-      der_integral_ene+=(beta_-beta_p_[i])*add_ij;
-      der_integral_vol+=(beta_*pres_-beta_p_[i]*pres_p_[j])*add_ij;
+      long double add_ij=get_weight(beta_p_[i],ene,pres_p_[j],vol,deltaF_[i][j]);
+      if(i==0 || i==steps_beta_-1 || j==0 || j==steps_pres_-1)
+        add_ij*=border_weight_;
+      sum+=add_ij;
+      der_sum_ene+=(beta_-beta_p_[i])*add_ij;
+      der_sum_vol+=(beta_*pres_-beta_p_[i]*pres_p_[j])*add_ij;
     }
   }
   if(NumParallel_>1)
   {
-    comm.Sum(integral);
-    comm.Sum(der_integral_ene);
-    comm.Sum(der_integral_vol);
+    comm.Sum(sum);
+    comm.Sum(der_sum_ene);
+    comm.Sum(der_sum_vol);
   }
 
-  current_bias_=-1./beta_*std::log(integral);
+  current_bias_=-1./beta_*std::log(sum/tot_steps_);
   setBias(current_bias_);
 
-  const double der_ene=-1./beta_*der_integral_ene/integral;
-  const double der_vol=-1./beta_*der_integral_vol/integral;
+  const double der_ene=-1./beta_*der_sum_ene/sum;
+  const double der_vol=-1./beta_*der_sum_vol/sum;
   setOutputForce(0,-der_ene);
   setOutputForce(1,-der_vol);
   getPntrToComponent("derEne")->set(der_ene);
@@ -418,13 +410,20 @@ void OPESmultiThermalBaric::calculate()
 //calculate work
   if(calc_work_)
   {
-    long double old_integral=0;
+    long double old_sum=0;
     for(unsigned i=rank_; i<steps_beta_; i+=NumParallel_)
+    {
       for(unsigned j=0; j<steps_pres_; j++)
-        old_integral+=integration_weights_[i][j]*get_weight(beta_p_[i],ene,pres_p_[j],vol,+old_deltaF_[i][j]);
+      {
+        long double add_ij=get_weight(beta_p_[i],ene,pres_p_[j],vol,+old_deltaF_[i][j]);
+        if(i==0 || i==steps_beta_-1 || j==0 || j==steps_pres_-1)
+          add_ij*=border_weight_;
+        old_sum+=add_ij;
+      }
+    }
     if(NumParallel_>1)
-      comm.Sum(old_integral);
-    work_+=-1./beta_*std::log(integral/old_integral);
+      comm.Sum(old_sum);
+    work_+=-1./beta_*std::log(sum/old_sum);
   }
 
   afterCalculate_=true;
@@ -538,47 +537,8 @@ void OPESmultiThermalBaric::init_integration_grid()
     for(unsigned j=0; j<steps_pres_; j++)
       pres_p_[j]=min_pres+j*(max_pres-min_pres)/(steps_pres_-1);
 
-//initialize simpson's weights. if steps<3 the sum is used instead of the integral
-  integration_weights_.resize(steps_beta_,std::vector<double>(steps_pres_));
-  if(border_weight_!=1)
-  {
-    if(border_weight_==-1)
-    {
-      log.printf(" --- TEST: using simpson integration ---\n");
-      plumed_massert(steps_beta_==2 || steps_beta_%2==1, "Simpson's integration requires an odd number of steps");
-      plumed_massert(steps_pres_==2 || steps_pres_%2==1, "Simpson's integration requires an odd number of steps");
-    }
-    else
-      log.printf(" --- TEST: multipling the border by %g ---\n",border_weight_);
-  }
-  double sum_w=0;
-  for(unsigned i=0; i<steps_beta_; i++)
-  {
-    double w_i=1.;
-    if(i!=0 && i!=(steps_beta_-1))
-    {
-      if(border_weight_==-1) //simpson integration
-        w_i*=2*(1+i%2);
-      else
-        w_i/=border_weight_;
-    }
-    for(unsigned j=0; j<steps_pres_; j++)
-    {
-      double w_j=1.;
-      if(j!=0 && j!=(steps_pres_-1))
-      {
-        if(border_weight_==-1) //simpson integration
-          w_j*=2*(1+j%2);
-        else
-          w_j/=border_weight_;
-      }
-      sum_w+=w_i*w_j;
-      integration_weights_[i][j]=w_i*w_j;
-    }
-  }
-  for(unsigned i=0; i<steps_beta_; i++)
-    for(unsigned j=0; j<steps_pres_; j++)
-      integration_weights_[i][j]/=sum_w; //normalize so that sum_w=1
+//initialize tot_steps_, depending on total number of steps and border_weight
+  tot_steps_=steps_beta_*steps_pres_+(border_weight_-1)*2*(steps_beta_+steps_pres_);
 
 //print some info
   log.printf("  Total temp steps (in beta) = %d\n",steps_beta_);
@@ -589,6 +549,8 @@ void OPESmultiThermalBaric::init_integration_grid()
   log.printf("  Total pres steps = %d\n",steps_pres_);
   for(unsigned j=0; j<steps_pres_; j++)
     log.printf("   % d. pres=% .10f\n",j+1,pres_p_[j]);
+  if(border_weight_!=1)
+    log.printf(" --- using a weight different from 1 for the border, BORDER_WEIGHT = %g ---\n",border_weight_);
 }
 
 void OPESmultiThermalBaric::init_from_obs()
@@ -743,11 +705,6 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
   {
     log.printf(" +++ WARNING +++ estimated grid spacing for %s gives a step=%d, changing it to 2\n",msg.c_str(),steps);
     return 2;
-  }
-  if(border_weight_==-1 && steps%2==0)
-  {
-    log.printf("  (adding one step in %s for Simpson's integration)\n",msg.c_str());
-    steps++; //simpson integration wants an even number of bins, thus an odd number of steps
   }
   return steps;
 }

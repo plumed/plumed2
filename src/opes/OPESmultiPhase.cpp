@@ -82,8 +82,8 @@ private:
   double epsilon_;
   double current_bias_;
 
-//  std::vector< std::vector<double> > integration_weights_;
-//  double border_weight_;
+  double border_weight_;
+  double tot_steps_;
 
   bool calc_work_;
   double work_;
@@ -132,7 +132,7 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
-//  keys.add("optional","BORDER_WEIGHT","specify the border weight for the integral, e.g. 0.5 for trapz. -1 is a shortcut for simpson");
+  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -198,9 +198,6 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
     plumed_massert(pres_==pres_p_[0],"if MIN_PRESSURE = MAX_PRESSURE, they should be equal to PRESSURE");
 
 //set other stuff
-//  border_weight_=1;
-//  parse("BORDER_WEIGHT",border_weight_);
-
   parse("PACE",stride_);
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
@@ -208,21 +205,14 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   steps_pres_=0;
   parse("STEPS_TEMP",steps_beta_);
   parse("STEPS_PRESSURE",steps_pres_);
-//  if(border_weight_==-1 && steps_beta_>2 && steps_beta_%2==0)
-//  {
-//    log.printf("  (for Simpson's integration STEPS_TEMP should be odd, increasing it by one)\n");
-//    steps_beta_++;
-//  }
-//  if(border_weight_==-1 && steps_pres_>2 && steps_pres_%2==0)
-//  {
-//    log.printf("  (for Simpson's integration STEPS_PRESSURE should be odd, increasing it by one)\n");
-//    steps_pres_++;
-//  }
   if(steps_beta_!=0 && steps_pres_!=0)
     obs_steps_=1;
   obs_ene_.resize(obs_steps_);
   obs_vol_.resize(obs_steps_);
   obs_cv_.resize(obs_steps_);
+
+  border_weight_=1;
+  parse("BORDER_WEIGHT",border_weight_);
 
   epsilon_=0;
   double barrier=0;
@@ -440,9 +430,12 @@ void OPESmultiPhase::calculate()
   {
     for(unsigned j=0; j<steps_pres_; j++)
     {
+      double w=1;
+      if(i==0 || i==steps_beta_-1 || j==0 || j==steps_pres_-1)
+        w=border_weight_;
       for(unsigned k=0; k<tot_umbrellas_; k++)
       {
-        const long double add_ijk=get_weight(beta_p_[i],ene,pres_p_[j],vol,center_[k],cv,deltaF_[i][j][k]);
+        const long double add_ijk=w*get_weight(beta_p_[i],ene,pres_p_[j],vol,center_[k],cv,deltaF_[i][j][k]);
         sum+=add_ijk;
         der_sum_ene+=(beta_-beta_p_[i])*add_ijk;
         der_sum_vol+=(beta_*pres_-beta_p_[i]*pres_p_[j])*add_ijk;
@@ -461,14 +454,13 @@ void OPESmultiPhase::calculate()
 //regularize with epsilon_
   if(epsilon_>0)
   {
-    const unsigned tot_steps=(steps_beta_*steps_pres_*tot_umbrellas_);
-    der_sum_ene/=std::pow(1.+sum/tot_steps*epsilon_,2);
-    der_sum_vol/=std::pow(1.+sum/tot_steps*epsilon_,2);
-    der_sum_cv/=std::pow(1.+sum/tot_steps*epsilon_,2);
-    sum=tot_steps/(tot_steps/sum+epsilon_);
+    der_sum_ene/=std::pow(1.+sum/tot_steps_*epsilon_,2);
+    der_sum_vol/=std::pow(1.+sum/tot_steps_*epsilon_,2);
+    der_sum_cv/=std::pow(1.+sum/tot_steps_*epsilon_,2);
+    sum=tot_steps_/(tot_steps_/sum+epsilon_);
   }
 
-  current_bias_=-1./beta_*std::log(sum/(steps_beta_*steps_pres_*tot_umbrellas_));
+  current_bias_=-1./beta_*std::log(sum/tot_steps_);
   setBias(current_bias_);
 
   const double der_ene=-1./beta_*der_sum_ene/sum;
@@ -486,9 +478,16 @@ void OPESmultiPhase::calculate()
   {
     long double old_sum=0;
     for(unsigned i=rank_; i<steps_beta_; i+=NumParallel_)
+    {
       for(unsigned j=0; j<steps_pres_; j++)
+      {
+        double w=1;
+        if(i==0 || i==steps_beta_-1 || j==0 || j==steps_pres_-1)
+          w=border_weight_;
         for(unsigned k=0; k<tot_umbrellas_; k++)
-          old_sum+=get_weight(beta_p_[i],ene,pres_p_[j],vol,center_[k],cv,old_deltaF_[i][j][k]);
+          old_sum+=w*get_weight(beta_p_[i],ene,pres_p_[j],vol,center_[k],cv,old_deltaF_[i][j][k]);
+      }
+    }
     if(NumParallel_>1)
       comm.Sum(old_sum);
     work_+=-1./beta_*std::log(sum/old_sum);
@@ -612,49 +611,10 @@ void OPESmultiPhase::init_integration_grid()
   else
     for(unsigned j=0; j<steps_pres_; j++)
       pres_p_[j]=min_pres+j*(max_pres-min_pres)/(steps_pres_-1);
-/*
-//initialize simpson's weights. if steps<3 the sum is used instead of the integral
-  integration_weights_.resize(steps_beta_,std::vector<double>(steps_pres_));
-  if(border_weight_!=1)
-  {
-    if(border_weight_==-1)
-    {
-      log.printf(" --- TEST: using simpson integration ---\n");
-      plumed_massert(steps_beta_==2 || steps_beta_%2==1, "Simpson's integration requires an odd number of steps");
-      plumed_massert(steps_pres_==2 || steps_pres_%2==1, "Simpson's integration requires an odd number of steps");
-    }
-    else
-      log.printf(" --- TEST: multipling the border by %g ---\n",border_weight_);
-  }
-  double sum_w=0;
-  for(unsigned i=0; i<steps_beta_; i++)
-  {
-    double w_i=1.;
-    if(i!=0 && i!=(steps_beta_-1))
-    {
-      if(border_weight_==-1) //simpson integration
-        w_i*=2*(1+i%2);
-      else
-        w_i/=border_weight_;
-    }
-    for(unsigned j=0; j<steps_pres_; j++)
-    {
-      double w_j=1.;
-      if(j!=0 && j!=(steps_pres_-1))
-      {
-        if(border_weight_==-1) //simpson integration
-          w_j*=2*(1+j%2);
-        else
-          w_j/=border_weight_;
-      }
-      sum_w+=w_i*w_j;
-      integration_weights_[i][j]=w_i*w_j;
-    }
-  }
-  for(unsigned i=0; i<steps_beta_; i++)
-    for(unsigned j=0; j<steps_pres_; j++)
-      integration_weights_[i][j]/=sum_w; //normalize so that sum_w=1
-*/
+
+//initialize tot_steps_, depending on total number of steps and border_weight
+  tot_steps_=steps_beta_*steps_pres_+(border_weight_-1)*2*(steps_beta_+steps_pres_);
+  tot_steps_*=tot_umbrellas_;
 
 //print some info
   log.printf("  Total temp steps (in beta) = %d\n",steps_beta_);
@@ -670,6 +630,8 @@ void OPESmultiPhase::init_integration_grid()
   log.printf("    with SIGMA = %g\n",sigma_);
   log.printf("    in CV range [%g,%g]\n",center_[0],center_[tot_umbrellas_-1]);
   log.printf("  Total deltaFs = %u\n",steps_beta_*steps_pres_*tot_umbrellas_);
+  if(border_weight_!=1)
+    log.printf(" --- using a weight different from 1 for the temperature-pressure border, BORDER_WEIGHT = %g ---\n",border_weight_);
 }
 
 void OPESmultiPhase::init_from_obs()

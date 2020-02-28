@@ -79,6 +79,9 @@ private:
   double shiftC_;
   double current_bias_;
 
+  double border_weight_;
+  double tot_steps_;
+
   bool calc_work_;
   double work_;
   std::vector<double> old_deltaF_;
@@ -116,6 +119,7 @@ void OPESmultiLambda::registerKeywords(Keywords& keys) {
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
+  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -167,6 +171,9 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   if(steps_lambda_!=0)
     obs_steps_=1;
   obs_field_.resize(obs_steps_);
+
+  border_weight_=1;
+  parse("BORDER_WEIGHT",border_weight_);
 
 //deltaFs file
   parse("FILE",deltaFsFileName_);
@@ -330,7 +337,9 @@ void OPESmultiLambda::calculate()
   long double der_sum_field=0;
   for(unsigned i=rank_; i<steps_lambda_; i+=NumParallel_)
   {
-    const long double add_i=std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+deltaF_[i])));
+    long double add_i=std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+deltaF_[i])));
+    if(i==0 || i==steps_lambda_-1)
+      add_i*=border_weight_;
     sum+=add_i;
     der_sum_field+=(beta_*(lambda_-lambda_p_[i]))*add_i;
   }
@@ -340,7 +349,7 @@ void OPESmultiLambda::calculate()
     comm.Sum(der_sum_field);
   }
 
-  current_bias_=-1./beta_*std::log(sum/steps_lambda_);
+  current_bias_=-1./beta_*std::log(sum/tot_steps_);
   setBias(current_bias_);
   setOutputForce(0,1./beta_*der_sum_field/sum);
 
@@ -349,7 +358,12 @@ void OPESmultiLambda::calculate()
   {
     long double old_sum=0;
     for(unsigned i=rank_; i<steps_lambda_; i+=NumParallel_)
-      old_sum+=std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+old_deltaF_[i])));
+    {
+      long double add_i=std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+old_deltaF_[i])));
+      if(i==0 || i==steps_lambda_-1)
+        add_i*=border_weight_;
+      old_sum+=add_i;
+    }
     if(NumParallel_>1)
       comm.Sum(old_sum);
     work_+=-1./beta_*std::log(sum/old_sum);
@@ -448,7 +462,8 @@ void OPESmultiLambda::init_integration_grid()
     for(unsigned i=0; i<steps_lambda_; i++)
       lambda_p_[i]=min_lambda+i*(max_lambda-min_lambda)/(steps_lambda_-1);
 
-//XXX  we are skipping fancy integrations weights here
+//initialize tot_steps_, depending on total number of steps and border_weight
+  tot_steps_=steps_lambda_+(border_weight_-1)*2;
 
 //print some info
   log.printf("  Total lambda steps = %d\n",steps_lambda_);
@@ -456,6 +471,8 @@ void OPESmultiLambda::init_integration_grid()
     log.printf("   % d. lambda=% .10f\n",i+1,lambda_p_[i]);
   if(NumParallel_>steps_lambda_)
     log.printf(" +++ WARNING +++ number of parallel threads is greater than lambda steps. Using SERIAL might be faster\n");
+  if(border_weight_!=1)
+    log.printf(" --- using a weight different from 1 for the border, BORDER_WEIGHT = %g ---\n",border_weight_);
 }
 
 void OPESmultiLambda::init_from_obs()
