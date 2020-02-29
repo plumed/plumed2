@@ -16,11 +16,12 @@ PRINT ATOMS=beh2 ARG1=beh2.g1 ARG2=beh2.g2 ARG3=beh2.g3 FILE=symmetry-functions.
 
 beh3: GSYMFUNC_THREEBODY ...
     WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z 
-    FUNCTION1={TYPE=g4 LABEL=g4 LAMBDA=2.0 NU=0.1 ZETA=2} SWITCH={COSINE R_0=4.5}
-    FUNCTION2={TYPE=g5 LABEL=g5 LAMBDA=3.5 NU=0.1 ZETA=3}
-    FUNCTION3={TYPE=g6 LABEL=g6 LAMBDA=6.6 ZETA=4} 
-    FUNCTION4={TYPE=g7 LABEL=g7 NU=3.0 ALPHA=1}
+    FUNCTION1={FUNC=0.25*(cos(pi*sqrt(rjk)/4.5)+1)*exp(-0.1*(rij+rik+rjk))*(1+2*cos(ajik))^2 LABEL=g4}
+    FUNCTION2={FUNC=0.25*exp(-0.1*(rij+rik))*(1+3.5*cos(ajik))^3 LABEL=g5}
+    FUNCTION3={FUNC=0.125*(1+6.6*cos(ajik))^4 LABEL=g6} 
+    FUNCTION4={FUNC=sin(3.0*(ajik-1)) LABEL=g7}
 ...
+
 PRINT ATOMS=beh3 ARG1=beh3.g4 ARG2=beh3.g5 ARG3=beh3.g6 ARG4=beh3.g7 FILE=threebody-symmetry-functions.xyz FMT=%8.4f
 
 g4m: COMBINE ARG=beh3.g4 PERIODIC=NO
