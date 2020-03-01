@@ -152,11 +152,11 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
       ofile<<"       swapInput(\""<<egname<<"\");\n";
       ofile<<"}\n";
       ofile<<"</script>\n";
-      ofile<<"<span style=\"display:none;\" id=\""<<egname<<"short\">"; 
+      ofile<<"<div style=\"display:none;\" id=\""<<egname<<"short\">"; 
       printExampleInput( input, egname + "short", egname, ofile );
-      ofile<<"</span>"<<std::endl;
+      ofile<<"</div>"<<std::endl;
       // Write out long version of the input
-      ofile<<"<span style=\"display:none;\" id=\""<<egname<<"long\">";
+      ofile<<"<div style=\"display:none;\" id=\""<<egname<<"long\">";
       std::vector<std::vector<std::string> > long_input; 
       PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
       myplumed.cmd("setRealPrecision",&rr); 
@@ -192,7 +192,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
       }
       printExampleInput( long_input, egname + "long", egname, ofile );
-      ofile<<"</span>"<<std::endl;
+      ofile<<"</div>"<<std::endl;
   } else printExampleInput( input, egname, egname, ofile );
   ofile.close(); return 0;
 }
