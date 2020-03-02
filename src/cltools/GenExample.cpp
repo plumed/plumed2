@@ -152,7 +152,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
       ofile<<"       swapInput(\""<<egname<<"\");"<<std::endl;
       ofile<<"}"<<std::endl;
       ofile<<"</script>"<<std::endl;
-      ofile<<"<div style=\"display:none;\" id=\""<<egname<<"short\">"; 
+      ofile<<"<div style=\"display:none;\" id=\""<<egname<<"short\">"<<std::endl; 
       printExampleInput( input, egname + "short", egname, ofile );
       ofile<<"</div>"<<std::endl;
       // Write out long version of the input
@@ -243,11 +243,11 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
          // And write out everything else in the input line
          bool trailingcomment=false; 
          for(unsigned i=1; i<interpreted.size(); ++i) {
-             if( interpreted[i]=="@newline" && i==1 ) { ofile<<"...\n   "; continue; } 
+             if( interpreted[i]=="@newline" && i==1 ) { ofile<<"..."<<std::endl<<"   "; continue; } 
              else if( interpreted[i]=="@newline" ) { 
                 if( trailingcomment ) { ofile<<"</span>"; trailingcomment=false; }
-                if( interpreted[i+1]=="..." ) ofile<<"\n";
-                else ofile<<"\n   "; 
+                if( interpreted[i+1]=="..." ) ofile<<std::endl;
+                else ofile<<std::endl<<"   "; 
                 continue; 
              } else if( interpreted[i]=="__FILL__" ) {
                 if( status!="incomplete" ) error("found __FILL__ statement but status is " + status);
@@ -298,9 +298,9 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             if( av ) {
                 if( av->getNumberOfComponents()==1 ){ ofile<<" calculates a single scalar value"; }
                 else if( av->getNumberOfComponents()>0 ) {
-                   ofile<<" calculates the following quantities:\n";
-                   ofile<<"<table  align=\"center\" frame=\"void\" width=\"95%%\" cellpadding=\"5%%\">\n";
-                   ofile<<"<tr><td width=\"5%%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>\n";
+                   ofile<<" calculates the following quantities:"<<std::endl;
+                   ofile<<"<table  align=\"center\" frame=\"void\" width=\"95%%\" cellpadding=\"5%%\">"<<std::endl;
+                   ofile<<"<tr><td width=\"5%%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>"<<std::endl;
                    unsigned ncomp = av->getNumberOfComponents();
                    for(unsigned k=0; k<ncomp; ++k ) {
                        std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of("."); 
@@ -315,7 +315,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
                        } else ofile<<keys.getOutputComponentDescription(tname);
                        ofile<<"</td></tr>";
                    } 
-                   ofile<<"</table>\n";
+                   ofile<<"</table>"<<std::endl;
                 }
             } else {
                 ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>( myplumed.getActionSet().selectWithLabel<Action*>(lab) );
@@ -328,7 +328,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
          } else ofile<<std::endl;
      }
   }
-  ofile<<"</pre>\n";
+  ofile<<"</pre>"<<std::endl;
 }
 
 } // End of namespace
