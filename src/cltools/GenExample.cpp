@@ -142,16 +142,16 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   if( hasshortcuts ) {
       // Write out the short version of the input
       ofile<<"<div style=\"width: 100%; float:left\" id=\"input_"<<egname<<"\"></div>"<<std::endl; 
-      ofile<<"<script type=\"text/javascript\">\n";
-      ofile<<"if (window.addEventListener) { // Mozilla, Netscape, Firefox\n";
-      ofile<<"    window.addEventListener('load', "<<egname<<"Load, false);\n";
-      ofile<<"} else if (window.attachEvent) { // IE\n";
-      ofile<<"    window.attachEvent('onload', "<<egname<<"Load);\n";
-      ofile<<"}\n";
-      ofile<<"function "<<egname<<"Load(event) {\n";
-      ofile<<"       swapInput(\""<<egname<<"\");\n";
-      ofile<<"}\n";
-      ofile<<"</script>\n";
+      ofile<<"<script type=\"text/javascript\">"<<std::endl;
+      ofile<<"if (window.addEventListener) { // Mozilla, Netscape, Firefox"<<std::endl;
+      ofile<<"    window.addEventListener('load', "<<egname<<"Load, false);"<<std::endl;
+      ofile<<"} else if (window.attachEvent) { // IE"<<std::endl;
+      ofile<<"    window.attachEvent('onload', "<<egname<<"Load);"<<std::endl;
+      ofile<<"}"<<std::endl;
+      ofile<<"function "<<egname<<"Load(event) {"<<std::endl;
+      ofile<<"       swapInput(\""<<egname<<"\");"<<std::endl;
+      ofile<<"}"<<std::endl;
+      ofile<<"</script>"<<std::endl;
       ofile<<"<div style=\"display:none;\" id=\""<<egname<<"short\">"; 
       printExampleInput( input, egname + "short", egname, ofile );
       ofile<<"</div>"<<std::endl;
@@ -209,9 +209,9 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
   }
   myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
   std::vector<std::string> labellist; bool endplumed=false; 
-  ofile<<"<pre style=\"width: 97%;\" class=\"fragment\">\n";
+  ofile<<"<pre style=\"width: 97%;\" class=\"fragment\">"<<std::endl;
   for(unsigned ll=0;ll<input.size();++ll) {
-     if( input[ll].empty() ) { ofile<<"\n"; continue; } 
+     if( input[ll].empty() ) { ofile<<std::endl; continue; } 
      if( input[ll][0].find("#")!=std::string::npos || endplumed ) {
          ofile<<"<span style=\"color:blue\">"<<input[ll][0];
          for(unsigned i=1; i<input[ll].size(); ++i) ofile<<" "<<input[ll][i];
