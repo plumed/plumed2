@@ -43,18 +43,14 @@ below calculates the reweighting weights for each of the trajectories and then a
 to determine a weight for each configuration in the concatenated trajectory.
 
 \plumedfile
-#SETTINGS NREPLICAS=8
+#SETTINGS NREPLICAS=4
 phi: TORSION ATOMS=5,7,9,15
 rp: RESTRAINT ARG=phi KAPPA=50.0 ...
   AT=@replicas:{
         -3.00000000000000000000
-        -2.22580645161290322584
         -1.45161290322580645168
-        -.67741935483870967752
         .09677419354838709664
-        .87096774193548387080
         1.64516129032258064496
-        2.41935483870967741912
      }
 ...
 
@@ -64,7 +60,7 @@ WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights
 The script above must be run with multiple replicas using the following command:
 
 \verbatim
-mpirun -np 8 plumed driver --mf_xtc alltraj.xtc --multi 8
+mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
 \endverbatim
 
 */
