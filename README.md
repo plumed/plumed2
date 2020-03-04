@@ -44,9 +44,10 @@ Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) fo
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2019 (expected) | / |
+| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2020 (expected) | / |
+| v2.6     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.6)](https://travis-ci.org/plumed/plumed2)   | 2019 | yes |
 | v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
-| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | yes |
+| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | no |
 | v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
 | v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |
