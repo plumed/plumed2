@@ -94,7 +94,7 @@ bool ActionRegister::getKeywords( const std::string& action, Keywords& keys ) {
 
 bool ActionRegister::printManual( const std::string& action, const bool& vimout, const bool& spellout ) {
   if ( check(action) ) {
-    Keywords keys; getKeywords( action, keys ); 
+    Keywords keys; getKeywords( action, keys );
     if( vimout ) {
       printf("%s",action.c_str()); keys.print_vim(); printf("\n");
     } else if( spellout ) {

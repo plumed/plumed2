@@ -577,22 +577,22 @@ void Keywords::printKeyword( const std::string& key, Log& log ) const {
 
 std::string Keywords::getTooltip( const std::string& name ) const {
   std::size_t dd=name.find_first_of("0123456789"); std::string kname=name.substr(0,dd);
-  if( !exists(kname) ) return "<b> could not find this keyword </b>"; 
+  if( !exists(kname) ) return "<b> could not find this keyword </b>";
   std::string mystring, docstr = documentation.find(kname)->second;
   if( types.find(kname)->second.isCompulsory() ) {
-      mystring += "<b>compulsory keyword ";
-      if( docstr.find("default")!=std::string::npos ) {
-          std::size_t bra = docstr.find_first_of(")"); mystring += docstr.substr(0,bra+1); docstr = docstr.substr(bra+1);
-      }
-      mystring += "</b>\n";
+    mystring += "<b>compulsory keyword ";
+    if( docstr.find("default")!=std::string::npos ) {
+      std::size_t bra = docstr.find_first_of(")"); mystring += docstr.substr(0,bra+1); docstr = docstr.substr(bra+1);
+    }
+    mystring += "</b>\n";
   }
-  std::vector<std::string> w=Tools::getWords( docstr ); unsigned nl=0; 
+  std::vector<std::string> w=Tools::getWords( docstr ); unsigned nl=0;
   for(unsigned i=0; i<w.size(); ++i) {
-      nl+=w[i].length() + 1;
-      if( nl>80 ) { mystring += w[i] + "\n"; nl=0; }
-      else { mystring += w[i] + " "; }
-      if( w[i].find(".")!=std::string::npos ) break; // Only write up the the first dot 
-  } 
+    nl+=w[i].length() + 1;
+    if( nl>80 ) { mystring += w[i] + "\n"; nl=0; }
+    else { mystring += w[i] + " "; }
+    if( w[i].find(".")!=std::string::npos ) break; // Only write up the the first dot
+  }
   return mystring;
 }
 
@@ -669,14 +669,14 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
-   if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
+  if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
 
-   bool found=false;
-   for(unsigned i=0; i<cnames.size(); ++i) {
-     if( name==cnames[i] ) found=true;
-   } 
-   if( !found ) plumed_merror("could not find output component named " + name );
-   return cdocs.find(name)->second;
+  bool found=false;
+  for(unsigned i=0; i<cnames.size(); ++i) {
+    if( name==cnames[i] ) found=true;
+  }
+  if( !found ) plumed_merror("could not find output component named " + name );
+  return cdocs.find(name)->second;
 }
 
 }
