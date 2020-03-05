@@ -47,8 +47,6 @@ if [ $neg -gt 0 ] ; then
          else if( match($0,"auxfile") ){ inp=1; }
          else if( inp==1 ){ print $0; }  
        }' > example-check/$fname.aux
-   echo Auxfile data for $fname:
-   cat example-check/$fname.aux
    naux=`grep ">>END OF EXAMPLE>>" example-check/$fname.aux | wc -l | awk '{print $1}'`
    # And split the set of include files
    sline=0
@@ -57,8 +55,6 @@ if [ $neg -gt 0 ] ; then
         eline=`grep -n ">>END OF EXAMPLE>>" example-check/$fname.aux | head -n $i | tail -n 1 | awk '{print $1}' | sed -e 's/:>>END//g'`
         head -n $(($eline-1)) example-check/$fname.aux | tail -n $(($eline-1-$sline)) > example-check/$fname/$ifname
         sline=$eline
-        echo Created auxfile named $fname/$ifname with content:
-        cat example-check/$fname/$ifname
    done
    rm example-check/$fname.aux
 fi
