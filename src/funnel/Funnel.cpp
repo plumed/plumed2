@@ -25,7 +25,7 @@ using namespace PLMD::bias;
 namespace PLMD {
 namespace funnel {
 
-//+PLUMEDOC BIAS FUNNEL
+//+PLUMEDOC FUNNELMOD_BIAS FUNNEL
 /*
 Calculate a funnel-shape restraint potential that is defined on a grid that is read during the setup.
 If the input file is not already present, it will create one with the name specified in the FILE flag.
