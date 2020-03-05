@@ -44,9 +44,11 @@ if [ $neg -gt 0 ] ; then
    cat $infile |
    awk 'BEGIN{inp=0;}{
          if( $1=="\\endauxfile" ){ print ">>END OF EXAMPLE>>"; inp=0; }
-         else if( match($1,"\\auxfile") ){ inp=1; }
+         else if( match($0,"\\auxfile") ){ inp=1; }
          else if( inp==1 ){ print $0; }  
        }' > example-check/$fname.aux
+   echo Auxfile data for $fname:
+   cat example-check/$fname.aux
    naux=`grep ">>END OF EXAMPLE>>" example-check/$fname.aux | wc -l | awk '{print $1}'`
    # And split the set of include files
    sline=0
