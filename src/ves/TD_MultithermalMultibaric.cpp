@@ -152,7 +152,7 @@ OPT_AVERAGED_SGD ...
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
 Consider a system of 250 atoms that crystallizes in the FCC crystal structure.
 The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa.
-We assume that inside this region we can find the liquid-fcc coexistence line that we would like to obtain.
+We assume that inside this region we can find the liquid-FCC coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
 The energy, volume, and an order parameter are used as collective variables to construct the bias potential.
 We choose as order parameter the \ref FCCUBIC.
