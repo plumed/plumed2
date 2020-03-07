@@ -26,8 +26,9 @@ namespace funnel {
 
 //+PLUMEDOC FUNNELMOD_COLVAR FUNNEL_PS
 /*
-FUNNEL_PS implements the Funnel-Metadynamics (FM) technique in PLUMED 2. Please read the FM \cite FM \cite FM-protocol
-papers to better understand the notions hereby reported.
+FUNNEL_PS implements the Funnel-Metadynamics (FM) technique in PLUMED 2.
+
+Please read the FM \cite FM \cite FM-protocol papers to better understand the notions hereby reported.
 
 This colvar evaluates the position of a ligand of interest with respect to a given line, built from the two points
 A and B, and should be used together with the \ref FUNNEL bias.
@@ -64,7 +65,7 @@ potential. In the latter case, the potential will force the ligand to enter with
 \par Examples
 
 The following input tells plumed to print the FUNNEL_PS components for the COM of a ligand. The inputs are a reference structure,
-which is the structure used for the alignment, the COM of the molecule we want to track, and 2 points in the cartesian space
+which is the structure used for the alignment, the COM of the molecule we want to track, and 2 points in the Cartesian space
 (i.e., x, y, and z) to draw the line representing the funnel axis.
 \plumedfile
 lig: COM ATOMS=2446,2447,2448,2449,2451
