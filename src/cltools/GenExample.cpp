@@ -169,7 +169,8 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     }
     myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
     for(unsigned ll=0; ll<input.size(); ++ll) {
-      if( input[ll].empty() || input[ll][0].find("#")!=std::string::npos || endplumed ) { long_input.push_back( input[ll] ); continue; }
+      if( input[ll].empty() || endplumed ) { long_input.push_back( input[ll] ); continue; }
+      if( input[ll][0].find("#")!=std::string::npos ) { long_input.push_back( input[ll] ); continue; }
       std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
       if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; }
       Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) ); 
