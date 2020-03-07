@@ -99,6 +99,11 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
     preps.resize( rep_data.size() );
     for(unsigned i=0; i<rep_data.size(); ++i) Tools::convert( rep_data[i], preps[i] );
   }
+  if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
+  else {
+      log.printf("  outputting data for replicas ");
+      for(unsigned i=0;i<preps.size();++i) log.printf("%d ", preps[i].c_str() );
+  }
 }
 
 void OutputColvarFile::performAnalysis() {
