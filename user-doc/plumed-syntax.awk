@@ -2,7 +2,7 @@ BEGIN{inside=0}{
   if(inside && match($0,"</pre>")) {
     inside=0; close("example"number".dat");
     if( nreplicas==1 ) { system("plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status "> /dev/null"); }
-    else { system("mpirun -np " nreplicas " plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status " --multi " nreplicas " > /dev/stderr);}
+    else { system("mpirun -np " nreplicas " plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status " --multi " nreplicas " > /dev/stderr");}
     system("cat example"number".html");
     system("rm example"number".dat example"number".html");
     sub("</pre>","");
