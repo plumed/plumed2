@@ -102,7 +102,7 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
   if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
   else {
       log.printf("  outputting data for replicas ");
-      for(unsigned i=0;i<preps.size();++i) log.printf("%d ", preps[i].c_str() );
+      for(unsigned i=0;i<preps.size();++i) log.printf("%d ", preps[i] );
   }
 }
 
