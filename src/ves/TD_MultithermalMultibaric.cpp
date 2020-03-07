@@ -86,7 +86,7 @@ with \f$C\f$ such that \f$F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0\f$ with \f$E_{m
 \f$ \beta F_{\beta,P}(E,\mathcal{V},s) \f$ is not know from the start and is instead found during the simulation.
 Therefore \f$ p(E,\mathcal{V},s) \f$ is determined iteratively as done in the well tempered target distribution \cite Valsson-JCTC-2015.
 
-The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of TP plane.
+The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of Temperature-Pressure plane.
 The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
 
 The multicanonical ensemble (fixed volume) can be targeted using \ref TD_MULTICANONICAL.
@@ -150,7 +150,7 @@ OPT_AVERAGED_SGD ...
 
 
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
-Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
+Consider a system of 250 atoms that crystallizes in the FCC crystal structure.
 The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa.
 We assume that inside this region we can find the liquid-fcc coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
