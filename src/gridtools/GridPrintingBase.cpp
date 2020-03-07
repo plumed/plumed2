@@ -62,16 +62,9 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   } else {
     log.printf("\n");
   }
-  std::vector<std::string> rep_data(1); parseVector("REPLICA",rep_data);
-  if( rep_data.size()==1 ) {
-    if( rep_data[0]=="all" ) output_for_all_replicas=true;
-    else {
-      preps.resize(1); Tools::convert( rep_data[0], preps[0] );
-    }
-  } else {
-    preps.resize( rep_data.size() );
-    for(unsigned i=0; i<rep_data.size(); ++i) Tools::convert( rep_data[i], preps[i] );
-  }
+  std::string rep_data; parse("REPLICA",rep_data);
+  if( rep_data=="all" ) output_for_all_replicas=true;
+  else { preps.resize(1); Tools::convert( rep_data, preps[0] ); }
   if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
   else {
     log.printf("  outputting data for replicas ");
