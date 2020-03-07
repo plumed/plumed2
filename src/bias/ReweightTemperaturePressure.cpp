@@ -90,13 +90,13 @@ avg_dist: AVERAGE ARG=distance LOGWEIGHTS=bias_weights,temp_press_weights
 PRINT ARG=avg_dist FILE=COLVAR_REWEIGHT STRIDE=1
 \endplumedfile
 
-Clearly, in performing the analysis above we would read from the potential energy, a distance, and the value of the bias potential from a COLVAR file like the one shown below.  We would then be able 
+Clearly, in performing the analysis above we would read from the potential energy, a distance, and the value of the bias potential from a COLVAR file like the one shown below.  We would then be able
 to calculate the ensemble average of the distance at 300 K.
 
 \auxfile{COLVAR}
 #! FIELDS time energy volume mybias.bias distance
  10000.000000 -13133.769283 7.488921 63.740530 0.10293
- 10001.000000 -13200.239722 7.116548 36.691988 0.16253 
+ 10001.000000 -13200.239722 7.116548 36.691988 0.16253
  10002.000000 -13165.108850 7.202273 44.408815 0.17625
 \endauxfile
 

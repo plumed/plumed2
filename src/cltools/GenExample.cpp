@@ -173,7 +173,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
       if( input[ll][0].find("#")!=std::string::npos ) { long_input.push_back( input[ll] ); continue; }
       std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
       if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; }
-      Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) ); 
+      Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) );
       actionRegister().getKeywords( interpreted[0], keys ); std::string lab, myinputline;
       if( Tools::parse(interpreted, "LABEL", lab ) ) myinputline = lab + ": ";
       myinputline += interpreted[0] + " "; bool trailingcomment=false;

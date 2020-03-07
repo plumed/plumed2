@@ -33,7 +33,7 @@ void GridPrintingBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  The default "
            "value of 0 ensures that the grid is only output at the end of the trajectory");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
-  keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
+  keys.add("compulsory","REPLICA","0","the replica for which you would like to output this information");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
@@ -62,7 +62,7 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   } else {
     log.printf("\n");
   }
-  std::vector<std::string> rep_data; parseVector("REPLICA",rep_data);
+  std::vector<std::string> rep_data(1); parseVector("REPLICA",rep_data);
   if( rep_data.size()==1 ) {
     if( rep_data[0]=="all" ) output_for_all_replicas=true;
     else {
@@ -74,8 +74,8 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   }
   if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
   else {
-      log.printf("  outputting data for replicas ");
-      for(unsigned i=0;i<preps.size();++i) log.printf("%d ", preps[i] );
+    log.printf("  outputting data for replicas ");
+    for(unsigned i=0; i<preps.size(); ++i) log.printf("%d ", preps[i] );
   }
 }
 
