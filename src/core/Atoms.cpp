@@ -442,6 +442,11 @@ void Atoms::updateUnits() {
 
 void Atoms::setTimeStep(void*p) {
   MD2double(p,timestep);
+// The following is to avoid extra digits in case the MD code uses floats
+// e.g.: float f=0.002 when converted to double becomes 0.002000000094995
+// To avoid this, we keep only up to 6 significant digits after first one
+  double magnitude=std::pow(10,std::floor(std::log10(timestep)));
+  timestep=std::floor(timestep/magnitude*1e6)/1e6*magnitude;
 }
 
 double Atoms::getTimeStep()const {

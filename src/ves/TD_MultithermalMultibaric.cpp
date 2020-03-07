@@ -60,7 +60,7 @@ This is done through the keywords STEPS_TEMP and STEPS_PRESSURE.
 If the number of intermediate temperature and pressures is too small, then holes might appear in the target distribution.
 If it is too large, the performance will deteriorate with no additional advantage.
 
-We now describe the algorithm more rigurously.
+We now describe the algorithm more rigorously.
 The target distribution is given by
 \f[
 p(E,\mathcal{V},s)=
@@ -242,7 +242,7 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PRESSURE","Target pressure of the barostat used in the MD engine.");
   keys.add("compulsory","STEPS_TEMP","20","Number of temperature steps.");
   keys.add("compulsory","STEPS_PRESSURE","20","Number of pressure steps.");
-  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
+  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
 }
 
 

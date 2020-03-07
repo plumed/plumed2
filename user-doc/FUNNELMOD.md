@@ -1,4 +1,4 @@
-\page FUNNEL Funnel-Metadynamics (FM)
+\page FUNNELMOD Funnel-Metadynamics (FM)
 
 <!-- 
 description: a collective variable and a bias action necessary to perform Funnel-Metadynamics on Molecular Dynamics simulations
@@ -6,7 +6,7 @@ authors: Stefano Raniolo, Vittorio Limongelli
 reference: \cite FM \cite FM-protocol
 -->
 
-##Overview
+## Overview
 FM is a combination of Metadynamics bias potential \cite metad with a funnel-shape restraint potential applied to the target structure of a binding interaction. 
 The latter is composed of a cone restraint, which covers the ligand binding site, and a cylindrical one that heads towards the solvent \cite FM. 
 When inside the funnel volume, the ligand does not feel any restraint potential, proceeding as regular Metadynamics.
@@ -33,10 +33,10 @@ The funnel module is composed of a collective variable that calculates the posit
 
 The following list contains descriptions of the collective variables developed for the PLUMED-FUNNEL module. They should be used in combination with the funnel-shaped restraint potential and Metadynamics to enable Funnel-Metadynamics.
 
-@FUNNEL@
+@FUNNELMOD_COLVAR@
 
 \page funnel_bias Bias Documentation
 
 The following list contains descriptions of biases developed for the PLUMED-FUNNEL module. They should be used in combination with the collective variable to calculate the position relative to the funnel-shape restraint potential and Metadynamics to enable Funnel-Metadynamics.
 
-@FUNNEL_PS@
+@FUNNELMOD_BIAS@
