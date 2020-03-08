@@ -76,6 +76,7 @@ public:
     return "construct an example for the manual that users can interact with";
   }
   void printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile );
+  std::vector<std::vector<std::string> > createLongInput( const std::vector<std::vector<std::string> >& input );
 };
 
 PLUMED_REGISTER_CLTOOL(GenExample,"gen_example")
@@ -157,46 +158,50 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     ofile<<"</div>"<<std::endl;
     // Write out long version of the input
     ofile<<"<div style=\"display:none;\" id=\""<<egname<<"long\">";
-    std::vector<std::vector<std::string> > long_input;
-    PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
-    myplumed.cmd("setRealPrecision",&rr);
-    if(Communicator::initialized()) {
-      if(multi) {
-        if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
-        myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
-      }
-      myplumed.cmd("setMPIComm",&intracomm.Get_comm());
-    }
-    myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
-    for(unsigned ll=0; ll<input.size(); ++ll) {
-      if( input[ll].empty() || endplumed ) { long_input.push_back( input[ll] ); continue; }
-      if( input[ll][0].find("#")!=std::string::npos ) { long_input.push_back( input[ll] ); continue; }
-      std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
-      if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; }
-      Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) );
-      actionRegister().getKeywords( interpreted[0], keys ); std::string lab, myinputline;
-      if( Tools::parse(interpreted, "LABEL", lab ) ) myinputline = lab + ": ";
-      myinputline += interpreted[0] + " "; bool trailingcomment=false;
-      for(unsigned i=1; i<interpreted.size(); ++i) {
-        if( trailingcomment && interpreted[i]=="@newline") { trailingcomment=false; continue; }
-        if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; continue; }
-        if( interpreted[i]=="@newline" || interpreted[i]=="..." ) continue;
-        std::size_t pos = 0;  while ((pos = interpreted[i].find("@newline",pos)) != std::string::npos) { interpreted[i].replace(pos, 8, "\n"); pos++; }
-        myinputline += interpreted[i] + " ";
-      }
-      if( status=="working" && keys.exists("IS_SHORTCUT") ) {
-        myplumed.readInputLine( myinputline );
-        ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
-        plumed_assert( as ); std::vector<std::string> shortcut_commands = as->getSavedInputLines();
-        for(unsigned i=0; i<shortcut_commands.size(); ++i) {
-          std::vector<std::string> words = Tools::getWords( shortcut_commands[i] ); long_input.push_back( words );
-        }
-      } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
-    }
+    std::vector<std::vector<std::string> > long_input = createLongInput( input );
     printExampleInput( long_input, egname + "long", egname, ofile );
     ofile<<"</div>"<<std::endl;
   } else printExampleInput( input, egname, egname, ofile );
   ofile.close(); return 0;
+}
+
+std::vector<std::vector<std::string> > GenExample::createLongInput( const std::vector<std::vector<std::string> >& input ) {
+  std::vector<std::vector<std::string> > long_input; PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
+  myplumed.cmd("setRealPrecision",&rr);
+  if(Communicator::initialized()) {
+    if(multi) {
+      if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
+    }
+    myplumed.cmd("setMPIComm",&intracomm.Get_comm());
+  }
+  bool endplumed=false; myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
+  for(unsigned ll=0; ll<input.size(); ++ll) {
+    if( input[ll].empty() || endplumed ) { long_input.push_back( input[ll] ); continue; }
+    if( input[ll][0].find("#")!=std::string::npos ) { long_input.push_back( input[ll] ); continue; }
+    std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
+    if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; }
+    Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) );
+    actionRegister().getKeywords( interpreted[0], keys ); std::string lab, myinputline;
+    if( Tools::parse(interpreted, "LABEL", lab ) ) myinputline = lab + ": ";
+    myinputline += interpreted[0] + " "; bool trailingcomment=false;
+    for(unsigned i=1; i<interpreted.size(); ++i) {
+      if( trailingcomment && interpreted[i]=="@newline") { trailingcomment=false; continue; }
+      if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; continue; }
+      if( interpreted[i]=="@newline" || interpreted[i]=="..." ) continue;
+      std::size_t pos = 0;  while ((pos = interpreted[i].find("@newline",pos)) != std::string::npos) { interpreted[i].replace(pos, 8, "\n"); pos++; }
+      myinputline += interpreted[i] + " ";
+    }
+    if( status=="working" && keys.exists("IS_SHORTCUT") ) {
+      myplumed.readInputLine( myinputline );
+      ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
+      plumed_assert( as ); std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+      for(unsigned i=0; i<shortcut_commands.size(); ++i) {
+        std::vector<std::string> words = Tools::getWords( shortcut_commands[i] ); long_input.push_back( words );
+      }
+    } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
+  }
+  return long_input; 
 }
 
 void GenExample::printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile ) {
