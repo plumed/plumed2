@@ -201,7 +201,7 @@ std::vector<std::vector<std::string> > GenExample::createLongInput( const std::v
       }
     } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
   }
-  return long_input; 
+  return long_input;
 }
 
 void GenExample::printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile ) {

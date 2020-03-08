@@ -99,7 +99,7 @@ if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
 fi
-#mv $file.tmp $file
+mv $file.tmp $file
 rm -f *
 done
 cd ../../
