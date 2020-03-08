@@ -143,6 +143,8 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   if( hasshortcuts ) {
     // Write out the short version of the input
     ofile<<"<div style=\"width: 100%; float:left\" id=\"input_"<<egname<<"\"></div>"<<std::endl;
+    // Write an extra pre to make sure the html after the example is put in the right place on the page
+    ofile<<"<pre style=\"width: 97%;\" class=\"fragment\"></pre>"<<std::endl;
     ofile<<"<script type=\"text/javascript\">"<<std::endl;
     ofile<<"if (window.addEventListener) { // Mozilla, Netscape, Firefox"<<std::endl;
     ofile<<"    window.addEventListener('load', "<<egname<<"Load, false);"<<std::endl;
