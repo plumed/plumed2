@@ -1,6 +1,6 @@
 language: cpp
 cache: ccache
-matrix:
+jobs:
   include:
 # list of configurations to be attempted:
 # MPI + doc
@@ -10,36 +10,29 @@ matrix:
   - name: Run all tests and build doc on ubuntu 18. All features enabled (system blas and lapack + asmjit)
     os: linux
     dist: bionic
-    sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
   - name: Run all tests and scan coverage
     os: linux
     dist: trusty
-    sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
   - name: Debug flags, no MPI
     os: linux
     dist: trusty
-    sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
   - name: Debug flags, MPI
     os: linux
     dist: trusty
-    sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
   - name: Cppcheck and codecheck
     os: linux
     dist: trusty
-    sudo: required
     env: CPPCHECK=yes CPPCHECK_VERSION=1.90
   - name: External blas with internal lapack, including asmjit
     os: linux
     if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
-    sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
   - name: Docker image (ubuntu 17, with gcc6)
-    sudo: required
     if: branch =~ ^test- OR type IN(pull_request)
     services: docker
     env: PLUMED_DOCKER=yes
@@ -89,7 +82,6 @@ matrix:
     os: linux
     if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
     dist: trusty
-    sudo: required
     env: PLUMED_CONDA=yes
 # osx conda package
   - name: Conda build, MacOS
@@ -257,7 +249,12 @@ script:
        CONDA_LABEL=nightly ;
     fi
 # build conda package
-  - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
+  - if test -n "$PLUMED_CONDA" ; then
+       curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci &&
+       source ./conda-ci install &&
+       source ./conda-ci install-conda-build &&
+       VERSION="$CONDA_VERSION" make -C conda ;
+    fi
 
 # build docker container
   - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi

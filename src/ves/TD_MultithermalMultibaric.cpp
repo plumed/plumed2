@@ -60,7 +60,7 @@ This is done through the keywords STEPS_TEMP and STEPS_PRESSURE.
 If the number of intermediate temperature and pressures is too small, then holes might appear in the target distribution.
 If it is too large, the performance will deteriorate with no additional advantage.
 
-We now describe the algorithm more rigurously.
+We now describe the algorithm more rigorously.
 The target distribution is given by
 \f[
 p(E,\mathcal{V},s)=
@@ -86,7 +86,7 @@ with \f$C\f$ such that \f$F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0\f$ with \f$E_{m
 \f$ \beta F_{\beta,P}(E,\mathcal{V},s) \f$ is not know from the start and is instead found during the simulation.
 Therefore \f$ p(E,\mathcal{V},s) \f$ is determined iteratively as done in the well tempered target distribution \cite Valsson-JCTC-2015.
 
-The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of TP plane.
+The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of Temperature-Pressure plane.
 The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
 
 The multicanonical ensemble (fixed volume) can be targeted using \ref TD_MULTICANONICAL.
@@ -150,9 +150,9 @@ OPT_AVERAGED_SGD ...
 
 
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
-Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
+Consider a system of 250 atoms that crystallizes in the FCC crystal structure.
 The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa.
-We assume that inside this region we can find the liquid-fcc coexistence line that we would like to obtain.
+We assume that inside this region we can find the liquid-FCC coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
 The energy, volume, and an order parameter are used as collective variables to construct the bias potential.
 We choose as order parameter the \ref FCCUBIC.
@@ -242,7 +242,7 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PRESSURE","Target pressure of the barostat used in the MD engine.");
   keys.add("compulsory","STEPS_TEMP","20","Number of temperature steps.");
   keys.add("compulsory","STEPS_PRESSURE","20","Number of pressure steps.");
-  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
+  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
 }
 
 

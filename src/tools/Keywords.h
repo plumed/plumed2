@@ -163,6 +163,8 @@ public:
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
 /// Get the description of this component
   std::string getOutputComponentDescription( const std::string& name ) const ;
+/// Remove a component with a particular name from the keywords
+  void removeComponent( const std::string& name );
 /// Reference to keys
   std::vector<std::string> getKeys() const { return keys; }
 /// Get the description of a particular keyword

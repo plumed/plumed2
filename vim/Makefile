@@ -10,7 +10,7 @@ plumed_compiled := $(wildcard ../src/lib/plumed)
 ifeq ($(strip $(plumed_compiled)),)
 
 all:
-	@echo You must compile plumed before building the user manual
+	@echo You must compile plumed before building the VIM syntax file
 
 else
 

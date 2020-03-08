@@ -318,11 +318,6 @@ vector<string> Tools::ls(const string&d) {
 #if defined(__PLUMED_HAS_READDIR_R)
       readdir_r(dir,&ent,&res);
 #else
-// cppcheck complains about this:
-// (portability) Non reentrant function 'readdir' called. For threadsafe applications it is recommended to use the reentrant replacement function 'readdir_r'.
-// since we use it only if readdir_r is not available, I suppress the warning
-// GB
-// cppcheck-suppress readdirCalled
       res=readdir(dir);
 #endif
       if(!res) break;

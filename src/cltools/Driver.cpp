@@ -390,6 +390,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 // it is necessary in order to store the pointer to ts_in.coords
   std::unique_ptr<float[]> ts_in_coords;
   ts_in.coords=ts_in_coords.get();
+  ts_in.velocities=NULL;
   ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 

@@ -30,12 +30,16 @@
 using namespace std;
 namespace PLMD {
 
+/// Retrieve PLUMED_ENABLE_SIGNALS.
+/// Inline static so that it can store a static variable (for quicker access)
+/// without adding a unique global symbol to a library including this header file.
+inline static bool SubprocessPidGetenvSignals() noexcept {
+  static const bool res=std::getenv("PLUMED_ENABLE_SIGNALS");
+  return res;
+}
+
 /// Small utility class, used to avoid inclusion of unistd.h> in a header file.
 class SubprocessPid {
-  static bool signals() noexcept {
-    static const bool res=std::getenv("PLUMED_ENABLE_SIGNALS");
-    return res;
-  }
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
   pid_t pid;
@@ -45,14 +49,14 @@ public:
     plumed_assert(pid!=0 && pid!=-1);
   }
   void stop() noexcept {
-    // signals give problems with MPI on Travis.
+    // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(signals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
   }
   void cont() noexcept {
-    // signals give problems with MPI on Travis.
+    // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(signals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
   }
   ~SubprocessPid() {
     // this is apparently working also with MPI on Travis.
