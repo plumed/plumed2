@@ -86,7 +86,6 @@ class Print :
   string description;
   string fmt;
   bool hasorigin;
-  bool printAtEnd;
   double lenunit;
   std::vector<std::string> names;
   bool gridinput;
@@ -155,7 +154,6 @@ Print::Print(const ActionOptions&ao):
   description(""),
   fmt("%f"),
   hasorigin(false),
-  printAtEnd(false),
   lenunit(1.0),
   gridinput(false),
   rotate(0),
@@ -197,7 +195,7 @@ Print::Print(const ActionOptions&ao):
       }
     }
     if( getStride()==0 ) { 
-        if( timeseries ) { setStride(10000); printAtEnd=true; log.printf("  printing time series at end of calculation \n"); }
+        if( timeseries ) { setStride(0); log.printf("  printing time series at end of calculation \n"); }
         else { setStride(1); log.printf("  with stride %d\n",getStride()); }
     }
 /////////////////////////////////////////
@@ -227,7 +225,7 @@ Print::Print(const ActionOptions&ao):
     }
     if( gridinput ) {
       if( getStride()==0 ) {
-        setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+        setStride(0); log.printf("  printing final grid only \n");
       }
       if( tstyle=="ndx" ) error("grids should be printed to xyz, grid or cube files only");
       if( getNumberOfArguments()!=1 ) error("can only print one grid at a time");
@@ -311,14 +309,14 @@ Print::Print(const ActionOptions&ao):
     }
   } else if( tstyle=="grid" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+      setStride(0); log.printf("  printing final grid only \n");
     }
     if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a grid");
     log.printf("  printing function labelled %s at points on a grid in a PLUMED grid file \n", getPntrToArgument(0)->getName().c_str() );
   } else if( tstyle=="cube" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+      setStride(0); log.printf("  printing final grid only \n");
     }
     if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=3 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a 3D grid");
@@ -327,7 +325,7 @@ Print::Print(const ActionOptions&ao):
     if( getNumberOfArguments()!=1 ) error("when printing a matrix to do a file you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+      setStride(0); log.printf("  printing final matrix only \n");
     }
     log.printf("  printing matrix labelled %s to file \n", getPntrToArgument(0)->getName().c_str() );
   } else if( tstyle=="dot" ) {
@@ -335,7 +333,7 @@ Print::Print(const ActionOptions&ao):
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
     if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("should not print non square matrices to dot file");
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+      setStride(0); log.printf("  printing final matrix only \n");
     }
     log.printf("  printing matrix labelled %s to a dot file \n", getPntrToArgument(0)->getName().c_str() );
     std::string ctol; parse("CONNECTION_TOL",ctol);
@@ -344,7 +342,7 @@ Print::Print(const ActionOptions&ao):
     log.printf("  elements in graph are shown connected if matrix element is greater than %f \n", dot_connection_cutoff );
   } else if( tstyle=="pdb" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing pdb at end of calculation \n");
+      setStride(0); log.printf("  printing pdb at end of calculation \n");
     }
     parse("DESCRIPTION",description); log.printf("  printing configurations to a pdb file \n");
     if( getNumberOfArguments()==0 ) {
@@ -435,7 +433,7 @@ void Print::update() {
     }
     if( dontprint ) return;  // If everything is an average don't print on first step
   }
-  if( printAtEnd ) return ;
+  plumed_assert( getStride()>0 );
 
   if( !timeseries && tstyle=="colvar" ) {
     ofile.fmtField(" %f");
@@ -742,8 +740,9 @@ void Print::update() {
 }
 
 void Print::runFinalJobs() {
-  if( !printAtEnd ) return ;
-  printAtEnd=false; retrieveAtoms(); update();
+  if( getStride()>0 ) return ;
+  // Stride is set to one here otherwise update crashes
+  setStride(1); retrieveAtoms(); update();
 }
 
 void Print::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const {

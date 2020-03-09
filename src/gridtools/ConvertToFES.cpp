@@ -71,13 +71,14 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); 
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
+  keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  double simtemp=0.; parse("TEMP",simtemp); 
+  double simtemp=0.; parse("TEMP",simtemp); bool minzero=false; parseFlag("MINTOZERO",minzero);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
   else simtemp=plumed.getAtoms().getKbT();
   if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
@@ -85,8 +86,12 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   std::vector<std::string> argv; parseVector("ARG",argv);
   if( argv.size()!=1 ) error("should only have one argument");
 
-  std::string str_temp; Tools::convert( simtemp, str_temp );
-  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
+  std::string str_temp; Tools::convert( simtemp, str_temp ); std::string flab=""; if( minzero ) flab="_unz";
+  readInputLine( getShortcutLabel() + flab + ": MATHEVAL ARG1=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
+  if( minzero ) {
+      readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz" );
+      readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_unz" + " ARG2=" + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
+  }
 }
 
 }

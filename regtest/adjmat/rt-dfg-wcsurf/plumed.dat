@@ -32,6 +32,6 @@ dens_denom: KDE HEIGHTS=clust1 ARG1=dens_dist.x ARG2=dens_dist.y ARG3=dens_dist.
 dens: MATHEVAL ARG1=dens_numer ARG2=dens_denom FUNC=x/y PERIODIC=NO
 
 # Print the cube and find a contour
-PRINT ARG=dens FILE=dens.grid FMT=%8.4f
+PRINT ARG=dens FILE=dens.grid FMT=%8.4f STRIDE=1
 sc: FIND_SPHERICAL_CONTOUR ARG=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 NPOINTS=100
-PRINT ARG=sc FILE=mysurface.xyz UNITS=A FMT=%8.4f 
+PRINT ARG=sc FILE=mysurface.xyz UNITS=A FMT=%8.4f STRIDE=1 
