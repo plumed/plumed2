@@ -63,7 +63,10 @@ private:
   double bias_prefactor_;
   unsigned stride_;
   std::vector<double> sigma0_;
-  bool measure_sigma_;
+  unsigned adaptive_sigma_stride_;
+  long unsigned adaptive_counter_;
+  std::vector<double> av_cv_;
+  std::vector<double> av_M2_;
   bool fixed_sigma_;
   double epsilon_;
   double sum_weights_;
@@ -121,7 +124,7 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","PACE","the frequency for kernel addition");
-  keys.add("compulsory","SIGMA","0","the initial widths of the kernels. If not set, the standar deviation of the unbiased fluctuations will be measured before starting biasing");
+  keys.add("compulsory","SIGMA","0","the initial widths of the kernels. If not set, adaptive sigma will be used");
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold. Set to zero to avoid compression");
 //extra options
@@ -129,6 +132,7 @@ void OPESwt::registerKeywords(Keywords& keys) {
            " Set to 'inf' for non-tempered flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
+  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Defauld is one PACE");
   keys.addFlag("NO_NORM",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursevely attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
@@ -180,17 +184,6 @@ OPESwt::OPESwt(const ActionOptions&ao)
 //other compulsory input
   parse("PACE",stride_);
 
-  measure_sigma_=false;
-  parseVector("SIGMA",sigma0_);
-  if(sigma0_[0]==0)
-  {
-    measure_sigma_=true;
-    sigma0_.clear();
-    sigma0_.resize(2*ncv_,0); //second half will store the averages
-  }
-  else
-    plumed_massert(sigma0_.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
-
   double barrier=0;
   parse("BARRIER",barrier);
   plumed_massert(barrier>=0,"the BARRIER should be greater than zero");
@@ -208,6 +201,25 @@ OPESwt::OPESwt(const ActionOptions&ao)
     parse("BIASFACTOR",biasfactor);
     plumed_massert(biasfactor>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor;
+  }
+
+  adaptive_sigma_stride_=0;
+  parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
+  parseVector("SIGMA",sigma0_);
+  if(sigma0_[0]==0 && sigma0_.size()==1)
+  {
+    plumed_massert(!std::isinf(biasfactor),"BIASFACTOR=inf is not compatible with adapitve SIGMA");
+    sigma0_.clear();
+    adaptive_counter_=0;
+    if(adaptive_sigma_stride_==0)
+      adaptive_sigma_stride_=stride_;
+    av_cv_.resize(ncv_,0);
+    av_M2_.resize(ncv_,0);
+  }
+  else
+  {
+    plumed_massert(sigma0_.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
+    plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is set then it cannot be adaptive, thus ADAPTIVE_SIGMA_STRIDE should not be set");
   }
 
   epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
@@ -231,8 +243,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
   parseFlag("NO_NORM",no_Zeta_);
   if(no_Zeta_)
   {//this makes it more gentle in the initial phase
-    if(!measure_sigma_)
-      counter_=1;
+    counter_=1;
     sum_weights_=1;
     sum_weights2_=1;
   }
@@ -307,7 +318,8 @@ OPESwt::OPESwt(const ActionOptions&ao)
     {
       ifile.open(kernelsFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
-      plumed_massert(!measure_sigma_,"SIGMA must be set manually if you want to restart");
+      if(sigma0_.size()==0)
+        log.printf(" +++ WARNING +++ restarting from an adaptive sigma simulation is not perfect\n");
       log.printf("    Restarting from: %s\n",kernelsFileName.c_str());
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
@@ -381,10 +393,10 @@ OPESwt::OPESwt(const ActionOptions&ao)
         Zeta_=sum_uprob/sum_weights_/kernels_.size();
         old_Zeta_=Zeta_;
       }
-      log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_-1,kernels_.size());
+      log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       ifile.reset(false);
       ifile.close();
-      //sync all walkers and treads. Not sure is mandatory but is no harm
+    //sync all walkers and treads. Not sure is mandatory but is no harm
       comm.Barrier();
       if(NumWalkers_>1 && comm.Get_rank()==0)
         multi_sim_comm.Barrier();
@@ -451,8 +463,8 @@ OPESwt::OPESwt(const ActionOptions&ao)
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor);
   if(std::isinf(biasfactor))
     log.printf("    (thus a flat target distribution, no well-tempering)\n");
-  if(measure_sigma_)
-    log.printf(" -- SIGMA not provided, it will be taken equal to the unbiased standard deviation in the basin\n");
+  if(sigma0_.size()==0)
+    log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %d\n",adaptive_sigma_stride_);
   else
   {
     log.printf("  kernels have initial SIGMA = ");
@@ -515,43 +527,33 @@ void OPESwt::calculate()
   const double old_prob=(prob*sum_weights_-tot_delta)/old_sum_weights_;
   work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zeta_+epsilon_);
 
-//measure sigma if not specified
-  if(measure_sigma_)
-  {
-    counter_++;
-    for(unsigned i=0; i<ncv_; i++)
-    { //Welford's online algorithm for standard deviation
-      const double old_delta=cv[i]-sigma0_[ncv_+i];
-      sigma0_[ncv_+i]+=(cv[i]-sigma0_[ncv_+i])/counter_;
-      sigma0_[i]+=old_delta*(cv[i]-sigma0_[ncv_+i]);
-    }
-    if(counter_>100*stride_) //should be enough
-    {
-      measure_sigma_=false;
-      sigma0_.resize(ncv_);//delete the averages, not needed anymore
-      for(unsigned i=0; i<ncv_; i++)
-        sigma0_[i]=std::sqrt(sigma0_[i]/counter_);
-      counter_=0;
-      if(no_Zeta_)
-        counter_=1;
-    //print to the log
-      log.printf("  --- using the unbiased standard deviation as initial SIGMA =");
-      for(unsigned i=0; i<ncv_; i++)
-        log.printf(" %g",sigma0_[i]);
-      log.printf("\n");
-    }
-  }
-
-//dump prob if requested
-  if( (wProbStride_>0 && getStep()%wProbStride_==0) || (wProbStride_==-1 && getCPT()) )
-    dumpProbToFile();
-
   afterCalculate_=true;
 }
 
 void OPESwt::update()
 {
-  if(getStep()%stride_!=0 || measure_sigma_)
+//dump prob if requested
+  if( (wProbStride_>0 && getStep()%wProbStride_==0) || (wProbStride_==-1 && getCPT()) )
+    dumpProbToFile();
+
+//update variance if adaptive sigma
+  if(sigma0_.size()==0)
+  {
+    adaptive_counter_++;
+    unsigned tau=adaptive_sigma_stride_;
+    if(adaptive_counter_<adaptive_sigma_stride_)
+      tau=adaptive_counter_;
+    for(unsigned i=0; i<ncv_; i++)
+    { //Welford's online algorithm for standard deviation
+      const double cv_i=getArgument(i);
+      const double diff=difference(i,av_cv_[i],cv_i);
+      av_cv_[i]+=diff/tau; //exponentially decaying average
+      av_M2_[i]+=diff*difference(i,av_cv_[i],cv_i);
+    }
+  }
+
+//check update
+  if(getStep()%stride_!=0)
     return;
   if(isFirstStep_)//same in MetaD, useful for restarts?
   {
@@ -598,6 +600,12 @@ void OPESwt::update()
 
 //if needed, rescale sigma and height
   std::vector<double> sigma=sigma0_;
+  if(sigma0_.size()==0)
+  {
+    sigma.resize(ncv_);
+    for(unsigned i=0; i<ncv_; i++)
+      sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+  }
   if(!fixed_sigma_)
   {
     const double s_rescaling=std::pow(neff*(ncv_+2.)/4.,-1./(4+ncv_));
