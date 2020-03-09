@@ -28,6 +28,7 @@ namespace funnel {
 //+PLUMEDOC FUNNELMOD_BIAS FUNNEL
 /*
 Calculate a funnel-shape restraint potential that is defined on a grid that is read during the setup.
+
 If the input file is not already present, it will create one with the name specified in the FILE flag.
 The potential has a two-dimensional resolution since it has been devised to be used with the two
 components of \ref FUNNEL_PS (i.e., fps.lp and fps.ld) and it is divided in two sections, a cone shape
