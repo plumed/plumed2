@@ -101,6 +101,7 @@ PRINT ARG=p.bias FILE=COLVAR
 \endplumedfile
 `plumed2.dat` can be an arbitrary plumed input file, for instance
 \plumedfile
+#SETTINGS FILENAME=plumed2.dat
 # plumed2.dat
 d: DISTANCE ATOMS=1,10
 RESTRAINT ARG=d KAPPA=10 AT=2
