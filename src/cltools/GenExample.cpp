@@ -133,11 +133,11 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     ofile<<"<div style=\"width: 90%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
   }
   ofile<<"<div style=\"width: 10%; float:left\">";
-  ofile<<"<img src=\"https://img.shields.io/badge/"<<version<<"-";
-  if(status=="working") ofile<<"passing-green";
-  else if(status=="broken") ofile<<"failed-red";
+  ofile<<"<img src=\"https://img.shields.io/badge/";
+  if(status=="working") ofile<<version<<"-passing-green";
+  else if(status=="broken") ofile<<version<<"-failed-red";
   else if(status=="loads") ofile<<"with-LOAD-yellow";
-  else if(status=="incomplete") ofile<<"incomplete-yellow";
+  else if(status=="incomplete") ofile<<version<<"-incomplete-yellow";
   else error("unknown status");
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
   if( hasshortcuts ) {

@@ -35,7 +35,7 @@ if [ $neg -gt 0 ] ; then
            hasname=`grep "#SETTINGS" example-check/$fname/$ffname.dat | grep "FILENAME=" | wc -l | awk '{print $1}'`
            if [ $hasname -gt 0 ] ; then
                 filename=`grep "#SETTINGS" example-check/$fname/$ffname.dat  | awk '{for(i=1;i<=NF;++i){if(match($i,"FILENAME=")){print $i}}}' | sed -e 's/FILENAME=//'`
-                mv example-check/$fname/$ffname.dat example-check/$fname/$filename
+                cp example-check/$fname/$ffname.dat example-check/$fname/$filename
            fi
         fi
         sline=$eline
