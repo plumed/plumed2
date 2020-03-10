@@ -142,7 +142,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   , print_stride_(1)
 {
   //TODO is there a way to check that ARG is actually energy,volume?
-  plumed_massert(getNumberOfArguments()==2,"olny ENERGY and VOLUME should be given as ARG");
+  plumed_massert(getNumberOfArguments()==2,"only ENERGY and VOLUME should be given as ARG");
 
 //set beta_
   const double Kb=plumed.getAtoms().getKBoltzmann();
@@ -253,7 +253,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(steps_beta_!=0 && steps_pres_!=0)
     log.printf(" +++ WARNING +++ STEPS_TEMP and STEPS_PRES are used, thus OBSERVATION_STEP is set to 1\n"
-               "                 Reference energy and initial deltaFs can be set whith a fake RESTART\n");
+               "                 Reference energy and initial deltaFs can be set with a fake RESTART\n");
   if(walkers_mpi)
     log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
@@ -318,13 +318,13 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       log.printf("  Successfully read %d steps\n",counter_);
       ifile.reset(false);
       ifile.close();
+    //sync all walkers and treads and close file. Not sure is mandatory but is no harm
+      comm.Barrier();
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Barrier();
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
-  //sync all walkers and treads and close file. Not sure is mandatory but is no harm
-    comm.Barrier();
-    if(comm.Get_rank()==0)
-      multi_sim_comm.Barrier();
   }
 
 //setup deltaFs file, without opening it
@@ -461,7 +461,7 @@ void OPESmultiThermalBaric::update()
     old_deltaF_=deltaF_;
   }
 
-//update averages. this assumes that calculate() always runs before update(), thus uses current_bias_
+//update averages. This assumes that calculate() always runs before update(), thus uses current_bias_
   const double ene=getArgument(0);
   const double vol=getArgument(1);
   if(NumWalkers_==1)
@@ -615,7 +615,7 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
     log.printf(" +++ WARNING +++ MIN_%s and MAX_%s are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
-  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not simmetric
+  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
     auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
@@ -631,7 +631,7 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
       return sum_w*sum_w/sum_w2/obs.size()-0.5;
     };
   //here we find the root of func using the regula falsi (false position) method
-  //but any method would be ok, not much precision is needed. src/tools/RootFindingBase.h looked complicated
+  //but any method would be OK, not much precision is needed. src/tools/RootFindingBase.h looked complicated
     const double tolerance=1e-4; //seems to be a good default
     double a=0; //default is right side case
     double func_a=0.5;

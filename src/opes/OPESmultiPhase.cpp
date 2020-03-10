@@ -124,9 +124,9 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.add("compulsory","MAX_PRESSURE","the maximum of the pressure range");
   keys.add("optional","STEPS_PRESSURE","manually set the number of intermediate pressures");
 //umbrella stuff
-  keys.add("compulsory","SIGMA","sigma of the umbrella gaussians");
-  keys.add("compulsory","MIN_CV","the minimum of the cv range to be explored");
-  keys.add("compulsory","MAX_CV","the maximum of the cv range to be explored");
+  keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
+  keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
+  keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
@@ -155,8 +155,8 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   , work_(0)
   , print_stride_(1)
 {
-  //TODO is there a way to check that ARG is actually energy,volume,cv?
-  plumed_massert(getNumberOfArguments()==3,"olny ENERGY, VOLUME and a CV should be given as ARG");
+  //TODO is there a way to check that ARG is actually energy,volume,CV?
+  plumed_massert(getNumberOfArguments()==3,"only ENERGY, VOLUME and a CV should be given as ARG");
 
 //set beta_
   const double Kb=plumed.getAtoms().getKBoltzmann();
@@ -286,7 +286,7 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(steps_beta_!=0 && steps_pres_!=0)
     log.printf(" +++ WARNING +++ STEPS_TEMP and STEPS_PRES are used, thus OBSERVATION_STEP is set to 1\n"
-               "                 Reference energy and initial deltaFs can be set whith a fake RESTART\n");
+               "                 Reference energy and initial deltaFs can be set with a fake RESTART\n");
   if(barrier!=0)
     log.printf("  bias BARRIER = %g\n",barrier);
   if(walkers_mpi)
@@ -362,13 +362,13 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
       log.printf("  Successfully read %d steps\n",counter_);
       ifile.reset(false);
       ifile.close();
+    //sync all walkers and treads and close file. Not sure is mandatory but is no harm
+      comm.Barrier();
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Barrier();
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
-  //sync all walkers and treads and close file. Not sure is mandatory but is no harm
-    comm.Barrier();
-    if(comm.Get_rank()==0)
-      multi_sim_comm.Barrier();
   }
 
 //setup deltaFs file, without opening it
@@ -529,7 +529,7 @@ void OPESmultiPhase::update()
     old_deltaF_=deltaF_;
   }
 
-//update averages. this assumes that calculate() always runs before update(), thus uses current_bias_
+//update averages. This assumes that calculate() always runs before update(), thus uses current_bias_
   const double ene=getArgument(0);
   const double vol=getArgument(1);
   const double cv=getArgument(2);
@@ -704,7 +704,7 @@ unsigned OPESmultiPhase::estimate_steps(const double left_side,const double righ
     log.printf(" +++ WARNING +++ MIN_%s and MAX_%s are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
-  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not simmetric
+  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
     auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
@@ -720,7 +720,7 @@ unsigned OPESmultiPhase::estimate_steps(const double left_side,const double righ
       return sum_w*sum_w/sum_w2/obs.size()-0.5;
     };
   //here we find the root of func using the regula falsi (false position) method
-  //but any method would be ok, not much precision is needed. src/tools/RootFindingBase.h looked complicated
+  //but any method would be OK, not much precision is needed. src/tools/RootFindingBase.h looked complicated
     const double tolerance=1e-4; //seems to be a good default
     double a=0; //default is right side case
     double func_a=0.5;
@@ -798,7 +798,7 @@ unsigned OPESmultiPhase::estimate_steps(const double left_side,const double righ
 //  if(border_weight_==-1 && steps%2==0)
 //  {
 //    log.printf("  (adding one step in %s for Simpson's integration)\n",msg.c_str());
-//    steps++; //simpson integration wants an even number of bins, thus an odd number of steps
+//    steps++; //Simpson integration wants an even number of bins, thus an odd number of steps
 //  }
   return steps;
 }

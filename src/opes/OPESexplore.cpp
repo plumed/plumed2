@@ -132,10 +132,10 @@ void OPESexplore::registerKeywords(Keywords& keys) {
            " Set to 'inf' for non-tempered flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
-  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Defauld is one PACE");
+  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Default is one PACE");
   keys.addFlag("NO_NORM",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
-  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursevely attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
+  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
 //kernels file
   keys.add("compulsory","FILE","KERNELS","a file in which the list of added kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
@@ -203,6 +203,7 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
       adaptive_sigma_stride_=stride_;
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
+    plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE >= PACE");
   }
   else
   {
@@ -576,7 +577,7 @@ void OPESexplore::update()
   const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
-//in opes explore the kernel heihgt=1, because it is not multiplied by the weight
+//in opes explore the kernel height=1, because it is not multiplied by the weight
   height=1;
 
 //if needed, rescale sigma and height
@@ -594,8 +595,8 @@ void OPESexplore::update()
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
   //the height should be divided by sqrt(2*pi)*sigma,
-  //but this overall factor would be cancelled when dividing by Zeta
-  //thus we skip it alltogether, but keep the s_rescaling
+  //but this overall factor would be canceled when dividing by Zeta
+  //thus we skip it altogether, but keep the s_rescaling
     height/=std::pow(s_rescaling,ncv_);
   }
 
@@ -640,7 +641,7 @@ void OPESexplore::update()
     const unsigned ks=kernels_.size();
     const unsigned ds=delta_kernels_.size();
     const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
-    if(few_kernels) //really needed? probably is almost always false
+    if(few_kernels) //really needed? Probably is almost always false
     {
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
         for(unsigned kk=0; kk<kernels_.size(); kk++)

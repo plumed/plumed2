@@ -98,9 +98,9 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","OBSERVATION_STEPS","0","number of unbiased initial steps to collect statistics for initial deltaFs guess");
   keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");
 //umbrella stuff
-  keys.add("compulsory","SIGMA","sigma of the umbrella gaussians");
-  keys.add("compulsory","MIN_CV","the minimum of the cv range to be explored");
-  keys.add("compulsory","MAX_CV","the maximum of the cv range to be explored");
+  keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
+  keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
+  keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
@@ -126,7 +126,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   , work_(0)
   , print_stride_(1)
 {
-  plumed_massert(getNumberOfArguments()==1,"olny one cv is supported");
+  plumed_massert(getNumberOfArguments()==1,"only one cv is supported");
 
 //set beta_
   const double Kb=plumed.getAtoms().getKBoltzmann();
@@ -305,13 +305,13 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       log.printf("  Successfully read %d steps\n",counter_);
       ifile.reset(false);
       ifile.close();
+    //sync all walkers and treads. Not sure is mandatory but is no harm
+      comm.Barrier();
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Barrier();
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
-  //sync all walkers and treads. Not sure is mandatory but is no harm
-    comm.Barrier();
-    if(comm.Get_rank()==0)
-      multi_sim_comm.Barrier();
   }
 
 //Bibliography
