@@ -533,6 +533,12 @@ void OPESwt::calculate()
 
 void OPESwt::update()
 {
+  if(isFirstStep_)//same in MetaD, useful for restarts?
+  {
+    isFirstStep_=false;
+    return;
+  }
+
 //dump prob if requested
   if( (wProbStride_>0 && getStep()%wProbStride_==0) || (wProbStride_==-1 && getCPT()) )
     dumpProbToFile();
@@ -553,14 +559,9 @@ void OPESwt::update()
     }
   }
 
-//check update
+//do update
   if(getStep()%stride_!=0)
     return;
-  if(isFirstStep_)//same in MetaD, useful for restarts?
-  {
-    isFirstStep_=false;
-    return;
-  }
   plumed_massert(afterCalculate_,"OPESwt::update() must be called after OPESwt::calculate() to work properly");
   afterCalculate_=false;
 
@@ -604,6 +605,11 @@ void OPESwt::update()
   if(sigma0_.size()==0)
   {
     sigma.resize(ncv_);
+    if(adaptive_counter_==stride_)
+    { //very first estimate is from unbiased, thus must be adjusted
+      for(unsigned i=0; i<ncv_; i++)
+        av_M2_[i]/=(1-bias_prefactor_);
+    }
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
   }
