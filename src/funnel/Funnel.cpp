@@ -3,7 +3,7 @@
 
    This file is part of funnel code module.
 
-   The FM code respects the CC BY-NC license.
+   The FM code respects the CC BY-NC license. 
    Users are free to download, adapt and use the code as long as it is not for commercial purposes.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
