@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
-#include "core/AverageBase.h"
+#include "core/CollectFrames.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include <numeric>
@@ -78,7 +78,7 @@ ITRE::ITRE(const ActionOptions&ao):
   Value* arg0 = getPntrToArgument(0);
   if( arg0->getRank()!=1 || arg0->hasDerivatives() || arg0->getName().find("logweights")==std::string::npos ) error("input should logweights from action that collects frames");
   // Setup the object that is collecting the data
-  AverageBase* ab=dynamic_cast<AverageBase*>( arg0->getPntrToAction() );
+  CollectFrames* ab=dynamic_cast<CollectFrames*>( arg0->getPntrToAction() );
   if( !ab ) error("input should be calculated by an average base object");
   ab->turnOnBiasHistory();
   // Read in the temperature

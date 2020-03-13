@@ -19,10 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/AverageBase.h"
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/ActionRegister.h"
+#include "AverageBase.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "ActionRegister.h"
 
 //+PLUMEDOC GRIDCALC AVERAGE
 /*
@@ -88,7 +88,6 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
 
 class Average : public AverageBase {
 private:
@@ -98,15 +97,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void resizeValues();
   bool allowComponentsAndValue() const { return true; }
-  void clearAccumulatedData();
-  void accumulateNorm( const double& cweight );
-  void accumulateGrid( const double& cweight );
-  void accumulateValue( const double& cweight, const std::vector<double>& val );
   void setReferenceConfig();
-  void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
-  void transferDataToValue() {}
+  void accumulate( const std::vector<std::vector<Vector> >& dir  );
+
+  void calculate();
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -126,7 +121,12 @@ Average::Average( const ActionOptions& ao):
   lbound(0.0),pfactor(0.0)
 {
   // Now read in the instructions for the normalization
-  std::string normstr; std::vector<unsigned> shape; parse("NORMALIZATION",normstr);
+  if( n_real_args>1 || n_real_args<0 ) error("cannot average more than one quantity at a time");
+  if( getNumberOfArguments()>n_real_args ) {
+      if( getNumberOfArguments()>n_real_args+1 ) error("too many arguments in input to average");
+      if( getPntrToArgument(n_real_args)->getRank()>0 ) error("rank of input log weight is wrong"); 
+  }
+  std::string normstr; parse("NORMALIZATION",normstr);
   if( normstr=="true" ) { normalization=t; clearnorm=true; }
   else if( normstr=="false" ) { normalization=f; clearnorm=false; }
   else if( normstr=="ndata" ) { normalization=ndata; clearnorm=true; }
@@ -136,7 +136,8 @@ Average::Average( const ActionOptions& ao):
   if( n_real_args>0 ) {
      if( getNumberOfAtoms()>0 ) error("cannot average arguments and positions at same time");
 
-     if( getPntrToArgument(0)->hasDerivatives() ) addValueWithDerivatives( getPntrToArgument(0)->getShape() );
+     std::vector<unsigned> shape( getPntrToArgument(0)->getShape() ); 
+     if( getPntrToArgument(0)->hasDerivatives() ) addValueWithDerivatives( shape );
      else addValue( shape );
 
      if( getPntrToArgument(0)->isPeriodic() ) {
@@ -151,53 +152,63 @@ Average::Average( const ActionOptions& ao):
        setNotPeriodic();
        if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
      }
-     nvals=0; for(unsigned i=0;i<n_real_args;++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
   } else if( getNumberOfAtoms()>0 ) {
       displacements.resize( mygroup.size() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
       std::vector<unsigned> shape(1); shape[0]=3*getNumberOfAtoms(); addValue( shape ); setNotPeriodic();
   } else error("found nothing to average in input");
 }
 
-void Average::resizeValues() {
-  if( n_real_args==0 ) return;
+void Average::calculate() {
+  if( n_real_args==0 || !firststep ) return;
 
   if( getPntrToOutput(0)->hasDerivatives() && getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
       getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
   }
 }
 
-void Average::accumulateGrid( const double& lweight ) {
+void Average::accumulate( const std::vector<std::vector<Vector> >& dir  ) {
+  double lweight=0; if( getNumberOfArguments()>n_real_args ) lweight=getPntrToArgument(n_real_args)->get();
   double cweight = exp( lweight ); Value* val=getPntrToOutput(0);
-  // And accumulate the grid
-  Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getNumberOfValues( getLabel() );
-  for(unsigned i=0; i<nvals; ++i) {
-      unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
-      for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
-  }
-}
 
-void Average::accumulateNorm( const double& lweight ) {
-  double cweight = exp( lweight );
+  if( getNumberOfAtoms()>0 ) { 
+      plumed_assert( dir.size()==1 );
+      for(unsigned i=0;i<displacements.size();++i) {
+          displacements[i] += cweight*dir[0][i];
+          atoms.setVatomMass( mygroup[i], align[i] ); atoms.setVatomCharge( mygroup[i], displace[i] );
+          Vector pos = getReferencePosition(i) + displacements[i] / val->getNorm();
+          atoms.setVatomPosition( mygroup[i], pos );
+          for(unsigned k=0;k<3;++k) val->set( 3*i + k, val->getNorm()*pos[k] );
+      } 
+  } 
+
   if( getPntrToOutput(0)->isPeriodic() ) {
       Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
       if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
       else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
   } else {
-      Value* val=getPntrToOutput(0);
       if( normalization==t ) val->setNorm( val->getNorm() + cweight );
-      else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 ); 
+      else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
   }
-}
 
-void Average::accumulateValue( const double& lweight, const std::vector<double>& dval ) {
-  plumed_dbg_assert( dval.size()==1 ); double cweight = exp( lweight );
-  if( getPntrToArgument(0)->isPeriodic() ) {
-      Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
-      double tval = ( dval[0] - lbound ) / pfactor;
-      valsin->add( 0, cweight*sin(tval) ); valcos->add( 0, cweight*cos(tval) );
-      getPntrToOutput(0)->set( 0, lbound + pfactor*atan2( valsin->get(0), valcos->get(0)) );
-  } else {
-      Value* val=getPntrToOutput(0); val->add( cweight*dval[0] );
+  if( getNumberOfAtoms()==0 ) {
+      Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getNumberOfValues( getLabel() );
+      if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
+          // And accumulate the grid
+          unsigned nder=val->getNumberOfDerivatives();
+          for(unsigned i=0; i<nvals; ++i) {
+              val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
+              for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
+          }
+      } else if( arg0->isPeriodic() ){
+          Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2); 
+          for(unsigned i=0;i<nvals;++i) {
+              double tval = ( arg0->get(i) - lbound ) / pfactor;
+              valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
+              val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
+          }
+      } else {
+          for(unsigned i=0;i<nvals;++i) val->add( i, cweight*arg0->get(i) );
+      } 
   }
 }
 
@@ -206,18 +217,4 @@ void Average::setReferenceConfig() {
   for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
 }
 
-void Average::accumulateAtoms( const double& lweight, const std::vector<Vector>& dir ) {
-   double cweight = exp( lweight ); Value* val=getPntrToOutput(0);
-// Accumulate displacements
-   for(unsigned i=0;i<displacements.size();++i) {
-       displacements[i] += cweight*dir[i];
-       atoms.setVatomMass( mygroup[i], align[i] ); atoms.setVatomCharge( mygroup[i], displace[i] );
-       Vector pos = getReferencePosition(i) + displacements[i] / val->getNorm();
-       atoms.setVatomPosition( mygroup[i], pos );
-       for(unsigned k=0;k<3;++k) val->set( 3*i + k, val->getNorm()*pos[k] ); 
-   }
-}
-
-
-}
 }

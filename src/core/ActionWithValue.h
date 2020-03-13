@@ -74,6 +74,7 @@ class ActionWithValue :
   public virtual Action
 {
   friend class AverageBase;
+  friend class CollectFrames;
   friend class ActionWithArguments;
 private:
 /// An array containing the values for this action
