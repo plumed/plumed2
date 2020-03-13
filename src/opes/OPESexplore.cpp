@@ -73,8 +73,8 @@ private:
   double sum_weights2_;
   double current_bias_;
 
-  bool no_Zeta_;
-  double Zeta_;
+  bool no_Zed_;
+  double Zed_;
 
   double threshold2_;
   bool recursive_merge_;
@@ -98,7 +98,7 @@ private:
 
   double work_;
   double old_counter_;
-  double old_Zeta_;
+  double old_Zed_;
   std::vector<kernel> delta_kernels_;
 
   OFile probOfile_;
@@ -133,7 +133,7 @@ void OPESexplore::registerKeywords(Keywords& keys) {
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Default is one PACE");
-  keys.addFlag("NO_NORM",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
+  keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
 //kernels file
@@ -152,7 +152,7 @@ void OPESexplore::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("work","default","work done by the last kernel added");
   keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$");
-  keys.addOutputComponent("norm","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$");
+  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels employed");
 }
@@ -164,10 +164,10 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   , counter_(0)
   , sum_weights_(0)
   , sum_weights2_(0)
-  , Zeta_(1)
+  , Zed_(1)
   , work_(0)
   , old_counter_(0)
-  , old_Zeta_(1)
+  , old_Zed_(1)
 {
   ncv_=getNumberOfArguments();
 //set kbt_
@@ -230,9 +230,9 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
 
 //optional stuff
-  no_Zeta_=false;
-  parseFlag("NO_NORM",no_Zeta_);
-  if(no_Zeta_)
+  no_Zed_=false;
+  parseFlag("NO_ZED",no_Zed_);
+  if(no_Zed_)
   {//this makes it more gentle in the initial phase
     counter_=1;
     sum_weights_=1;
@@ -364,7 +364,7 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
         sum_weights2_+=weight*weight;
         counter_++;
       }
-      if(!no_Zeta_)
+      if(!no_Zed_)
       {
         double sum_uprob=0;
         for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
@@ -372,8 +372,8 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
             sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
         if(NumParallel_>1)
           comm.Sum(sum_uprob);
-        Zeta_=sum_uprob/counter_/kernels_.size();
-        old_Zeta_=Zeta_;
+        Zed_=sum_uprob/counter_/kernels_.size();
+        old_Zed_=Zed_;
       }
       log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       ifile.reset(false);
@@ -430,8 +430,8 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   addComponent("work"); componentIsNotPeriodic("work");
   addComponent("rct"); componentIsNotPeriodic("rct");
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
-  addComponent("norm"); componentIsNotPeriodic("norm");
-  getPntrToComponent("norm")->set(Zeta_);
+  addComponent("zed"); componentIsNotPeriodic("zed");
+  getPntrToComponent("zed")->set(Zed_);
   addComponent("neff"); componentIsNotPeriodic("neff");
   getPntrToComponent("neff")->set(std::pow(1+sum_weights_,2)/(1+sum_weights2_));
   addComponent("nker"); componentIsNotPeriodic("nker");
@@ -466,8 +466,8 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
   if(!recursive_merge_)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
-  if(no_Zeta_)
-    log.printf(" -- NO_NORM: using fixed normalization factor = %g\n",Zeta_);
+  if(no_Zed_)
+    log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
   if(wProbStride_!=0 && walker_rank_==0)
     log.printf("  probability estimate is written on file %s with stride %d\n",probFileName.c_str(),wProbStride_);
   if(walkers_mpi)
@@ -495,17 +495,17 @@ void OPESexplore::calculate()
 
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
-  current_bias_=kbt_*(biasfactor_-1)*std::log(prob/Zeta_+epsilon_);
+  current_bias_=kbt_*(biasfactor_-1)*std::log(prob/Zed_+epsilon_);
   setBias(current_bias_);
   for(unsigned i=0; i<ncv_; i++)
-    setOutputForce(i,der_prob[i]==0?0:-kbt_*(biasfactor_-1)/(prob/Zeta_+epsilon_)*der_prob[i]/Zeta_);
+    setOutputForce(i,der_prob[i]==0?0:-kbt_*(biasfactor_-1)/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
 //calculate work
   double tot_delta=0;
   for(unsigned d=0; d<delta_kernels_.size(); d++)
     tot_delta+=evaluateKernel(delta_kernels_[d],cv);
   const double old_prob=(prob*counter_-tot_delta)/old_counter_;
-  work_+=current_bias_-kbt_*(biasfactor_-1)*std::log(old_prob/old_Zeta_+epsilon_);
+  work_+=current_bias_-kbt_*(biasfactor_-1)*std::log(old_prob/old_Zed_+epsilon_);
 
   afterCalculate_=true;
 }
@@ -544,12 +544,12 @@ void OPESexplore::update()
   afterCalculate_=false;
 
 //work done by the bias in one iteration, uses as zero reference a point at inf, so that the work is always positive
-  const double min_shift=kbt_*(biasfactor_-1)*std::log(old_Zeta_/Zeta_*old_counter_/counter_);
+  const double min_shift=kbt_*(biasfactor_-1)*std::log(old_Zed_/Zed_*old_counter_/counter_);
   getPntrToComponent("work")->set(work_-stride_*min_shift);
   work_=0;
   delta_kernels_.clear();
   old_counter_=counter_;
-  old_Zeta_=Zeta_;
+  old_Zed_=Zed_;
   unsigned old_nker=kernels_.size();
 
 //get new kernel height
@@ -595,7 +595,7 @@ void OPESexplore::update()
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
   //the height should be divided by sqrt(2*pi)*sigma,
-  //but this overall factor would be canceled when dividing by Zeta
+  //but this overall factor would be canceled when dividing by Zed
   //thus we skip it altogether, but keep the s_rescaling
     height/=std::pow(s_rescaling,ncv_);
   }
@@ -634,8 +634,8 @@ void OPESexplore::update()
     addKernel(height,center,sigma,true);
   getPntrToComponent("nker")->set(kernels_.size());
 
-  //update Zeta_
-  if(!no_Zeta_)
+  //update Zed_
+  if(!no_Zed_)
   {
     double sum_uprob=0;
     const unsigned ks=kernels_.size();
@@ -673,10 +673,10 @@ void OPESexplore::update()
           delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
         }
       }
-      sum_uprob=Zeta_*old_counter_*old_nker+delta_sum_uprob;
+      sum_uprob=Zed_*old_counter_*old_nker+delta_sum_uprob;
     }
-    Zeta_=sum_uprob/counter_/kernels_.size();
-    getPntrToComponent("norm")->set(Zeta_);
+    Zed_=sum_uprob/counter_/kernels_.size();
+    getPntrToComponent("zed")->set(Zed_);
   }
 }
 
@@ -805,7 +805,7 @@ void OPESexplore::dumpProbToFile()
   probOfile_.addConstantField("epsilon");
   probOfile_.addConstantField("kernel_cutoff");
   probOfile_.addConstantField("compression_threshold");
-  probOfile_.addConstantField("norm");
+  probOfile_.addConstantField("zed");
   probOfile_.addConstantField("sum_weights");
   probOfile_.addConstantField("sum_weights2");
   for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
@@ -814,7 +814,7 @@ void OPESexplore::dumpProbToFile()
   probOfile_.printField("epsilon",epsilon_);
   probOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
   probOfile_.printField("compression_threshold",sqrt(threshold2_));
-  probOfile_.printField("norm",Zeta_);
+  probOfile_.printField("zed",Zed_);
   probOfile_.printField("sum_weights",sum_weights_);
   probOfile_.printField("sum_weights2",sum_weights2_);
   for(unsigned k=0; k<kernels_.size(); k++)
