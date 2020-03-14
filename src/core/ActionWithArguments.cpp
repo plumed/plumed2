@@ -506,7 +506,9 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
         }
         arg_ends.push_back( arg.size() ); log.printf("\n");
         if( i==1 ) narg = nargt;
-        else if( narg!=nargt && getName()!="MATHEVAL" && getName()!="CUSTOM" ) error("mismatch between number of arguments specified for different numbered ARG values");
+        else if( narg!=nargt && getName()!="MATHEVAL" && getName()!="CUSTOM" && getName()!="DIFFERENCE" ) {
+           error("mismatch between number of arguments specified for different numbered ARG values");
+        }
       }
     }
     if( keywords.numbered("ARG" ) ) requestArguments(arg,true);
