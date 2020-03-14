@@ -32,7 +32,8 @@ private:
   unsigned nvals, ndata, task_start;
   std::vector<double> frame_weights, data, off_diag_bias, allweights, posdata;
   std::vector<std::vector<double> > alldata, allposdata;
-  double computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial );
+  void retrieveDataPoint( const unsigned& itime, std::vector<double>& old_data );
+  void computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial, std::vector<double>& weights );
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectFrames( const ActionOptions& );
@@ -40,7 +41,6 @@ public:
   void calculate();
   void finishComputations( const std::vector<double>& buf );
   void accumulate( const std::vector<std::vector<Vector> >& dir );
-  void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data );
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };

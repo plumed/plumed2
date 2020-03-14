@@ -100,8 +100,10 @@ void CollectFrames::turnOnBiasHistory() {
   const ActionSet & as=plumed.getActionSet(); task_counts.resize(0);
   std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false ); 
   for(const auto & pp : as ) { 
-      Action* p(pp.get()); AverageBase* ab=dynamic_cast<AverageBase*>(p);
+      Action* p(pp.get()); CollectFrames* ab=dynamic_cast<CollectFrames*>(p);
       if( ab && !ab->doNotCalculateDerivatives() ) task_counts.push_back(0);
+      // If this is a gather replicas then crash
+      if( p->getLabel()=="GATHER_REPLICAS" ) error("cannot use ITRE with replica gathering");  
       // If this is the final bias then get the value and get out
       for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
           std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
@@ -116,8 +118,8 @@ void CollectFrames::turnOnBiasHistory() {
   }
 }
 
-double CollectFrames::computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial ) {
-  double logw = 0; const ActionSet & as=plumed.getActionSet(); CollectFrames* ab=NULL;
+void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial, std::vector<double>& weights ) {
+  const ActionSet & as=plumed.getActionSet(); CollectFrames* ab=NULL;
   std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
   // Set the arguments equal to the values in the old frame
   for(unsigned i=0;i<data.size();++i) {
@@ -156,9 +158,15 @@ double CollectFrames::computeCurrentBiasForData( const std::vector<double>& valu
       }
       if(ab) ab->task_start = 0;
       // If this is the final bias then get the value and get out
-      for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
+      unsigned basej = 0;
+      for(unsigned i=arg_ends[arg_ends.size()-2];i<arg_ends[arg_ends.size()-1];++i) {
           std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-          if( name.substr(0,dot)==p->getLabel() ) { foundbias[i-n_real_args]=true; logw += getPntrToArgument(i)->get(); }
+          if( name.substr(0,dot)==p->getLabel() ) {
+              foundbias[i-n_real_args]=true; 
+              unsigned nv = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+              for(unsigned j=0;j<nv;++j) weights[basej+j] = getPntrToArgument(i)->get(j);
+          }
+          basej += getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
       }
       // Check if we have recalculated all the things we need
       bool foundall=true; 
@@ -167,7 +175,6 @@ double CollectFrames::computeCurrentBiasForData( const std::vector<double>& valu
       }
       if( foundall ) break;
   }
-  return logw;
 }
 
 void CollectFrames::calculate() {
@@ -196,17 +203,18 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
       // Compute the weights for all the old configurations
       unsigned stride=comm.Get_size(), rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
-      std::vector<double> new_old_bias( nstored, 0 );
+      unsigned ntimes = nstored / nvals; plumed_assert( nstored%nvals==0 );
+      std::vector<double> biasdata( nvals ), new_old_bias( nstored, 0 );
       if( nstored>0 ) {
-          for(unsigned i=rank;i<nstored-1;i+=stride) {
-              for(unsigned j=0;j<nvals;++j) retrieveDataPoint( i, j, old_data );
-              new_old_bias[i] = computeCurrentBiasForData( old_data, true );
+          for(unsigned i=rank;i<ntimes-1;i+=stride) {
+              retrieveDataPoint( i, old_data ); computeCurrentBiasForData( old_data, true, biasdata );
+              for(unsigned j=0;j<biasdata.size();++j) new_old_bias[i*nvals+j] = biasdata[j];
           }
           if( !runInSerial() ) comm.Sum( new_old_bias );
           // Have to compute all Gaussians for final data point
           for(unsigned j=0;j<task_counts.size();++j) task_counts[j] = 0;
-          for(unsigned j=0;j<nvals;++j) retrieveDataPoint( nstored-1, j, old_data );
-          new_old_bias[nstored-1] = computeCurrentBiasForData( old_data, false );
+          retrieveDataPoint( ntimes-1, old_data ); computeCurrentBiasForData( old_data, false, biasdata );
+          for(unsigned j=0;j<biasdata.size();++j) new_old_bias[(nstored-1)*nvals+j] = biasdata[j];
 
           Value* bval = getPntrToOutput(getNumberOfComponents()-1);
           for(unsigned i=0;i<nstored;++i) {
@@ -218,7 +226,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
               }
           }
           // And recompute the current bias
-          double ignore = computeCurrentBiasForData( current_data, false );
+          computeCurrentBiasForData( current_data, false, biasdata );
       }
       if( task_counts.size()>0 ) {
           // And update the task counts
@@ -304,15 +312,15 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
   }
 }
 
-void CollectFrames::retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) {
-  unsigned nvals=getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
+void CollectFrames::retrieveDataPoint( const unsigned& itime, std::vector<double>& old_data ) {
   if( clearstride>0 ) {
-      plumed_dbg_assert( ipoint*nvals + jval < ndata );
-      for(unsigned j=0;j<n_real_args;++j) old_data[j*nvals+jval] = getPntrToOutput(j)->get( ipoint*nvals + jval );
+      for(unsigned i=0;i<nvals;++i) {
+          for(unsigned j=0;j<data.size();++j) old_data[j*nvals+i] = getPntrToOutput(j)->get( itime*nvals + i );
+      }
   } else {
-      plumed_dbg_assert( ipoint*nvals + jval < alldata.size() );
-      for(unsigned j=0;j<n_real_args;++j) old_data[j*nvals+jval] = alldata[ipoint*nvals + jval][j];
-
+      for(unsigned i=0;i<nvals;++i) {
+          for(unsigned j=0;j<data.size();++j) old_data[j*nvals+i] = alldata[itime*nvals + i][j];
+      }
   }
 }
 
