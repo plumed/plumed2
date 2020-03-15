@@ -740,6 +740,7 @@ void PIV::calculate()
     // The following are probably needed as static arrays
     static int prev_stp=-1;
     static int init_stp=1;
+    static double Fvol_stc=1.;
     static std:: vector<std:: vector<Vector> > prev_pos(Nlist);
     static std:: vector<std:: vector<double> > cPIV(Nlist);
     static std:: vector<std:: vector<int> > Atom0(Nlist);
@@ -764,9 +765,9 @@ void PIV::calculate()
     if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
         //if(prev_stp!=-1) {init_stp=0;}
         // Calculate the volume scaling factor
-        if(Svol) {
-//      Fvol=cbrt(Vol0/getBox().determinant());
-            Fvol=Fvol_init;
+        if(Svol&&prev_stp==-1) {
+            //Fvol=cbrt(Vol0/getBox().determinant());
+            Fvol_stc=Fvol_init;
         }
         //Set switching function parameters
         log << "\n";
@@ -784,7 +785,7 @@ void PIV::calculate()
                 bool tmp=Tools::parse(data,"R_0",r0);
                 std::string old_r0;
                 Tools::convert(r0,old_r0);
-                r0*=Fvol;
+                r0*=Fvol_stc;
                 std::string new_r0;
                 Tools::convert(r0,new_r0);
                 std::size_t pos = sw[j].find("R_0");
