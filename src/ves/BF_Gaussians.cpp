@@ -124,7 +124,6 @@ BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
     mean_.push_back(intervalMin()+(i-2)*(intervalMax()-intervalMin())/getOrder());
   }
   setNonPeriodic();
-  setNonOrthogonal();
   setIntervalBounded();
   setType("gaussian_functions");
   setDescription("Gaussian Functions with shifted means that are being optimized in their height");
