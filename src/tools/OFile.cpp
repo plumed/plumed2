@@ -47,7 +47,7 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
   size_t r;
   if(linked) return linked->llwrite(ptr,s);
   if(! (comm && comm->Get_rank()>0)) {
-    if(!fp) plumed_merror("writing on uninitilized File");
+    if(!fp) plumed_merror("writing on uninitialized File");
     if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
       r=gzwrite(gzFile(gzfp),ptr,s);

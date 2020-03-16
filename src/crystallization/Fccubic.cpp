@@ -96,7 +96,7 @@ Fccubic::Fccubic(const ActionOptions&ao):
   // and '0' corresponds to isotropic (liquid)
   parse("ALPHA",alpha);
   a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
-  log.printf("  setting alpha paramter equal to %f \n",alpha);
+  log.printf("  setting alpha parameter equal to %f \n",alpha);
   // And setup the ActionWithVessel
   checkRead();
 }

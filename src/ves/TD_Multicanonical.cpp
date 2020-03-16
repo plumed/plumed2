@@ -227,7 +227,7 @@ void TD_Multicanonical::updateGrid() {
     if(targetDistGrid().getDimension()==1) {
       // 1D variant: Multicanonical without order parameter
       // In this variant we find the minimum and maximum relevant potential energies.
-      // Using this information we construct a uniform target distribution inbetween these two.
+      // Using this information we construct a uniform target distribution in between these two.
       double beta = getBeta();
       double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
       double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);

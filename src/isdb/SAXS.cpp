@@ -401,7 +401,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // size,size,1,1
     af::array dist_sqrt = af::sqrt(square);
-    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter becasue this are multiplied by zero)
+    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter because this are multiplied by zero)
     af::replace(square,!(af::iszero(square)),1.);
     // size,size,3,1
     xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);

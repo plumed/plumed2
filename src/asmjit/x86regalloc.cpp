@@ -1640,7 +1640,7 @@ _NextGroup:
                   }
                 }
                 else {
-                  // Read-Only is usualy the combination of the second/third/fourth operands.
+                  // Read-Only is usually the combination of the second/third/fourth operands.
                   combinedFlags = inFlags;
 
                   // Idiv is a special instruction, never handled here.

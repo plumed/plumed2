@@ -335,7 +335,7 @@ private:
 
   void thermostat(const int natoms,const int ndim,const vector<double>& masses,const double dt,const double friction,
                   const double temperature,vector<Vector>& velocities,double & engint,Random & random) {
-// Langevin thermostat, implemented as decribed in Bussi and Parrinello, Phys. Rev. E (2007)
+// Langevin thermostat, implemented as described in Bussi and Parrinello, Phys. Rev. E (2007)
 // it is a linear combination of old velocities and new, randomly chosen, velocity,
 // with proper coefficients
     double c1=exp(-friction*dt);

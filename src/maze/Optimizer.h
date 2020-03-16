@@ -73,7 +73,7 @@ public:
   static void registerKeywords(Keywords& keys);
 
   /**
-   * The pairing function needs to be overriden by a specific optimizer.
+   * The pairing function needs to be overridden by a specific optimizer.
    *
    * @param[in] distance distance between a pair of atoms
    */

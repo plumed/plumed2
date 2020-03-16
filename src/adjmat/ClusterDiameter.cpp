@@ -98,7 +98,7 @@ ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
   for(unsigned  i=0; i<getNumberOfNodes(); ++i) {
     for(unsigned j=0; j<getNumberOfNodes(); ++j) addTaskToList( i*getNumberOfNodes() + j );
   }
-  // Now create a higest vessel
+  // Now create a highest vessel
   addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 }
 

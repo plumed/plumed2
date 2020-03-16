@@ -266,7 +266,7 @@ void Gyration::calculate() {
   }
   //calculate determinant of transformation matrix
   double det = determinant(transf);
-  // trasformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
+  // transformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
   if(det<0) {
     for(unsigned j=0; j<3; j++) transf[j][2]=-transf[j][2];
     det = -det;

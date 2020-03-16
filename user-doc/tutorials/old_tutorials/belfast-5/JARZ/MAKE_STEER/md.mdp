@@ -90,7 +90,7 @@ rvdw                     = 0.0
 DispCorr                 = No
 ; Extension of the potential lookup tables beyond the cut-off
 table-extension          = 3
-; Seperate tables between energy group pairs
+; Separate tables between energy group pairs
 energygrp_table          = 
 ; Spacing for the PME/PPPM FFT grid
 fourierspacing           = 0.120

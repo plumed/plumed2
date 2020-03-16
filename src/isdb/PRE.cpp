@@ -193,7 +193,7 @@ PRE::PRE(const ActionOptions&ao):
   // Create neighbour lists
   nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
 
-  // Ouput details of all contacts
+  // Output details of all contacts
   unsigned index=0;
   for(unsigned i=0; i<nga.size(); ++i) {
     log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);

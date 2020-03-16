@@ -82,7 +82,7 @@ As someone who learnt to program in fortran it was this aspect of C++, more than
 the most. In actually though it is rather simple and I don't really know why I was confused. In essence every 
 class must contain some method for creating it. This class should set the initial values of all the variables
 inside the class. Obviously the functions (or more correctly methods) that the class
-contains cannot be used untill an instance of the class has been created using the constructor. 
+contains cannot be used until an instance of the class has been created using the constructor.
 
 An example of how all this works in practise is given below:
 
@@ -194,11 +194,11 @@ B* mynewB=new B();   // This is a special way of calling the constructor so you 
 A* BpretendingToBeA=dynamic_cast<A*>(mynewB); 
 \endverbatim
 
-All the colvars and free energy methods of plumed use inheritence. In fact all these methods are 
+All the colvars and free energy methods of plumed use inheritance. In fact all these methods are
 built on a single base class called PLMD::Action. This class contains all the functionality for
 reading stuff from input, the stuff for controlling the dependencies Actions and a set of controls
 that decide which actions are performed when. All the functionality for the different methods is
-then built on this root. As you can see (PLMD::Action) the inheritence tree for the code is 
+then built on this root. As you can see (PLMD::Action) the inheritance tree for the code is
 quite complicated.  However, in practise if you are implementing a CV, function, bias or virtual atom
 the correct start point is with one of the classes listed on this page \ref INHERIT all of which contain
 detailed descriptions of how to use them. 
@@ -211,7 +211,7 @@ we are using multiple inheritance - the classes in the layer above inherit from 
 This way of incorporating functionality from classes is unique to C++ and brings with it a special set of
  difficulties in programming.  Its great advantage is though that one can 
 create classes that incorporate bring a set of particular attributes.  This will perhaps be most clear
-if you look at what each of the classes in the multiple inheritence layer is doing (see \ref MULTIINHERIT) and see how these
+if you look at what each of the classes in the multiple inheritance layer is doing (see \ref MULTIINHERIT) and see how these
 functionalities are used in Colvars, Functions and Biases.  Please be aware that, unless you are doing something really wacky, 
 you should be able to implement whatever you need to implement without writing classes that take advantage of multiple inheritance. Furthermore,
 you should not need to touch the classes in this region of the code.  The information here is there for
@@ -223,7 +223,7 @@ developers before doing anything.
 Polymorhpism is a way of using the same code to do many different things.  As an example consider a 
 Matrix.  The elements of a Matrix can be ints, doubles, floats or even some fancy new class
 but we would still want the operator (i,j) to return the element in row i and column j.  That is to
-say the operator (const int i, const int j) of a matrix is indepedent of what is actually inside the
+say the operator (const int i, const int j) of a matrix is independent of what is actually inside the
 matrix.  Using C++ we can use so called template classes to implement thse kinds of things and can then 
 re-use them to do an enormous variety of different operations.  To see how this works in practise take
 a look at PLMD::Matrix, which is a working version of our Matrix example.  Be aware that all the 
@@ -268,7 +268,7 @@ that inherit PLMD::Action. Classes like PLMD::Action are called abstract base cl
 
 The great advantage of declaring calculate() inside PLMD::Action in this way is that the calculate 
 routine that we declare in the derived class is a member of PLMD::Action.  We thus can thus write
-a class for doing all the bussiness of plumed in the manner described previously.
+a class for doing all the business of plumed in the manner described previously.
 
 \section ForwardDeclaration Forward declaration
 
@@ -449,7 +449,7 @@ In PLUMED you can find many times sections of code such as
 \endverbatim
 Here we use a pointer to allow dynamic polymorphism.
 
-In this case, the object pointed by `obj` is not transfered anywhere else.
+In this case, the object pointed by `obj` is not transferred anywhere else.
 In other words, you can think that the `obj` pointer owns the object itself.
 You can replace it with a `std::unique_ptr` as follows:
 \verbatim
@@ -600,7 +600,7 @@ Here the `#ifdef __PLUMED_HAS_BOOST_GRAPH` ensures that this part of the code is
 
 This example is a bit of a special case as the particular PLMD::Action I took this example from both when the 
 library is available and when it is not.  Obviously, if your PLMD::Action does not work without the library
-then you should place everything in the file inside the file (the definition of the class, the defintions of 
+then you should place everything in the file inside the file (the definition of the class, the definitions of 
 the methods and the PLUMED_REGISTER_ACTION command) an ifdef block like the one shown above. 
 
 Once you have written the code and surrounded all the calls to the library by an ifdef block like the one above
@@ -634,7 +634,7 @@ is the name of one of the header files from the library that you are using.  You
 file in the same way as you specified its location within the code.  So for example if you had #include <boost/graph/adjacency_list.hpp> 
 in your cpp code you would replace header_file.hpp in the above with boost/graph/adjacency_list.hpp.  The next 
 argument to PLUMED_CHECK_PACKAGE is one of the functions that is within the library that you are trying to link.  If in doubt
-you can use the exit funciton here, which should work even if you are using template functions.  The third argument is the precompiler 
+you can use the exit function here, which should work even if you are using template functions.  The third argument is the precompiler
 directive that appears around your library calling code and that we discussed earlier.  The last argument meanwhile is the name of the library - 
 the part that appears after the -l.  In the example above the code would thus try and link -llibrary_name. 
 

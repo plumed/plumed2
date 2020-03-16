@@ -219,7 +219,7 @@ void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomN
       // this is a complicated way to have the exception propagated with MPI.
       // It is necessary since only one process calls the selector.
       // Probably I should recycle the exception propagation at library boundaries
-      // to allow transfering the exception to other processes.
+      // to allow transferring the exception to other processes.
       try {
         plumed_assert(selector) << "Python interpreter is disabled, selection " + symbol + " cannot be interpreted";
         auto h=selector->contStop(); // stops again when it goes out of scope

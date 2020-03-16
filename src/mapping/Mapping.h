@@ -62,7 +62,7 @@ protected:
   std::vector<double> fframes;
 /// Get the number of frames in the path
   unsigned getNumberOfReferencePoints() const;
-/// Finish the setup of the referenceValuePack by transfering atoms and args
+/// Finish the setup of the referenceValuePack by transferring atoms and args
   void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
   double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;

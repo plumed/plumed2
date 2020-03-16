@@ -145,7 +145,7 @@ NOE::NOE(const ActionOptions&ao):
   if(ntarget==nga.size()) addexp=true;
   if(getDoScore()&&!addexp) error("with DOSCORE you need to set the NOEDIST values");
 
-  // Ouput details of all contacts
+  // Output details of all contacts
   unsigned index=0;
   for(unsigned i=0; i<nga.size(); ++i) {
     log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms\n", i, nga[i]);

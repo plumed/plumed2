@@ -714,7 +714,7 @@ where
 \f[
 Z_i=\sum_{q}e^{-\left(U(q)+V_i(q)\right)}
 \f]
-The likelyhood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
+The likelihood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
 the index of the trajectory and \f$t\f$ is time) is just the product of the probability
 of each of the snapshots. We use here the minus-logarithm of the likelihood (so that
 the product is converted to a sum) that can be written as
@@ -727,7 +727,7 @@ the product is converted to a sum) that can be written as
 +\log Z_i
 \right)
 \f]
-One can then maximize the likelyhood by setting \f$\frac{\delta \mathcal{L}}{\delta P({\bf s})}=0\f$.
+One can then maximize the likelihood by setting \f$\frac{\delta \mathcal{L}}{\delta P({\bf s})}=0\f$.
 After some boring algebra the following expression can be obtained
 \f[
 0=\sum_{i}\int dt\left(-\frac{\delta_{{\bf s}_{i}(t),{\bf s}}}{P({\bf s})}+\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}}\right)
@@ -889,7 +889,7 @@ profile calculated from a metadynamics simulations using both phi and psi as CVs
 
 We can easily spot from the plot above that something went wrong in this multiple restraint simulations, despite we used the very same approach we adopted for the phi dihedral. The problem here is that psi is a "bad" collective variable, and the system is not able to equilibrate the missing slow degree of freedom phi in the short time scale of the umbrella simulation (1 ns). In the metadynamics exercise in which we biased only psi, we detect problems by observing the behavior of the CV as a function of simulation time. How can we detect problems in multiple restraint simulations? This is slightly more complicated, but running this kind of simulation in a replica-exchange scheme offers a convenient way to detect problems.
 
-The first thing we need to do is to demux the replica-exchange trajectories and reconstruct the continous trajectories of the replicas
+The first thing we need to do is to demux the replica-exchange trajectories and reconstruct the continuous trajectories of the replicas
 across the different restraint potentials. In order to do so, we can use the following script:
 
 \verbatim
@@ -897,7 +897,7 @@ demux.pl md0.log
 trjcat_mpi -f traj?.xtc traj??.xtc  -demux replica_index.xvg
 \endverbatim
  
-This commands will generate 32 continous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
+This commands will generate 32 continuous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
 phi and psi on these trajectories.
 
 \verbatim

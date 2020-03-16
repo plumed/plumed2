@@ -87,7 +87,7 @@ w_j(s) = \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \fr
 void HistogramBead::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
-  keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
+  keys.add("compulsory","SMEAR","0.5","the amount to smear the Gaussian for each value in the distribution");
 }
 
 HistogramBead::HistogramBead():
@@ -107,7 +107,7 @@ HistogramBead::HistogramBead():
 
 std::string HistogramBead::description() const {
   std::ostringstream ostr;
-  ostr<<"betweeen "<<lowb<<" and "<<highb<<" width of gaussian window equals "<<width;
+  ostr<<"between "<<lowb<<" and "<<highb<<" width of gaussian window equals "<<width;
   return ostr.str();
 }
 
