@@ -628,7 +628,7 @@ void Print::update() {
     // Now print connections
     unsigned nrows = gval->getShape()[0], ncols = gval->getShape()[1];
     for(unsigned i=0; i<nrows; ++i) {
-       for(unsigned j=0; j<ncols; ++j) ogfile.printf( fmt.c_str(), gval->get( i*nrows + j ) );
+       for(unsigned j=0; j<ncols; ++j) ogfile.printf( fmt.c_str(), gval->get( i*ncols + j ) );
        ogfile.printf("\n");
     }
     ogfile.close();

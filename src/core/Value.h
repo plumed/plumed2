@@ -219,6 +219,8 @@ public:
   void setSymmetric( const bool& sym );
 ///
   bool isSymmetric() const ;
+///
+  bool dataAlwaysStored() const ;
 };
 
 inline
@@ -391,6 +393,11 @@ double Value::getMaxMinusMin()const {
 inline
 bool Value::isTimeSeries() const {
   return istimeseries;
+}
+
+inline
+bool Value::dataAlwaysStored() const {
+  return alwaysstore;
 }
 
 }

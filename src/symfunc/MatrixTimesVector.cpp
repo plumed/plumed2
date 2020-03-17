@@ -94,6 +94,8 @@ public:
   explicit MatrixTimesVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
   void calculate();
+  void update();
+  void runFinalJobs();
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
   void updateDerivativeIndices( MultiValue& myvals ) const ;
@@ -113,7 +115,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 {
   if( getPntrToArgument(0)->getPntrToAction() ) {
       adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
-      if( !ab ) fixed_matrix=true;
+      if( !ab || getPntrToArgument(0)->dataAlwaysStored() ) fixed_matrix=true;
   } else fixed_matrix=true;
 
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
@@ -142,13 +144,26 @@ void MatrixTimesVector::calculate() {
   runAllTasks();
 }
 
+void MatrixTimesVector::update() { 
+  if( actionInChain() || skipUpdate() ) return ;
+  plumed_assert( fixed_matrix );
+  runAllTasks();
+}
+
+void MatrixTimesVector::runFinalJobs() { 
+  if( actionInChain() || skipUpdate() ) return ;
+  plumed_assert( fixed_matrix );
+  runAllTasks();
+}
+
 void MatrixTimesVector::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( fixed_matrix ) {
+      unsigned nrows = getPntrToArgument(0)->getShape()[0];
       unsigned ncols = getPntrToArgument(0)->getShape()[1]; Vector dir;
       for(unsigned i=0;i<ncols;++i) {
           double weight = getPntrToArgument(0)->get( current*ncols + i );
           if( fabs(weight)>epsilon ) {
-              myvals.setSecondTaskIndex( ncols + i ); compute( weight, dir, myvals );
+              myvals.setSecondTaskIndex( nrows + i ); compute( weight, dir, myvals );
           }
       }
       if( !doNotCalculateDerivatives() ) updateDerivativeIndices( myvals );

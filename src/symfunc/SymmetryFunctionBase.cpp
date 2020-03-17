@@ -127,7 +127,7 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   if( wval[0]->getPntrToAction() ) {
       alabels[0]=(wval[0]->getPntrToAction())->getLabel();
       ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
-      if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+      if( !as && !wval[0]->dataAlwaysStored() ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
       nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
   }
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
