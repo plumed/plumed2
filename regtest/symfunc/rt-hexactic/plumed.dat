@@ -1,0 +1,5 @@
+hex: HEXACTIC_PARAMETER SPECIES=1-54 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2} MEAN
+PRINT ATOMS=hex ARG1=hex_rmn ARG2=hex_imn ARG3=hex_denom FMT=%8.4f FILE=hexparam.xyz
+bb: BIASVALUE ARG=hex.mean
+PRINT ARG=hex.mean,bb.* FILE=colvar FMT=%8.4f 
+

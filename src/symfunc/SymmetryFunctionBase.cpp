@@ -135,7 +135,7 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   if( keywords.exists("VECTORS") ) {
     if( !wval[0]->getPntrToAction() ) error("using weights from input matrix not available with vectors");
     for(unsigned i=1; i<=3; ++i) {
-      std::vector<Value*> vecs; parseArgumentList("VECTORS",i,vecs);
+      std::vector<Value*> vecs; parseArgumentList("VECTORS",i,vecs); if( vecs.size()==0 ) break; 
       if( vecs.size()!=1 ) error("keywords VECTORS should be provided with the label of a single action");
       if( wval[0]->getRank()!=vecs[0]->getRank() ) error("rank of weights does not match rank of vector");
       if( wval[0]->getRank()==2 ) {
@@ -155,9 +155,12 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
       }
       alabels[0]=(vecs[0]->getPntrToAction())->getLabel(); ActionSetup* as2 = dynamic_cast<ActionSetup*>( vecs[0]->getPntrToAction() );
       if( as2 ) (vecs[0]->getPntrToAction())->addActionToChain( alabels, this );
-      wval.push_back(vecs[0]); std::string dir="x"; if( i==2 ) dir="y"; else dir="z";
+      wval.push_back(vecs[0]); std::string dir="x"; if( i==2 ) dir="y"; else if( i==3 ) dir="z";
       log.printf("  %s direction of bond read from matrix labelled %s \n",dir.c_str(),vecs[0]->getName().c_str() );
     }
+    if( getName()=="CYLINDRICAL_HARMONIC" ) {
+        if( wval.size()!=3 ) error("insufficient VECTORS keywords found.  There should be two" );
+    } else if( wval.size()!=4 ) error("insufficient VECTORS keywords found.  There should be three" ); 
   }
   if( keywords.exists("ONESHOT") ) {
     bool oneshot; parseFlag("ONESHOT",oneshot);
@@ -219,11 +222,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
     double weight = myvals.get( getPntrToArgument(0)->getPositionInStream() );
     if( fabs(weight)>epsilon ) {
       Vector dir; dir.zero();
-      if( getNumberOfArguments()==4 ) {
-        dir[0] = myvals.get( getPntrToArgument(1)->getPositionInStream() );
-        dir[1] = myvals.get( getPntrToArgument(2)->getPositionInStream() );
-        dir[2] = myvals.get( getPntrToArgument(3)->getPositionInStream() );
-      }
+      for(unsigned j=0;j<getNumberOfArguments()-1;++j) dir[j] = myvals.get( getPntrToArgument(j+1)->getPositionInStream() );
       compute( weight, dir, myvals );
     }
   } else if( myvals.inVectorCall() ) {
@@ -232,12 +231,10 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
       if( !doNotCalculateDerivatives() ) {
         std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(0)->getPositionInStream() ) );
         if( tmp_w.size()<getNumberOfComponents()*getPntrToArgument(0)->getShape()[1] ) tmp_w.resize( getNumberOfComponents()*getPntrToArgument(0)->getShape()[1], 0 );
-        std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(1)->getPositionInStream() ) );
-        if( tmp_x.size()<getNumberOfComponents()*getPntrToArgument(1)->getShape()[1] ) tmp_x.resize( getNumberOfComponents()*getPntrToArgument(1)->getShape()[1], 0 );
-        std::vector<double>& tmp_y( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(2)->getPositionInStream() ) );
-        if( tmp_y.size()<getNumberOfComponents()*getPntrToArgument(2)->getShape()[1] ) tmp_y.resize( getNumberOfComponents()*getPntrToArgument(2)->getShape()[1], 0 );
-        std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(3)->getPositionInStream() ) );
-        if( tmp_z.size()<getNumberOfComponents()*getPntrToArgument(3)->getShape()[1] ) tmp_z.resize( getNumberOfComponents()*getPntrToArgument(3)->getShape()[1], 0 );
+        for(unsigned i=0;i<getNumberOfArguments()-1;++i) {
+            std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives( getPntrToArgument(1+i)->getPositionInStream() ) );
+            if( tmp_x.size()<getNumberOfComponents()*getPntrToArgument(1+i)->getShape()[1] ) tmp_x.resize( getNumberOfComponents()*getPntrToArgument(1+i)->getShape()[1], 0 );
+        }
       }
       computeSymmetryFunction( current, myvals );
       // And now the derivatives
@@ -250,18 +247,15 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
         // Turn off matrix element storing during rerun of calculations
         myvals.setMatrixStashForRerun();
         if( getNumberOfArguments()==4 ) {
-          unsigned my_x = getPntrToArgument(1)->getPositionInStream();
-          std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives(my_x) );
-          unsigned my_y = getPntrToArgument(2)->getPositionInStream();
-          std::vector<double>& tmp_y( myvals.getSymfuncTemporyDerivatives(my_y) );
-          unsigned my_z = getPntrToArgument(3)->getPositionInStream();
-          std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives(my_z) );
+          std::vector<unsigned> my_v( getNumberOfArguments()-1 );
+          for(unsigned i=0;i<my_v.size();++i) my_v[i] = getPntrToArgument(1+i)->getPositionInStream(); 
           for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
             unsigned wstart=0, jind = myvals.getStashedMatrixIndex(matind,j);
             // Check for derivatives and skip recalculation if there are none
             double totder=0;
             for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-              totder +=tmp_w[wstart+jind] + tmp_x[wstart+jind] + tmp_y[wstart+jind] + tmp_z[wstart+jind];
+              totder +=tmp_w[wstart+jind];
+              for(unsigned k=0;k<my_v.size();++k) totder += myvals.getSymfuncTemporyDerivatives(my_v[k])[wstart+jind];
               wstart++;
             }
             if( fabs(totder)<epsilon ) continue ;
@@ -274,20 +268,15 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
                 unsigned kind=myvals.getActiveIndex(my_w,k);
                 myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
               }
-              for(unsigned k=0; k<myvals.getNumberActive(my_x); ++k) {
-                unsigned kind=myvals.getActiveIndex(my_x,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
+              for(unsigned n=0;n<my_v.size();++n) {
+                  double pref = myvals.getSymfuncTemporyDerivatives(my_v[n])[wstart+jind];
+                  for(unsigned k=0; k<myvals.getNumberActive(my_v[n]); ++k) {
+                    unsigned kind=myvals.getActiveIndex(my_v[n],k);
+                    myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, pref*myvals.getDerivative( my_v[n], kind ) );
+                  }
+                  myvals.getSymfuncTemporyDerivatives(my_v[n])[wstart+jind]=0; 
               }
-              for(unsigned k=0; k<myvals.getNumberActive(my_y); ++k) {
-                unsigned kind=myvals.getActiveIndex(my_y,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[2] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
-              }
-              for(unsigned k=0; k<myvals.getNumberActive(my_z); ++k) {
-                unsigned kind=myvals.getActiveIndex(my_z,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
-              }
-              tmp_w[wstart+jind]=tmp_x[wstart+jind]=tmp_y[wstart+jind]=tmp_z[wstart+jind]=0;
-              wstart += getPntrToArgument(0)->getShape()[1];
+              tmp_w[wstart+jind]=0; wstart += getPntrToArgument(0)->getShape()[1];
             }
             // Clear the matrix elements for this task
             av->clearMatrixElements( myvals );
@@ -352,15 +341,12 @@ void SymmetryFunctionBase::computeSymmetryFunction( const unsigned& current, Mul
   Vector dir;
   unsigned matind = getPntrToArgument(0)->getPositionInMatrixStash();
   if( getNumberOfArguments()>1 ) {
-    unsigned matind_x = getPntrToArgument(1)->getPositionInMatrixStash();
-    unsigned matind_y = getPntrToArgument(2)->getPositionInMatrixStash();
-    unsigned matind_z = getPntrToArgument(3)->getPositionInMatrixStash();
+    std::vector<unsigned> matind_v( getNumberOfArguments()-1 );
+    for(unsigned i=0;i<getNumberOfArguments()-1;++i) matind_v[i] = getPntrToArgument(1+i)->getPositionInMatrixStash();
     for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
       unsigned jind = myvals.getStashedMatrixIndex(matind,j);
       double weight = myvals.getStashedMatrixElement( matind, jind );
-      dir[0] = myvals.getStashedMatrixElement( matind_x, jind );
-      dir[1] = myvals.getStashedMatrixElement( matind_y, jind );
-      dir[2] = myvals.getStashedMatrixElement( matind_z, jind );
+      for(unsigned i=0;i<matind_v.size();++i) dir[i] = myvals.getStashedMatrixElement( matind_v[i], jind );
       myvals.setSymfuncTemporyIndex(jind); compute( weight, dir, myvals );
     }
   } else {
