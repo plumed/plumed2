@@ -104,13 +104,29 @@ ActionShortcut(ao)
             coeffstr +=",-1"; powstr +=",2"; std::string anum, eignum; Tools::convert( i+1, eignum );
             Tools::convert( i+2, anum ); argstr += " ARG" + anum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num + " ";
             // Multiply difference in CVs by eigenvector - returns a vector
+	    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" ); plumed_assert( av ); //////
+	    std::string per_str;
+	    // By default, we set the low dimensional CVs to be non-periodic. As at this stage periodic CVs has a diagonal covariance matrix, this affect in a 
+	    // minimum way the projection of periodic variable
+	    per_str = "NO";
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
-               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
+               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC="+per_str);
             // Sum the components of the vector
-            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
-            // And divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
-            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
-               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC=NO");
+            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC="+per_str);
+            // Divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
+	    // However, since it seems quite complex to normalize the periodic boundary too, we do not normalize the non-periodic boundaries for the sqrt(eigval)
+	    // As a matter of fact, for periodic CVs this procedure is basically a selection of the most important modes in the basins
+	    if( av->copyOutput(0)->isPeriodic()) {
+		    // Periodic CVs -> not normalized
+	            std::string min, max; av->copyOutput(0)->getDomain(min,max);
+	            per_str = min+","+max;
+	            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
+	        		    +  " FUNC=x PERIODIC="+per_str);
+	    } else {
+		    // Non periodic CVs -> normalized
+	            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
+	        		    + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC="+per_str);
+	    } ////
         }
         // Add this command to compute the residual distance
         if( resid[k] ) {
