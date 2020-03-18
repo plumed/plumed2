@@ -61,6 +61,7 @@ private:
   unsigned obs_steps_;
   std::vector<double> obs_cv_;
   unsigned tot_umbrellas_;
+  unsigned P0_contribution_;
 
   double beta_;
   double sigma_;
@@ -106,6 +107,7 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
+  keys.addFlag("ADD_P0",false,"add also P0 to the target distribution, useful to make sure the target is broader than P0");
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -170,6 +172,14 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   parse("PRINT_STRIDE",print_stride_);
   std::string fmt;
   parse("FMT",fmt);
+
+  bool add_P0=false;
+  parseFlag("ADD_P0",add_P0);
+  if(add_P0)
+    P0_contribution_=1;
+  else
+    P0_contribution_=0;
+  log.printf(" --- ADD_P0 adding P0 to the target\n");
 
 //work flag
   parseFlag("CALC_WORK",calc_work_);
@@ -327,7 +337,7 @@ void OPESumbrellas::calculate()
     return;
 
   const double cv=getArgument(0);
-  long double sum=0;
+  long double sum=P0_contribution_;
   long double der_sum_cv=0;
   for(unsigned i=rank_; i<tot_umbrellas_; i+=NumParallel_)
   {
@@ -341,15 +351,15 @@ void OPESumbrellas::calculate()
     comm.Sum(sum);
     comm.Sum(der_sum_cv);
   }
-
+  const unsigned tot_steps=tot_umbrellas_+P0_contribution_;
 //regularize with epsilon_
   if(epsilon_>0)
   {
-    der_sum_cv/=std::pow(1.+sum/tot_umbrellas_*epsilon_,2);
-    sum=tot_umbrellas_/(tot_umbrellas_/sum+epsilon_);
+    der_sum_cv/=std::pow(1.+sum/tot_steps*epsilon_,2);
+    sum=tot_steps/(tot_steps/sum+epsilon_);
   }
 
-  current_bias_=-1./beta_*std::log(sum/tot_umbrellas_);
+  current_bias_=-1./beta_*std::log(sum/tot_steps);
   setBias(current_bias_);
 //  setOutputForce(0,1./beta_*der_sum_cv/sum);
   const double der_cv=-1./beta_*der_sum_cv/sum;
@@ -359,7 +369,7 @@ void OPESumbrellas::calculate()
 //calculate work
   if(calc_work_)
   {
-    long double old_sum=0;
+    long double old_sum=P0_contribution_;
     for(unsigned i=rank_; i<tot_umbrellas_; i+=NumParallel_)
       old_sum+=std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],cv)/sigma_,2)+beta_*old_deltaF_[i]));
     if(NumParallel_>1)
