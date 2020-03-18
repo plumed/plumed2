@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "core/AverageBase.h"
+#include "core/CollectFrames.h"
 #include "core/ActionSetup.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -96,15 +96,15 @@ Function::Function(const ActionOptions&ao):
                     ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
                     if(!as) hasscalar=true; else getPntrToArgument(arg_ends[i])->buildDataStore( getLabel() );
                 } else {
-                    AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
-                    if(!ab) hasrank=true;
+                    CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
+                    if(!ab) hasrank=true; else if( ab->hasClear() ) { hasscalar=hasrank=true; getPntrToArgument(arg_ends[i])->buildDataStore( getLabel() ); }
                 }
             } else hasrank=true;
         }
         // Check if we are using not all the values in an average base 
         if( !hasrank ) {
             for(unsigned i=0; i<getNumberOfArguments(); ++i ) {
-                AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(i)->getPntrToAction() );
+                CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(i)->getPntrToAction() );
                 if( ab ) { if( !getPntrToArgument(i)->usingAllVals(getLabel()) ) hasrank=true; }
             }
         }

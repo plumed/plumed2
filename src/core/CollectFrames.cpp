@@ -297,7 +297,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
       getPntrToOutput(getNumberOfComponents()-1)->setShape( shape ); unsigned k=0;
       for(unsigned i=0;i<allweights.size();++i) {
           for(unsigned j=0;j<data.size();++j) { getPntrToOutput(j)->set( i, alldata[i][j] ); }
-          unsigned pos_b=0; if( n_real_args>0 ) pos_b = arg_ends.size()-1;
+          unsigned pos_b=0; if( n_real_args>0 ) pos_b = arg_ends.size()-2;
           for(unsigned j=0;j<posdata.size();++j) { getPntrToOutput(pos_b+j)->set( i, allposdata[i][j] ); }
           if( save_all_bias ) {
               Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( allweights.size()*i + i, allweights[i] );

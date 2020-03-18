@@ -20,12 +20,16 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/CollectFrames.h"
 
 namespace PLMD {
 namespace analysis {
 
 void LandmarkSelectionBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
+  keys.add("optional","DATA","the label of a COLLECT_FRAMES action from which landmarks should be selected");
   keys.use("ARG"); keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");
   ActionWithValue::useCustomisableComponents( keys );
 }
@@ -38,6 +42,17 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
   nlandmarks(0),
   nvals(0)
 {
+  std::string data; parse("DATA",data);
+  if( data.length()>0 ) {
+      CollectFrames* myfram = plumed.getActionSet().selectWithLabel<CollectFrames*>(data);
+      if( !myfram ) error( data + " is not a valid COLLECT_FRAMES action so cannot collect data");
+      std::vector<Value*> vals( getArguments() );
+      for(unsigned j=0;j<myfram->getNumberOfComponents();++j) { 
+          vals.push_back( myfram->copyOutput(j) ); arg_ends.push_back(vals.size()); 
+      }
+      requestArguments( vals, false );
+  }
+ 
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks);
   log.printf("  selecting %u landmark points \n",nlandmarks);
 
@@ -69,6 +84,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
           std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
           componentIsPeriodic( getPntrToArgument(arg_ends[i])->getName(), min, max );
       } else componentIsNotPeriodic( getPntrToArgument(arg_ends[i])->getName() ); 
+      if( argi->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
   }
 }
 

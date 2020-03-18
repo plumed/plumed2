@@ -60,6 +60,7 @@ public:
   explicit AverageBase( const ActionOptions& );
   ~AverageBase();
   void clearDerivatives( const bool& force=false );
+  bool hasClear() const ;
   unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfVirtualAtoms() const ;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -93,6 +94,11 @@ Vector AverageBase::getReferencePosition(const unsigned& i ) {
 inline
 unsigned AverageBase::getNumberOfVirtualAtoms() const {
   return getNumberOfAtoms();
+}
+
+inline
+bool AverageBase::hasClear() const {
+  return (clearstride>0);
 }
 
 }

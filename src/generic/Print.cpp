@@ -164,13 +164,18 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()>0 ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { timeseries=true; break; }
       }
       if( timeseries ) {
-          unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
+          std::vector<Value*> myvals;
           for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-              if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+              if( getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) myvals.push_back( getPntrToArgument(i) );
           }
+          unsigned nv = myvals[0]->getNumberOfValues( getLabel() );
+          for(unsigned i=0; i<myvals.size();++i) {
+              if( myvals[i]->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+          }
+          requestArguments( myvals, false ); 
       }
   }
   if(file.length()>0) {
@@ -704,9 +709,7 @@ void Print::update() {
     } else {
        std::vector<unsigned> argnums, posnums;
        for(unsigned k=0;k<getNumberOfArguments();++k) {
-           AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(k)->getPntrToAction() );
-           if( !ab ) argnums.push_back( k ); 
-           else if( getPntrToArgument(k)->getName().find(".pos")!=std::string::npos ) {
+           if( getPntrToArgument(k)->getName().find(".pos")!=std::string::npos ) {
                 if( posnums.size()%3==0 && getPntrToArgument(k)->getName().find(".posx-")==std::string::npos ) error("x coordinate of input positions in wrong place");
                 if( posnums.size()%3==1 && getPntrToArgument(k)->getName().find(".posy-")==std::string::npos ) error("y coordinate of input positions in wrong place");
                 if( posnums.size()%3==2 && getPntrToArgument(k)->getName().find(".posz-")==std::string::npos ) error("z coordinate of input positions in wrong place");
