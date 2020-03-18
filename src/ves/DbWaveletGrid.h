@@ -23,20 +23,22 @@
 #define __PLUMED_ves_DbWaveletsGrid_h
 
 #include "../lapack/lapack.h"
-#include "tools/Grid.h"
-#include "tools/Log.h"
-#include "tools/Matrix.h"
+#include <memory>
 #include <unordered_map>
+#include <vector>
 
 namespace PLMD {
+
+template <typename T>
+class Matrix;
+
 namespace ves {
 
+class Grid;
 
-// Grid that holds the values and 1st derivative of Daubechies wavelets
-// mustn't be an inherited class at the moment, but that way new interpolation options can be added easily
-class DbWaveletGrid : public Grid {
-  void setup_Grid(const unsigned order, const unsigned gridsize);
-  // helper functions to set up Grid
+
+// factory class to set up a Grid with DbWavelets
+class DbWaveletGrid {
   // lookup function for the filter coefficients
   static std::vector<double> get_filter_coefficients(const unsigned order);
   // Fills the coefficient matrices needed for the cascade algorithm
@@ -47,13 +49,9 @@ class DbWaveletGrid : public Grid {
   static std::vector<double> get_eigenvector(const Matrix<double>& A, const double eigenvalue);
   // calculate the values of the Wavelet or its derivative via the vector cascade algorithm
   static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
-
 public:
   // constructor that directly creates Grid with right properties
-  DbWaveletGrid(const unsigned order, const unsigned gridsize) : Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(order*2-1)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}) {
-    this->setup_Grid(order, gridsize);
-  };
-
+  static std::unique_ptr<Grid> setup_Grid(const unsigned order, unsigned gridsize);
 };
 
 

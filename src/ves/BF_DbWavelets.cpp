@@ -23,7 +23,8 @@
 
 #include "BasisFunctions.h"
 #include "DbWaveletGrid.h"
-#include "GridLinearInterpolation.h"
+#include "tools/Grid.h"
+#include "VesTools.h"
 #include "core/ActionRegister.h"
 
 
@@ -58,11 +59,8 @@ Method of construction: Strang, Nguyen - Vector cascade algorithm
 
 class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
-  std::unique_ptr<DbWaveletGrid> Wavelet_Grid_;
-  std::string interpolation_;
+  std::unique_ptr<Grid> waveletGrid_;
   void setupLabels() override;
-  // function to calculates the "true" grid size
-  void calc_grid_size(unsigned& gridsize, unsigned order);
 
 public:
   static void registerKeywords( Keywords&);
@@ -76,8 +74,7 @@ PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
 
 void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number."); // Change the commentary a bit?
-  keys.add("optional","INTERPOLATION","The interpolation method to be used when looking up values between grid points. Available at the moment is only \"LINEAR\" interpolation or \"OFF\". Defaults to no interpolation at all.");
+  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\". Default is false.");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
@@ -93,18 +90,15 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setIntervalBounded();
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  calc_grid_size(gridsize, getOrder());
-  if(gridsize!=1000) {addKeywordToList("GRID_SIZE",gridsize);}
-  Wavelet_Grid_.reset(new DbWaveletGrid(getOrder(), gridsize));
-  interpolation_ = "OFF";
-  parse("INTERPOLATION", interpolation_);
-  if(interpolation_!="OFF") {addKeywordToList("INTERPOLATION",interpolation_);}
+  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize);
+  unsigned true_gridsize = waveletGrid_->getNbin()[0];
+  if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
     wavelet_gridfile.open("wavelet_grid.data");
-    Wavelet_Grid_->writeToFile(wavelet_gridfile);
+    waveletGrid_->writeToFile(wavelet_gridfile);
   }
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (maximum phase type)");
@@ -132,12 +126,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
       // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
       std::vector<double> temp_deriv(1);
       std::vector<double> x_vec {x};
-      if (interpolation_ == "OFF") {
-        values[i] = Wavelet_Grid_->getValueAndDerivatives(x_vec, temp_deriv);
-      }
-      else if (interpolation_ == "LINEAR"){
-        values[i] = GridLinearInterpolation::getGridValueAndDerivativeWithLinearInterpolation(Wavelet_Grid_.get(), x_vec, temp_deriv);
-      }
+      values[i] = waveletGrid_->getValueAndDerivatives(x_vec, temp_deriv);
       derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
     }
   }
@@ -153,19 +142,6 @@ void BF_DbWavelets::setupLabels() {
     std::string is; Tools::convert((i-1)/intervalDerivf(),is);
     setLabel(i,"i = "+is);
   }
-}
-
-
-// Calculate the needed recursion number and the resulting grid size
-// There are 2**recursion_number grid bins per integer
-void BF_DbWavelets::calc_grid_size(unsigned& gridsize, unsigned order){
-  // the range of the grid is from 0 to maxsupport
-  unsigned maxsupport = order*2 -1;
-  // determine needed recursion depth for specified size
-  unsigned recursion_number = 0;
-  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
-  gridsize = maxsupport*(1<<recursion_number);
-  return;
 }
 
 

@@ -21,25 +21,38 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "DbWaveletGrid.h"
+#include "tools/Exception.h"
+#include "tools/Grid.h"
+#include "tools/Matrix.h"
+
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace PLMD {
 namespace ves {
 
 
-void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
-  // helper variable, find recursion number
-  unsigned bins_per_int = gridsize/(order*2-1);
-  // check if it is a power of two
-  if ((bins_per_int & (bins_per_int -1)) != 0) {
-    plumed_merror("Trying to set up wavelet grid with bad size");
-  }
-  unsigned recursion_number = log2(bins_per_int);
+  std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned gridsize) {
+  // calculate the grid properties
+  // the range of the grid is from 0 to maxsupport
+  unsigned maxsupport = order*2 -1;
+  // determine needed recursion depth for specified size
+  unsigned recursion_number = 0;
+  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
+  // set "true" gridsize
+  unsigned bins_per_int = 1<<recursion_number;
+  gridsize = maxsupport*bins_per_int;
+  // helper variable
+
+  // instantiate grid with right properties
+  std::unique_ptr<Grid> grid;
+  grid.reset(new Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> Matvec = setup_Matrices(h_coeffs);
-  //log << "Got coeffs and matrices\n";
 
   // get the values at integers
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
@@ -61,9 +74,10 @@ void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
     for (unsigned j=0; j<value_element.second.size(); ++j) {
       // derivative has to be passed as vector
       std::vector<double> deriv {deriv_iter->second.at(j)};
-      this->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
+      grid->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
     }
   }
+  return grid;
 }
 
 
@@ -93,7 +107,7 @@ std::vector<double> DbWaveletGrid::calc_integer_values(const Matrix<double> &M, 
 
   // normalization of the eigenvector
   double normfactor = 0.;
-  // i=0 is always 0; for deriv > 1 there is an additional factorial term missing
+  // i=0 is always 0; for derivs > 1 an additional factorial would have to be added
   for (unsigned i=1; i<values.size(); ++i) {
     normfactor += values[i] * pow(-i, deriv);
   }
@@ -178,6 +192,7 @@ std::unordered_map<std::string, std::vector<double>> DbWaveletGrid::cascade(std:
 
   return binarymap;
 }
+
 
 }
 }
