@@ -25,6 +25,8 @@
 #include "reference/MetricRegister.h"
 #include "reference/ReferenceConfiguration.h"
 #include <stdlib.h>
+#include <limits>
+#include "tools/Matrix.h"
 
 //+PLUMEDOC ANALYSIS GEODESIC_DISTANCES
 /*
@@ -105,11 +107,17 @@ namespace analysis {
 class GeodesicDistances : public AnalysisBase {
 private:
     double cutoff, cutoff2;
-    double distance_neighbors;
+//    double distance_neighbors;
     unsigned nneighbors;
     std::vector<unsigned> nneigh;
+    std::vector<unsigned> new_parent;
+    std::vector<unsigned> old_parent;
+    std::vector<unsigned> dist;
+    std::vector<unsigned> sptSet;
     Matrix<double> dissimilarities;
     Matrix<std::pair<double,double> > adj_list;
+    Matrix<std::pair<double,double> > h;
+    Matrix<std::pair<double,double> > indices;
 public:
     static void registerKeywords( Keywords& keys );
     GeodesicDistances( const ActionOptions& ao );
@@ -191,13 +199,12 @@ void GeodesicDistances::performAnalysis() {
     
     std::vector<std::vector<std::pair<double,int> > > neighborhood;
     neighborhood.resize(getNumberOfDataPoints());
-    int states[getNumberOfDataPoints()][getNumberOfDataPoints()];
     int k=0;
     double distance_neighbors;
     double dist;
-    double h[getNumberOfDataPoints()][getNumberOfDataPoints()];
+    Matrix<double> h( getNumberOfDataPoints(), getNumberOfDataPoints() );
     double a = std::numeric_limits<double>::infinity();
-    bool indices[getNumberOfDataPoints()][getNumberOfDataPoints()];
+    Matrix<double> indices(getNumberOfDataPoints(),getNumberOfDataPoints());
     int m=getNumberOfDataPoints();
     
     //        ##################################
@@ -245,7 +252,6 @@ void GeodesicDistances::performAnalysis() {
             for (int j=0; j<getNumberOfDataPoints(); j++) {
                 distance_neighbors=neighborhood[i][j].first;
                 k=(neighborhood[i][j].second)-n*i;
-                states[i][j]=k;
                 //          states contains for each index the nearest neighbors
                 //          ordered with increaing distance, i.e.
                 //          each row contains indices of points sorted by their distance in ascending order
@@ -273,39 +279,14 @@ void GeodesicDistances::performAnalysis() {
 // end function
 
 
-
-
-
-//        ##################################
-// An utility function to find the vertex with minimum distance value, from
-// the set of vertices not yet included in shortest path tree
-
-int minDistance(double dist[], bool sptSet[], int m)
-{
-    // Initialize min value
-    int min = INT_MAX, min_index;
-    
-    for (int v = 0; v < m; v++){
-        if (sptSet[v] == false && dist[v] <= min){
-            min = dist[v], min_index = v;
-        }
-    }
-    
-    return min_index;
-}
-
-//              End of minDistance
-//        ##################################
-
-
 double GeodesicDistances::getDissimilarity( const unsigned& iframe, const unsigned& jframe ) {
     
     if( dissimilarities(iframe,jframe)>0. ) { return dissimilarities(iframe,jframe); }
     double tmp_distances(getNumberOfDataPoints());
     
-    double h[getNumberOfDataPoints()][getNumberOfDataPoints()];
-    int new_parent[n];
-    int old_parent[n];
+    Matrix<double> h( getNumberOfDataPoints(), getNumberOfDataPoints() );
+    new_parent.resize( getNumberOfDataPoints() );
+    old_parent.resize( getNumberOfDataPoints() );
     
     plumed_dbg_assert( iframe<getNumberOfDataPoints() && jframe<getNumberOfDataPoints() );
     if( !usingLowMem() ) {
@@ -317,14 +298,14 @@ double GeodesicDistances::getDissimilarity( const unsigned& iframe, const unsign
         // Function that implements Dijkstra's single source shortest path algorithm
         // for a graph represented using adjacency matrix representation
         
-        //     for (int j = 0 ; j < getNumberOfDataPoints() ; j++){
         int j=0;
-        double dist[n];
+        
+        dist.resize( getNumberOfDataPoints() );
         double a = std::numeric_limits<double>::infinity();
         // The output array.  dist[i] will hold the shortest
         // distance from j to i
         
-        bool sptSet[n];
+        sptSet.resize( getNumberOfDataPoints() );
         // sptSet[i] will be true if vertex i is included in shortest
         // path tree or shortest distance from j to i is finalized
         // Initialize all distances as INFINITE and stpSet[] as false
@@ -340,7 +321,13 @@ double GeodesicDistances::getDissimilarity( const unsigned& iframe, const unsign
         for (int count = 0; count < getNumberOfDataPoints()-1; count++){
             // Pick the minimum distance vertex from the set of vertices not
             // yet processed. u is always equal to j in the first iteration.
-            int u = minDistance(dist, sptSet, getNumberOfDataPoints());
+            int u,min,min_index;
+            for (int v = 0; v < getNumberOfDataPoints(); v++){
+                if (sptSet[v] == false && dist[v] <= INT_MAX){
+                    min = dist[v], min_index = v;
+                }
+            }
+            u=min_index;
             
             // Mark the picked vertex as processed
             sptSet[u] = true;
