@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <limits>
 #include "tools/Matrix.h"
+#include <climits>
 
 //+PLUMEDOC ANALYSIS GEODESIC_DISTANCES
 /*
