@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <limits>
 #include "tools/Matrix.h"
-#include <climits>
 
 //+PLUMEDOC ANALYSIS GEODESIC_DISTANCES
 /*
@@ -324,7 +323,7 @@ double GeodesicDistances::getDissimilarity( const unsigned& iframe, const unsign
             // yet processed. u is always equal to j in the first iteration.
             int u,min,min_index;
             for (int v = 0; v < getNumberOfDataPoints(); v++){
-                if (sptSet[v] == false && dist[v] <= INT_MAX){
+                if (sptSet[v] == false && dist[v] <= a){
                     min = dist[v], min_index = v;
                 }
             }
@@ -339,7 +338,7 @@ double GeodesicDistances::getDissimilarity( const unsigned& iframe, const unsign
                 // Update dist[v] only if is not in sptSet, there is an edge from
                 // u to v, and total weight of path from src to  v through u is
                 // smaller than current value of dist[v]
-                if (!sptSet[v] && h[u][v] && dist[u] != INT_MAX
+                if (!sptSet[v] && h[u][v] && dist[u] != a
                     && dist[u]+h[u][v] < dist[v]){
                     
                     dist[v] = dist[u] + h[u][v];
