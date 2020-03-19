@@ -35,15 +35,15 @@ namespace ves {
 
 // construction of Wavelet grid according to the Daubechies-Lagarias method
 // c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
-std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet, const std::string& type) {
+std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool use_mother_wavelet, const std::string& type) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
-  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
+  while (maxsupport*(1U<<recursion_number) < gridsize) { recursion_number++; }
   // set "true" gridsize
-  unsigned bins_per_int = 1<<recursion_number;
+  unsigned bins_per_int = 1U<<recursion_number;
   gridsize = maxsupport*bins_per_int;
 
   // Filter coefficients
@@ -58,24 +58,25 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
 
 
   std::unique_ptr<Grid> grid;
-  if (!do_wavelet) {
+  if (!use_mother_wavelet) {
     // Set up the scaling grid with correct properties
     grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"},
-                           {std::to_string(maxsupport)}, {gridsize}, false, true, true,
-                           {false}, {"0."}, {"0."}));
+    {std::to_string(maxsupport)}, {gridsize}, false, true, true,
+    {false}, {"0."}, {"0."}));
   }
   else {
     // if wavelet is wanted: get the needed coefficients as well
     std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
 
-    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"},
-                           {std::to_string(maxsupport)}, {gridsize}, false, true, true,
-                           {false}, {"0."}, {"0."}));
+    grid.reset(new Grid(
+    "db"+std::to_string(order)+"_psi", {"position"}, {"0"},
+    {std::to_string(maxsupport)}, {gridsize}, false, true, true,
+    {false}, {"0."}, {"0."}));
   }
 
-  BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, do_wavelet);
-  BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, do_wavelet);
+  BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, use_mother_wavelet);
+  BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, use_mother_wavelet);
 
   fillGridFromMaps(grid, values, derivs);
 
@@ -160,7 +161,7 @@ std::vector<double> DbWaveletGrid::getEigenvector(const Matrix<double> &A, const
 }
 
 
-DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum, bool do_wavelet) {
+DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum, bool use_mother_wavelet) {
   BinaryMap scaling_map, wavelet_map;
   scaling_map.reserve(bins_per_int);
   // vector to store the binary representation of all the decimal parts
@@ -171,7 +172,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
   // multiply matrices by 2 if derivatives are calculated (assumes ascending order)
   if (derivnum != 0) for (auto& M : h_Matvec) M *= 2;
 
-  if (do_wavelet) {
+  if (use_mother_wavelet) {
     wavelet_map.reserve(bins_per_int);
     if (derivnum != 0) for (auto& M : g_Matvec) M *= 2;
   }
@@ -181,7 +182,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
   mult(h_Matvec[1], values_at_integers, temp_values);
   scaling_map["1"] = temp_values;
 
-  if (do_wavelet) {
+  if (use_mother_wavelet) {
     mult(g_Matvec[0], values_at_integers, temp_values);
     wavelet_map["0"] = temp_values;
     mult(g_Matvec[1], values_at_integers, temp_values);
@@ -198,7 +199,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
         std::string new_binary = std::to_string(k) + binary;
         mult(h_Matvec[k], scaling_map[binary], temp_values);
         scaling_map.insert(std::pair<std::string, std::vector<double>>(new_binary, temp_values));
-        if (do_wavelet) {
+        if (use_mother_wavelet) {
           mult(g_Matvec[k], scaling_map[binary], temp_values);
           wavelet_map.insert(std::pair<std::string, std::vector<double>>(new_binary, temp_values));
         }
@@ -208,7 +209,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
     binary_vec = new_binary_vec;
   }
 
-  return do_wavelet ? wavelet_map : scaling_map;
+  return use_mother_wavelet ? wavelet_map : scaling_map;
 }
 
 
