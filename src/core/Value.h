@@ -221,6 +221,8 @@ public:
   bool isSymmetric() const ;
 ///
   bool dataAlwaysStored() const ;
+///
+  bool storingData() const ;
 };
 
 inline
@@ -398,6 +400,11 @@ bool Value::isTimeSeries() const {
 inline
 bool Value::dataAlwaysStored() const {
   return alwaysstore;
+}
+
+inline
+bool Value::storingData() const {
+  return storedata;
 }
 
 }

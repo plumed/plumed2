@@ -34,6 +34,10 @@ public ActionWithArguments {
 private:
 /// A counter that is used when setting the landmark values
   unsigned jframe;
+/// The indices of the landmark frames
+  std::vector<unsigned> landmarks;
+/// This sets the square matrix that contains the separations between the landmarks
+  void setLandmarkSeparations();
 protected:
 /// The number of landmarks we are selecting
   unsigned nlandmarks;

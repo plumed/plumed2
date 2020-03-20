@@ -1,5 +1,5 @@
-REMARK ARG=l1.c1.d1,l1.c1.d2,l1.c1.logweights,lwe 
-REMARK l1.c1.d1=1.2626   l1.c1.d2=1.0972   l1.c1.logweights=0.0000   lwe=1.0000   
+REMARK ARG=l1.d1,l1.d2,l1.logweights,lwe 
+REMARK l1.d1=1.2626   l1.d2=1.0972   l1.logweights=0.0000   lwe=1.0000   
 ATOM      0  X   RES     0      -4.506 -11.060 -37.700  1.00  1.00
 ATOM      1  X   RES     1       4.963 -11.182 -29.349  1.00  1.00
 ATOM      2  X   RES     2       4.162  -2.540 -37.362  1.00  1.00
@@ -21,8 +21,8 @@ ATOM     17  X   RES    17       3.305   5.096  37.423  1.00  1.00
 ATOM     18  X   RES    18       4.331  14.345  30.242  1.00  1.00
 ATOM     19  X   RES    19      -3.402  14.752  38.099  1.00  1.00
 END
-REMARK ARG=l1.c1.d1,l1.c1.d2,l1.c1.logweights,lwe 
-REMARK l1.c1.d1=1.3176   l1.c1.d2=1.0588   l1.c1.logweights=0.0000   lwe=1.0000   
+REMARK ARG=l1.d1,l1.d2,l1.logweights,lwe 
+REMARK l1.d1=1.3176   l1.d2=1.0588   l1.logweights=0.0000   lwe=1.0000   
 ATOM      0  X   RES     0      -4.733 -11.357 -37.591  1.00  1.00
 ATOM      1  X   RES     1       5.592 -11.157 -29.408  1.00  1.00
 ATOM      2  X   RES     2       4.027  -2.487 -37.026  1.00  1.00
@@ -44,8 +44,8 @@ ATOM     17  X   RES    17       3.001   4.729  37.080  1.00  1.00
 ATOM     18  X   RES    18       4.385  14.424  30.800  1.00  1.00
 ATOM     19  X   RES    19      -3.070  15.029  38.577  1.00  1.00
 END
-REMARK ARG=l1.c1.d1,l1.c1.d2,l1.c1.logweights,lwe 
-REMARK l1.c1.d1=1.3934   l1.c1.d2=1.0958   l1.c1.logweights=0.0000   lwe=1.0000   
+REMARK ARG=l1.d1,l1.d2,l1.logweights,lwe 
+REMARK l1.d1=1.3934   l1.d2=1.0958   l1.logweights=0.0000   lwe=1.0000   
 ATOM      0  X   RES     0      -4.936 -11.355 -37.524  1.00  1.00
 ATOM      1  X   RES     1       6.223 -10.940 -29.189  1.00  1.00
 ATOM      2  X   RES     2       4.038  -2.545 -36.960  1.00  1.00
@@ -67,8 +67,8 @@ ATOM     17  X   RES    17       3.363   4.509  36.923  1.00  1.00
 ATOM     18  X   RES    18       4.304  14.191  30.938  1.00  1.00
 ATOM     19  X   RES    19      -3.371  14.855  39.010  1.00  1.00
 END
-REMARK ARG=l1.c1.d1,l1.c1.d2,l1.c1.logweights,lwe 
-REMARK l1.c1.d1=1.4755   l1.c1.d2=1.1628   l1.c1.logweights=0.0000   lwe=1.0000   
+REMARK ARG=l1.d1,l1.d2,l1.logweights,lwe 
+REMARK l1.d1=1.4755   l1.d2=1.1628   l1.logweights=0.0000   lwe=1.0000   
 ATOM      0  X   RES     0      -5.180 -11.348 -37.390  1.00  1.00
 ATOM      1  X   RES     1       6.784 -10.593 -28.789  1.00  1.00
 ATOM      2  X   RES     2       4.211  -2.660 -37.131  1.00  1.00
@@ -90,8 +90,8 @@ ATOM     17  X   RES    17       3.938   4.421  36.946  1.00  1.00
 ATOM     18  X   RES    18       4.145  14.107  30.732  1.00  1.00
 ATOM     19  X   RES    19      -3.796  14.492  39.287  1.00  1.00
 END
-REMARK ARG=l1.c1.d1,l1.c1.d2,l1.c1.logweights,lwe 
-REMARK l1.c1.d1=1.4908   l1.c1.d2=1.2160   l1.c1.logweights=0.0000   lwe=1.0000   
+REMARK ARG=l1.d1,l1.d2,l1.logweights,lwe 
+REMARK l1.d1=1.4908   l1.d2=1.2160   l1.logweights=0.0000   lwe=1.0000   
 ATOM      0  X   RES     0      -5.304 -11.406 -37.003  1.00  1.00
 ATOM      1  X   RES     1       7.010 -10.524 -28.647  1.00  1.00
 ATOM      2  X   RES     2       4.468  -2.765 -37.303  1.00  1.00

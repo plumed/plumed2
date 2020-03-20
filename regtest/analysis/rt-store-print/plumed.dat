@@ -9,9 +9,9 @@ PRINT ARG=ff2.d1,weight2 FILE=output-all
 PRINT ARG=ff2.d1,weight2 FILE=output-reuse
 
 ll1: LANDMARK_SELECT_STRIDE ARG1=ff2.d1 ARG2=weight2 NLANDMARKS=5
-PRINT ARG=ll1.ff2.d1,ll1.weight2 FILE=output-stride
+PRINT ARG=ll1.d1,ll1.weight2 FILE=output-stride
 
 ff3: COLLECT_FRAMES STRIDE=1 ARG1=d1 CLEAR=6
 weight3: CUSTOM ARG1=ff3.logweights FUNC=exp(x) PERIODIC=NO
 ll2: LANDMARK_SELECT_STRIDE ARG1=ff3.d1 ARG2=weight3 NLANDMARKS=3
-PRINT ARG=ll2.ff3.d1,ll2.weight3 FILE=output-stride2 STRIDE=6
+PRINT ARG=ll2.d1,ll2.weight3 FILE=output-stride2 STRIDE=6
