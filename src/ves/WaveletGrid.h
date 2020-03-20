@@ -32,10 +32,9 @@ namespace PLMD {
 template <typename T>
 class Matrix;
 
-namespace ves {
-
 class Grid;
 
+namespace ves {
 
 // factory class to set up a Grid with Wavelets
 class WaveletGrid {
