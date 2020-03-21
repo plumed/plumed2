@@ -51,6 +51,7 @@ PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")
 void FarthestPointSampling::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);
   keys.add("compulsory","SEED","1234","a random number seed");
+  keys.add("compulsory","DISTANCE_MATRIX","the matrix you would like to use to for the distances.  You only need to specify this if you have more than one distance matrix in the input");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
@@ -59,11 +60,19 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
   distance_matrix(NULL),
   outmatrix(NULL)
 {
+  bool needmatrix=false;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( !distance_matrix && getPntrToArgument(i)->getRank()==2 ) { distance_matrix = getPntrToArgument(i); outmatrix = getPntrToOutput(i); }
-      else if( distance_matrix && getPntrToArgument(i)->getRank()==2 ) error("should only be one distance matrix in input arguments");
+      else if( distance_matrix && getPntrToArgument(i)->getRank()==2 ) needmatrix=true;
   }
-  if( !distance_matrix ) error("could not find distance matrix in input arguments");
+  if( needmatrix ) {
+      outmatrix=NULL; std::string matlab; parse("DISTANCE_MATRIX",matlab);
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getName()==matlab ) { distance_matrix = getPntrToArgument(i); break; }
+      }
+      if( !distance_matrix ) error("could not find dissimilarity matrix with label " + matlab + " in input arguments");
+      if( distance_matrix->getRank()!=2 ) error( matlab + " is not a matrix");
+  }
   parse("SEED",seed); plumed_assert( outmatrix->getRank()==2 );
 }
 

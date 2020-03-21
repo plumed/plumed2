@@ -65,7 +65,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
   }
 
-  std::vector<unsigned> shape(1); std::string foundmat="";
+  std::vector<unsigned> shape(1); std::vector<std::string> foundmat;
   for(unsigned i=0;i<arg_ends.size()-1;++i) { 
       unsigned tvals=0; 
       for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
@@ -84,7 +84,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       if( argi->hasDerivatives() ) {
           error("cannot select landmarks for value " + argi->getName() );
       } else if( argi->getRank()==2 ) {
-          shape.resize(2); shape[0] = nlandmarks; shape[1] = nvals;
+          shape.resize(2); shape[0] = nlandmarks; shape[1] = nvals; argi->buildDataStore( getLabel() );
       } else if( argi->getRank()==1 ) {
           shape.resize(1); shape[0] = nlandmarks;
       } else error("cannot select landmarks for value " + argi->getName() );
@@ -93,10 +93,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       if( cf ) { 
           if( shape.size()==2 ) error("input from COLLECT_FRAMES should be a vector -- how have you done this?");
           std::size_t dot=vname.find_first_of('.'); vname = vname.substr(dot+1); 
-      } else if( shape.size()==2 ) { 
-          if( foundmat.length()>0 ) error("should only have one matrix in input");
-          foundmat=vname; vname = vname + "_rect";
-      }
+      } else if( shape.size()==2 ) { foundmat.push_back(vname); vname = vname + "_rect"; }
       addComponent( vname, shape );
       if( argi->isPeriodic() ) {
           std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
@@ -104,41 +101,45 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       } else componentIsNotPeriodic( vname ); 
       if( argi->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
   }
-  if( foundmat.length()>0 ) {
+  if( foundmat.size()>0 ) {
       shape.resize(2); shape[0]=shape[1]=nlandmarks; 
-      addComponent( foundmat + "_sqr", shape ); 
-      componentIsNotPeriodic( foundmat + "_sqr" );
+      for(unsigned i=0;i<foundmat.size();++i) {
+          addComponent( foundmat[i] + "_sqr", shape ); componentIsNotPeriodic( foundmat[i] + "_sqr" );
+      }
   }
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      Value* val0=getPntrToOutput(i);
+      Value* val0=getPntrToOutput(i); 
       if( val0->getRank()==2 && val0->storingData() ) {
           Value* arg0 = getPntrToArgument(arg_ends[i]); 
           for(unsigned j=0;j<nvals;++j) {
               val0->set( nvals*jframe + j, arg0->get(nvals*iframe+j) );
           }
-      } else if( val0->getRank()==1 ) val0->set( jframe, retrieveRequiredArgument( i, iframe ) );
+      } else if( val0->getRank()==1 && val0->storingData() ) val0->set( jframe, retrieveRequiredArgument( i, iframe ) );
   }
   landmarks[jframe]=iframe; jframe++; if( jframe==nlandmarks ) jframe=0;
 }
 
 void LandmarkSelectionBase::setLandmarkSeparations() {
   if( getNumberOfComponents()==(arg_ends.size()-1) ) return;
-  Value* val0 = getPntrToOutput( getNumberOfComponents()-1 );
-  if( !val0->storingData() ) return;
+  for(unsigned k=arg_ends.size()-1;k<getNumberOfComponents();++k) {
+      Value* val0 = getPntrToOutput( k );
+      if( !val0->storingData() ) continue;
 
-  Value* arg0; 
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      if( getPntrToOutput(i)->getRank()==2 ) { arg0 = getPntrToArgument(arg_ends[i]); break; }
-  }
-  plumed_assert( arg0 ); 
+      Value* arg0; std::string fname = getPntrToOutput(k)->getName(); fname=fname.substr(0,fname.size()-4);
+      for(unsigned i=0;i<arg_ends.size()-1;++i) {
+          std::string tname = getPntrToOutput(i)->getName(); tname=tname.substr(0,tname.size()-5);
+          if( tname==fname ) { arg0 = getPntrToArgument(arg_ends[i]); break; }
+      }
+      plumed_assert( arg0 ); 
 
-  for(unsigned i=1;i<nlandmarks;++i) {
-      for(unsigned j=0;j<i;++j) {
-          double myval = arg0->get(nvals*landmarks[i] + landmarks[j] );
-          val0->set( i*nlandmarks+j, myval ); val0->set( j*nlandmarks+i, myval );
+      for(unsigned i=1;i<nlandmarks;++i) {
+          for(unsigned j=0;j<i;++j) {
+              double myval = arg0->get(nvals*landmarks[i] + landmarks[j] );
+              val0->set( i*nlandmarks+j, myval ); val0->set( j*nlandmarks+i, myval );
+          }
       }
   }
 }
