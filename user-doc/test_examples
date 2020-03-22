@@ -100,6 +100,10 @@ for file in *.dat ; do
            nerr=1
        fi
        if [ $nerr -gt 0 ] ; then
+           ferr=`grep $infile ../../example_errors | wc -l | awk '{print $1}'`
+           if [ $ferr -eq 0 ] ; then
+              echo Found broken examples in $infile >> ../../example_errors
+           fi
            awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " broken DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e
        else 
            awk -v eg=$egn -v data=$fname '{if(match($0,"plumedfile") && !match($0,"endplumedfile") && n+1==eg){ n++; print $0 " working DATADIR=example-check/" data; }else if(match($0,"plumedfile") && !match($0,"endplumedfile")){ n++; print $0;}else{print $0;}}' ../../$infile > ../../$infile.e

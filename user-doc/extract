@@ -3,7 +3,7 @@
 source ../sourceme.sh
 
 # initial cleanup
-rm -f errors
+rm -f errors example_errors
 rm -rf automatic example-check
 mkdir automatic
 mkdir example-check
