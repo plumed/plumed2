@@ -118,6 +118,8 @@ private:
   std::vector< std::vector<std::string> > projection_args_;
   //
   bool calc_reweightfactor_;
+  //
+  double optimization_threshold_;
 private:
   void initializeCoeffs(CoeffsVector*);
   std::vector<double> computeCovarianceFromAverages(const unsigned int) const;
