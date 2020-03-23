@@ -34,6 +34,8 @@ namespace symfunc {
 //+PLUMEDOC MCOLVAR HEXACTIC_PARAMETER
 /*
 
+\bug Virial is not working currently
+
 \par Examples
 
 
