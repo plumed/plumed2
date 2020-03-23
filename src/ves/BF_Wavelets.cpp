@@ -22,6 +22,7 @@
 
 
 #include "BasisFunctions.h"
+#include "GridLinearInterpolation.h"
 #include "tools/Grid.h"
 #include "VesTools.h"
 #include "WaveletGrid.h"
@@ -309,7 +310,7 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
       // declare vectors and fill them with value
       std::vector<double> temp_deriv (1);
       std::vector<double> x_vec {x};
-      values[i] = waveletGrid_->getValueAndDerivatives(x_vec, temp_deriv);
+      values[i] = GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation(waveletGrid_.get(), x_vec, temp_deriv);
       derivs[i] = temp_deriv[0] * scale_; // scale derivative
     }
   }
