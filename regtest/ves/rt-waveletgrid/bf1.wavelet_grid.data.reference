@@ -1,4 +1,4 @@
-#! FIELDS position db8_phi der_position
+#! FIELDS position Db8_phi der_position
 #! SET min_position 0
 #! SET max_position 15
 #! SET nbins_position  1921
