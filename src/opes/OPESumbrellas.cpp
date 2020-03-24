@@ -326,8 +326,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
 
 //Bibliography
   log.printf("  Bibliography: ");
-  log<<plumed.cite("Piaggi and Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
-  log<<plumed.cite("Invernizzi and Parrinello, arXiv:1909.07250 (2019)");
+  log<<plumed.cite("P. Piaggi and M. Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
+  log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
 }
 

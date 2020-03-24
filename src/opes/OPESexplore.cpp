@@ -483,7 +483,7 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
   log.printf(" Bibliography ");
-  log<<plumed.cite("Invernizzi and Parrinello, arXiv:1909.07250 (2019)");
+  log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
 }
 
