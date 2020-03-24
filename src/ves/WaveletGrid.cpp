@@ -61,15 +61,15 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   if (use_mother_wavelet) { // get the highpass filter coefficients as well
     std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
-    gridvarname = "wvlt"+std::to_string(order)+"_psi";
+    gridvarname = typeToString(type,true)+std::to_string(order)+"_psi";
   }
   else {
-    gridvarname = "wvlt"+std::to_string(order)+"_phi";
+    gridvarname = typeToString(type,true)+std::to_string(order)+"_phi";
   }
 
   // Set up the grid with correct properties
   auto grid = std::unique_ptr<Grid>(new Grid(gridvarname, {"position"}, {"0"},
-    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
+  {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
 
   BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, use_mother_wavelet);
   BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, use_mother_wavelet);
@@ -226,6 +226,27 @@ void WaveletGrid::fillGridFromMaps(std::unique_ptr<Grid>& grid, const BinaryMap&
       grid->setValueAndDerivatives(first_grid_element + bins_per_int*i, value_iter.second[i], deriv);
     }
   }
+}
+
+
+WaveletGrid::Type WaveletGrid::stringToType(std::string& type_str) {
+  std::unordered_map<std::string, Type> typemap = { {"DAUBECHIES", Type::db}, {"SYMLETS", Type::sym} };
+  try { return typemap.at(type_str); }
+  catch(const std::out_of_range& e) {plumed_merror("The specified wavelet type "+type_str+" is not implemented."); }
+}
+
+
+std::string WaveletGrid::typeToString(Type type, bool abbrev) {
+  std::string type_str;
+  switch(type) {
+  case Type::db:
+    type_str = abbrev ? "Db" : "DAUBECHIES";
+    break;
+  case Type::sym:
+    type_str = abbrev ? "Sym" : "SYMLETS";
+    break;
+  }
+  return type_str;
 }
 
 

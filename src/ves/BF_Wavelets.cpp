@@ -167,7 +167,6 @@ class BF_Wavelets : public BasisFunctions {
   void setupLabels() override;
 protected:
   std::vector<double> getCutoffPoints(const double& threshold);
-  void setWaveletType(const std::string& type_str);
 
   bool use_mother_wavelet_;
   WaveletGrid::Type wavelet_type_ ;
@@ -209,7 +208,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   std::string wavelet_type_str = "DAUBECHIES";
   parse("TYPE", wavelet_type_str);
-  setWaveletType(wavelet_type_str);
+  wavelet_type_ = WaveletGrid::stringToType(wavelet_type_str);
 
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
@@ -315,20 +314,6 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
     }
   }
   if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
-}
-
-
-// Sets the enum WaveletType from the parsed string
-void BF_Wavelets::setWaveletType(const std::string& wavelet_type_str) {
-  if (wavelet_type_str == "DAUBECHIES") {
-    this->wavelet_type_ = WaveletGrid::Type::db;
-  }
-  else if (wavelet_type_str == "SYMLETS") {
-    this->wavelet_type_ = WaveletGrid::Type::sym;
-  }
-  else {
-    plumed_merror("Unknown Wavelet type \""+wavelet_type_str+"\"");
-  }
 }
 
 

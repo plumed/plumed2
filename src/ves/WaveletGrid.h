@@ -46,6 +46,8 @@ public:
     db, // standard Daubechies
     sym // most symmetric Daubechies
   };
+  static std::string typeToString(Type type, bool abbrev=false);
+  static Type stringToType(std::string& type_str);
 
 private:
   // lookup function for the filter coefficients
