@@ -39,7 +39,6 @@ OPES_WT ...
   LABEL=opes
   ARG=cv
   PACE=500
-  SIGMA=0.2
   BARRIER=15
 ... OPES_WT
 
@@ -103,7 +102,7 @@ private:
 
   OFile probOfile_;
   int wProbStride_;
-  bool storeOldProb_;
+  bool storeOldProbs_;
 
 public:
   OPESwt(const ActionOptions&);
@@ -140,9 +139,10 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","KERNELS","a file in which the list of added kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
 //save probability estimate (compressed kernels)
+  keys.add("optional","PROB_RFILE","a probability file from which restarting the simulation");
   keys.add("optional","PROB_WFILE","the file on which to write the estimated probability");
   keys.add("optional","PROB_WSTRIDE","write the estimated probability to a file every N steps");
-  keys.addFlag("STORE_PROB",false,"store all the estimated probability files the calculation generates. They will be deleted if this keyword is not present");
+  keys.addFlag("STORE_PROBS",false,"store all the probability files the calculation generates. They are overwritten if this keyword is not present");
 //miscellaneous
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. 1D systems");
@@ -164,7 +164,6 @@ OPESwt::OPESwt(const ActionOptions&ao)
   , counter_(1)
   , Zed_(1)
   , work_(0)
-  , old_Zed_(1)
 {
   ncv_=getNumberOfArguments();
 //set kbt_
@@ -225,7 +224,6 @@ OPESwt::OPESwt(const ActionOptions&ao)
   plumed_massert(epsilon_>0,"you must choose a value for EPSILON greater than zero. Is your BARRIER too high?");
   sum_weights_=std::pow(epsilon_,bias_prefactor_); //to avoid NANs we start with counter_=1 and w0=exp(beta*V0)
   sum_weights2_=sum_weights_*sum_weights_;
-  old_sum_weights_=sum_weights_;
 
   double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
   parse("KERNEL_CUTOFF",cutoff);
@@ -246,7 +244,6 @@ OPESwt::OPESwt(const ActionOptions&ao)
   {//this makes it more gentle in the initial phase
     sum_weights_=1;
     sum_weights2_=1;
-    old_sum_weights_=1;
   }
   fixed_sigma_=false;
   parseFlag("FIXED_SIGMA",fixed_sigma_);
@@ -255,19 +252,21 @@ OPESwt::OPESwt(const ActionOptions&ao)
   recursive_merge_=!recursive_merge_off;
 
 //kernels file
-  std::string kernelsFileName("KERNELS");
+  std::string kernelsFileName;
   parse("FILE",kernelsFileName);
   std::string fmt;
   parse("FMT",fmt);
 
 //output current probability estimate, as kernels
+  std::string restartFileName;
+  parse("PROB_RFILE",restartFileName);
   std::string probFileName;
   parse("PROB_WFILE",probFileName);
   wProbStride_=0;
   parse("PROB_WSTRIDE",wProbStride_);
-  storeOldProb_=false;
-  parseFlag("STORE_PROB",storeOldProb_);
-  if(wProbStride_!=0 || storeOldProb_)
+  storeOldProbs_=false;
+  parseFlag("STORE_PROBS",storeOldProbs_);
+  if(wProbStride_!=0 || storeOldProbs_)
     plumed_massert(probFileName.length()>0,"filename for estimated probability not specified, use PROB_WFILE");
   if(probFileName.length()>0 && wProbStride_==0)
     wProbStride_=-1;//will print only on CPT events
@@ -309,19 +308,27 @@ OPESwt::OPESwt(const ActionOptions&ao)
   checkRead();
 
 //restart if needed
-  if(getRestart()) //TODO add option to restart from dumped PROB file
+  if(getRestart())
   {
+    bool probRestart=true;
+    if(restartFileName.length()==0)
+    {
+      probRestart=false;
+      restartFileName=kernelsFileName;
+    }
     IFile ifile;
     ifile.link(*this);
     if(NumWalkers_>1)
       ifile.enforceSuffix("");
-    if(ifile.FileExist(kernelsFileName))
+    if(ifile.FileExist(restartFileName))
     {
-      ifile.open(kernelsFileName);
+      ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
-      if(sigma0_.size()==0)
-        log.printf(" +++ WARNING +++ restarting from an adaptive sigma simulation is not perfect\n");
-      log.printf("    Restarting from: %s\n",kernelsFileName.c_str());
+        log.printf("    restarting from: %s\n",restartFileName.c_str());
+      if(probRestart)
+        log.printf("    it should be a probability file (not a kernel file)\n");
+      else
+        log.printf(" +++ WARNING +++ restarting from kernel file is not smooth, use PROB_RFILE to restart from a probability\n");
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
       if(strcasecmp(old_biasfactor_str.c_str(),"inf")==0)
@@ -333,22 +340,41 @@ OPESwt::OPESwt(const ActionOptions&ao)
       {
         double old_biasfactor;
         ifile.scanField("biasfactor",old_biasfactor);
-        if(old_biasfactor!=biasfactor)
+        if(std::abs(biasfactor-old_biasfactor)>1e-6*biasfactor)
           log.printf(" +++ WARNING +++ previous bias factor was %g while now it is %g. diff = %g\n",old_biasfactor,biasfactor,biasfactor-old_biasfactor);
       }
       double old_epsilon;
       ifile.scanField("epsilon",old_epsilon);
-      if(old_epsilon!=epsilon_)
+      if(std::abs(epsilon_-old_epsilon)>1e-6*epsilon_)
         log.printf(" +++ WARNING +++ previous epsilon was %g while now it is %g. diff = %g\n",old_epsilon,epsilon_,epsilon_-old_epsilon);
       double old_cutoff;
       ifile.scanField("kernel_cutoff",old_cutoff);
-      if(old_cutoff!=cutoff)
+      if(std::abs(cutoff-old_cutoff)>1e-6*cutoff)
         log.printf(" +++ WARNING +++ previous kernel_cutoff was %g while now it is %g. diff = %g\n",old_cutoff,cutoff,cutoff-old_cutoff);
       double old_threshold;
       const double threshold=sqrt(threshold2_);
       ifile.scanField("compression_threshold",old_threshold);
-      if(old_threshold!=threshold)
+      if(std::abs(threshold-old_threshold)>1e-6*threshold)
         log.printf(" +++ WARNING +++ previous compression_threshold was %g while now it is %g. diff = %g\n",old_threshold,threshold,threshold-old_threshold);
+      if(probRestart)
+      {
+        ifile.scanField("zed",Zed_);
+        ifile.scanField("sum_weights",sum_weights_);
+        ifile.scanField("sum_weights2",sum_weights2_);
+        std::string str_counter;
+        ifile.scanField("counter",str_counter); //scanField does not handle unsigned
+        counter_=std::stoul(str_counter);
+        if(sigma0_.size()==0)
+        {
+          ifile.scanField("adaptive_counter",str_counter); //scanField does not handle long unsigned
+          adaptive_counter_=std::stoul(str_counter);
+          for(unsigned i=0; i<ncv_; i++)
+          {
+            ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+            ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+          }
+        }
+      }
       for(unsigned i=0; i<ncv_; i++)
       {
         if(getPntrToArgument(i)->isPeriodic())
@@ -362,39 +388,59 @@ OPESwt::OPESwt(const ActionOptions&ao)
           plumed_massert(file_max==arg_max,"mismatch between restart and ARG periodicity");
         }
       }
-      ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
-      double time;
-      while(ifile.scanField("time",time))
+      if(probRestart)
       {
-        std::vector<double> center(ncv_);
-        std::vector<double> sigma(ncv_);
-        double height;
-        double logweight;
-        for(unsigned i=0; i<ncv_; i++)
-          ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
-        for(unsigned i=0; i<ncv_; i++)
-          ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-        ifile.scanField("height",height);
-        ifile.scanField("logweight",logweight);
-        ifile.scanField();
-        addKernel(height,center,sigma,false);
-        const double weight=std::exp(logweight);
-        sum_weights_+=weight; //FIXME this sum is slightly inaccurate, because when printing some precision is lost
-        sum_weights2_+=weight*weight;
-        counter_++;
+        double time;
+        while(ifile.scanField("time",time))
+        {
+          std::vector<double> center(ncv_);
+          std::vector<double> sigma(ncv_);
+          double height;
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          ifile.scanField("height",height);
+          ifile.scanField();
+          kernels_.emplace_back(height,center,sigma);
+        }
+        log.printf("    A total of %d kernels where read\n",kernels_.size());
       }
-      if(!no_Zed_)
+      else
       {
-        double sum_uprob=0;
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          for(unsigned kk=0; kk<kernels_.size(); kk++)
-            sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
-        if(NumParallel_>1)
-          comm.Sum(sum_uprob);
-        Zed_=sum_uprob/sum_weights_/kernels_.size();
-        old_Zed_=Zed_;
+        ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
+        double time;
+        while(ifile.scanField("time",time))
+        {
+          std::vector<double> center(ncv_);
+          std::vector<double> sigma(ncv_);
+          double height;
+          double logweight;
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          ifile.scanField("height",height);
+          ifile.scanField("logweight",logweight);
+          ifile.scanField();
+          addKernel(height,center,sigma,false);
+          const double weight=std::exp(logweight);
+          sum_weights_+=weight; //this sum is slightly inaccurate, because when printing some precision is lost
+          sum_weights2_+=weight*weight;
+          counter_++;
+        }
+        if(!no_Zed_)
+        {
+          double sum_uprob=0;
+          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+            for(unsigned kk=0; kk<kernels_.size(); kk++)
+              sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+          if(NumParallel_>1)
+            comm.Sum(sum_uprob);
+          Zed_=sum_uprob/sum_weights_/kernels_.size();
+        }
+        log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       }
-      log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       ifile.reset(false);
       ifile.close();
     //sync all walkers and treads. Not sure is mandatory but is no harm
@@ -403,7 +449,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
         multi_sim_comm.Barrier();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but file '%s' was not found!\n",kernelsFileName.c_str());
+      log.printf(" +++ WARNING +++ restart requested, but file '%s' was not found!\n",restartFileName.c_str());
   }
 
 //setup output kernels file
@@ -445,6 +491,10 @@ OPESwt::OPESwt(const ActionOptions&ao)
       probOfile_.fmtField(" "+fmt);
   }
 
+//set initial old values for work
+  old_sum_weights_=sum_weights_;
+  old_Zed_=Zed_;
+
 //add and set output components
   addComponent("work"); componentIsNotPeriodic("work");
   addComponent("rct"); componentIsNotPeriodic("rct");
@@ -483,8 +533,8 @@ OPESwt::OPESwt(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ probably kernels are truncated too much\n");
   log.printf("  the value at cutoff is = %g\n",val_at_cutoff_);
   log.printf("  regularization EPSILON = %g\n",epsilon_);
-  if(val_at_cutoff_>epsilon_)
-    log.printf(" +++ WARNING +++ the KERNEL_CUTOFF might be too small for the given EPSILON");
+  if(val_at_cutoff_>epsilon_*(1+1e-6))
+    log.printf(" +++ WARNING +++ the KERNEL_CUTOFF might be too small for the given EPSILON\n");
   log.printf("  kernels will be compressed when closer than COMPRESSION_THRESHOLD = %g\n",sqrt(threshold2_));
   if(threshold2_==0)
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
@@ -507,7 +557,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
   log.printf(" Bibliography ");
-  log<<plumed.cite("Invernizzi and Parrinello, arXiv:1909.07250 (2019)");
+  log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
 }
 
@@ -568,7 +618,7 @@ void OPESwt::update()
   if(getStep()%stride_!=0)
     return;
   plumed_massert(afterCalculate_,"OPESwt::update() must be called after OPESwt::calculate() to work properly");
-  afterCalculate_=false;
+  afterCalculate_=false; //if needed implementation can be changed to avoid this
 
 //work done by the bias in one iteration, uses as zero reference a point at inf, so that the work is always positive
   const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_sum_weights_/sum_weights_);
@@ -789,7 +839,7 @@ unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,cons
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list
+  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
   {
     if(k==giver_k) //a kernel should not be merged with itself
       continue;
@@ -822,7 +872,7 @@ unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,cons
 
 void OPESwt::dumpProbToFile()
 {
-  if(storeOldProb_)
+  if(storeOldProbs_)
     probOfile_.clearFields();
   else if(walker_rank_==0)
     probOfile_.rewind();
@@ -834,6 +884,16 @@ void OPESwt::dumpProbToFile()
   probOfile_.addConstantField("zed");
   probOfile_.addConstantField("sum_weights");
   probOfile_.addConstantField("sum_weights2");
+  probOfile_.addConstantField("counter");
+  if(sigma0_.size()==0)
+  {
+    probOfile_.addConstantField("adaptive_counter");
+    for(unsigned i=0; i<ncv_; i++)
+    {
+      probOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
+      probOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
+    }
+  }
   for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
     probOfile_.setupPrintValue(getPntrToArgument(i));
   probOfile_.printField("biasfactor",1./(1.-bias_prefactor_));
@@ -843,9 +903,19 @@ void OPESwt::dumpProbToFile()
   probOfile_.printField("zed",Zed_);
   probOfile_.printField("sum_weights",sum_weights_);
   probOfile_.printField("sum_weights2",sum_weights2_);
+  probOfile_.printField("counter",std::to_string(counter_)); //printField does not handle unsigned
+  if(sigma0_.size()==0)
+  {
+    probOfile_.printField("adaptive_counter",std::to_string(adaptive_counter_)); //printField does not handle long unsigned
+    for(unsigned i=0; i<ncv_; i++)
+    {
+      probOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+      probOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+    }
+  }
   for(unsigned k=0; k<kernels_.size(); k++)
   {
-    probOfile_.printField("time",getTime());
+    probOfile_.printField("time",getTime()); //this is not very usefull
     for(unsigned i=0; i<ncv_; i++)
       probOfile_.printField(getPntrToArgument(i),kernels_[k].center[i]);
     for(unsigned i=0; i<ncv_; i++)
@@ -853,7 +923,7 @@ void OPESwt::dumpProbToFile()
     probOfile_.printField("height",kernels_[k].height);
     probOfile_.printField();
   }
-  if(!storeOldProb_)
+  if(!storeOldProbs_)
     probOfile_.flush();
 }
 
