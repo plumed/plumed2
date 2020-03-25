@@ -38,9 +38,9 @@ namespace ves {
 /*
 Daubechies Wavelets as basis functions.
 
-Note: at the moment only the scaling function is working as intended as multiscale is not yet implemented.
+Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
-This basis set uses Daubechies Wavelets \cite daubechies_orthonormal_1988 to construct a complete and orthogonal basis.
+This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis.
 It is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
 They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
 
@@ -70,39 +70,56 @@ As an example the two Db8 wavelet functions can be seen below
 \image html ves-basisf-db8.png
 
 
-\par Some details on the input parameters
+\par Specify the wavelet type
 
-The specified order of the basis set defines the coefficients and the corresponding wavelet used.
-Order N results in DbN wavelets, which is equal to the number of vanishing moments of the wavelet basis and double the number of filter coefficients.
+The TYPE keyword sets the type of Wavelet, at the moment "DAUBECHIES" and "SYMLETS" are available.
+The specified ORDER of the basis corresponds to the number of vanishing moments of the wavelet, i.e. if TYPE was specified as "DAUBECHIES" an order of 8 results in Db8 wavelets.
 
-The intrinsic support of the wavelets is then \f$ \left[0, N*2 -1 \right) \f$.
-Using the cascade algorithm results in a doubling of the grid values per integer for each iteration.
-This means that the grid size will always be a power of two multiplied by the intrinsic support length of the wavelets.
-The used grid size is calculated by \f$n_{\text{bins}} = (N*2 - 1) * 2^m\f$ with the smallest \f$ m \f$ such that the grid is at least as large as the specified number.
 
-By default the basis functions are scaled to match the specified size of the CV space (MINIMUM and MAXIMUM keywords), which often is a good initial choice.
-The "FUNCTION_LENGTH" keyword can be used to alter this and use a different scaling.
-A smaller value will use more and smaller basis functions which results in a more localized optimization, while a larger one will use less and more globally defined functions.
+\par Specify the number of functions
 
-\par Number of basis functions
-
-The resulting basis set consists of integer shifts of the wavelet function at scale \f$j\f$ ,
+The resulting basis set consists of integer shifts of the wavelet with some scaling \f$j\f$,
 \f[
-  \phi_i (x) = \phi(\frac{x+i}{j})
+  V(x) = \sum_i \alpha_i * \phi_i (x) = \sum_i \alpha_i * \phi(\frac{x+i}{j})
 \f]
+with the variational parameters \f$ \alpha \f$.
+Additionally a constant basis function is included.
 
-where \f$i\f$ in principal would span all positive and negative integers.
-Because of the compact support of the wavelets clearly not all shifts are needed.
+There are two different ways to specify the number of used basis functions implemented.
+You can either specify the scale or alternatively a fixed number of basis function.
 
-If the wavelets are scaled to match the CV range exactly there would be \f$4*N -3\f$ basis functions whose support is at least partially in this region.
-This number is adjusted automatically if a different FUNCTION_LENGTH is specified.
-Additionally, some of the shifted basis functions will not have significant contributions because of their function values being close to zero over the full range.
+Coming from the multiresolution aspect of wavelets, you can set the scale of the father wavelets, i.e. the largest scale used for approximation.
+This can be done with the FUNCTIION_LENGTH keyword.
+It should be given in the same units as the used CV and specifies the length (of the domain interval) of the individual father wavelet functions.
+
+Alternatively a fixed number of basis functions for the bias expansion can be specified with the NUM_BF keyword, which will set the scale automatically to match the desired number of functions.
+Note that this also includes the constant function.
+
+If you do not specify anything, it is assumed that the range of the bias should match the scale of the wavelet functions.
+More precise, the basis functions are scaled to match the specified size of the CV space (MINIMUM and MAXIMUM keywords).
+This has so far been a good initial choice.
+
+If the wavelets are scaled to match the CV range exactly there would be \f$4*\text{ORDER} -3\f$ basis functions whose domain is at least partially in this region.
+This number is adjusted if FUNCTION_LENGTH or NUM_BF is specified.
+Additionally, some of the shifted basis functions will not have significant contributions because of their function values being close to zero over the full range of the bias.
 These 'tail wavelets' can be omitted by using the TAILS_THRESHOLD keyword.
-By default all are included but a value of e.g. 0.01 will already reduce the number of basis functions significantly.
-The number of basis functions is not easily determinable a priori but will be given in the logfile.
+This omits all shifted functions that have only function values smaller than a fraction of their maximum value inside the bias range.
+Using a value of e.g. 0.01 will already reduce the number of basis functions significantly.
+The default setting will not omit any tail wavelets (i.e. TAILS_THRESHOLD=0).
+
+The number of basis functions is then not easily determinable a priori but will be given in the logfile.
 Additionally the starting point (leftmost defined point) of the individual basis functions is printed.
 
-Additionally a constant basis function is included.
+
+\par Grid
+
+The values of the wavelet function are generated on a grid.
+Using the cascade algorithm results in doubling the grid values for each iteration.
+This means that the grid size will always be a power of two multiplied by the number of coefficients (\f$ 2*\text{ORDER} -1\f$) for the specified wavelet.
+Using the GRIDSIZE keyword a lower bound for the number of grid points can be specified.
+By default at least 1,000 grid points are used.
+Function values in between grid points are calculated by linear interpolation.
+
 
 \par Examples
 
@@ -110,10 +127,11 @@ Additionally a constant basis function is included.
 First a very simple example that relies on the default values.
 We want to bias some CV in the range of 0 to 4.
 The wavelets will therefore be scaled to match that range.
-Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by \f$ -14 \frac{4}{15}, -13 \frac{4}{15}, \cdots , 0 , \cdots, 13 \frac{4}{15}, 14 \frac{4}{15} \f$.
+Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by \f$ -14*\frac{4}{15}, -13*\frac{4}{15}, \cdots , 0 , \cdots, 13*\frac{4}{15}, 14*\frac{4}{15} \f$.
 \plumedfile
 BF_WAVELETS ...
  ORDER=8
+ TYPE=DAUBECHIES
  MINIMUM=0.0
  MAXIMUM=4.0
  LABEL=bf
@@ -121,10 +139,11 @@ BF_WAVELETS ...
 \endplumedfile
 
 
-By omitting wavelets with only insignificant parts, we can reduce the number of basis functions, e.g. a threshold of 0.01 will remove the 8 leftmost shifts.
+By omitting wavelets with only insignificant parts, we can reduce the number of basis functions. Using a threshold of 0.01 will in this example remove the 8 leftmost shifts, which we can check in the logfile.
 \plumedfile
 BF_WAVELETS ...
  ORDER=8
+ TYPE=DAUBECHIES
  MINIMUM=0.0
  MAXIMUM=4.0
  TAILS_THRESHOLD=0.01
@@ -134,10 +153,11 @@ BF_WAVELETS ...
 
 
 The length of the individual basis functions can also be adjusted to fit the specific problem.
-If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at \f$ -14 \frac{3}{15}, -13 \frac{3}{15}, \cdots, 0, \cdots, 18 \frac{3}{15}, 19 \frac{3}{15} \f$.
+If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at \f$ -14*\frac{3}{15}, -13*\frac{3}{15}, \cdots, 0, \cdots, 18*\frac{3}{15}, 19*\frac{3}{15} \f$.
 \plumedfile
 BF_WAVELETS ...
  ORDER=8
+ TYPE=DAUBECHIES
  MINIMUM=0.0
  MAXIMUM=4.0
  FUNCTION_LENGTH=3
@@ -146,13 +166,17 @@ BF_WAVELETS ...
 \endplumedfile
 
 
-To use a different wavelet family it can be specified with the "TYPE" keyword, e.g. to use the "least asymmetric" or "symlets" one could use an input like:
+Alternatively you can also specify the number of basis functions. Here we specify the usage of 40 Sym10 wavelet functions. We also used a custom minimum size for the grid and want it to be printed to a file with a specific format.
 \plumedfile
 BF_WAVELETS ...
- ORDER=8
+ ORDER=10
+ TYPE=SYMLETS
  MINIMUM=0.0
  MAXIMUM=4.0
- TYPE=SYMLETS
+ NUM_BF=40
+ GRID_SIZE=500
+ DUMP_WAVELET_GRID
+ FORMAT_WAVELET_DUMP=%11.4f
  LABEL=bf
 ... BF_WAVELETS
 \endplumedfile
@@ -184,14 +208,14 @@ PLUMED_REGISTER_ACTION(BF_Wavelets,"BF_WAVELETS")
 
 void BF_Wavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
+  keys.add("compulsory","TYPE","Specify the wavelet type. Currently available are \"DAUBECHIES\" Wavelets with minimum phase and the more symmetric \"SYMLETS\"");
+  keys.add("optional","FUNCTION_LENGTH","The domain size of the individual basis functions (\"length\"). This is used to alter the scaling of the basis functions. By default it is set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
+  keys.add("optional","NUM_BF","The number of basis functions that should be used. Includes the constant one and N-1 shifted wavelets within the specified range. Cannot be used together with FUNCTION_LENGTH.");
+  keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets as a fraction of the maximum value. All shifted wavelet functions that only have values smaller than the threshold in the bias range will be excluded from the basis set. Defaults to 0 (include all).");
+  keys.addFlag("MOTHER_WAVELET", false, "If this flag is set mother wavelets will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not usable.");
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value definess the minimum number, while the true number will probably be larger. Defaults to 1000.");
-  keys.add("optional","NUM_BF","The number of basis functions that should be used. Includes the constant one and N-1 shifted wavelets within the specified range.");
-  keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
-  keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all).");
-  keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
-  keys.add("optional","TYPE","Specify the wavelet type. Defaults to \"DAUBECHIES\" Wavelets with minimum phase. Other currently implemented possibilities are \"SYMLETS\"");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
-  keys.add("optional","FORMAT_WAVELET_DUMP","The numerical format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","FORMAT_WAVELET_DUMP","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
 }
@@ -206,7 +230,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   // parse grid properties and set it up
   parseFlag("MOTHER_WAVELET", use_mother_wavelet_);
 
-  std::string wavelet_type_str = "DAUBECHIES";
+  std::string wavelet_type_str;
   parse("TYPE", wavelet_type_str);
   wavelet_type_ = WaveletGrid::stringToType(wavelet_type_str);
 
@@ -271,7 +295,6 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     double intrinsic_bias_length = num_BFs - cutoff_length + 1; // length of bias in intrinsic scale of wavelets
     scale_ = intrinsic_bias_length / bias_length;
   }
-  log.printf("  Each basisfunction spans %f in CV space\n", intrinsic_length/scale_);
 
   setNumberOfBasisFunctions(num_BFs);
 
@@ -290,6 +313,8 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   setLabelPrefix("k");
   setupBF();
   checkRead();
+
+  log.printf("  Each basisfunction spans %f in CV space\n", intrinsic_length/scale_);
 }
 
 
