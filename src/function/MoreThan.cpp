@@ -43,6 +43,7 @@ Use a switching function to determine how many of the input variables are more t
 class MoreThan :
   public Function
 {
+  bool squared;
   SwitchingFunction switchingFunction;
 public:
   explicit MoreThan(const ActionOptions&);
@@ -63,6 +64,7 @@ void MoreThan::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.addFlag("SQUARED",false,"is the input quantity the square of the value that you would like to apply the switching function to");
 }
 
 MoreThan::MoreThan(const ActionOptions&ao):
@@ -85,13 +87,17 @@ MoreThan::MoreThan(const ActionOptions&ao):
     switchingFunction.set(nn,mm,r0,d0);
   }
   log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
+  parseFlag("SQUARED",squared);
+  log<<"  taking square root of argument prior to applying switching function\n";
 
   addValueWithDerivatives();
   checkRead();
 }
 
 void MoreThan::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  plumed_dbg_assert( args.size()==1 ); double dv, f = 1.0 - switchingFunction.calculate( args[0], dv );
+  plumed_dbg_assert( args.size()==1 ); double dv, f;
+  if( squared ) f = 1.0 - switchingFunction.calculateSqr( args[0], dv );
+  else f = 1.0 - switchingFunction.calculate( args[0], dv );
   addValue( 0, f, myvals ); addDerivative( 0, 0, -dv*args[0], myvals );
 }
 
