@@ -222,7 +222,7 @@ Print::Print(const ActionOptions&ao):
       unsigned nt=0;
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
         if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; break; }
-        if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors in xyz/ndx output");
+        if( getPntrToArgument(j)->getRank()!=1 ) error("problem outputting " + getPntrToArgument(j)->getName() + " can only output vectors in xyz/ndx output" );
         nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
       if( i==0 ) { nper=nt; }
