@@ -137,7 +137,6 @@ double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::ve
       }
     }
   }
-  printf("FINAL STRESS %f \n", stress );
   return stress;
 }
 
