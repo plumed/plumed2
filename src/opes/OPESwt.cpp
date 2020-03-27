@@ -187,7 +187,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
   double biasfactor=barrier/kbt_;
   std::string biasfactor_str;
   parse("BIASFACTOR",biasfactor_str);
-  if(strcasecmp(biasfactor_str.c_str(),"inf")==0)
+  if(biasfactor_str=="inf" || biasfactor_str=="INF")
   {
     biasfactor=std::numeric_limits<double>::infinity();
     bias_prefactor_=1;
@@ -331,7 +331,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
         log.printf(" +++ WARNING +++ restarting from kernel file is not smooth, use PROB_RFILE to restart from a probability\n");
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
-      if(strcasecmp(old_biasfactor_str.c_str(),"inf")==0)
+      if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF")
       {
         if(!std::isinf(biasfactor))
           log.printf(" +++ WARNING +++ previous bias factor was inf while now it is %g\n",biasfactor);
