@@ -31,16 +31,55 @@ namespace opes {
 
 //+PLUMEDOC BIAS OPES_WT
 /*
-On-the-fly probability enhanced sampling (OPES) with a well-tempered target distribution.
+On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution \cite Invernizzi2020opeswt .
+
+Contrary to \ref METAD, OPES is not filling the basins, but rather tries wery quickly to get a coarse idea of the full Free Energy Surface (FES), and then slowly refines it.
+It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more (quasi-static regime).
+For this reason it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
+The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
+Similarly, the \f$Z_n\f$ is printed and it should converge when no new region of the CV-space is explored.
+
+Notice that if the employed CV is degenerate and maps different metastable basins onto the same CV-space region, then OPES will practically get stuck, instead of completely reshaping the bias (as \ref METAD would do, especially if BIASFACTOR is very high).
+This can be useful to diagnostic problems with your collective variable.
+If you have no way to improve the set of CVs, you might consider using \ref OPES_EXPLORE instead.
+
+The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
+If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slower in converging.
+If you know wich one is the most stable basin of your system you should start your simulation from there.
+
+By default SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
+
+To use uniform flat target, explicitly set BIASFACTOR=inf (but should be needed only in very specific cases).
+
+Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing numbers to file, or usage of adaptive SIGMA).
+For a perfect restart you need to use PROB_RFILE to read a checkpoint of the probability estimate.
+To save such checkpoints, define a PROB_WFILE and choose how often to print them with PROB_WSTRIDE.
 
 \par Examples
 
+The following is a minimal working example:
+
+\plumedfile
+opes: OPES_WT ARG=cv PACE=500 BARRIER=40
+\endplumedfile
+
+Another more articulated one:
+
+\plumedfile
 OPES_WT ...
   LABEL=opes
-  ARG=cv
+  FILE=Kernels.data
+  TEMP=300
+  ARG=cv1,cv2
+  SIGMA=2.37,5.19
   PACE=500
-  BARRIER=15
+  BARRIER=60
+  BIASFACTOR=inf
+  PROB_WFILE=Prob.data
+  PROB_WSTRIDE=50000
+  WALKERS_MPI
 ... OPES_WT
+\endplumedfile
 
 
 */
@@ -128,33 +167,33 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold. Set to zero to avoid compression");
 //extra options
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
-           " Set to 'inf' for non-tempered flat target");
+           " Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Default is 10 PACE");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
-  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
+  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down things");
 //kernels file
   keys.add("compulsory","FILE","KERNELS","a file in which the list of added kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
 //save probability estimate (compressed kernels)
   keys.add("optional","PROB_RFILE","a probability file from which restarting the simulation");
-  keys.add("optional","PROB_WFILE","the file on which to write the estimated probability");
+  keys.add("optional","PROB_WFILE","the file on which to write the estimated probability. It can be used as checkpoint for RESTART");
   keys.add("optional","PROB_WSTRIDE","write the estimated probability to a file every N steps");
   keys.addFlag("STORE_PROBS",false,"store all the probability files the calculation generates. They are overwritten if this keyword is not present");
 //miscellaneous
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers");
-  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. 1D systems");
+  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. if only one CV is used");
   keys.use("RESTART");
 
 //output components
   componentsAreNotOptional(keys);
   keys.addOutputComponent("work","default","work done by the last kernel added");
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$");
+  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges");
+  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
-  keys.addOutputComponent("nker","default","total number of compressed kernels employed");
+  keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
 }
 
 OPESwt::OPESwt(const ActionOptions&ao)
@@ -269,7 +308,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
   if(wProbStride_!=0 || storeOldProbs_)
     plumed_massert(probFileName.length()>0,"filename for estimated probability not specified, use PROB_WFILE");
   if(probFileName.length()>0 && wProbStride_==0)
-    wProbStride_=-1;//will print only on CPT events
+    wProbStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
 //multiple walkers //TODO implement also external mw for cp2k
   bool walkers_mpi=false;
@@ -513,7 +552,7 @@ OPESwt::OPESwt(const ActionOptions&ao)
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor);
   if(std::isinf(biasfactor))
-    log.printf("    (thus a flat target distribution, no well-tempering)\n");
+    log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
   if(sigma0_.size()==0)
   {
     log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %d\n",adaptive_sigma_stride_);
