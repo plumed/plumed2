@@ -478,7 +478,11 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     log.printf("    number of walkers: %d\n",NumWalkers_);
     log.printf("    walker rank: %d\n",walker_rank_);
   }
+  int mw_warning=0;
   if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_)
+    mw_warning=1;
+  comm.Bcast(mw_warning,0);
+  if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
