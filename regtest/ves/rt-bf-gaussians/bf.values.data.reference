@@ -1,4 +1,4 @@
-#! FIELDS arg s=0 s=-4.4 s=-4 s=-3.6 s=-3.2 s=-2.8 s=-2.4 s=-2 s=-1.6 s=-1.2 s=-0.8 s=-0.4 s=0 s=0.4 s=0.8 s=1.2 s=1.6 s=2 s=2.4 s=2.8 s=3.2 s=3.6 s=4 s=4.4
+#! FIELDS arg const m=-4.4 m=-4 m=-3.6 m=-3.2 m=-2.8 m=-2.4 m=-2 m=-1.6 m=-1.2 m=-0.8 m=-0.4 m=0 m=0.4 m=0.8 m=1.2 m=1.6 m=2 m=2.4 m=2.8 m=3.2 m=3.6 m=4 m=4.4
 #! SET bf_keywords {BF_GAUSSIANS ORDER=20 MINIMUM=-4.0 MAXIMUM=4.0}
 #! SET min -4.0
 #! SET max 4.0

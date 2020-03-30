@@ -1,4 +1,4 @@
-#! FIELDS arg d_s=0 d_s=-4.4 d_s=-4 d_s=-3.6 d_s=-3.2 d_s=-2.8 d_s=-2.4 d_s=-2 d_s=-1.6 d_s=-1.2 d_s=-0.8 d_s=-0.4 d_s=0 d_s=0.4 d_s=0.8 d_s=1.2 d_s=1.6 d_s=2 d_s=2.4 d_s=2.8 d_s=3.2 d_s=3.6 d_s=4 d_s=4.4
+#! FIELDS arg d_const d_m=-4.4 d_m=-4 d_m=-3.6 d_m=-3.2 d_m=-2.8 d_m=-2.4 d_m=-2 d_m=-1.6 d_m=-1.2 d_m=-0.8 d_m=-0.4 d_m=0 d_m=0.4 d_m=0.8 d_m=1.2 d_m=1.6 d_m=2 d_m=2.4 d_m=2.8 d_m=3.2 d_m=3.6 d_m=4 d_m=4.4
 #! SET bf_keywords {BF_GAUSSIANS ORDER=20 MINIMUM=-4.0 MAXIMUM=4.0}
 #! SET min -4.0
 #! SET max 4.0

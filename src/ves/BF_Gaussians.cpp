@@ -87,16 +87,15 @@ bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
 //+ENDPLUMEDOC
 
 class BF_Gaussians : public BasisFunctions {
-  // width of the Gaussians
+  /// width of the Gaussians
   double width_;
-  // positions of the means
-  std::vector<double> mean_;
-  virtual void setupLabels();
+  /// positions of the means
+  std::vector<double> means_;
+  void setupLabels() override;
 public:
   static void registerKeywords( Keywords&);
   explicit BF_Gaussians(const ActionOptions&);
-  double getValue(const double, const unsigned int, double&, bool&) const;
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 
@@ -111,17 +110,16 @@ void BF_Gaussians::registerKeywords(Keywords& keys) {
 
 BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  width_((intervalMax()-intervalMin()) / getOrder())
+  width_((intervalMax()-intervalMin()) / getOrder()),
+  means_(getOrder()+4)
 {
   setNumberOfBasisFunctions(getOrder()+4); // 1 constant, order+1 for interval, 2 for boundaries
   setIntrinsicInterval(intervalMin(),intervalMax());
   parse("WIDTH",width_);
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
-  mean_.reserve(getNumberOfBasisFunctions());
-  mean_.push_back(0.0);
-  for(int i=1; i < static_cast<int>(getNumberOfBasisFunctions()); i++) {
-    mean_.push_back(intervalMin()+(i-2)*(intervalMax()-intervalMin())/getOrder());
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) { // ignore constant one
+    means_[i] = intervalMin()+(static_cast<int>(i)-2)*(intervalMax()-intervalMin())/getOrder();
   }
   setNonPeriodic();
   setIntervalBounded();
@@ -139,18 +137,19 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
   values[0]=1.0;
   derivs[0]=0.0;
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    values[i] = exp(-0.5*pow((argT-mean_[i])/width_,2.0));
-    derivs[i] = -values[i] * (argT-mean_[i])/pow(width_,2.0);
+    values[i] = exp(-0.5*pow((argT-means_[i])/width_,2.0));
+    derivs[i] = -values[i] * (argT-means_[i])/pow(width_,2.0);
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
 
 
-// label according to positions?
+// label according to position of mean
 void BF_Gaussians::setupLabels() {
-  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(mean_[i],is);
-    setLabel(i,"s="+is);
+  setLabel(0,"const");
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    std::string is; Tools::convert(means_[i],is);
+    setLabel(i,"m="+is);
   }
 }
 

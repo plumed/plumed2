@@ -186,16 +186,16 @@ BF_WAVELETS ...
 
 
 class BF_Wavelets : public BasisFunctions {
-  // Grid that holds the Wavelet values and its derivative
-  std::unique_ptr<Grid> waveletGrid_;
+private:
   void setupLabels() override;
-protected:
+  /// ptr to Grid that holds the Wavelet values and its derivative
+  std::unique_ptr<Grid> waveletGrid_;
+  /// calculate threshold for omitted tail wavelets
   std::vector<double> getCutoffPoints(const double& threshold);
-
-  bool use_mother_wavelet_;
-  WaveletGrid::Type wavelet_type_ ;
-  double scale_; // scale factor of the individual BFs to match specified length
-  std::vector<double> shifts_; // shift of the individual BFs
+  /// scale factor of the individual BFs to match specified length
+  double scale_;
+  /// shift of the individual BFs
+  std::vector<double> shifts_;
 public:
   static void registerKeywords( Keywords&);
   explicit BF_Wavelets(const ActionOptions&);
@@ -213,7 +213,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","NUM_BF","The number of basis functions that should be used. Includes the constant one and N-1 shifted wavelets within the specified range. Cannot be used together with FUNCTION_LENGTH.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets as a fraction of the maximum value. All shifted wavelet functions that only have values smaller than the threshold in the bias range will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set mother wavelets will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not usable.");
-  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value definess the minimum number, while the true number will probably be larger. Defaults to 1000.");
+  keys.add("optional","MIN_GRID_SIZE","The minimal number of grid bins of the Wavelet function. The true number depends also on the used wavelet type and will probably be larger. Defaults to 1000.");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   keys.add("optional","FORMAT_WAVELET_DUMP","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   // why is this removed?
@@ -223,23 +223,23 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
 
 BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  use_mother_wavelet_(false),
-  wavelet_type_(WaveletGrid::Type::db)
+  waveletGrid_(nullptr),
+  scale_(0.0)
 {
 
-  // parse grid properties and set it up
-  parseFlag("MOTHER_WAVELET", use_mother_wavelet_);
+  // parse properties for waveletGrid and set it up
+  bool use_mother_wavelet;
+  parseFlag("MOTHER_WAVELET", use_mother_wavelet);
 
   std::string wavelet_type_str;
   parse("TYPE", wavelet_type_str);
-  wavelet_type_ = WaveletGrid::stringToType(wavelet_type_str);
+  addKeywordToList("TYPE", wavelet_type_str);
 
-  unsigned gridsize = 1000;
-  parse("GRID_SIZE", gridsize);
+  unsigned min_grid_size = 1000;
+  parse("MIN_GRID_SIZE", min_grid_size);
+  if(min_grid_size != 1000) {addKeywordToList("MIN_GRID_SIZE",min_grid_size);}
 
-  waveletGrid_ = WaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_, wavelet_type_);
-  unsigned true_gridsize = waveletGrid_->getNbin()[0];
-  if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
+  waveletGrid_ = WaveletGrid::setupGrid(getOrder(), min_grid_size, use_mother_wavelet, WaveletGrid::stringToType(wavelet_type_str));
   bool dump_wavelet_grid=false;
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
@@ -253,7 +253,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
 
-
+  // now set up properties of basis set
   unsigned intrinsic_length = 2*getOrder() - 1; // length of unscaled wavelet
   double bias_length = intervalMax() - intervalMin(); // intervalRange() is not yet set
 
@@ -277,16 +277,16 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   }
 
   // determine number of BFs and needed scaling
-  unsigned int num_BFs = 0;
+  int num_BFs = 0;
   parse("NUM_BF",num_BFs);
   if(num_BFs == 0) { // get from function length
     scale_ = intrinsic_length / function_length;
     num_BFs = 1; // constant one
     // left shifts (w/o left cutoff) + right shifts - right cutoff - 1
     num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1] + (bias_length)*scale_ - cutoffpoints[0]) - 1);
-
   }
   else {
+    plumed_massert(num_BFs > 0, "The number of basis functions has to be positive (NUM_BF > 0)");
     // check does not work if function length was given as intrinsic length, but can't check for keyword use directly
     plumed_massert(function_length==bias_length,"The keywords \"NUM_BF\" and \"FUNCTION_LENGTH\" cannot be used at the same time");
     addKeywordToList("NUM_BF",num_BFs);
@@ -310,7 +310,6 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   setIntervalBounded();
   setType(wavelet_type_str);
   setDescription("Wavelets as localized basis functions");
-  setLabelPrefix("k");
   setupBF();
   checkRead();
 
@@ -331,10 +330,8 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
       values[i] = 0.0; derivs[i] = 0.0;
     }
     else {
-      // declare vectors and fill them with value
       std::vector<double> temp_deriv (1);
-      std::vector<double> x_vec {x};
-      values[i] = GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation(waveletGrid_.get(), x_vec, temp_deriv);
+      values[i] = GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation(waveletGrid_.get(), {x}, temp_deriv);
       derivs[i] = temp_deriv[0] * scale_; // scale derivative
     }
   }
