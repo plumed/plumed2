@@ -116,6 +116,7 @@ ActionShortcut(ao)
         if( resid[k] ) {
             readInputLine( getShortcutLabel() + "_resid2-" + num + ": COMBINE PERIODIC=NO " + argstr + coeffstr + " " + powstr );
             readInputLine( getShortcutLabel() + "_resid-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_resid2-" + num + " FUNC=sqrt(x) PERIODIC=NO");
+            readInputLine( getShortcutLabel() + "_presid-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_resid-" + num + " FUNC=0-x PERIODIC=NO");
         }
       }
   }
@@ -172,12 +173,18 @@ ActionShortcut(ao)
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
           for(unsigned i=0;i<neigv[k];++i) { 
               std::string eignum; Tools::convert( i+1, eignum ); 
-              targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
+              if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );
+              else targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
               if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
           }
           if( resid[k] ) { 
-              targs.push_back( getShortcutLabel() + "_resid-" + num );
-              if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
+              targs.push_back( getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
+              if( gmax.size()>0 ) { 
+                  tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); 
+              } else { 
+                  readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
+                  hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
+              } 
           } 
       }
       MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
