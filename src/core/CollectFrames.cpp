@@ -179,7 +179,11 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
 
 void CollectFrames::calculate() {
   if( firststep ) { 
-      if( action_to_do_after && doNotCalculateDerivatives() ) { action_to_do_after->action_to_do_before=NULL; action_to_do_after=NULL; } 
+      if( action_to_do_after && doNotCalculateDerivatives() ) { 
+          ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action_to_do_after );
+          if(aa) aa->done_over_stream=false; 
+          action_to_do_after->action_to_do_before=NULL; action_to_do_after=NULL; 
+      } 
   }
   if( action_to_do_after ) runAllTasks();
 }

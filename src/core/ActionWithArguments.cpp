@@ -775,15 +775,24 @@ void ActionWithArguments::resizeForFinalTasks() {
         }
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
-      // Now resize everything for analysis
-      std::vector<unsigned> r1shape(1), r2shape(2); r1shape[0]=r2shape[0]=r2shape[1]=nvalues;
-      for(unsigned i=0;i<av->getNumberOfComponents();++i) {
-          Value* myval = av->getPntrToOutput(i);
-          if( myval->getRank()==1 && !myval->hasDerivatives() ) myval->setShape( r1shape );
-          else if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setShape( r2shape );
-      }
       for(unsigned i=0;i<nvalues;++i) av->addTaskToList( i );
-  } 
+  }
+  // Find the shape that we should use for the output values
+  std::vector<unsigned> r1shape(1), r2shape(2); r1shape[0]=av->getFullNumberOfTasks();
+  bool argmat=false;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+      if( arguments[i]->getRank()==2 ) { 
+          argmat=true; r2shape[0]=arguments[i]->getShape()[0];
+          r2shape[1]=arguments[i]->getShape()[1]; break;
+      }
+  }
+  if( !argmat ) r2shape[0]=r2shape[1]=r1shape[0];
+  // Resize everything for the analysis
+  for(unsigned i=0;i<av->getNumberOfComponents();++i) {
+      Value* myval = av->getPntrToOutput(i);
+      if( myval->getRank()==1 && !myval->hasDerivatives() && myval->getShape()[0]!=r1shape[0] ) myval->setShape( r1shape );
+      else if( myval->getRank()==2 && !myval->hasDerivatives() && (myval->getShape()[0]!=r2shape[0] || myval->getShape()[1]!=r2shape[1]) ) myval->setShape( r2shape );
+  }
   ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( av->action_to_do_after );
   if( aa ) aa->resizeForFinalTasks();
 }

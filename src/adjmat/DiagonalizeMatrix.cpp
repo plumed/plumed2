@@ -95,6 +95,7 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
     addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
     // Make sure eigenvalues are always stored
     getPntrToComponent( 2*i+1 )->alwaysStoreValues();
+    if( getPntrToArgument(0)->isTimeSeries() ) getPntrToComponent( 2*i+1 )->makeTimeSeries();
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];

@@ -118,6 +118,7 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
       for(unsigned i=1;i<getNumberOfArguments();++i) {
           if( !getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
       }
+      getPntrToOutput(0)->makeTimeSeries();
   } else {
       for(unsigned i=1;i<getNumberOfArguments();++i) {
           if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");

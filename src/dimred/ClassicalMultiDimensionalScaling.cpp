@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionShortcut.h"
+#include "ClassicalMultiDimensionalScaling.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
@@ -162,12 +162,6 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 namespace PLMD {
 namespace dimred {
 
-class ClassicalMultiDimensionalScaling : public ActionShortcut {
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-};
-
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
@@ -197,19 +191,21 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
       std::string nat_str;
       readInputLine( getShortcutLabel() + "_matful: DISSIMILARITIES SQUARED " + argstr ); Tools::convert( natoms3/3, nat_str );
       readInputLine( getShortcutLabel() + "_mat: MATHEVAL PERIODIC=NO ARG1=" + getShortcutLabel() + "_matful FUNC=x/" + nat_str ); 
-  } else readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr );  
+  } else readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr ); 
+  // And generate the multidimensional scaling projection 
+  unsigned ndim; parse("NLOW_DIM",ndim); createMDSProjection( getShortcutLabel(), getShortcutLabel() + "_mat", ndim, this ); 
+}
+
+void ClassicalMultiDimensionalScaling::createMDSProjection( const std::string& lab, const std::string& matname, const unsigned& ndim, ActionShortcut* myact ) { 
   // Center the dissimilarity matrix
-  readInputLine( getShortcutLabel() + "_cmat: CENTER_MATRIX ARG=" + getShortcutLabel() + "_mat" );
+  myact->readInputLine( lab + "_cmat: CENTER_MATRIX ARG=" + matname );
   // Diagonalize the centered dissimilarity matrix
-  unsigned ndim; parse("NLOW_DIM",ndim); std::string vecstr="1"; 
-  for(unsigned i=1;i<ndim;++i){ std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
-  readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_cmat VECTORS=" + vecstr );
+  std::string vecstr="1"; for(unsigned i=1;i<ndim;++i){ std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  myact->readInputLine( lab + "_eig: DIAGONALIZE ARG=" + lab + "_cmat VECTORS=" + vecstr );
   // And calculate the mds projections
   for(unsigned i=0;i<ndim;++i) {
       std::string num; Tools::convert( i+1, num );
-      readInputLine( getShortcutLabel() + "-" +  num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_eig.vals-" + num + 
-                                                                 " ARG2=" + getShortcutLabel() + "_eig.vecs-" + num + 
-                                                                 " FUNC=sqrt(x)*y PERIODIC=NO");
+      myact->readInputLine( lab + "-" +  num + ": MATHEVAL ARG1=" + lab + "_eig.vals-" + num + " ARG2=" + lab + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
   }
 }
 

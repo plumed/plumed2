@@ -39,6 +39,7 @@ public ActionWithValue,
 public ActionWithArguments {
 private: 
   double cgtol;
+  bool updateWasRun;
   std::vector<SwitchingFunction> switchingFunction;
   void checkInputMatrix( const std::string& key, const unsigned& nvals, const std::vector<Value*>& mat ) const ;
 protected:
@@ -70,7 +71,8 @@ void ArrangePoints::registerKeywords( Keywords& keys ) {
 ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
+  ActionWithArguments(ao),
+  updateWasRun(false)
 {
   std::vector<unsigned> shape(1); shape[0]=0; 
   for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
@@ -79,7 +81,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates");
       std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape ); 
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
-      getPntrToOutput(i)->makeTimeSeries();
+      if( getPntrToArgument(arg_ends[i])->isTimeSeries() ) getPntrToOutput(i)->makeTimeSeries();
   }
   std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors;
   // Read in target "distances" and target weights
@@ -87,10 +89,11 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       target.resize(0); if( !parseArgumentList("TARGET",i,target) ) break; 
       std::string inum; Tools::convert( i, inum ); checkInputMatrix( "TARGET" + inum, shape[0], target );
       if( !parseArgumentList("WEIGHTS",i,weights) ) error("missing WEIGHTS" + inum + " keyword in input");
-      checkInputMatrix( "WEIGHTS" + inum, shape[0], target ); args.push_back( target[0] ); args.push_back( weights[0] );
+      checkInputMatrix( "WEIGHTS" + inum, shape[0], target ); 
+      args.push_back( target[0] ); args.push_back( weights[0] );
       bool has_sf = parseNumbered("FUNC",i,sfd); switchingFunction.push_back( SwitchingFunction() );
       if( !has_sf ) {  
-         switchingFunction[i-1].set( "CUSTOM FUNC=sqrt(x2) R_0=1.0", errors );
+         switchingFunction[i-1].set( "CUSTOM FUNC=1-sqrt(x2) R_0=1.0", errors );
       } else {
          switchingFunction[i-1].set( sfd, errors );
          if( errors.length()!=0 ) error("problem reading switching function description " + errors); 
@@ -146,6 +149,7 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
 }
 
 void ArrangePoints::update() {
+  updateWasRun=true;
   // Retrive the initial value
   unsigned nvals = getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape()[0];
   std::vector<double> pos( (arg_ends.size()-1)*nvals ); unsigned nlow = arg_ends.size()-1;
@@ -161,6 +165,16 @@ void ArrangePoints::update() {
 }
 
 void ArrangePoints::runFinalJobs() {
+   if( updateWasRun ) return ; 
+   // Resize all the output stuff
+   std::vector<unsigned> shape(1); shape[0]=0; 
+   for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+   for(unsigned i=0;i<arg_ends.size()-1;++i) { 
+       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+       if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates"); 
+       getPntrToOutput(i)->setShape( shape ); 
+   }
+   update();
 }
 
 }

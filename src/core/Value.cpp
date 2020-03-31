@@ -133,7 +133,7 @@ void Value::alwaysStoreValues() {
 }
 
 void Value::makeTimeSeries() {
-  plumed_assert( shape.size()<=1 ); istimeseries=true;
+  istimeseries=true;
   unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
 }
 

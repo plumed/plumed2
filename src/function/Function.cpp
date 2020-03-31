@@ -113,7 +113,10 @@ Function::Function(const ActionOptions&ao):
       unsigned nscalars=0; done_over_stream=false;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getNumberOfValues( getLabel() )==1 ) nscalars++;
-        else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+        else {
+          getPntrToArgument(i)->buildDataStore( getLabel() );
+          npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+        }
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
       // Now create a task list for the function
@@ -152,12 +155,10 @@ Function::Function(const ActionOptions&ao):
       plumed.getAtoms().insertGroup( getLabel(), m->second );
     }
   }
-  if( actionInChain() ) {
-    matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
-    if( matinp ) {
-      for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->getRank()>0 ) plumed_massert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives(), "problem in " + getLabel() );
-      }
+  if( getPntrToArgument(0)->usingAllVals( getLabel() ) ) matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
+  if( matinp ) {
+    for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+        if( getPntrToArgument(i)->getRank()>0 ) plumed_massert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives(), "problem in " + getLabel() );
     }
   }
 }
@@ -362,7 +363,7 @@ void Function::evaluateAllFunctions() {
 void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   unsigned nstart = getFullNumberOfTasks(), ndata = 0; 
   for(unsigned i=0;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues( getLabel() );
   }
   if( nstart<ndata ) { 
       for(unsigned i=nstart;i<ndata;++i) addTaskToList(i); 
@@ -425,17 +426,39 @@ void Function::getGridPointAsCoordinate( const unsigned& ind, const bool& setlen
   }
 }
 
+bool Function::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  if( actionInChain() || !matinp ) return true; plumed_dbg_assert( controller==getLabel() );
+  unsigned colno = index2; if( index2>=getFullNumberOfTasks() ) colno = index2-getFullNumberOfTasks();
+  std::vector<double> args( 1 ); args[0] = getPntrToArgument(0)->get( index1*getPntrToArgument(0)->getShape()[1] + colno );
+  calculateFunction( args, myvals ); return true;
+}
+
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // Calculate whatever we are calculating
-  if( (matinp && !myvals.inVectorCall()) || !matinp ) {
-    std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args, 0 );
-    calculateFunction( args, myvals );
-    // Make sure grid derivatives are updated
-    if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
-      unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-      for(unsigned i=0; i<nderivatives; ++i) myvals.updateIndex( ostrn, i );
+  if( actionInChain() || !matinp ) {
+      // Calculate whatever we are calculating
+      if( (matinp && !myvals.inVectorCall()) || !matinp ) {
+        std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args, 0 );
+        calculateFunction( args, myvals );
+        // Make sure grid derivatives are updated
+        if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
+          unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+          for(unsigned i=0; i<nderivatives; ++i) myvals.updateIndex( ostrn, i );
+          return;
+        } 
+      }
+  } else if( myvals.inVectorCall() ) {
+      plumed_dbg_assert( getNumberOfArguments()==1 && getPntrToArgument(0)->getRank()==2 );
+      unsigned nbase=0, ncols = getPntrToArgument(0)->getShape()[1];
+      if( getPntrToArgument(0)->getShape()[0]!=ncols ) nbase=getPntrToArgument(0)->getShape()[0]; 
+      for(unsigned i=0; i<ncols;++i) {
+          // This does everything in the stream that is done with single matrix elements
+          runTask( getLabel(), myvals.getTaskIndex(), current, nbase+i, myvals );
+          // Now clear only elements that are not accumulated over whole row
+          clearMatrixElements( myvals );
+      }
+      // Now update the matrix indices
+      if( !doNotCalculateDerivatives() ) plumed_merror("this has not been implemented");
       return;
-    }
   }
   // And update the dynamic list
   if( doNotCalculateDerivatives() ) return ;

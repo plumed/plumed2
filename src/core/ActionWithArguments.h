@@ -45,6 +45,7 @@ class ReweightBase;
 
 class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
+  friend class CollectFrames; 
 private:
   bool allrankzero;
   std::vector<bool> usingAllArgs;

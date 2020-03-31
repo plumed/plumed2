@@ -68,9 +68,9 @@ double DissimilarityMatrix::computeVectorProduct( const unsigned& index1, const 
     std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const {
   double dist = 0; 
   for(unsigned i=0;i<vec1.size();++i) {
-       double tmp = vec1[i] - vec2[i]; dist += tmp*tmp;
+       double tmp = getPntrToArgument(arg_ends[i])->difference(vec2[i], vec1[i]); dist += tmp*tmp;
        dvec1[i] = 2*tmp; dvec2[i] = -2*tmp;
-  } 
+  }
   if( squared ) return dist ;
   dist = sqrt( dist );
   for(unsigned i=0;i<vec1.size();++i) { dvec1[i] /= 2*dist; dvec2[i] /= 2*dist; }
