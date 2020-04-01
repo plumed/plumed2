@@ -25,7 +25,6 @@
 
 namespace PLMD {
 
-
 void AverageBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
@@ -47,13 +46,9 @@ AverageBase::AverageBase( const ActionOptions& ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   clearnextstep(false),
-  firststep(true),
   DRotDPos(3,3),
-  data(getNumberOfArguments()),
-  nvals(0),
+  firststep(true),
   clearnorm(false),
-  save_all_bias(false),
-  task_start(0),
   n_real_args(getNumberOfArguments())
 {
   plumed_assert( keywords.exists("ARG") );
@@ -89,7 +84,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
   }
   if( all_atoms.size()>0 ) { atoms.insertGroup( getLabel(), mygroup ); log.printf("\n"); }
 
-  std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
+  std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr); 
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
   std::vector<Value*> arg( getArguments() ), biases; interpretArgumentList( wwstr, biases );
   for(unsigned i=0; i<biases.size(); ++i) {
@@ -102,13 +97,14 @@ AverageBase::AverageBase( const ActionOptions& ao):
   // There are problems here if vatoms are used as they will be cleared 
   // by the call to requestArguments
   if( all_atoms.size()>0 ) {
-      requestAtoms( all_atoms ); direction.resize( atom_pos.size() );
+      requestAtoms( all_atoms ); direction.resize( std::floor( getNumberOfAtoms() / atom_pos.size() ) );
+      for(unsigned i=0;i<direction.size();++i) direction[i].resize( atom_pos.size() );
       align.resize( atom_pos.size() ); parseVector("ALIGN",align);
       displace.resize( atom_pos.size() ); parseVector("DISPLACE",displace );
       parse("TYPE",rmsd_type); der.resize( atom_pos.size() );
       log.printf("  aligning atoms to first frame in data set using %s algorithm \n", rmsd_type.c_str() );
   } 
-  requestArguments( arg, false );
+  requestArguments( arg, false ); arg_ends.push_back( getNumberOfArguments() );
 
   // Read in clear instructions
   parse("CLEAR",clearstride);
@@ -127,67 +123,6 @@ AtomNumber AverageBase::getAtomNumber(const AtomNumber& anum ) const {
       if( anum==mygroup[i] ) return getAbsoluteIndex(i);
   }
   plumed_error(); return getAbsoluteIndex(0);
-}
-
-void AverageBase::setupComponents( const unsigned& nreplicas ) { 
-  nvals = 0;
-  if( n_real_args>0 ) {
-      plumed_assert( arg_ends.size()>0 );
-      for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-  } else if( getNumberOfAtoms()>0 ) nvals = 3*getNumberOfAtoms();
-  else {
-      for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-  }
-  std::vector<unsigned> shape( 1 ); shape[0]=( clearstride / getStride() )*nvals*nreplicas; 
-  // Setup values to hold arguments
-  if( n_real_args>0 ) {
-      for(unsigned i=0;i<arg_ends.size()-1;++i) {
-          if( arg_ends[i]>n_real_args ) break;   // Ignore anything that is weights
-          unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
-          if( tvals!=nvals ) error("all values input to store object must have same length");
-          addComponent( getPntrToArgument(arg_ends[i])->getName(), shape ); 
-          if( getPntrToArgument(arg_ends[i])->isPeriodic() ) { 
-              std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max ); 
-              componentIsPeriodic( getPntrToArgument(arg_ends[i])->getName(), min, max );
-          } else componentIsNotPeriodic( getPntrToArgument(arg_ends[i])->getName() );
-          getPntrToOutput(i)->makeTimeSeries();
-      }
-  }
-  // Setup values to hold atomic positions
-  for(unsigned j=0;j<getNumberOfAtoms();++j) {
-      std::string num; Tools::convert( j+1, num );
-      addComponent( "posx-" + num, shape ); componentIsNotPeriodic( "posx-" + num ); getPntrToOutput(n_real_args+3*j+0)->makeTimeSeries();
-      addComponent( "posy-" + num, shape ); componentIsNotPeriodic( "posy-" + num ); getPntrToOutput(n_real_args+3*j+1)->makeTimeSeries();
-      addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
-  }
-  // And create a component to store the weights -- if we store the history this is a matrix
-  addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
-  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
-}
-
-void AverageBase::turnOnBiasHistory() {
-  if( getNumberOfArguments()==n_real_args ) error("cannot compute bias history if no bias is stored");
-  save_all_bias=true; std::vector<unsigned> shape(2);
-  shape[0]=shape[1]=getPntrToOutput( getNumberOfComponents()-1 )->getShape()[0]; 
-  getPntrToOutput( getNumberOfComponents()-1 )->setShape( shape );
- 
-  const ActionSet & as=plumed.getActionSet(); task_counts.resize(0);
-  std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false ); 
-  for(const auto & pp : as ) { 
-      Action* p(pp.get()); AverageBase* ab=dynamic_cast<AverageBase*>(p);
-      if( ab && !ab->doNotCalculateDerivatives() ) task_counts.push_back(0);
-      // If this is the final bias then get the value and get out
-      for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
-          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-          if( name.substr(0,dot)==p->getLabel() ) foundbias[i-n_real_args]=true; 
-      } 
-      // Check if we have recalculated all the things we need
-      bool foundall=true;
-      for(unsigned i=0;i<foundbias.size();++i) {
-          if( !foundbias[i] ) { foundall=false; break; }
-      }
-      if( foundall ) break;
-  }
 }
 
 std::string AverageBase::getStrideClearAndWeights() const {
@@ -265,74 +200,8 @@ void AverageBase::setReferenceConfig() {
   myrmsd.clear(); myrmsd.set(align,displace,atom_pos,rmsd_type,true,true);
 }
 
-double AverageBase::computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial ) {
-  double logw = 0; const ActionSet & as=plumed.getActionSet(); AverageBase* ab=NULL;
-  std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
-  // Set the arguments equal to the values in the old frame
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      unsigned k=0; if( arg_ends[i]>n_real_args ) break;
-      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          Value* thisarg = getPntrToArgument(j); 
-          unsigned nv = thisarg->getNumberOfValues( getLabel() );
-          for(unsigned n=0;n<nv;++n) { thisarg->set( n, values[i*nvals+k] ); k++; }
-      }
-  }
-
-  unsigned k=0;
-  for(const auto & pp : as ) {
-     Action* p(pp.get()); bool found=false, savemp, savempi;
-     // If this is one of actions for the the stored arguments then we skip as we set these values from the list
-     for(unsigned i=0; i<n_real_args; ++i) {
-         std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-         if( name.substr(0,dot)==p->getLabel() ) { found=true; break; }
-     }
-     if( found || p->getName()=="READ" ) continue; 
-     ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(p);
-     if( aa ) if( aa->getNumberOfAtoms()>0 ) continue;
-     if( task_counts.size()>0 ) {
-         ab=dynamic_cast<AverageBase*>(p);
-         if(ab) { ab->task_start = task_counts[k]; k++; } 
-     }
-     // Recalculate the action
-     if( p->isActive() && p->getCaller()=="plumedmain" ) {
-         ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-         if(av) { 
-           av->clearInputForces(); av->clearDerivatives();
-           if( runserial ) { savemp = av->no_openmp; savempi = av->serial; av->no_openmp = true; av->serial = true; }
-         }
-         p->calculate();
-         if( av && runserial ) { av->no_openmp=savemp; av->serial=savempi; }
-      }
-      if(ab) ab->task_start = 0;
-      // If this is the final bias then get the value and get out
-      for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
-          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-          if( name.substr(0,dot)==p->getLabel() ) { foundbias[i-n_real_args]=true; logw += getPntrToArgument(i)->get(); }
-      }
-      // Check if we have recalculated all the things we need
-      bool foundall=true; 
-      for(unsigned i=0;i<foundbias.size();++i) { 
-          if( !foundbias[i] ) { foundall=false; break; }
-      }
-      if( foundall ) break;
-  }
-  return logw;
-}
-
 void AverageBase::clearDerivatives( const bool& force ) {
   if( action_to_do_after ) action_to_do_after->clearDerivatives( force );
-}
-
-void AverageBase::calculate() {
-  if( firststep ) { 
-      resizeValues();  // This is called in calculate to ensure that values are set to the right size the first time they are used
-      if( action_to_do_after && doNotCalculateDerivatives() ) { action_to_do_after->action_to_do_before=NULL; action_to_do_after=NULL; } 
-  }
-  if( action_to_do_after ) runAllTasks();
-}
-
-void AverageBase::finishComputations( const std::vector<double>& buf ) {
-  if( action_to_do_after ) action_to_do_after->finishComputations( buffer );
 }
 
 void AverageBase::update() {
@@ -351,123 +220,29 @@ void AverageBase::update() {
       setReferenceConfig(); clearnextstep=false; 
   }
 
-  // Get the weight information
-  double cweight=0.0; 
-  if ( getNumberOfArguments()>n_real_args ) {
-       // This stores the current bias on the diagonal of the matrx
-       for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) cweight+=getPntrToArgument(i)->get();
-       // This stores the new bias for the old configuration
-       if( save_all_bias ) {
-           unsigned nstored = getNumberOfStoredWeights(); 
-           std::vector<double> old_data( nvals*n_real_args ), current_data( nvals*n_real_args );
-           // Store the current values for all the arguments
-           for(unsigned i=0;i<nvals;++i) {
-               for(unsigned j=0;j<n_real_args;++j) current_data[j*nvals+i] = getPntrToArgument(j)->get(i);
-           }
-           // Compute the weights for all the old configurations
-           unsigned stride=comm.Get_size(), rank=comm.Get_rank();
-           if( runInSerial() ) { stride=1; rank=0; } 
-           std::vector<double> new_old_bias( nstored, 0 );
-           if( nstored>0 ) {
-               for(unsigned i=rank;i<nstored-1;i+=stride) {
-                   for(unsigned j=0;j<nvals;++j) retrieveDataPoint( i, j, old_data );
-                   new_old_bias[i] = computeCurrentBiasForData( old_data, true );
-               }
-               if( !runInSerial() ) comm.Sum( new_old_bias );
-               // Have to compute all Gaussians for final data point
-               for(unsigned j=0;j<task_counts.size();++j) task_counts[j] = 0;
-               for(unsigned j=0;j<nvals;++j) retrieveDataPoint( nstored-1, j, old_data );
-               new_old_bias[nstored-1] = computeCurrentBiasForData( old_data, false ); 
-
-               for(unsigned i=0;i<nstored;++i) {
-                   for(unsigned j=0;j<nvals;++j) storeRecomputedBias( i*nvals, j, new_old_bias[i] );
-               }
-               // And recompute the current bias
-               double ignore = computeCurrentBiasForData( current_data, false );
-           }
-           if( task_counts.size()>0 ) { 
-               // And update the task counts
-               const ActionSet & as=plumed.getActionSet(); unsigned k=0;
-               std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
-               for(const auto & pp : as ) {
-                   Action* p(pp.get()); AverageBase* ab=dynamic_cast<AverageBase*>(p);
-                   if( ab ) { task_counts[k] = ab->getFullNumberOfTasks(); k++; }
-                   // If this is the final bias then get the value and get out
-                   for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
-                       std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-                       if( name.substr(0,dot)==p->getLabel() ) foundbias[i-n_real_args]=true; 
-                   } 
-                   // Check if we have recalculated all the things we need
-                   bool foundall=true;
-                   for(unsigned i=0;i<foundbias.size();++i) {
-                       if( !foundbias[i] ) { foundall=false; break; }
-                   }
-                   if( foundall ) break;
-               }
-           }
-       } 
-  }
-
   if( atom_pos.size()>0 ) { 
       unsigned nat_sets = std::floor( getNumberOfAtoms() / atom_pos.size() ); plumed_dbg_assert( nat_sets*atom_pos.size()==getNumberOfAtoms() );
       for(unsigned i=0;i<nat_sets;++i) {
           makeWhole( i*atom_pos.size(), (i+1)*atom_pos.size() );
-          for(unsigned j=0;j<atom_pos.size();++j) atom_pos[j] = getPosition( i*atom_pos.size() +j ); 
+          for(unsigned j=0;j<atom_pos.size();++j) atom_pos[j] = getPosition( i*atom_pos.size() + j ); 
            
           if( rmsd_type=="SIMPLE") {
-             double d = myrmsd.simpleAlignment( align, displace, atom_pos, myrmsd.getReference(), der, direction, true );
+             double d = myrmsd.simpleAlignment( align, displace, atom_pos, myrmsd.getReference(), der, direction[i], true );
           } else {
-             double d = myrmsd.calc_PCAelements( atom_pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, true );
-             for(unsigned i=0;i<direction.size();++i) direction[i] = ( direction[i] - myrmsd.getReference()[i] );
+             double d = myrmsd.calc_PCAelements( atom_pos, der, rot, DRotDPos, direction[i], centeredpos, centeredreference, true );
+             for(unsigned j=0;j<direction[i].size();++j) direction[i][j] = ( direction[i][j] - myrmsd.getReference()[j] );
           }
-          accumulateAtoms( cweight, direction );
       }
   }
-
   // Accumulate the data required for this round
-  if( n_real_args>0 ) {
-      if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
-          accumulateNorm( cweight ); accumulateGrid( cweight );
-      } else {
-          cweight = cweight - std::log(nvals);
-          for(unsigned i=0;i<nvals;++i) {
-              for(unsigned j=0;j<arg_ends.size()-1;++j ) {
-                  if( arg_ends[j]>n_real_args ) break;
-                  data[j] = retrieveRequiredArgument( j, i );
-              }
-              accumulateNorm( cweight ); accumulateValue( cweight, data );
-          }
-      }
-  } else { accumulateNorm( cweight ); }
+  accumulate( direction );
 
   // Clear if required
   if( clearstride>0 ) {
       if ( getStep()%clearstride==0 ) clearnextstep=true;
-  // Transfer the stored data to the output value
-  } else transferDataToValue();
+  } 
   // Rerun the calculation with the new bias
   if( action_to_do_after ) runAllTasks();
-}
-
-void AverageBase::transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights, const std::vector<double>& offdiag_weight ) {
-  std::vector<unsigned> shape(1); shape[0]=myweights.size(); std::vector<double> sumoff( myweights.size(), 0 );
-  for(unsigned i=0;i<getNumberOfComponents()-1;++i) getPntrToOutput(i)->setShape( shape );
-  if( save_all_bias ) { getPntrToOutput(getNumberOfComponents()-1)->clearDerivatives(); shape.resize(2); shape[0]=shape[1]=myweights.size(); }
-  getPntrToOutput(getNumberOfComponents()-1)->setShape( shape );
-
-  unsigned k=0;
-  for(unsigned i=0;i<myweights.size();++i) {
-      for(unsigned j=0;j<getNumberOfComponents()-1;++j) { getPntrToOutput(j)->set( i, mydata[i][j] ); }
-      if( save_all_bias ) {
-          Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( myweights.size()*i + i, myweights[i] );
-          for(unsigned j=0;j<i;++j) { 
-              if( task_counts.size()>0 ) {
-                  sumoff[j] += offdiag_weight[k]; myw->set( myweights.size()*i + j, sumoff[j] );
-              } else myw->set( myweights.size()*i + j, offdiag_weight[k] ); 
-              k++; 
-          }
-      } else getPntrToOutput(getNumberOfComponents()-1)->set( i, myweights[i] );
-  }
 }
 
 }

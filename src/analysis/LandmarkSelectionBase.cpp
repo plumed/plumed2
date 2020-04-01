@@ -20,66 +20,170 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionSetup.h"
+#include "core/CollectFrames.h"
 
 namespace PLMD {
 namespace analysis {
 
 void LandmarkSelectionBase::registerKeywords( Keywords& keys ) {
-  AnalysisBase::registerKeywords( keys );
-  keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");
-  keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
-  keys.addFlag("IGNORE_WEIGHTS",false,"ignore the weights in the underlying analysis object");
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
+  keys.add("optional","DATA","the label of a COLLECT_FRAMES action from which landmarks should be selected");
+  keys.use("ARG"); keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");
+  keys.addOutputComponent("_rect","default","the rectangular matrix containing the distances between the landmarks and all the points");
+  keys.addOutputComponent("_sqr","default","the square matrix containing the distances between the various landmark points");
+  ActionWithValue::useCustomisableComponents( keys );
 }
 
 LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
   Action(ao),
-  AnalysisBase(ao),
-  nlandmarks(0)
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  jframe(0),
+  nlandmarks(0),
+  nvals(0)
 {
+  std::string data; parse("DATA",data);
+  if( data.length()>0 ) {
+      CollectFrames* myfram = plumed.getActionSet().selectWithLabel<CollectFrames*>(data);
+      if( !myfram ) error( data + " is not a valid COLLECT_FRAMES action so cannot collect data");
+      std::vector<Value*> vals( getArguments() );
+      for(unsigned j=0;j<myfram->getNumberOfComponents();++j) { 
+          vals.push_back( myfram->copyOutput(j) ); arg_ends.push_back(vals.size()); 
+      }
+      requestArguments( vals, false );
+  }
+ 
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks);
   log.printf("  selecting %u landmark points \n",nlandmarks);
-  lweights.resize( nlandmarks );
 
-  parseFlag("NOVORONOI",novoronoi);
-  if( !novoronoi && !dissimilaritiesWereSet() ) error("cannot calculate voronoi weights without dissimilarity mesaure");
+  nvals = 0; landmarks.resize(nlandmarks);
+  for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
+      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
+  }
 
-  if( !novoronoi ) log.printf("  ascribing weights to landmarks using voronoi analysis\n");
-  else log.printf("  ascribing weights of original points to landmark\n");
+  std::vector<unsigned> shape(1); std::vector<std::string> foundmat;
+  for(unsigned i=0;i<arg_ends.size()-1;++i) { 
+      unsigned tvals=0; 
+      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
+      }
+      if( tvals!=nvals ) {
+          if( tvals==0 ) {
+              // Check here if input is a matrix that was read in during startup
+              ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[0])->getPntrToAction() );
+              if( !as ) error("mismatch between sizes of input positions");
+          } else error("mismatch between sizes of input positions");
+      }
+      // Add suitable argument
+      Value* argi = getPntrToArgument(arg_ends[i]);
+      if( argi->hasDerivatives() ) {
+          error("cannot select landmarks for value " + argi->getName() );
+      } else if( argi->getRank()==2 ) {
+          shape.resize(2); shape[0] = nlandmarks; shape[1] = nvals; argi->buildDataStore( getLabel() );
+      } else if( argi->getRank()==1 ) {
+          shape.resize(1); shape[0] = nlandmarks;
+      } else error("cannot select landmarks for value " + argi->getName() );
+      std::string vname = argi->getName(); 
+      CollectFrames* cf = dynamic_cast<CollectFrames*>( argi->getPntrToAction() );
+      if( cf ) { 
+          if( shape.size()==2 ) error("input from COLLECT_FRAMES should be a vector -- how have you done this?");
+          std::size_t dot=vname.find_first_of('.'); vname = vname.substr(dot+1); 
+      } else if( shape.size()==2 ) { foundmat.push_back(vname); vname = vname + "_rect"; }
+      addComponent( vname, shape );
+      if( argi->isPeriodic() ) {
+          std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
+          componentIsPeriodic( vname, min, max );
+      } else componentIsNotPeriodic( vname ); 
+      if( argi->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+      getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
+  }
+  if( foundmat.size()>0 ) {
+      shape.resize(2); shape[0]=shape[1]=nlandmarks; 
+      for(unsigned i=0;i<foundmat.size();++i) {
+          addComponent( foundmat[i] + "_sqr", shape ); componentIsNotPeriodic( foundmat[i] + "_sqr" ); 
+          getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues(); 
+          if( getPntrToOutput(0)->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+      }
+  }
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
-  landmark_indices.push_back( iframe );
+  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+      Value* val0=getPntrToOutput(i); 
+      if( val0->getRank()==2 && val0->storingData() ) {
+          Value* arg0 = getPntrToArgument(arg_ends[i]); 
+          for(unsigned j=0;j<nvals;++j) {
+              val0->set( nvals*jframe + j, arg0->get(nvals*iframe+j) );
+          }
+      } else if( val0->getRank()==1 && val0->storingData() ) val0->set( jframe, retrieveRequiredArgument( i, iframe ) );
+  }
+  landmarks[jframe]=iframe; jframe++; if( jframe==nlandmarks ) jframe=0;
 }
 
-void LandmarkSelectionBase::performAnalysis() {
-  landmark_indices.resize(0); selectLandmarks();
-  plumed_dbg_assert( nlandmarks==getNumberOfDataPoints() );
-  if( lweights.size()!=nlandmarks ) lweights.resize( nlandmarks );
+void LandmarkSelectionBase::setLandmarkSeparations() {
+  if( getNumberOfComponents()==(arg_ends.size()-1) ) return;
+  for(unsigned k=arg_ends.size()-1;k<getNumberOfComponents();++k) {
+      Value* val0 = getPntrToOutput( k );
+      if( !val0->storingData() ) continue;
 
-  if( !novoronoi ) {
-    lweights.assign(lweights.size(),0.0);
-    std::vector<unsigned> tmpass( my_input_data->getNumberOfDataPoints() );
-    voronoiAnalysis( landmark_indices, lweights, tmpass );
-  } else {
-    for(unsigned i=0; i<nlandmarks; ++i) lweights[i]=my_input_data->getWeight( landmark_indices[i] );
+      Value* arg0; std::string fname = getPntrToOutput(k)->getName(); fname=fname.substr(0,fname.size()-4);
+      for(unsigned i=0;i<arg_ends.size()-1;++i) {
+          std::string tname = getPntrToOutput(i)->getName(); tname=tname.substr(0,tname.size()-5);
+          if( tname==fname ) { arg0 = getPntrToArgument(arg_ends[i]); break; }
+      }
+      plumed_assert( arg0 ); 
+
+      for(unsigned i=1;i<nlandmarks;++i) {
+          for(unsigned j=0;j<i;++j) {
+              double myval = arg0->get(nvals*landmarks[i] + landmarks[j] );
+              val0->set( i*nlandmarks+j, myval ); val0->set( j*nlandmarks+i, myval );
+          }
+      }
   }
 }
 
-void LandmarkSelectionBase::voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const {
-  plumed_dbg_assert( myindices.size()==lweights.size() && assignments.size()==my_input_data->getNumberOfDataPoints() );
-  lweights.assign( lweights.size(), 0 );
-  unsigned rank=comm.Get_rank(), size=comm.Get_size();
-  for(unsigned i=rank; i<my_input_data->getNumberOfDataPoints(); i+=size) {
-    assignments[i]=0;
-    double mindist=my_input_data->getDissimilarity( i, myindices[0] );
-    for(unsigned j=1; j<nlandmarks; ++j) {
-      double dist=my_input_data->getDissimilarity( i, myindices[j] );
-      if( dist<mindist ) { mindist=dist; assignments[i]=j; }
-    }
-    lweights[ assignments[i] ] += my_input_data->getWeight(i);
+void LandmarkSelectionBase::calculate() {
+  if( skipCalculate() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  selectLandmarks(); setLandmarkSeparations();
+}
+
+void LandmarkSelectionBase::update() {
+  if( skipUpdate() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  selectLandmarks(); setLandmarkSeparations();
+}
+
+void LandmarkSelectionBase::runFinalJobs() {
+  if( skipUpdate() ) {
+      bool allsetup=true; 
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(i)->getPntrToAction() );
+          if(!as) allsetup=false;
+      }
+      if( !allsetup ) return;
   }
-  comm.Sum( &lweights[0], lweights.size() );
-  comm.Sum( &assignments[0], assignments.size() );
+  plumed_dbg_assert( !actionInChain() ); nvals=0;
+  for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
+      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
+  }
+  std::vector<unsigned> shape(2); shape[0]=nlandmarks; shape[1]=nvals;
+  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+      unsigned tvals=0;
+      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
+      }
+      if( tvals!=nvals ) error("mismatch between sizes of input positions");
+      Value* val0 = getPntrToComponent(i); if( val0->getRank()==2 ) { val0->setShape( shape ); } 
+  }
+  selectLandmarks(); setLandmarkSeparations();
 }
 
 }

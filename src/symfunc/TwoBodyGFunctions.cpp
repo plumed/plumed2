@@ -59,7 +59,7 @@ TwoBodyGFunctions::TwoBodyGFunctions(const ActionOptions&ao):
     std::vector<std::string> data=Tools::getWords(mystr);
     if( !Tools::parse(data,"LABEL",lab ) ) error("found no LABEL in FUNCTION" + num + " specification");
     addComponentWithDerivatives( lab ); 
-    if( !Tools::parse(data,"FUNC",myfunc) ) break;
+    if( !Tools::parse(data,"FUNC",myfunc) )  error("found no FUNC in FUNCTION" + num + " specification");
     functions.push_back( SwitchingFunction() );
     functions[i-1].set( "CUSTOM FUNC=" + myfunc + " R_0=1.0", errors );
     if( errors.length()>0 ) error("errors reading function " + errors ); 

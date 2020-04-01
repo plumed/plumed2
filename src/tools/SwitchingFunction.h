@@ -24,7 +24,7 @@
 
 #include <string>
 #include <vector>
-#include "lepton/Lepton.h"
+#include "LeptonCall.h"
 
 namespace PLMD {
 
@@ -75,14 +75,8 @@ class SwitchingFunction {
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
 /// Function for lepton;
   std::string lepton_func;
-/// Lepton expression.
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<lepton::CompiledExpression> expression;
-/// Lepton expression for derivative
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<lepton::CompiledExpression> expression_deriv;
-  std::vector<double*> lepton_ref;
-  std::vector<double*> lepton_ref_deriv;
+/// Object that calls lepton so it is threadsafe
+  LeptonCall lepton_function;
 /// Return the derivative rather than deriv/distance
   bool returnderiv=false;
 /// Set to true for fast rational functions (depending on x**2 only)

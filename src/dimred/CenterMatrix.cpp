@@ -72,6 +72,7 @@ CenterMatrix::CenterMatrix( const ActionOptions& ao):
   std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(1); 
   requestArguments(args, false ); std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0];
   addValue(shape); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
+  if( getPntrToArgument(0)->isTimeSeries() ) getPntrToOutput(0)->makeTimeSeries();
 }
 
 void CenterMatrix::update() {

@@ -33,7 +33,7 @@ public:
   explicit MetadShortcut(const ActionOptions&);
   static void createMetadBias( const std::string& lab, const std::string& pacestr, const std::vector<std::string>& args,
                                const std::vector<std::string>& gmin, const std::vector<std::string>& gmax, const std::vector<std::string>& grid_nbins,
-                               const std::string& truncflag1, const std::string& truncflag2, ActionShortcut* act );
+                               const std::string& weight_str, const std::string& truncflag1, const std::string& truncflag2, ActionShortcut* act );
 };
 
 }

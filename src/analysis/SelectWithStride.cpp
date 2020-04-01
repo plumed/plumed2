@@ -38,7 +38,7 @@ class SelectWithStride : public LandmarkSelectionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SelectWithStride( const ActionOptions& ao );
-  void selectLandmarks() override;
+  void selectLandmarks();
 };
 
 PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")
@@ -54,7 +54,7 @@ SelectWithStride::SelectWithStride( const ActionOptions& ao ):
 }
 
 void SelectWithStride::selectLandmarks() {
-  unsigned stride = std::floor( my_input_data->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
+  unsigned stride = std::floor( nvals / nlandmarks ), max=stride*nlandmarks;
   for(unsigned i=0; i<max; i+=stride) selectFrame( i );
 }
 

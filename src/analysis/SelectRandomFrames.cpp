@@ -59,15 +59,11 @@ SelectRandomFrames::SelectRandomFrames( const ActionOptions& ao ):
 }
 
 void SelectRandomFrames::selectLandmarks() {
-  Random r; r.setSeed(-seed);
-  unsigned nframe=my_input_data->getNumberOfDataPoints();
-  unsigned nland=getNumberOfDataPoints();
-
-  std::vector<bool> selected( nframe, false );
+  Random r; r.setSeed(-seed); std::vector<bool> selected( nvals, false );
 
   unsigned fcount=0;
-  while (fcount<nland) {
-    unsigned iframe = std::floor( r.U01()*nframe );
+  while (fcount<nlandmarks) {
+    unsigned iframe = std::floor( r.U01()*nvals );
     if (!selected[iframe]) {
       selected[iframe]=true;
       selectFrame( iframe );

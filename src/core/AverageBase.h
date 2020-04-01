@@ -35,28 +35,22 @@ class AverageBase :
   public ActionWithValue,
   public ActionWithArguments {
 private:
-  bool clearnextstep, firststep;
+  bool clearnextstep;
   Tensor rot;
   PLMD::RMSD myrmsd;
   std::string rmsd_type;
   Matrix<std::vector<Vector> > DRotDPos;
-  std::vector<double> data;
-  std::vector<Vector> atom_pos, der, direction, centeredpos, centeredreference;
-/// Calculate the current bias at this position
-  double computeCurrentBiasForData( const std::vector<double>& data, const bool& runserial );
+  // std::vector<double> data;
+  std::vector<std::vector<Vector> > direction;
+  std::vector<Vector> der, centeredpos, centeredreference;
 protected:
-  unsigned nvals;
-  std::vector<unsigned> task_counts;
-  bool clearnorm, save_all_bias;
-  unsigned task_start;
+  bool firststep;
+  std::vector<Vector> atom_pos;
+  bool clearnorm;
   unsigned clearstride;
   unsigned n_real_args;
   std::vector<AtomNumber> mygroup;
   std::vector<double> align, displace;
-/// This is used to setup the components for the actions that store data
-  void setupComponents( const unsigned& nreplicas );
-/// This is used to transfer the data in runFinalJobs for actions that collect data
-  void transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights, const std::vector<double>& offdiag_weight );
 /// Get the number of atoms that we are averaging
   unsigned getNumberOfAtomsToAverage() const ;
 /// Get the position of the ith atom in the reference configuration
@@ -66,8 +60,7 @@ public:
   explicit AverageBase( const ActionOptions& );
   ~AverageBase();
   void clearDerivatives( const bool& force=false );
-  void turnOnBiasHistory();
-  virtual void resizeValues() {}
+  bool hasClear() const ;
   unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfVirtualAtoms() const ;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -79,22 +72,13 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
-  void calculate(); 
-  void finishComputations( const std::vector<double>& buf );
   void apply() {}
   void update();
-  virtual void accumulateNorm( const double& cweight ) = 0 ;
-  virtual void accumulateGrid( const double& cweight ){ plumed_error(); }
-  virtual void accumulateValue( const double& cweight, const std::vector<double>& val ) = 0;
   virtual void setReferenceConfig();
-  virtual void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) = 0;
+  virtual void accumulate( const std::vector<std::vector<Vector> >& dir ) = 0;
   std::string getStrideClearAndWeights() const ;
   std::string getAtomsData() const ;
   AtomNumber getAtomNumber(const AtomNumber& num ) const ;
-  virtual unsigned getNumberOfStoredWeights() const { plumed_merror("Cannot use matrix store with this action"); }
-  virtual void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
-  virtual void storeRecomputedBias( const unsigned& itime, const unsigned& jframe, const double& data ) { plumed_error(); }
-  virtual void transferDataToValue() = 0;
 };
 
 inline
@@ -110,6 +94,11 @@ Vector AverageBase::getReferencePosition(const unsigned& i ) {
 inline
 unsigned AverageBase::getNumberOfVirtualAtoms() const {
   return getNumberOfAtoms();
+}
+
+inline
+bool AverageBase::hasClear() const {
+  return (clearstride>0);
 }
 
 }

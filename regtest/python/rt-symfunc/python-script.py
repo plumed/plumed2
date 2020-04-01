@@ -3,11 +3,11 @@
 # cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={COSINE R_0=4.5} COMPONENTS
 # beh2: GSYMFUNC_TWOBODY ...
 #    WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z
-#    FUNCTION1={TYPE=g2 LABEL=g2 NU=1 CENTER=3}
+#    FUNCTION1={FUNC=exp(-(x-3)^2) LABEL=g2}
 # ...
 # beh3: GSYMFUNC_THREEBODY ...
 #     WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z
-#     FUNCTION1={TYPE=g4 LABEL=g4 LAMBDA=2.0 NU=0.1 ZETA=2} SWITCH={COSINE R_0=4.5}
+#     FUNCTION1={FUNC=0.25*(cos(pi*sqrt(rjk)/4.5)+1)*exp(-0.1*(rij+rik+rjk))*(1+2*cos(ajik))^2 LABEL=g4}
 # ...
 # g4m: PRINT ARG=beh2.g2,beh3.g4 FILE=colvar FMT=%8.4f
 
@@ -73,7 +73,7 @@ p.cmd("setLogFile","test.log")
 p.cmd("init")
 p.cmd("readInputLine","cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={COSINE R_0=4.5} COMPONENTS")
 t1 = create_plumed_var( p, "beh2.g2", "GSYMFUNC_TWOBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={FUNC=exp(-(x-3)^2) LABEL=g2}" ) 
-t2 = create_plumed_var( p, "beh3.g4", "GSYMFUNC_THREEBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={TYPE=g4 LABEL=g4 LAMBDA=2.0 NU=0.1 ZETA=2} SWITCH={COSINE R_0=4.5}" )
+t2 = create_plumed_var( p, "beh3.g4", "GSYMFUNC_THREEBODY WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z FUNCTION1={FUNC=0.25*(cos(pi*sqrt(rjk)/4.5)+1)*exp(-0.1*(rij+rik+rjk))*(1+2*cos(ajik))^2 LABEL=g4}" )
  
 # Read in the correct answers that were calculated directly using PLUMED
 correct_values = np.loadtxt("colvar.ref")

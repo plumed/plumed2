@@ -783,6 +783,8 @@ void PlumedMain::prepareDependencies() {
       active=true;
     }
   };
+// This stops the driver calculation if there is not a read action
+  if( !active && atoms.getNatoms()==0 ) (*stopFlag)=1;
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   for(const auto & p : actionSet) {

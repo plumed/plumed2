@@ -132,6 +132,7 @@ ActionShortcut(ao)
         if( resid[k] ) {
             readInputLine( getShortcutLabel() + "_resid2-" + num + ": COMBINE PERIODIC=NO " + argstr + coeffstr + " " + powstr );
             readInputLine( getShortcutLabel() + "_resid-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_resid2-" + num + " FUNC=sqrt(x) PERIODIC=NO");
+            readInputLine( getShortcutLabel() + "_presid-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_resid-" + num + " FUNC=0-x PERIODIC=NO");
         }
       }
   }
@@ -161,7 +162,7 @@ ActionShortcut(ao)
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
-  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
+  std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
   if( gmax.size()>0 && grid_nbins.size()==0 ) error("you must set GRID_BIN if you set GRID_MAX");
   if( grid_nbins.size()>0 && gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");  
@@ -171,27 +172,38 @@ ActionShortcut(ao)
       std::string num; Tools::convert( k+1, num ); targs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
       readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " FUNC=log(x) PERIODIC=NO");
       readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" + 
-                    num + " FUNC=x+y PERIODIC=NO");
+                    num + " FUNC=x+y PERIODIC=NO"); hstring = getShortcutLabel() + "-" + num + "_wtfact";
       if( neigv[k]==0 ) {
           targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
-          if( gmax.size()>0 ) { tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins ); }
+          if( gmax.size()>0 ) { 
+              tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins ); 
+          } else {
+              readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
+              hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact"; 
+          }
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
           for(unsigned i=0;i<neigv[k];++i) { 
               std::string eignum; Tools::convert( i+1, eignum ); 
-              targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
+              if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );
+              else targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
               if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
           }
           if( resid[k] ) { 
-              targs.push_back( getShortcutLabel() + "_resid-" + num );
-              if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
+              targs.push_back( getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
+              if( gmax.size()>0 ) { 
+                  tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); 
+              } else { 
+                  readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
+                  hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
+              } 
           } 
       }
-      MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, truncflag1, truncflag2, this );
+      MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
   }
 
   // Normalize the weights for each of the kernels and compute the final bias

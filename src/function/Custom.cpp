@@ -22,7 +22,7 @@
 #include "ActionRegister.h"
 #include "Function.h"
 #include "tools/OpenMP.h"
-#include "lepton/Lepton.h"
+#include "tools/LeptonCall.h"
 
 namespace PLMD {
 namespace function {
@@ -163,19 +163,11 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Custom :
   public Function
 {
+  std::string func;
+  LeptonCall function;
 /// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
 /// to speed things up
   std::vector<unsigned> check_multiplication_vars;
-/// Lepton expression.
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
-  std::vector<lepton::CompiledExpression> expression;
-/// Lepton expression for derivative
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;
-  std::vector<std::string> var;
-  std::vector<double*> lepton_ref;
-  std::vector<double*> lepton_ref_deriv;
-  std::string func;
 public:
   explicit Custom(const ActionOptions&);
   bool writeInGraph( std::string& exline ) const override;
@@ -225,17 +217,10 @@ void Custom::registerKeywords(Keywords& keys) {
 
 Custom::Custom(const ActionOptions&ao):
   Action(ao),
-  Function(ao),
-  expression(OpenMP::getNumThreads()),
-  expression_deriv(getNumberOfArguments()),
-  lepton_ref(OpenMP::getNumThreads()*getNumberOfArguments(),nullptr),
-  lepton_ref_deriv(OpenMP::getNumThreads()*getNumberOfArguments()*getNumberOfArguments(),nullptr)
+  Function(ao)
 {
-  // Resize the expression for the derivatives
-  for(unsigned i=0;i<expression_deriv.size();++i) expression_deriv[i].resize(OpenMP::getNumThreads());
-
   // Read in the variables
-  parseVector("VAR",var);
+  std::vector<std::string> var; parseVector("VAR",var); parse("FUNC",func);
   if(var.size()==0) {
     var.resize(getNumberOfArguments());
     if(getNumberOfArguments()>3)
@@ -244,9 +229,7 @@ Custom::Custom(const ActionOptions&ao):
     if(var.size()>1) var[1]="y";
     if(var.size()>2) var[2]="z";
   }
-  if(var.size()!=getNumberOfArguments())
-    error("Size of VAR array should be the same as number of arguments");
-  parse("FUNC",func);
+  if(var.size()!=getNumberOfArguments()) error("Size of VAR array should be the same as number of arguments");
   // Check for operations that are not multiplication (this can probably be done much more cleverly)
   bool onlymultiplication = func.find("*")!=std::string::npos;
   // Find first bracket in expression
@@ -273,42 +256,7 @@ Custom::Custom(const ActionOptions&ao):
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");
   for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
-  log.printf("\n");
-
-  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
-  log<<"  function as parsed by lepton: "<<pe<<"\n"; unsigned nt=0;
-  for(auto & e : expression) {
-     e=pe.createCompiledExpression();
-     for(unsigned j=0;j<getNumberOfArguments();++j) {
-         try {
-             lepton_ref[nt*getNumberOfArguments()+j]=&const_cast<lepton::CompiledExpression*>(&expression[nt])->getVariableReference(var[j]);
-         } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x      
-         }
-     }
-     nt++;
-  }
-  for(auto & p : expression[0].getVariables()) {
-    if(std::find(var.begin(),var.end(),p)==var.end()) error("variable " + p + " is not defined");
-  }
-  log<<"  derivatives as computed by lepton:\n";
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
-    log<<"    "<<pe<<"\n"; nt=0;
-    for(auto & e : expression_deriv[i]) {
-        e=pe.createCompiledExpression();
-        for(unsigned j=0;j<getNumberOfArguments();++j) {
-            try {
-                lepton_ref_deriv[i*OpenMP::getNumThreads()*getNumberOfArguments() + nt*getNumberOfArguments()+j]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[i][nt])->getVariableReference(var[j]);
-            } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x      
-            }
-        }
-        nt++;
-    }
-  } 
+  log.printf("\n"); function.set( func, var, this );
 }
 
 bool Custom::writeInGraph( std::string& exline ) const { 
@@ -352,19 +300,8 @@ void Custom::calculateFunction( const std::vector<double>& args, MultiValue& myv
           return;
       }
   }
-
-  const unsigned t=OpenMP::getThreadNum(), tbas=t*getNumberOfArguments(); plumed_assert(t<expression.size());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    if( lepton_ref[tbas+i] ) *lepton_ref[tbas+i] = args[i];
-  }
-  addValue(0, expression[t].evaluate(), myvals );
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    unsigned dbas = i*OpenMP::getNumThreads()*getNumberOfArguments() + t*getNumberOfArguments();
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      if(lepton_ref_deriv[dbas+j] ) *lepton_ref_deriv[dbas+j] = args[j];
-    }
-    addDerivative(0, i, expression_deriv[i][t].evaluate(), myvals);
-  }
+  addValue( 0, function.evaluate( args ), myvals );
+  for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative( 0, i, function.evaluateDeriv( i, args ), myvals );
 }
 
 }

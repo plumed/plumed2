@@ -64,7 +64,7 @@ ActionShortcut(ao)
   // Convert the bandwidth to something constant actions
   gridtools::KDEShortcut::convertBandwiths( getShortcutLabel(), sigma, this );
   // Create a metadynamics bias
-  createMetadBias( getShortcutLabel(), pacestr, args, gmin, gmax, grid_nbins, "", "", this );
+  createMetadBias( getShortcutLabel(), pacestr, args, gmin, gmax, grid_nbins, getShortcutLabel() + "_wtfact", "", "", this );
   // Bias the simulation using this bias potentital
   readInputLine("BIASVALUE ARG=" + getShortcutLabel() + "_bias" );
   // Complete setup of the well tempered weights
@@ -77,7 +77,7 @@ ActionShortcut(ao)
 
 void MetadShortcut::createMetadBias( const std::string& lab, const std::string& pacestr, const std::vector<std::string>& args, 
                                      const std::vector<std::string>& gmin, const std::vector<std::string>& gmax, const std::vector<std::string>& grid_nbins,
-                                     const std::string& truncflag1, const std::string& truncflag2, ActionShortcut* act ) {
+                                     const std::string& weight_str, const std::string& truncflag1, const std::string& truncflag2, ActionShortcut* act ) {
   if( gmin.size()>0 ) {
       // Now create the height
       act->readInputLine( lab + "_height: CONSTANT VALUE=1.0");
@@ -89,7 +89,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
 
       }
       act->readInputLine( input + " " + gminstr + " " + gmaxstr + " " + " " + gbinstr + " " + truncflag1 );
-      act->readInputLine( lab + "_grid: AVERAGE ARG=" + lab + "_kde NORMALIZATION=false STRIDE=" + pacestr + " LOGWEIGHTS=" + lab + "_wtfact" );
+      act->readInputLine( lab + "_grid: AVERAGE ARG=" + lab + "_kde NORMALIZATION=false STRIDE=" + pacestr + " LOGWEIGHTS=" + weight_str );
       // Evaluate the instantaneous value of the bias potential 
       act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID ARG=" + lab + "_grid " + truncflag2 );
   } else {
@@ -97,12 +97,12 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       act->readInputLine( lab + "_sigma: CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={MATHEVAL ARG1=" + lab + "_ref.variance FUNC=sqrt(x) PERIODIC=NO}");
       std::string store_args; for(unsigned i=0;i<args.size();++i) { std::string num; Tools::convert( i+1, num ); store_args += " ARG" + num + "=" + args[i]; }
       // Create a store to hold the list of Gaussians
-      act->readInputLine( lab + "_store: COLLECT_FRAMES STRIDE=" + pacestr + store_args + " LOGWEIGHTS=" + lab + "_wtfact" );
+      act->readInputLine( lab + "_store: COLLECT_FRAMES STRIDE=" + pacestr + store_args + " LOGWEIGHTS=" + weight_str );
       std::string names=" VAR=v1", func="v1*v1", func_args;
       for(unsigned i=1;i<args.size();++i) {  std::string num; Tools::convert( i+1, num ); names += ",v" + num; func += "+v" + num + "*v" + num; }
       for(unsigned i=0;i<args.size();++i) {
           std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com);
-          act->readInputLine( lab + "_sub_" + thisarg + ": CUSTOM FUNC=(y-x) PERIODIC=NO ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
+          act->readInputLine( lab + "_sub_" + thisarg + ": DIFFERENCE ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
           if( args.size()==1 ) {
               act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg +
                              " ARG2=" + lab + "_sigma" );

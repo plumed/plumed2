@@ -86,7 +86,6 @@ class Print :
   string description;
   string fmt;
   bool hasorigin;
-  bool printAtEnd;
   double lenunit;
   std::vector<std::string> names;
   bool gridinput;
@@ -155,7 +154,6 @@ Print::Print(const ActionOptions&ao):
   description(""),
   fmt("%f"),
   hasorigin(false),
-  printAtEnd(false),
   lenunit(1.0),
   gridinput(false),
   rotate(0),
@@ -166,13 +164,18 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()>0 ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { timeseries=true; break; }
       }
       if( timeseries ) {
-          unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
+          std::vector<Value*> myvals;
           for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-              if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+              if( getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) myvals.push_back( getPntrToArgument(i) );
           }
+          unsigned nv = myvals[0]->getNumberOfValues( getLabel() );
+          for(unsigned i=0; i<myvals.size();++i) {
+              if( myvals[i]->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+          }
+          requestArguments( myvals, false ); 
       }
   }
   if(file.length()>0) {
@@ -197,7 +200,7 @@ Print::Print(const ActionOptions&ao):
       }
     }
     if( getStride()==0 ) { 
-        if( timeseries ) { setStride(10000); printAtEnd=true; log.printf("  printing time series at end of calculation \n"); }
+        if( timeseries ) { setStride(0); log.printf("  printing time series at end of calculation \n"); }
         else { setStride(1); log.printf("  with stride %d\n",getStride()); }
     }
 /////////////////////////////////////////
@@ -219,7 +222,7 @@ Print::Print(const ActionOptions&ao):
       unsigned nt=0;
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
         if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; break; }
-        if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors in xyz/ndx output");
+        if( getPntrToArgument(j)->getRank()!=1 ) error("problem outputting " + getPntrToArgument(j)->getName() + " can only output vectors in xyz/ndx output" );
         nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
       if( i==0 ) { nper=nt; }
@@ -227,7 +230,7 @@ Print::Print(const ActionOptions&ao):
     }
     if( gridinput ) {
       if( getStride()==0 ) {
-        setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+        setStride(0); log.printf("  printing final grid only \n");
       }
       if( tstyle=="ndx" ) error("grids should be printed to xyz, grid or cube files only");
       if( getNumberOfArguments()!=1 ) error("can only print one grid at a time");
@@ -311,14 +314,14 @@ Print::Print(const ActionOptions&ao):
     }
   } else if( tstyle=="grid" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+      setStride(0); log.printf("  printing final grid only \n");
     }
     if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a grid");
     log.printf("  printing function labelled %s at points on a grid in a PLUMED grid file \n", getPntrToArgument(0)->getName().c_str() );
   } else if( tstyle=="cube" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+      setStride(0); log.printf("  printing final grid only \n");
     }
     if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=3 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a 3D grid");
@@ -327,7 +330,7 @@ Print::Print(const ActionOptions&ao):
     if( getNumberOfArguments()!=1 ) error("when printing a matrix to do a file you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+      setStride(0); log.printf("  printing final matrix only \n");
     }
     log.printf("  printing matrix labelled %s to file \n", getPntrToArgument(0)->getName().c_str() );
   } else if( tstyle=="dot" ) {
@@ -335,7 +338,7 @@ Print::Print(const ActionOptions&ao):
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
     if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("should not print non square matrices to dot file");
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+      setStride(0); log.printf("  printing final matrix only \n");
     }
     log.printf("  printing matrix labelled %s to a dot file \n", getPntrToArgument(0)->getName().c_str() );
     std::string ctol; parse("CONNECTION_TOL",ctol);
@@ -344,7 +347,7 @@ Print::Print(const ActionOptions&ao):
     log.printf("  elements in graph are shown connected if matrix element is greater than %f \n", dot_connection_cutoff );
   } else if( tstyle=="pdb" ) {
     if( getStride()==0 ) {
-      setStride(10000); printAtEnd=true; log.printf("  printing pdb at end of calculation \n");
+      setStride(0); log.printf("  printing pdb at end of calculation \n");
     }
     parse("DESCRIPTION",description); log.printf("  printing configurations to a pdb file \n");
     if( getNumberOfArguments()==0 ) {
@@ -435,7 +438,7 @@ void Print::update() {
     }
     if( dontprint ) return;  // If everything is an average don't print on first step
   }
-  if( printAtEnd ) return ;
+  plumed_assert( getStride()>0 );
 
   if( !timeseries && tstyle=="colvar" ) {
     ofile.fmtField(" %f");
@@ -630,7 +633,7 @@ void Print::update() {
     // Now print connections
     unsigned nrows = gval->getShape()[0], ncols = gval->getShape()[1];
     for(unsigned i=0; i<nrows; ++i) {
-       for(unsigned j=0; j<ncols; ++j) ogfile.printf( fmt.c_str(), gval->get( i*nrows + j ) );
+       for(unsigned j=0; j<ncols; ++j) ogfile.printf( fmt.c_str(), gval->get( i*ncols + j ) );
        ogfile.printf("\n");
     }
     ogfile.close();
@@ -706,9 +709,7 @@ void Print::update() {
     } else {
        std::vector<unsigned> argnums, posnums;
        for(unsigned k=0;k<getNumberOfArguments();++k) {
-           AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(k)->getPntrToAction() );
-           if( !ab ) argnums.push_back( k ); 
-           else if( getPntrToArgument(k)->getName().find(".pos")!=std::string::npos ) {
+           if( getPntrToArgument(k)->getName().find(".pos")!=std::string::npos ) {
                 if( posnums.size()%3==0 && getPntrToArgument(k)->getName().find(".posx-")==std::string::npos ) error("x coordinate of input positions in wrong place");
                 if( posnums.size()%3==1 && getPntrToArgument(k)->getName().find(".posy-")==std::string::npos ) error("y coordinate of input positions in wrong place");
                 if( posnums.size()%3==2 && getPntrToArgument(k)->getName().find(".posz-")==std::string::npos ) error("z coordinate of input positions in wrong place");
@@ -742,8 +743,9 @@ void Print::update() {
 }
 
 void Print::runFinalJobs() {
-  if( !printAtEnd ) return ;
-  printAtEnd=false; retrieveAtoms(); update();
+  if( getStride()>0 ) return ;
+  // Stride is set to one here otherwise update crashes
+  setStride(1); retrieveAtoms(); update();
 }
 
 void Print::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const {

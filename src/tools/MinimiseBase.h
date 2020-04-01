@@ -83,15 +83,15 @@ private:
   FCLASS* myclass_func;
 protected:
 /// This calculates the derivatives at a point
-  double calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc );
+  double calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) const ;
 public:
   explicit MinimiseBase( FCLASS* funcc ) : myclass_func(funcc) {}
 /// This is the line minimiser
-  double linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc );
+  double linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) const ;
 };
 
 template <class FCLASS>
-double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) {
+double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) const {
   // Construct the object that turns points on a line into vectors
   F1dim<FCLASS> f1dim( p, dir, myclass_func, NULL, myfunc );
 
@@ -107,7 +107,7 @@ double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vecto
 }
 
 template <class FCLASS>
-double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) {
+double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) const {
   return (myclass_func->*myfunc)( p, der );
 }
 

@@ -93,8 +93,10 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   // Input for collection of weights for WHAM
   std::string bias; parse("BIAS",bias); 
   std::string stride; parse("STRIDE",stride); 
-  // Input for COLLECT_REPLICAS
-  readInputLine( getShortcutLabel() + "_collect: COLLECT_REPLICAS LOGWEIGHTS=" + bias + " STRIDE=" + stride);
+  // Input for GATHER_REPLICAS
+  readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
+  // Input for COLLECT_FRAMES
+  readInputLine( getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_gather.* STRIDE=" + stride);
   // Input for WHAM
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + ": WHAM ARG=" + getShortcutLabel() + "_collect.logweights " + tempstr );

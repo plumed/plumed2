@@ -133,7 +133,7 @@ void Value::alwaysStoreValues() {
 }
 
 void Value::makeTimeSeries() {
-  plumed_assert( shape.size()<=1 ); istimeseries=true;
+  istimeseries=true;
   unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
 }
 
@@ -309,6 +309,11 @@ double Value::get(const unsigned& ival) const {
 double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
   plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
   return data[n*(1+action->getNumberOfDerivatives()) + 1 + j] / norm;
+}
+
+void Value::setGridDerivative(const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
+  data[n*(1+action->getNumberOfDerivatives()) + 1 + j] = val;
 }
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {

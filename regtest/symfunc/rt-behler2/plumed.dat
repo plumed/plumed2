@@ -7,7 +7,7 @@ cmat_oo: CONTACT_MATRIX GROUP=1,4 SWITCH={TANH3 R_0=10.0} COMPONENTS
 beh_oo: GSYMFUNC_TWOBODY WEIGHT=cmat_oo.w VECTORS1=cmat_oo.x VECTORS2=cmat_oo.y VECTORS3=cmat_oo.z FUNCTION1={FUNC=exp(-0.01*x*x) LABEL=g2}
 
 cmat_oh: CONTACT_MATRIX GROUPA=1,4 GROUPB=2,3,5,6 SWITCH={TANH3 R_0=10.0} COMPONENTS
-beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w VECTORS1=cmat_oh.x VECTORS2=cmat_oh.y VECTORS3=cmat_oh.z FUNCTION1={TYPE=g4 LABEL=g4 LAMBDA=1 NU=0.001 ZETA=1} SWITCH={TANH3 R_0=10.0}
+beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w VECTORS1=cmat_oh.x VECTORS2=cmat_oh.y VECTORS3=cmat_oh.z FUNCTION1={FUNC=((tanh(1-sqrt(rjk)/10))^3)*exp(-0.001*(rij+rik+rjk))*(1+cos(ajik)) LABEL=g4} 
 
 PRINT ARG1=beh_hh.g2 ATOMS=2,3,5,6 FMT=%8.4f FILE=gfunc_h.xyz
 PRINT ARG1=beh_oo.g2 ARG2=beh_oh.g4 ATOMS=1,4 FMT=%8.4f FILE=gfunc_o.xyz

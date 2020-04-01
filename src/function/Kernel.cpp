@@ -101,6 +101,22 @@ Kernel::Kernel(const ActionOptions&ao):
       std::string input = "KERNEL TYPE=" + ktype + " WEIGHT=" + weight_str;
       if( allone ) { 
           input += " ARG=" + names[0]; for(unsigned i=1;i<names.size();++i) input += "," + names[i]; 
+      } else if( sig.length()>0 && !norm ) {
+          // Fast version of diagonal Gaussian
+          std::vector<std::string> sigma=Tools::getWords(sig,"\t\n ,");
+          std::vector<std::string> centers=Tools::getWords(center,"\t\n ,");
+          std::string func_args = "", func = "v1*v1", fnames=" VAR=v1"; 
+          for(unsigned i=1;i<names.size();++i) { std::string num; Tools::convert( i+1, num ); fnames += ",v" + num; func += "+v" + num + "*v" + num; }
+          for(unsigned i=0;i<names.size();++i) {
+              double nsig; Tools::convert( sigma[i], nsig ); std::string coeff; Tools::convert( 1/nsig, coeff );
+              readInputLine( getShortcutLabel() + "_scaled_" + names[i] + ": COMBINE PERIODIC=NO ARG1=" + names[i] + " COEFFICIENTS=" + coeff + " PARAMETERS=" + centers[i] );
+              std::string num; Tools::convert( i+1, num ); func_args += " ARG" + num + "=" + getShortcutLabel() + "_scaled_" + names[i]; 
+          }
+          readInputLine( getShortcutLabel() + "_r2: CUSTOM PERIODIC=NO FUNC=(" + func + ")" + fnames + " " + func_args );
+          if( ktype=="gaussian" ) readInputLine( getShortcutLabel() + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG1=" +  getShortcutLabel() + "_r2" );
+          else if( ktype=="triangular" ) readInputLine( getShortcutLabel() + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG1=" + getShortcutLabel() + "_r2" );
+          else readInputLine( getShortcutLabel() + ": CUSTOM PERIODIC=NO FUNC=" + ktype + " ARG1=" + getShortcutLabel() + "_r2" );
+          checkRead(); return; 
       } else input += " ARG=" + argstr2; 
       if( norm ) input += " NORMALIZED";
       if( fname.length()>0 ) { 

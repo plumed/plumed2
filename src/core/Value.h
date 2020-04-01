@@ -153,6 +153,8 @@ public:
   double getDerivative(const unsigned n) const;
 /// get the derivative of a grid at a point n with resepct to argument j
   double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
+/// Set the grid derivative
+  void setGridDerivative(const unsigned& n, const unsigned& j, const double& val );
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
@@ -217,6 +219,10 @@ public:
   void setSymmetric( const bool& sym );
 ///
   bool isSymmetric() const ;
+///
+  bool dataAlwaysStored() const ;
+///
+  bool storingData() const ;
 };
 
 inline
@@ -389,6 +395,16 @@ double Value::getMaxMinusMin()const {
 inline
 bool Value::isTimeSeries() const {
   return istimeseries;
+}
+
+inline
+bool Value::dataAlwaysStored() const {
+  return alwaysstore;
+}
+
+inline
+bool Value::storingData() const {
+  return storedata;
 }
 
 }

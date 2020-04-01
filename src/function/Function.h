@@ -65,6 +65,7 @@ public:
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   virtual void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply() override;
