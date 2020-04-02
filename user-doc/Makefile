@@ -26,5 +26,8 @@ endif
 spelling:
 	./go-spelling
 
+showerrors:
+	./report_errors
+
 clean:
 	rm -fr example-check html latex automatic *~ *PP.txt *PP.md errors manual.pdf regtests
