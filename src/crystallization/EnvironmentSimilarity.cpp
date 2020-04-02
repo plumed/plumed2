@@ -19,6 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+/* ----------------------------------------------------------------------
+   Contributing author: Pablo Piaggi (Princeton University)
+------------------------------------------------------------------------- */
+
 #include "multicolvar/MultiColvarBase.h"
 #include "multicolvar/AtomValuePack.h"
 #include "core/ActionRegister.h"
@@ -44,6 +49,7 @@ namespace multicolvar {
 
 class EnvironmentSimilarity : public MultiColvarBase {
 private:
+  // All global variables end with underscore
   // square of cutoff, square of broadening parameter
   double rcut2_, sigmaSqr_;
   // lambda parameter for softmax function
@@ -59,6 +65,11 @@ public:
   bool isPeriodic() { return false; }
 // Calculates maximum distance in an environment
   double maxDistance(std::vector<Vector>& environment);
+  // Parse everything connected to the definition of the reference environments
+  // First argument is the array of Vectors that stores the reference environments
+  // Second argument is the maximum distance in the ref environments and sets the
+  // cutoff for the cell lists
+  void parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments, double& max_dist);
 };
 
 PLUMED_REGISTER_ACTION(EnvironmentSimilarity,"ENVIRONMENTSIMILARITY")
@@ -83,147 +94,18 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
-  std::vector<double> lattice_constants;
-  parseVector("LATTICE_CONSTANTS", lattice_constants);
-  std::string crystal_structure;
-  parse("CRYSTAL_STRUCTURE", crystal_structure);
-  // find crystal structure
-  double max_dist_ref_vector=0;
-  if (crystal_structure == "FCC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
-    environments_.resize(1);
-    environments_[0].resize(12);
-    environments_[0][0]  = Vector(+0.5,+0.5,+0.0)*lattice_constants[0];
-    environments_[0][1]  = Vector(-0.5,-0.5,+0.0)*lattice_constants[0];
-    environments_[0][2]  = Vector(+0.5,-0.5,+0.0)*lattice_constants[0];
-    environments_[0][3]  = Vector(-0.5,+0.5,+0.0)*lattice_constants[0];
-    environments_[0][4]  = Vector(+0.5,+0.0,+0.5)*lattice_constants[0];
-    environments_[0][5]  = Vector(-0.5,+0.0,-0.5)*lattice_constants[0];
-    environments_[0][6]  = Vector(-0.5,+0.0,+0.5)*lattice_constants[0];
-    environments_[0][7]  = Vector(+0.5,+0.0,-0.5)*lattice_constants[0];
-    environments_[0][8]  = Vector(+0.0,+0.5,+0.5)*lattice_constants[0];
-    environments_[0][9]  = Vector(+0.0,-0.5,-0.5)*lattice_constants[0];
-    environments_[0][10] = Vector(+0.0,-0.5,+0.5)*lattice_constants[0];
-    environments_[0][11] = Vector(+0.0,+0.5,-0.5)*lattice_constants[0];
-    max_dist_ref_vector = std::sqrt(2)*lattice_constants[0]/2.;
-  } else if (crystal_structure == "SC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for SC");
-    environments_.resize(1);
-    environments_[0].resize(6);
-    environments_[0][0]  = Vector(+1.0,+0.0,+0.0)*lattice_constants[0];
-    environments_[0][1]  = Vector(-1.0,+0.0,+0.0)*lattice_constants[0];
-    environments_[0][2]  = Vector(+0.0,+1.0,+0.0)*lattice_constants[0];
-    environments_[0][3]  = Vector(+0.0,-1.0,+0.0)*lattice_constants[0];
-    environments_[0][4]  = Vector(+0.0,+0.0,+1.0)*lattice_constants[0];
-    environments_[0][5]  = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
-    max_dist_ref_vector = lattice_constants[0];
-  } else if (crystal_structure == "BCC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
-    environments_.resize(1);
-    environments_[0].resize(14);
-    environments_[0][0]  = Vector(+0.5,+0.5,+0.5)*lattice_constants[0];
-    environments_[0][1]  = Vector(-0.5,-0.5,-0.5)*lattice_constants[0];
-    environments_[0][2]  = Vector(-0.5,+0.5,+0.5)*lattice_constants[0];
-    environments_[0][3]  = Vector(+0.5,-0.5,+0.5)*lattice_constants[0];
-    environments_[0][4]  = Vector(+0.5,+0.5,-0.5)*lattice_constants[0];
-    environments_[0][5]  = Vector(-0.5,-0.5,+0.5)*lattice_constants[0];
-    environments_[0][6]  = Vector(+0.5,-0.5,-0.5)*lattice_constants[0];
-    environments_[0][7]  = Vector(-0.5,+0.5,-0.5)*lattice_constants[0];
-    environments_[0][8]  = Vector(+1.0,+0.0,+0.0)*lattice_constants[0];
-    environments_[0][9]  = Vector(+0.0,+1.0,+0.0)*lattice_constants[0];
-    environments_[0][10] = Vector(+0.0,+0.0,+1.0)*lattice_constants[0];
-    environments_[0][11] = Vector(-1.0,+0.0,+0.0)*lattice_constants[0];
-    environments_[0][12] = Vector(+0.0,-1.0,+0.0)*lattice_constants[0];
-    environments_[0][13] = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
-    max_dist_ref_vector = lattice_constants[0];
-  } else if (crystal_structure == "HCP") {
-    if (lattice_constants.size() != 2) error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
-    environments_.resize(2);
-    environments_[0].resize(12);
-    environments_[1].resize(12);
-    double sqrt3=std::sqrt(3);
-    environments_[0][0]  = Vector(+0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[0][1]  = Vector(-0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[0][2]  = Vector(+0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[0][3]  = Vector(-0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[0][4]  = Vector(+1.0,+0.0,+0.0)      *lattice_constants[0];
-    environments_[0][5]  = Vector(-1.0,+0.0,+0.0)      *lattice_constants[0];
-    environments_[0][6]  = Vector(+0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[0][7]  = Vector(-0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[0][8]  = Vector(+0.0,-sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[0][9]  = Vector(+0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    environments_[0][10] = Vector(-0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    environments_[0][11] = Vector(+0.0,-sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    environments_[1][0]  = Vector(+0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[1][1]  = Vector(-0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[1][2]  = Vector(+0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[1][3]  = Vector(-0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
-    environments_[1][4]  = Vector(+1.0,+0.0,+0.0)      *lattice_constants[0];
-    environments_[1][5]  = Vector(-1.0,+0.0,+0.0)      *lattice_constants[0];
-    environments_[1][6]  = Vector(+0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[1][7]  = Vector(-0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[1][8]  = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
-    environments_[1][9]  = Vector(+0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    environments_[1][10] = Vector(-0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    environments_[1][11] = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
-    max_dist_ref_vector = lattice_constants[0];
- } else if (crystal_structure == "DIAMOND") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
-    environments_.resize(2);
-    environments_[0].resize(4); environments_[1].resize(4);
-    environments_[0][0]  = Vector(+1.0,+1.0,+1.0)*lattice_constants[0]/4.0;
-    environments_[0][1]  = Vector(-1.0,-1.0,+1.0)*lattice_constants[0]/4.0;
-    environments_[0][2]  = Vector(+1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
-    environments_[0][3]  = Vector(-1.0,+1.0,-1.0)*lattice_constants[0]/4.0;
-    environments_[1][0]  = Vector(+1.0,-1.0,+1.0)*lattice_constants[0]/4.0;
-    environments_[1][1]  = Vector(-1.0,+1.0,+1.0)*lattice_constants[0]/4.0;
-    environments_[1][2]  = Vector(+1.0,+1.0,-1.0)*lattice_constants[0]/4.0;
-    environments_[1][3]  = Vector(-1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
-    max_dist_ref_vector = std::sqrt(3)*lattice_constants[0]/4.0;
- } else if (crystal_structure == "CUSTOM") {
-    std::string reffile;
-    parse("REFERENCE",reffile);
-    if (reffile.empty()) {
-      // Case with one reference environment
-      environments_.resize(1);
-      PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
-      unsigned natoms=pdb.getPositions().size(); environments_[0].resize( natoms );
-      for(unsigned i=0;i<natoms;++i) environments_[0][i]=pdb.getPositions()[i];
-      max_dist_ref_vector=maxDistance(environments_[0]);
-      log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
-    } else {
-      // Case with several reference environments
-      max_dist_ref_vector=0;
-      for(unsigned int i=1;; i++) {
-        if(!parseNumbered("REFERENCE",i,reffile) ) {break;}
-        PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
-        unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
-        for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
-        environments_.push_back(environment);
-        double norm = maxDistance(environment);
-        if (norm>max_dist_ref_vector) max_dist_ref_vector=norm;
-        log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
-      }
-    }
-    log.printf("  Number of reference environments is %d\n",environments_.size() );
-    log.printf("  Number of vectors per reference environment is %d\n",environments_[0].size() );
-  } else {
-    error("CRYSTAL_STRUCTURE=" + crystal_structure + " does not match any structures in the database");
-  }
-
-  log.printf("  targeting the %s crystal structure",crystal_structure.c_str());
-  if (lattice_constants.size()>0) log.printf(" with lattice constants %f\n",lattice_constants[0]);
-  else log.printf("\n");
+  // Parse everything connected to the definition of the reference environments
+  double max_dist_ref_vector;
+  parseReferenceEnvironments(environments_, max_dist_ref_vector);
 
   double sigma;
   parse("SIGMA", sigma);
   log.printf("  representing local density as a sum of Gaussians with standard deviation %f\n",sigma);
   sigmaSqr_=sigma*sigma;
-  log.printf("  maximum distance in the reference environment is %f\n",max_dist_ref_vector);
 
   lambda_=100;
   parse("LAMBDA", lambda_);
-  if (environments_.size()>1) log.printf("  using a lambda value of %f\n",lambda_);
+  if (environments_.size()>1) log.printf("  using a soft max function with lambda %f\n",lambda_);
 
   // Set the link cell cutoff
   double rcut = max_dist_ref_vector + 3*sigma;
@@ -303,7 +185,6 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
   }
 }
 
-
 double EnvironmentSimilarity::maxDistance( std::vector<Vector>& environment ) {
   double max_dist = 0.0;
   for(unsigned int i=1;environment.size(); i++) {
@@ -311,6 +192,141 @@ double EnvironmentSimilarity::maxDistance( std::vector<Vector>& environment ) {
     if (norm>max_dist) max_dist=norm;
   }
   return max_dist;
+}
+
+void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments, double& max_dist) {
+  std::vector<double> lattice_constants;
+  parseVector("LATTICE_CONSTANTS", lattice_constants);
+  std::string crystal_structure;
+  parse("CRYSTAL_STRUCTURE", crystal_structure);
+  // find crystal structure
+  if (crystal_structure == "FCC") {
+    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
+    environments.resize(1);
+    environments[0].resize(12);
+    environments[0][0]  = Vector(+0.5,+0.5,+0.0)*lattice_constants[0];
+    environments[0][1]  = Vector(-0.5,-0.5,+0.0)*lattice_constants[0];
+    environments[0][2]  = Vector(+0.5,-0.5,+0.0)*lattice_constants[0];
+    environments[0][3]  = Vector(-0.5,+0.5,+0.0)*lattice_constants[0];
+    environments[0][4]  = Vector(+0.5,+0.0,+0.5)*lattice_constants[0];
+    environments[0][5]  = Vector(-0.5,+0.0,-0.5)*lattice_constants[0];
+    environments[0][6]  = Vector(-0.5,+0.0,+0.5)*lattice_constants[0];
+    environments[0][7]  = Vector(+0.5,+0.0,-0.5)*lattice_constants[0];
+    environments[0][8]  = Vector(+0.0,+0.5,+0.5)*lattice_constants[0];
+    environments[0][9]  = Vector(+0.0,-0.5,-0.5)*lattice_constants[0];
+    environments[0][10] = Vector(+0.0,-0.5,+0.5)*lattice_constants[0];
+    environments[0][11] = Vector(+0.0,+0.5,-0.5)*lattice_constants[0];
+    max_dist = std::sqrt(2)*lattice_constants[0]/2.;
+  } else if (crystal_structure == "SC") {
+    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for SC");
+    environments.resize(1);
+    environments[0].resize(6);
+    environments[0][0]  = Vector(+1.0,+0.0,+0.0)*lattice_constants[0];
+    environments[0][1]  = Vector(-1.0,+0.0,+0.0)*lattice_constants[0];
+    environments[0][2]  = Vector(+0.0,+1.0,+0.0)*lattice_constants[0];
+    environments[0][3]  = Vector(+0.0,-1.0,+0.0)*lattice_constants[0];
+    environments[0][4]  = Vector(+0.0,+0.0,+1.0)*lattice_constants[0];
+    environments[0][5]  = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
+    max_dist = lattice_constants[0];
+  } else if (crystal_structure == "BCC") {
+    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
+    environments.resize(1);
+    environments[0].resize(14);
+    environments[0][0]  = Vector(+0.5,+0.5,+0.5)*lattice_constants[0];
+    environments[0][1]  = Vector(-0.5,-0.5,-0.5)*lattice_constants[0];
+    environments[0][2]  = Vector(-0.5,+0.5,+0.5)*lattice_constants[0];
+    environments[0][3]  = Vector(+0.5,-0.5,+0.5)*lattice_constants[0];
+    environments[0][4]  = Vector(+0.5,+0.5,-0.5)*lattice_constants[0];
+    environments[0][5]  = Vector(-0.5,-0.5,+0.5)*lattice_constants[0];
+    environments[0][6]  = Vector(+0.5,-0.5,-0.5)*lattice_constants[0];
+    environments[0][7]  = Vector(-0.5,+0.5,-0.5)*lattice_constants[0];
+    environments[0][8]  = Vector(+1.0,+0.0,+0.0)*lattice_constants[0];
+    environments[0][9]  = Vector(+0.0,+1.0,+0.0)*lattice_constants[0];
+    environments[0][10] = Vector(+0.0,+0.0,+1.0)*lattice_constants[0];
+    environments[0][11] = Vector(-1.0,+0.0,+0.0)*lattice_constants[0];
+    environments[0][12] = Vector(+0.0,-1.0,+0.0)*lattice_constants[0];
+    environments[0][13] = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
+    max_dist = lattice_constants[0];
+  } else if (crystal_structure == "HCP") {
+    if (lattice_constants.size() != 2) error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
+    environments.resize(2);
+    environments[0].resize(12);
+    environments[1].resize(12);
+    double sqrt3=std::sqrt(3);
+    environments[0][0]  = Vector(+0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[0][1]  = Vector(-0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[0][2]  = Vector(+0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[0][3]  = Vector(-0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[0][4]  = Vector(+1.0,+0.0,+0.0)      *lattice_constants[0];
+    environments[0][5]  = Vector(-1.0,+0.0,+0.0)      *lattice_constants[0];
+    environments[0][6]  = Vector(+0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[0][7]  = Vector(-0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[0][8]  = Vector(+0.0,-sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[0][9]  = Vector(+0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    environments[0][10] = Vector(-0.5,+sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    environments[0][11] = Vector(+0.0,-sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    environments[1][0]  = Vector(+0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[1][1]  = Vector(-0.5,+sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[1][2]  = Vector(+0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[1][3]  = Vector(-0.5,-sqrt3/2.0,+0.0)*lattice_constants[0];
+    environments[1][4]  = Vector(+1.0,+0.0,+0.0)      *lattice_constants[0];
+    environments[1][5]  = Vector(-1.0,+0.0,+0.0)      *lattice_constants[0];
+    environments[1][6]  = Vector(+0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[1][7]  = Vector(-0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[1][8]  = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,+0.5)*lattice_constants[1];
+    environments[1][9]  = Vector(+0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    environments[1][10] = Vector(-0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    environments[1][11] = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
+    max_dist = lattice_constants[0];
+ } else if (crystal_structure == "DIAMOND") {
+    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
+    environments.resize(2);
+    environments[0].resize(4); environments[1].resize(4);
+    environments[0][0]  = Vector(+1.0,+1.0,+1.0)*lattice_constants[0]/4.0;
+    environments[0][1]  = Vector(-1.0,-1.0,+1.0)*lattice_constants[0]/4.0;
+    environments[0][2]  = Vector(+1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
+    environments[0][3]  = Vector(-1.0,+1.0,-1.0)*lattice_constants[0]/4.0;
+    environments[1][0]  = Vector(+1.0,-1.0,+1.0)*lattice_constants[0]/4.0;
+    environments[1][1]  = Vector(-1.0,+1.0,+1.0)*lattice_constants[0]/4.0;
+    environments[1][2]  = Vector(+1.0,+1.0,-1.0)*lattice_constants[0]/4.0;
+    environments[1][3]  = Vector(-1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
+    max_dist = std::sqrt(3)*lattice_constants[0]/4.0;
+ } else if (crystal_structure == "CUSTOM") {
+    std::string reffile;
+    parse("REFERENCE",reffile);
+    if (reffile.empty()) {
+      // Case with one reference environment
+      environments.resize(1);
+      PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+      unsigned natoms=pdb.getPositions().size(); environments[0].resize( natoms );
+      for(unsigned i=0;i<natoms;++i) environments[0][i]=pdb.getPositions()[i];
+      max_dist=maxDistance(environments[0]);
+      log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
+    } else {
+      // Case with several reference environments
+      max_dist=0;
+      for(unsigned int i=1;; i++) {
+        if(!parseNumbered("REFERENCE",i,reffile) ) {break;}
+        PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+        unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
+        for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
+        environments.push_back(environment);
+        double norm = maxDistance(environment);
+        if (norm>max_dist) max_dist=norm;
+        log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
+      }
+    }
+    log.printf("  Number of reference environments is %d\n",environments.size() );
+    log.printf("  Number of vectors per reference environment is %d\n",environments[0].size() );
+  } else {
+    error("CRYSTAL_STRUCTURE=" + crystal_structure + " does not match any structures in the database");
+  }
+
+  log.printf("  targeting the %s crystal structure",crystal_structure.c_str());
+  if (lattice_constants.size()>0) log.printf(" with lattice constants %f\n",lattice_constants[0]);
+  else log.printf("\n");
+
+  log.printf("  maximum distance in the reference environment is %f\n",max_dist);
 }
 
 }
