@@ -89,3 +89,5 @@ elif [ "$GIT_OWNER" = plumed ] ; then
     -X POST -d "{\"body\":\"$EXGEN_RESULTS\"}" \
     https://api.github.com/repos/plumed/plumed2/issues/$TRAVIS_PULL_REQUEST/comments
 fi
+
+exit 0
