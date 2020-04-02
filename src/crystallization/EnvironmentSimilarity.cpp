@@ -182,7 +182,8 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
     max_dist_ref_vector = std::sqrt(3)*lattice_constants[0]/4.0;
  } else if (crystal_structure == "CUSTOM") {
     std::string reffile;
-    if (parse("REFERENCE",reffile)) {
+    parse("REFERENCE",reffile);
+    if (reffile.empty()) {
       // Case with one reference environment
       environments_.resize(1);
       PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
@@ -199,7 +200,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
         unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
         for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
         environments_.push_back(environment);
-        double norm = maxDistance(environment)
+        double norm = maxDistance(environment);
         if (norm>max_dist_ref_vector) max_dist_ref_vector=norm;
         log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
       }
@@ -300,18 +301,17 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
     }
     return std::log(sum)/lambda_;
   }
-
-
-
-  double EnvironmentSimilarity::maxDistance(std::vector<Vector>& environment) {
-    max_dist = 0.0;
-    for(unsigned int i=1;environment.size(); i++) {
-      double norm=environment[i].modulo();
-      if (norm>max_dist) max_dist=norm;
-    }
-    return max_dist;
-  }
-
 }
+
+
+double EnvironmentSimilarity::maxDistance( std::vector<Vector>& environment ) {
+  double max_dist = 0.0;
+  for(unsigned int i=1;environment.size(); i++) {
+    double norm=environment[i].modulo();
+    if (norm>max_dist) max_dist=norm;
+  }
+  return max_dist;
+}
+
 }
 }
