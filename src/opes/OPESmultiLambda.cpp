@@ -31,24 +31,21 @@ namespace opes {
 
 //+PLUMEDOC BIAS OPES_MULTILAMBDA
 /*
-Target distribution is a sum of probabilities with Hamiltonians:
+Run a system with potential energy U_0, and consider another one with energy U_1.
+The required CV is \f$ s=\Delta U=U_1-U_0 \f$.
+Thus the target:
 \f[
-  H = H_0 + \lambda H_1
-\f]
-and normalization estimated on the fly, as free energy differences.
-Thus:
-\f[
-  p^t(s)=P(s)\frac{1}{N}\sum_i e^{\beta(\lambda_i H_1+\Delta F_i)}
+  p^{tg}(s)=P(s)\frac{1}{N}\sum_i e^{\beta(-\lambda_i s+\Delta F_i)}
 \f]
 
 \par Examples
 
 OPES_MULTILAMBDA ...
   LABEL=test
-  ARG=field #for thermodynamic integration: H_1=H_unknown-H_known
+  ARG=field #DeltaU=U_1-U_0
   PACE=50
   TEMP=300
-  LAMBDA=0 #for thermodynamic integration: 0 is known system, 1 is the unknown one
+  LAMBDA=0 #running the system with U_0
   MIN_LAMBDA=0
   MAX_LAMBDA=1
 ... OPES_MULTILAMBDA
@@ -517,22 +514,22 @@ void OPESmultiLambda::init_from_obs()
 }
 
 unsigned OPESmultiLambda::estimate_steps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string msg) const
-{
+{ //uses Neff to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {
     log.printf(" +++ WARNING +++ MIN_%s and MAX_%s are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
-  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs) //HWHM = half width at half maximum. neff is in general not symmetric
+  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const double delta,const std::vector<double> obs)
+    auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
     {
       double sum_w=0;
       double sum_w2=0;
       for(unsigned t=0; t<obs.size(); t++)
       {
-        const double w=std::exp(-delta*obs[t]);
+        const double w=std::exp(-delta*(obs[t]-av_obs));
         sum_w+=w;
         sum_w2+=w*w;
       }
@@ -544,7 +541,7 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
     double a=0; //default is right side case
     double func_a=0.5;
     double b=side;
-    double func_b=func(side,obs);
+    double func_b=func(side,obs,av_obs);
     if(func_b>=0)
       return 0.0; //no zero is present!
     if(b<0)//left side case
@@ -567,7 +564,7 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
         func_b=func_c;
       }
       c=(a*func_b-b*func_a)/(func_b-func_a);
-      func_c=func(c,obs);//func is evaluated only here, it might be expensive
+      func_c=func(c,obs,av_obs);//func is evaluated only here, it might be expensive
     }
     return std::abs(c);
   };
@@ -581,10 +578,10 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
 //estimation
   double left_HWHM=0;
   if(left_side!=0)
-    left_HWHM=get_neff_HWHM(left_side,obs);
+    left_HWHM=get_neff_HWHM(left_side,obs,av_obs);
   double right_HWHM=0;
   if(right_side!=0)
-    right_HWHM=get_neff_HWHM(right_side,obs);
+    right_HWHM=get_neff_HWHM(right_side,obs,av_obs);
   if(left_HWHM==0)
   {
     right_HWHM*=2;
