@@ -40,7 +40,7 @@ using namespace std;
 namespace PLMD {
 namespace multicolvar {
 
-//+PLUMEDOC MCOLVAR REFCV
+//+PLUMEDOC MCOLVAR ENVIRONMENTSIMILARITY
 /*
 
 */
@@ -64,7 +64,7 @@ public:
 // Returns the number of coordinates of the field
   bool isPeriodic() { return false; }
 // Calculates maximum distance in an environment
-  double maxDistance(std::vector<Vector>& environment);
+  double maxDistance(std::vector<Vector> environment);
   // Parse everything connected to the definition of the reference environments
   // First argument is the array of Vectors that stores the reference environments
   // Second argument is the maximum distance in the ref environments and sets the
@@ -185,9 +185,9 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
   }
 }
 
-double EnvironmentSimilarity::maxDistance( std::vector<Vector>& environment ) {
+double EnvironmentSimilarity::maxDistance( std::vector<Vector> environment ) {
   double max_dist = 0.0;
-  for(unsigned int i=1;environment.size(); i++) {
+  for(unsigned i=0;i<environment.size(); ++i) {
     double norm=environment[i].modulo();
     if (norm>max_dist) max_dist=norm;
   }
@@ -294,7 +294,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
  } else if (crystal_structure == "CUSTOM") {
     std::string reffile;
     parse("REFERENCE",reffile);
-    if (reffile.empty()) {
+    if (!reffile.empty()) {
       // Case with one reference environment
       environments.resize(1);
       PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
@@ -306,7 +306,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       // Case with several reference environments
       max_dist=0;
       for(unsigned int i=1;; i++) {
-        if(!parseNumbered("REFERENCE",i,reffile) ) {break;}
+        if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
         PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
         unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
         for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
@@ -316,6 +316,8 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
         log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
       }
     }
+    if (environments.size()==0) error("No environments have been found! Please specify a PDB file in the REFERENCE "
+                                      "or in the REFERENCE_1, REFERENCE_2, etc keywords");
     log.printf("  Number of reference environments is %d\n",environments.size() );
     log.printf("  Number of vectors per reference environment is %d\n",environments[0].size() );
   } else {
