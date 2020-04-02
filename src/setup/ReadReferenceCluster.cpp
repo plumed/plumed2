@@ -26,6 +26,7 @@
 namespace PLMD {
 namespace setup {
 
+PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_VECTOR")
 PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_CLUSTER")
 
 void ReadReferenceCluster::registerKeywords( Keywords& keys ) {
@@ -56,24 +57,26 @@ SetupReferenceBase(ao)
           shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
       }
       log.printf("  read in center of cluster in space of dimension %d \n", shape[0] );
-      addComponent( "center", shape ); componentIsNotPeriodic("center"); getPntrToComponent(0)->buildDataStore( getLabel() );
-      if( center.size()!=shape[0] ) error("size of center does not match number of arguments");
-      for(unsigned i=0;i<shape[0];++i) getPntrToComponent(0)->set( i, center[i] );
-      // Read in the covariance
-      std::vector<double> sigma; parseVector("SIGMA",sigma);
-      if( sigma.size()==shape[0] ) {
-          addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-          for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, sigma[i]*sigma[i] );
-      } else if( sigma.size()==0 ) {
-          std::vector<double> covar; parseVector("COVAR",covar); 
-          if( covar.size()==shape[0] ) {
+      if( getName()=="READ_VECTOR" ) {
+          addValue( shape ); setNotPeriodic(); setCenterFromVector( center );
+      } else { 
+          addComponent( "center", shape ); componentIsNotPeriodic("center"); setCenterFromVector( center );
+          // Read in the covariance
+          std::vector<double> sigma; parseVector("SIGMA",sigma);
+          if( sigma.size()==shape[0] ) {
               addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-              for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, covar[i] );
-          } else if( covar.size()==shape[0]*shape[0] ) {
-              shape.push_back( shape[0] ); addComponent("covariance", shape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-              for(unsigned i=0;i<covar.size();++i) getPntrToComponent(1)->set( i, covar[i] ); 
-          } else error("covariance has the wrong shape");
-      } else error("sigma has the wrong shape");
+              for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, sigma[i]*sigma[i] );
+          } else if( sigma.size()==0 ) {
+              std::vector<double> covar; parseVector("COVAR",covar); 
+              if( covar.size()==shape[0] ) {
+                  addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
+                  for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, covar[i] );
+              } else if( covar.size()==shape[0]*shape[0] ) {
+                  shape.push_back( shape[0] ); addComponent("covariance", shape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->buildDataStore( getLabel() );
+                  for(unsigned i=0;i<covar.size();++i) getPntrToComponent(1)->set( i, covar[i] ); 
+              } else error("covariance has the wrong shape");
+          } else error("sigma has the wrong shape");
+      }
   } else {
       unsigned number; parse("NUMBER",number); std::vector<std::string> names; 
       for(unsigned i=0;i<getNumberOfArguments();++i) {
@@ -114,6 +117,13 @@ SetupReferenceBase(ao)
       }
       std::string slab = getLabel(); readInputLine( slab + ": READ_CLUSTER " + input );
   }
+}
+
+void ReadReferenceCluster::setCenterFromVector( const std::vector<double>& center ) {
+  getPntrToComponent(0)->buildDataStore( getLabel() );
+  std::vector<unsigned> shape( getPntrToComponent(0)->getShape() );
+  if( center.size()!=shape[0] ) error("size of center does not match number of arguments");
+  for(unsigned i=0;i<shape[0];++i) getPntrToComponent(0)->set( i, center[i] );
 }
 
 std::string ReadReferenceCluster::convertFileToLine( const std::string& reference, const unsigned& number, const std::vector<std::string>& names ) {

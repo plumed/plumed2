@@ -164,7 +164,11 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { 
+              if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+              ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(i)->getPntrToAction() );
+              if(as) { timeseries=true; break; }
+          }
       }
       if( timeseries ) {
           std::vector<Value*> myvals;
@@ -175,7 +179,7 @@ Print::Print(const ActionOptions&ao):
           for(unsigned i=0; i<myvals.size();++i) {
               if( myvals[i]->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
           }
-          requestArguments( myvals, false ); 
+          log.printf("  input is printed as time series\n"); requestArguments( myvals, false ); 
       }
   }
   if(file.length()>0) {
