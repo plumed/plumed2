@@ -57,4 +57,35 @@ else
   echo ""
   cat errors
   echo "************************************************"
-fi  
+fi
+
+# Test for existance of errors in example input files
+if [ ! -f example_errors ] ; then
+   exit 0
+fi
+
+echo "************************************************"
+echo "Found errors in examples in documentation"
+echo ""
+cat example_errors
+echo "************************************************"
+
+GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+
+# If not a pull request add a comment on the commit message
+if [ $TRAVIS_PULL_REQUEST=="false" ] ; then
+    if [ "$GIT_OWNER" = plumed ] ; then
+        EXGEN_RESULTS=`cat example_errors`
+        curl -i -H "Authorization: token $GIT_TOKEN" \
+        -H "Content-Type: application/json" \
+        -X POST -d "{\"body\":\"$EXGEN_RESULTS\"}" \
+        https://api.github.com/repos/plumed/plumed2/commits/$TRAVIS_COMMIT/comments
+    fi
+# If it is a pull request comment on the pull request
+elif [ "$GIT_OWNER" = plumed ] ; then
+    EXGEN_RESULTS=`cat example_errors`
+    curl -i -H "Authorization: token $GIT_TOKEN" \
+    -H "Content-Type: application/json" \
+    -X POST -d "{\"body\":\"$EXGEN_RESULTS\"}" \
+    https://api.github.com/repos/plumed/plumed2/issues/$TRAVIS_PULL_REQUEST/comments
+fi
