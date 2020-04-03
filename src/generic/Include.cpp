@@ -67,8 +67,8 @@ INCLUDE FILE=groups.dat
 c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.5
 METAD ARG=c HEIGHT=0.2 PACE=100 SIGMA=0.2 BIASFACTOR=5
 \endplumedfile
-Here `groups.dat` could be a huge file containing group definitions.  This groups.dat file might look something 
-like the following example but with more atom indices in the groups. 
+Here `groups.dat` could be a huge file containing group definitions.  This groups.dat file might look something
+like the following example but with more atom indices in the groups.
 \plumedfile
 #SETTINGS FILENAME=groups.dat
 # this is groups.dat
