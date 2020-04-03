@@ -42,6 +42,110 @@ namespace multicolvar {
 
 //+PLUMEDOC MCOLVAR ENVIRONMENTSIMILARITY
 /*
+Measure how similar the environment around atoms is to that found in some reference crystal structure.
+
+This CV was introduced in this article \cite Piaggi-JCP-2019.
+The starting point for the definition of the CV is the local atomic density around an atom.
+We consider an environment \f$\chi\f$ around this atom and we define the density by
+\f[
+ \rho_{\chi}(\mathbf{r})=\sum\limits_{i\in\chi} \exp\left(- \frac{|\mathbf{r}_i-\mathbf{r}|^2} {2\sigma^2} \right),
+\f]
+where \f$i\f$ runs over the neighbors in the environment \f$\chi\f$, \f$\sigma\f] is a broadening parameter, and \f$\mathbf{r}_i\f$ are the
+coordinates of the neighbors relative to the central atom.
+We now define a reference environment or template \f$\chi_0\f$ that contains \f$n\f$ reference positions \f$\{\mathbf{r}^0_1,...,\mathbf{r}^0_n\}\f$
+that describe, for instance, the nearest neighbors in a given lattice.
+\f$\sigma\f] is set using the SIGMA keyword and \f$\chi_0\f$ is chosen with the CRYSTAL_STRUCTURE keyword.
+If only the SPECIES keyword is given then the atoms defined there will be the central and neighboring atoms.
+If instead the SPECIESA and SPECIESB keywords are given then SPECIESA determines the central atoms and SPECIESB the neighbors.
+
+The environments $\chi$ and $\chi_0$ are compared using the kernel,
+\f[
+ k_{\chi_0}(\chi)= \int d\mathbf{r} \rho_{\chi}(\mathbf{r}) \rho_{\chi_0}(\mathbf{r}) .
+\f]
+Combining the two equations above and performing the integration analytically we obtain,
+\f[
+ k_{\chi_0}(\chi)= \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \pi^{3/2} \sigma^3  \exp\left(- \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right).
+\f]
+The kernel is finally normalized,
+\f[
+ \tilde{k}_{\chi_0}(\chi) & = \frac{k_{\chi_0}(\chi)}{k_{\chi_0}(\chi_0)} \nonumber \\
+ & = \frac{1}{n} \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \exp\left( - \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right),
+\f]
+such that \f$\tilde{k}_{\chi_0}(\chi_0) = 1\f$.
+The above kernel is computed for each atom in the SPECIES or SPECIESA keywords.
+This quantity is a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
+the average value for the atoms in your system, the number of atoms that have an \f$\tilde{k}_{\chi_0}\f$ value that is more that some target and
+so on.
+
+The kernel can be generalized to crystal structures described as a lattice with a basis of more than one atom.
+In this case there is more than one type of environment.
+We consider the case of \f$M\f$ environments \f$X = \chi_1,\chi_2,...,\chi_M\f$ and we define the kernel through a best match strategy:
+\f[
+ \tilde{k}_X(\chi)= \frac{1}{\lambda} \log \left ( \sum\limits_{l=1}^{M}\exp \left (\lambda \: \tilde{k}_{\chi_l}(\chi) \right ) \right ).
+\f]
+For a large enough \f$\lambda\f$ this expression will select the largest \f$\tilde{k}_{\chi_l}(\chi)\f$ with \f$\chi_l \in X\f$.
+This approach can be used, for instance, to target the hexagonal closed packed (HCP keyword) or the diamond structure (DIAMOND keyword).
+
+The CRYSTAL_STRUCTURE keyword can take the values SC (simple cubic), BCC (body centered cubic), FCC (face centered cubic),
+HCP (hexagonal closed pack), DIAMOND (cubic diamond), and CUSTOM (user defined).
+All options follow the same conventions as in the [lattice command](https://lammps.sandia.gov/doc/lattice.html) of [LAMMPS](https://lammps.sandia.gov/).
+
+If the CUSTOM option is used then the reference environments have to be specified by the user.
+The reference environments are specified in pdb files containing the distance vectors from the central atom to the neighbors.
+Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page"
+If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
+If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments of the
+keywords REFERENCE_1, REFERENCE_2, etc.
+
+\par Examples
+
+The following input calculates the ENVIRONMENTSIMILARITY kernel for 250 atoms in the system
+using the BCC atomic environment as target and then calculates and prints the average value
+ for this quantity.
+
+\plumedfile
+ENVIRONMENTSIMILARITY SPECIES=1-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYSTAL_STRUCTURE=BCC MEAN LABEL=es
+
+PRINT ARG=es.* FILE=COLVAR
+\endplumedfile
+
+The next example compares the environments of the 96 selected atoms with a user specified reference
+environment. The reference environment is contained in the env1.pdb file. Once the kernel is computed
+ the average and the number of atoms with a kernel larger than 0.5 are computed.
+
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-288:3
+ SIGMA=0.05
+ CRYSTAL_STRUCTURE=CUSTOM
+ REFERENCE=env1.pdb
+ LABEL=es
+ MEAN
+ MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
+... ENVIRONMENTSIMILARITY
+
+PRINT ARG=es.mean,es.morethan FILE=COLVAR
+\endplumedfile
+
+The next example is simlar to the one above but in this case 4 reference environments are specified.
+ Each reference environment is given in a separate pdb file.
+
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-288:3
+ SIGMA=0.05
+ CRYSTAL_STRUCTURE=CUSTOM
+ REFERENCE_1=env1.pdb
+ REFERENCE_2=env2.pdb
+ REFERENCE_3=env3.pdb
+ REFERENCE_4=env4.pdb
+ LABEL=es
+ MEAN
+ MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
+... ENVIRONMENTSIMILARITY
+
+PRINT ARG=es.mean,es.morethan FILE=COLVAR
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -78,7 +182,14 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","SIGMA","0.1","Broadening parameter");
-  keys.add("compulsory","CRYSTAL_STRUCTURE","FCC","Targeted crystal structure");
+  keys.add("compulsory","CRYSTAL_STRUCTURE","FCC","Targeted crystal structure. Options are: "
+                        "SC: simple cubic, "
+                        "BCC: body center cubic, "
+                        "FCC: face centered cubic, "
+                        "HCP: hexagonal closed pack, "
+                        "DIAMOND: cubic diamond, "
+                        "CUSTOM: user defined "
+                        " ");
   keys.add("optional","LATTICE_CONSTANTS","Lattice constants");
   keys.add("compulsory","LAMBDA","100","Lambda parameter");
   keys.add("optional","REFERENCE","PDB file with relative distances from central atom.");
@@ -94,6 +205,10 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
+  log.printf("  Please read and cite ");
+  log << plumed.cite("Piaggi and Parrinello, J. Chem. Phys. 150 (24), 244119 (2019)");
+  log.printf("\n");
+
   // Parse everything connected to the definition of the reference environments
   double max_dist_ref_vector;
   parseReferenceEnvironments(environments_, max_dist_ref_vector);
