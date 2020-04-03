@@ -63,7 +63,7 @@ where \f$\langle \cdot \rangle_{\xi,V}\f$ is a mean value in the biased ensemble
 Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action \f$ w (\mathbf{R},\mathcal{V}) \f$ together with the weights of \ref REWEIGHT_BIAS (see the examples below).
 
 The bias potential \f$ V(\mathbf{s}) \f$ can be constructed with \ref METAD using \ref ENERGY as a CV \cite mich+04prl.
-More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-arXiv-2019 within \ref VES.
+More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-JCP-2019 within \ref VES.
 In the latter algorithms the interval of temperatures and pressures in which the trajectory can be reweighted is chosen explicitly.
 
 \par Examples
