@@ -89,6 +89,8 @@ This approach can be used, for instance, to target the hexagonal closed packed (
 The CRYSTAL_STRUCTURE keyword can take the values SC (simple cubic), BCC (body centered cubic), FCC (face centered cubic),
 HCP (hexagonal closed pack), DIAMOND (cubic diamond), and CUSTOM (user defined).
 All options follow the same conventions as in the [lattice command](https://lammps.sandia.gov/doc/lattice.html) of [LAMMPS](https://lammps.sandia.gov/).
+If a CRYSTAL_STRUCTURE other than CUSTOM is used, then the lattice constants have to be specified using the keyword LATTICE_CONSTANTS.
+One value has to be specified for SC, BCC, FCC, and DIAMOND and two values have to be set for HCP (a and c lattice constants in that order).
 
 If the CUSTOM option is used then the reference environments have to be specified by the user.
 The reference environments are specified in pdb files containing the distance vectors from the central atom to the neighbors.
@@ -96,6 +98,7 @@ Make sure your PDB file is correctly formatted as explained \ref pdbreader "in t
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
 If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments of the
 keywords REFERENCE_1, REFERENCE_2, etc.
+If you have a reference crystal structure configuration you can use the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the reference environments that you should use.
 
 \par Examples
 
@@ -183,18 +186,18 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","SIGMA","0.1","Broadening parameter");
   keys.add("compulsory","CRYSTAL_STRUCTURE","FCC","Targeted crystal structure. Options are: "
-                        "SC: simple cubic, "
-                        "BCC: body center cubic, "
-                        "FCC: face centered cubic, "
-                        "HCP: hexagonal closed pack, "
-                        "DIAMOND: cubic diamond, "
-                        "CUSTOM: user defined "
-                        " ");
+           "SC: simple cubic, "
+           "BCC: body center cubic, "
+           "FCC: face centered cubic, "
+           "HCP: hexagonal closed pack, "
+           "DIAMOND: cubic diamond, "
+           "CUSTOM: user defined "
+           " ");
   keys.add("optional","LATTICE_CONSTANTS","Lattice constants");
   keys.add("compulsory","LAMBDA","100","Lambda parameter");
   keys.add("optional","REFERENCE","PDB file with relative distances from central atom.");
   keys.add("numbered","REFERENCE_","PDB files with relative distances from central atom."
-		                   "Each file corresponds to one template");
+           "Each file corresponds to one template");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -246,7 +249,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
           Vector distanceFromRef=distance-environments_[0][k];
           double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[0].size() ;
           // CAREFUL! Off-diagonal virial is incorrect. Do not perform NPT simulations with flexible box angles.
-          accumulateSymmetryFunction( 1, i, value, (value/(2*sigmaSqr_))*(-distance+environments_[0][k]) , (value/(2*sigmaSqr_))*Tensor(distance-environments_[0][k],distance) , myatoms );
+          accumulateSymmetryFunction( 1, i, value, (value/(2*sigmaSqr_))*(-distance+environments_[0][k]), (value/(2*sigmaSqr_))*Tensor(distance-environments_[0][k],distance), myatoms );
         }
       }
     }
@@ -274,8 +277,8 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
     }
     double sum=0;
     for(unsigned j=0; j<environments_.size(); ++j) {
-       values[j] = std::exp(lambda_*values[j]);
-       sum += values[j];
+      values[j] = std::exp(lambda_*values[j]);
+      sum += values[j];
     }
     // Second time find derivatives
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
@@ -291,7 +294,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
           for(unsigned k=0; k<environments_[j].size(); ++k) {
             Vector distanceFromRef=distance-environments_[j][k];
             double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[j].size() ;
-            accumulateSymmetryFunction( 1, i, value, -(values[j]/sum)*(value/(2*sigmaSqr_))*distanceFromRef  , (values[j]/sum)*(value/(2*sigmaSqr_))*Tensor(distanceFromRef,distance) , myatoms );
+            accumulateSymmetryFunction( 1, i, value, -(values[j]/sum)*(value/(2*sigmaSqr_))*distanceFromRef, (values[j]/sum)*(value/(2*sigmaSqr_))*Tensor(distanceFromRef,distance), myatoms );
           }
         }
       }
@@ -302,7 +305,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
 
 double EnvironmentSimilarity::maxDistance( std::vector<Vector> environment ) {
   double max_dist = 0.0;
-  for(unsigned i=0;i<environment.size(); ++i) {
+  for(unsigned i=0; i<environment.size(); ++i) {
     double norm=environment[i].modulo();
     if (norm>max_dist) max_dist=norm;
   }
@@ -393,7 +396,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[1][10] = Vector(-0.5,-sqrt3/6.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
     environments[1][11] = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
     max_dist = lattice_constants[0];
- } else if (crystal_structure == "DIAMOND") {
+  } else if (crystal_structure == "DIAMOND") {
     if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
     environments.resize(2);
     environments[0].resize(4); environments[1].resize(4);
@@ -406,7 +409,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[1][2]  = Vector(+1.0,+1.0,-1.0)*lattice_constants[0]/4.0;
     environments[1][3]  = Vector(-1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
     max_dist = std::sqrt(3)*lattice_constants[0]/4.0;
- } else if (crystal_structure == "CUSTOM") {
+  } else if (crystal_structure == "CUSTOM") {
     std::string reffile;
     parse("REFERENCE",reffile);
     if (!reffile.empty()) {
@@ -414,7 +417,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       environments.resize(1);
       PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
       unsigned natoms=pdb.getPositions().size(); environments[0].resize( natoms );
-      for(unsigned i=0;i<natoms;++i) environments[0][i]=pdb.getPositions()[i];
+      for(unsigned i=0; i<natoms; ++i) environments[0][i]=pdb.getPositions()[i];
       max_dist=maxDistance(environments[0]);
       log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
     } else {
@@ -424,7 +427,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
         if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
         PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
         unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
-        for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
+        for(unsigned i=0; i<natoms; ++i) environment[i]=pdb.getPositions()[i];
         environments.push_back(environment);
         double norm = maxDistance(environment);
         if (norm>max_dist) max_dist=norm;
@@ -432,7 +435,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       }
     }
     if (environments.size()==0) error("No environments have been found! Please specify a PDB file in the REFERENCE "
-                                      "or in the REFERENCE_1, REFERENCE_2, etc keywords");
+                                        "or in the REFERENCE_1, REFERENCE_2, etc keywords");
     log.printf("  Number of reference environments is %d\n",environments.size() );
     log.printf("  Number of vectors per reference environment is %d\n",environments[0].size() );
   } else {
