@@ -28,17 +28,13 @@
 #include "multicolvar/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/PDB.h"
-
-#include <string>
-#include <cmath>
-#include <cfloat>
 
 using namespace std;
 
 namespace PLMD {
-namespace multicolvar {
+namespace crystallization {
+
 
 //+PLUMEDOC MCOLVAR ENVIRONMENTSIMILARITY
 /*
@@ -153,7 +149,7 @@ PRINT ARG=es.mean,es.morethan FILE=COLVAR
 //+ENDPLUMEDOC
 
 
-class EnvironmentSimilarity : public MultiColvarBase {
+class EnvironmentSimilarity : public multicolvar::MultiColvarBase {
 private:
   // All global variables end with underscore
   // square of cutoff, square of broadening parameter
@@ -166,7 +162,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EnvironmentSimilarity(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 // Returns the number of coordinates of the field
   bool isPeriodic() { return false; }
 // Calculates maximum distance in an environment
@@ -236,7 +232,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
 }
 
-double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   if (environments_.size()==1) {
     // One reference environment case
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
@@ -438,8 +434,8 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     }
     if (environments.size()==0) error("No environments have been found! Please specify a PDB file in the REFERENCE "
                                         "or in the REFERENCE_1, REFERENCE_2, etc keywords");
-    log.printf("  Number of reference environments is %d\n",environments.size() );
-    log.printf("  Number of vectors per reference environment is %d\n",environments[0].size() );
+    log.printf("  Number of reference environments is %lu\n",environments.size() );
+    log.printf("  Number of vectors per reference environment is %lu\n",environments[0].size() );
   } else {
     error("CRYSTAL_STRUCTURE=" + crystal_structure + " does not match any structures in the database");
   }
