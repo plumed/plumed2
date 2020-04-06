@@ -50,15 +50,15 @@ We consider an environment \f$\chi\f$ around this atom and we define the density
 \f[
  \rho_{\chi}(\mathbf{r})=\sum\limits_{i\in\chi} \exp\left(- \frac{|\mathbf{r}_i-\mathbf{r}|^2} {2\sigma^2} \right),
 \f]
-where \f$i\f$ runs over the neighbors in the environment \f$\chi\f$, \f$\sigma\f] is a broadening parameter, and \f$\mathbf{r}_i\f$ are the
+where \f$i\f$ runs over the neighbors in the environment \f$\chi\f$, \f$\sigma\f$ is a broadening parameter, and \f$\mathbf{r}_i\f$ are the
 coordinates of the neighbors relative to the central atom.
 We now define a reference environment or template \f$\chi_0\f$ that contains \f$n\f$ reference positions \f$\{\mathbf{r}^0_1,...,\mathbf{r}^0_n\}\f$
 that describe, for instance, the nearest neighbors in a given lattice.
-\f$\sigma\f] is set using the SIGMA keyword and \f$\chi_0\f$ is chosen with the CRYSTAL_STRUCTURE keyword.
+\f$\sigma\f$ is set using the SIGMA keyword and \f$\chi_0\f$ is chosen with the CRYSTAL_STRUCTURE keyword.
 If only the SPECIES keyword is given then the atoms defined there will be the central and neighboring atoms.
 If instead the SPECIESA and SPECIESB keywords are given then SPECIESA determines the central atoms and SPECIESB the neighbors.
 
-The environments $\chi$ and $\chi_0$ are compared using the kernel,
+The environments \f$\chi\f$ and \f$\chi_0\f$ are compared using the kernel,
 \f[
  k_{\chi_0}(\chi)= \int d\mathbf{r} \rho_{\chi}(\mathbf{r}) \rho_{\chi_0}(\mathbf{r}) .
 \f]
@@ -68,8 +68,7 @@ Combining the two equations above and performing the integration analytically we
 \f]
 The kernel is finally normalized,
 \f[
- \tilde{k}_{\chi_0}(\chi) & = \frac{k_{\chi_0}(\chi)}{k_{\chi_0}(\chi_0)} \nonumber \\
- & = \frac{1}{n} \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \exp\left( - \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right),
+ \tilde{k}_{\chi_0}(\chi)  = \frac{1}{n} \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \exp\left( - \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right),
 \f]
 such that \f$\tilde{k}_{\chi_0}(\chi_0) = 1\f$.
 The above kernel is computed for each atom in the SPECIES or SPECIESA keywords.
@@ -103,13 +102,13 @@ If you have a reference crystal structure configuration you can use the [Environ
 \par Examples
 
 The following input calculates the ENVIRONMENTSIMILARITY kernel for 250 atoms in the system
-using the BCC atomic environment as target and then calculates and prints the average value
+using the BCC atomic environment as target, and then calculates and prints the average value
  for this quantity.
 
 \plumedfile
 ENVIRONMENTSIMILARITY SPECIES=1-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYSTAL_STRUCTURE=BCC MEAN LABEL=es
 
-PRINT ARG=es.* FILE=COLVAR
+PRINT ARG=es.mean FILE=COLVAR
 \endplumedfile
 
 The next example compares the environments of the 96 selected atoms with a user specified reference
@@ -193,11 +192,14 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
            "DIAMOND: cubic diamond, "
            "CUSTOM: user defined "
            " ");
-  keys.add("optional","LATTICE_CONSTANTS","Lattice constants");
+  keys.add("optional","LATTICE_CONSTANTS","Lattice constants. Two comma separated values for HCP, "
+           "one value for all other CRYSTAL_STRUCTURES.");
   keys.add("compulsory","LAMBDA","100","Lambda parameter");
-  keys.add("optional","REFERENCE","PDB file with relative distances from central atom.");
+  keys.add("optional","REFERENCE","PDB file with relative distances from central atom."
+           " Use this keyword if you are targeting a single reference environment.");
   keys.add("numbered","REFERENCE_","PDB files with relative distances from central atom."
-           "Each file corresponds to one template");
+           " Each file corresponds to one template."
+           " Use these keywords if you are targeting more than one reference environment.");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -249,7 +251,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
           Vector distanceFromRef=distance-environments_[0][k];
           double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[0].size() ;
           // CAREFUL! Off-diagonal virial is incorrect. Do not perform NPT simulations with flexible box angles.
-          accumulateSymmetryFunction( 1, i, value, (value/(2*sigmaSqr_))*(-distance+environments_[0][k]), (value/(2*sigmaSqr_))*Tensor(distance-environments_[0][k],distance), myatoms );
+          accumulateSymmetryFunction( 1, i, value, -(value/(2*sigmaSqr_))*distanceFromRef, (value/(2*sigmaSqr_))*Tensor(distance,distanceFromRef), myatoms );
         }
       }
     }
@@ -294,7 +296,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, AtomValuePack& my
           for(unsigned k=0; k<environments_[j].size(); ++k) {
             Vector distanceFromRef=distance-environments_[j][k];
             double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[j].size() ;
-            accumulateSymmetryFunction( 1, i, value, -(values[j]/sum)*(value/(2*sigmaSqr_))*distanceFromRef, (values[j]/sum)*(value/(2*sigmaSqr_))*Tensor(distanceFromRef,distance), myatoms );
+            accumulateSymmetryFunction( 1, i, value, -(values[j]/sum)*(value/(2*sigmaSqr_))*distanceFromRef, (values[j]/sum)*(value/(2*sigmaSqr_))*Tensor(distance,distanceFromRef), myatoms );
           }
         }
       }
