@@ -1,0 +1,4 @@
+type=driver
+plumed_modules=crystallization
+# this is to test a different name
+arg="--plumed plumed.dat --mf_pdb IceIh.pdb"

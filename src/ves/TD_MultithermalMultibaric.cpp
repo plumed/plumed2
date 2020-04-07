@@ -47,7 +47,7 @@ The collective variables (CVs) used to construct the bias potential must be:
   2. the potential energy, the volume, and an order parameter.
 
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
-The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition \cite Piaggi-arXiv-2019 .
+The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition \cite Piaggi-JCP-2019 .
 
 The algorithm will explore the free energy at each temperature and pressure up to a predefined free
  energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
@@ -263,7 +263,7 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   log.printf("  Please read and cite ");
   log << plumed.cite("Piaggi and Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
   log.printf(" and ");
-  log << plumed.cite("Piaggi and Parrinello, arXiv preprint arXiv:1904.05624 (2019)");
+  log << plumed.cite("Piaggi and Parrinello, J. Chem. Phys. 150 (24), 244119 (2019)");
   log.printf("\n");
 
 
