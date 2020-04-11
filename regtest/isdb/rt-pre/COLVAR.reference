@@ -1,4 +1,4 @@
-#! FIELDS time prova.pre_0 prova.pre_1 prova.pre_2
+#! FIELDS time prova.pre-0 prova.pre-1 prova.pre-2
  0.000000 0.006196 0.026475 0.061531
  0.050000 0.006179 0.022978 0.055435
  0.100000 0.006346 0.019823 0.051159

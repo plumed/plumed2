@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,22 +60,24 @@ looking through the example given below.
 In this example I will explain in detail what the following input is computing:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=M1d.pdb
 psi: TORSIONS ATOMS1=@psi-2 ATOMS2=@psi-3 ATOMS3=@psi-4
 phi: TORSIONS ATOMS1=@phi-2 ATOMS2=@phi-3 ATOMS3=@phi-4
-p: PAMM DATA=phi,psi CLUSTERS=clusters.dat MEAN1={COMPONENT=1} MEAN2={COMPONENT=2}
-PRINT ARG=p.mean-1,mean-2 FILE=colvar
+p: PAMM DATA=phi,psi CLUSTERS=clusters.pamm MEAN1={COMPONENT=1} MEAN2={COMPONENT=2}
+PRINT ARG=p.mean-1,p.mean-2 FILE=colvar
 \endplumedfile
 
-The best place to start our explanation is to look at the contents of the clusters.dat file
+The best place to start our explanation is to look at the contents of the clusters.pamm file
 
-\verbatim
+\auxfile{clusters.pamm}
 #! FIELDS height phi psi sigma_phi_phi sigma_phi_psi sigma_psi_phi sigma_psi_psi
 #! SET multivariate von-misses
 #! SET kerneltype gaussian
-      0.4     -1.0      -1.0      0.2     -0.1    -0.1    0.2
-      0.6      1.0      +1.0      0.1     -0.03   -0.03   0.1
-\endverbatim
+      2.97197455E-0001     -1.91983118E+0000      2.25029540E+0000      2.45960237E-0001     -1.30615381E-0001     -1.30615381E-0001      2.40239117E-0001
+      2.29131448E-0002      1.39809354E+0000      9.54585380E-0002      9.61755708E-0002     -3.55657919E-0002     -3.55657919E-0002      1.06147253E-0001
+      5.06676398E-0001     -1.09648066E+0000     -7.17867907E-0001      1.40523052E-0001     -1.05385552E-0001     -1.05385552E-0001      1.63290557E-0001
+\endauxfile
 
 This files contains the parameters of two two-dimensional Gaussian functions.  Each of these Gaussian kernels has a weight, \f$w_k\f$,
 a vector that specifies the position of its center, \f$\mathbf{c}_k\f$, and a covariance matrix, \f$\Sigma_k\f$.  The \f$\phi_k\f$ functions that
@@ -115,15 +117,16 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PAMM(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Calculate the weight of this object ( average of input weights )
+  using PLMD::multicolvar::MultiColvarBase::calculateWeight;
   void calculateWeight( multicolvar::AtomValuePack& myatoms );
 /// Actually do the calculation
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 /// This returns the position of the central atom
   Vector getCentralAtom();
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(PAMM,"PAMM")

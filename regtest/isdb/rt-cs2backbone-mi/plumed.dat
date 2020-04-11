@@ -7,8 +7,8 @@ m2: PBMETAD ARG=d1,d2 HEIGHT=0.1 SIGMA=0.2,0.5 PACE=1 TEMP=300 BIASFACTOR=10 FIL
 cs: CS2BACKBONE ATOMS=1-2612 DATADIR=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC 
 
 METAINFERENCE ...
-ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*),m1.bias
-PARARG=(cs\.expca_.*),(cs\.expcb_.*),(cs\.exphn_.*),(cs\.expnh_.*)
+ARG=(cs\.ca-.*),(cs\.cb-.*),(cs\.hn-.*),(cs\.nh-.*),m1.bias
+PARARG=(cs\.expca-.*),(cs\.expcb-.*),(cs\.exphn-.*),(cs\.expnh-.*)
 REWEIGHT
 DSIGMA=0
 SIGMA_MEAN0=100

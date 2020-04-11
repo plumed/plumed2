@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,47 @@
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_WHAM
 /*
+Calculate the weights for configurations using the weighted histogram analysis method.
+
+Suppose that you have run multiple \f$N\f$ trajectories each of which was computed by integrating a different biased Hamiltonian. We can calculate the probability of observing
+the set of configurations during the \f$N\f$ trajectories that we ran using the product of multinomial distributions shown below:
+\f[
+P( \vec{T} ) \propto \prod_{j=1}^M \prod_{k=1}^N (c_k w_{kj} p_j)^{t_{kj}}
+\label{eqn:wham1}
+\f]
+In this expression the second product runs over the biases that were used when calculating the \f$N\f$ trajectories.  The first product then runs over the
+\f$M\f$ bins in our histogram.  The \f$p_j\f$ variable that is inside this product is the quantity we wish to extract; namely, the unbiased probability of
+having a set of CV values that lie within the range for the \f$j\f$th bin.
+
+The quantity that we can easily extract from our simulations, \f$t_{kj}\f$, however, measures the number of frames from trajectory \f$k\f$ that are inside the \f$j\f$th bin.
+To interpret this quantity we must consider the bias that acts on each of the replicas so the \f$w_{kj}\f$ term is introduced.  This quantity is calculated as:
+\f[
+w_{kj} =
+\f]
+and is essentially the factor that we have to multiply the unbiased probability of being in the bin by in order to get the probability that we would be inside this same bin in
+the \f$k\f$th of our biased simulations.  Obviously, these \f$w_{kj}\f$ values depend on the value that the CVs take and also on the particular trajectory that we are investigating
+all of which, remember, have different simulation biases.  Finally, \f$c_k\f$ is a free parameter that ensures that, for each \f$k\f$, the biased probability is normalized.
+
+We can use the equation for the probability that was given above to find a set of values for \f$p_j\f$ that maximizes the likelihood of observing the trajectory.
+This constrained optimization must be performed using a set of Lagrange multipliers, \f$\lambda_k\f$, that ensure that each of the biased probability distributions
+are normalized, that is \f$\sum_j c_kw_{kj}p_j=1\f$.  Furthermore, as the problem is made easier if the quantity in the equation above is replaced by its logarithm
+we actually chose to minimize
+\f[
+\mathcal{L}= \sum_{j=1}^M \sum_{k=1}^N t_{kj} \ln c_k  w_{kj} p_j + \sum_k\lambda_k \left( \sum_{j=1}^N c_k w_{kj} p_j - 1 \right)
+\f]
+After some manipulations the following (WHAM) equations emerge:
+\f[
+\begin{aligned}
+p_j & \propto \frac{\sum_{k=1}^N t_{kj}}{\sum_k c_k w_{kj}} \\
+c_k & =\frac{1}{\sum_{j=1}^M w_{kj} p_j}
+\end{aligned}
+\f]
+which can be solved by computing the \f$p_j\f$ values using the first of the two equations above with an initial guess for the \f$c_k\f$ values and by then refining
+these \f$p_j\f$ values using the \f$c_k\f$ values that are obtained by inserting the \f$p_j\f$ values obtained into the second of the two equations above.
+
+Notice that only \f$\sum_k t_{kj}\f$, which is the total number of configurations from all the replicas that enter the \f$j\f$th bin, enters the WHAM equations above.
+There is thus no need to record which replica generated each of the frames.  One can thus simply gather the trajectories from all the replicas together at the outset.
+This observation is important as it is the basis of the binless formulation of WHAM that is implemented within PLUMED.
 
 \par Examples
 
@@ -45,11 +86,11 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightWham(const ActionOptions&ao);
-  bool buildsWeightStore() const { return true; }
-  void calculateWeights( const unsigned& nframes );
-  void clearData();
-  double getLogWeight();
-  double getWeight( const unsigned& iweight ) const ;
+  bool buildsWeightStore() const override { return true; }
+  void calculateWeights( const unsigned& nframes ) override;
+  void clearData() override;
+  double getLogWeight() override;
+  double getWeight( const unsigned& iweight ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")

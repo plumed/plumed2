@@ -23,6 +23,8 @@ t14: TORSION ATOMS=@chi-5_8
 
 c: CENTER ATOMS=@back-B4
 d: CENTER ATOMS=@base-B4
+s2: CENTER ATOMS=@sidechain-2
+b2: CENTER ATOMS=@back-2
 
 PRINT ARG=t2,t3,t4,t4d,t5,t6,t7,t8,t9,t10,t12,t13,t13b,t13c,t13d,t13e,t14 FILE=COLVAR FMT=%6.3f
 

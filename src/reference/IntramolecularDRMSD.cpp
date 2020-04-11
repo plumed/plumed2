@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,8 +30,8 @@ private:
   std::vector<unsigned> blocks;
 public:
   explicit IntramolecularDRMSD( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& pdb );
-  void setup_targets();
+  void read( const PDB& pdb ) override;
+  void setup_targets() override;
 };
 
 PLUMED_REGISTER_METRIC(IntramolecularDRMSD,"INTRA-DRMSD")

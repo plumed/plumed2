@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,7 +72,7 @@ class ReweightBias : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBias(const ActionOptions&ao);
-  double getLogWeight();
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")

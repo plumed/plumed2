@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,8 +60,8 @@ class Manual:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Manual(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "print out a description of the keywords for an action in html";
   }
 };

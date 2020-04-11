@@ -120,19 +120,19 @@ private:
   std::vector<TargetDistribution*> distribution_pntrs_;
   std::vector<Grid*> grid_pntrs_;
   unsigned int ndist_;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
 public:
   static void registerKeywords(Keywords&);
   explicit TD_ProductCombination(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   //
-  void linkVesBias(VesBias*);
-  void linkAction(Action*);
+  void linkVesBias(VesBias*) override;
+  void linkAction(Action*) override;
   //
-  void linkBiasGrid(Grid*);
-  void linkBiasWithoutCutoffGrid(Grid*);
-  void linkFesGrid(Grid*);
+  void linkBiasGrid(Grid*) override;
+  void linkBiasWithoutCutoffGrid(Grid*) override;
+  void linkFesGrid(Grid*) override;
   //
 };
 

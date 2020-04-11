@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,26 +51,26 @@ private:
   std::vector<double> weights;
 public:
   static void registerKeywords( Keywords& keys );
-  ReadDissimilarityMatrix( const ActionOptions& ao );
-  unsigned getNumberOfDataPoints() const ;
+  explicit ReadDissimilarityMatrix( const ActionOptions& ao );
+  unsigned getNumberOfDataPoints() const override;
 // Return the index of the data point in the base class
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const override;
 /// This gives an error as if we read in the matrix we dont have the coordinates
-  DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
+  DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist ) override;
 /// Tell everyone we have dissimilarities
-  bool dissimilaritiesWereSet() const { return true; }
+  bool dissimilaritiesWereSet() const override { return true; }
 /// Get the dissimilarity between two data points
-  double getDissimilarity( const unsigned&, const unsigned& );
+  double getDissimilarity( const unsigned&, const unsigned& ) override;
 /// Get the weight from the input file
-  double getWeight( const unsigned& idata );
+  double getWeight( const unsigned& idata ) override;
 /// Just tell plumed to stop
-  void update();
+  void update() override;
 /// Read in the dissimilarity matrix
-  void runFinalJobs();
+  void runFinalJobs() override;
 /// This does nothing
-  void performAnalysis() {};
+  void performAnalysis() override {};
 /// Overwrite virtual function in base class
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")

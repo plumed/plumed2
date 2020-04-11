@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,6 +51,8 @@ void ActionRegister::remove(creator_pointer f) {
 }
 
 void ActionRegister::add(string key,creator_pointer f,keywords_pointer k) {
+  // this force each action to be registered as an uppercase string
+  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( islower( c ) ); } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
   if(m.count(key)) {
     m.erase(key);
     disabled.insert(key);

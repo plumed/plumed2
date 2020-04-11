@@ -19,7 +19,6 @@ sed "s|/x86/|/|" |
 sed "s/::asmjit/::PLMD::asmjit/" |
 sed "s/defined(ASMJIT_EMBED)/1/" |
 sed "s/define FIXUP_GPB(REG_OP, REG_ID, ...)/define FIXUP_GPB(REG_OP, REG_ID)/" | # this is giving too many warnings on travis-ci
-grep -v "bool-operation" | # this is giving too many warnings on travis-ci
 cat > $move
 done
 
@@ -39,12 +38,17 @@ grep -v "bool-operation" | # this is giving too many warnings on travis-ci
 awk '
 BEGIN{
 print "#ifdef __PLUMED_HAS_ASMJIT"
+print "#pragma GCC diagnostic push"
+print "#pragma GCC diagnostic ignored \"-Wpedantic\""
 }
 {
 if($1=="namespace" && $2=="asmjit") print "namespace PLMD {"
+if(match($0,"^#undef T.*$")) print "}"
 print
 if($1=="}" && $2=="//" && $3=="asmjit") print "} // namespace PLMD"
+if(match($0,"^#define T.*$")) print "namespace { // unnamed namespace to avoid unique global symbols"
 }END{
+print "#pragma GCC diagnostic pop"
 print "#endif // __PLUMED_HAS_ASMJIT"
 }' > $move
 done

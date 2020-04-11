@@ -174,9 +174,9 @@ public:
   static double normalizeGrid(Grid*);
   static Grid getMarginalDistributionGrid(Grid*, const std::vector<std::string>&);
   // empty standard action stuff
-  void update() {};
-  void apply() {};
-  void calculate() {};
+  void update() override {};
+  void apply() override {};
+  void calculate() override {};
 };
 
 

@@ -5,4 +5,4 @@
 # (this is same as gromacs)
 # Notice that "plumed info --version" will return only 2.X
 # and "plumed info --long-version" will return the full string
-2.6.0-dev
+2.7.0-dev

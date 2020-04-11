@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ namespace PLMD {
 /*
 Functions that measure whether values are less than a certain quantity.
 
-Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$d_0\f$.
+Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$r_0\f$.
 For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.
 The various switching functions available in plumed differ in terms of how this decay is performed.
 

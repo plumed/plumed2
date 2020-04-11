@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 #ifndef __PLUMED_asmjit_operand_h
 #define __PLUMED_asmjit_operand_h
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -1592,5 +1594,6 @@ ASMJIT_DEFINE_TYPE_ID(TypeId::Vec512    , TypeId::kI32x16);
 
 // [Guard]
 #endif // _ASMJIT_BASE_OPERAND_H
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT
 #endif

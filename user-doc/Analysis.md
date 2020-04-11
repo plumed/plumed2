@@ -171,10 +171,13 @@ that are available in PLUMED are as follows
 In general most of these landmark selection algorithms must be used in tandem with a \ref dissimilaritym "dissimilarity matrix" object as as follows:
 
 \plumedfile
-data: COLLECT_FRAMES ARG=d1 STRIDE=1
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES ARG=d1,d2,d3 STRIDE=1
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
-OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
 \endplumedfile
 
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
@@ -202,13 +205,16 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 where \f$F(D_{ij})\f$ is some transformation of the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$f(d_{ij})\f$ is some transformation
 of the distance between the projection of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  \f$w_i\f$ and \f$w_j\f$ are the weights
 of configurations \f$X^i\f$ and \f$^j\f$ respectively.  These weights are calculated using the reweighting and Voronoi polyhedron approaches described in
-previous sections.  A tutorial on dimensionality reduction and how it can be used to analyze simulations can be found in the tutorial \ref belfast-3 and in 
+previous sections.  A tutorial on dimensionality reduction and how it can be used to analyze simulations can be found in the tutorial \ref lugano-5 and in 
 the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 Within PLUMED running an input to run a dimensionality reduction algorithm can be as simple as:
 
 \plumedfile
-data: COLLECT_FRAMES STRIDE=1 ARG=d1
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ss1 NLOW_DIM=2
 \endplumedfile
@@ -217,11 +223,14 @@ Where we have to use the \ref EUCLIDEAN_DISSIMILARITIES action here in order to 
 We can even throw some landmark selection into this procedure and perform
 
 \plumedfile
-data: COLLECT_FRAMES STRIDE=1 ARG=d1
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+data: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
 matrix: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=matrix NLANDMARKS=300
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ll2 NLOW_DIM=2
-osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=matrix PROJECTION=smap
+osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=matrix PROJECTION=mds
 \endplumedfile
 
 Notice here that the final command allows us to calculate the projections of all the non-landmark points that were collected by the action with

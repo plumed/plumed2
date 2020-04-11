@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -78,10 +78,10 @@ public:
   static void registerKeywords( Keywords& keys );
   ///
   explicit ContactAlignedMatrix(const ActionOptions&);
-  void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
   double computeVectorFunction( const unsigned& iv, const unsigned& jv,
                                 const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")

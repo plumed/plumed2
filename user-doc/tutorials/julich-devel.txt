@@ -174,7 +174,7 @@ there are lots of smart people out in the world writing code (and again I am not
 tested and faster than anything that you will write so spend your time learning how it works so that you can re-use it.    
 
 - <B> Test your code </B> Notice that I set up directories that you could use to test your code for this tutorial.  Testing should always be part of your
-development workflow and coming up with ways to test your code is hard, which is why we often don't do it enough.  Also don't develop stuff in a 
+development work flow and coming up with ways to test your code is hard, which is why we often don't do it enough.  Also don't develop stuff in a 
 vacuum get in touch with people who are using the code.  You need to test your code on systems that people actually want to simulate and not 
 just on dummy problems.  In addition, you should learn to use profiling tools such as Valgrind and instruments on the mac so that you can find 
 memory leaks and bottlenecks in your code.  When you start doing this properly you will realize that you cannot possibly properly maintain all the code 

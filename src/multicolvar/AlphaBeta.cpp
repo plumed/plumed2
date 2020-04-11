@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -76,6 +76,7 @@ can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 ALPHABETA ...
 ATOMS1=@phi-3 REFERENCE=3.14
@@ -100,8 +101,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaBeta(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")

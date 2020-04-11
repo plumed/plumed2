@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -1020,6 +1020,18 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
 
+/**
+  Retrieve PLUMED_EXCEPTIONS_DEBUG (internal utility).
+
+  This function should not be used by external programs. It is defined
+  as inline static so that it can store a static variable (for quicker access)
+  without adding a unique global symbol to a library including this header file.
+*/
+inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
+  return res;
+}
+
 /* Optionally, it is further hidden in an anonymous namespace */
 
 __PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
@@ -1087,9 +1099,7 @@ class Plumed {
         options+=2;
       }
 
-    static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
-
-    if(debug) {
+    if(PlumedGetenvExceptionsDebug()) {
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_EXCEPTIONS_DEBUG\n");
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ code: %d error_code: %d message:\n%s\n",h->code,h->error_code,what);
       if(__PLUMED_WRAPPER_STD strlen(what) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
@@ -1320,8 +1330,7 @@ private:
     __PLUMED_WRAPPER_CXX_EXPLICIT std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       this->msg[0]='\0'; \
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG"); \
-      if(debug && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
+      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
     } \
     std_ ## name(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       msg[0]='\0'; \
@@ -2483,7 +2492,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
-    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
+    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
     if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
     __PLUMED_WRAPPER_STD exit(1);
   }

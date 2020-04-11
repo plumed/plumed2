@@ -1,0 +1,6 @@
+CONDA_BUILD_SYSROOT:
+  - /opt/MacOSX10.9.sdk   # [osx]
+libblas:
+- 3.8 *netlib
+liblapack:
+- 3.8.0 *netlib

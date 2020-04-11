@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -249,8 +249,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EMMI(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
+  void prepare() override;
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(EMMI,"EMMI")
@@ -520,7 +520,7 @@ EMMI::EMMI(const ActionOptions&ao):
     double ovdd_m = get_median(ovdd);
     double err_m  = get_median(err);
     // print out statistics
-    log.printf("     # of members : %u\n", GMM_d_grps_[Gid].size());
+    log.printf("     # of members : %zu\n", GMM_d_grps_[Gid].size());
     log.printf("     median overlap : %lf\n", ovdd_m);
     log.printf("     median error : %lf\n", err_m);
     // add minimum value of sigma for this group of GMMs

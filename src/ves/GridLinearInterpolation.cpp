@@ -31,7 +31,7 @@ namespace PLMD {
 namespace ves {
 
 
-double GridLinearInterpolation::getGridValueWithLinearInterpolation_1D(Grid* grid_pntr, const std::vector<double>& arg) {
+double GridLinearInterpolation::getGridValueWithLinearInterpolation_1D(GridBase* grid_pntr, const std::vector<double>& arg) {
 
   plumed_massert(grid_pntr->getDimension()==1,"The grid is of the wrong dimension, should be one-dimensional");
   plumed_massert(arg.size()==1,"input value is of the wrong size");
@@ -51,7 +51,7 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_1D(Grid* gri
 }
 
 
-double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(Grid* grid_pntr, const std::vector<double>& arg) {
+double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(GridBase* grid_pntr, const std::vector<double>& arg) {
   plumed_massert(grid_pntr->getDimension()==2,"The grid is of the wrong dimension, should be two-dimensional");
   plumed_massert(arg.size()==2,"input value is of the wrong size");
 
@@ -95,7 +95,7 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(Grid* gri
 }
 
 
-double GridLinearInterpolation::getGridValueWithLinearInterpolation(Grid* grid_pntr, const std::vector<double>& arg) {
+double GridLinearInterpolation::getGridValueWithLinearInterpolation(GridBase* grid_pntr, const std::vector<double>& arg) {
   unsigned int dim = grid_pntr->getDimension();
   if(dim==1) {
     return getGridValueWithLinearInterpolation_1D(grid_pntr,arg);

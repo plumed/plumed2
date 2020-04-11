@@ -5,6 +5,7 @@
 !/README
 !/adjmat
 !/analysis
+!/annfunc
 !/asmjit
 !/bias
 !/blas
@@ -45,6 +46,7 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
+!/funnel
 
 
 # And just ignore these files

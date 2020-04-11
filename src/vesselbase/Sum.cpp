@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,8 +30,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit Sum( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  std::string value_descriptor() override;
+  double calcTransform( const double& val, double& dv ) const override;
 };
 
 PLUMED_REGISTER_VESSEL(Sum,"SUM")

@@ -64,13 +64,13 @@ coefficients.
 
 class BF_Combined : public BasisFunctions {
   std::vector<BasisFunctions*> basisf_pntrs_;
-  virtual void setupLabels();
-  virtual void setupUniformIntegrals();
+  void setupLabels() override;
+  void setupUniformIntegrals() override;
   // void getBFandValueIndices(const unsigned int, unsigned int&, unsigned int&) const;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Combined(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 

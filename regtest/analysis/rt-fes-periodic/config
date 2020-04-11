@@ -1,0 +1,3 @@
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --igro traj.gro"

@@ -1,0 +1,46 @@
+# vim:ft=plumed
+# Read energy
+energy: READ FILE=COLVAR-READ VALUES=energy IGNORE_FORCES
+
+# Construct a bias potential using VES
+# The hyperparameters used here might not reflect correct values for simulations
+# Please refer to the original papers for suitable hyperparameters
+
+# Basis functions
+bf1: BF_LEGENDRE ORDER=10 MINIMUM=-15000 MAXIMUM=-12250
+
+# Target distributions
+TD_MULTICANONICAL ...
+ MIN_TEMP=260
+ MAX_TEMP=350
+ SIGMA=50.
+ THRESHOLD=0.1
+ LABEL=td_multi
+... TD_MULTICANONICAL
+
+# Expansion
+VES_LINEAR_EXPANSION ...
+ ARG=energy
+ BASIS_FUNCTIONS=bf1
+ TEMP=300.0
+ GRID_BINS=100
+ TARGET_DISTRIBUTION=td_multi
+ LABEL=b1
+... VES_LINEAR_EXPANSION
+
+# Optimization algorithm
+OPT_AVERAGED_SGD ...
+  BIAS=b1
+  STRIDE=1
+  LABEL=o1
+  STEPSIZE=1.0
+  FES_OUTPUT=10000
+  BIAS_OUTPUT=10000
+  TARGETDIST_OUTPUT=10000
+  COEFFS_OUTPUT=5000
+  TARGETDIST_STRIDE=1000
+  COEFFS_FMT=%12.6f
+... OPT_AVERAGED_SGD
+
+PRINT ARG=* FILE=COLVAR STRIDE=10
+

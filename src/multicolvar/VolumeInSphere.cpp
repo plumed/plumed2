@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,7 +59,7 @@ of radius 1.5 nm that is centered on the position of atom 101.
 
 \plumedfile
 c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
-d2: INSPHERE ATOM=101 DATA=d1 RADIUS={TANH R_0=1.5} SIGMA=0.1 LOWER=-0.1 UPPER=0.1 MEAN
+d2: INSPHERE ATOM=101 DATA=c1 RADIUS={TANH R_0=1.5} MEAN
 PRINT ARG=d2.* FILE=colvar
 \endplumedfile
 
@@ -76,8 +76,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInSphere(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")

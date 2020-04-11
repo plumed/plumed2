@@ -18,6 +18,8 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -396,4 +398,5 @@ Error X86Compiler::_emit(uint32_t instId, const Operand_& o0, const Operand_& o1
 
 // [Guard]
 #endif // ASMJIT_BUILD_X86 && !ASMJIT_DISABLE_COMPILER
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT

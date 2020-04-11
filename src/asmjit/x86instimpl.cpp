@@ -18,6 +18,8 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -751,4 +753,5 @@ ASMJIT_FAVOR_SIZE Error X86InstImpl::checkFeatures(uint32_t archType, const Inst
 
 // [Api-End]
 #include "./asmjit_apiend.h"
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT

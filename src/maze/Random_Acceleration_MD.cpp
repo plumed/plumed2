@@ -35,7 +35,7 @@ namespace maze {
 //+PLUMEDOC MAZE_OPTIMIZER MAZE_RANDOM_ACCELERATION_MD
 /*
 
-Performs random acceleratiob MD within the protein matrix.
+Performs random acceleration MD within the protein matrix.
 
 \par Examples
 

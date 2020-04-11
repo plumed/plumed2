@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,9 +66,9 @@ public:
 /// Constructor
   explicit ClusterProperties(const ActionOptions&);
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")

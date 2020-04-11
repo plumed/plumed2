@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,6 +92,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
 \endplumedfile
@@ -110,8 +111,8 @@ class WholeMolecules:
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")

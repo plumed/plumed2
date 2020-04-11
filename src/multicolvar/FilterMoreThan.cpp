@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -116,7 +116,7 @@ to a second coordination number calculation.  This second coordination number th
 two-coordinated atoms that each of the two-coordinated atoms is bound to.
 
 \plumedfile
-1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+c1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
 \endplumedfile
@@ -133,7 +133,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterMore(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")

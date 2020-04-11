@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,7 +59,7 @@ The default values of these parameters are: \f$a=1\f$ and \f$b=1\f$.
 The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x\neq N_y\f$):
 
 \plumedfile
-FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1 FILE=fourier.dat
+FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1
 \endplumedfile
 
 */
@@ -70,18 +70,18 @@ class FourierTransform : public ActionWithInputGrid {
 private:
   std::string output_type;
   bool real_output, store_norm;
-  std::vector<unsigned> gdirs;
   std::vector<int> fourier_params;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
+  void clearAverage() override;
 #ifndef __PLUMED_HAS_FFTW
-  void performOperations( const bool& from_update ) {}
+  void performOperations( const bool& from_update ) override {}
 #else
-  void performOperations( const bool& from_update );
+  void performOperations( const bool& from_update ) override;
 #endif
-  void compute( const unsigned&, MultiValue& ) const {}
-  bool isPeriodic() { return false; }
+  void compute( const unsigned&, MultiValue& ) const override {}
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
@@ -138,27 +138,20 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 
   // Create the input from the old string
   std::string vstring;
-  unsigned n=0; gdirs.resize( ingrid->getDimension() );
-  for(unsigned i=0; i<ingrid->getDimension(); ++i) {
-    gdirs[n]=i; n++;
-  }
-
-  plumed_assert( n==ingrid->getDimension() );
-
   if (real_output) {
     if (!store_norm) vstring="COMPONENTS=" + getLabel() + "_abs";
     else vstring="COMPONENTS=" + getLabel() + "_norm";
   } else vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
 
   // Set COORDINATES keyword
-  vstring += " COORDINATES=" + ingrid->getComponentName( gdirs[0] );
-  for(unsigned i=1; i<gdirs.size(); ++i) vstring += "," + ingrid->getComponentName( gdirs[i] );
+  vstring += " COORDINATES=" + ingrid->getComponentName( 0 );
+  for(unsigned i=1; i<ingrid->getDimension(); ++i) vstring += "," + ingrid->getComponentName( i );
 
   // Set PBC keyword
   vstring += " PBC=";
-  if( ingrid->isPeriodic(gdirs[0]) ) vstring+="T"; else vstring+="F";
-  for(unsigned i=1; i<gdirs.size(); ++i) {
-    if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
+  if( ingrid->isPeriodic(0) ) vstring+="T"; else vstring+="F";
+  for(unsigned i=1; i<ingrid->getDimension(); ++i) {
+    if( ingrid->isPeriodic(i) ) vstring+=",T"; else vstring+=",F";
   }
 
 
@@ -171,32 +164,21 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 #endif
 }
 
+void FourierTransform::clearAverage() {
+  std::vector<double> fspacing;
+  std::vector<std::string> ft_min( ingrid->getMin() ), ft_max( ingrid->getMax() );
+  for(unsigned i=0; i<ingrid->getDimension(); ++i) {
+    Tools::convert( 0.0, ft_min[i] ); Tools::convert( 2.0*pi*ingrid->getNbin()[i]/ ingrid->getGridExtent(i), ft_max[i] );
+  }
+  mygrid->setBounds( ft_min, ft_max, ingrid->getNbin(), fspacing); resizeFunctions();
+  ActionWithAveraging::clearAverage();
+}
+
 #ifdef __PLUMED_HAS_FFTW
 void FourierTransform::performOperations( const bool& from_update ) {
 
   // Spacing of the real grid
   std::vector<double> g_spacing ( ingrid->getGridSpacing() );
-  // Spacing of the k-grid
-  std::vector<double> ft_spacing;
-  // Extents of the k-grid
-  std::vector<std::string> ft_min( ingrid->getMin() ), ft_max( ingrid->getMax() );
-  // Number of bins in the k-grid (equal to the number of bins in the real grid)
-  std::vector<unsigned> ft_bins ( ingrid->getNbin() );
-
-  for (unsigned i=0; i<ingrid->getDimension(); ++i) {
-    // Check PBC in current grid dimension
-    if( !ingrid->isPeriodic(i) ) ft_bins[i]++;
-    // Compute k-grid extents
-    double dmin, dmax;
-    Tools::convert(ft_min[i],dmin); Tools::convert(ft_max[i],dmax);
-    // We want to have the min of k-grid at point (0,0)
-    dmin=0.0;
-    dmax=2.0*pi*ft_bins[i]/( ingrid->getGridExtent(i) );
-    Tools::convert(dmin,ft_min[i]); Tools::convert(dmax,ft_max[i]);
-  }
-
-  // This is the actual setup of the k-grid
-  mygrid->setBounds( ft_min, ft_max, ft_bins, ft_spacing); resizeFunctions();
 
   // *** CHECK CORRECT k-GRID BOUNDARIES ***
   //log<<"Real grid boundaries: \n"
@@ -206,11 +188,11 @@ void FourierTransform::performOperations( const bool& from_update ) {
   //    <<"  min_x: "<<ft_min[0]<<"  min_y: "<<ft_min[1]<<"\n"
   //    <<"  max_x: "<<ft_max[0]<<"  max_y: "<<ft_max[1]<<"\n";
 
-
-
   // Get the size of the input data arrays (to allocate FFT data)
+  size_t fft_dimension=static_cast<size_t>( ingrid->getNumberOfPoints() );
   std::vector<unsigned> N_input_data( ingrid->getNbin() );
-  size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
+  for(unsigned i=0; i<N_input_data.size(); ++i) if( !ingrid->isPeriodic(i) ) N_input_data[i]++;
+  // size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
 
   // FFT arrays
   std::vector<std::complex<double> > input_data(fft_dimension), fft_data(fft_dimension);

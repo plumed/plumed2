@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -78,15 +78,16 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithAveraging( const ActionOptions& );
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives(PLMD::ActionWithValue*);
-  virtual unsigned getNumberOfDerivatives() { return 0; }
-  virtual unsigned getNumberOfQuantities() const ;
-  unsigned getNumberOfArguments() const ;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives(PLMD::ActionWithValue*) override;
+  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfQuantities() const override;
+  unsigned getNumberOfArguments() const override;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
+  using ActionWithArguments::getArguments;
   std::vector<Value*> getArguments();
-  void update();
+  void update() override;
 /// This does the clearing of the action
   virtual void clearAverage();
 /// This is done before the averaging comences
@@ -94,7 +95,7 @@ public:
 /// This does the averaging operation
   virtual void performOperations( const bool& from_update );
 /// Does the calculation
-  virtual void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override;
 ///
   virtual void runTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
@@ -102,9 +103,9 @@ public:
 /// This is done once the averaging is finished
   virtual void finishAveraging() {}
 ///
-  void runFinalJobs();
+  void runFinalJobs() override;
 ///
-  bool ignoreNormalization() const ;
+  virtual bool ignoreNormalization() const ;
 };
 
 inline

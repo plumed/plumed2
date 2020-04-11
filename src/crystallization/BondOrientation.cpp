@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,8 +43,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit BondOrientation( const ActionOptions& ao );
-  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTIONS")

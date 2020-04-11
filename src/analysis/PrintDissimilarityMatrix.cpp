@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,9 +42,9 @@ private:
   std::string fname;
 public:
   static void registerKeywords( Keywords& keys );
-  PrintDissimilarityMatrix( const ActionOptions& ao );
-  void performAnalysis();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  explicit PrintDissimilarityMatrix( const ActionOptions& ao );
+  void performAnalysis() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")

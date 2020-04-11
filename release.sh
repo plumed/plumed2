@@ -132,7 +132,7 @@ if ! test "$VALIDATED" ; then
   echo "and wait for travis to finish the tests"
   echo "In case of failures, fix and repeat the procedure"
   echo "Also check the online manual, that should be here:"
-  echo "  http://plumed.github.io/doc-v$shortversion"
+  echo "  http://www.plumed.org/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
   update_changelog CHANGES/v$shortversion.md $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
@@ -189,21 +189,8 @@ else
   echo "plumed-test-$version.tgz"
   echo "plumed-src-$version.tgz"
   echo
-  echo "3. Update Portfile"
-  echo "In directory macports/science/plumed you can find a Portfile for this release"
-  echo "Please inspect it manually and add it to the ports repository"
-  echo "Here are the corresponding checksums"
-  echo -n "checksums "
-# this list can be extended in case we want to compute checksums for multiple
-# files. so far it only does plumed-src
-  for file in plumed-src
-  do
-    echo " \\"
-    echo "  $file-\${version}.tgz \\"
-    echo "          sha256 $(openssl dgst -sha256 $file-$version.tgz |awk '{print $NF}') \\"
-    echo "          rmd160 $(openssl dgst -rmd160 $file-$version.tgz |awk '{print $NF}')"
-  done
-  echo
+  echo "3. Update MacPorts and Conda-Forge"
+  echo "WARNING: make sure MacPorts and Conda-Forge only build python 3 wrappers!"
   echo "4. Notify the mailing list"
 fi
 

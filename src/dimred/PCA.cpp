@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,14 +63,16 @@ The first two principal components will be output to a file called PCA-comp.pdb.
 will be performed at the end of the simulation.
 
 \plumedfile
-PCA METRIC=OPTIMAL ATOMS=1-22 STRIDE=1 NLOW_DIM=2 OFILE=PCA-comp.pdb
+ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1
+pca: PCA USE_OUTPUT_DATA_FROM=ff METRIC=OPTIMAL NLOW_DIM=2
+OUTPUT_PCA_PROJECTION USE_OUTPUT_DATA_FROM=pca FILE=PCA-comp.pdb
 \endplumedfile
 
 The following input instructs PLUMED to perform a principal component analysis in which the covariance matrix is calculated from changes in the six distances
 seen in the previous lines.  Notice that here the TYPE=EUCLIDEAN keyword is used to indicate that no alignment has to be done when calculating the various
 elements of the covariance matrix from the input vectors.  In this calculation the first two principal components will be output to a file called PCA-comp.pdb.
 Trajectory frames will be collected every five steps and the PCA calculation is performed every 1000 steps.  Consequently, if you run a 2000 step simulation the
-PCA analysis will be performed twice.  The REWEIGHT_BIAS keyword in this input tells PLUMED that rather that ascribing a weight of one to each of the frames
+PCA analysis will be performed twice.  The REWEIGHT_BIAS action in this input tells PLUMED that rather that ascribing a weight of one to each of the frames
 when calculating averages and covariance matrices a reweighting should be performed based and each frames' weight in these calculations should be determined based on
 the current value of the instantaneous bias (see \ref REWEIGHT_BIAS).
 
@@ -81,8 +83,12 @@ d3: DISTANCE ATOMS=1,4
 d4: DISTANCE ATOMS=2,3
 d5: DISTANCE ATOMS=2,4
 d6: DISTANCE ATOMS=3,4
+rr: RESTRAINT ARG=d1 AT=0.1 KAPPA=10
+rbias: REWEIGHT_BIAS TEMP=300
 
-PCA ARG=d1,d2,d3,d4,d5,d6 METRIC=EUCLIDEAN STRIDE=5 RUN=1000 NLOW_DIM=2 REWEIGHT_BIAS OFILE=PCA-comp.pdb
+ff: COLLECT_FRAMES ARG=d1,d2,d3,d4,d5,d6 LOGWEIGHTS=rbias STRIDE=5
+pca: PCA USE_OUTPUT_DATA_FROM=ff METRIC=EUCLIDEAN NLOW_DIM=2
+OUTPUT_PCA_PROJECTION USE_OUTPUT_DATA_FROM=pca STRIDE=100 FILE=PCA-comp.pdb
 \endplumedfile
 
 */
@@ -177,7 +183,7 @@ void PCA::performAnalysis() {
   for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
     my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
     for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
-    double d = myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
+    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
     // Accumulate average displacement of position
@@ -194,7 +200,7 @@ void PCA::performAnalysis() {
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
     my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
     for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
-    double d = myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
+    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     for(unsigned jarg=0; jarg<narg; ++jarg) {
       // Need sorting for PBC with GAT
       double jarg_d = 0.5*mypack.getArgumentDerivative(jarg) + myconf0->getReferenceArguments()[jarg] - sarg[jarg];

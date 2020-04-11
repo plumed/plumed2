@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,6 +55,7 @@ by using TORSION in combination with the \ref MOLINFO command.  This can be done
 syntax.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
@@ -97,7 +98,7 @@ class Torsion : public Colvar {
 public:
   explicit Torsion(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

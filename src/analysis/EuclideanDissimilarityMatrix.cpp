@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,17 +44,17 @@ private:
   Matrix<double> dissimilarities;
 public:
   static void registerKeywords( Keywords& keys );
-  EuclideanDissimilarityMatrix( const ActionOptions& ao );
+  explicit EuclideanDissimilarityMatrix( const ActionOptions& ao );
 /// Do the analysis
-  void performAnalysis();
+  void performAnalysis() override;
 /// This ensures that classes that use this data know that dissimilarities were set
-  bool dissimilaritiesWereSet() const { return true; }
+  bool dissimilaritiesWereSet() const override { return true; }
 /// Get information on how to calculate dissimilarities
-  std::string getDissimilarityInstruction() const ;
+  std::string getDissimilarityInstruction() const override;
 /// Get the squared dissimilarity between two reference configurations
-  double getDissimilarity( const unsigned& i, const unsigned& j );
+  double getDissimilarity( const unsigned& i, const unsigned& j ) override;
 /// This is just to deal with ActionWithVessel
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ spherical regions.  The number of averaged coordination numbers that are greater
 
 \plumedfile
 COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
-LOCAL_AVERAGE ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
+LOCAL_AVERAGE SPECIES=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
 PRINT ARG=la.* FILE=colvar
 \endplumedfile
 
@@ -71,7 +71,7 @@ quantities that were used in the paper by Lechner and Dellago \cite dellago-q6
 
 \plumedfile
 Q4 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q4
-LOCAL_AVERAGE ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
+LOCAL_AVERAGE SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
 PRINT ARG=la.* FILE=colvar
 \endplumedfile
 
@@ -91,13 +91,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// We overwrite this in order to have dumpmulticolvar working for local average
-  void normalizeVector( std::vector<double>& vals ) const {}
+  void normalizeVector( std::vector<double>& vals ) const override {}
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")

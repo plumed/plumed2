@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -77,7 +77,7 @@ class Tetrahedral : public CubicHarmonicBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Tetrahedral(const ActionOptions&);
-  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
+  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Tetrahedral,"TETRAHEDRAL")

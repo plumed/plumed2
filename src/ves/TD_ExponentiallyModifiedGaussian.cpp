@@ -112,7 +112,7 @@ class TD_ExponentiallyModifiedGaussian: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_ExponentiallyModifiedGaussian(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 

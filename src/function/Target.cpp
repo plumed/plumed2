@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,13 +86,13 @@ The contents of the file containing the reference structure (reference.pdb) is s
 labels of the CVs that are being used to define the position of the reference configuration in this file together with the values that these
 quantities take in the reference configuration.
 
-\verbatim
+\auxfile{reference.pdb}
 DESCRIPTION: a reference point.
 REMARK WEIGHT=1.0
 REMARK ARG=d1,d2
 REMARK d1=1.0 d2=1.0
 END
-\endverbatim
+\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -104,7 +104,7 @@ private:
   std::unique_ptr<PLMD::ArgumentOnlyDistance> target;
 public:
   explicit Target(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys );
 };
 

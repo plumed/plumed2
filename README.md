@@ -1,11 +1,14 @@
 [![Homepage](https://img.shields.io/badge/Home-plumed.org-green.svg)](http://www.plumed.org)
 [![Homepage](https://img.shields.io/badge/Google_group-plumed--users-green.svg)](http://groups.google.com/forum/#!forum/plumed-users)
 [![codecov](https://codecov.io/gh/plumed/plumed2/branch/master/graph/badge.svg)](https://codecov.io/gh/plumed/plumed2)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/plumed/plumed2.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/plumed/plumed2/context:python)
+[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/plumed/plumed2.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/plumed/plumed2/context:cpp)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
+[![MacPorts package](https://repology.org/badge/version-for-repo/macports/plumed.svg)](https://repology.org/project/plumed/versions)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/plumed/badges/version.svg)](https://anaconda.org/conda-forge/plumed)
+[![AUR package](https://repology.org/badge/version-for-repo/aur/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/plumed.svg)](https://repology.org/metapackage/plumed)
 
 Branches and releases
 ---------------------
@@ -41,9 +44,10 @@ Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) fo
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2019 (expected) | / |
+| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2020 (expected) | / |
+| v2.6     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.6)](https://travis-ci.org/plumed/plumed2)   | 2019 | yes |
 | v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
-| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | yes |
+| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | no |
 | v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
 | v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |

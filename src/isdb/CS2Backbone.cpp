@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -96,14 +96,14 @@ CAshifts.dat:
 #last of second chain
 \endverbatim
 
-The default behavior is to store the values for the active nuclei in components (ca_#, cb_#,
-co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
+The default behavior is to store the values for the active nuclei in components (ca-#, cb-#,
+co-#, ha-#, hn-#, nh-# and expca-#, expcb-#, expco-#, expha-#, exphn-#, exp-nh#) with NOEXP it is possible
 to only store the back-calculated values, where # includes a chain and residue number.
 
 One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
 calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-Additional material and examples can be also found in the tutorial \ref belfast-9 as well as in the cs2backbone regtests
+Additional material and examples can be also found in the tutorial \ref isdb-1 as well as in the cs2backbone regtests
 in the isdb folder.
 
 \par Examples
@@ -114,7 +114,7 @@ in NMR driven Metadynamics \cite Granata:2013dk :
 \plumedfile
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 DATADIR=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
+cs: CS2BACKBONE ATOMS=1-2612 DATADIR=data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
@@ -123,21 +123,21 @@ In this second example the chemical shifts are used as replica-averaged restrain
 
 \plumedfile
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
-encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
-stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
+encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 
 \endplumedfile
 
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=CS.dat STRIDE=1000
 PRINT ARG=cs.score FILE=BIAS STRIDE=100
 \endplumedfile
 
@@ -486,21 +486,20 @@ public:
 
   explicit CS2Backbone(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
-  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialize ALMOST.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system.");
   keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbor list update.");
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score.");
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimental values.");
@@ -607,14 +606,14 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
-        addComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
         setParameter(chemicalshifts[cs].exp_cs);
       } else {
-        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
       }
     }
     if(getDoScore()) Initialise(chemicalshifts.size());
@@ -624,9 +623,9 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
-      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
+      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       comp->set(chemicalshifts[cs].exp_cs);
     }
   }
@@ -686,12 +685,12 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
     ChemicalShift tmp_cs;
 
     tmp_cs.exp_cs = cs;
-    if(nucl=="CA")      tmp_cs.nucleus = "ca_";
-    else if(nucl=="CB") tmp_cs.nucleus = "cb_";
-    else if(nucl=="C")  tmp_cs.nucleus = "co_";
-    else if(nucl=="HA") tmp_cs.nucleus = "ha_";
-    else if(nucl=="H")  tmp_cs.nucleus = "hn_";
-    else if(nucl=="N")  tmp_cs.nucleus = "nh_";
+    if(nucl=="CA")      tmp_cs.nucleus = "ca-";
+    else if(nucl=="CB") tmp_cs.nucleus = "cb-";
+    else if(nucl=="C")  tmp_cs.nucleus = "co-";
+    else if(nucl=="HA") tmp_cs.nucleus = "ha-";
+    else if(nucl=="H")  tmp_cs.nucleus = "hn-";
+    else if(nucl=="N")  tmp_cs.nucleus = "nh-";
     tmp_cs.chain = ichain;
     tmp_cs.res_num = resnum;
     tmp_cs.res_type_curr = frag2enum(RES);

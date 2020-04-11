@@ -137,6 +137,8 @@ if exists("b:current_syntax")
   finish
 endif
 
+syntax case ignore
+
 let b:current_syntax="plumed"
 
 if exists("g:plumed_shortcuts")

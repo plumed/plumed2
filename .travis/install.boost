@@ -1,0 +1,29 @@
+#! /bin/bash
+  
+set -e
+set -x
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+# this should probably match system boost
+version=1.65.1
+
+version_=${version//./_}
+
+echo $version $version_
+
+wget https://sourceforge.net/projects/boost/files/boost/$version/boost_${version_}.tar.gz/download > /dev/null 2> /dev/null
+tar xzf download
+
+cd boost_${version_}
+
+./bootstrap.sh --with-libraries=serialization --prefix="$HOME/opt"
+
+# debug build:
+./b2 debug cxxflags=-D_GLIBCXX_DEBUG install -j 4 > /dev/null 2> /dev/null
+
+# release build would be this one:
+#./b2 release install -j 4 
+# not needed since we can use system boost
+
+

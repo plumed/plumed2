@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,16 +63,19 @@ class ConvertToFES : public ActionWithInputGrid {
 private:
   double simtemp;
   bool activated;
+  bool mintozero;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void prepare() { activated=true; }
-  void prepareForAveraging() { ActionWithInputGrid::prepareForAveraging(); activated=false; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
-  bool onStep() const { return activated; }
-  void runFinalJobs();
+  unsigned getNumberOfQuantities() const override;
+  bool ignoreNormalization() const override { return true; }
+  void prepare() override { activated=true; }
+  void prepareForAveraging() override { ActionWithInputGrid::prepareForAveraging(); activated=false; }
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  void finishComputations( const std::vector<double>& buffer ) override;
+  bool isPeriodic() override { return false; }
+  bool onStep() const override { return activated; }
+  void runFinalJobs() override;
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
@@ -80,6 +83,7 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
+  keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
   keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
   keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
 }
@@ -98,7 +102,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
   setAveragingAction( std::move(grid), true );
 
-  simtemp=0.; parse("TEMP",simtemp);
+  simtemp=0.; parse("TEMP",simtemp); parseFlag("MINTOZERO",mintozero);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
   else simtemp=plumed.getAtoms().getKbT();
   if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
@@ -121,6 +125,18 @@ void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const 
   if( !mygrid->noDerivatives() && val>0 ) {
     for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
   }
+}
+
+void ConvertToFES::finishComputations( const std::vector<double>& buffer ) {
+  ActionWithVessel::finishComputations( buffer );
+  if(!mintozero) return;
+
+  double optval = mygrid->getGridElement( 0, 0 );
+  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
+    double tval = mygrid->getGridElement( i, 0 );
+    if( tval<optval || std::isnan(optval) ) { optval=tval; }
+  }
+  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) mygrid->addToGridElement( i, 0, -optval );
 }
 
 void ConvertToFES::runFinalJobs() {

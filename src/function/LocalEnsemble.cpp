@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2019 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -82,7 +82,7 @@ class LocalEnsemble :
   unsigned narg;
 public:
   explicit LocalEnsemble(const ActionOptions&);
-  void     calculate();
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -93,7 +93,7 @@ void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","NUM","the number of local replicas");
-  ActionWithValue::useCustomisableComponents(keys);
+  useCustomisableComponents(keys);
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):

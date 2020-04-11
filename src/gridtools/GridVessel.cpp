@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2019 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,10 +95,12 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
     Tools::convert( str_min[i], min[i] );
     Tools::convert( str_max[i], max[i] );
     if( spacing.size()==dimension && binsin.size()==dimension ) {
-      double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]);
-      // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
-      if( fabs( binsin[i]*spacing[i]-range )>epsilon ) spc += 1;
-      if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i];
+      if( spacing[i]==0 ) nbin[i] = binsin[i];
+      else {
+        double range = max[i] - min[i]; nbin[i] = std::round( range / spacing[i]);
+        // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
+        if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
+      }
     } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
     else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;
     else plumed_error();

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2019 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,7 +95,7 @@ molecules in the protein channel described above.  The average coordination numb
 numbers more than 4 is then calculated.  The values of these two quantities are given the labels cav.mean and cav.morethan
 
 \plumedfile
-d1: COORDINATIONNUMBER SPECIES=20-500
+d1: COORDINATIONNUMBER SPECIES=20-500 R_0=0.1
 CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=cav
 \endplumedfile
 
@@ -119,9 +119,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeCavity(const ActionOptions& ao);
   ~VolumeCavity();
-  void setupRegions();
-  void update();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  void update() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")

@@ -248,7 +248,8 @@ the atomic positions. This is a very good way to understand what \ref WHOLEMOLEC
 is actually doing. Try the following input
 
 \plumedfile
-MOLINFO STRUCTURE=../TOPO/reference.pdb
+#SETTINGS MOLFILE=user-doc/tutorials/munster/TOPO/reference.pdb
+MOLINFO STRUCTURE=reference.pdb
 DUMPATOMS FILE=test1.gro ATOMS=1-22
 WHOLEMOLECULES ENTITY0=1-22
 DUMPATOMS FILE=test2.gro ATOMS=1-22
@@ -279,15 +280,14 @@ psi: TORSION ATOMS=7,9,15,17
 heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
 gyr: GYRATION ATOMS=heavy
 PRINT ARG=phi,psi,gyr FILE=analyze
-HISTOGRAM ...
+myhist: HISTOGRAM ...
   ARG=gyr
-  USE_ALL_DATA
-  KERNEL=discrete
+  KERNEL=DISCRETE
   GRID_MIN=0
   GRID_MAX=1
   GRID_BIN=50
-  GRID_WFILE=histogram
-... HISTOGRAM
+... 
+DUMPGRID GRID=myhist FILE=histogram 
 \endplumedfile
 
 An histogram with 50 bins will be performed on the gyration radius. Try to compute the histogram for
@@ -820,7 +820,7 @@ MOVINGRESTRAINT ...
   LABEL=res
   ARG=phi
   STEP0=0 AT0=-0.5pi KAPPA0=5
-  STEP1=10000 AT0=0.5pi 
+  STEP1=10000 AT1=0.5pi 
 ...
 PRINT ARG=phi,psi,res.work,res.phi_cntr FILE=colvar
 \endplumedfile

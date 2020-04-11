@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,12 +99,12 @@ class MultiColvarDensity : public gridtools::ActionWithGrid {
 public:
   explicit MultiColvarDensity(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  unsigned getNumberOfQuantities() const ;
-  bool isPeriodic() { return false; }
-  void clearAverage();
-  void prepareForAveraging();
-  void compute( const unsigned&, MultiValue& ) const ;
-  void apply() {}
+  unsigned getNumberOfQuantities() const override;
+  bool isPeriodic() override { return false; }
+  void clearAverage() override;
+  void prepareForAveraging() override;
+  void compute( const unsigned&, MultiValue& ) const override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")

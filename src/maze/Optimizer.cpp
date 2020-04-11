@@ -139,12 +139,12 @@ void Optimizer::registerKeywords(Keywords& keys) {
 Optimizer::Optimizer(const ActionOptions& ao)
   : PLUMED_COLVAR_INIT(ao),
     first_step_(true),
+    opt_value_(0.0),
     pbc_(true),
+    sampling_r_(0.0),
     serial_(false),
     validate_list_(true),
-    first_time_(true),
-    opt_value_(0.0),
-    sampling_r_(0.0)
+    first_time_(true)
 {
   parseFlag("SERIAL", serial_);
 
