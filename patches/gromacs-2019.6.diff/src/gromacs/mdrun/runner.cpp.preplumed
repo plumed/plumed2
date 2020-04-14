@@ -679,7 +679,7 @@ int Mdrunner::mdrunner()
     try
     {
         // It's possible that there are different numbers of GPUs on
-        // different nodes, which is the user's responsibilty to
+        // different nodes, which is the user's responsibility to
         // handle. If unsuitable, we will notice that during task
         // assignment.
         bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
@@ -1092,7 +1092,7 @@ int Mdrunner::mdrunner()
             MPI_Barrier(ms->mpi_comm_masters);
         }
         /* We need another barrier to prevent non-master ranks from contiuing
-         * when an error occured in a different simulation.
+         * when an error occurred in a different simulation.
          */
         MPI_Barrier(cr->mpi_comm_mysim);
     }

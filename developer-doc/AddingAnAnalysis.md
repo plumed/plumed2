@@ -179,7 +179,7 @@ As such in PLMD::dimred::DimensionalityReductionBase and its daughter classes we
 The dissimilarities between the input high dimensional frames will always be calculated by some method akin to PLMD::analysis::EuclideanDissimilarityMatrix.  
 PLMD::dimred::DimensionalityReductionBase inherits from PLMD::analysis::AnalysisBase and expects another PLMD::analysis::AnalysisBase object as input.  
 Furthermore, with the exception of PLMD::dimred::ClassicalMultiDimensionalScaling the input PLMD::AnalysisBase must be an 
-PLMD::dimred::DimensionalityReductionBase as initial guesses must be suggested when using an interative optimization algorithm such as PLMD::dimred::SMACOF.
+PLMD::dimred::DimensionalityReductionBase as initial guesses must be suggested when using an iterative optimization algorithm such as PLMD::dimred::SMACOF.
 
 Much of the work of dimensionality reduction done in the base PLMD::dimred::DimensionalityReductionBase class.  When implementing any new
 dimensionality reduction algorithm your focus will be on writing a PLMD::dimred::calculateProjections routines.  This function will take as

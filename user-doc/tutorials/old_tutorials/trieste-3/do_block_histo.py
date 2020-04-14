@@ -47,7 +47,7 @@ variance = ( norm /(norm-(norm2/norm)) ) * variance
 # And lastly divide by number of grids and square root to get an error bar for each grid point
 ngrid = 1 + len( glob.glob( "analysis.*." + filename ) )
 errors = np.sqrt( variance / ngrid )
-# Calcualte average error over grid and output in header
+# Calculate average error over grid and output in header
 for i in range(0,nquantities) :
         mean_error = sum(errors[i,:]) / len(errors[i,:])
         print("# Average error for " + str(i+1) + "th averaged function on grid equals ", mean_error )

@@ -78,7 +78,7 @@ replicas have the fictitious variables located properly in space.
 
 \warning
 \ref RESTART is not properly supported by this action. Indeed,
-at every start the postion of the fictitious variable is reset to the value
+at every start the position of the fictitious variable is reset to the value
 of the real variable, and its velocity is set to zero.
 This is not expected to introduce big errors, but certainly is
 introducing a small inconsistency between a single long run

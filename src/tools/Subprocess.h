@@ -102,7 +102,7 @@ public:
     Handler & operator=(const Handler & handler) = delete;
     /// Move constructor.
     Handler(Handler &&) noexcept;
-    /// Move assignemnt.
+    /// Move assignment.
     Handler & operator=(Handler && handler) noexcept;
   };
 /// Constructor with a command line.

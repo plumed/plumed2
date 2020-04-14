@@ -141,7 +141,7 @@ public:
   void print_html() const ;
 /// Print keywords in form readable by vim
   void print_vim() const ;
-/// Print the template version for the documenation
+/// Print the template version for the documentation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );

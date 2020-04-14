@@ -38,7 +38,7 @@ rvdw = 1.0
 rlist = 1.0
 rcoulomb = 1.0 
 cutoff-scheme=Verlet
-; Periodic boudary conditions in all the directions 
+; Periodic boundary conditions in all the directions
 pbc                      = xyz
 ;Temperature coupling
 tcoupl                   = v-rescale

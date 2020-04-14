@@ -1901,7 +1901,7 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #endif
 
 /*
-  With internal interface, it does not make sence to emit kernel register or fortran interfaces
+  With internal interface, it does not make sense to emit kernel register or fortran interfaces
 */
 
 #if ! __PLUMED_WRAPPER_EXTERN /*{*/

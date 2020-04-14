@@ -306,7 +306,7 @@ RDC::RDC(const ActionOptions&ao):
   if(svd&&!addexp) error("with SVD you need to set the COUPLING values");
 
 
-  // Ouput details of all contacts
+  // Output details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
   for(unsigned i=0; i<ndata; ++i) {
     log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());

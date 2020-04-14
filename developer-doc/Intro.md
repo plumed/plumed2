@@ -4,7 +4,7 @@ This is the developer manual. Please first have a look at the <a href="../../use
 
 Plumed 2 is written in C++ and uses many of the advanced, object-oriented features of this language.  This structure makes the implementation of collective coordinates and free energy methods straightforward.  In fact, it should be possible to implement methods and collective coordinates (CV) by creating a single file and without touching any other part of the code. Futhermore, to implement new methodology does not require one to be some sort of C++ wizzard. Rather, the code has been specifically redisigned to make the implementation of new CVs and new free energy methods straightforward so as to encourage people to implement whatever new functionality they require.  This document serves then to provide an introduction as to how to go about implementing new functionality in plumed. A good starting point is \ref INHERIT as this page contains links to parts of the manual where you can find information on how to go about implementing CV, functions and biases. Another useful page is the \subpage TOOLBOX page, which contains information on the many reusable objects that have been implemented in plumed.  
 
-If you want to understand a little more about the code and the way that we use the various features of C++ before you start then we describe this breifly here:   
+If you want to understand a little more about the code and the way that we use the various features of C++ before you start then we describe this briefly here:
 
 \ref ABriefIntroduction 
 
@@ -64,7 +64,7 @@ To add a class to this group, just put a
 \verbatim
 \ingroup MULTIINHERIT 
 \endverbatim
-statement somwhere inside the header.
+statement somewhere inside the header.
 @}
 
 \defgroup INHERIT Base classes for CVs, functions, biases, etc.

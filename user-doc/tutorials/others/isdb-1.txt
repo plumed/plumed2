@@ -269,7 +269,7 @@ PRINT ARG=byrdccaha.* STRIDE=200 FILE=BAYES.RDC.CAHA
 PRINT ARG=byj.*       STRIDE=200 FILE=BAYES.J
 PRINT ARG=bycs.*      STRIDE=200 FILE=BAYES.CS
 
-# the following are usefull for the analysis on-the-fly of the quality of the agreement with the experimentl data
+# the following are useful for the analysis on-the-fly of the quality of the agreement with the experimentl data
 ENSEMBLE ...
     ARG=(nh\.rdc_.*),(caha\.rdc_.*),(jhan\.j_.*),(jhahn\.j_.*),(jccg\.j_.*),(jncg\.j_.*),(cs\..._.*),pb.bias REWEIGHT
     LABEL=ens

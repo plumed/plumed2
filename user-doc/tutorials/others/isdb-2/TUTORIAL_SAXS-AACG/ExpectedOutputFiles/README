@@ -1,6 +1,6 @@
 Running:
 	> python martiniFormFactor_p3.py -f start.pdb -dat SASDAB7.dat -unit nm
-results in the following ouput files:
+results in the following output files:
 	aacg_template.pdb
 	plumed.dat
 	plumed_beads.dat

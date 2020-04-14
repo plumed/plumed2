@@ -198,7 +198,7 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 void EffectiveEnergyDrift::update() {
   bool pbc=atoms.getPbc().isSet();
 
-  //retrive data of local atoms
+  //retrieve data of local atoms
   const vector<int>& gatindex = atoms.getGatindex();
   nLocalAtoms = gatindex.size();
   atoms.getLocalPositions(positions);
