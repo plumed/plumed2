@@ -228,7 +228,7 @@ ActionShortcut(ao)
   readInputLine( combstr ); readInputLine("BIASVALUE ARG=" + getShortcutLabel() );
 
   // Print the theta values to the THETA file
-  std::string theta_str = "PRINT FILE=THETA FMT=%8.12f STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_wkernel-1" ;
+  std::string theta_str = "PRINT FILE=THETA FMT=%.8e STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_wkernel-1" ;
   for(unsigned k=1;k<weights.size();++k) {
     std::string num; Tools::convert( k+1, num );
     theta_str += "," + getShortcutLabel() + "_wkernel-" + num;
@@ -237,7 +237,7 @@ ActionShortcut(ao)
   readInputLine( theta_str );
 
   // Print the reduced CVs to a file
-  std::string cvs_str = "PRINT FILE=LOWD_CVS FMT=%8.12f STRIDE="+pacestr+" ARG=";
+  std::string cvs_str = "PRINT FILE=LOWD_CVS FMT=%.8e STRIDE="+pacestr+" ARG=";
   for(unsigned k=0;k<weights.size();++k) {
     std::string num; Tools::convert( k+1, num );
     if( neigv[k]==0 ) {
