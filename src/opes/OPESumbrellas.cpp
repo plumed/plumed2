@@ -67,7 +67,8 @@ private:
   double sigma_;
   std::vector<double> center_;
   std::vector<double> deltaF_;
-  double shiftC_;
+  double rct_;
+  double my_rct_;
   double epsilon_;
   double current_bias_;
 
@@ -75,7 +76,6 @@ private:
   double work_;
   std::vector<double> old_deltaF_;
 
-  std::string deltaFsFileName_;
   OFile deltaFsOfile_;
   unsigned print_stride_;
 
@@ -115,7 +115,7 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("derCV","default","derivative of the bias wrt the CV");
+  keys.addOutputComponent("rct","WALKERS_MPI","single walker estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, all walkers should converge to the same value");
   keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update"); //calculating this maybe is only a useless overhead...
 }
 
@@ -124,7 +124,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(0)
-  , shiftC_(0)
+  , rct_(0)
+  , my_rct_(0)
   , work_(0)
   , print_stride_(1)
 {
@@ -168,7 +169,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
     epsilon_=std::exp(-beta_*barrier);
 
 //deltaFs file
-  parse("FILE",deltaFsFileName_);
+  std::string deltaFsFileName;
+  parse("FILE",deltaFsFileName);
   parse("PRINT_STRIDE",print_stride_);
   std::string fmt;
   parse("FMT",fmt);
@@ -179,7 +181,6 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
     P0_contribution_=1;
   else
     P0_contribution_=0;
-  log.printf(" --- ADD_P0 adding P0 to the target\n");
 
 //work flag
   parseFlag("CALC_WORK",calc_work_);
@@ -226,16 +227,22 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   if(NumWalkers_>1)
   {
     if(walker_rank>0)
-      deltaFsFileName_="/dev/null"; //only first walker writes on file
+      deltaFsFileName="/dev/null"; //only first walker writes on file
     deltaFsOfile_.enforceSuffix("");
   }
+  deltaFsOfile_.open(deltaFsFileName);
   if(fmt.length()>0)
     deltaFsOfile_.fmtField(" "+fmt);
   deltaFsOfile_.setHeavyFlush(); //do I need it?
+  deltaFsOfile_.addConstantField("print_stride");
+  deltaFsOfile_.printField("print_stride",(int)print_stride_);
 
 //add and set output components
-  addComponent("derCV");
-  componentIsNotPeriodic("derCV");
+  if(walkers_mpi && NumWalkers_>1)
+  {
+    addComponent("rct");
+    componentIsNotPeriodic("rct");
+  }
   if(calc_work_)
   {
     addComponent("work");
@@ -252,6 +259,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(barrier!=0)
     log.printf("  bias BARRIER = %g\n",barrier);
+  if(add_P0)
+    log.printf(" --- ADD_P0: adding P0 to the target\n");
   if(walkers_mpi)
     log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
@@ -270,20 +279,20 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
     ifile.link(*this);
     if(NumWalkers_>1)
       ifile.enforceSuffix("");
-    if(ifile.FileExist(deltaFsFileName_))
+    if(ifile.FileExist(deltaFsFileName))
     {
-      log.printf("  Restarting from: %s\n",deltaFsFileName_.c_str());
+      log.printf("  Restarting from: %s\n",deltaFsFileName.c_str());
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
-      ifile.open(deltaFsFileName_);
+      ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
       ifile.scanFieldList(deltaFsName);//TODO add a check to see if the temp/pres grid is the same?
-      const unsigned pre_f=2; //time and shiftC
+      const unsigned pre_f=2; //time and rct
       const unsigned post_f=1; //print_stride
-      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName_+"' file");
+      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
       const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
       const std::size_t first=lastW.find_first_of("_");
       const std::size_t last=lastW.find_last_of("_");
-      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName_+"' file: could find 2 steps in "+lastW);
+      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName+"' file: could find 2 steps in "+lastW);
       unsigned read_umbrellas=0;
       try
       {
@@ -291,10 +300,10 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       }
       catch(std::exception const & e)
       {
-        error("RESTART - something wrong with '"+deltaFsFileName_+"' file: "+e.what());
+        error("RESTART - something wrong with '"+deltaFsFileName+"' file: "+e.what());
       }
-      plumed_massert(read_umbrellas==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName_+"' file: steps not matching size");
-      plumed_massert(read_umbrellas==tot_umbrellas_,"RESTART - mismatch between number of umbrellas set and number of umbrellas in restart file '"+deltaFsFileName_+"'");
+      plumed_massert(read_umbrellas==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
+      plumed_massert(read_umbrellas==tot_umbrellas_,"RESTART - mismatch between number of umbrellas set and number of umbrellas in restart file '"+deltaFsFileName+"'");
       deltaF_.resize(tot_umbrellas_);
       isFirstStep_=false;//avoid initializing again
     //read steps from file
@@ -306,7 +315,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       {
         if(calc_work_)
           old_deltaF_=deltaF_;
-        ifile.scanField("shiftC",shiftC_);
+        ifile.scanField("rct",rct_);
         for(unsigned i=0; i<tot_umbrellas_; i++)
           ifile.scanField(deltaFsName[pre_f+i],deltaF_[i]);
         ifile.scanField();
@@ -321,7 +330,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
         multi_sim_comm.Barrier();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
+      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
   }
 
 //Bibliography
@@ -337,7 +346,7 @@ void OPESumbrellas::calculate()
     return;
 
   const double cv=getArgument(0);
-  long double sum=P0_contribution_;
+  long double sum=0;
   long double der_sum_cv=0;
   for(unsigned i=rank_; i<tot_umbrellas_; i+=NumParallel_)
   {
@@ -351,6 +360,7 @@ void OPESumbrellas::calculate()
     comm.Sum(sum);
     comm.Sum(der_sum_cv);
   }
+  sum+=P0_contribution_;
   const unsigned tot_steps=tot_umbrellas_+P0_contribution_;
 //regularize with epsilon_
   if(epsilon_>0)
@@ -361,19 +371,17 @@ void OPESumbrellas::calculate()
 
   current_bias_=-1./beta_*std::log(sum/tot_steps);
   setBias(current_bias_);
-//  setOutputForce(0,1./beta_*der_sum_cv/sum);
-  const double der_cv=-1./beta_*der_sum_cv/sum;
-  setOutputForce(0,-der_cv);
-  getPntrToComponent("derCV")->set(der_cv);
+  setOutputForce(0,1./beta_*der_sum_cv/sum);
 
 //calculate work
   if(calc_work_)
   {
-    long double old_sum=P0_contribution_;
+    long double old_sum=0;
     for(unsigned i=rank_; i<tot_umbrellas_; i+=NumParallel_)
       old_sum+=std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],cv)/sigma_,2)+beta_*old_deltaF_[i]));
     if(NumParallel_>1)
       comm.Sum(old_sum);
+    old_sum+=P0_contribution_;
     work_+=-1./beta_*std::log(sum/old_sum);
   }
 
@@ -426,10 +434,10 @@ void OPESumbrellas::update()
   if(NumWalkers_==1)
   {
     counter_++;
-    const double increment=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_+shiftC_)))/(counter_-1.));
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-rct_)))/(counter_-1.));
     for(unsigned i=0; i<tot_umbrellas_; i++)
-      deltaF_[i]+=-increment-1./beta_*std::log1p(std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],cv)/sigma_,2)+beta_*(current_bias_+shiftC_+deltaF_[i])))/(counter_-1.));
-    shiftC_+=increment-1./beta_*std::log1p(-1./counter_);
+      deltaF_[i]+=increment-1./beta_*std::log1p(std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],cv)/sigma_,2)+beta_*(current_bias_-rct_+deltaF_[i])))/(counter_-1.));
+    rct_+=increment+1./beta_*std::log1p(-1./counter_);
   }
   else
   {
@@ -448,18 +456,23 @@ void OPESumbrellas::update()
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       counter_++;
-      const double increment_w=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]+shiftC_)))/(counter_-1.));
+      const double increment_w=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]-rct_)))/(counter_-1.));
       for(unsigned i=0; i<tot_umbrellas_; i++)
-        deltaF_[i]+=-increment_w-1./beta_*std::log1p(std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],all_cv[w])/sigma_,2)+beta_*(all_bias[w]+shiftC_+deltaF_[i])))/(counter_-1.));
-      shiftC_+=increment_w-1./beta_*std::log1p(-1./counter_);
+        deltaF_[i]+=increment_w-1./beta_*std::log1p(std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],all_cv[w])/sigma_,2)+beta_*(all_bias[w]-rct_+deltaF_[i])))/(counter_-1.));
+      rct_+=increment_w+1./beta_*std::log1p(-1./counter_);
     }
+    //calc single walker rct
+    const unsigned single_counter=(counter_-1)/NumWalkers_+1;
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-my_rct_)))/(single_counter-1.));
+    my_rct_+=increment+1./beta_*std::log1p(-1./single_counter);
+    getPntrToComponent("rct")->set(my_rct_);
   }
 
 //write to file
   if(((counter_-1)/NumWalkers_)%print_stride_==0)
   {
     deltaFsOfile_.printField("time",getTime());
-    deltaFsOfile_.printField("shiftC",shiftC_);
+    deltaFsOfile_.printField("rct",rct_);
     for(unsigned i=0; i<tot_umbrellas_; i++)
       deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
     deltaFsOfile_.printField();
@@ -491,12 +504,9 @@ void OPESumbrellas::init_from_obs()
     old_deltaF_=deltaF_;
   obs_cv_.clear();
 
-//open and initialize deltaFs file
-  deltaFsOfile_.open(deltaFsFileName_);
-  deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+//print initialization to file
   deltaFsOfile_.printField("time",getTime());
-  deltaFsOfile_.printField("shiftC",shiftC_);
+  deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<tot_umbrellas_; i++)
     deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
   deltaFsOfile_.printField();

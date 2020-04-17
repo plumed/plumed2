@@ -71,7 +71,8 @@ private:
   std::vector<double> beta_p_;
   std::vector<double> pres_p_;
   std::vector< std::vector<double> > deltaF_;
-  double shiftC_;
+  double rct_;
+  double my_rct_;
   double current_bias_;
 
   double border_weight_;
@@ -81,7 +82,6 @@ private:
   double work_;
   std::vector< std::vector<double> > old_deltaF_;
 
-  std::string deltaFsFileName_;
   OFile deltaFsOfile_;
   unsigned print_stride_;
 
@@ -127,8 +127,7 @@ void OPESmultiThermalBaric::registerKeywords(Keywords& keys) {
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("derEne","default","derivative of the bias wrt the energy");
-  keys.addOutputComponent("derVol","default","derivative of the bias wrt the volume");
+  keys.addOutputComponent("rct","WALKERS_MPI","single walker estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, all walkers should converge to the same value");
   keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update"); //calculating this maybe is only a useless overhead...
 }
 
@@ -137,7 +136,8 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(0)
-  , shiftC_(0)
+  , rct_(0)
+  , my_rct_(0)
   , work_(0)
   , print_stride_(1)
 {
@@ -200,7 +200,8 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   parse("BORDER_WEIGHT",border_weight_);
 
 //deltaFs file
-  parse("FILE",deltaFsFileName_);
+  std::string deltaFsFileName;
+  parse("FILE",deltaFsFileName);
   parse("PRINT_STRIDE",print_stride_);
   std::string fmt;
   parse("FMT",fmt);
@@ -255,7 +256,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ STEPS_TEMP and STEPS_PRES are used, thus OBSERVATION_STEP is set to 1\n"
                "                 Reference energy and initial deltaFs can be set with a fake RESTART\n");
   if(walkers_mpi)
-    log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
+    log.printf("  WALKERS_MPI: if present, multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
   {
     log.printf("  Using multiple walkers\n");
@@ -272,20 +273,20 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
     ifile.link(*this);
     if(NumWalkers_>1)
       ifile.enforceSuffix("");
-    if(ifile.FileExist(deltaFsFileName_))
+    if(ifile.FileExist(deltaFsFileName))
     {
-      log.printf("  Restarting from: %s\n",deltaFsFileName_.c_str());
+      log.printf("  Restarting from: %s\n",deltaFsFileName.c_str());
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
-      ifile.open(deltaFsFileName_);
+      ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
       ifile.scanFieldList(deltaFsName);//TODO add a check to see if the temp/pres grid is the same?
-      const unsigned pre_f=2; //time and shiftC
+      const unsigned pre_f=2; //time and rct
       const unsigned post_f=1; //print_stride
-      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName_+"' file");
+      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
       const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
       const std::size_t first=lastW.find_first_of("_");
       const std::size_t last=lastW.find_last_of("_");
-      plumed_massert(first!=last,"RESTART - something wrong with '"+deltaFsFileName_+"' file: could not find 2 steps in "+lastW);
+      plumed_massert(first!=last,"RESTART - something wrong with '"+deltaFsFileName+"' file: could not find 2 steps in "+lastW);
       try
       {
         steps_beta_=std::stoi(lastW.substr(first+1,last-first-1));
@@ -293,9 +294,9 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       }
       catch(std::exception const & e)
       {
-        error("RESTART - something wrong with '"+deltaFsFileName_+"' file: "+e.what());
+        error("RESTART - something wrong with '"+deltaFsFileName+"' file: "+e.what());
       }
-      plumed_massert(steps_beta_*steps_pres_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName_+"' file: steps not matching size");
+      plumed_massert(steps_beta_*steps_pres_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
       init_integration_grid();
       deltaF_.resize(steps_beta_,std::vector<double>(steps_pres_));
       isFirstStep_=false;//avoid initializing again
@@ -308,7 +309,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       {
         if(calc_work_)
           old_deltaF_=deltaF_;
-        ifile.scanField("shiftC",shiftC_);
+        ifile.scanField("rct",rct_);
         for(unsigned i=0; i<steps_beta_; i++)
           for(unsigned j=0; j<steps_pres_; j++)
             ifile.scanField(deltaFsName[pre_f+i*steps_pres_+j],deltaF_[i][j]);
@@ -324,7 +325,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
         multi_sim_comm.Barrier();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
+      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
   }
 
 //setup deltaFs file, without opening it
@@ -332,24 +333,22 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   if(NumWalkers_>1)
   {
     if(walker_rank>0)
-      deltaFsFileName_="/dev/null"; //only first walker writes on file
+      deltaFsFileName="/dev/null"; //only first walker writes on file
     deltaFsOfile_.enforceSuffix("");
   }
+  deltaFsOfile_.open(deltaFsFileName);
   if(fmt.length()>0)
     deltaFsOfile_.fmtField(" "+fmt);
   deltaFsOfile_.setHeavyFlush(); //do I need it?
-  if(getRestart())
-  { //open and initialize deltaFs file
-    deltaFsOfile_.open(deltaFsFileName_);
-    deltaFsOfile_.addConstantField("print_stride");
-    deltaFsOfile_.printField("print_stride",(int)print_stride_);
-  }
+  deltaFsOfile_.addConstantField("print_stride");
+  deltaFsOfile_.printField("print_stride",(int)print_stride_);
 
 //add and set output components
-  addComponent("derEne");
-  componentIsNotPeriodic("derEne");
-  addComponent("derVol");
-  componentIsNotPeriodic("derVol");
+  if(walkers_mpi && NumWalkers_>1)
+  {
+    addComponent("rct");
+    componentIsNotPeriodic("rct");
+  }
   if(calc_work_)
   {
     addComponent("work");
@@ -399,13 +398,8 @@ void OPESmultiThermalBaric::calculate()
 
   current_bias_=-1./beta_*std::log(sum/tot_steps_);
   setBias(current_bias_);
-
-  const double der_ene=-1./beta_*der_sum_ene/sum;
-  const double der_vol=-1./beta_*der_sum_vol/sum;
-  setOutputForce(0,-der_ene);
-  setOutputForce(1,-der_vol);
-  getPntrToComponent("derEne")->set(der_ene);
-  getPntrToComponent("derVol")->set(der_vol);
+  setOutputForce(0,1./beta_*der_sum_ene/sum);
+  setOutputForce(1,1./beta_*der_sum_vol/sum);
 
 //calculate work
   if(calc_work_)
@@ -467,11 +461,11 @@ void OPESmultiThermalBaric::update()
   if(NumWalkers_==1)
   { //log1p(arg)=log(1+arg)
     counter_++;
-    const double increment=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_+shiftC_)))/(counter_-1.));
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-rct_)))/(counter_-1.));
     for(unsigned i=0; i<steps_beta_; i++)
       for(unsigned j=0; j<steps_pres_; j++)
-        deltaF_[i][j]+=-increment-1./beta_*std::log1p(get_weight(beta_p_[i],ene,pres_p_[j],vol,current_bias_+shiftC_+deltaF_[i][j])/(counter_-1.));
-    shiftC_+=increment-1./beta_*std::log1p(-1./counter_);
+        deltaF_[i][j]+=increment-1./beta_*std::log1p(get_weight(beta_p_[i],ene,pres_p_[j],vol,current_bias_-rct_+deltaF_[i][j])/(counter_-1.));
+    rct_+=increment+1./beta_*std::log1p(-1./counter_);
   }
   else
   {
@@ -493,19 +487,24 @@ void OPESmultiThermalBaric::update()
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       counter_++;
-      const double increment_w=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]+shiftC_)))/(counter_-1.));
+      const double increment_w=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]-rct_)))/(counter_-1.));
       for(unsigned i=0; i<steps_beta_; i++)
         for(unsigned j=0; j<steps_pres_; j++)
-          deltaF_[i][j]+=-increment_w-1./beta_*std::log1p(get_weight(beta_p_[i],all_ene[w],pres_p_[j],all_vol[w],all_bias[w]+shiftC_+deltaF_[i][j])/(counter_-1.));
-      shiftC_+=increment_w-1./beta_*std::log1p(-1./counter_);
+          deltaF_[i][j]+=increment_w-1./beta_*std::log1p(get_weight(beta_p_[i],all_ene[w],pres_p_[j],all_vol[w],all_bias[w]-rct_+deltaF_[i][j])/(counter_-1.));
+      rct_+=increment_w+1./beta_*std::log1p(-1./counter_);
     }
+    //calc single walker rct
+    const unsigned single_counter=(counter_-1)/NumWalkers_+1;
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-my_rct_)))/(single_counter-1.));
+    my_rct_+=increment+1./beta_*std::log1p(-1./single_counter);
+    getPntrToComponent("rct")->set(my_rct_);
   }
 
 //write to file
   if(((counter_-1)/NumWalkers_)%print_stride_==0)
   {
     deltaFsOfile_.printField("time",getTime());
-    deltaFsOfile_.printField("shiftC",shiftC_);
+    deltaFsOfile_.printField("rct",rct_);
     for(unsigned i=0; i<steps_beta_; i++)
       for(unsigned j=0; j<steps_pres_; j++)
         deltaFsOfile_.printField("deltaF_"+std::to_string(i+1)+"_"+std::to_string(j+1),deltaF_[i][j]);
@@ -596,12 +595,9 @@ void OPESmultiThermalBaric::init_from_obs()
   obs_ene_.clear();
   obs_vol_.clear();
 
-//open and initialize deltaFs file
-  deltaFsOfile_.open(deltaFsFileName_);
-  deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+//print initialization to file
   deltaFsOfile_.printField("time",getTime());
-  deltaFsOfile_.printField("shiftC",shiftC_);
+  deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<steps_beta_; i++)
     for(unsigned j=0; j<steps_pres_; j++)
       deltaFsOfile_.printField("deltaF_"+std::to_string(i+1)+"_"+std::to_string(j+1),deltaF_[i][j]);

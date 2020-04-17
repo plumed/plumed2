@@ -73,7 +73,8 @@ private:
   double lambda_;
   std::vector<double> lambda_p_;
   std::vector<double> deltaF_;
-  double shiftC_;
+  double rct_;
+  double my_rct_;
   double current_bias_;
 
   double border_weight_;
@@ -83,7 +84,6 @@ private:
   double work_;
   std::vector<double> old_deltaF_;
 
-  std::string deltaFsFileName_;
   OFile deltaFsOfile_;
   unsigned print_stride_;
 
@@ -110,7 +110,7 @@ void OPESmultiLambda::registerKeywords(Keywords& keys) {
   keys.add("compulsory","LAMBDA","0","lambda of the underlying simulation");
   keys.add("compulsory","MIN_LAMBDA","0","the minimum of the lambda range");
   keys.add("compulsory","MAX_LAMBDA","1","the maximum of the lambda range");
-  keys.add("optional","STEPS_LAMBDA","manually set the number of intermediate temperatures");
+  keys.add("optional","STEPS_LAMBDA","manually set the number of intermediate lambdas");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
   keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
@@ -124,6 +124,7 @@ void OPESmultiLambda::registerKeywords(Keywords& keys) {
 
 //output components
   componentsAreNotOptional(keys);
+  keys.addOutputComponent("rct","WALKERS_MPI","single walker estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, all walkers should converge to the same value");
   keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update"); //calculating this maybe is only a useless overhead...
 }
 
@@ -132,7 +133,8 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(0)
-  , shiftC_(0)
+  , rct_(0)
+  , my_rct_(0)
   , work_(0)
   , print_stride_(1)
 {
@@ -173,7 +175,8 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   parse("BORDER_WEIGHT",border_weight_);
 
 //deltaFs file
-  parse("FILE",deltaFsFileName_);
+  std::string deltaFsFileName;
+  parse("FILE",deltaFsFileName);
   parse("PRINT_STRIDE",print_stride_);
   std::string fmt;
   parse("FMT",fmt);
@@ -223,14 +226,22 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   if(NumWalkers_>1)
   {
     if(walker_rank>0)
-      deltaFsFileName_="/dev/null"; //only first walker writes on file
+      deltaFsFileName="/dev/null"; //only first walker writes on file
     deltaFsOfile_.enforceSuffix("");
   }
+  deltaFsOfile_.open(deltaFsFileName);
   if(fmt.length()>0)
     deltaFsOfile_.fmtField(" "+fmt);
   deltaFsOfile_.setHeavyFlush(); //do I need it?
+  deltaFsOfile_.addConstantField("print_stride");
+  deltaFsOfile_.printField("print_stride",(int)print_stride_);
 
 //add and set output components
+  if(walkers_mpi && NumWalkers_>1)
+  {
+    addComponent("rct");
+    componentIsNotPeriodic("rct");
+  }
   if(calc_work_)
   {
     addComponent("work");
@@ -264,29 +275,29 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
     ifile.link(*this);
     if(NumWalkers_>1)
       ifile.enforceSuffix("");
-    if(ifile.FileExist(deltaFsFileName_))
+    if(ifile.FileExist(deltaFsFileName))
     {
-      log.printf("  Restarting from: %s\n",deltaFsFileName_.c_str());
+      log.printf("  Restarting from: %s\n",deltaFsFileName.c_str());
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
-      ifile.open(deltaFsFileName_);
+      ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
       ifile.scanFieldList(deltaFsName);//TODO add a check to see if the temp/pres grid is the same?
-      const unsigned pre_f=2; //time and shiftC
+      const unsigned pre_f=2; //time and rct
       const unsigned post_f=1; //print_stride
-      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName_+"' file");
+      plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
       const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
       const std::size_t first=lastW.find_first_of("_");
       const std::size_t last=lastW.find_last_of("_");
-      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName_+"' file: could find 2 steps in "+lastW);
+      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName+"' file: could find 2 steps in "+lastW);
       try
       {
         steps_lambda_=std::stoi(lastW.substr(last+1,lastW.size()-last-1));
       }
       catch(std::exception const & e)
       {
-        error("RESTART - something wrong with '"+deltaFsFileName_+"' file: "+e.what());
+        error("RESTART - something wrong with '"+deltaFsFileName+"' file: "+e.what());
       }
-      plumed_massert(steps_lambda_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName_+"' file: steps not matching size");
+      plumed_massert(steps_lambda_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
       init_integration_grid();
       deltaF_.resize(steps_lambda_);
       isFirstStep_=false;//avoid initializing again
@@ -299,7 +310,7 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
       {
         if(calc_work_)
           old_deltaF_=deltaF_;
-        ifile.scanField("shiftC",shiftC_);
+        ifile.scanField("rct",rct_);
         for(unsigned i=0; i<steps_lambda_; i++)
           ifile.scanField(deltaFsName[pre_f+i],deltaF_[i]);
         ifile.scanField();
@@ -314,7 +325,7 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
         multi_sim_comm.Barrier();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName_.c_str());
+      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
   }
 
 //Bibliography
@@ -405,10 +416,10 @@ void OPESmultiLambda::update()
   if(NumWalkers_==1)
   {
     counter_++;
-    const double increment=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_+shiftC_)))/(counter_-1.));
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-rct_)))/(counter_-1.));
     for(unsigned i=0; i<steps_lambda_; i++)
-      deltaF_[i]+=-increment-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+current_bias_+shiftC_+deltaF_[i])))/(counter_-1.));
-    shiftC_+=increment-1./beta_*std::log1p(-1./counter_);
+      deltaF_[i]+=increment-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*field+current_bias_-rct_+deltaF_[i])))/(counter_-1.));
+    rct_+=increment+1./beta_*std::log1p(-1./counter_);
   }
   else
   {
@@ -427,18 +438,23 @@ void OPESmultiLambda::update()
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       counter_++;
-      const double increment_w=-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]+shiftC_)))/(counter_-1.));
+      const double increment_w=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(all_bias[w]-rct_)))/(counter_-1.));
       for(unsigned i=0; i<steps_lambda_; i++)
-        deltaF_[i]+=-increment_w-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*all_field[w]+all_bias[w]+shiftC_+deltaF_[i])))/(counter_-1.));
-      shiftC_+=increment_w-1./beta_*std::log1p(-1./counter_);
+        deltaF_[i]+=increment_w-1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*((lambda_-lambda_p_[i])*all_field[w]+all_bias[w]-rct_+deltaF_[i])))/(counter_-1.));
+      rct_+=increment_w+1./beta_*std::log1p(-1./counter_);
     }
+    //calc single walker rct
+    const unsigned single_counter=(counter_-1)/NumWalkers_+1;
+    const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-my_rct_)))/(single_counter-1.));
+    my_rct_+=increment+1./beta_*std::log1p(-1./single_counter);
+    getPntrToComponent("rct")->set(my_rct_);
   }
 
 //write to file
   if(((counter_-1)/NumWalkers_)%print_stride_==0)
   {
     deltaFsOfile_.printField("time",getTime());
-    deltaFsOfile_.printField("shiftC",shiftC_);
+    deltaFsOfile_.printField("rct",rct_);
     for(unsigned i=0; i<steps_lambda_; i++)
       deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
     deltaFsOfile_.printField();
@@ -502,12 +518,9 @@ void OPESmultiLambda::init_from_obs()
     old_deltaF_=deltaF_;
   obs_field_.clear();
 
-//open and initialize deltaFs file
-  deltaFsOfile_.open(deltaFsFileName_);
-  deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+//print initialization to file
   deltaFsOfile_.printField("time",getTime());
-  deltaFsOfile_.printField("shiftC",shiftC_);
+  deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<steps_lambda_; i++)
     deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
   deltaFsOfile_.printField();
