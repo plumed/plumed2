@@ -367,8 +367,8 @@ do
        echo There are no examples inside documentation for action: $flag >> errors
      fi
        { 
-        awk '{if($1!="*/"){print $0}}END{print "\\hidden"}' automatic/$flag.tmp
-        awk '{print $0}END{print "\\endhidden \n */"}' automatic/$flag.man
+        awk '{if($1!="*/"){print $0}}END{print "\\par Glossary of keywords and components"}' automatic/$flag.tmp
+        awk '{print $0}END{print "*/"}' automatic/$flag.man
        } > automatic/$flag.txt
    fi
 done
