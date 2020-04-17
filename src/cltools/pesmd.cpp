@@ -208,7 +208,7 @@ public:
       }
     // And initialize the velocities
     for(int i=0; i<nat; ++i) for(int j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * sqrt( temp );
-    // And calcualte the kinetic energy
+    // And calculate the kinetic energy
     double tke=0;
     for(int i=0; i<nat; ++i) {
       for(int j=0; j<3; ++j) {

@@ -55,7 +55,7 @@ for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.s
     fi
 done
 
-# Test for existance of spelling results
+# Test for existence of spelling results
 if [ ! -f spelling_results ] ; then
    exit 0
 fi

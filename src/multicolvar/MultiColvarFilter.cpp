@@ -55,7 +55,7 @@ void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, 
   invals.copyValues( outvals );
   if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
 
-  // Retrive the value of the multicolvar and apply filter
+  // Retrieve the value of the multicolvar and apply filter
   double val=invals.get(1), df, weight=applyFilter( val, df );
 
   // Now propegate derivatives

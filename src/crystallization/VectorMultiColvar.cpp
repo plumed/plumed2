@@ -59,7 +59,7 @@ void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp ) {
 }
 
 void VectorMultiColvar::doNotCalculateDirector() {
-  store_director=false;    // Need a sanity check in here  so that you don't use the same instance of Q4 to calcualte vectors and directors
+  store_director=false;    // Need a sanity check in here so that you don't use the same instance of Q4 to calculate vectors and directors
 }
 
 double VectorMultiColvar::compute( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const {

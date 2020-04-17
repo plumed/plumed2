@@ -596,7 +596,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           log<<"  Writing full grid on file "<<myout<<" \n";
           gridfile.open(myout);
 
-          // also this is usefull only for free energy
+          // also this is useful only for free energy
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);

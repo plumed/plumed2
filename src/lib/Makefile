@@ -384,7 +384,7 @@ ifeq ($(program_can_run),no)
 	@echo "WARNING: This is normal if you are cross compiling."
 	@echo "WARNING: - to patch an MD code use '$(program_name)-patch'"
 	@echo "WARNING: - to verify configuration use '$(program_name)-config'"
-	@echo "WARNING: - a few other command line tools are avalable as $(libdir)/$(program_name)/plumed-*"
+	@echo "WARNING: - a few other command line tools are available as $(libdir)/$(program_name)/plumed-*"
 else ifeq ($(program_can_run_mpi),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: unless you invoke it as '$(program_name) --no-mpi'"

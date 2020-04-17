@@ -869,7 +869,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
 /* END PLUMED HREX */
     if (re->bNPT)
     {
-        /* revist the calculation for 5.0.  Might be some improvements. */
+        /* revisit the calculation for 5.0.  Might be some improvements. */
         dpV = (beta[ap] * re->pres[ap] - beta[bp] * re->pres[bp]) * (Vol[b] - Vol[a]) / PRESFAC;
         if (bPrint)
         {

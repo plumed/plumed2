@@ -372,7 +372,7 @@ class LogMFD : public Bias {
   int    interval;              ///< input parameter, period of MD steps when fictitious dynamical variables are evolved.
   double delta_t;               ///< input parameter, one time step of MFD when fictitious dynamical variables are evolved.
   string thermostat;            ///< input parameter, type of thermostat for canonical dyanamics.
-  double kbt;                   ///< k_B*temerature
+  double kbt;                   ///< k_B*temperature
 
   int    TAMD;                  ///< input parameter, perform TAMD instead of LogMFD.
   double alpha;                 ///< input parameter, alpha parameter for LogMFD.
@@ -698,7 +698,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
    \brief calculate forces for fictitious variables at every MD steps.
    \details This function calculates initial values of fictitious variables
    and write header messages to LogMFD log files at the first MFD step,
-   calculates restraining fources comes from difference between the fictious variable
+   calculates restraining fources comes from difference between the fictitious variable
    and collective variable at every MD steps.
 */
 void LogMFD::calculate() {

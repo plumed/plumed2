@@ -1,4 +1,4 @@
-\page Miscelaneous Miscelaneous
+\page Miscellaneous Miscellaneous
 
 - \subpage comments
 - \subpage ContinuationLines

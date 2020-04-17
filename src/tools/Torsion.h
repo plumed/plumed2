@@ -37,7 +37,7 @@ namespace PLMD {
 /// inside the Torsion class, we can remove it later and write compute as
 /// a static function.
 class Torsion {
-// still empty, but may accomodate some options in the future
+// still empty, but may accommodate some options in the future
 public:
 /// Compute the angle between the projections of v1 and v3 on the plane orthogonal
 /// to v2. To have a "normal" definition (= plumed1), use it as

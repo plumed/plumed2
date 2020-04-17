@@ -54,7 +54,7 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
   char buffer[1000];
   buffer[0]=0;
   for(unsigned i=0; i<40; i++) os<<" ";
-  os<<"      Cycles        Total      Average      Minumum      Maximum\n";
+  os<<"      Cycles        Total      Average      Minimum      Maximum\n";
 
   std::vector<std::string> names;
   for(const auto & it : watches) names.push_back(it.first);
