@@ -1,0 +1,5 @@
+website: https://github.com/molmod/yaff
+
+notes: An interface to PLUMED has been available in Yaff since Jul 2019
+
+install: Information on using PLUMED with Yaff is available <a href="https://github.com/molmod/yaff/blob/master/doc/ug_sampling.rst">here</a>

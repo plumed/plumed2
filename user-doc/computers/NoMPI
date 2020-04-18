@@ -1,0 +1,12 @@
+@question@ Compiling a no-mpi version of PLUMED
+
+<p>
+It is usually not necessary to install both an MPI and a non-MPI PLUMED version of PLUMED. The PLUMED library only calls MPI functions
+when the MD code is compiled with MPI. Furthermore, the PLUMED executable can be invked with a <code>--no-mpi</code> flag on the login node
+as shown below:</p>
+<pre class="fragment">
+&gt; plumed --no-mpi
+</pre>
+<p>This command will run even if PLUMED was compiled with MPI and the login node does not support MPI.
+The only cases where you might need two different PLUMED installations for the compute
+and login node is when you are cross compiling.</p>

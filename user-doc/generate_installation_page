@@ -1,0 +1,274 @@
+#!/bin/bash
+
+create_configure() {
+   local compcom=$1
+   local ccc=$2
+   local option_start=`grep -n "Optional Features:" configure_help.log | sed -e s/":Optional Features:"//`
+   local option_end=`grep -n "Some influential environment variables:" configure_help.log | sed -e s/":Some influential environment variables:"//`
+   local noptions=`head -n $(($option_end-2)) configure_help.log | tail -n +$(($option_start+4)) | grep "\-\-enable\-" | wc -l | awk '{print $1}'`
+
+   local subcomp=`echo $compcom | sed -e s@"./configure"@@`
+   local opts=( $subcomp )
+   # Build the links that insert information from the options included
+   baseconf="./configure"
+   for opt in "${opts[@]}"; do 
+       if [[ "$opt" != '""' ]] ; then
+           substr="$(cut -d'=' -f1 <<<"$opt")"
+           # Note this shitty fix so we can convert things like CXXFLAGS='-DMPICH_IGNORE_CXX_SEEK&-mt_mpi' to CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi".
+           # Any better ideas? 
+           fopt=`echo $opt | sed -e s/\'/\"/g | sed -e s/"&"/" "/g`
+           baseconf=`echo $baseconf '<b name="'$ccc$substr$'" onclick=\'openModal("'$substr$'")\'>'$fopt'</b>'`
+       fi
+   done
+
+   # And build the expanded version of the configuration that includes the tooltips
+   allconf="";
+   for ((i=1;i<$noptions;i++)) ; do
+       com_start=`head -n $(($option_end-2)) configure_help.log | tail -n +$(($option_start+4)) | grep -n "\-\-enable\-" | head -n $i | tail -n 1 | awk '{print $1}' | sed -e s/":"//`
+       com_end=`head -n $(($option_end-2)) configure_help.log | tail -n +$(($option_start+4)) | grep -n "\-\-enable\-" | head -n $((i+1)) | tail -n 1 | awk '{print $1}' | sed -e s/":"//`
+       dataopt=`head -n $(($option_end-2)) configure_help.log | tail -n +$(($option_start+4)) | head -n $(($com_end-1)) | tail -n +$com_start`
+       # Search for this option in input string
+       found=0
+       for opt in "${opts[@]}"; do 
+           substr="$(cut -d'=' -f1 <<<"$opt")"
+           if [[ "$dataopt" == *"$substr"* ]]; then 
+              found=1
+              break
+           fi
+       done   
+       # Create a tooltip for this option from the help information if it is not included in the input command
+       if [ $found -eq 0 ] ; then
+            fff=`echo $dataopt | 
+                 awk '{
+                   tooltip="";
+                   for(i=1;i<=NF;++i){
+                       if(nrec==0){ option=$i; } 
+                       else { tooltip = tooltip " " $i; }                
+   
+                       if(founddef==1 && $i=="yes"){printf "<div class=\"tooltip\">%s", option; founddef=0;}
+                       else if(founddef==1 && $i=="no"){gsub(/enable/,"disable",option); printf "<div class=\"tooltip\">%s", option; founddef=0;}
+                       else if(founddef==1){printf "<div class=\"tooltip\">%s=%s ",option, $i; founddef=0;}
+                       else if($i=="default:"){founddef=1;}
+                       nrec++;
+                   }
+                   printf "<div class=\"right\">%s<i></i></div></div>", tooltip;
+                 }'`
+            allconf=`echo $allconf $fff`
+       fi
+   done 
+   
+   # Write out the button to toggle between versions
+   echo '<div style="width: 80%; float:left">Click on the options in the command shown below for more information</div>'
+   echo '<div style="width: 10%; float:left"><button type="button" id="'$ccc$'_button" onclick=\'swapConfigure("'$ccc$'")\'>hide defaults</button></div>'
+   # Write out the div that holds the configure command
+   echo '<div style="width: 100%; float:left" id="conf_'$ccc'"></div>'
+   # Write out the div that will hold the information on the various commands that the user will look at
+   echo '<div style="width: 100%; float:left" id="'$ccc'"></div>'
+   # This script ensures that the short version of the configure is loaded when the page opens
+   echo '<pre style="width: 97%;" class="fragment"></pre>'
+   echo '<script type="text/javascript">'
+   echo 'if (window.addEventListener) { // Mozilla, Netscape, Firefox'
+   echo "    window.addEventListener('load', "$ccc"_Load, false);"
+   echo '} else if (window.attachEvent) { // IE'
+   echo "    window.attachEvent('onload', "$ccc"_Load);";
+   echo '}'
+   echo 'function '$ccc'_Load(event) {'
+   echo '    swapConfigure("'$ccc'");'
+   echo '}'
+   echo '</script>'
+   # Write out the short version of the configure
+   echo '<div style="display:none;" id="'$ccc'_short">'
+   echo '<pre style="width: 97%;" class="fragment">'$baseconf'</pre>'
+   echo '</div>'
+   # Write out the long version of the configure
+   echo '<div style="display:none;" id="'$ccc'_long">'
+   echo '<pre style="width: 97%;" class="fragment">'$baseconf $allconf'</pre>'
+   echo '</div>'
+}
+
+build_computer_list() {
+   n=0
+   echo "<script>"
+   echo "function showComputer( name ) {"
+   echo "  var mydiv = document.getElementById(\"computediv\");"
+   for computer in `ls computers` ; do
+      if [ $n -eq 0 ] ; then
+           echo "  if( name==\"$computer\") {"
+      else 
+           echo "  } else if( name==\"$computer\") {"
+      fi
+      n=1
+      echo "    var mydata1 = document.getElementById(\"$computer\");"
+      echo "    mydiv.innerHTML = mydata1.innerHTML;"
+   done
+   echo "  } else {"
+   echo "    mydiv.innerHTML = \"\";"
+   echo "  }"
+   echo "}"
+   echo "</script>"
+   echo "<div class=\"dropdown\">"
+   echo "  <button class=\"dropbtn\">Select the topic you would like more information about</button>"
+   echo "  <div class=\"dropdown-content\">"
+   for computer in `ls computers` ; do
+       question=`grep @question@ computers/$computer | sed -e s/@question@//`
+       echo "  <a onclick='showComputer(\"$computer\")'>$question</a>"
+   done
+   echo "  </div>"
+   echo "</div>"
+   for computer in `ls computers` ; do
+      echo "<div style=\"display:none;\" id=\"$computer\">"
+      ninstalines1=`wc -l computers/$computer | awk '{print $1}'`
+      for ((jn=1;jn<=$ninstalines1;jn++)) ; do
+          thisline=`head -n $jn computers/$computer | tail -n 1` 
+          if [[ "$thisline" == *"@configure("* ]] ; then
+             inputconf=`echo $thisline | sed -e s/"@configure("// | sed -e s/")@"//`
+             # Create the configure (command below ensure correct interprettation of input)
+             confcom=`echo $inputconf | awk -F[\"] '{print $2}'`
+             divname=`echo $inputconf | awk -F[\"] '{print $3}'`
+             create_configure "$confcom" $divname
+          elif [[ "$thisline" != *"@question@"* ]] ; then
+             echo $thisline
+          fi
+      done
+      echo "</div>" 
+   done
+   echo "<div style=\"width: 100%; float:left\" id=\"computediv\"></div>"
+}
+
+printCodeFunction() {
+   mdcode=$1
+   mdcodenohpy=`echo $1 | sed -e s/-//g`
+   echo 'var '$mdcodenohpy'_cbox=document.getElementById("'$mdcode'_cbox");'
+   echo 'if(' $mdcodenohpy'_cbox.checked ) {' 
+   echo '  var '$mdcodenohpy'_data;'
+   echo '  if ( current_instructions=="local" ) {' 
+   echo '     '$mdcodenohpy'_data=document.getElementById("'$mdcode'_local");'
+   echo '  } else if( current_instructions=="cross" ) {'
+   echo '     '$mdcodenohpy'_data=document.getElementById("'$mdcode'_cross");'
+   echo '  } else {'
+   echo '     '$mdcodenohpy'_data=document.getElementById("'$mdcode'");'
+   echo '}'
+   echo '  mdcodedata += '$mdcodenohpy'_data.innerHTML;'
+   echo '}'
+}
+
+printCheckbox() {
+   mdcode=$1
+   label=$mdcode
+   if [[ "$label" == "mdcodeother" ]] ; then 
+      label="other" 
+   fi
+   echo '<td align="right" style="padding: 10px"><label class="container">' $label
+   echo '<input type="checkbox" id="'$mdcode$'_cbox" onclick=\'updateCheck("'$mdcode$'")\'>'
+   echo '<span class="checkmark"></span>'
+   echo '</label></td>'
+}
+
+# Get all the help information from the configure script so that we can use it to construct configure commands
+../configure --help > configure_help.log
+
+# Work out how many lines there are in the installation pages
+ninstalines=`wc -l Installation.md | awk '{print $1}'`
+# Now work through each line at a time to create the new file
+for ((ln=1;ln<=$ninstalines;ln++)) ; do
+    thisline=`head -n $ln Installation.md | tail -n 1`
+    if [[ "$thisline" == "@configure-conda@" ]] ; then
+       concomm=`grep configure ../conda/plumed/build.sh`
+       # Create the configure
+       create_configure "$concomm" condaconf1
+    elif [[ "$thisline" == *"@configure("* ]] ; then
+       inputconf=`echo $thisline | sed -e s/"@configure("// | sed -e s/")@"//`
+       # Create the configure (command below ensure correct interprettation of input)
+       confcom=`echo $inputconf | awk -F[\"] '{print $2}'`
+       divname=`echo $inputconf | awk -F[\"] '{print $3}'`
+       create_configure "$confcom" $divname
+    elif [[ "$thisline" == "@computer-data@" ]] ; then
+       build_computer_list 
+    # This makes the colspan correct for the table at the start
+    elif [[ "$thisline" == *"@nrows@"* ]] ; then 
+          outline=`echo $thisline | sed -e s/@nrows@/4/g`
+          echo $outline
+    # Build function for controlling information on MD codes based on checkboxes
+    elif [[ "$thisline" == "@MDCODEFUNC@" ]] ; then
+       for file in ../patches/*.diff ; do
+           myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
+           mytag=`echo "$myengine" | sed -e 's/\./-/g'`
+           printCodeFunction $mytag 
+       done
+       for mdcod in `ls codes` ; do
+          printCodeFunction $mdcod
+       done
+    # Build list of checkpoint boxes for MD codes
+    elif [[ "$thisline" == "@MDCODEBOXES@" ]] ; then
+       jcode=0
+       for file in ../patches/*.diff ; do
+           myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
+           mytag=`echo "$myengine" | sed -e 's/\./-/g'`
+           printCheckbox $mytag 
+           jcode=$(($jcode+1))
+           if ! (($jcode % 6)) ; then
+              echo "</tr><tr>"
+           fi 
+       done 
+       for mdcod in `ls codes` ; do 
+           printCheckbox $mdcod
+           jcode=$(($jcode+1))
+           if ! (($jcode % 6)) ; then
+              echo "</tr><tr>"
+           fi
+       done 
+       printCheckbox mdcodeother
+    # Include data on MD codes
+    elif [[ "$thisline" == "@MDCODEDATA@" ]] ; then
+       for file in ../patches/*.diff ; do
+           myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
+           mytag=`echo "$myengine" | sed -e 's/\./-/g'`
+           intro=`echo "<p>Before compiling @MDcode@ you need to ensure that PLUMED is properly compiled and that the PLUMED executable appears in the execution path.</p>" | sed -e s/@MDcode@/$mytag/g`
+           instruct=`cat patch_instructions | sed -e s/@MDcode@/$mytag/g` 
+           specifics=`../src/lib/plumed --no-mpi patch -e $myengine -i -q`
+           echo '<div style="display:none;" id="'$mytag$'_local">'
+           echo '<h2> Building' $mytag 'with PLUMED </h2>' 
+           echo $intro
+           finstruct=`echo $instruct | sed -e s/"plumed-patch"/"plumed patch"/g | sed -e s/"--runtime"/"--shared"/g `
+           final=`echo $specifics | awk -v d="$finstruct" '{gsub("@PATCHINSTRUCTIONS@",d); print $0}' | sed -e s/@PATCHINSTRUCTIONS@//`
+           echo $final
+           echo '</div>'
+           echo '<div style="display:none;" id="'$mytag$'_cross">'
+           echo '<h2> Building' $mytag 'with PLUMED </h2>' 
+           echo $intro
+           final=`echo $specifics | awk -v d="$instruct" '{gsub("@PATCHINSTRUCTIONS@",d); print $0}' | sed -e s/@PATCHINSTRUCTIONS@//` 
+           echo $final
+           echo '</div>'
+           echo '<div style="display:none;" id="'$mytag$'">'
+           echo '<h2> Building' $mytag 'with PLUMED </h2>' 
+           echo $intro
+           finstruct=`echo $instruct | sed -e s/"plumed-patch"/"plumed patch"/g` 
+           final=`echo $specifics | awk -v d="$finstruct" '{gsub("@PATCHINSTRUCTIONS@",d); print $0}'| sed -e s/@PATCHINSTRUCTIONS@//`   
+           echo $final
+           echo '</div>'
+       done  
+       for mdcod in `ls codes` ; do
+           website=`grep "website:" codes/$mdcod | sed -e s/website://`
+           install=`grep "install:" codes/$mdcod | sed -e s/install://`
+           echo '<div style="display:none;" id="'$mdcod$'_local">'
+           echo '<h2> Building' $mdcod 'with PLUMED </h2>' 
+           echo '<p> You can download' $mdcod 'from <a href="'$website$'">'$website$'</a>.  PLUMED support is provided natively by' $mdcod'.'
+           echo $install '</p>'
+           echo '</div>'
+           echo '<div style="display:none;" id="'$mdcod$'_cross">'
+           echo '<h2> Building' $mdcod 'with PLUMED </h2>' 
+           echo '<p> You can download' $mdcod 'from <a href="'$website$'">'$website$'</a>.  PLUMED support is provided natively by' $mdcod'.'
+           echo $install '</p>'
+           echo '</div>' 
+           echo '<div style="display:none;" id="'$mdcod$'">'
+           echo '<h2> Building' $mdcod 'with PLUMED </h2>' 
+           echo '<p> You can download' $mdcod 'from <a href="'$website$'">'$website$'</a>.  PLUMED support is provided natively by' $mdcod'.'
+           echo $install '</p>'
+           echo '</div>'
+       done
+    else 
+       echo $thisline
+    fi
+done
+
+rm -f configure_help.log

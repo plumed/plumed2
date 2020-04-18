@@ -1,0 +1,5 @@
+website: http://www.cp2k.org 
+
+notes: PLUMED has been available in CP2K since Feb 2015. 
+
+install: You can find information on how to install and use PLUMED with CP2K <a href="https://www.cp2k.org/howto:install_with_plumed">here.</a>

@@ -1,0 +1,11 @@
+@question@ Compiling on a Cray machine
+
+<p>
+On Cray machines you often have to set the <code>CRAYPE_LINK_TYPE</code> environmental variable
+before configuring and building both PLUMED and the MD code that you want to patch with PLUMED.
+You can set this variable using the command:
+<p>
+<pre class="fragment">
+export CRAYPE_LINK_TYPE=dynamic
+</pre> 
+<p> Our thanks to Marco De La Pierre for reporting this requirement</p>

@@ -1,0 +1,5 @@
+website: http://espressomd.org 
+
+notes: A version of ESPResSo that has been patched with PLUMED can be found <a href="http://davidebr.github.io/espresso/">here</a>
+
+install: Instructions on how to compile and use PLUMED with ESPResSo <a href="http://davidebr.github.io/espresso/">here</a>

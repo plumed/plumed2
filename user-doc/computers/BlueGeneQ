@@ -1,0 +1,11 @@
+@question@ Compiling on a Blue Gene Q
+
+<p> 
+On Blue Gene Q (likely on AIX) the prelinking made with <code>ld -r</code> is not
+working properly. There is no easy way to detect this at configure time.
+If, however, you receive an error in the form:
+</p>
+<pre class="fragment">
+ld: TOC section size exceeds 64k
+</pre>
+<p> when you run <code>make</code> please configure PLUMED again using the flag <code>--disable-ld-r</code></p>

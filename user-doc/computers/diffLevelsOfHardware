@@ -1,0 +1,12 @@
+@question@ Compiling on machines with different levels of hardware
+
+<p>
+PLUMED needs to be well optimized to run efficiently.
+If you need a single PLUMED binary to run efficiency on machines with different levels of hardware (for example, if 
+some of your workstations support AVX and some do not), then with then intel compiler you can use 
+a configure command like the one shown below:</p>
+
+@configure("./configure CXX=mpicxx CXXFLAGS='-O3&-axSSE2,AVX'" diffLev1)@
+
+<p>This will take more time to compile but it will allow you to use a single module. If you cannot use this option, you should install two
+PLUMED versions with different optimization levels.</p>

@@ -424,8 +424,16 @@ rm -f *PP.txt *PP.md
 
 keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
 
+# This generates the page with the instructions for installation
+./generate_installation_page > InstallationPP.md
+
 for f in *.txt *.md
 do
+
+# Installation page is created by specialist script
+if [ "$f" == "Installation.md" ] ; then
+   continue
+fi 
 
 test -f $f || continue
 

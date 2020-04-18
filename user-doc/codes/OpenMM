@@ -1,0 +1,5 @@
+website: http://openmm.org
+
+notes: To use openMM and PLUMED you need to download the <a href="http://github.com/peastman/openmm-plumed">openmmp-plumed plugin</a>
+
+install: Instructions on installing and using the openmmp-plumed plugin is available <a href="http://github.com/peastman/openmm-plumed">here</a>

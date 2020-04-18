@@ -1,0 +1,5 @@
+website: http://github.com/TuckermanGroup/PINY
+
+notes: You can use PINY in its plumed branch.
+
+install: You can find instructions on how to install PLUMED with PINY <a href="https://github.com/TuckermanGroup/PINY/tree/plumed">here.</a>

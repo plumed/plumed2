@@ -1,0 +1,5 @@
+website: https://lammps.sandia.gov/ 
+
+notes: There has been a native implementation of PLUMED in LAMMPS since Nov 2018.  Details on how to use PLUMED with LAMMPS is available <a href="https://lammps.sandia.gov/doc/fix_plumed.html">here</a>
+
+install: You can find information about installing LAMMPS with PLUMED <a href="https://lammps.sandia.gov/doc/Build_extras.html#user-plumed-package">here</a>

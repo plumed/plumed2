@@ -1,0 +1,5 @@
+website: https://github.com/PHOTOX/ABIN 
+
+notes: There is nothing special to note about ABIN. 
+
+install: You can find the interface to PLUMED for this code <a href="https://github.com/PHOTOX/ABIN/blob/master/plumed.F90">here</a>.

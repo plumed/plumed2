@@ -1,0 +1,10 @@
+@question@ Compiling using Intel MPI
+
+<p>
+To build PLUMED with Intel MPI you need to include the flags <code>-lmpi_mt -mt_mpi -DMPICH_IGNORE_CXX_SEEK</code> when compiling and the
+flags <code>-lmpi_mt -mt_mpi</code> when linking.  To do so you can use the configure command:</p>
+
+@configure("./configure LDFLAGS=-lmpi_mt CXXFLAGS='-DMPICH_IGNORE_CXX_SEEK&-mt_mpi' STATIC_LIBS=-mt_mpi" intel1)@
+
+<p> This tip was provided by Abhishek Acharya.  You can read more about it in
+<a href="https://groups.google.com/d/msgid/plumed-users/CAB1aw3y0m%3D5qwzsZY4ZB-aBevsL5iuS%3DmQuSWK_cw527zCMqzg%40mail.gmail.com?utm_medium=email&utm_source=footer">this thread.</a></p>
