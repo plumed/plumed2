@@ -215,7 +215,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set mother wavelets will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not usable.");
   keys.add("optional","MIN_GRID_SIZE","The minimal number of grid bins of the Wavelet function. The true number depends also on the used wavelet type and will probably be larger. Defaults to 1000.");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
-  keys.add("optional","FORMAT_WAVELET_DUMP","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","WAVELET_FILE_FMT","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
 }
@@ -245,7 +245,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
     std::string fmt = "%13.6f";
-    parse("FORMAT_WAVELET_DUMP",fmt);
+    parse("WAVELET_FILE_FMT",fmt);
     waveletGrid_->setOutputFmt(fmt); // property of grid not OFile determines fmt
     wavelet_gridfile.link(*this);
     wavelet_gridfile.enforceBackup();

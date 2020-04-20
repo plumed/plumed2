@@ -30,11 +30,41 @@ namespace ves {
 
 //+PLUMEDOC VES_BASISF BF_CUBIC_B_SPLINES
 /*
-Cubic B spline basis functions
+A basis using cubic B spline functions according to \cite habermann_multidimensional_2007 .
+
+\attention
+__These basis functions do not form orthogonal bases__.
+
+The mathematical expression of the individual splines is given by
+\f{align*}{
+  h\left(x\right) =
+  \begin{cases}
+    \left(2 - \lvert x \rvert\right)^3, & 1 \leq \lvert x \rvert \leq 2\\
+    4 - 6\lvert x \rvert^2 + 3 \lvert x \rvert^3,\qquad & \lvert x \rvert \leq 1\\
+    0, & \text{elsewhere}.
+  \end{cases}
+\f}
+
+The full basis consists of equidistant splines at positions \f$\mu_i\f$ which are optimized in their height:
+\f{align*}{
+  f_i\left(x\right) = h\left(\frac{x-\mu_i}{\sigma}\right)
+\f}
+
+Note that the distance between individual splines cannot be chosen freely but is equal to the width: \f$\mu_{i+1} = \mu_{i} + \sigma\f$.
+
+The ORDER keyword of the basis set determines the number of equally sized sub-intervalls to be used.
+On the borders of each of these sub-intervalls the mean \f$\mu_i\f$ of a spline function is placed.
+
+The total number of basis functions is \f$\text{ORDER}+4\f$ as the constant \f$f_{0}(x)=1\f$, as well as the two splines with means just outside the interval are also included.
+
 
 \par Examples
+The bias is expanded with cubic B splines in the intervall from 0.0 to 10.0 specifying an order of 20.
+This results in 24 basis functions.
 
-\par Test
+\plumedfile
+bf: BF_CUBIC_B_SPLINES MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

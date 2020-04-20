@@ -68,7 +68,7 @@ The optimization procedure then adjusts the heigths of the individual Gaussians.
 
 The bias is expanded with Gaussian functions in the intervall from 0.0 to
 10.0 using order 20.
-This results in 22 basis functions.
+This results in 24 basis functions.
 
 \plumedfile
 bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
