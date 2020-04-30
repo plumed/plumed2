@@ -131,7 +131,7 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.addFlag("ADD_P0",false,"add also P0 to the target distribution, useful to make sure the target is broader than P0");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
-  keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
+  keys.add("optional","PRINT_STRIDE","( default=100 ) stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
   keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
@@ -154,7 +154,7 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   , rct_(0)
   , my_rct_(0)
   , work_(0)
-  , print_stride_(1)
+  , print_stride_(100)
 {
   //TODO is there a way to check that ARG is actually energy,volume,CV?
   plumed_massert(getNumberOfArguments()==3,"only ENERGY, VOLUME and a CV should be given as ARG");
@@ -353,8 +353,9 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
       deltaF_.resize(steps_beta_,std::vector< std::vector<double> >(steps_pres_,std::vector<double>(tot_umbrellas_)));
       isFirstStep_=false;//avoid initializing again
     //read steps from file
-      int restart_stride=1;
+      int restart_stride;
       ifile.scanField("print_stride",restart_stride);
+      plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");
       ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
       double time;
       while(ifile.scanField("time",time)) //room for improvements: only last line is important
@@ -367,9 +368,10 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
             for(unsigned k=0; k<tot_umbrellas_; k++)
               ifile.scanField(deltaFsName[pre_f+i*steps_pres_*tot_umbrellas_+j*tot_umbrellas_+k],deltaF_[i][j][k]);
         ifile.scanField();
-        counter_+=restart_stride;
+        counter_+=print_stride_;
       }
-      log.printf("  Successfully read %d steps\n",counter_);
+      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
+      counter_=counter_*NumWalkers_+1; //adjust counter
       ifile.reset(false);
       ifile.close();
     //sync all walkers and treads and close file. Not sure is mandatory but is no harm

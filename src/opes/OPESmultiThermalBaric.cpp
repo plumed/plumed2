@@ -116,7 +116,7 @@ void OPESmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.add("optional","STEPS_PRESSURE","manually set the number of intermediate pressures");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
-  keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
+  keys.add("optional","PRINT_STRIDE","( default=100 ) stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
   keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
@@ -139,7 +139,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   , rct_(0)
   , my_rct_(0)
   , work_(0)
-  , print_stride_(1)
+  , print_stride_(100)
 {
   //TODO is there a way to check that ARG is actually energy,volume?
   plumed_massert(getNumberOfArguments()==2,"only ENERGY and VOLUME should be given as ARG");
@@ -254,7 +254,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(steps_beta_!=0 && steps_pres_!=0)
     log.printf(" +++ WARNING +++ STEPS_TEMP and STEPS_PRES are used, thus OBSERVATION_STEP is set to 1\n"
-               "                 Reference energy and initial deltaFs can be set with a fake RESTART\n");
+               "                 Custom initial deltaFs can be set with a fake RESTART\n");
   if(walkers_mpi)
     log.printf("  WALKERS_MPI: if present, multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
@@ -301,8 +301,9 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       deltaF_.resize(steps_beta_,std::vector<double>(steps_pres_));
       isFirstStep_=false;//avoid initializing again
     //read steps from file
-      int restart_stride=1;
+      int restart_stride;
       ifile.scanField("print_stride",restart_stride);
+      plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");
       ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
       double time;
       while(ifile.scanField("time",time)) //room for improvements: only last line is important
@@ -314,9 +315,10 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
           for(unsigned j=0; j<steps_pres_; j++)
             ifile.scanField(deltaFsName[pre_f+i*steps_pres_+j],deltaF_[i][j]);
         ifile.scanField();
-        counter_+=restart_stride;
+        counter_+=print_stride_;
       }
-      log.printf("  Successfully read %d steps\n",counter_);
+      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
+      counter_=counter_*NumWalkers_+1; //adjust counter
       ifile.reset(false);
       ifile.close();
     //sync all walkers and treads and close file. Not sure is mandatory but is no harm

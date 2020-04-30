@@ -113,7 +113,7 @@ void OPESmultiLambda::registerKeywords(Keywords& keys) {
   keys.add("optional","STEPS_LAMBDA","manually set the number of intermediate lambdas");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
-  keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
+  keys.add("optional","PRINT_STRIDE","( default=100 ) stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
   keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
@@ -136,7 +136,7 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   , rct_(0)
   , my_rct_(0)
   , work_(0)
-  , print_stride_(1)
+  , print_stride_(100)
 {
   plumed_massert(getNumberOfArguments()==1,"olny the field complementary to lambda should be given as ARG");
 
@@ -221,33 +221,6 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
 
   checkRead();
 
-//setup deltaFs file, without opening it
-  deltaFsOfile_.link(*this);
-  if(NumWalkers_>1)
-  {
-    if(walker_rank>0)
-      deltaFsFileName="/dev/null"; //only first walker writes on file
-    deltaFsOfile_.enforceSuffix("");
-  }
-  deltaFsOfile_.open(deltaFsFileName);
-  if(fmt.length()>0)
-    deltaFsOfile_.fmtField(" "+fmt);
-  deltaFsOfile_.setHeavyFlush(); //do I need it?
-  deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
-
-//add and set output components
-  if(walkers_mpi && NumWalkers_>1)
-  {
-    addComponent("rct");
-    componentIsNotPeriodic("rct");
-  }
-  if(calc_work_)
-  {
-    addComponent("work");
-    componentIsNotPeriodic("work");
-  }
-
 //printing some info
   log.printf("  Beta = %g\n",beta_);
   log.printf("  Running at TEMP = %g\n",1./(Kb*beta_));
@@ -256,7 +229,7 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(steps_lambda_!=0)
     log.printf(" +++ WARNING +++ STEPS_LAMBDA is used, thus OBSERVATION_STEP is set to 1\n"
-               "                 Reference field and initial deltaFs can be set with a fake RESTART\n");
+               "                 Custom initial deltaFs can be set with a fake RESTART\n");
   if(walkers_mpi)
     log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
@@ -281,29 +254,35 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
       ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
-      ifile.scanFieldList(deltaFsName);//TODO add a check to see if the temp/pres grid is the same?
+      ifile.scanFieldList(deltaFsName);
+    //check range consistency
       const unsigned pre_f=2; //time and rct
       const unsigned post_f=1; //print_stride
       plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
-      const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
-      const std::size_t first=lastW.find_first_of("_");
-      const std::size_t last=lastW.find_last_of("_");
-      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName+"' file: could find 2 steps in "+lastW);
-      try
-      {
-        steps_lambda_=std::stoi(lastW.substr(last+1,lastW.size()-last-1));
-      }
-      catch(std::exception const & e)
-      {
-        error("RESTART - something wrong with '"+deltaFsFileName+"' file: "+e.what());
-      }
+      if(steps_lambda_==0)
+        steps_lambda_=deltaFsName.size()-pre_f-post_f;
       plumed_massert(steps_lambda_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
+      const std::string firstW=deltaFsName[pre_f];
+      const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
+      const std::size_t _pos=firstW.find_first_of("_");
+      std::size_t test_pos=firstW.find_last_of("_");
+      plumed_massert(_pos==test_pos,"RESTART - something wrong with '"+deltaFsFileName+"' file: more than 1 depencency (_) found");
+      test_pos=lastW.find_last_of("_");
+      plumed_massert(_pos==test_pos,"RESTART - something wrong with '"+deltaFsFileName+"' file: wrong format of FIELDS names");
+      const std::string read_min_lambda=firstW.substr(_pos+1,firstW.size()-_pos-1);
+      const std::string used_min_lambda=std::to_string(lambda_p_[0]);
+      plumed_massert(used_min_lambda==read_min_lambda,"mismatch between provided MIN_LAMBDA and the one in restart");
+      const std::string read_max_lambda=lastW.substr(_pos+1,lastW.size()-_pos-1);
+      const std::string used_max_lambda=std::to_string(lambda_p_[1]);
+      plumed_massert(used_max_lambda==read_max_lambda,"mismatch between provided MAX_LAMBDA and the one in restart");
+    //initialize
       init_integration_grid();
       deltaF_.resize(steps_lambda_);
       isFirstStep_=false;//avoid initializing again
     //read steps from file
-      int restart_stride=1;
+      int restart_stride;
       ifile.scanField("print_stride",restart_stride);
+      plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");
       ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
       double time;
       while(ifile.scanField("time",time)) //room for improvements: only last line is important
@@ -314,9 +293,10 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
         for(unsigned i=0; i<steps_lambda_; i++)
           ifile.scanField(deltaFsName[pre_f+i],deltaF_[i]);
         ifile.scanField();
-        counter_+=restart_stride;
+        counter_+=print_stride_;
       }
-      log.printf("  Successfully read %d steps\n",counter_);
+      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
+      counter_=counter_*NumWalkers_+1; //adjust counter
       ifile.reset(false);
       ifile.close();
     //sync all walkers and treads. Not sure is mandatory but is no harm
@@ -326,6 +306,33 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+  }
+
+//setup deltaFs file, without opening it
+  deltaFsOfile_.link(*this);
+  if(NumWalkers_>1)
+  {
+    if(walker_rank>0)
+      deltaFsFileName="/dev/null"; //only first walker writes on file
+    deltaFsOfile_.enforceSuffix("");
+  }
+  deltaFsOfile_.open(deltaFsFileName);
+  if(fmt.length()>0)
+    deltaFsOfile_.fmtField(" "+fmt);
+  deltaFsOfile_.setHeavyFlush(); //do I need it?
+  deltaFsOfile_.addConstantField("print_stride");
+  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+
+//add output components
+  if(walkers_mpi && NumWalkers_>1)
+  {
+    addComponent("rct");
+    componentIsNotPeriodic("rct");
+  }
+  if(calc_work_)
+  {
+    addComponent("work");
+    componentIsNotPeriodic("work");
   }
 
 //Bibliography
@@ -456,7 +463,7 @@ void OPESmultiLambda::update()
     deltaFsOfile_.printField("time",getTime());
     deltaFsOfile_.printField("rct",rct_);
     for(unsigned i=0; i<steps_lambda_; i++)
-      deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
+      deltaFsOfile_.printField("deltaF_"+std::to_string(lambda_p_[i]),deltaF_[i]);
     deltaFsOfile_.printField();
   }
 }
@@ -522,7 +529,7 @@ void OPESmultiLambda::init_from_obs()
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<steps_lambda_; i++)
-    deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
+    deltaFsOfile_.printField("deltaF_"+std::to_string(lambda_p_[i]),deltaF_[i]);
   deltaFsOfile_.printField();
 }
 

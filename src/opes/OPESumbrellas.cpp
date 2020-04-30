@@ -83,7 +83,6 @@ public:
   OPESumbrellas(const ActionOptions&);
   void calculate() override;
   void update() override;
-  void init_integration_grid();
   void init_from_obs();
   unsigned estimate_steps(const double,const double,const std::vector<double>&,const std::string) const;
   static void registerKeywords(Keywords& keys);
@@ -97,14 +96,14 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","PACE","10","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","0","number of unbiased initial steps to collect statistics for initial deltaFs guess");
-  keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");
+  keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");//TODO make default 'inf' instead of 0
 //umbrella stuff
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
   keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
-  keys.add("optional","PRINT_STRIDE","stride for printing to DELTAFS file");
+  keys.add("optional","PRINT_STRIDE","( default=100 ) stride for printing to DELTAFS file");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
   keys.addFlag("ADD_P0",false,"add also P0 to the target distribution, useful to make sure the target is broader than P0");
@@ -127,7 +126,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   , rct_(0)
   , my_rct_(0)
   , work_(0)
-  , print_stride_(1)
+  , print_stride_(100)
 {
   plumed_massert(getNumberOfArguments()==1,"only one cv is supported");
 
@@ -222,33 +221,6 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
 
   checkRead();
 
-//setup deltaFs file, without opening it
-  deltaFsOfile_.link(*this);
-  if(NumWalkers_>1)
-  {
-    if(walker_rank>0)
-      deltaFsFileName="/dev/null"; //only first walker writes on file
-    deltaFsOfile_.enforceSuffix("");
-  }
-  deltaFsOfile_.open(deltaFsFileName);
-  if(fmt.length()>0)
-    deltaFsOfile_.fmtField(" "+fmt);
-  deltaFsOfile_.setHeavyFlush(); //do I need it?
-  deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
-
-//add and set output components
-  if(walkers_mpi && NumWalkers_>1)
-  {
-    addComponent("rct");
-    componentIsNotPeriodic("rct");
-  }
-  if(calc_work_)
-  {
-    addComponent("work");
-    componentIsNotPeriodic("work");
-  }
-
 //printing some info
   log.printf("  Beta = %g\n",beta_);
   log.printf("  Running at TEMP = %g\n",1./(Kb*beta_));
@@ -285,30 +257,33 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
       ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
-      ifile.scanFieldList(deltaFsName);//TODO add a check to see if the temp/pres grid is the same?
+      ifile.scanFieldList(deltaFsName);
       const unsigned pre_f=2; //time and rct
       const unsigned post_f=1; //print_stride
       plumed_massert(deltaFsName.size()-pre_f-post_f>=2,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
+      if(tot_umbrellas_==0) //should never happen
+        tot_umbrellas_=deltaFsName.size()-pre_f-post_f;
+      plumed_massert(tot_umbrellas_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
+      const std::string firstW=deltaFsName[pre_f];
       const std::string lastW=deltaFsName[deltaFsName.size()-post_f-1];
-      const std::size_t first=lastW.find_first_of("_");
-      const std::size_t last=lastW.find_last_of("_");
-      plumed_massert(first==last,"RESTART - something wrong with '"+deltaFsFileName+"' file: could find 2 steps in "+lastW);
-      unsigned read_umbrellas=0;
-      try
-      {
-        read_umbrellas=std::stoi(lastW.substr(last+1,lastW.size()-last-1));
-      }
-      catch(std::exception const & e)
-      {
-        error("RESTART - something wrong with '"+deltaFsFileName+"' file: "+e.what());
-      }
-      plumed_massert(read_umbrellas==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
-      plumed_massert(read_umbrellas==tot_umbrellas_,"RESTART - mismatch between number of umbrellas set and number of umbrellas in restart file '"+deltaFsFileName+"'");
+      const std::size_t _pos=firstW.find_first_of("_");
+      std::size_t test_pos=firstW.find_last_of("_");
+      plumed_massert(_pos==test_pos,"RESTART - something wrong with '"+deltaFsFileName+"' file: more than 1 depencency (_) found");
+      test_pos=lastW.find_last_of("_");
+      plumed_massert(_pos==test_pos,"RESTART - something wrong with '"+deltaFsFileName+"' file: wrong format of FIELDS names");
+      const std::string read_min_cv=firstW.substr(_pos+1,firstW.size()-_pos-1);
+      const std::string used_min_cv=std::to_string(center_[0]);
+      plumed_massert(used_min_cv==read_min_cv,"mismatch between provided MIN_CV and the one in restart");
+      const std::string read_max_cv=lastW.substr(_pos+1,lastW.size()-_pos-1);
+      const std::string used_max_cv=std::to_string(center_[center_.size()-1]);
+      plumed_massert(used_max_cv==read_max_cv,"mismatch between provided MAX_CV and the one in restart");
+    //initialize
       deltaF_.resize(tot_umbrellas_);
       isFirstStep_=false;//avoid initializing again
     //read steps from file
-      int restart_stride=1;
+      int restart_stride;
       ifile.scanField("print_stride",restart_stride);
+      plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");
       ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
       double time;
       while(ifile.scanField("time",time)) //room for improvements: only last line is important
@@ -319,9 +294,10 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
         for(unsigned i=0; i<tot_umbrellas_; i++)
           ifile.scanField(deltaFsName[pre_f+i],deltaF_[i]);
         ifile.scanField();
-        counter_+=restart_stride;
+        counter_+=print_stride_;
       }
-      log.printf("  Successfully read %d steps\n",counter_);
+      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
+      counter_=counter_*NumWalkers_+1; //adjust counter
       ifile.reset(false);
       ifile.close();
     //sync all walkers and treads. Not sure is mandatory but is no harm
@@ -331,6 +307,33 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+  }
+
+//setup deltaFs file, without opening it
+  deltaFsOfile_.link(*this);
+  if(NumWalkers_>1)
+  {
+    if(walker_rank>0)
+      deltaFsFileName="/dev/null"; //only first walker writes on file
+    deltaFsOfile_.enforceSuffix("");
+  }
+  deltaFsOfile_.open(deltaFsFileName);
+  if(fmt.length()>0)
+    deltaFsOfile_.fmtField(" "+fmt);
+  deltaFsOfile_.setHeavyFlush(); //do I need it?
+  deltaFsOfile_.addConstantField("print_stride");
+  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+
+//add output components
+  if(walkers_mpi && NumWalkers_>1)
+  {
+    addComponent("rct");
+    componentIsNotPeriodic("rct");
+  }
+  if(calc_work_)
+  {
+    addComponent("work");
+    componentIsNotPeriodic("work");
   }
 
 //Bibliography
@@ -474,7 +477,7 @@ void OPESumbrellas::update()
     deltaFsOfile_.printField("time",getTime());
     deltaFsOfile_.printField("rct",rct_);
     for(unsigned i=0; i<tot_umbrellas_; i++)
-      deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
+      deltaFsOfile_.printField("deltaF_"+std::to_string(center_[i]),deltaF_[i]);
     deltaFsOfile_.printField();
   }
 }
@@ -508,7 +511,7 @@ void OPESumbrellas::init_from_obs()
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<tot_umbrellas_; i++)
-    deltaFsOfile_.printField("deltaF_"+std::to_string(i+1),deltaF_[i]);
+    deltaFsOfile_.printField("deltaF_"+std::to_string(center_[i]),deltaF_[i]);
   deltaFsOfile_.printField();
 }
 
