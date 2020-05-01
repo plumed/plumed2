@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
+#include "bias/ReweightBase.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/Atoms.h"
@@ -175,6 +176,7 @@ private:
   const unsigned int ncvs_;
   std::vector<double> center_;
   std::vector<Value*> center_values_;
+  ReweightBase* logweights_; // weights to use if reweighting averages
   std::vector<double> scale_;
   std::vector<double> current_coupling_; //actually current coupling
   std::vector<double> set_coupling_; //what our coupling is ramping up to. Equal to current_coupling when gathering stats
@@ -210,6 +212,7 @@ private:
   bool b_lm_;
   bool b_virial_;
   bool b_update_virial_;
+  bool b_weights_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -219,6 +222,8 @@ private:
   double lm_mixing_par_;
   double virial_scaling_;
   double pseudo_virial_sum_; //net virial for all cvs in current period
+  double max_logweight_; // maximum observed max logweight for period
+  double wsum_; // sum of weights thus far
   Random rand_;
   Value* value_force2_;
   Value* value_pressure_;
@@ -268,7 +273,7 @@ void EDS::registerKeywords(Keywords& keys) {
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
   keys.add("optional","VIRIAL","Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
-
+  keys.add("optional", "LOGWEIGHTS", "Add weights to use for computing statistics. For example, if biasing with metadynamics.");
   keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
 
@@ -320,6 +325,7 @@ EDS::EDS(const ActionOptions&ao):
   b_write_restart_(false),
   b_lm_(false),
   b_virial_(false),
+  b_weights_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
@@ -329,10 +335,13 @@ EDS::EDS(const ActionOptions&ao):
   lm_mixing_par_(0.1),
   virial_scaling_(0.),
   pseudo_virial_sum_(0.0),
+  max_logweight_(0.0),
+  wsum_(0.0),
   value_force2_(NULL)
 {
   double temp=-1.0;
   bool b_mean=false;
+  std::vector<Value*> wvalues;
 
   addComponent("force2");
   componentIsNotPeriodic("force2");
@@ -347,6 +356,7 @@ EDS::EDS(const ActionOptions&ao):
 
   parseVector("CENTER",center_);
   parseArgumentList("CENTER_ARG",center_values_);
+  parseArgumentList("LOGWEIGHTS", wvalues);
   parseVector("BIAS_SCALE", scale_);
   parseVector("RANGE",max_coupling_range_);
   parseVector("FIXED",target_coupling_);
@@ -392,7 +402,13 @@ EDS::EDS(const ActionOptions&ao):
     log.printf("  EDS will use fixed centers\n");
   }
 
-
+  // check for weights
+  if(wvalues.size() > 1) {
+    error("LOGWEIGHTS can only support one weight set. Please only pass one action");
+  } else if(wvalues.size() == 1){
+    logweights_ = dynamic_cast<ReweightBase*> (wvalues[0]->getPntrToAction());
+    b_weights_ = true;
+  }
 
   log.printf("  setting scaling:");
   if(scale_.size() > 0  && scale_.size() < ncvs_) {
@@ -606,6 +622,9 @@ void EDS::readInRestart(const bool b_mean) {
 
   while(in_restart_.scanField("time",time)) {
 
+    if(b_weights_)
+      in_restart_.scanField("weightsum", wsum_);
+
     for(unsigned int i = 0; i<ncvs_; ++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name + "_center", set_coupling_[i]);
@@ -687,6 +706,9 @@ void EDS::writeOutRestart() {
   std::string cv_name;
   out_restart_.printField("time",getTimeStep()*getStep());
 
+  if(b_weights_)
+    out_restart_.printField("weightsum", wsum_);
+
   for(unsigned int i = 0; i<ncvs_; ++i) {
     cv_name = getPntrToArgument(i)->getName();
     out_restart_.printField(cv_name + "_center",center_[i]);
@@ -703,7 +725,6 @@ void EDS::writeOutRestart() {
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
       out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
-
   }
   out_restart_.printField();
 }
@@ -740,12 +761,29 @@ void EDS::apply_bias() {
 }
 
 void EDS::update_statistics()  {
-  double s;
-  double N = fmax(1,update_calls_);
+  double s, N, w = 1.0;
   std::vector<double> deltas(ncvs_);
-  //Welford, West, and Hanso online variance method
+
+  // update weight max, if necessary
+  if(b_weights_) {
+    w = logweights_->getLogWeight();
+    if(max_logweight_ < w) {
+      // we have new max. Need to shift existing values
+      wsum_ *= exp(max_logweight_ - w);
+      max_logweight_ = w;
+    }
+    // convert to weight
+    w = exp(w - max_logweight_);
+    wsum_ += w;
+    N = wsum_;
+  } else {
+      N = fmax(1,update_calls_);
+  }
+
+  // Welford, West, and Hanso online variance method
+  // with weights (default =  1.0)
   for(unsigned int i = 0; i < ncvs_; ++i)  {
-    deltas[i] = difference(i,means_[i],getArgument(i));
+    deltas[i] = difference(i,means_[i],getArgument(i)) * w;
     means_[i] += deltas[i]/N;
     if(!b_covar_ && !b_lm_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
@@ -779,6 +817,11 @@ void EDS::reset_statistics() {
       pseudo_virial_[i] = 0;
     pseudo_virial_sum_ = 0;
   }
+  if(b_weights_) {
+    wsum_ = 0;
+    max_logweight_ = 0;
+  }
+
 }
 
 void EDS::calc_lm_step_size() {
