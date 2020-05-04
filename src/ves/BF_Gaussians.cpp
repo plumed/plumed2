@@ -105,6 +105,7 @@ PLUMED_REGISTER_ACTION(BF_Gaussians,"BF_GAUSSIANS")
 void BF_Gaussians::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","WIDTH","The width (i.e. standart deviation) of the Gaussian functions. By default it is equal to the sub-intervall size.");
+  keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
@@ -113,15 +114,21 @@ BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
   width_((intervalMax()-intervalMin()) / getOrder()),
   means_(getOrder()+4)
 {
-  setNumberOfBasisFunctions(getOrder()+4); // 1 constant, order+1 for interval, 2 for boundaries
   setIntrinsicInterval(intervalMin(),intervalMax());
   parse("WIDTH",width_);
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
+
+  bool periodic = false;
+  parseFlag("PERIODIC", periodic);
+  // 1 constant, getOrder() on interval, 1 (left) + 2 (right) at boundaries if not periodic
+  unsigned int num_BFs = periodic ? getOrder()+1U : getOrder()+4U;
+  setNumberOfBasisFunctions(num_BFs);
+
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) { // ignore constant one
-    means_[i] = intervalMin()+(static_cast<int>(i)-2)*(intervalMax()-intervalMin())/getOrder();
+    means_[i] = intervalMin()+(static_cast<int>(i) - 1 - static_cast<int>(!periodic))*(intervalMax()-intervalMin())/getOrder();
   }
-  setNonPeriodic();
+  periodic ? setPeriodic() : setNonPeriodic();
   setIntervalBounded();
   setType("gaussian_functions");
   setDescription("Gaussian Functions with shifted means that are being optimized in their height");
@@ -140,7 +147,17 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
     values[i] = exp(-0.5*pow((argT-means_[i])/width_,2.0));
     derivs[i] = -values[i] * (argT-means_[i])/pow(width_,2.0);
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(arePeriodic()) { // translate argument and add contributions from 1st periodic images
+    std::vector<double> periodic_arg = {argT - intervalRange(), argT + intervalRange()};
+    for (auto argP : periodic_arg) {
+      for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+        double tmp_value = exp(-0.5*pow((argP-means_[i])/width_,2.0));
+        values[i] += tmp_value;
+        derivs[i] += tmp_value * (argT-means_[i])/pow(width_,2.0);
+      }
+    }
+  }
+  if(!inside_range) {for (auto& d: derivs){d=0.0;}}
 }
 
 
