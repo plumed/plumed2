@@ -32,8 +32,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 //+PLUMEDOC FUNCTION FUNCPATHGENERAL
 /*
@@ -85,40 +85,40 @@ NEIGH_STRIDE=20
 
 */
 //+ENDPLUMEDOC
-   
+
 class FuncPathGeneral : public Function {
   double lambda;
   int neigh_size;
   double neigh_stride;
-    
+
   vector<double> coefficients;
   vector< vector<double> > path_cv_values;
-  
+
   // For faster calculation
   vector<double> expdists;
-  
+
   // For calculating derivatives
   vector< vector<double> > numerators;
   vector<double> s_path_ders;
   vector<double> z_path_ders;
-    
+
   // For handling periodicity
   vector<double> domains;
-    
+
   string reference;
   vector<int> columns;
-    
+
   vector< pair<int,double> > neighpair;
-  vector <Value*> allArguments; 
-    
+  vector <Value*> allArguments;
+
   // Methods
   void loadReference();
 
-struct pairordering {
-  bool operator ()(pair<int, double> const& a, pair<int, double> const& b) {
-    return (a).second < (b).second;
-  }
-};
+  struct pairordering {
+    bool operator ()(pair<int, double> const& a, pair<int, double> const& b) {
+      return (a).second < (b).second;
+    }
+  };
 
 public:
   explicit FuncPathGeneral(const ActionOptions&);
@@ -133,13 +133,13 @@ PLUMED_REGISTER_ACTION(FuncPathGeneral, "FUNCPATHGENERAL")
 void FuncPathGeneral::loadReference() {
   IFile input;
   input.open(reference);
-  if (!input) 
+  if (!input)
     plumed_merror("Could not open the reference file!");
   while (input)
   {
     vector<string> strings;
     Tools::getParsedLine(input, strings);
-    if (strings.empty()) 
+    if (strings.empty())
       continue;
     vector<double> colvarLine;
     double value;
@@ -148,16 +148,16 @@ void FuncPathGeneral::loadReference() {
     {
       int col = columns.empty() ? i : columns[i];
       // If no columns have been entered, ignore the first (time) and take the rest
-      if (columns.empty() && i == 0) 
+      if (columns.empty() && i == 0)
         continue;
-      
+
       Tools::convert(strings[col], value);
       colvarLine.push_back(value);
     }
     path_cv_values.push_back(colvarLine);
   }
 }
-    
+
 void FuncPathGeneral::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
@@ -171,12 +171,12 @@ void FuncPathGeneral::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("s", "default", "Position on the path");
   keys.addOutputComponent("z", "default", "Distance from the path");
 }
-    
+
 FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-neigh_size(-1),
-neigh_stride(-1.)
+  Action(ao),
+  Function(ao),
+  neigh_size(-1),
+  neigh_stride(-1.)
 {
   parse("LAMBDA", lambda);
   parse("NEIGH_SIZE", neigh_size);
@@ -186,17 +186,17 @@ neigh_stride(-1.)
   parseVector("COLUMNS", columns);
   checkRead();
   log.printf("  lambda is %f\n", lambda);
-  if (getNumberOfArguments() != coefficients.size()) 
+  if (getNumberOfArguments() != coefficients.size())
     plumed_merror("The numbers of coefficients and CVs are different!");
   if (!columns.empty()) {
-    if (columns.size() != coefficients.size()) 
+    if (columns.size() != coefficients.size())
       plumed_merror("The numbers of coefficients and columns are different!");
   }
-  log.printf("  Consistency check completed! Your path cvs look good!\n"); 
-  
+  log.printf("  Consistency check completed! Your path cvs look good!\n");
+
   // Load the reference colvar file
   loadReference();
-  
+
   // Do some neighbour printout
   if (neigh_stride > 0. || neigh_size > 0) {
     if (static_cast<unsigned>(neigh_size) > path_cv_values.size()) {
@@ -212,7 +212,7 @@ neigh_stride(-1.)
 
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
-    
+
   // Initialise vectors
   vector<double> temp (coefficients.size());
   for (unsigned i = 0; i < path_cv_values.size(); ++i) {
@@ -222,10 +222,10 @@ neigh_stride(-1.)
     z_path_ders.push_back(0.);
   }
 
-  // Store the arguments 
+  // Store the arguments
   for (unsigned i=0; i<getNumberOfArguments(); i++)
-    allArguments.push_back(getPntrToArgument(i)); 
-    
+    allArguments.push_back(getPntrToArgument(i));
+
   // Get periodic domains, negative for not periodic, stores half the domain length (maximum difference)
   for (unsigned i = 0; i < allArguments.size(); ++i) {
     if (allArguments[i]->isPeriodic()) {
@@ -237,56 +237,56 @@ neigh_stride(-1.)
       domains.push_back(-1.);
   }
 }
-    
+
 // Calculator
 void FuncPathGeneral::calculate() {
   double s_path = 0.;
   double partition = 0.;
   double tmp, value, diff, expdist, s_der, z_der;
   int ii;
-    
+
   typedef vector< pair< int,double> >::iterator pairiter;
-    
+
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
     (*it).second = 0.;
   }
-    
-  if (neighpair.empty()) { 
+
+  if (neighpair.empty()) {
     // Resize at the first step
     neighpair.resize(path_cv_values.size());
-    for (unsigned i = 0; i < path_cv_values.size(); ++i) 
-      neighpair[i].first = i; 
+    for (unsigned i = 0; i < path_cv_values.size(); ++i)
+      neighpair[i].first = i;
   }
-  
+
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
-    
+
   for(unsigned j = 0; j < allArguments.size(); ++j) {
     value = allArguments[j]->get();
     for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
       diff = (value - path_cv_values[(*it).first][j]);
       if (domains[j] > 0) {
-        if (diff > domains[j]) 
+        if (diff > domains[j])
           diff -= 2 * domains[j];
-        if (diff < -domains[j]) 
+        if (diff < -domains[j])
           diff += 2 * domains[j];
       }
       (*it).second += Tools::fastpow(coefficients[j] * diff, 2);
       numerators[(*it).first][j] = 2 * Tools::fastpow(coefficients[j], 2) * diff;
     }
   }
-    
+
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
     expdist = exp(-lambda * (*it).second);
     expdists[(*it).first] = expdist;
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
   }
-      
+
   s_path /= partition;
   val_s_path->set(s_path);
   val_z_path->set(-(1. / lambda) * std::log(partition));
-    
+
   // Derivatives
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
     ii = (*it).first;
@@ -304,22 +304,22 @@ void FuncPathGeneral::calculate() {
     }
     setDerivative(val_s_path, i, s_der);
     setDerivative(val_z_path, i, z_der);
-  }    
+  }
 }
-    
+
 // Prepare the required arguments
-void FuncPathGeneral::prepare(){
-  // Neighbour list: rank and activate the chain for the next step 
+void FuncPathGeneral::prepare() {
+  // Neighbour list: rank and activate the chain for the next step
 
   // Neighbour list: if neigh_size < 0 never sort and keep the full vector
-  // Neighbour list: if neigh_size > 0  
-  //                 if the size is full -> sort the vector and decide the dependencies for next step 
-  //                 if the size is not full -> check if next step will need the full dependency otherwise keep these dependencies 
+  // Neighbour list: if neigh_size > 0
+  //                 if the size is full -> sort the vector and decide the dependencies for next step
+  //                 if the size is not full -> check if next step will need the full dependency otherwise keep these dependencies
 
   if (neigh_size > 0) {
-    if (neighpair.size() == path_cv_values.size()) { 
+    if (neighpair.size() == path_cv_values.size()) {
       // The complete round has been done: need to sort, shorten and give it a go
-      // Sort the values  
+      // Sort the values
       sort(neighpair.begin(), neighpair.end(), pairordering());
       // Resize the effective list
       neighpair.resize(neigh_size);
@@ -330,13 +330,13 @@ void FuncPathGeneral::prepare(){
     } else {
       if (int(getStep()) % int(neigh_stride / getTimeStep()) == 0) {
         log.printf(" Time %f : recalculating full neighbour list \n", getStep() * getTimeStep());
-        neighpair.resize(path_cv_values.size());  
+        neighpair.resize(path_cv_values.size());
         for (unsigned i = 0; i < path_cv_values.size(); ++i)
-          neighpair[i].first = i; 
+          neighpair[i].first = i;
       }
-    } 
+    }
   }
-    
+
   requestArguments(allArguments);
 }
 
