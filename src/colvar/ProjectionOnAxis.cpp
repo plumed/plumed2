@@ -36,14 +36,14 @@ namespace colvar {
 Calculate a position based on the projection along and extension from a defined axis.
 
 This variable takes 3 input atoms or pseudoatoms, using the two AXIS_ATOMS to define a linear vector.
-The positon of the ATOM is then calculated relative to this vector, with two output components. 
-The projection on the axis (proj) is the distance along the axis from the ATOM to the origin. 
+The positon of the ATOM is then calculated relative to this vector, with two output components.
+The projection on the axis (proj) is the distance along the axis from the ATOM to the origin.
 The extension (ext) is the orthogonal distance between the ATOM and the axis.
 
 \par Examples
 
-This command tells plumed to define an axis, by calculating a vector that passes through atom 1 and atom 2. 
-The position of atom 3 as a projection along this vector is calculated and printed to COLVAR1. 
+This command tells plumed to define an axis, by calculating a vector that passes through atom 1 and atom 2.
+The position of atom 3 as a projection along this vector is calculated and printed to COLVAR1.
 At the same time, the perpendicular distance of atom 3 from the axis, the extension, is printed to COLVAR2.
 
 \plumedfile
@@ -52,11 +52,11 @@ PRINT ARG=poa.proj FILE=COLVAR1
 PRINT ARG=poa.ext FILE=COLVAR2
 \endplumedfile
 
-A particular application of this variable could be to study the motion of a ligand relative to its binding pocket on a protein. 
-In this set of commands, the anchor points a1 and a2 are defined using example atom numbers within the protein. 
-As a2 is attempting to be as close as possible to the center of the binding pocket, a COM is used when there are no suitable protein atoms. 
-Similarly, a COM is used to define the position of the ligand in lig1. 
-The calculated projection of lig1 along the axis defined between a1 and a2 is printed to COLVAR1. 
+A particular application of this variable could be to study the motion of a ligand relative to its binding pocket on a protein.
+In this set of commands, the anchor points a1 and a2 are defined using example atom numbers within the protein.
+As a2 is attempting to be as close as possible to the center of the binding pocket, a COM is used when there are no suitable protein atoms.
+Similarly, a COM is used to define the position of the ligand in lig1.
+The calculated projection of lig1 along the axis defined between a1 and a2 is printed to COLVAR1.
 The calculated perpendicular extension of lig1 from the axis defined between a1 and a2 is printed to COLVAR2.
 
 \plumedfile
@@ -98,11 +98,11 @@ ProjectionOnAxis::ProjectionOnAxis(const ActionOptions&ao):
   vector<AtomNumber> axis_atoms;
   parseAtomList("AXIS_ATOMS",axis_atoms);
   if( axis_atoms.size()!=2 ) error("There should only be two atoms specified to AXIS_ATOMS keyword");
-  vector<AtomNumber> atom; 
+  vector<AtomNumber> atom;
   parseAtomList("ATOM",atom);
   if( atom.size()!=1 ) error("There should only be one atom specified to ATOM keyword");
   log.printf("  calculating projection of vector connecting atom %d and atom %d on vector connecting atom %d and atom %d \n",
-                axis_atoms[0].serial(), atom[0].serial(), axis_atoms[0].serial(), axis_atoms[1].serial() ); 
+             axis_atoms[0].serial(), atom[0].serial(), axis_atoms[0].serial(), axis_atoms[1].serial() );
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -111,10 +111,10 @@ ProjectionOnAxis::ProjectionOnAxis(const ActionOptions&ao):
   else    log.printf("  not using periodic boundary conditions\n");
 
   // Add values to store data
-  addComponentWithDerivatives("proj"); componentIsNotPeriodic("proj"); 
+  addComponentWithDerivatives("proj"); componentIsNotPeriodic("proj");
   addComponentWithDerivatives("ext"); componentIsNotPeriodic("ext");
-  // Get all the atom positions 
-  axis_atoms.push_back( atom[0] ); 
+  // Get all the atom positions
+  axis_atoms.push_back( atom[0] );
   requestAtoms(axis_atoms);
   checkRead();
 }
@@ -124,13 +124,13 @@ void ProjectionOnAxis::calculate() {
 
   Vector rik, rjk;
   if( pbc ) {
-      rik = pbcDistance( getPosition(2), getPosition(0) );
-      rjk = pbcDistance( getPosition(2), getPosition(1) );
+    rik = pbcDistance( getPosition(2), getPosition(0) );
+    rjk = pbcDistance( getPosition(2), getPosition(1) );
   } else {
-      rik = delta( getPosition(2), getPosition(0) );
-      rjk = delta( getPosition(2), getPosition(1) );
+    rik = delta( getPosition(2), getPosition(0) );
+    rjk = delta( getPosition(2), getPosition(1) );
   }
-  Vector rij = delta( rik, rjk ); double dij = rij.modulo(); 
+  Vector rij = delta( rik, rjk ); double dij = rij.modulo();
   Vector nij = (1.0/dij)*rij; Tensor dij_a1;
   // Derivative of director connecting atom1 - atom2 wrt the position of atom 1
   dij_a1(0,0) = ( -(nij[1]*nij[1]+nij[2]*nij[2])/dij );   // dx/dx
@@ -160,7 +160,7 @@ void ProjectionOnAxis::calculate() {
   Vector der2 = invc*(-d*dd2);
   Vector der3 = invc*(-rik - d*dd3);
 
-  Value* cval=getPntrToComponent("ext"); cval->set( c ); 
+  Value* cval=getPntrToComponent("ext"); cval->set( c );
   setAtomsDerivatives( cval, 0, der1 );
   setAtomsDerivatives( cval, 1, der2 );
   setAtomsDerivatives( cval, 2, der3 );

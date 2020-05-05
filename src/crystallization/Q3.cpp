@@ -83,15 +83,15 @@ Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q3
 PRINT ARG=q3.mean FILE=colvar
 \endplumedfile
 
-If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the 
-command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format 
-called q3.xyz for each frame of the analysed MD trajectory.  The first column in this file will contain a dummy name for each of the 
+If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the
+command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format
+called q3.xyz for each frame of the analysed MD trajectory.  The first column in this file will contain a dummy name for each of the
 atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q3 paramter, columns
 6-12 will contain the real parts of the director of the \f$q_{3m}\f$ vector while columns 12-19 will contain the imaginary parts of this director.
 
 \plumedfile
 q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPMULTICOLVAR DATA=q3 FILE=q3.xyz 
+DUMPMULTICOLVAR DATA=q3 FILE=q3.xyz
 \endplumedfile
 
 */
