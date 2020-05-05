@@ -482,14 +482,14 @@ OPESwt::OPESwt(const ActionOptions&ao)
       }
       ifile.reset(false);
       ifile.close();
-    //sync all walkers and treads. Not sure is mandatory but is no harm
-      comm.Barrier();
-      if(NumWalkers_>1 && comm.Get_rank()==0)
-        multi_sim_comm.Barrier();
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but file '%s' was not found!\n",restartFileName.c_str());
   }
+//sync all walkers to avoid opening files before reding is over (see also METAD)
+  comm.Barrier();
+  if(comm.Get_rank()==0 && walkers_mpi)
+    multi_sim_comm.Barrier();
 
 //setup output kernels file
   kernelsOfile_.link(*this);
@@ -733,7 +733,7 @@ void OPESwt::update()
     std::vector<double> all_height(NumWalkers_,0.0);
     std::vector<double> all_center(NumWalkers_*ncv_,0.0);
     std::vector<double> all_sigma(NumWalkers_*ncv_,0.0);
-    if(rank_==0)
+    if(comm.Get_rank()==0)
     {
       multi_sim_comm.Allgather(height,all_height); //TODO heights should be communicated only once
       multi_sim_comm.Allgather(center,all_center);

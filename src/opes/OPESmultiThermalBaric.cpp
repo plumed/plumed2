@@ -321,14 +321,14 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       counter_=counter_*NumWalkers_+1; //adjust counter
       ifile.reset(false);
       ifile.close();
-    //sync all walkers and treads and close file. Not sure is mandatory but is no harm
-      comm.Barrier();
-      if(comm.Get_rank()==0)
-        multi_sim_comm.Barrier();
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
   }
+//sync all walkers to avoid opening files before reding is over (see also METAD)
+  comm.Barrier();
+  if(comm.Get_rank()==0 && walkers_mpi)
+    multi_sim_comm.Barrier();
 
 //setup deltaFs file, without opening it
   deltaFsOfile_.link(*this);
