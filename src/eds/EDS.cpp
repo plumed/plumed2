@@ -932,7 +932,6 @@ void EDS::update_bias()
           //scale^2 here is to align units
           step_size_[i] -= 2 * scale_[i] * scale_[i] * virial_scaling_ * pseudo_virial_sum_ * pseudo_virial_sum_ / set_coupling_[i];
       }
-      std::cout << step_size_[i] << std::endl;
       if(step_size_[i] == 0)
         continue;
 
@@ -940,7 +939,6 @@ void EDS::update_bias()
       step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
       coupling_accum_[i] += step_size_[i] * step_size_[i];
 
-      std::cout << step_size_[i] <<  " " << coupling_accum_[i] << std::endl;
       //equation 5 in White and Voth, JCTC 2014
       //no negative sign because it's in step_size
       set_coupling_[i] += step_size_[i] * max_coupling_range_[i] / sqrt(coupling_accum_[i]);
