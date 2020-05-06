@@ -195,11 +195,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       NumWalkers_=multi_sim_comm.Get_size();
       walker_rank=multi_sim_comm.Get_rank();
     }
-    if(comm.Get_size()>1) //if each walker has more than one processor update them all
-    {
-      comm.Bcast(NumWalkers_,0);
-      comm.Bcast(walker_rank,0);
-    }
+    comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
+    comm.Bcast(walker_rank,0);
   }
   else
   {
@@ -249,8 +246,6 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   {
     IFile ifile;
     ifile.link(*this);
-    if(NumWalkers_>1)
-      ifile.enforceSuffix("");
     if(ifile.FileExist(deltaFsFileName))
     {
       log.printf("  Restarting from: %s\n",deltaFsFileName.c_str());
@@ -325,7 +320,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   deltaFsOfile_.printField("print_stride",(int)print_stride_);
 
 //add output components
-  if(walkers_mpi && NumWalkers_>1)
+  if(NumWalkers_>1)
   {
     addComponent("rct");
     componentIsNotPeriodic("rct");
@@ -446,16 +441,13 @@ void OPESumbrellas::update()
   {
     std::vector<double> all_bias(NumWalkers_);
     std::vector<double> all_cv(NumWalkers_);
-    if(rank_==0)
+    if(comm.Get_rank()==0)
     {
       multi_sim_comm.Allgather(current_bias_,all_bias);
       multi_sim_comm.Allgather(cv,all_cv);
     }
-    if(comm.Get_size()>1)
-    {
-      comm.Bcast(all_bias,0);
-      comm.Bcast(all_cv,0);
-    }
+    comm.Bcast(all_bias,0);
+    comm.Bcast(all_cv,0);
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       counter_++;
@@ -489,10 +481,9 @@ void OPESumbrellas::init_from_obs()
   {
     obs_steps_*=NumWalkers_;
     std::vector<double> all_obs_cv(obs_steps_);
-    if(rank_==0)
+    if(comm.Get_rank()==0)
       multi_sim_comm.Allgather(obs_cv_,all_obs_cv);
-    if(comm.Get_size()>1)
-      comm.Bcast(all_obs_cv,0);
+    comm.Bcast(all_obs_cv,0);
     obs_cv_=all_obs_cv;
   }
 

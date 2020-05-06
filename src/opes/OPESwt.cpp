@@ -320,11 +320,8 @@ OPESwt::OPESwt(const ActionOptions&ao)
       NumWalkers_=multi_sim_comm.Get_size();
       walker_rank_=multi_sim_comm.Get_rank();
     }
-    if(comm.Get_size()>1) //if each walker has more than one processor update them all
-    {
-      comm.Bcast(NumWalkers_,0);
-      comm.Bcast(walker_rank_,0);
-    }
+    comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
+    comm.Bcast(walker_rank_,0);
   }
   else
   {
@@ -357,8 +354,6 @@ OPESwt::OPESwt(const ActionOptions&ao)
     }
     IFile ifile;
     ifile.link(*this);
-    if(NumWalkers_>1)
-      ifile.enforceSuffix("");
     if(ifile.FileExist(restartFileName))
     {
       ifile.open(restartFileName);
@@ -685,11 +680,8 @@ void OPESwt::update()
       multi_sim_comm.Sum(sum_heights);
       multi_sim_comm.Sum(sum_heights2);
     }
-    if(comm.Get_size()>1)
-    {
-      comm.Bcast(sum_heights,0);
-      comm.Bcast(sum_heights2,0);
-    }
+    comm.Bcast(sum_heights,0);
+    comm.Bcast(sum_heights2,0);
   }
   counter_+=NumWalkers_;
   sum_weights_+=sum_heights;
@@ -739,12 +731,9 @@ void OPESwt::update()
       multi_sim_comm.Allgather(center,all_center);
       multi_sim_comm.Allgather(sigma,all_sigma);
     }
-    if(comm.Get_size()>1)
-    {
-      comm.Bcast(all_height,0);
-      comm.Bcast(all_center,0);
-      comm.Bcast(all_sigma,0);
-    }
+    comm.Bcast(all_height,0);
+    comm.Bcast(all_center,0);
+    comm.Bcast(all_sigma,0);
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
