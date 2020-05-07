@@ -622,9 +622,6 @@ void EDS::readInRestart(const bool b_mean) {
 
   while(in_restart_.scanField("time",time)) {
 
-    if(b_weights_)
-      in_restart_.scanField("weightsum", wsum_);
-
     for(unsigned int i = 0; i<ncvs_; ++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name + "_center", set_coupling_[i]);
@@ -705,9 +702,6 @@ void EDS::setupOutRestart() {
 void EDS::writeOutRestart() {
   std::string cv_name;
   out_restart_.printField("time",getTimeStep()*getStep());
-
-  if(b_weights_)
-    out_restart_.printField("weightsum", wsum_);
 
   for(unsigned int i = 0; i<ncvs_; ++i) {
     cv_name = getPntrToArgument(i)->getName();
