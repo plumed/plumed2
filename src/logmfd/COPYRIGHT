@@ -1,7 +1,6 @@
-Copyright (c) 2015-2018
+Copyright (c) 2019
 National Institute of Advanced Industrial Science and Technology (AIST), Japan.
 This file contains module for LogMFD method proposed by Tetsuya Morishita(AIST).
-then written by Mizuho information and Research Institute, Inc.
 
 The LogMFD module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by

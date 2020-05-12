@@ -27,27 +27,6 @@
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
        0     0.707107       0
-       1     0.000000       1
-       2     0.000158       2
-       3     0.000000       3
-       4     0.000707       4
-       5     0.000000       5
-       6     0.001784       6
-       7     0.000000       7
-       8     0.003494       8
-       9     0.000000       9
-      10     0.005922      10
-#!-------------------
-
-
-#! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 4.000000
-#! SET iteration  2
-#! SET type LinearBasisSet
-#! SET ndimensions  1
-#! SET ncoeffs_total  11
-#! SET shape_phi2  11
-       0     0.707107       0
        1    -0.010957       1
        2    -0.007183       2
        3     0.017448       3
@@ -62,8 +41,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 6.000000
-#! SET iteration  3
+#! SET time 4.000000
+#! SET iteration  2
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -83,8 +62,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 8.000000
-#! SET iteration  4
+#! SET time 6.000000
+#! SET iteration  3
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -104,8 +83,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 10.000000
-#! SET iteration  5
+#! SET time 8.000000
+#! SET iteration  4
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -125,8 +104,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 12.000000
-#! SET iteration  6
+#! SET time 10.000000
+#! SET iteration  5
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -146,8 +125,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 14.000000
-#! SET iteration  7
+#! SET time 12.000000
+#! SET iteration  6
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -167,8 +146,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 16.000000
-#! SET iteration  8
+#! SET time 14.000000
+#! SET iteration  7
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -188,8 +167,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 18.000000
-#! SET iteration  9
+#! SET time 16.000000
+#! SET iteration  8
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -209,8 +188,8 @@
 
 
 #! FIELDS idx_phi2 ves1.targetdist_averages index
-#! SET time 20.000000
-#! SET iteration  10
+#! SET time 18.000000
+#! SET iteration  9
 #! SET type LinearBasisSet
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
@@ -226,6 +205,27 @@
        8    -0.041415       8
        9     0.064562       9
       10    -0.010045      10
+#!-------------------
+
+
+#! FIELDS idx_phi2 ves1.targetdist_averages index
+#! SET time 20.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi2  11
+       0     0.707107       0
+       1    -0.078495       1
+       2    -0.022385       2
+       3     0.083732       3
+       4    -0.048266       4
+       5    -0.039028       5
+       6     0.080626       6
+       7    -0.030931       7
+       8    -0.045260       8
+       9     0.070832       9
+      10    -0.012552      10
 #!-------------------
 
 

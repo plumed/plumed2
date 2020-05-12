@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,9 @@ namespace setup {
 
 //+PLUMEDOC GENERIC UNITS
 /*
-This command sets the internal units for the code.  A new unit can be set by either
+This command sets the internal units for the code.
+
+A new unit can be set by either
 specifying a conversion factor from the plumed default unit or by using a string
 corresponding to one of the defined units given below.  This directive MUST
 appear at the BEGINNING of the plumed.dat file.  The same units must be used

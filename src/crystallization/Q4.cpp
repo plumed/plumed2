@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -88,8 +88,7 @@ PRINT ARG=q4.mean FILE=colvar
 
 //+PLUMEDOC MCOLVARF LOCAL_Q4
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_4\f$ vector on the central atom and the \f$q_4\f$ vector
-on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_4\f$ vector on the central atom and the \f$q_4\f$ vector on the atoms in the first coordination sphere.
 
 The \ref Q4 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
@@ -173,6 +172,8 @@ public:
   explicit Q4( const ActionOptions& ao );
 };
 
+// For some reason, this is not seen correctly by cppcheck
+// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(Q4,"Q4")
 typedef LocalSteinhardt<Q4> LOCAL_Q4;
 PLUMED_REGISTER_ACTION(LOCAL_Q4,"LOCAL_Q4")

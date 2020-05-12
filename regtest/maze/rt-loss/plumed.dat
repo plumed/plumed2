@@ -1,0 +1,11 @@
+MAZE_LOSS ...
+  LABEL=loss
+
+  PARAMS=1,1,1
+... MAZE_LOSS
+
+PRINT ...
+  ARG=*
+  FILE=colvar 
+  FMT=%15.8f 
+... PRINT

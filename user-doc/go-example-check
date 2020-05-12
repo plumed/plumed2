@@ -1,0 +1,144 @@
+#!/bin/bash
+
+rm -rf example-check
+mkdir example-check
+
+# This generates plumed.dat files for each of the documentation pages in the manual
+for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
+    # echo Generating examples to check for file $file
+    # Single replica examples
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'` 
+    cat $file | 
+    awk 'BEGIN{inp=0;}{
+           if( $1=="\\endplumedfile" ){ print ">>END OF EXAMPLE>>"; inp=0; }
+           else if( $1=="\\plumedfile" ){ inp=1; }
+           else if( inp==1 ){ print $0; }  
+         }' > example-check/$fname.dat
+    # Count the number of examples found in the input
+    neg=`grep ">>END OF EXAMPLE>>" example-check/$fname.dat | wc -l | awk '{print $1}'`
+    if [ $neg -gt 0 ] ; then
+       # Make a directory to hold all the inputs
+       mkdir example-check/$fname
+       # Now split the examples found into the set of example input files in the documentation
+       sline=0
+       for ((i=1;i<=$neg;++i)) ; do
+            eline=`grep -n ">>END OF EXAMPLE>>" example-check/$fname.dat | head -n $i | tail -n 1 | awk '{print $1}' | sed -e 's/:>>END//g'`
+            head -n $(($eline-1)) example-check/$fname.dat | tail -n $(($eline-1-$sline)) > example-check/$fname/$i.dat 
+            wrongc=`grep "this is wrong" example-check/$fname/$i.dat | wc -l | awk '{print $1}'`
+            if [ $wrongc -gt 0 ] ; then
+                 rm example-check/$fname/$i.dat
+            else 
+               # This deals with include files
+               hasname=`grep "#SETTINGS" example-check/$fname/$i.dat | grep "FILENAME=" | wc -l | awk '{print $1}'`
+               if [ $hasname -gt 0 ] ; then
+                    filename=`grep "#SETTINGS" example-check/$fname/$i.dat  | awk '{for(i=1;i<=NF;++i){if(match($i,"FILENAME=")){print $i}}}' | sed -e 's/FILENAME=//'`
+                    mv example-check/$fname/$i.dat example-check/$fname/$filename
+               fi
+            fi
+            sline=$eline
+       done 
+       # Check for auxiliary files
+       cat $file |
+       awk 'BEGIN{inp=0;}{
+             if( $1=="\\endauxfile" ){ print ">>END OF EXAMPLE>>"; inp=0; }
+             else if( match($1,"\\auxfile") ){ inp=1; }
+             else if( inp==1 ){ print $0; }  
+           }' > example-check/$fname.aux
+       naux=`grep ">>END OF EXAMPLE>>" example-check/$fname.aux | wc -l | awk '{print $1}'`
+       # And split the set of include files
+       sline=0
+       for ((i=1;i<=$naux;++i)) ; do
+            ifname=`grep "auxfile" $file | grep -v "endauxfile" | head -n $i | tail -n 1 | sed -e 's/\\\auxfile{//' | sed -e 's/}//'`
+            eline=`grep -n ">>END OF EXAMPLE>>" example-check/$fname.aux | head -n $i | tail -n 1 | awk '{print $1}' | sed -e 's/:>>END//g'`
+            head -n $(($eline-1)) example-check/$fname.aux | tail -n $(($eline-1-$sline)) > example-check/$fname/$ifname
+            sline=$eline
+       done
+       rm example-check/$fname.aux
+    fi
+    rm example-check/$fname.dat 
+done
+
+# Copy the data directories needed for CS2BACKBONE so we can run these tests
+cp -pr ../regtest/isdb/rt-cs2backbone/data example-check/CS2BACKBONE.txt/data
+# Change to the directory that contains the examples that we are testing
+cd example-check
+
+# These are things that are not really input files and that are expected to never work
+rm -f MiscelaneousPP.md/10.dat MiscelaneousPP.md/11.dat 
+# These are things that we might want to fix
+rm -rf PLUMED.txt
+
+# Here we have a list of things that are currently not working.  We delete the input files for these 
+# so as to avoid them causing problems.  As they are fixed we will reincorporate them and delete these lines
+rm -rf FUNCPATHMSD.txt/3.dat PIV.txt # This is all PIV
+# This is stuff for Gareth to work on
+rm -rf FOURIER_TRANSFORM.txt 
+# These are problems that Max and Carlo need to fix
+rm -rf NOE.txt SAXS.txt RDC.txt LOCALENSEMBLE.txt EEFSOLV.txt EMMI.txt METAINFERENCE.txt/2.dat
+# These are problems for Giovanni to fix
+rm -rf PIECEWISE.txt PUCKERING.txt/ CALIBER.txt/
+# These are things for Omar to fix
+rm -rf VES_OUTPUT_FES.txt/ VES_LINEAR_EXPANSION.txt/
+# Not sure how to get this to work - won't compile on my laptop GAT
+rm -rf DRR.txt 
+# Stuff in tutorials that doesn't quite work
+rm -f a-trieste-6.txt/1.dat a-trieste-6.txt/2.dat Miscellaneous/17.dat
+rm -rf isdb-1.txt isdb-2.txt performance-optimization.txt
+rm -rf ves-lugano2017-01-metad.txt ves-lugano2017-02-ves1.txt ves-lugano2017-03-ves2.txt ves-lugano2017-04-kinetics.txt  
+
+# Now check that plumed can parse all the inputs in the manual
+for dir in * ; do
+    cd $dir
+    for file in *.dat ; do
+        # echo Checking example named $dir/$file
+        # This checks if we need a structure file for a MOLINFO command and gets one if it is required
+        molfile=`grep "MOLINFO" $file | wc -l | awk '{print $1}'`
+        nfill=`grep "__FILL__" $file | wc -l | awk '{print $1}'`
+        if [ $molfile -gt 0 ] && [ $nfill -eq 0 ] ; then
+             hasmol=`grep "#SETTINGS" $file | grep "MOLFILE=" | wc -l | awk '{print $1}'`
+             if [ $hasmol -eq 0 ] ; then
+                  echo For example $file in $dir you need to include a MOLFILE= keyword in the SETTINGS line
+                  exit 1 
+             fi
+             molname=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"MOLFILE=")){print $i}}}' | sed -e 's/MOLFILE=//'`
+             inpf=`grep "STRUCTURE=" $file | awk '{for(i=1;i<=NF;++i){ if($i ~ /STRUCTURE=/){ print $i; }}}' | sed -e 's/STRUCTURE=//'`
+             cp ../../../$molname $inpf
+        fi
+
+        # Now running test with PLUMED
+        nload=`grep "LOAD" $file | wc -l | awk '{print $1}'`
+        # Want to get rid of these
+        ntarget=`grep "TARGET=" $file | wc -l | awk '{print $1}'`
+        if [ $nload -eq 0 ] && [ $nfill -eq 0 ] ; then
+            hasrep=0
+            settings=`grep "#SETTINGS" $file | wc -l | awk '{print $1}'`
+            if [ $settings -gt 0 ] ; then
+                 hasrep=`grep "#SETTINGS" $file | grep "NREPLICAS=" | wc -l | awk '{print $1}'`
+            fi
+            if [ $hasrep -gt 0 ] ; then
+                nrep=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"NREPLICAS=")){print $i}}}' | sed -e 's/NREPLICAS=//'`
+                mpirun -np $nrep ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file --multi $nrep > check.log 
+            else 
+                ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file > check.log
+            fi
+            nerr=`grep "PLUMED error" check.log | wc -l | awk '{print $1}'`
+            if [ $nerr -gt 0 ] ; then
+                echo Found mistakes for examples in $dir example $file
+                cat check.log
+                exit 1
+            fi 
+        elif [ $nload -gt 0 ] ; then
+            echo WARNING: FILE named $dir/$file tries to LOAD external functionality
+        elif [ $nfill -gt 0 ] ; then
+            echo ERROR: File named $dir/$file contains a FILL statement
+        fi
+   done
+   cd ../
+done
+
+# Remove some crap that is created somewhere
+cd ../
+
+exit 0

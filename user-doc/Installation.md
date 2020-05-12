@@ -78,7 +78,7 @@ PLUMED is made up of modules. Some of them are on by default, some others aren't
 Since version 2.3, the activation of modules should be made during configuration using the `--enable-modules`
 option (see \ref mymodules).
 
-Notice that some functionalities of PLUMED depend on external
+Notice that some of the methods within PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim
@@ -375,8 +375,8 @@ possible kinds of innocuous errors:
 
 \attention
 Even though we regularly perform tests on [Travis-CI](http://travis-ci.org/plumed/plumed2),
-it is possible that aggressive optimizations or even architecture dependent features
-trigger bugs that did not show up on travis. So please always perform regtests when you install
+it is possible that aggressive optimization or even architecture dependent features
+trigger bugs that did not show up on travis. So please always perform the regtests when you install
 PLUMED.
 
 Notice that the compiled executable, which now sits in 'src/lib/plumed', relies
@@ -453,7 +453,7 @@ the following things:
 - use the "plumed" executable from the command line. This is also possible before installing.
 - link against the PLUMED library using the "-lplumed" flag for the linker. This allows
   one to use PLUMED library in general purpose programs
-- use the PLUMED internal functionalities (C++ classes) including
+- use PLUMED internal functionality (C++ classes) including
   header files such as "#include <plumed/tools/Vector.h>". This is useful as it may be expedient to
   exploit the PLUMED library in general purpose programs
 
@@ -626,6 +626,31 @@ is hard coded. As a consequence:
 This is especially useful if you are developing PLUMED since you will be able to install
 gromacs once for all and combine it with your working version of PLUMED.
 
+\section Installation-conda Installing PLUMED with conda
+
+If you use the conda package manager you can install a pre-compiled PLUMED binary using the following command:
+\verbatim
+> conda install -c conda-forge plumed
+\endverbatim
+Similarly, the python wrappers can be installed with
+\verbatim
+> conda install -c conda-forge py-plumed
+\endverbatim
+
+These packages are part of [conda-forge](https://anaconda.org/conda-forge) and as such should be binary compatible
+with other codes from the same distribution. Notice that it should also be possible to combine the installed
+plumed kernel with an MD code compiled outside of conda (or within a different conda environment)
+if plumed is linked in runtime mode.
+The only variable that you need to set in order to access to the installed plumed kernel is
+`PLUMED_KERNEL` (e.g., `export PLUMED_KERNEL=/conda/prefix/lib/libplumedKernel.so`).
+
+Notice that binaries are only available for Linux and MacOS and that they have a limited number of features.
+In particular, they do not support MPI and do not include optional modules.
+However, they can be used to quickly install a working PLUMED version without the need to have a compiler.
+
+Notice that there are additional conda packages on the [plumed](https://anaconda.org/plumed/plumed) channel.
+Those packages are for testing only.
+
 \section installingonacluster Installing PLUMED on a cluster
 
 If you are installing PLUMED on a cluster and you want several users to take advantage of it
@@ -690,7 +715,7 @@ There are two ways to install Python wrappers.
 
 \subsection installingpython-inside Installing Python wrappers within PLUMED
 
-If `./configure` finds a `python` executable that also has the modules `numpy` and `cython` available, Python wrappers will be installed within `/prefix/lib/plumed/python`. In order to access them, you should add this directory to the environment variable `PYTHONPATH`. Notice that if your python interpreter has a different name you might have to pass it to `./configure` with `PYTHON_BIN=python3.6`. The whole thing would then be:
+If `./configure` finds a `python` executable that also has the `cython` module available, Python wrappers will be installed within `/prefix/lib/plumed/python`. In order to access them, you should add this directory to the environment variable `PYTHONPATH`. Notice that if your python interpreter has a different name you might have to pass it to `./configure` with `PYTHON_BIN=python3.6`. The whole thing would then be:
 
 ````
 ./configure PYTHON_BIN=python3.6 --prefix=$HOME/opt
@@ -707,7 +732,6 @@ Notice that in this manner you will have to commit to a specific python version 
 If you use multiple python versions, you might find it easier to install the Python wrappers separately from PLUMED. The simplest way is to do it with `pip`:
 
 ````
-pip3.6 install --user numpy
 pip3.6 install --user plumed
 ````
 
@@ -724,8 +748,7 @@ If you want to install using pip the development version of the wrappers you sho
 the following commands:
 
 ````
-pip3.6 install --user cython # also cython is required in this case
-pip3.6 install --user numpy
+pip3.6 install --user cython # cython is required in this case
 cd plumed2/python
 make pip
 pip3.6 install --user .

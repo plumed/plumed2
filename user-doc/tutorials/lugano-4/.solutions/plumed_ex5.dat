@@ -1,0 +1,20 @@
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+UNITS NATURAL
+
+# We can delete the parts of the input that specified the walls and disregrad these in our analysis
+# It is OK to do this as we are only interested in the value of the free energy in parts of phase space
+# where the bias due to these walls is not acting.
+
+c1: COORDINATIONNUMBER SPECIES=1-7 MOMENTS=2-3 SWITCH={RATIONAL R_0=1.5 NN=8 MM=16}
+
+# The metadynamics bias is restarted here so we consider the final bias as a static bias in our calculations
+METAD ARG=c1.* HEIGHT=0.05 PACE=50000000 SIGMA=0.1,0.1 GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=500,500 TEMP=0.1 BIASFACTOR=5 RESTART=YES
+
+# This adjusts the weights of the sampled configurations and thereby accounts for the effect of the bias potential
+rw: REWEIGHT_BIAS TEMP=0.1
+
+# Calculate the histogram and output it to a file
+hh: HISTOGRAM ARG=c1.* GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=200,200 BANDWIDTH=0.02,0.02 LOGWEIGHTS=rw CLEAR=2500
+DUMPGRID GRID=hh FILE=my_histogram.dat STRIDE=2500

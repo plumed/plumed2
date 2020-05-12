@@ -1,9 +1,9 @@
 \page PIVMOD PIV collective variable
 
 <!-- 
-description: To be completed
-authors: To be completed
-reference: To be completed
+description: Permutation invariant collective variable (PIV) 
+authors: S. Pipolo, F. Pietrucci 
+reference: \cite gallet2013structural \cite pipolo2017navigating 
 -->
 
 ## Overview

@@ -149,8 +149,6 @@ public:
   explicit VesBias(const ActionOptions&ao);
   ~VesBias();
   //
-  void apply();
-  //
   static void useInitialCoeffsKeywords(Keywords&);
   static void useTargetDistributionKeywords(Keywords&);
   static void useMultipleTargetDistributionKeywords(Keywords&);

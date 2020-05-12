@@ -88,6 +88,6 @@ CALIBER ...
 ... CALIBER
 
 
-PRINT ARG=pairs,cal.x0_0,cal.bias FILE=COLVAR STRIDE=1
+PRINT ARG=pairs,cal.x0-0,cal.bias FILE=COLVAR STRIDE=1
 
 ENDPLUMED

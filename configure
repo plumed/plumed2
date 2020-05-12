@@ -721,6 +721,7 @@ enable_bsymbolic
 enable_ld_r
 enable_ar_cr
 enable_static_archive
+enable_asmjit
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -732,13 +733,13 @@ enable_cregex
 enable_dlopen
 enable_rtld_default
 enable_chdir
+enable_subprocess
 enable_getcwd
 enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
-enable_asmjit
 enable_fftw
 enable_python
 enable_af_ocl
@@ -1412,6 +1413,7 @@ Optional Features:
                           yes
   --enable-static-archive enable try to build libplumed.a for static linking,
                           default: yes
+  --enable-asmjit         enable enable embedded asmjit, default: no
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -1423,11 +1425,13 @@ Optional Features:
                           yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
-                          yes
+                          no
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-chdir          enable search for chdir function, default: yes
+  --enable-subprocess     enable search for functions needed to manage a
+                          subprocess, default: yes
   --enable-getcwd         enable search for getcwd function, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
@@ -1435,8 +1439,7 @@ Optional Features:
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
-  --enable-asmjit         enable search for asmjit, default: no
-  --enable-fftw           enable search for fftw, default: no
+  --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
   --enable-af_ocl         enable arrayfire_opencl, default: search for
                           arrayfire
@@ -2837,6 +2840,24 @@ fi
 
 
 
+asmjit=
+# Check whether --enable-asmjit was given.
+if test "${enable_asmjit+set}" = set; then :
+  enableval=$enable_asmjit; case "${enableval}" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+  esac
+
+fi
+
+
+
 mpi=
 # Check whether --enable-mpi was given.
 if test "${enable_mpi+set}" = set; then :
@@ -2954,7 +2975,7 @@ if test "${enable_readdir_r+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
   esac
 else
-  case "yes" in
+  case "no" in
              (yes) readdir_r=true ;;
              (no)  readdir_r=false ;;
   esac
@@ -3029,6 +3050,24 @@ else
   case "yes" in
              (yes) chdir=true ;;
              (no)  chdir=false ;;
+  esac
+
+fi
+
+
+
+subprocess=
+# Check whether --enable-subprocess was given.
+if test "${enable_subprocess+set}" = set; then :
+  enableval=$enable_subprocess; case "${enableval}" in
+             (yes) subprocess=true ;;
+             (no)  subprocess=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-subprocess" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) subprocess=true ;;
+             (no)  subprocess=false ;;
   esac
 
 fi
@@ -3143,24 +3182,6 @@ fi
 
 
 
-asmjit=
-# Check whether --enable-asmjit was given.
-if test "${enable_asmjit+set}" = set; then :
-  enableval=$enable_asmjit; case "${enableval}" in
-             (yes) asmjit=true ;;
-             (no)  asmjit=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) asmjit=true ;;
-             (no)  asmjit=false ;;
-  esac
-
-fi
-
-
-
 fftw=
 # Check whether --enable-fftw was given.
 if test "${enable_fftw+set}" = set; then :
@@ -3170,7 +3191,7 @@ if test "${enable_fftw+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-fftw" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) fftw=true ;;
              (no)  fftw=false ;;
   esac
@@ -5758,6 +5779,66 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv can be linked with no library" >&5
+$as_echo_n "checking whether dgemv can be linked with no library... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv ();
+int
+main ()
+{
+return dgemv ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    blas_found=nounderscore
+
+else
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv_ can be linked with no library" >&5
+$as_echo_n "checking whether dgemv_ can be linked with no library... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv_ ();
+int
+main ()
+{
+return dgemv_ ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      blas_found=underscore
+
+else
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
   if test "${libsearch}" == true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv" >&5
@@ -6115,6 +6196,14 @@ fi
 
   fi
 
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 fi
 
 # if not found, then use internal lapack and blas
@@ -6828,6 +6917,142 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 
+if test $asmjit == true ; then
+  found=ko
+# asmjit calls clock_gettime and thus should be linked to rt on Linux
+  if test `(uname)` = Linux ; then
+
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' rt; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
+$as_echo "$as_me: Enabling embedded asmjit" >&6;}
+    $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&5
+$as_echo "$as_me: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&2;}
+  fi
+fi
+
+
 if test $readdir_r == true ; then
 
     found=ko
@@ -7438,6 +7663,89 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&2;}
+    fi
+
+fi
+
+if test $subprocess == true ; then
+
+    found=ko
+    __PLUMED_HAS_SUBPROCESS=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
+$as_echo_n "checking subprocess with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
+$as_echo_n "checking subprocess without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_SUBPROCESS 1" >>confdefs.h
+
+      __PLUMED_HAS_SUBPROCESS=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&2;}
+      LIBS="$save_LIBS"
     fi
 
 fi
@@ -8498,78 +8806,6 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
 # notice: macports install libraries with -mt suffix
 fi
 
-if test $asmjit == true ; then
-
-    found=ko
-    __PLUMED_HAS_ASMJIT=no
-    if test "${libsearch}" == true ; then
-      testlibs="asmjit"
-    else
-      testlibs=""
-    fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit with -l$testlib" >&5
-$as_echo_n "checking asmjit with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit without extra libs" >&5
-$as_echo_n "checking asmjit without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <asmjit/asmjit.h>
-#include <stdio.h>
-using namespace asmjit;
-typedef int (*Func)(void);
-int main(int argc, char* argv[]) {
-  JitRuntime rt;
-  CodeHolder code;
-  code.init(rt.getCodeInfo());
-  X86Assembler a(&code);
-  a.mov(x86::eax, 1);
-  a.ret();
-  Func fn;
-  Error err = rt.add(&fn, &code);
-  if (err) return 1;
-  int result = fn();
-  printf("%d\n", result);
-  rt.release(fn);
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  found=ok
-          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
-      fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
-
-      __PLUMED_HAS_ASMJIT=yes
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&2;}
-      LIBS="$save_LIBS"
-    fi
-
-fi
-
 if test $fftw == true ; then
 
     found=ko
@@ -8760,8 +8996,8 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)" >&5
-$as_echo_n "checking support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)" >&5
+$as_echo_n "checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)... " >&6; }
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -8770,8 +9006,9 @@ import os
 import os.path
 import sys
 from shutil import copyfile
-import numpy
 from Cython.Build import cythonize
+if sys.version_info < (3,):
+    raise ImportError('PLUMED 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

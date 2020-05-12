@@ -1,8 +1,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2015-2018
+Copyright (c) 2019
 National Institute of Advanced Industrial Science and Technology (AIST), Japan.
 This file contains module for LogMFD method proposed by Tetsuya Morishita(AIST).
-then written by Mizuho information and Research Institute, Inc.
 
 The LogMFD module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +29,7 @@ Consider a physical system of \f$N_q\f$ particles, for which the Hamiltonian is 
   {H_{\rm MD}}\left( {\bf{\Gamma}} \right) = \sum\limits_{j = 1}^{{N_q}} {\frac{{{\bf{p}}_j^2}}{{2{m_j}}}}  + \Phi \left( {\bf{q}} \right)
 \f]
 
-where \f${\bf q}_j\f$, \f${\bf p}_j\f$ (\f$\bf{\Gamma}={\bf q},{\bf p}\f$), and \f$m_j\f$ are the position, momentum, and mass of the \f$j\f$th particle, respectively,
+where \f${\bf q}_j\f$, \f${\bf p}_j\f$ (\f$\bf{\Gamma}={\bf q},{\bf p}\f$), and \f$m_j\f$ are the position, momentum, and mass of particle \f$j\f$ respectively,
 and \f$\Phi\f$ is the potential energy function for \f${\bf q}\f$.
 The free energy \f$F({\bf X})\f$ as a function of a set of \f$N\f$ collective variables (CVs) is given as
 
@@ -46,7 +45,7 @@ and \f$K_i\f$ is the spring constant which is large enough to invoke
  \delta \left( x \right) = \lim_{k \to \infty } \sqrt {\beta k/2\pi} \exp \left( -\beta kx^2/2 \right)
 \f]
 
-In mean-force dynamics (MFD), \f${\bf X}\f$ are treated as fictitious dynamical variables, which are associated with the following Hamiltonian,
+In mean-force dynamics, \f${\bf X}\f$ are treated as fictitious dynamical variables, which are associated with the following Hamiltonian,
 
 \f[
  {H_{\rm log}} = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{2{M_i}}} + \Psi \left( {{\bf X}} \right)}
@@ -64,7 +63,7 @@ which corresponds to TAMD/d-AFED \cite AbramsJ2008, \cite Maragliano2006 (or the
 
 where \f$\alpha\f$ (ALPHA) and \f$\gamma\f$ (GAMMA) are positive parameters. The logarithmic form of \f$\Psi_{\rm log}\f$ ensures the dynamics of \f${\bf X}\f$ on a much smoother energy surface [i.e., \f$\Psi_{\rm log}({\bf X})\f$] than \f$F({\bf X})\f$, thus enhancing the sampling in the \f${\bf X}\f$-space. The parameters \f$\alpha\f$ and \f$\gamma\f$ determine the degree of flatness of \f$\Psi_{\rm log}\f$, but adjusting only \f$\alpha\f$ is normally sufficient to have a relatively flat surface (with keeping the relation \f$\gamma=1/\alpha\f$).
 
-The equation of motion (EOM) for \f$X_i\f$ in LogMFD (no thermostat) is
+The equation of motion for \f$X_i\f$ in LogMFD (no thermostat) is
 
 \f[
  {M_i}{\ddot X_i} =  - \left( {\frac{{\alpha \gamma }}{{\alpha F + 1}}} \right)\frac{{\partial F}}{{\partial {X_i}}}
@@ -83,7 +82,7 @@ where
  Z = \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
 \f]
 
-The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run each time \f${\bf X}\f$ is updated according to the EOM for \f${\bf X}\f$.
+The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run each time \f${\bf X}\f$ is updated according to the equation of motion for \f${\bf X}\f$.
 
 If the canonical average for the MF is effectively converged, the dynamical variables \f${\bf q}\f$ and \f${\bf X}\f$ are decoupled and they evolve adiabatically, which can be exploited for the on-the-fly evaluation of \f$F({\bf X})\f$. I.e., \f$H_{\rm log}\f$ should be a constant of motion in this case, thus \f$F({\bf X})\f$ can be evaluated each time \f${\bf X}\f$ is updated as
 
@@ -94,7 +93,7 @@ If the canonical average for the MF is effectively converged, the dynamical vari
 \f]
 
 
-This means that \f$F({\bf X})\f$ can be constructed without postprocessing (on-the-fly free energy reconstruction). Note that the on-the-fly free energy reconstruction is also possible in TAMD/d-AFED if the Hamiltonian-like conserved quantity is available (e.g., the Nose-Hoover type dynamics).
+This means that \f$F({\bf X})\f$ can be constructed without post processing (on-the-fly free energy reconstruction). Note that the on-the-fly free energy reconstruction is also possible in TAMD/d-AFED if the Hamiltonian-like conserved quantity is available (e.g., the Nose-Hoover type dynamics).
 
 
 
@@ -104,7 +103,7 @@ This means that \f$F({\bf X})\f$ can be constructed without postprocessing (on-t
 The accuracy in the MF is critical to the on-the-fly free energy reconstruction. To improve the evaluation of the MF, parallel-dynamics (PD) is incorporated into LogMFD, leading to logarithmic parallel-dynamics (LogPD) \cite MorishitaLogPD.
 
 
-In PD, the MF is evaluated by a nonequilibrium path-ensemble based on the Crooks-Jarzynski nonequilibrium work relation. To this end, multiple replicas of the MD system which run in parallel are introduced. The CVs [\f${\bf s}({\bf q})\f$] in each replica is restrained to the same value of \f${\bf X}(t)\f$. A canonical MD run with \f$N_m\f$ steps is performed in each replica, then the MF on \f$X_i\f$ is evaluated using the MD trajectories from all replicas.
+In PD, the MF is evaluated by a non-equilibrium path-ensemble based on the Crooks-Jarzynski non-equilibrium work relation. To this end, multiple replicas of the MD system which run in parallel are introduced. The CVs [\f${\bf s}({\bf q})\f$] in each replica is restrained to the same value of \f${\bf X}(t)\f$. A canonical MD run with \f$N_m\f$ steps is performed in each replica, then the MF on \f$X_i\f$ is evaluated using the MD trajectories from all replicas.
 The MF is practically calculated as
 
 
@@ -132,9 +131,9 @@ where
  H_{\rm MD}^k\left( {{\bf{\Gamma }},{{\bf X}}} \right) = {H_{\rm MD}}\left( {{{\bf{\Gamma }}^k}} \right) + \sum\limits_{i = 1}^N {\frac{{{K_i}}}{2}{{\left( {s_i^k - {X_i}} \right)}^2}}
 \f]
 
-and \f$s^k_i\f$ is the \f$i\f$ th CV in the \f$k\f$th replica.
+and \f$s^k_i\f$ is the \f$i\f$th CV in the \f$k\f$th replica.
 
-\f$W_k\f$ comes from the Crooks-Jarzynski nonequilibrium work relation by which we can evaluate an equilibrium ensemble average from a set of nonequilibrium trajectories. Note that, to avoid possible numerical errors in the exponential function, the following form of \f$W_k\f$ is instead used in PLUMED,
+\f$W_k\f$ comes from the Crooks-Jarzynski non-equilibrium work relation by which we can evaluate an equilibrium ensemble average from a set of non-equilibrium trajectories. Note that, to avoid possible numerical errors in the exponential function, the following form of \f$W_k\f$ is instead used in PLUMED,
 
 \f[
  {W_k}\left( t \right) = \frac{{\exp \left[ { - \beta \left\{ {{w_k}\left( t \right) - {w_{\min }}\left( t \right)} \right\}} \right]}}{{\sum\nolimits_k {\exp \left[ { - \beta \left\{ {{w_k}\left( t \right) - {w_{\min }}\left( t \right)} \right\}} \right]} }}
@@ -149,21 +148,21 @@ where
 
 With the MF evaluated using the PD approach, reconstructing free energy profiles can be performed more efficiently (requiring less elapsed computing time) in LogPD than with a single MD system in LogMFD. In the case that there exists more than one stable state separated by high energy barriers in the hidden subspace orthogonal to the CV-subspace, LogPD is particularly of use to incorporate all the contributions from such hidden states with appropriate weights (in the limit \f$N_r\to\infty\f$ ).
 
-Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski nonequilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with Lammps, Gromacs, and NAMD.
+Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski non-equilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with LAMMPS, Gromacs, and NAMD.
 
-\section Thermostatted Thermostatted LogMFD/PD
+\section Thermostat Using LogMFD/PD with a thermostat
 
-Thermostatting of \f${\bf X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f${\bf q}\f$ and \f${\bf X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f${\bf X}\f$.
+Introducing a thermostat on \f${\bf X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f${\bf q}\f$ and \f${\bf X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f${\bf X}\f$.
 
 \subsection Nose-Hoover Nose-Hoover LogMFD/PD
 
-The EOM for \f$X_i\f$ coupled to a Nose-Hoover thermostat variable \f$\eta\f$ (single heat bath) is
+The equation of motion for \f$X_i\f$ coupled to a Nose-Hoover thermostat variable \f$\eta\f$ (single heat bath) is
 
 \f[
  {M_i}{\ddot X_i} =  - \left( {\frac{{\alpha \gamma }}{{\alpha F + 1}}} \right)\frac{{\partial F}}{{\partial {X_i}}} - {M_i}{\dot X_i}\dot \eta
 \f]
 
-The EOM for \f$\eta\f$ is
+The equation of motion for \f$\eta\f$ is
 
 \f[
  Q\ddot \eta  = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{{M_i}}} - N{k_B}T}
@@ -218,7 +217,7 @@ to the fictitious dynamical variables in LogMFD/PD.
 
 plumed.dat
 \plumedfile
-UNITS TIME=fs LENGTH=1.0 ENERGY=kcal/mol Mass=1.0 CHARGE=1.0
+UNITS TIME=fs LENGTH=1.0 ENERGY=kcal/mol MASS=1.0 CHARGE=1.0
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -226,7 +225,7 @@ psi: TORSION ATOMS=7,9,15,17
 LOGMFD ...
 LABEL=logmfd
 ARG=phi,psi
-KAPPA=1000.0,1000.0
+KAPPA=100.0,100.0
 DELTA_T=0.5
 INTERVAL=500
 TEMP=300.0
@@ -248,9 +247,9 @@ to execute a LogMFD run with Gromacs-MD.
 Here TOPO/topol0.tpr is an input file
 which contains atomic coordinates and Gromacs parameters.
 
-\plumedfile
+\verbatim
 gmx_mpi mdrun -s TOPO/topol0.tpr -plumed
-\endplumedfile
+\endverbatim
 
 This command will output files named logmfd.out and replica.out.
 
@@ -258,34 +257,34 @@ The output file logmfd.out records free energy and all fictitious dynamical vari
 
 logmfd.out
 
-\plumedfile
+\verbatim
 # LogMFD
 # CVs : phi psi
-# Mass for CV particles :    6000.000000000    6000.000000000
-# Mass for thermostat   :    6000.000000000
+# Mass for CV particles : 5000000.000000000 5000000.000000000
+# Mass for thermostat   :   20000.000000000
 # 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
 # 6:phi_fict(t), 7:phi_vfict(t), 8:phi_force(t),
 # 9:psi_fict(t), 10:psi_vfict(t), 11:psi_force(t),
-       0      10.000000000       0.000000000       0.000000000       0.000000000      -2.856237341       0.000000000       0.000000000       2.791986734       0.000000000       0.000000000
-       1       9.999998983       0.000002983       0.000000000       0.000000000      -2.856235970       0.000002741       1.348654484       2.791987168       0.000000868       0.427130489
-       2       9.999990885       0.000026738       0.000000000       0.000000000      -2.856231815       0.000008311       2.740416731       2.791988289       0.000002243       0.676244355
+       1       4.99918574     308.24149708       0.00000000       0.00000000      -2.85605938       0.00035002       5.19074544       2.79216364       0.00035000      -0.53762989
+       2       4.99836196     308.26124159       0.00000000       0.00000000      -2.85588436       0.00035005       4.71247605       2.79233863       0.00035000      -0.00532474
+       3       4.99743572     308.28344595       0.00000000       0.00000000      -2.85570932       0.00035007       5.34358230       2.79251363       0.00035000      -0.05119816
 ...
-\endplumedfile
+\endverbatim
 
 The output file replica.out records all collective variables at every MFD step.
 
 replica.out
 
-\plumedfile
+\verbatim
 # Replica No. 0 of 1.
 # 1:iter_md, 2:work, 3:weight,
-# 4:phi(q),
-# 5:psi(q),
-       0    0.000000e+00     1.000000e+00       -2.856237341       2.791986734
-       1    0.000000e+00     1.000000e+00       -2.829264251       2.800529344
-       2   -4.049512e-06     1.000000e+00       -2.801427636       2.805512055
+# 4:phi(q)
+# 5:psi(q)
+       1   -8.142952e-04     1.000000e+00       -2.80432694       2.78661234
+       2   -1.638105e-03     1.000000e+00       -2.80893462       2.79211039
+       3   -2.564398e-03     1.000000e+00       -2.80244854       2.79182665
 ...
-\endplumedfile
+\endverbatim
 
 \subsection Example-LogPD Example of LogPD
 
@@ -293,9 +292,9 @@ Use the following command line to execute a LogPD run using two MD replicas (not
 Here TOPO/topol0.tpr and TOPO/topol1.tpr are input files
 which contain atomic coordinates of each replica and Gromacs parameters.
 
-\plumedfile
+\verbatim
 mpirun -np 2 gmx_mpi mdrun -s TOPO/topol -plumed -multi 2
-\endplumedfile
+\endverbatim
 
 This command will output files named logmfd.out, replica.out.0 and replica.out.1.
 
@@ -303,51 +302,51 @@ The output file logmfd.out records free energy and all fictitious dynamical vari
 
 logmfd.out
 
-\plumedfile
+\verbatim
 # LogPD, replica parallel of LogMFD
-# CVs : phi psi
 # number of replica : 2
-# Mass for CV particles :    6000.000000000    6000.000000000
-# Mass for thermostat   :    6000.000000000
+# CVs : phi psi
+# Mass for CV particles : 5000000.000000000 5000000.000000000
+# Mass for thermostat   :   20000.000000000
 # 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
 # 6:phi_fict(t), 7:phi_vfict(t), 8:phi_force(t),
 # 9:psi_fict(t), 10:psi_vfict(t), 11:psi_force(t),
-       0      10.000000000       0.000000000       0.000000000       0.000000000      -0.959548298       0.000000000       0.000000000       0.789064173       0.000000000       0.000000000
-       1       9.999999713       0.000000842       0.000000000       0.000000000      -0.959547729       0.000001138       0.559781383       0.789064682       0.000001019       0.501485083
-       2       9.999997525       0.000007259       0.000000000       0.000000000      -0.959546257       0.000002944       0.888495415       0.789066375       0.000003384       1.163634941
+       1       5.00224715     308.16814691       0.00000000       0.00000000      -0.95937173       0.00034994     -12.91277494       0.78923967       0.00035000       0.07353010
+       2       5.00476934     308.10774854       0.00000000       0.00000000      -0.95919679       0.00034989     -11.20093553       0.78941467       0.00034999      -3.21098229
+       3       5.00702463     308.05376594       0.00000000       0.00000000      -0.95902187       0.00034983     -10.81712171       0.78958965       0.00034998      -2.07196718
 ...
-\endplumedfile
+\endverbatim
 
 
 The output file replica.out.0 records all collective variables of replica No.0 at every MFD step.
 
 replica.out.0
 
-\plumedfile
+\verbatim
 # Replica No. 0 of 2.
 # 1:iter_md, 2:work, 3:weight,
-# 4:phi(q),
-# 5:psi(q),
-       0    0.000000e+00     5.000000e-01       -2.856237851       2.791988354
-       1    0.000000e+00     5.000000e-01       -2.825008209       2.796384301
-       2    9.218849e-07     4.999996e-01       -2.787512517       2.793347554
+# 4:phi(q)
+# 5:psi(q)
+       1    1.843110e-03     5.003389e-01       -1.10929125       0.83348865
+       2    3.466179e-03     5.010942e-01       -1.05020764       0.78731283
+       3    4.927870e-03     5.017619e-01       -1.04968867       0.79635198
 ...
-\endplumedfile
+\endverbatim
 
 The output file replica.out.1 records all collective variables of replica No.1 at every MFD step.
 
 replica.out.1
 
-\plumedfile
+\verbatim
 # Replica No. 1 of 2.
 # 1:iter_md, 2:work, 3:weight,
-# 4:phi(q),
-# 5:psi(q),
-       0    0.000000e+00     5.000000e-01        0.937141255      -1.213860008
-       1    0.000000e+00     5.000000e-01        0.928302868      -1.198196552
-       2   -3.118851e-06     5.000004e-01        0.903953885      -1.168669583
+# 4:phi(q)
+# 5:psi(q)
+       1    2.651173e-03     4.996611e-01       -1.06802968       0.74605205
+       2    6.075530e-03     4.989058e-01       -1.09264741       0.72681448
+       3    9.129358e-03     4.982381e-01       -1.08517238       0.74084241
 ...
-\endplumedfile
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -439,7 +438,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","THERMOSTAT",
            "Type of thermostat for the fictitious dynamical variables. NVE, NVT, VS are available." );
   keys.add("optional","TEMP",
-           "Temperature of the fictitious dynamical variables in thermostatted LogMFD/PD. "
+           "Temperature of the fictitious dynamical variables in LogMFD/PD thermostat. "
            "If not provided or provided as 0, it will be taken from the temperature of the MD system." );
 
   keys.add("optional","TAMD",
@@ -457,9 +456,9 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "Spring constant of the harmonic restraining potential for the fictitious dynamical variables." );
 
   keys.add("compulsory","FICT_MAX",
-           "Maximam values reachable for the fictitious dynamical variables. The variables will elastically bounce back at the boundary (mirror boundary)." );
+           "Maximum values reachable for the fictitious dynamical variables. The variables will elastically bounce back at the boundary (mirror boundary)." );
   keys.add("compulsory","FICT_MIN",
-           "Minimam values reachable for the fictitious dynamical variables. The variables will elastically bounce back at the boundary (mirror boundary)." );
+           "Minimum values reachable for the fictitious dynamical variables. The variables will elastically bounce back at the boundary (mirror boundary)." );
 
   keys.add("optional","FICT",
            "The initial values of the fictitious dynamical variables. "
@@ -480,7 +479,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "If not provided, it will be taken as 0." );
   keys.add("optional","META",
            "Mass of eta variable. "
-           "If not provided, it will be taken as N*kb*T*100*100." );
+           "If not provided, it will be taken as \\f$N*kb*T*100*100\\f$." );
 
   keys.add("compulsory","FLOG",
            "The initial free energy value in the LogMFD/PD run."
@@ -857,7 +856,7 @@ void LogMFD::calculate() {
    bounces back variables, updates free energy, and record logs.
 */
 void LogMFD::update() {
-  if(getStep()%interval != 0 ) return;
+  if(getStep() == 0 || getStep()%interval != 0 ) return;
 
   // calc mean force for fictitious variables
   calcMeanForce();
@@ -1116,9 +1115,7 @@ double LogMFD::calcFlog() {
   const double ekin = calcEkin();
   double pot;
 
-  if( false ) {
-  }
-  else if (thermostat == "NVE") {
+  if (thermostat == "NVE") {
     pot = hlog - ekin;
   }
   else if (thermostat == "NVT") {

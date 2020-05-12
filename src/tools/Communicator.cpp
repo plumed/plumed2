@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Communicator.h"
 #include "Exception.h"
+#include "AtomNumber.h"
 #include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
@@ -171,34 +173,48 @@ Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
 }
 
 void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const int*displs) {
-#if defined(__PLUMED_HAS_MPI)
-  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
   int*rc=const_cast<int*>(recvcounts);
   int*di=const_cast<int*>(displs);
-  if(s==NULL)s=MPI_IN_PLACE;
-  MPI_Allgatherv(s,in.size,in.type,r,rc,di,out.type,communicator);
+#if defined(__PLUMED_HAS_MPI)
+  if(initialized()) {
+    if(s==NULL)s=MPI_IN_PLACE;
+    MPI_Allgatherv(s,in.size,in.type,r,rc,di,out.type,communicator);
+  } else {
+    plumed_assert(in.nbytes==out.nbytes);
+    plumed_assert(in.size==out.size);
+    plumed_assert(rc);
+    plumed_assert(rc[0]==in.size);
+    plumed_assert(di);
+    if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
+  }
 #else
-  (void) in;
-  (void) out;
-  (void) recvcounts;
-  (void) displs;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+  plumed_assert(in.nbytes==out.nbytes);
+  plumed_assert(in.size==out.size);
+  plumed_assert(rc);
+  plumed_assert(rc[0]==in.size);
+  plumed_assert(di);
+  if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
 #endif
 }
 
 void Communicator::Allgather(ConstData in,Data out) {
-#if defined(__PLUMED_HAS_MPI)
-  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
-  if(s==NULL)s=MPI_IN_PLACE;
-  MPI_Allgather(s,in.size,in.type,r,out.size/Get_size(),out.type,communicator);
+#if defined(__PLUMED_HAS_MPI)
+  if(initialized()) {
+    if(s==NULL)s=MPI_IN_PLACE;
+    MPI_Allgather(s,in.size,in.type,r,out.size/Get_size(),out.type,communicator);
+  } else {
+    plumed_assert(in.nbytes==out.nbytes);
+    plumed_assert(in.size==out.size);
+    if(s) std::memcpy(r,s,in.size*in.nbytes);
+  }
 #else
-  (void) in;
-  (void) out;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+  plumed_assert(in.nbytes==out.nbytes);
+  plumed_assert(in.size==out.size);
+  if(s) std::memcpy(r,s,in.size*in.nbytes);
 #endif
 }
 
@@ -257,6 +273,7 @@ template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_DOUBLE;}
 template<> MPI_Datatype Communicator::getMPIType<int>()   { return MPI_INT;}
 template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
+template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
@@ -264,6 +281,7 @@ template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_Datatype
 template<> MPI_Datatype Communicator::getMPIType<int>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
 #endif
 

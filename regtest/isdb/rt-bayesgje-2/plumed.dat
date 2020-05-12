@@ -23,4 +23,4 @@ TEMP=300
 
 BIASVALUE ARG=spe.score
 
-PRINT ARG=spe.score,spe.biasDer,spe.weight,spe.scale,spe.acceptScale,spe.acceptSigma,spe.sigmaMean_0,spe.sigma_0,spe.sigmaMean_1,spe.sigma_1,spe.sigmaMean_2,spe.sigma_2,spe.sigmaMean_3,spe.sigma_3 FILE=BIAS STRIDE=1
+PRINT ARG=spe.score,spe.biasDer,spe.weight,spe.scale,spe.acceptScale,spe.acceptSigma,spe.sigmaMean-0,spe.sigma-0,spe.sigmaMean-1,spe.sigma-1,spe.sigmaMean-2,spe.sigma-2,spe.sigmaMean-3,spe.sigma-3 FILE=BIAS STRIDE=1

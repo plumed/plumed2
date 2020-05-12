@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -77,7 +77,7 @@ plumed simplemd --help
 class SimpleMD:
   public PLMD::CLTool
 {
-  string description()const {
+  string description()const override {
     return "run lj code";
   }
 
@@ -400,7 +400,7 @@ private:
 
 
 
-  virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc) {
+  int main(FILE* in,FILE*out,PLMD::Communicator& pc) override {
     int            natoms;       // number of atoms
     vector<Vector> positions;    // atomic positions
     vector<Vector> velocities;   // velocities
@@ -602,6 +602,9 @@ private:
       if((istep+1)%nstat==0)   write_statistics(statfile,istep+1,tstep,natoms,ndim,engkin,engconf,engint);
 
     }
+
+// call final plumed jobs
+    plumed->cmd("runFinalJobs");
 
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);

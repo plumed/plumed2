@@ -78,7 +78,7 @@ class Opt_Dummy : public Optimizer {
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Dummy(const ActionOptions&);
-  void coeffsUpdate(const unsigned int c_id = 0);
+  void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
 

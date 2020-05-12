@@ -1,0 +1,446 @@
+/**
+\page lugano-5 Lugano tutorial: Dimensionality reduction
+
+\section lugano-5-aim Aims
+
+This tutorial will show you how to you can use PLUMED to perform dimensionality reduction.  The tutorial will try not 
+to focus on the application of one particular algorithm but will instead try to show you the principles behind the 
+implementation of these algorithms that has been adopted within PLUMED.  By the end of the tutorial you will thus be 
+able to design your own dimensionality reduction algorithm.  
+
+\section lugano-5-lo Objectives
+
+Once this tutorial is completed students will
+
+- Be able to use \ref COLLECT_FRAMES to store a trajectory for later analysis
+- Be able to use \ref PCA to perform principal component analysis
+- Be able to construct a dissimilarity matrix using \ref EUCLIDEAN_DISSIMILARITIES
+- Be able to select a subset of landmark points to analyze with particular dimensionality reduction algorithm.
+- Be able to construct low dimensional representations using \ref CLASSICAL_MDS and \ref SKETCH_MAP.
+- Be able to generate projections of non-landmark points by using \ref PROJECT_ALL_ANALYSIS_DATA
+
+\section lugano-5-resources Resources
+
+The \tarball{lugano-5} for this project contains the following files:
+
+- beta-hairpin.pdb : A pdb file containing the protein that we are going to study in this tutorial in a beta hairpin configuration.  This input will be used as a template so that we can use the names of special groups in many of the inputs that follow.
+
+In addition, you will also need to get a copy of the trajectory that we will be analyzing in this tutorial by executing the following command:
+
+\verbatim
+wget https://github.com/plumed/lugano2019/raw/master/handson_5/traj.dcd
+\endverbatim
+
+The trajectory we are analyzing is a smaller version of the trajectory that was analyzed in the following paper:
+
+- https://www.frontiersin.org/articles/10.3389/fmolb.2019.00046/full
+
+In this paper the trajectory was analyzed with a variety of different dimensionality reduction algorithms and the 
+results were compared.  The paper may, therefore, be of interest.
+
+This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
+
+Also notice that the `.solutions` direction of the tarball contains correct input files for the exercises.
+Please only look at these files once you have tried to solve the problems yourself.  Similarly the tutorial
+below contains questions for you to answer that are shown in bold.  You can reveal the answers to these questions
+by clicking on links within the tutorial but you should obviously try to answer things yourself before reading these
+answers.
+
+\section lugano-5-intro Introduction
+
+In all of the previous tutorials we have used functions that take the position of all the atoms in the system - a \f$3N\f$
+dimensional vector, where \f$N\f$ is the number of atoms as input.  This function then outputs a single number - the value of the collective variable -
+that tells us where in a low dimensional space we should project that configuration.  Problems can arise because this collective-variable function
+is many-to-one and it may thus be difficult to distinguish between every different pair of structurally distinct conformers of our system.
+
+In this tutorial we are going to introduce an alternative approach to this business of finding collective variables.  In this alternative
+approach we are going to stop trying to seek out a function that can take any configuration of the atoms (any \f$3N\f$-dimensional vector) and find its
+low dimensional projection on the collective variable axis.  Instead we are going to take a set of configurations of the atoms (a set of \f$3N\f$-dimensional
+vectors of atom positions) and try to find a sensible set of projections for these configurations.  We are going to find this low dimensional representation 
+by seeking out <a href="http://en.wikipedia.org/wiki/Isometry"> an isometry </a> between the space containing the \f$3N\f$-dimensional vectors of atom positions
+and some lower-dimensional space.  This idea is explained in more detail in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be"> video </a> 
+and details on the various algorithms that we are using in the tutorial can be found in:
+
+- https://arxiv.org/abs/1907.04170 
+
+As you will find out if you read the chapter that is linked above there are multiple ways to construct an isometric embedding of a trajectory.  This tutorial will thus try to teach you a set of basic 
+ideas and will then encourage you to experiment and to develop your own strategy for representing the data set.
+
+\section lugano-5-exercises Exercises
+
+\subsection lugano-5-starting Collecting the trajectory
+
+The first thing that we need to learn to do in order to run these dimensionality reduction algorithms is to store the trajectory so that we can analyze in later.  The following input (once
+the blanks are filled in) will take the positions of the non-hydrogen atoms in our protein and store them every 1 step in an object that we can refer to later in the input using the label data.  All
+the configurations stored in data will then be output to a pdb file once the whole trajectory is read in.  Fill in the blanks in the input below now:
+
+\plumedfile
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=__FILL__ MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES __FILL__=@nonhydrogens
+
+# This should output the atomic positions for the frames that were collected to a pdb file called traj.pdb
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=__FILL__ FILE=traj.pdb
+\endplumedfile
+
+Then, once all the blanks are filled in, run the command using:
+
+\verbatim
+plumed driver --mf_dcd traj.dcd
+\endverbatim
+
+Notice that the above input stored the atomic positions of the atoms.  We can use the atomic positions in many of the dimensionality reductions that will be discussed later in this tutorial or 
+we can use a high-dimensional vector of collective variables.  The following input thus gives an example of which shows you can compute and store the values the Ramachandran angles of the protein 
+took in all the trajectory frames so that they can be analyzed using a dimensionality reduction algorithm.  Try to fill in the blanks on this input and then run this form of analysis on the trajectory 
+using the command above once more:
+
+\plumedfile
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=__FILL__ MOLTYPE=protein
+
+# The following commands compute all the Ramachandran angles of the protein for you
+r2-phi: TORSION ATOMS=@phi-2
+r2-psi: TORSION ATOMS=@psi-2
+r3-phi: TORSION ATOMS=@phi-3
+r3-psi: TORSION ATOMS=@psi-3
+r4-phi: TORSION __FILL__
+r4-psi: TORSION __FILL__ 
+r5-phi: TORSION __FILL__ 
+r5-psi: TORSION __FILL__ 
+r6-phi: TORSION __FILL__ 
+r6-psi: TORSION __FILL__ 
+r7-phi: TORSION __FILL__ 
+r7-psi: TORSION __FILL__ 
+r8-phi: TORSION __FILL__ 
+r8-psi: TORSION __FILL__ 
+r9-phi: TORSION __FILL__ 
+r9-psi: TORSION __FILL__ 
+r10-phi: TORSION __FILL__ 
+r10-psi: TORSION __FILL__ 
+r11-phi: TORSION __FILL__ 
+r11-psi: TORSION __FILL__ 
+r12-phi: TORSION __FILL__ 
+r12-psi: TORSION __FILL__ 
+r13-phi: TORSION __FILL__ 
+r13-psi: TORSION __FILL__ 
+r14-phi: TORSION __FILL__ 
+r14-psi: TORSION __FILL__  
+r15-phi: TORSION __FILL__ 
+r15-psi: TORSION __FILL__ 
+r16-phi: TORSION __FILL__ 
+r16-psi: TORSION __FILL__ 
+
+# This command stores all the Ramachandran angles that were computed
+cc: COLLECT_FRAMES __FILL__=r2-phi,r2-psi,r3-phi,r3-psi,r4-phi,r4-psi,r5-phi,r5-psi,r6-phi,r6-psi,r7-phi,r7-psi,r8-phi,r8-psi,r9-phi,r9-psi,r10-phi,r10-psi,r11-phi,r11-psi,r12-phi,r12-psi,r13-phi,r13-psi,r14-phi,r14-psi,r15-phi,r15-psi,r16-phi,r16-psi 
+
+# This command outputs all the Ramachandran angles that were stored to a file called angles_data
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=cc.* FILE=angles_data
+\endplumedfile
+
+\subsection lugano-5-pca Performing PCA
+
+Having learned how to store data for later analysis with a dimensionality reduction algorithm lets now apply principal component analysis (PCA) upon 
+our stored data.  In principal component analysis a low dimensional projections for our trajectory are constructed by:
+
+- Computing a covariance matrix from the trajectory data
+- Diagonalizing the covariance matrix.
+- Calculating the projection of each trajectory frame on a subset of the eigenvectors of the covariance matrix.
+
+To perform PCA using PLUMED we are going to use the following input with the blanks filled in:
+
+\plumedfile
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens 
+# special group later in the input
+MOLINFO STRUCTURE=__FILL__ MOLTYPE=protein
+  
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES __FILL__=@nonhydrogens
+# This diagonalizes the covariance matrix
+pca: PCA USE_OUTPUT_DATA_FROM=__FILL__ METRIC=OPTIMAL NLOW_DIM=2
+# This projects each of the trajectory frames onto the low dimensional space that was 
+# identified by the PCA command
+dat: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FILL__
+
+# This should output the atomic positions for the frames that were collected and analyzed using PCA
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=__FILL__ FILE=traj.pdb
+# This should output the PCA projections of all the coordinates
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=dat.* FILE=pca_data
+
+# These next three commands calculate the secondary structure variables.  These 
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
+# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# in different parts of the low dimensional space.
+alpha: ALPHARMSD RESIDUES=all
+abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+
+# These commands collect and output the secondary structure variables so that we can use this information to 
+# determine how good our projection of the trajectory data is.
+cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
+\endplumedfile
+
+To generate the projection you run the command:
+
+\verbatim
+plumed driver --mf_dcd traj.dcd
+\endverbatim
+
+I would recommend visualizing this data using the GISMO plugin to VMD.  You can find instructions on how to compile this code on the page below:
+
+http://epfl-cosmo.github.io/sketchmap/index.html?page=code
+
+(you don't need to compile the sketch-map code)  Once GISMO is installed you should have an option to open it when you open vmd.  The option
+to open GISMO can be found under Extensions>Analysis>GISMO.  To visualize the results from what we have just done you should need to follow 
+the following instructions:
+
+- Open vmd and load the pdb file that was output: traj.pdb 
+- Open GISMO and load the pca projections file: pca_data
+- Open GISMO and load the secondary structure variables: secondary_structure_data
+- You can safely ignore the error message that GISMO will give at this stage.
+- Now choose to plot the quantities dat.coord-1 and dat.coord-2 on the x and y axis respectively.  Color the points using cc2.alpha.
+
+If you follow the instructions above you should get an image like the one shown below:
+
+\anchor lugano-5-gismo 
+\image html lugano-5-gismo.png "Figure created using GISMO that shows where each frame of the trajectory is projected in the low-dimensional space.  Points are colored in accordance with the alpha helical content of the structure."
+
+You can click on the various points in the plot and VMD will show you the structure in the corresponding trajectory frame.  Furthermore, you can get a particularly useful representation of the structures by adding the following 
+text to your ~/.vmdrc file:
+
+\verbatim
+user add key m {
+  puts "Automatic update of secondary structure, and alignment to first frame"
+  trace variable vmd_frame w structure_trace
+  rmsdtt
+  rmsdtt::doAlign
+  destroy $::rmsdtt::w
+  clear_reps top
+  mol color Structure
+  mol selection backbone
+  mol representation NewCartoon
+  mol addrep top
+}
+\endverbatim
+
+With this text in your ~/.vmdrc file VMD will align all the structures with the first frame and then show the cartoon representation of each structure when you press the m button on your keyboard 
+
+\subsection lugano-5-mds Performing MDS 
+
+In the previous section we performed PCA on the atomic positions directly.  In the section before last, however, we also saw how we can store high-dimensional vectors of collective variables and then 
+use these vectors as input to a dimensionality reduction algorithm.  We might legitimately ask, therefore, if we can do PCA using these high-dimensional vectors as input rather than atomic positions.
+The answer to this question is yes as long as the CV is not periodic.  If any of our CVs are not periodic we cannot analyze them using the \ref PCA action.  We can, however, formulate the PCA algorithm
+in a different way.  In this alternative formulation, which is known as classical multidimensional scaling (MDS) we do the following:
+
+- We calculate the matrix of distances between configurations
+- We perform an operation known as centering the matrix.
+- We diagonalize the centered matrix
+- The eigenvectors multiplied by the square root of the corresponding eigenvalue can then be used as a set of projections for our input points.
+
+This method is used less often the PCA as the matrix that we have to diagonalize here in the third step can be considerably larger than the matrix that we have to diagonalize when we perform PCA.  In fact
+in order to avoid this expensive diagonalization step we often select a subset of so called landmark points on which to run the algorithm directly.  Projections for the remaining points are then found 
+by using a so-called out-of-sample procedure.  This is what has been done in the following input:
+
+\plumedfile
+ This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES ATOMS=@nonhydrogens
+# This should output the atomic positions for the frames that were collected and analyzed using MDS
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=cc FILE=traj.pdb
+
+# The following commands compute all the Ramachandran angles of the protein for you
+r2-phi: TORSION ATOMS=@phi-2
+r2-psi: TORSION ATOMS=@psi-2
+r3-phi: TORSION ATOMS=@phi-3
+r3-psi: TORSION ATOMS=@psi-3
+r4-phi: TORSION __FILL__ 
+r4-psi: TORSION __FILL__ 
+r5-phi: TORSION __FILL__ 
+r5-psi: TORSION __FILL__ 
+r6-phi: TORSION __FILL__ 
+r6-psi: TORSION __FILL__ 
+r7-phi: TORSION __FILL__ 
+r7-psi: TORSION __FILL__ 
+r8-phi: TORSION __FILL__ 
+r8-psi: TORSION __FILL__ 
+r9-phi: TORSION __FILL__ 
+r9-psi: TORSION __FILL__ 
+r10-phi: TORSION __FILL__
+r10-psi: TORSION __FILL__ 
+r11-phi: TORSION __FILL__ 
+r11-psi: TORSION __FILL__ 
+r12-phi: TORSION __FILL__ 
+r12-psi: TORSION __FILL__ 
+r13-phi: TORSION __FILL__ 
+r13-psi: TORSION __FILL__ 
+r14-phi: TORSION __FILL__ 
+r14-psi: TORSION __FILL__ 
+r15-phi: TORSION __FILL__ 
+r15-psi: TORSION __FILL__ 
+r16-phi: TORSION __FILL__ 
+r16-psi: TORSION __FILL__ 
+
+# This command stores all the Ramachandran angles that were computed
+angles: COLLECT_FRAMES __FILL__=r2-phi,r2-psi,r3-phi,r3-psi,r4-phi,r4-psi,r5-phi,r5-psi,r6-phi,r6-psi,r7-phi,r7-psi,r8-phi,r8-psi,r9-phi,r9-psi,r10-phi,r10-psi,r11-phi,r11-psi,r12-phi,r12-psi,r13-phi,r13-psi,r14-phi,r14-psi,r15-phi,r15-psi,r16-phi,r16-psi
+# Lets now compute the matrix of distances between the frames in the space of the Ramachandran angles
+distmat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=__FILL__ METRIC=EUCLIDEAN
+# Now select 500 landmark points to analyze
+fps: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=__FILL__ NLANDMARKS=500
+# Run MDS on the landmarks
+mds: CLASSICAL_MDS __FILL__=fps NLOW_DIM=2
+# Project the remaining trajectory data
+osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FILL__
+
+# This command outputs all the projections of all the points in the low dimensional space
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=osample.* FILE=mds_data
+
+# These next three commands calculate the secondary structure variables.  These
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
+# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# in different parts of the low dimensional space.
+alpha: ALPHARMSD RESIDUES=all
+abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+
+# These commands collect and output the secondary structure variables so that we can use this information to
+# determine how good our projection of the trajectory data is.
+cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
+\endplumedfile
+
+This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed and a set of landmark points 
+is selected using a method known as farthest point sampling.  A matrix that contains only those distances between the landmarks is then constructed and diagonalized by the \ref CLASSICAL_MDS action so that 
+projections of the landmarks can be constructed.  The final step is then to project the remainder of the trajectory using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
+and run this calculation now using the command:
+
+\verbatim
+plumed driver --mf_dcd traj.dcd
+\endverbatim
+
+Once the calculation has completed you can, once again, visualize the data generated using the GISMO plugin.
+
+\subsection lugano-5-smap Performing sketch-map
+
+The two algorithms (PCA and MDS) that we have looked at thus far are both linear dimensionality reduction algorithms.  In addition to these there are a whole class of non-linear dimensionality reduction 
+reduction algorithms which work by transforming the matrix of dissimilarities between configurations, calculating geodesic rather than Euclidean distances between configurations or by changing the form of the
+loss function that is optimized.  In this final exercise we are going to use an algorithm that uses the last of the these three strategies to construct a non-linear projection.  The algorithm is known as sketch-map
+and an input for sketch-map is provided below:
+
+\plumedfile
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=__FILL__ MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES __FILL__=@nonhydrogens
+# This should output the atomic positions for the frames that were collected and analyzed using MDS
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=__FILL__ FILE=traj.pdb
+
+# The following commands compute all the Ramachandran angles of the protein for you
+r2-phi: TORSION ATOMS=@phi-2
+r2-psi: TORSION ATOMS=@psi-2
+r3-phi: TORSION ATOMS=@phi-3
+r3-psi: TORSION ATOMS=@psi-3
+r4-phi: TORSION __FILL__ 
+r4-psi: TORSION __FILL__ 
+r5-phi: TORSION __FILL__ 
+r5-psi: TORSION __FILL__ 
+r6-phi: TORSION __FILL__ 
+r6-psi: TORSION __FILL__ 
+r7-phi: TORSION __FILL__ 
+r7-psi: TORSION __FILL__ 
+r8-phi: TORSION __FILL__ 
+r8-psi: TORSION __FILL__ 
+r9-phi: TORSION __FILL__ 
+r9-psi: TORSION __FILL__ 
+r10-phi: TORSION __FILL__ 
+r10-psi: TORSION __FILL__ 
+r11-phi: TORSION __FILL__ 
+r11-psi: TORSION __FILL__ 
+r12-phi: TORSION __FILL__ 
+r12-psi: TORSION __FILL__ 
+r13-phi: TORSION __FILL__ 
+r13-psi: TORSION __FILL__ 
+r14-phi: TORSION __FILL__ 
+r14-psi: TORSION __FILL__ 
+r15-phi: TORSION __FILL__ 
+r15-psi: TORSION __FILL__ 
+r16-phi: TORSION __FILL__ 
+r16-psi: TORSION __FILL__ 
+
+# This command stores all the Ramachandran angles that were computed
+angles: COLLECT_FRAMES __FILL__=r2-phi,r2-psi,r3-phi,r3-psi,r4-phi,r4-psi,r5-phi,r5-psi,r6-phi,r6-psi,r7-phi,r7-psi,r8-phi,r8-psi,r9-phi,r9-psi,r10-phi,r10-psi,r11-phi,r11-psi,r12-phi,r12-psi,r13-phi,r13-psi,r14-phi,r14-psi,r15-phi,r15-psi,r16-phi,r16-psi
+# Lets now compute the matrix of distances between the frames in the space of the Ramachandran angles
+distmat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=__FILL__ METRIC=EUCLIDEAN
+# Now select 500 landmark points to analyze
+fps: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=__FILL__ NLANDMARKS=500
+# Run sketch-map on the landmarks
+smap: SKETCH_MAP __FILL__=fps NLOW_DIM=2 HIGH_DIM_FUNCTION={SMAP R_0=6 A=8 B=2} LOW_DIM_FUNCTION={SMAP R_0=6 A=2 B=2} CGTOL=1E-3 CGRID_SIZE=20 FGRID_SIZE=200 ANNEAL_STEPS=0
+# Project the remaining trajectory data
+osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FILL__
+
+# This command outputs all the projections of all the points in the low dimensional space
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=osample.* FILE=smap_data
+
+# These next three commands calculate the secondary structure variables.  These
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
+# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# in different parts of the low dimensional space.
+alpha: ALPHARMSD RESIDUES=all
+abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+
+# These commands collect and output the secondary structure variables so that we can use this information to
+# determine how good our projection of the trajectory data is.
+cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
+\endplumedfile
+
+This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed and a set of landmark points
+is selected using a method known as farthest point sampling.  A matrix that contains only those distances between the landmarks is then constructed and diagonalized by the \ref CLASSICAL_MDS action and this
+set of projections is used as the initial configuration for the various minimization algorithms that are then used to optimize the sketch-map stress function.  As in the previous exercise once the projections of 
+the landmarks are found the projections for the remainder of the points in the trajectory are found by using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
+and run this calculation now using the command:
+
+\verbatim
+plumed driver --mf_dcd traj.dcd
+\endverbatim
+
+Once the calculation has completed you can, once again, visualize the data generated using the GISMO plugin.
+
+\section lugano-5-extensions Conclusions and extensions
+
+This tutorial shown you that running dimensionality reduction algorithms using PLUMED involves the following stages:
+
+- Data is collected from the trajectory using \ref COLLECT_FRAMES.
+- Landmark points are selected using a \ref landmarks algorithm
+- The distances between the trajectory frames are computed using \ref EUCLIDEAN_DISSIMILARITIES
+- A loss function is optimized in order to generate projections of the landmarks.  
+- Projections of the non-landmark points are generated using \ref PROJECT_ALL_ANALYSIS_DATA.
+
+There are multiple choices to be made in each of the various stages described above.  For example, you can change the particular sort of data this is collected from the 
+trajectory, there are multiple different ways to select landmarks, you can use the distances directly or you can transform them, you can use various different loss function and you can
+optimize the loss function using a variety of different algorithms.  In this final exercise of the tutorial I thus want you to experiment with these various different choices that can
+be made.  Use the data set that we have been working with throughout this tutorial and try to construct an interesting representation of it using some combination of Actions that we have 
+not explored in the tutorial.  Some things you can perhaps try:
+
+- Try sketch-map with RMSD distances as input rather than angles
+- Try using different \ref landmarks algorithms
+- Try using different numbers of landmarks
+- Try to use PCA followed by sketch-map
+- See if you can work out how to draw contour plot showing the free energy as a function of the low-dimensional coordinates.
+
+*/
+
+link: @subpage lugano-5 
+
+description: How to perform dimensionality reduction using PLUMED
+
+additional-files: lugano-5

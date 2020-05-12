@@ -351,20 +351,20 @@ the user-doc directory you will find a bibtex file called bibliography.bib that 
 the references that are included in the user documentation for plumed.  To add your reference
 you should add bibliographic data for the article you want to cite in this file.
 
-\subsection Examples
+\section Examples
 
-Your manual entry <b>must</b> contain some examples as to how your PLMD::Action.  These should be included as follows:
+Manual entries for actions and tutorials <b>must</b> contain some examples.  The most basic way to include these is as follows:
 
 \verbatim
 \par Example
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5             LABEL=d1
 DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
 PRINT ARG=d1,d2,d2.x
-\ endverbatim  /*** But with no space between the \ and the endverbatim
+\ endplumedfile /*** But with no space between the \ and the endplumedfile
 \endverbatim 
 
 In the manual this will be converted to:
@@ -373,15 +373,130 @@ In the manual this will be converted to:
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
-DISTANCE ATOMS=3,5             LABEL=d1
-DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
-PRINT ARG=d1,d2,d2.x
-\endverbatim
+<pre class="fragment">
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=3,5             LABEL=d1
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=2,4 COMPONENTS  LABEL=d2
+<a href="../../user-doc/html/_p_r_i_n_t.html" style="color:green">PRINT</a> ARG=d1,d2,d2.x
+</pre>
 
 Please be aware of the blank line between after the title of the paragraph.  If this line is not present your manual will look ugly.  
 Also be aware that your Examples section <b> must </b> be called Examples and not Example because of a perculiarity in the 
 script that generates the manual.
+
+By including the example input in a plumedfile environment you ensure two things:
+
+- That the action names are converted to links to the relevant pages in the manual when the manual is constructed.
+- That the code to construct the user manual will test to see if your example input can be parsed by PLUMED whenever the user manual is built.
+
+To achieve the second of these objectives with the input shown above it is sufficient to include the example input in a plumedfile environment.
+As detailed in the following sections, however, there are some cases where things are a little more complicated.
+
+\subsection multirepeg Including example inputs for multiple replica simulations
+
+If you have an input for a simulation that is to be run with three replicas such as the one below:
+
+<pre class="fragment">
+<span style="color:blue"># Compute a distance</span>
+d: <a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2
+<span style="color:blue"># Apply a restraint.</span>
+<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
+</pre>
+
+Then you must specify that the input is to be run on three replicas in the first (SETTINGS) line of the input file as shown below: 
+
+\verbatim
+\plumedfile{3}
+#SETTINGS NREPLICAS=3
+# Compute a distance
+d: DISTANCE ATOMS=1,2
+# Apply a restraint.
+RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
+\ endplumedfile /*** But with no space between the \ and the endplumedfile
+\endverbatim
+
+Notice that there should not be a space between the hash sign at the start of this line and word settings. 
+
+\subsection auxfileeg Including example inputs that require an auxiliary file
+
+Suppose that you have an input such as the one below:
+
+<pre class="fragment">
+<a href="../../user-doc/html/_r_m_s_d.html" style="color:green">RMSD</a> REFERENCE=file.pdb TYPE=OPTIMAL
+</pre>
+
+As RMSD has been used here you are also required to provide an input file which in this case would be called file.pdb.  You can include 
+this input in an auxfile environment as shown below:
+
+\verbatim
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
+END
+\ endauxfile /*** But with no space between the \ and the endauxfile
+\endverbatim
+
+Obviously, the file.pdb inside the curly braces in the top line here indicates that the auxiliary file to be constructed from this data should be named 
+file.pdb.  Files input in this way can be given any name but:
+
+- If two auxfiles are used on the same page they must be given different names (if they are on different pages it does not matter)
+- auxfiles should not be named *.dat as the script that builds the user manual assumes that all *.dat files are plumed input files. 
+
+\subsection incfileeg Using INCLUDE in your example input files
+
+Suppose that you have split your input by using an INCLUDE file as shown below:
+
+<pre class="fragment">
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2 LABEL=dist
+<a href="../../user-doc/html/_i_n_c_l_u_d_e.html" style="color:green">INCLUDE</a> FILE=toBeIncluded.inc
+</pre>
+
+<pre class="fragment">
+<span style="color:blue"># this is toBeIncluded.inc</span>
+<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=dist AT=2.0 KAPPA=1.0
+</pre>
+
+To include an input like this in the manul you would write the following:
+
+\verbatim
+\plumedfile
+DISTANCE ATOMS=1,2 LABEL=dist
+INCLUDE FILE=toBeIncluded.inc
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+
+\plumedfile
+#SETTINGS FILENAME=toBeIncluded.inc  
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
+\ endplumedfile   /*** But with no space between the \ and the endplumedincludefile
+\endverbatim
+
+By including the FILENAME attribute on the SETTINGS line you can set the name of the plumed input file that is generated when the input is tested.
+Also notice that if, as in the example above, the included file is not (by itself) a valid plumed input it CANNOT be called *.dat as the script that 
+checks the input will complain.  
+
+\subsection molfileeg Using MOLFILE in your example input files
+
+If you use have used a \ref MOLINFO command in the example input that you specified as has been done here:
+
+<pre class="fragment">
+<a href="./_m_o_l_i_n_f_o.html" style="color:green">MOLINFO</a> STRUCTURE=helix.pdb
+<a href="./_w_h_o_l_e_m_o_l_e_c_u_l_e_s.html" style="color:green">WHOLEMOLECULES</a> ENTITY0=1-100
+alpha: <a href="./_a_l_p_h_a_r_m_s_d.html" style="color:green">ALPHARMSD</a> RESIDUES=all TYPE=OPTIMAL R_0=0.1
+</pre> 
+
+Then you must provide information on the location from whence PLUMED can the reference input so that the example checking script can copy the input
+for the MOLINFO.   The above input would thus be included in the manual as shown below:
+
+\verbatim
+\plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=helix.pdb
+WHOLEMOLECULES ENTITY0=1-100
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+\endverbatim
 
 \section tutorials Writing how-to instructions
 
@@ -473,7 +588,7 @@ In this case the tar ball you add is called mytute.tar.gz.  The user can downloa
 
 \section updating-web-manuals Updating web manuals
 
-Precompiled versions of PLUMED manuals can be found on github at an address such as http://plumed.github.io/doc-v2.1/user-doc/html/index.html
+Precompiled versions of PLUMED manuals can be found on github at an address such as http://www.plumed.org/doc-v2.1/user-doc/html/index.html
 (replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
 is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done

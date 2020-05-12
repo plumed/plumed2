@@ -5,6 +5,8 @@
 !/README
 !/adjmat
 !/analysis
+!/annfunc
+!/asmjit
 !/bias
 !/blas
 !/cltools
@@ -28,6 +30,7 @@
 !/maketools
 !/mapping
 !/manyrestraints
+!/maze
 !/molfile
 !/multicolvar
 !/python

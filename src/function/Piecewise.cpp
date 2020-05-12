@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,8 +31,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION PIECEWISE
 /*
-Compute a piece wise straight line through its arguments that passes through
-a set of ordered control points.
+Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
 
 For variables less than the first
 (greater than the last) point, the value of the first (last) point is used.
@@ -76,7 +75,7 @@ class Piecewise :
   std::vector<std::pair<double,double> > points;
 public:
   explicit Piecewise(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

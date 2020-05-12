@@ -169,7 +169,7 @@ class TD_Gaussian: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Gaussian(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 

@@ -1,0 +1,29 @@
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES ATOMS=@nonhydrogens
+# This diagonalizes the covariance matrix
+pca: PCA USE_OUTPUT_DATA_FROM=cc METRIC=OPTIMAL NLOW_DIM=2
+# This projects each of the trajectory frames onto the low dimensional space that was
+# identified by the PCA command
+dat: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=cc PROJECTION=pca
+
+# This should output the atomic positions for the frames that were collected and analyzed using PCA
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=cc FILE=traj.pdb
+# This should output the PCA projections of all the coordinates
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=dat ARG=dat.* FILE=pca_data
+
+# These next three commands calculate the secondary structure variables.  These
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
+# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# in different parts of the low dimensional space.
+alpha: ALPHARMSD RESIDUES=all
+abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+
+# These commands collect and output the secondary structure variables so that we can use this information to
+# determine how good our projection of the trajectory data is.
+cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data

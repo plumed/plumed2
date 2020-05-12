@@ -29,10 +29,23 @@ import os
 import os.path
 import sys
 from shutil import copyfile
+import platform
+from distutils.sysconfig import get_config_var
+from distutils.version import LooseVersion
+
+if sys.version_info < (3,):
+    raise ImportError("PLUMED 2.6 only supports Python 3")
+
+def is_platform_mac():
+    return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
     copyfile("../VERSION","VERSION")
-    copyfile("../src/wrapper/Plumed.h","Plumed.h")
+    try:
+        os.mkdir("include")
+    except OSError:
+        pass
+    copyfile("../src/wrapper/Plumed.h","include/Plumed.h")
 
 plumedname = os.getenv("plumed_program_name")
 if plumedname is None:
@@ -40,7 +53,7 @@ if plumedname is None:
 
 plumedversion = os.getenv("plumed_version")
 if plumedversion is None:
-    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8")
+    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8").rstrip()
 
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
@@ -52,22 +65,28 @@ if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
 
+# Fixes problem with compiling the PYTHON interface in Mac OS 10.14 and higher.
+# Sets the deployment target to 10.9 when compiling on version 10.9 and above,
+# overriding distutils behaviour to target the Mac OS version python was built for.
+# This can be overridden by setting MACOSX_DEPLOYMENT_TARGET before compiling the
+# python interface.
+# This fix is taken from https://github.com/pandas-dev/pandas/pull/24274/files
+if is_platform_mac():
+    if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
+        current_system = LooseVersion(platform.mac_ver()[0])
+        python_target = LooseVersion(get_config_var('MACOSX_DEPLOYMENT_TARGET'))
+        if python_target < '10.9' and current_system >= '10.9':
+            os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
+
 def readme():
     with open('README.rst') as f:
         return f.read()
 
-try:
-    import numpy
-except:
-    print('Error: building ' + plumedname + ' requires numpy. Please install it first with pip install numpy')
-    sys.exit(-1)
-
-include_dirs=[numpy.get_include()]
 
 try:
-    include_dirs.append(os.environ["plumed_include_dir"])
-except:
-    include_dirs.append(".")
+    include_dirs=[os.environ["plumed_include_dir"]]
+except KeyError:
+    include_dirs=["./include"]
 
 # allow one to force using cython with env var plumed_force_cython=yes
 USE_CYTHON = False
@@ -75,7 +94,7 @@ try:
     if(os.environ["plumed_force_cython"]=="yes"):
         print('plumed_force_cython=yes')
         USE_CYTHON = True
-except:
+except KeyError:
     pass
 
 # if plumed.cpp is available, do not need cython
@@ -90,7 +109,7 @@ if USE_CYTHON:
         print('importing cython')
         from Cython.Build import cythonize
         extension="pyx"
-    except:
+    except ImportError:
         print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
         sys.exit(-1)
 else:
@@ -106,7 +125,7 @@ ext_modules=[Extension(
   )]
 
 if USE_CYTHON:
-    ext_modules=cythonize(ext_modules)
+    ext_modules=cythonize(ext_modules,language_level=3)
 
 setup(
   name=plumedname,
@@ -120,8 +139,6 @@ setup(
           'Topic :: Scientific/Engineering :: Chemistry',
           'Topic :: Scientific/Engineering :: Physics',
           'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
@@ -131,5 +148,6 @@ setup(
   url='http://www.plumed.org',
   ext_modules = ext_modules,
   zip_safe=False,
-  test_suite='nose.collector'
+  test_suite='nose.collector',
+  python_requires='>=3'
 )

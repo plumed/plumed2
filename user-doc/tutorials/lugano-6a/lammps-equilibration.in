@@ -1,0 +1,104 @@
+#
+#  define units
+#
+units       lj
+
+#
+#  specify periodic boundary conditions
+#
+boundary p p p
+
+#
+#  define atom_style
+#  full covers everything
+#
+atom_style  full 
+
+#
+# Setup the simulatioon box  
+#
+variable blen      equal 12.5
+region      boxid block 0.0       ${blen}      0.0       ${blen}      0.0       ${blen}
+create_box  2 boxid
+
+#
+#  Split the simulation into two regions
+#
+variable    half_x equal ${blen}/2.0
+region      boxa  block 0.0       ${half_x} 0.0 ${blen} 0.0 ${blen} 
+region      boxb  block ${half_x} ${blen}      0.0 ${blen} 0.0 ${blen} 
+
+#
+#  specify initial positions of atoms
+#  sc = simple cubic
+#  0.5 = density in lj units
+#
+lattice     sc 0.50
+#  place atoms of type 1 in boxa
+#  place atoms of type 2 in boxb
+create_atoms    1 region boxa
+create_atoms    2 region boxb
+
+#
+#   define mass
+#
+#   mass of atom type 1
+mass        1 1.0
+mass        2 1.0
+
+#
+#  specify initial velocity of atoms
+#  group = all
+#  reduced temperature is T = 1.0 = lj-eps/kb 
+#  seed for random number generator
+#  distribution is gaussian (e.g. Maxwell-Boltzmann)
+#
+velocity    all create 1.0 87287 dist gaussian
+
+#
+#  specify interaction potential
+#  pairwise interaction via the Lennard-Jones potential with a cut-off at 2.5 lj-sigma
+#
+pair_style  lj/cut 2.5
+#  specify parameters between atoms of type 1 with an atom of type 1
+#  epsilon = 1.0, sigma = 1.0, cutoff = 2.5
+pair_coeff  1 1 1.0 1.0 2.5
+pair_coeff  2 2 1.2 0.9 2.5
+
+#
+#  specify parameters for neighbor list 
+#  rnbr = rcut + 0.3
+#
+neighbor    0.3 bin
+
+#
+# Specify timestep
+#
+timestep 0.001
+
+#
+# Write thermodynamic parameters to log
+#
+thermo_style custom step pe ke etotal temp press density
+thermo 1000
+thermo_modify norm no
+
+#
+# Setup plumed and that we are going to run npt equilibration
+#
+fix     1 all plumed plumedfile plumed.dat outfile p.log
+fix     2 all npt temp 1.0 1.0 0.1 iso 0.0 0.0 0.4
+
+#
+#   save trajectory and restart file
+#   dumpid = 1
+#   filename = output.xyz
+#
+dump    1       all xyz 1000 output.xyz
+dump_modify 1 element Ar Ne
+restart 100000 lj.equilibration.restart
+
+#
+# Run 5000000 of equilibration
+#
+run     100000

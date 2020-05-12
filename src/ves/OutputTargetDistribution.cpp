@@ -83,8 +83,8 @@ class OutputTargetDistribution :
 {
 public:
   explicit OutputTargetDistribution(const ActionOptions&);
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
   static void registerKeywords(Keywords& keys);
 };
 

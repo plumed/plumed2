@@ -77,7 +77,7 @@ class TD_Exponential: public TargetDistribution {
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Exponential(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 
