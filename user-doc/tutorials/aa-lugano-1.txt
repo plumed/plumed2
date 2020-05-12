@@ -38,7 +38,7 @@ The reference trajectories and other files needed for the exercises proposed in 
 can be downloaded from `github` using the following command:
 
 \verbatim
-wget https://github.com/plumed/lugano2019/raw/master/hands_on_1/handson_1.tgz
+wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
 \endverbatim
 
 The zip archive contains the following files:

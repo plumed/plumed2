@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -352,7 +352,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=6;
+        *(static_cast<int*>(val))=7;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -553,6 +553,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      /* ADDED WITH API==7 */
       case cmd_convert:
       {
         double v;

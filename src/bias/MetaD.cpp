@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2019 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -479,7 +479,7 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const override {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override;
 };
 
 PLUMED_REGISTER_ACTION(MetaD,"METAD")
@@ -1998,7 +1998,6 @@ double MetaD::getTransitionBarrierBias() {
   }
 }
 
-
 void MetaD::updateFrequencyAdaptiveStride() {
   plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
   plumed_massert(acceleration,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
@@ -2011,6 +2010,14 @@ void MetaD::updateFrequencyAdaptiveStride() {
     current_stride=fa_max_stride_;
   }
   getPntrToComponent("pace")->set(current_stride);
+}
+
+bool MetaD::checkNeedsGradients()const
+{
+  if(adaptive_==FlexibleBin::geometry) {
+    if(getStep()%stride_==0 && !isFirstStep) return true;
+    else return false;
+  } else return false;
 }
 
 }

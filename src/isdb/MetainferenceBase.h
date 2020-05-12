@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -156,7 +156,7 @@ private:
                      const double scale, const double offset);
   double getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                       const double scale, const double offset);
-  void   setMetaDer(const unsigned index, const double der);
+  void setMetaDer(const unsigned index, const double der);
   void getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
@@ -167,6 +167,9 @@ private:
   void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
   void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
   void do_regression_zero(const std::vector<double> &mean);
+  void moveTilde(const std::vector<double> &mean_, double old_energy);
+  void moveScaleOffset(const std::vector<double> &mean_, double old_energy);
+  void moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow);
   double doMonteCarlo(const std::vector<double> &mean);
 
 

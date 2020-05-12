@@ -170,7 +170,7 @@ def _build_convert_function(kernel=None):
 # if necessary, load a kernel
         if not isinstance(kernel,Plumed):
             kernel=Plumed(kernel=kernel)
-    except:
+    except Exception:
         warnings.warn("cannot load PLUMED instance, conversions will not be available")
         return None
     try:
@@ -188,7 +188,7 @@ def _build_convert_function(kernel=None):
             return None
 # set convert
         return convert_func
-    except:
+    except Exception:
         warnings.warn("PLUMED instance is too old, conversions do not work and will be disabled")
         return None
 
