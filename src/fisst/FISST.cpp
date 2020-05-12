@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2019, Glen M. Hocky
+Copyright (c) 2020, Glen M. Hocky
 
 The fisst module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -38,7 +38,7 @@ namespace fisst {
 //+PLUMEDOC FISSTMOD_BIAS FISST
 /*
 Compute and apply the optimal linear force on an observable to enhance sampling 
-of conformational distributions over a range of applied forces.
+of conformational distributions over a range of applied forces. This method is described in \cite Hartmann-FISST-2019
 
 If the system's Hamiltonian is given by:
 \f[
