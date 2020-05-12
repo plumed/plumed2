@@ -534,13 +534,13 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
+    auto func=[](const long double delta,const std::vector<double> obs, const double av_obs)
     {
-      double sum_w=0;
-      double sum_w2=0;
+      long double sum_w=0;
+      long double sum_w2=0;
       for(unsigned t=0; t<obs.size(); t++)
       {
-        const double w=std::exp(-delta*(obs[t]-av_obs));
+        const long double w=std::exp(-delta*(obs[t]-av_obs));
         sum_w+=w;
         sum_w2+=w*w;
       }
@@ -597,7 +597,7 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
   {
     right_HWHM*=2;
     if(left_side==0)
-      log.printf(" +++ WARNING +++ MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MIN_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -605,7 +605,7 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
   {
     left_HWHM*=2;
     if(right_side==0)
-      log.printf(" +++ WARNING +++ MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -617,11 +617,7 @@ unsigned OPESmultiLambda::estimate_steps(const double left_side,const double rig
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("  Estimated %s spacing (with beta) = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
-  if(steps<2)//should never happen
-  {
-    log.printf(" +++ WARNING +++ estimated grid spacing for %s gives a step=%d, changing it to 2\n",msg.c_str(),steps);
-    return 2;
-  }
+  plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
   return steps;
 }
 

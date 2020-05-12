@@ -152,8 +152,8 @@ OPESmultiCanonical::OPESmultiCanonical(const ActionOptions&ao)
   parse("MIN_TEMP",min_temp);
   parse("MAX_TEMP",max_temp);
   plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
-  const double tol=1e-4; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp<min_temp-tol || temp>max_temp+tol)
+  const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
+  if(temp<(1-tol)*min_temp || temp>(1+tol)*max_temp)
     log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp);
   beta_p_.resize(2);
   beta_p_[0]=1./(Kb*max_temp); //min_beta
@@ -531,13 +531,13 @@ unsigned OPESmultiCanonical::estimate_steps(const double left_side,const double 
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
+    auto func=[](const long double delta,const std::vector<double> obs, const double av_obs)
     {
-      double sum_w=0;
-      double sum_w2=0;
+      long double sum_w=0;
+      long double sum_w2=0;
       for(unsigned t=0; t<obs.size(); t++)
       {
-        const double w=std::exp(-delta*(obs[t]-av_obs));
+        const long double w=std::exp(-delta*(obs[t]-av_obs));
         sum_w+=w;
         sum_w2+=w*w;
       }
@@ -594,7 +594,7 @@ unsigned OPESmultiCanonical::estimate_steps(const double left_side,const double 
   {
     right_HWHM*=2;
     if(left_side==0)
-      log.printf(" +++ WARNING +++ MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MIN_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -602,7 +602,7 @@ unsigned OPESmultiCanonical::estimate_steps(const double left_side,const double 
   {
     left_HWHM*=2;
     if(right_side==0)
-      log.printf(" +++ WARNING +++ MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -614,11 +614,7 @@ unsigned OPESmultiCanonical::estimate_steps(const double left_side,const double 
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("  Estimated %s spacing (with beta) = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
-  if(steps<2)//should never happen
-  {
-    log.printf(" +++ WARNING +++ estimated grid spacing for %s gives a step=%d, changing it to 2\n",msg.c_str(),steps);
-    return 2;
-  }
+  plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
   return steps;
 }
 

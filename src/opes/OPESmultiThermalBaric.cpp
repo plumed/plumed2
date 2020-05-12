@@ -162,35 +162,43 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
 //set temp range
   double min_temp;
   double max_temp;
+  steps_beta_=0;
   parse("MIN_TEMP",min_temp);
   parse("MAX_TEMP",max_temp);
+  parse("STEPS_TEMP",steps_beta_);
   plumed_massert(max_temp>=min_temp,"MAX_TEMP cannot be smaller than MIN_TEMP");
-  const double tol=1e-4; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp<min_temp-tol || temp>max_temp+tol)
+  const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
+  if(temp<(1-tol)*min_temp || temp>(1+tol)*max_temp)
     log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp);
-  if(min_temp==max_temp && std::abs(temp-min_temp)<tol)
-      log.printf(" +++ WARNING +++ MIN_TEMP is equal to MAX_TEMP but they are different from TEMP\n");
+  if(min_temp==max_temp)
+  {
+    plumed_massert(std::abs((temp-min_temp)/min_temp)<tol,"if MIN_TEMP = MAX_TEMP, they should be equal to TEMP");
+    plumed_massert(steps_beta_==0 || steps_beta_==1,"cannot have multiple steps when MIN_TEMP = MAX_TEMP");
+    steps_beta_=1;
+  }
   beta_p_.resize(2);
   beta_p_[0]=1./(Kb*max_temp); //min_beta
   beta_p_[1]=1./(Kb*min_temp); //max_beta
 
 //set pres
+  steps_pres_=0;
   parse("PRESSURE",pres_);
   pres_p_.resize(2);
   parse("MIN_PRESSURE",pres_p_[0]);
   parse("MAX_PRESSURE",pres_p_[1]);
+  parse("STEPS_PRESSURE",steps_pres_);
   plumed_massert(pres_p_[1]>=pres_p_[0],"MAX_PRESSURE is smaller than MIN_PRESSURE");
   if(pres_p_[0]==pres_p_[1])
+  {
     plumed_massert(pres_==pres_p_[0],"if MIN_PRESSURE = MAX_PRESSURE, they should be equal to PRESSURE");
+    plumed_massert(steps_pres_==0 || steps_pres_==1,"cannot have multiple steps when MIN_PRESSURE = MAX_PRESSURE");
+    steps_pres_=1;
+  }
 
 //set other stuff
   parse("PACE",stride_);
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
-  steps_beta_=0;
-  steps_pres_=0;
-  parse("STEPS_TEMP",steps_beta_);
-  parse("STEPS_PRESSURE",steps_pres_);
   if(steps_beta_!=0 && steps_pres_!=0)
     obs_steps_=1;
   obs_ene_.resize(obs_steps_);
@@ -542,6 +550,7 @@ void OPESmultiThermalBaric::init_integration_grid()
   log.printf("  Total pres steps = %d\n",steps_pres_);
   for(unsigned j=0; j<steps_pres_; j++)
     log.printf("   % d. pres=% .10f\n",j+1,pres_p_[j]);
+  log.printf("  Total deltaFs = %d\n",steps_beta_*steps_pres_);
   if(border_weight_!=1)
     log.printf(" --- using a weight different from 1 for the border, BORDER_WEIGHT = %g ---\n",border_weight_);
 }
@@ -605,13 +614,13 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
   //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const double delta,const std::vector<double> obs, const double av_obs)
+    auto func=[](const long double delta,const std::vector<double> obs, const double av_obs)
     {
-      double sum_w=0;
-      double sum_w2=0;
+      long double sum_w=0;
+      long double sum_w2=0;
       for(unsigned t=0; t<obs.size(); t++)
       {
-        const double w=std::exp(-delta*(obs[t]-av_obs));
+        const long double w=std::exp(-delta*(obs[t]-av_obs));
         sum_w+=w;
         sum_w2+=w*w;
       }
@@ -668,7 +677,7 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
   {
     right_HWHM*=2;
     if(left_side==0)
-      log.printf(" +++ WARNING +++ MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MIN_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -676,7 +685,7 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
   {
     left_HWHM*=2;
     if(right_side==0)
-      log.printf(" +++ WARNING +++ MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
     else
       log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
@@ -688,11 +697,7 @@ unsigned OPESmultiThermalBaric::estimate_steps(const double left_side,const doub
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("  Estimated %s spacing (with beta) = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
-  if(steps<2)//should never happen
-  {
-    log.printf(" +++ WARNING +++ estimated grid spacing for %s gives a step=%d, changing it to 2\n",msg.c_str(),steps);
-    return 2;
-  }
+  plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
   return steps;
 }
 
