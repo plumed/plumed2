@@ -67,7 +67,7 @@ do this can be found here: \ref usingDoxygen
 }
 
 FunctionNAME::FunctionNAME(const ActionOptions&ao):
-/--- These two lines set up various things in the plumed core whcih functions rely on.
+/--- These two lines set up various things in the plumed core which functions rely on.
 Action(ao),
 Function(ao)
 {

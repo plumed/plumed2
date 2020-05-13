@@ -105,7 +105,7 @@ public:
 ///
   void runFinalJobs() override;
 ///
-  bool ignoreNormalization() const ;
+  virtual bool ignoreNormalization() const ;
 };
 
 inline

@@ -34,7 +34,7 @@ void TargetDist::read( const PDB& pdb, std::vector<Value*> ar ) {
     (ar[i]->getPntrToAction())->clearDerivatives();
   }
 
-  // Caclulate target actions from input in PDB file
+  // Calculate target actions from input in PDB file
   std::vector<double> targ( ar.size() );
   for(unsigned i=0; i<ar.size(); ++i) {
     if( ar[i]->valueHasBeenSet() ) {

@@ -901,22 +901,22 @@ void PlumedMain::load(const std::string& ss) {
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
-      if(comm.Get_rank()==0) system(cmd.c_str());
+      if(comm.Get_rank()==0) {
+        int ret=system(cmd.c_str());
+        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+      }
       comm.Barrier();
       base="./"+base;
     }
     s=base+"."+config::getSoExt();
     void *p=dlloader.load(s);
     if(!p) {
-      const std::string error_msg="I cannot load library " + ss + " " + dlloader.error();
-      log<<"ERROR\n";
-      log<<error_msg<<"\n";
-      plumed_merror(error_msg);
+      plumed_error()<<"I cannot load library " << ss << " " << dlloader.error();
     }
     log<<"Loading shared library "<<s.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
-  } else plumed_merror("loading not enabled, please recompile with -D__PLUMED_HAS_DLOPEN");
+  } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
 }
 
 double PlumedMain::getBias() const {

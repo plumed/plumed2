@@ -99,7 +99,7 @@ void OutputPCAProjection::performAnalysis() {
   afile.open( filename.c_str() ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
   if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
   else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
-  // And now ouput the eigenvectors
+  // And now output the eigenvectors
   for(unsigned dim=0; dim<mypca->nlow; ++dim) {
     afile.printf("REMARK TYPE=DIRECTION \n");
     mypdb.setAtomPositions( mypca->directions[dim].getReferencePositions() );

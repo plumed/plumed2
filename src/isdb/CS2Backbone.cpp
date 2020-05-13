@@ -395,7 +395,7 @@ class CS2Backbone : public MetainferenceBase {
     Value *comp;                // a pointer to the component
     unsigned res_kind;          // residue type (STD/GLY/PRO)
     unsigned atm_kind;          // nuclues (HA/CA/CB/CO/NH/HN)
-    unsigned res_type_prev;     // previuos residue (ALA/VAL/..)
+    unsigned res_type_prev;     // previous residue (ALA/VAL/..)
     unsigned res_type_curr;     // current residue (ALA/VAL/..)
     unsigned res_type_next;     // next residue (ALA/VAL/..)
     string res_name;            // residue name
@@ -552,7 +552,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   string stringadb  = stringa_data + string("/camshift.db");
   string stringapdb = stringa_data + string("/") + stringa_template;
 
-  /* Lenght conversion (parameters are tuned for angstrom) */
+  /* Length conversion (parameters are tuned for angstrom) */
   double scale=1.;
   if(!plumed.getAtoms().usingNaturalUnits()) {
     scale = 10.*atoms.getUnits().getLength();

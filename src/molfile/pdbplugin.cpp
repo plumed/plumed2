@@ -578,7 +578,7 @@ static int write_timestep(void *v, const molfile_timestep_t *ts) {
         pos[0], pos[1], pos[2], 
         atom->occupancy, atom->bfactor, atom->chain, atom->segid)) {
       fprintf(stderr, 
-          "PDB: Error encoutered writing atom %d; file may be incomplete.\n", 
+          "PDB: Error encountered writing atom %d; file may be incomplete.\n",
           i+1);
       return MOLFILE_ERROR;
     }

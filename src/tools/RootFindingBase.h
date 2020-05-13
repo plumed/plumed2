@@ -30,7 +30,7 @@ namespace PLMD {
 template <class FCLASS>
 class RootFindingBase {
 private:
-/// This is the pointer to the member funciton in the energy
+/// This is the pointer to the member function in the energy
 /// calculating class that calculates the energy
   typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der ) const ;
   typedef double(FCLASS::*engfnc_pointer)( const std::vector<double>& p, std::vector<double>& der ) ;

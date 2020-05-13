@@ -1,6 +1,6 @@
 # vim:ft=plumed
 
-# Chi distribtion
+# Chi distribution
 # see https://en.wikipedia.org/wiki/Chi_distribution
 
 arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME

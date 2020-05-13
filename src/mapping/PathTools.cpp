@@ -186,7 +186,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     // And make all points equally spaced
     double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
 
-    // Ouput data on spacings
+    // Output data on spacings
     double mean=0;
     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
     ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
@@ -237,7 +237,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
   nbetween++;
   fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
-  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the intial and final structures "
+  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
           "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
 // Create a vector of arguments to use for calculating displacements

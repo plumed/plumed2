@@ -79,7 +79,7 @@ void DimensionalityReductionBase::performAnalysis() {
   dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
-  // Retreive the projections from the previous calculation
+  // Retrieve the projections from the previous calculation
   if( dimredbase ) {
     std::vector<double> newp( nlow ); double w;
     for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {

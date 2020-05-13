@@ -107,10 +107,13 @@ the code should automatically detect the limits not given.
 Therefore, if we consider a target distribution that is
 defined over an interval from 0.0 to 10.0 for the first
 argument and from 0.2 to 1.0 for the second argument are
-all of the following examples equivalent
+the following example
 \plumedfile
 td: TD_UNIFORM
 \endplumedfile
+
+is equivalent to this one
+
 \plumedfile
 TD_UNIFORM ...
  MINIMA=0.0,0.2
@@ -118,9 +121,15 @@ TD_UNIFORM ...
  LABEL=td
  ... TD_UNIFORM
 \endplumedfile
+
+and this one
+
 \plumedfile
 td: TD_UNIFORM  MAXIMA=10.0,1.0
 \endplumedfile
+
+and also this one
+
 \plumedfile
 td: TD_UNIFORM MINIMA=0.0,0,2
 \endplumedfile

@@ -63,7 +63,7 @@ In this exercise you are challenged to
 - Select two water molecule to be kept far apart using \ref LOWER_WALLS and the distance between their two oxygen atoms.
 - Use the distances of an hydrogen from both oxygen atoms to setup a first \ref METAD calculation to study the proton transfer between the selected water molecules
 - Test more complex CVs maybe taking into account the role of the other molecules.
-- Think how to study proton transfer in a general way instead than between two specif water molecules and using a specific hydrogen.
+- Think how to study proton transfer in a general way instead than between two specific water molecules and using a specific hydrogen.
 
 The number of steps in the simulation is initially set to 100, this should be increased so to allow a more extensive exploration of the conformational space.
 This simulation can be slow and is better run on a workstation with multiple processors.

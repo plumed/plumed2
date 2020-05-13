@@ -59,7 +59,7 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     else if(residuename=="ACE") return true;
     else if(residuename=="NME") return true;
     else if(residuename=="NH2") return true;
-// Alternative residue names in common force fiels
+// Alternative residue names in common force fields
     else if(residuename=="GLH") return true; // neutral GLU
     else if(residuename=="ASH") return true; // neutral ASP
     else if(residuename=="HID") return true; // HIS-D amber

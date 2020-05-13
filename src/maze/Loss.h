@@ -38,7 +38,7 @@ namespace maze {
 /**
  * @class Loss Loss.h "maze/Loss.h"
  *
- * @brief Loss function desribes a score between a ligand-protein conformation.
+ * @brief Loss function describes a score between a ligand-protein conformation.
  *
  * Loss function must be defined for an optimizer as it minimizes a loss
  * of a ligand-protein conformation in order to simulate the ligand-protein

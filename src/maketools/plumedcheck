@@ -158,7 +158,7 @@ BEGIN{
 
 # for each input file
 BEGINFILE{
-# these variables are used to track if a file containes at least one item of a specific kind
+# these variables are used to track if a file contains at least one item of a specific kind
 # as such they should be reset for every new input file
   found_namespace_plmd=0
   found_namespace_module=0
