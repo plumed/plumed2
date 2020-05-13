@@ -37,7 +37,7 @@ namespace fisst {
 
 //+PLUMEDOC FISSTMOD_BIAS FISST
 /*
-Compute and apply the optimal linear force on an observable to enhance sampling 
+Compute and apply the optimal linear force on an observable to enhance sampling
 of conformational distributions over a range of applied forces. This method is described in \cite Hartmann-FISST-2019
 
 If the system's Hamiltonian is given by:
@@ -55,12 +55,12 @@ adaptively according to the FISST algorithm.
 
 Specifically,
 \f[
-\bar{F}(Q)=\frac{ \int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) F dF}{\int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) dF}, 
+\bar{F}(Q)=\frac{ \int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) F dF}{\int_{F_{min}}^{F_{max}} e^{\beta F Q(\vec{q})} \omega(F) dF},
 \f]
 
-where \f$\vec{q}\f$ are the molecular coordinates of the system, and \f$w(F)\f$ is a weighting function that is learned on the fly for each force by the FISST algorithm (starting from an initial weight distribution, uniform by default). 
+where \f$\vec{q}\f$ are the molecular coordinates of the system, and \f$w(F)\f$ is a weighting function that is learned on the fly for each force by the FISST algorithm (starting from an initial weight distribution, uniform by default).
 
-The target for \f$w(F)=1/Z_q(F)\f$, where 
+The target for \f$w(F)=1/Z_q(F)\f$, where
 \f[
     Z_q(F) \equiv \int d\vec{q} e^{-\beta U(\vec{q}) + \beta F Q(\vec{q})}.
 \f]
@@ -259,68 +259,68 @@ FISST::FISST(const ActionOptions&ao):
   parse("IN_RESTART",in_restart_name_);
   checkRead();
 
-   if(center_.size() != ncvs_)
-   error("Must have same number of CENTER arguments as ARG arguments");
+  if(center_.size() != ncvs_)
+    error("Must have same number of CENTER arguments as ARG arguments");
 
-   if(in_restart_name_ != "") {
-      b_restart_ = true;
-      log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
-      readInRestart();
-    } else {
+  if(in_restart_name_ != "") {
+    b_restart_ = true;
+    log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
+    readInRestart();
+  } else {
 
-      if(! kbt_ > 0.0) 
-          kbt_ = plumed.getAtoms().getKbT();
+    if(! kbt_ > 0.0)
+      kbt_ = plumed.getAtoms().getKbT();
 
-      //in driver, this results in kbt of 0
-      if(kbt_ == 0) {
-        error("  Unable to determine valid kBT. "
-              "Could be because you are runnning from driver or MD didn't give temperature.\n"
-              "Consider setting temperature manually with the KBT keyword.");
-      }
-  
-      log.printf("  kBT = %f\n",kbt_);
-      log.printf("  Updating with a time scale of %i steps\n",period_);
+    //in driver, this results in kbt of 0
+    if(kbt_ == 0) {
+      error("  Unable to determine valid kBT. "
+            "Could be because you are runnning from driver or MD didn't give temperature.\n"
+            "Consider setting temperature manually with the KBT keyword.");
+    }
 
-      log.printf("  Using centers for CVs of:");
-      for(unsigned int i = 0; i< ncvs_; i++) {
-        log.printf(" %f ",center_[i]);
-      }
-      log.printf("\n");
-      observable_weight_.resize(n_interpolation_);
-      for(unsigned int i = 0; i<n_interpolation_; i++) observable_weight_[i] = 1.0;
+    log.printf("  kBT = %f\n",kbt_);
+    log.printf("  Updating with a time scale of %i steps\n",period_);
 
-      forces_.resize(n_interpolation_);
-      force_weight_.resize(n_interpolation_);
-      //using code from the MIST project
-      gauss_weight_.resize(n_interpolation_);
-      legendre_compute_glr(n_interpolation_, &forces_[0], &gauss_weight_[0]);
-      rescale(min_force_, max_force_, n_interpolation_, &forces_[0], &gauss_weight_[0]);
+    log.printf("  Using centers for CVs of:");
+    for(unsigned int i = 0; i< ncvs_; i++) {
+      log.printf(" %f ",center_[i]);
+    }
+    log.printf("\n");
+    observable_weight_.resize(n_interpolation_);
+    for(unsigned int i = 0; i<n_interpolation_; i++) observable_weight_[i] = 1.0;
 
-      log.printf("Using weight distribution %s with rate %f\n",initial_weight_dist_.c_str(),initial_weight_rate_);
-      if(initial_weight_dist_ == "UNIFORM" ) {
-          for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = 1.0;
-      }
-      else if (initial_weight_dist_ == "EXP" ) {
-          for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
-      }
-      else if (initial_weight_dist_ == "GAUSS" ) {
-          for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
-      }
-      else {
-        error("  Specified weight distribution is not from the allowed list.");
+    forces_.resize(n_interpolation_);
+    force_weight_.resize(n_interpolation_);
+    //using code from the MIST project
+    gauss_weight_.resize(n_interpolation_);
+    legendre_compute_glr(n_interpolation_, &forces_[0], &gauss_weight_[0]);
+    rescale(min_force_, max_force_, n_interpolation_, &forces_[0], &gauss_weight_[0]);
 
-      }
+    log.printf("Using weight distribution %s with rate %f\n",initial_weight_dist_.c_str(),initial_weight_rate_);
+    if(initial_weight_dist_ == "UNIFORM" ) {
+      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = 1.0;
+    }
+    else if (initial_weight_dist_ == "EXP" ) {
+      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
+    }
+    else if (initial_weight_dist_ == "GAUSS" ) {
+      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
+    }
+    else {
+      error("  Specified weight distribution is not from the allowed list.");
 
-      partition_estimate_.resize(n_interpolation_);
-      NormalizeForceWeights();
-      double sum = 0.0;
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
-          //setting partition estimate as 1/w_i
-          partition_estimate_[i] = 1/force_weight_[i];
-          log.printf("force/gauss weight/force_weight: %i %f %f %f\n",i,forces_[i],gauss_weight_[i],force_weight_[i]);
-          sum+=gauss_weight_[i]*force_weight_[i];
-      }
-      log.printf("--Sum_i w_i g_i: %f\n",sum);
+    }
+
+    partition_estimate_.resize(n_interpolation_);
+    NormalizeForceWeights();
+    double sum = 0.0;
+    for(unsigned int i = 0; i<n_interpolation_; i++) {
+      //setting partition estimate as 1/w_i
+      partition_estimate_[i] = 1/force_weight_[i];
+      log.printf("force/gauss weight/force_weight: %i %f %f %f\n",i,forces_[i],gauss_weight_[i],force_weight_[i]);
+      sum+=gauss_weight_[i]*force_weight_[i];
+    }
+    log.printf("--Sum_i w_i g_i: %f\n",sum);
 
   }
 
@@ -348,13 +348,13 @@ FISST::FISST(const ActionOptions&ao):
 }
 
 void FISST::NormalizeForceWeights() {
-    double denom = 0.0;
+  double denom = 0.0;
 
-    for(unsigned i=0; i<n_interpolation_; i++)
-        denom += gauss_weight_[i] * force_weight_[i];
+  for(unsigned i=0; i<n_interpolation_; i++)
+    denom += gauss_weight_[i] * force_weight_[i];
 
-    for(unsigned i=0; i<n_interpolation_; i++)
-        force_weight_[i] /= denom;
+  for(unsigned i=0; i<n_interpolation_; i++)
+    force_weight_[i] /= denom;
 }
 
 void FISST::readInRestart() {
@@ -404,11 +404,11 @@ void FISST::readInRestart() {
     for(unsigned int i = 0; i<ncvs_; ++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name,tmp);
-      for(unsigned int j =0;j<n_interpolation_; ++j) {
-          in_restart_.scanField(cv_name + "_f"+to_string(j),forces_[j]);
-          in_restart_.scanField(cv_name + "_g"+to_string(j),gauss_weight_[j]);
-          in_restart_.scanField(cv_name + "_w"+to_string(j),force_weight_[j]);
-          in_restart_.scanField(cv_name + "_z"+to_string(j),partition_estimate_[j]);
+      for(unsigned int j =0; j<n_interpolation_; ++j) {
+        in_restart_.scanField(cv_name + "_f"+std::to_string(j),forces_[j]);
+        in_restart_.scanField(cv_name + "_g"+std::to_string(j),gauss_weight_[j]);
+        in_restart_.scanField(cv_name + "_w"+std::to_string(j),force_weight_[j]);
+        in_restart_.scanField(cv_name + "_z"+std::to_string(j),partition_estimate_[j]);
       }
     }
     N++;
@@ -417,13 +417,13 @@ void FISST::readInRestart() {
   }
 
   double sum = 0.0;
-  for(unsigned int j =0;j<n_interpolation_; ++j) {
-     //clear observable weight, which will be set later
-     observable_weight_[j] = 1.0;
+  for(unsigned int j =0; j<n_interpolation_; ++j) {
+    //clear observable weight, which will be set later
+    observable_weight_[j] = 1.0;
 
-     //setting partition estimate as 1/w_i
-     log.printf("force/gauss weight/force_weight: %i %e %e %e\n",j,forces_[j],gauss_weight_[j],force_weight_[j]);
-     sum+=gauss_weight_[j]*force_weight_[j];
+    //setting partition estimate as 1/w_i
+    log.printf("force/gauss weight/force_weight: %i %e %e %e\n",j,forces_[j],gauss_weight_[j],force_weight_[j]);
+    sum+=gauss_weight_[j]*force_weight_[j];
   }
   log.printf("--Sum_i w_i g_i: %f\n",sum);
 
@@ -463,16 +463,16 @@ void FISST::writeOutRestart() {
   out_restart_.printField("nsamples",n_samples_);
 
   for(unsigned int i = 0; i<ncvs_; ++i) {
-      cv_name = getPntrToArgument(i)->getName();
-      double Q_i = difference(i, center_[i], getArgument(i));
-      out_restart_.printField(cv_name,Q_i);
-      for(int j = 0; j < n_interpolation_; j++ ) {
-//have to update this for multiple cvs 
-        out_restart_.printField(cv_name + "_f"+to_string(j),forces_[j]);
-        out_restart_.printField(cv_name + "_g"+to_string(j),gauss_weight_[j]);
-        out_restart_.printField(cv_name + "_w"+to_string(j),force_weight_[j]);
-        out_restart_.printField(cv_name + "_z"+to_string(j),partition_estimate_[j]);
-      }
+    cv_name = getPntrToArgument(i)->getName();
+    double Q_i = difference(i, center_[i], getArgument(i));
+    out_restart_.printField(cv_name,Q_i);
+    for(int j = 0; j < n_interpolation_; j++ ) {
+//have to update this for multiple cvs
+      out_restart_.printField(cv_name + "_f"+std::to_string(j),forces_[j]);
+      out_restart_.printField(cv_name + "_g"+std::to_string(j),gauss_weight_[j]);
+      out_restart_.printField(cv_name + "_w"+std::to_string(j),force_weight_[j]);
+      out_restart_.printField(cv_name + "_z"+std::to_string(j),partition_estimate_[j]);
+    }
   }
   out_restart_.printField();
 }
@@ -483,15 +483,15 @@ void FISST::writeOutObservable() {
   out_observable_.printField("nsamples",n_samples_);
 
   for(unsigned int i = 0; i<ncvs_; ++i) {
-      cv_name = getPntrToArgument(i)->getName();
-      double Q_i = difference(i, center_[i], getArgument(i));
-      out_observable_.printField(cv_name,Q_i);
-      out_observable_.printField(cv_name + "_fbar",current_avg_force_[i]);
-      for(int j = 0; j < n_interpolation_; j++ ) {
-//have to update this for multiple cvs 
-        out_observable_.printField(cv_name + "_f"+to_string(j),forces_[j]);
-        out_observable_.printField(cv_name + "_ow"+to_string(j),observable_weight_[j]);
-      }
+    cv_name = getPntrToArgument(i)->getName();
+    double Q_i = difference(i, center_[i], getArgument(i));
+    out_observable_.printField(cv_name,Q_i);
+    out_observable_.printField(cv_name + "_fbar",current_avg_force_[i]);
+    for(int j = 0; j < n_interpolation_; j++ ) {
+//have to update this for multiple cvs
+      out_observable_.printField(cv_name + "_f"+std::to_string(j),forces_[j]);
+      out_observable_.printField(cv_name + "_ow"+std::to_string(j),observable_weight_[j]);
+    }
   }
   out_observable_.printField();
 }
@@ -499,31 +499,31 @@ void FISST::writeOutObservable() {
 
 void FISST::calculate() {
   if(getStep() == 0 ) {
-      if(b_write_restart_) writeOutRestart();
-      if(b_write_observable_) writeOutObservable();
-  } 
+    if(b_write_restart_) writeOutRestart();
+    if(b_write_observable_) writeOutObservable();
+  }
 
-  if(! b_freeze_){
-      if(b_restart_ && b_first_restart_sample_) {
-          //dont' update statistics if restarting and first sample
-          b_first_restart_sample_ = false;
-      }
-      else {
-          update_statistics();
-      }
+  if(! b_freeze_) {
+    if(b_restart_ && b_first_restart_sample_) {
+      //dont' update statistics if restarting and first sample
+      b_first_restart_sample_ = false;
+    }
+    else {
+      update_statistics();
+    }
   }
   update_bias();
   apply_bias();
-  
+
   //check about writing restart file
   if(getStep()>0 && getStep()%period_==0) {
-      if(b_write_restart_) writeOutRestart();
-  } 
+    if(b_write_restart_) writeOutRestart();
+  }
   if(getStep()>0 && getStep()%observable_freq_==0) {
-      if(b_write_observable_) { 
-          compute_observable_weight();
-          writeOutObservable();
-       }
+    if(b_write_observable_) {
+      compute_observable_weight();
+      writeOutObservable();
+    }
   }
 }
 
@@ -551,92 +551,92 @@ void FISST::apply_bias() {
 
 void FISST::update_statistics()  {
 //get stride is for multiple time stepping
-    double dt=getTimeStep()*getStride();
-    double h = dt/(period_*getTimeStep());
-    double fbar_denum_integral = 0.0;
+  double dt=getTimeStep()*getStride();
+  double h = dt/(period_*getTimeStep());
+  double fbar_denum_integral = 0.0;
 
-    int step = getStep();
-    if(reset_period_>0 && step>0 && step%reset_period_==0) {
-        n_samples_=1;
-    }
-    else{
-        n_samples_++;
-    }
-    double d_n_samples = (double)n_samples_;
+  int step = getStep();
+  if(reset_period_>0 && step>0 && step%reset_period_==0) {
+    n_samples_=1;
+  }
+  else {
+    n_samples_++;
+  }
+  double d_n_samples = (double)n_samples_;
 
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-        double Q_i = difference(i, center_[i], getArgument(i));
-        for(unsigned int j=0; j<n_interpolation_; j++)
-        {
-            //if multiple cvs, these need to be updated to have 2 columns
-            double f_j = forces_[j];
-            double w_j = force_weight_[j];
-            double g_j = gauss_weight_[j];
-    
-            fbar_denum_integral += g_j * w_j * exp(beta_*f_j * Q_i);
-        }
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    double Q_i = difference(i, center_[i], getArgument(i));
+    for(unsigned int j=0; j<n_interpolation_; j++)
+    {
+      //if multiple cvs, these need to be updated to have 2 columns
+      double f_j = forces_[j];
+      double w_j = force_weight_[j];
+      double g_j = gauss_weight_[j];
 
-        for(unsigned int j=0; j<n_interpolation_; j++)
-        {
-            double f_j = forces_[j];
-            double sample_weight = exp(beta_*f_j * Q_i) / fbar_denum_integral;
-                                                
-            partition_estimate_[j] = sample_weight/d_n_samples + partition_estimate_[j]*(d_n_samples-1)/(d_n_samples);
-
-            double w_jn = force_weight_[j];
-            double z_jn = partition_estimate_[j];
-    
-            double w_jp1 = (1.0 - h) * w_jn + h / z_jn;
-            force_weight_[j] = w_jp1;
-        }
+      fbar_denum_integral += g_j * w_j * exp(beta_*f_j * Q_i);
     }
 
-    // make sure that the weights are normalised
-    NormalizeForceWeights();
+    for(unsigned int j=0; j<n_interpolation_; j++)
+    {
+      double f_j = forces_[j];
+      double sample_weight = exp(beta_*f_j * Q_i) / fbar_denum_integral;
+
+      partition_estimate_[j] = sample_weight/d_n_samples + partition_estimate_[j]*(d_n_samples-1)/(d_n_samples);
+
+      double w_jn = force_weight_[j];
+      double z_jn = partition_estimate_[j];
+
+      double w_jp1 = (1.0 - h) * w_jn + h / z_jn;
+      force_weight_[j] = w_jp1;
+    }
+  }
+
+  // make sure that the weights are normalised
+  NormalizeForceWeights();
 }
 
 
 void FISST::update_bias()
 {
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-        double Q_i = difference(i, center_[i], getArgument(i));
-        double fbar_num_integral = 0.0;
-        double fbar_denum_integral = 0.0;
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    double Q_i = difference(i, center_[i], getArgument(i));
+    double fbar_num_integral = 0.0;
+    double fbar_denum_integral = 0.0;
 
-        for(unsigned int j=0; j<n_interpolation_; j++ ) {
-            double f_j = forces_[j];
-            double w_j = force_weight_[j];
-            double g_j = gauss_weight_[j];
-    
-            fbar_num_integral += g_j * f_j * w_j * exp(beta_*f_j*Q_i);
-            fbar_denum_integral += g_j * w_j * exp(beta_*f_j*Q_i);
-        }
+    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+      double f_j = forces_[j];
+      double w_j = force_weight_[j];
+      double g_j = gauss_weight_[j];
 
-        current_avg_force_[i] = fbar_num_integral/fbar_denum_integral;
+      fbar_num_integral += g_j * f_j * w_j * exp(beta_*f_j*Q_i);
+      fbar_denum_integral += g_j * w_j * exp(beta_*f_j*Q_i);
     }
+
+    current_avg_force_[i] = fbar_num_integral/fbar_denum_integral;
+  }
 }
 
 void FISST::compute_observable_weight() {
-    double obs_num = (max_force_ - min_force_);
+  double obs_num = (max_force_ - min_force_);
 
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-        double Q_i = difference(i, center_[i], getArgument(i));
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    double Q_i = difference(i, center_[i], getArgument(i));
 
-        for(unsigned int j=0; j<n_interpolation_; j++ ) {
-            double z_j = partition_estimate_[j];
-            double f_j = forces_[j];
-            double denum_integral = 0.0;
+    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+      double z_j = partition_estimate_[j];
+      double f_j = forces_[j];
+      double denum_integral = 0.0;
 
-            for( unsigned int k=0; k<n_interpolation_; k++ ) {
-                double f_k = forces_[k];
-                double w_k = force_weight_[k];
-                double g_k = gauss_weight_[k];
-        
-                denum_integral += g_k * w_k * exp(beta_*(f_k-f_j)*Q_i);
-            }
-            observable_weight_[j] = obs_num/(denum_integral*z_j);
-        }
+      for( unsigned int k=0; k<n_interpolation_; k++ ) {
+        double f_k = forces_[k];
+        double w_k = force_weight_[k];
+        double g_k = gauss_weight_[k];
+
+        denum_integral += g_k * w_k * exp(beta_*(f_k-f_j)*Q_i);
+      }
+      observable_weight_[j] = obs_num/(denum_integral*z_j);
     }
+  }
 }
 
 
