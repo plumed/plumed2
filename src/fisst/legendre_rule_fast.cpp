@@ -19,7 +19,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 // adapted from:
 // https://people.sc.fsu.edu/~jburkardt/cpp_src/legendre_rule_fast/legendre_rule_fast.html
 //
-# include "legendre_rule_fast.h"
+#include "legendre_rule_fast.h"
 
 namespace PLMD {
 namespace fisst {
