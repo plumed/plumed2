@@ -573,8 +573,8 @@ ENDFILE{
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
      while((getline < cppfile)>=0){
-       if(match($0,"^ *#include")){
-         sub("^ *#include","");
+       if(match($0,"^# *include")){
+         sub("^# *include","");
 # DOC: :non_included_h:
 # DOC: The source file corresponding to a header file (that is: with the same name) should include it as the first included file.
 # DOC: This is to make sure that all the header files that we install can be individually included and compiled.
