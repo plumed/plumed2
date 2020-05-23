@@ -1,11 +1,16 @@
 The PYCV module for PLUMED 2
 ====================================
 
-[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/) [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
+Note: this is a fork of the official [PLUMED
+repository](https://github.com/plumed/plumed2). Please see [PLUMED's
+homepage](https://www.plumed.org/) for information on the PLUMED
+library.
 
-The [PYCV module](https://giorginolab.github.io/plumed2-pycv) enables
-PLUMED2 Collective Variables (CVs) and arbitrary functions to be
-defined and auto-differentiated in the Python language.
+
+The [PYCV module](https://giorginolab.github.io/plumed2-pycv)
+[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
+enables PLUMED2 Collective Variables (CVs) and arbitrary functions to
+be defined and auto-differentiated in the Python language.
 
 Advantages of using PYCV over standard development of CVs in C++ are:
  1. functions may be prototyped in  high-level code, using
@@ -21,10 +26,6 @@ Please see the project's
 tests](https://github.com/giorginolab/plumed2-pycv/tree/v2.6-pycv-devel/regtest/pycv)
 for detailed instructions.
 
-This is a fork of the official [PLUMED
-repository](https://github.com/plumed/plumed2). Please see [PLUMED's
-homepage](https://www.plumed.org/) for information on the PLUMED
-library.
 
 
 
