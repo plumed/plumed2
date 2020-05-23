@@ -26,19 +26,6 @@ tests](https://github.com/giorginolab/plumed2-pycv/tree/v2.6-pycv-devel/regtest/
 for detailed instructions.
 
 
-Last tested with
-------------------------------
-
-Software | Version
----------|---------
-PLUMED | 2.6.0
-Python | 3.7.7 (Homebrew)
-Jax | 0.1.68
-Jaxlib | 0.1.47
-Numpy | 1.17.0
-
-
-
 
 
 Citation
@@ -50,6 +37,19 @@ Collective Variables in Python. The Journal of Open Source Software
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773) 
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
+
+
+
+Last tested with
+------------------------------
+
+Software | Version
+---------|---------
+PLUMED | 2.6.0
+Python | 3.7.7 (Homebrew)
+Jax | 0.1.68
+Jaxlib | 0.1.47
+Numpy | 1.17.0
 
 
 Copyright
