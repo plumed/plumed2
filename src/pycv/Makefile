@@ -1,5 +1,5 @@
 USE=core tools bias colvar function
-ADDCPPFLAGS += -Ipybind11-2.3.0/include
+ADDCPPFLAGS += -Ipybind11-2.5.0/include
 
 # generic makefile
 include ../maketools/make.module
