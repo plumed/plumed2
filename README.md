@@ -8,7 +8,6 @@ library.
 
 
 The [PYCV module](https://giorginolab.github.io/plumed2-pycv)
-[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 enables PLUMED2 Collective Variables (CVs) and arbitrary functions to
 be defined and auto-differentiated in the Python language.
 
@@ -36,7 +35,8 @@ Giorgino T. PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of
 Collective Variables in Python. The Journal of Open Source Software
 4(42):1773
 
-[![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773) 
+[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
 
 Copyright
