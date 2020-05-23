@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2019 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -172,6 +172,8 @@ public:
   explicit Q4( const ActionOptions& ao );
 };
 
+// For some reason, this is not seen correctly by cppcheck
+// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(Q4,"Q4")
 typedef LocalSteinhardt<Q4> LOCAL_Q4;
 PLUMED_REGISTER_ACTION(LOCAL_Q4,"LOCAL_Q4")

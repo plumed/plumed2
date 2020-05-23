@@ -1427,7 +1427,7 @@ Optional Features:
                           yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
-                          yes
+                          no
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
@@ -2977,7 +2977,7 @@ if test "${enable_readdir_r+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
   esac
 else
-  case "yes" in
+  case "no" in
              (yes) readdir_r=true ;;
              (no)  readdir_r=false ;;
   esac

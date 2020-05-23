@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -333,6 +333,7 @@ OFile& OFile::rewind() {
     gzclose((gzFile)gzfp);
 #endif
   } else fclose(fp);
+
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
     size_t found=fname.find_last_of("/\\");
@@ -342,6 +343,9 @@ OFile& OFile::rewind() {
     int check=rename(fname.c_str(),backup.c_str());
     plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
   }
+
+  if(comm) comm->Barrier();
+
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");

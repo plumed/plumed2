@@ -14,7 +14,7 @@ Once this tutorial is completed students will have used PLUMED coupled with LAMM
 
 \section lugano-6a-resources Resources
 
-The \tarball{lugano-4} for this project contains the following files:
+The \tarball{lugano-6a} for this project contains the following files:
 
 - lammps-equilibration.in : The input for LAMMPS that we will use for our setup and equilibration steps of our investigation
 - lammps-production.in : The input for LAMMPS that will be used for the production steps of our investigation

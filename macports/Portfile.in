@@ -85,7 +85,8 @@ if {[mpi_variant_isset]} {
 # only requested packages are linked.
 configure.ldflags-append \
                     -lxdrfile -lz -lgsl
-depends_lib-append  port:gsl \
+depends_lib-append  port:gawk \
+                    port:gsl \
                     port:xdrfile \
                     port:zlib
 

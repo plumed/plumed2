@@ -31,7 +31,7 @@ matrix:
     os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.88
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.90
   - name: External blas with internal lapack, including asmjit
     os: linux
     if: branch =~ ^test- OR type IN(pull_request)
@@ -125,6 +125,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -n "$PLUMED_CXX" ; then
       brew update > /dev/null ;
       brew install ccache ;
+      brew install gawk ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
   - if [[ "$TRAVIS_DIST" == xenial ]] || [[ "$TRAVIS_DIST" == bionic ]] ; then
@@ -170,11 +171,7 @@ install:
 # pandas: needed by mdtraj and by plumed
   - if test "$PLUMED_CXX" ; then
       if test "$TRAVIS_OS_NAME" == "linux" ; then
-        if test "$TRAVIS_DIST" == "bionic" ; then
-            pyenv global 3.7.1 ;
-        else
-            pyenv global 3.6.3;
-        fi ;
+        pyenv global 3.6;
         pip install --user Cython ;
         pip install --user nose ;
         pip install --user numpy ;

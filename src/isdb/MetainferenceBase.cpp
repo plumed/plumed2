@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2019 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "MetainferenceBase.h"
 #include "tools/File.h"
 #include <cmath>
-#include <ctime>
+#include <chrono>
 #include <numeric>
 
 using namespace std;
@@ -320,22 +320,34 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   // initialize random seed
   unsigned iseed;
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
+  if(master) {
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts)+replica_;
+  } else {
+    iseed = 0;
+  }
   comm.Sum(&iseed, 1);
+  // this is used for ftilde and sigma both the move and the acceptance
+  // this is different for each replica
   random[0].setSeed(-iseed);
-  // Random chunk
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
-  comm.Sum(&iseed, 1);
-  random[2].setSeed(-iseed);
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
-    iseed = time(NULL);
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts);
     if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
     comm.Bcast(iseed,0);
+    // this is used for scale and offset sampling and acceptance
     random[1].setSeed(-iseed);
   }
+  // this is used for random chunk of sigmas, and it is different for each replica
+  if(master) {
+    auto ts = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    iseed = static_cast<unsigned>(ts)+replica_;
+  } else {
+    iseed = 0;
+  }
+  comm.Sum(&iseed, 1);
+  random[2].setSeed(-iseed);
 
   // outfile stuff
   if(write_stride_>0&&doscore_) {
@@ -414,6 +426,17 @@ void MetainferenceBase::Initialise(const unsigned input)
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)) {
+      // check for syncronisation
+      vector<double> dummy_time(nrep_,0);
+      if(master&&nrep_>1) {
+        dummy_time[replica_] = dummy;
+        multi_sim_comm.Sum(dummy_time);
+      }
+      comm.Sum(dummy_time);
+      for(unsigned i=1; i<nrep_; i++) {
+        string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
+        if(dummy_time[i]!=dummy_time[0]) plumed_merror(msg);
+      }
       // nsel
       for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
         std::string msg_i;
@@ -555,6 +578,17 @@ void MetainferenceBase::Initialise(const unsigned input)
   }
 
   if(doscale_) {
+    // check that the scale value is the same for all replicas
+    vector<double> dummy_scale(nrep_,0);
+    if(master&&nrep_>1) {
+      dummy_scale[replica_] = scale_;
+      multi_sim_comm.Sum(dummy_scale);
+    }
+    comm.Sum(dummy_scale);
+    for(unsigned i=1; i<nrep_; i++) {
+      string msg = "The SCALE value must be the same for all replicas: check your input or restart file";
+      if(dummy_scale[i]!=dummy_scale[0]) plumed_merror(msg);
+    }
     log.printf("  sampling a common scaling factor with:\n");
     log.printf("    initial scale parameter %f\n",scale_);
     if(scale_prior_==SC_GAUSS) {
@@ -567,6 +601,17 @@ void MetainferenceBase::Initialise(const unsigned input)
   }
 
   if(dooffset_) {
+    // check that the offset value is the same for all replicas
+    vector<double> dummy_offset(nrep_,0);
+    if(master&&nrep_>1) {
+      dummy_offset[replica_] = offset_;
+      multi_sim_comm.Sum(dummy_offset);
+    }
+    comm.Sum(dummy_offset);
+    for(unsigned i=1; i<nrep_; i++) {
+      string msg = "The OFFSET value must be the same for all replicas: check your input or restart file";
+      if(dummy_offset[i]!=dummy_offset[0]) plumed_merror(msg);
+    }
     log.printf("  sampling a common offset with:\n");
     log.printf("    initial offset parameter %f\n",offset_);
     if(offset_prior_==SC_GAUSS) {
@@ -577,6 +622,9 @@ void MetainferenceBase::Initialise(const unsigned input)
       log.printf("    maximum MC move of offset parameter %f\n",Doffset_);
     }
   }
+
+  if(doregres_zero_)
+    log.printf("  doing regression with zero intercept with stride: %d\n", nregres_zero_);
 
   log.printf("  number of experimental data points %u\n",narg);
   log.printf("  number of replicas %u\n",nrep_);
@@ -741,6 +789,209 @@ double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<
   return kbt_ * ene;
 }
 
+void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy)
+{
+  vector<double> new_ftilde(sigma_.size());
+  new_ftilde = ftilde_;
+
+  // change all tildes
+  for(unsigned j=0; j<sigma_.size(); j++) {
+    const double r3 = random[0].Gaussian();
+    const double ds3 = Dftilde_*sqrt(sigma_mean2_[j])*r3;
+    new_ftilde[j] = ftilde_[j] + ds3;
+  }
+  // calculate new energy
+  double new_energy = getEnergyMIGEN(mean_,new_ftilde,sigma_,scale_,offset_);
+
+  // accept or reject
+  const double delta = ( new_energy - old_energy ) / kbt_;
+  // if delta is negative always accept move
+  if( delta <= 0.0 ) {
+    old_energy = new_energy;
+    ftilde_ = new_ftilde;
+    MCacceptFT_++;
+    // otherwise extract random number
+  } else {
+    const double s = random[0].RandU01();
+    if( s < exp(-delta) ) {
+      old_energy = new_energy;
+      ftilde_ = new_ftilde;
+      MCacceptFT_++;
+    }
+  }
+}
+
+void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_energy)
+{
+  double new_scale = scale_;
+
+  if(doscale_) {
+    if(scale_prior_==SC_FLAT) {
+      const double r1 = random[1].Gaussian();
+      const double ds1 = Dscale_*r1;
+      new_scale += ds1;
+      // check boundaries
+      if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
+      if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
+    } else {
+      const double r1 = random[1].Gaussian();
+      const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*exp(1)/M_PI*r1;
+      new_scale += ds1;
+    }
+  }
+
+  double new_offset = offset_;
+
+  if(dooffset_) {
+    if(offset_prior_==SC_FLAT) {
+      const double r1 = random[1].Gaussian();
+      const double ds1 = Doffset_*r1;
+      new_offset += ds1;
+      // check boundaries
+      if(new_offset > offset_max_) {new_offset = 2.0 * offset_max_ - new_offset;}
+      if(new_offset < offset_min_) {new_offset = 2.0 * offset_min_ - new_offset;}
+    } else {
+      const double r1 = random[1].Gaussian();
+      const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*exp(1)/M_PI*r1;
+      new_offset += ds1;
+    }
+  }
+
+  // calculate new energy
+  double new_energy = 0.;
+
+  switch(noise_type_) {
+  case GAUSS:
+    new_energy = getEnergyGJ(mean_,sigma_,new_scale,new_offset);
+    break;
+  case MGAUSS:
+    new_energy = getEnergyGJE(mean_,sigma_,new_scale,new_offset);
+    break;
+  case OUTLIERS:
+    new_energy = getEnergySP(mean_,sigma_,new_scale,new_offset);
+    break;
+  case MOUTLIERS:
+    new_energy = getEnergySPE(mean_,sigma_,new_scale,new_offset);
+    break;
+  case GENERIC:
+    new_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,new_scale,new_offset);
+    break;
+  }
+
+  // for the scale/offset we need to consider the total energy
+  vector<double> totenergies(2);
+  if(master) {
+    totenergies[0] = old_energy;
+    totenergies[1] = new_energy;
+    if(nrep_>1) multi_sim_comm.Sum(totenergies);
+  } else {
+    totenergies[0] = 0;
+    totenergies[1] = 0;
+  }
+  comm.Sum(totenergies);
+
+  // accept or reject
+  const double delta = ( totenergies[1] - totenergies[0] ) / kbt_;
+  // if delta is negative always accept move
+  if( delta <= 0.0 ) {
+    old_energy = new_energy;
+    scale_ = new_scale;
+    offset_ = new_offset;
+    MCacceptScale_++;
+    // otherwise extract random number
+  } else {
+    double s = random[1].RandU01();
+    if( s < exp(-delta) ) {
+      old_energy = new_energy;
+      scale_ = new_scale;
+      offset_ = new_offset;
+      MCacceptScale_++;
+    }
+  }
+}
+
+void MetainferenceBase::moveSigmas(const vector<double> &mean_, double old_energy, const unsigned i, const vector<unsigned> &indices, bool breaknow)
+{
+  vector<double> new_sigma(sigma_.size());
+  new_sigma = sigma_;
+
+  // change MCchunksize_ sigmas
+  if (MCchunksize_ > 0) {
+    if ((MCchunksize_ * i) >= sigma_.size()) {
+      // This means we are not moving any sigma, so we should break immediately
+      breaknow = true;
+    }
+
+    // change random sigmas
+    for(unsigned j=0; j<MCchunksize_; j++) {
+      const unsigned shuffle_index = j + MCchunksize_ * i;
+      if (shuffle_index >= sigma_.size()) {
+        // Going any further will segfault but we should still evaluate the sigmas we changed
+        break;
+      }
+      const unsigned index = indices[shuffle_index];
+      const double r2 = random[0].Gaussian();
+      const double ds2 = Dsigma_[index]*r2;
+      new_sigma[index] = sigma_[index] + ds2;
+      // check boundaries
+      if(new_sigma[index] > sigma_max_[index]) {new_sigma[index] = 2.0 * sigma_max_[index] - new_sigma[index];}
+      if(new_sigma[index] < sigma_min_[index]) {new_sigma[index] = 2.0 * sigma_min_[index] - new_sigma[index];}
+    }
+  } else {
+    // change all sigmas
+    for(unsigned j=0; j<sigma_.size(); j++) {
+      const double r2 = random[0].Gaussian();
+      const double ds2 = Dsigma_[j]*r2;
+      new_sigma[j] = sigma_[j] + ds2;
+      // check boundaries
+      if(new_sigma[j] > sigma_max_[j]) {new_sigma[j] = 2.0 * sigma_max_[j] - new_sigma[j];}
+      if(new_sigma[j] < sigma_min_[j]) {new_sigma[j] = 2.0 * sigma_min_[j] - new_sigma[j];}
+    }
+  }
+
+  if (breaknow) {
+    // We didnt move any sigmas, so no sense in evaluating anything
+    return;
+  }
+
+  // calculate new energy
+  double new_energy = 0.;
+  switch(noise_type_) {
+  case GAUSS:
+    new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
+    break;
+  case MGAUSS:
+    new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_);
+    break;
+  case OUTLIERS:
+    new_energy = getEnergySP(mean_,new_sigma,scale_,offset_);
+    break;
+  case MOUTLIERS:
+    new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_);
+    break;
+  case GENERIC:
+    new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_);
+    break;
+  }
+
+  // accept or reject
+  const double delta = ( new_energy - old_energy ) / kbt_;
+  // if delta is negative always accept move
+  if( delta <= 0.0 ) {
+    old_energy = new_energy;
+    sigma_ = new_sigma;
+    MCaccept_++;
+    // otherwise extract random number
+  } else {
+    const double s = random[0].RandU01();
+    if( s < exp(-delta) ) {
+      old_energy = new_energy;
+      sigma_ = new_sigma;
+      MCaccept_++;
+    }
+  }
+}
+
 double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
 {
   // calculate old energy with the updated coordinates
@@ -764,7 +1015,9 @@ double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
     break;
   }
 
+  // do not run MC if this is a replica-exchange trial
   if(!getExchangeStep()) {
+
     // Create vector of random sigma indices
     vector<unsigned> indices;
     if (MCchunksize_ > 0) {
@@ -777,224 +1030,35 @@ double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
 
     // cycle on MC steps
     for(unsigned i=0; i<MCsteps_; ++i) {
-
       MCtrial_++;
-
       // propose move for ftilde
-      vector<double> new_ftilde(sigma_.size());
-      new_ftilde = ftilde_;
-
-      if(noise_type_==GENERIC) {
-        // change all sigmas
-        for(unsigned j=0; j<sigma_.size(); j++) {
-          const double r3 = random[0].Gaussian();
-          const double ds3 = Dftilde_*sqrt(sigma_mean2_[j])*r3;
-          new_ftilde[j] = ftilde_[j] + ds3;
-        }
-        // calculate new energy
-        double new_energy = getEnergyMIGEN(mean_,new_ftilde,sigma_,scale_,offset_);
-
-        // accept or reject
-        const double delta = ( new_energy - old_energy ) / kbt_;
-        // if delta is negative always accept move
-        if( delta <= 0.0 ) {
-          old_energy = new_energy;
-          ftilde_ = new_ftilde;
-          MCacceptFT_++;
-          // otherwise extract random number
-        } else {
-          const double s = random[0].RandU01();
-          if( s < exp(-delta) ) {
-            old_energy = new_energy;
-            ftilde_ = new_ftilde;
-            MCacceptFT_++;
-          }
-        }
-      }
-
+      if(noise_type_==GENERIC) moveTilde(mean_, old_energy);
       // propose move for scale and/or offset
-      double new_scale = scale_;
-      double new_offset = offset_;
-      if(doscale_||dooffset_) {
-        if(doscale_) {
-          if(scale_prior_==SC_FLAT) {
-            const double r1 = random[1].Gaussian();
-            const double ds1 = Dscale_*r1;
-            new_scale += ds1;
-            // check boundaries
-            if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
-            if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
-          } else {
-            const double r1 = random[1].Gaussian();
-            const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*exp(1)/M_PI*r1;
-            new_scale += ds1;
-          }
-        }
-
-        if(dooffset_) {
-          if(offset_prior_==SC_FLAT) {
-            const double r1 = random[1].Gaussian();
-            const double ds1 = Doffset_*r1;
-            new_offset += ds1;
-            // check boundaries
-            if(new_offset > offset_max_) {new_offset = 2.0 * offset_max_ - new_offset;}
-            if(new_offset < offset_min_) {new_offset = 2.0 * offset_min_ - new_offset;}
-          } else {
-            const double r1 = random[1].Gaussian();
-            const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*exp(1)/M_PI*r1;
-            new_offset += ds1;
-          }
-        }
-
-        // calculate new energy
-        double new_energy = 0.;
-
-        switch(noise_type_) {
-        case GAUSS:
-          new_energy = getEnergyGJ(mean_,sigma_,new_scale,new_offset);
-          break;
-        case MGAUSS:
-          new_energy = getEnergyGJE(mean_,sigma_,new_scale,new_offset);
-          break;
-        case OUTLIERS:
-          new_energy = getEnergySP(mean_,sigma_,new_scale,new_offset);
-          break;
-        case MOUTLIERS:
-          new_energy = getEnergySPE(mean_,sigma_,new_scale,new_offset);
-          break;
-        case GENERIC:
-          new_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,new_scale,new_offset);
-          break;
-        }
-        // for the scale we need to consider the total energy
-        vector<double> totenergies(2);
-        if(master) {
-          totenergies[0] = old_energy;
-          totenergies[1] = new_energy;
-          if(nrep_>1) multi_sim_comm.Sum(totenergies);
-        } else {
-          totenergies[0] = 0;
-          totenergies[1] = 0;
-        }
-        comm.Sum(totenergies);
-
-        // accept or reject
-        const double delta = ( totenergies[1] - totenergies[0] ) / kbt_;
-        // if delta is negative always accept move
-        if( delta <= 0.0 ) {
-          old_energy = new_energy;
-          scale_ = new_scale;
-          offset_ = new_offset;
-          MCacceptScale_++;
-          // otherwise extract random number
-        } else {
-          double s = random[1].RandU01();
-          if( s < exp(-delta) ) {
-            old_energy = new_energy;
-            scale_ = new_scale;
-            offset_ = new_offset;
-            MCacceptScale_++;
-          }
-        }
-      }
-
+      if(doscale_||dooffset_) moveScaleOffset(mean_, old_energy);
       // propose move for sigma
-      vector<double> new_sigma(sigma_.size());
-      new_sigma = sigma_;
-
-      // change MCchunksize_ sigmas
-      if (MCchunksize_ > 0) {
-        if ((MCchunksize_ * i) >= sigma_.size()) {
-          // This means we are not moving any sigma, so we should break immediately
-          breaknow = true;
-        }
-
-        // change random sigmas
-        for(unsigned j=0; j<MCchunksize_; j++) {
-          const unsigned shuffle_index = j + MCchunksize_ * i;
-          if (shuffle_index >= sigma_.size()) {
-            // Going any further will segfault but we should still evaluate the sigmas we changed
-            break;
-          }
-          const unsigned index = indices[shuffle_index];
-          const double r2 = random[0].Gaussian();
-          const double ds2 = Dsigma_[index]*r2;
-          new_sigma[index] = sigma_[index] + ds2;
-          // check boundaries
-          if(new_sigma[index] > sigma_max_[index]) {new_sigma[index] = 2.0 * sigma_max_[index] - new_sigma[index];}
-          if(new_sigma[index] < sigma_min_[index]) {new_sigma[index] = 2.0 * sigma_min_[index] - new_sigma[index];}
-        }
-      } else {
-        // change all sigmas
-        for(unsigned j=0; j<sigma_.size(); j++) {
-          const double r2 = random[0].Gaussian();
-          const double ds2 = Dsigma_[j]*r2;
-          new_sigma[j] = sigma_[j] + ds2;
-          // check boundaries
-          if(new_sigma[j] > sigma_max_[j]) {new_sigma[j] = 2.0 * sigma_max_[j] - new_sigma[j];}
-          if(new_sigma[j] < sigma_min_[j]) {new_sigma[j] = 2.0 * sigma_min_[j] - new_sigma[j];}
-        }
-      }
-
-      if (breaknow) {
-        // We didnt move any sigmas, so no sense in evaluating anything
-        break;
-      }
-
-      // calculate new energy
-      double new_energy = 0.;
-      switch(noise_type_) {
-      case GAUSS:
-        new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
-        break;
-      case MGAUSS:
-        new_energy = getEnergyGJE(mean_,new_sigma,scale_,offset_);
-        break;
-      case OUTLIERS:
-        new_energy = getEnergySP(mean_,new_sigma,scale_,offset_);
-        break;
-      case MOUTLIERS:
-        new_energy = getEnergySPE(mean_,new_sigma,scale_,offset_);
-        break;
-      case GENERIC:
-        new_energy = getEnergyMIGEN(mean_,ftilde_,new_sigma,scale_,offset_);
-        break;
-      }
-
-      // accept or reject
-      const double delta = ( new_energy - old_energy ) / kbt_;
-      // if delta is negative always accept move
-      if( delta <= 0.0 ) {
-        old_energy = new_energy;
-        sigma_ = new_sigma;
-        MCaccept_++;
-        // otherwise extract random number
-      } else {
-        const double s = random[0].RandU01();
-        if( s < exp(-delta) ) {
-          old_energy = new_energy;
-          sigma_ = new_sigma;
-          MCaccept_++;
-        }
-      }
-
+      moveSigmas(mean_, old_energy, i, indices, breaknow);
+      // exit from the loop if this is the case
+      if(breaknow) break;
     }
 
     /* save the result of the sampling */
-    double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
-    valueAccept->set(accept);
-    if(doscale_ || doregres_zero_) valueScale->set(scale_);
-    if(dooffset_) valueOffset->set(offset_);
-    if(doscale_||dooffset_) {
-      accept = static_cast<double>(MCacceptScale_) / static_cast<double>(MCtrial_);
-      valueAcceptScale->set(accept);
-    }
-    for(unsigned i=0; i<sigma_.size(); i++) valueSigma[i]->set(sigma_[i]);
+    /* ftilde */
     if(noise_type_==GENERIC) {
-      accept = static_cast<double>(MCacceptFT_) / static_cast<double>(MCtrial_);
+      double accept = static_cast<double>(MCacceptFT_) / static_cast<double>(MCtrial_);
       valueAcceptFT->set(accept);
       for(unsigned i=0; i<sigma_.size(); i++) valueFtilde[i]->set(ftilde_[i]);
     }
+    /* scale and offset */
+    if(doscale_ || doregres_zero_) valueScale->set(scale_);
+    if(dooffset_) valueOffset->set(offset_);
+    if(doscale_||dooffset_) {
+      double accept = static_cast<double>(MCacceptScale_) / static_cast<double>(MCtrial_);
+      valueAcceptScale->set(accept);
+    }
+    /* sigmas */
+    for(unsigned i=0; i<sigma_.size(); i++) valueSigma[i]->set(sigma_[i]);
+    double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
+    valueAccept->set(accept);
   }
 
   // here we sum the score over the replicas to get the full metainference score that we save as a bias
