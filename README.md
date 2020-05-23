@@ -26,19 +26,6 @@ tests](https://github.com/giorginolab/plumed2-pycv/tree/v2.6-pycv-devel/regtest/
 for detailed instructions.
 
 
-Last tested with
-------------------------------
-
-Software | Version
----------|---------
-PLUMED | 2.6.0
-Python | 3.7.7 (Homebrew)
-Jax | 0.1.68
-Jaxlib | 0.1.47
-Numpy | 1.17.0
-
-
-
 
 
 Citation
