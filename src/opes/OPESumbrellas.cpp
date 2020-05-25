@@ -95,7 +95,7 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","PACE","10","how often the bias is updated");
-  keys.add("compulsory","OBSERVATION_STEPS","0","number of unbiased initial steps to collect statistics for initial deltaFs guess");
+  keys.add("compulsory","OBSERVATION_STEPS","1","number of unbiased initial steps to collect statistics for initial deltaFs guess");
   keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");//TODO make default 'inf' instead of 0
 //umbrella stuff
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
@@ -159,8 +159,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
 //set other stuff
   parse("PACE",stride_);
   parse("OBSERVATION_STEPS",obs_steps_);
-  if(obs_steps_>0)
-    obs_cv_.resize(obs_steps_);
+  plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
+  obs_cv_.resize(obs_steps_);
   epsilon_=0;
   double barrier=0;
   parse("BARRIER",barrier);
@@ -274,7 +274,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       plumed_massert(used_max_cv==read_max_cv,"mismatch between provided MAX_CV and the one in restart");
     //initialize
       deltaF_.resize(tot_umbrellas_);
-      isFirstStep_=false;//avoid initializing again
+      obs_steps_=0; //avoid initializing again
     //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
@@ -289,10 +289,15 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
         for(unsigned i=0; i<tot_umbrellas_; i++)
           ifile.scanField(deltaFsName[pre_f+i],deltaF_[i]);
         ifile.scanField();
-        counter_+=print_stride_;
+        counter_++;
       }
-      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
-      counter_=counter_*NumWalkers_+1; //adjust counter
+      log.printf("  Successfully read %d lines, up to t=%g\n",counter_,time);
+      counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
+      if(NumWalkers_>1)
+      {
+        my_rct_=rct_; //better than 0
+        log.printf(" +++ WARNING +++ the single walker rct estimate is resetted to the global rct\n");
+      }
       ifile.reset(false);
       ifile.close();
     }
@@ -324,6 +329,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   {
     addComponent("rct");
     componentIsNotPeriodic("rct");
+    getPntrToComponent("rct")->set(my_rct_);
   }
   if(calc_work_)
   {
@@ -340,7 +346,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
 
 void OPESumbrellas::calculate()
 {
-  if(isFirstStep_) //no bias before initialization
+  if(obs_steps_>0) //no bias before initialization
     return;
 
   const double cv=getArgument(0);
@@ -390,31 +396,23 @@ void OPESumbrellas::update()
 {
   if(getStep()%stride_!=0)
     return;
-  if(isFirstStep_)
+  if(isFirstStep_) //skip very first step, as in METAD
   {
-    if(obs_steps_==0)
+    isFirstStep_=false;
+    if(obs_steps_!=1) //if obs_steps_==1 go on with initialization
+      return;
+  }
+  if(obs_steps_>0)
+  {
+    obs_cv_[counter_]=getArgument(0);
+    counter_++;
+    if(counter_==obs_steps_)
     {
-      counter_=1;
-      obs_steps_=1;
-      obs_cv_.resize(1,getArgument(0));
       init_from_obs();
-      isFirstStep_=false;
-      return;
+      counter_=NumWalkers_; //all preliminary observations count 1
+      obs_steps_=0; //no more observation
     }
-    else
-    {
-      if(getStep()==0) //skip very first step, as in METAD
-        return;
-      obs_cv_[counter_]=getArgument(0);
-      counter_++;
-      if(counter_==obs_steps_)
-      {
-        init_from_obs();
-        counter_=1;
-        isFirstStep_=false;
-      }
-      return;
-    }
+    return;
   }
   plumed_massert(afterCalculate_,"OPESumbrellas::update() must be called after OPESumbrellas::calculate() to work properly");
   afterCalculate_=false;
@@ -457,14 +455,14 @@ void OPESumbrellas::update()
       rct_+=increment_w+1./beta_*std::log1p(-1./counter_);
     }
     //calc single walker rct
-    const unsigned single_counter=(counter_-1)/NumWalkers_+1;
+    const unsigned single_counter=counter_/NumWalkers_;
     const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-my_rct_)))/(single_counter-1.));
     my_rct_+=increment+1./beta_*std::log1p(-1./single_counter);
     getPntrToComponent("rct")->set(my_rct_);
   }
 
 //write to file
-  if(((counter_-1)/NumWalkers_)%print_stride_==0)
+  if((counter_/NumWalkers_-1)%print_stride_==0)
   {
     deltaFsOfile_.printField("time",getTime());
     deltaFsOfile_.printField("rct",rct_);

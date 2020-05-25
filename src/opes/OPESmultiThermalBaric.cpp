@@ -302,7 +302,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       plumed_massert(steps_beta_*steps_pres_==deltaFsName.size()-pre_f-post_f,"RESTART - something wrong with '"+deltaFsFileName+"' file: steps not matching size");
       init_integration_grid();
       deltaF_.resize(steps_beta_,std::vector<double>(steps_pres_));
-      isFirstStep_=false;//avoid initializing again
+      obs_steps_=0; //avoid initializing again
     //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
@@ -318,10 +318,15 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
           for(unsigned j=0; j<steps_pres_; j++)
             ifile.scanField(deltaFsName[pre_f+i*steps_pres_+j],deltaF_[i][j]);
         ifile.scanField();
-        counter_+=print_stride_;
+        counter_++;
       }
-      log.printf("  Successfully read %d steps, up to t=%g\n",counter_,time);
-      counter_=counter_*NumWalkers_+1; //adjust counter
+      log.printf("  Successfully read %d lines, up to t=%g\n",counter_,time);
+      counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
+      if(NumWalkers_>1)
+      {
+        my_rct_=rct_; //better than 0
+        log.printf(" +++ WARNING +++ the single walker rct estimate is resetted to the global rct\n");
+      }
       ifile.reset(false);
       ifile.close();
     }
@@ -348,11 +353,12 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
   deltaFsOfile_.addConstantField("print_stride");
   deltaFsOfile_.printField("print_stride",(int)print_stride_);
 
-//add and set output components
+//add output components
   if(NumWalkers_>1)
   {
     addComponent("rct");
     componentIsNotPeriodic("rct");
+    getPntrToComponent("rct")->set(my_rct_);
   }
   if(calc_work_)
   {
@@ -374,7 +380,7 @@ inline long double OPESmultiThermalBaric::get_weight(const double beta_p,const d
 
 void OPESmultiThermalBaric::calculate()
 {
-  if(isFirstStep_) //no bias before initialization
+  if(obs_steps_>0) //no bias before initialization
     return;
 
   const double ene=getArgument(0);
@@ -432,10 +438,14 @@ void OPESmultiThermalBaric::update()
 {
   if(getStep()%stride_!=0)
     return;
-  if(isFirstStep_)
+  if(isFirstStep_) //skip very first step, as in METAD
   {
-    if(getStep()==0) //skip very first step, as in METAD
+    isFirstStep_=false;
+    if(obs_steps_!=1) //if obs_steps_==1 go on with initialization
       return;
+  }
+  if(obs_steps_>0)
+  {
     obs_ene_[counter_]=getArgument(0);
     obs_vol_[counter_]=getArgument(1);
     counter_++;
@@ -444,8 +454,8 @@ void OPESmultiThermalBaric::update()
       log.printf("\nAction OPES_MULTITHERMAL_MULTIBARIC\n");
       init_from_obs();
       log.printf("Finished initialization\n\n");
-      counter_=1;
-      isFirstStep_=false;
+      counter_=NumWalkers_; //all preliminary observations count 1
+      obs_steps_=0; //no more observation
     }
     return;
   }
@@ -496,14 +506,14 @@ void OPESmultiThermalBaric::update()
       rct_+=increment_w+1./beta_*std::log1p(-1./counter_);
     }
     //calc single walker rct
-    const unsigned single_counter=(counter_-1)/NumWalkers_+1;
+    const unsigned single_counter=counter_/NumWalkers_;
     const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(current_bias_-my_rct_)))/(single_counter-1.));
     my_rct_+=increment+1./beta_*std::log1p(-1./single_counter);
     getPntrToComponent("rct")->set(my_rct_);
   }
 
 //write to file
-  if(((counter_-1)/NumWalkers_)%print_stride_==0)
+  if((counter_/NumWalkers_-1)%print_stride_==0)
   {
     deltaFsOfile_.printField("time",getTime());
     deltaFsOfile_.printField("rct",rct_);
@@ -544,12 +554,12 @@ void OPESmultiThermalBaric::init_integration_grid()
 //print some info
   log.printf("  Total temp steps (in beta) = %d\n",steps_beta_);
   for(unsigned i=0; i<steps_beta_; i++)
-    log.printf("   % d. beta=% .10f  temp=% g\n",i+1,beta_p_[i],1./(plumed.getAtoms().getKBoltzmann()*beta_p_[i]));
+    log.printf("   %2d. beta=% .10f  temp=% g\n",i+1,beta_p_[i],1./(plumed.getAtoms().getKBoltzmann()*beta_p_[i]));
   if(NumParallel_>steps_beta_)
     log.printf(" +++ WARNING +++ number of parallel threads is greater than beta steps. Using SERIAL might be faster\n");
   log.printf("  Total pres steps = %d\n",steps_pres_);
   for(unsigned j=0; j<steps_pres_; j++)
-    log.printf("   % d. pres=% .10f\n",j+1,pres_p_[j]);
+    log.printf("   %2d. pres=% .10f\n",j+1,pres_p_[j]);
   log.printf("  Total deltaFs = %d\n",steps_beta_*steps_pres_);
   if(border_weight_!=1)
     log.printf(" --- using a weight different from 1 for the border, BORDER_WEIGHT = %g ---\n",border_weight_);
