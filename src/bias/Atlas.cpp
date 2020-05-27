@@ -51,7 +51,8 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_MAX","the maximum value to use for all the grids");
   keys.add("optional","GRID_BIN","the number of bins to use for all the grids");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
-  keys.add("compulsory","WALL","the force constant of the wall applied outside the GMM");
+  keys.add("compulsory","STATIC_WALL","the force constant of the wall applied outside the GMM");
+  keys.add("compulsory","ADAPTIVE_WALL","the force constant of the wall applied outside the GMM");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
@@ -106,7 +107,7 @@ ActionShortcut(ao)
             // Multiply difference in CVs by eigenvector - returns a vector
 	    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" ); plumed_assert( av ); //////
 	    std::string per_str;
-	    // By default, we set the low dimensional CVs to be non-periodic. As at this stage periodic CVs has a diagonal covariance matrix, this affect in a 
+	    // By default, we set the low dimensional CVs to be non-periodic. As at this stage periodic CVs has a diagonal covariance matrix, this affect in a
 	    // minimum way the projection of periodic variable
 	    per_str = "NO";
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
@@ -144,15 +145,15 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_wtfact: REWEIGHT_WELLTEMPERED HEIGHT=" + height + " BIASFACTOR=" + biasfactor + tempstr);
 
   // And sum the kernels
-  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1", pwrs=" POWERS=2";
-  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; pwrs += ",2"; }
-  readInputLine( cinput + pwrs ); readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=sqrt(x)"+ " PERIODIC=NO");
+  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1", pwrs=" POWERS=1";
+  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; pwrs += ",1"; }
+  readInputLine( cinput + pwrs ); readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=x"+ " PERIODIC=NO");
 
   // Add a small number to regularize the sum
   std::string regparam; parse("REGULARISE",regparam);
   readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=x+" + regparam + " PERIODIC=NO");
 
-  // Normalize the weights for each of the kernels and compute the final bias
+  // Normalize the weights for each of the kernels
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num );
       // And now compute the final weights of the basins
@@ -160,48 +161,57 @@ ActionShortcut(ao)
                      "_rksum FUNC=x/y PERIODIC=NO");
   }
 
+  // And compute the wkernel outside the GMM
+  readInputLine( getShortcutLabel() + "_ext_wkernel: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=" + regparam + "/(x+" + regparam + ") PERIODIC=NO");
+
+  // And sum the wkernels for the renormalization
+  std::string ccinput = getShortcutLabel() + "_wksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_wkernel-1", ppwrs=" POWERS=2";
+  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); ccinput += "," + getShortcutLabel() + "_wkernel-" + num; ppwrs += ",2"; }
+  ccinput +="," + getShortcutLabel() + "_ext_wkernel"; ppwrs += ",2";
+  readInputLine( ccinput + ppwrs );
+
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
   std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
   if( gmax.size()>0 && grid_nbins.size()==0 ) error("you must set GRID_BIN if you set GRID_MAX");
-  if( grid_nbins.size()>0 && gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");  
+  if( grid_nbins.size()>0 && gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
   // Build the histograms for the bias potential
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); targs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
-      readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " FUNC=log(x) PERIODIC=NO");
-      readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" + 
+      readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " ARG2=" + getShortcutLabel() + "_wksum FUNC=log(x/y) PERIODIC=NO");
+      readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" +
                     num + " FUNC=x+y PERIODIC=NO"); hstring = getShortcutLabel() + "-" + num + "_wtfact";
       if( neigv[k]==0 ) {
           targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
-          if( gmax.size()>0 ) { 
-              tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins ); 
+          if( gmax.size()>0 ) {
+              tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins );
           } else {
               readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
-              hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact"; 
+              hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
           }
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
-          for(unsigned i=0;i<neigv[k];++i) { 
-              std::string eignum; Tools::convert( i+1, eignum ); 
+          for(unsigned i=0;i<neigv[k];++i) {
+              std::string eignum; Tools::convert( i+1, eignum );
               if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );
               else targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
               if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
           }
-          if( resid[k] ) { 
+          if( resid[k] ) {
               targs.push_back( getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
-              if( gmax.size()>0 ) { 
-                  tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); 
-              } else { 
+              if( gmax.size()>0 ) {
+                  tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins );
+              } else {
                   readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
                   hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
-              } 
-          } 
+              }
+          }
       }
       MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
   }
@@ -213,17 +223,21 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_bias ARG2=" +
                      getShortcutLabel() + "_wkernel-" + num + " FUNC=x*y PERIODIC=NO");
   }
-  // And compute the wkernel outside the GMM
-  readInputLine( getShortcutLabel() + "_ext_wkernel: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=" + regparam + "/(x+" + regparam + ") PERIODIC=NO");
 
-  // And calculate the external wall potential
-  std::string wall; parse("WALL",wall);
-  readInputLine( getShortcutLabel() + "_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + wall + "*x/(1-x) PERIODIC=NO");
+  // And calculate the static_wall
+  std::string static_wall; parse("STATIC_WALL",static_wall);
+  readInputLine( getShortcutLabel() + "_static_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + static_wall + "*x/(1-x) PERIODIC=NO");
+
+  // And calculate the adaptive_wall
+  std::string adaptive_wall; parse("ADAPTIVE_WALL",adaptive_wall);
+  //readInputLine( getShortcutLabel() + "_height_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + adaptive_wall + "*x PERIODIC=NO");
+  //readInputLine( getShortcutLabel() + "_adaptive_wall: AVERAGE NORMALIZATION=false CLEAR=0 STRIDE="+pacestr+" ARG1=" + getShortcutLabel() + "_ext_wkernel");
+  readInputLine( getShortcutLabel() + "_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + static_wall + "*x/(1-x) PERIODIC=NO");
 
   // This is for the sum of these quantities
-  std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_wall," + getShortcutLabel() + "_wbias-1";
-
+  std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_static_wall," + getShortcutLabel() + "_adaptive_wall," + getShortcutLabel() + "_wbias-1";
   for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); combstr += "," + getShortcutLabel() + "_wbias-" + num; }
+
   // And the final bias
   readInputLine( combstr ); readInputLine("BIASVALUE ARG=" + getShortcutLabel() );
 
@@ -238,20 +252,25 @@ ActionShortcut(ao)
 
   // Print the reduced CVs to a file
   std::string cvs_str = "PRINT FILE=LOWD_CVS FMT=%.8e STRIDE="+pacestr+" ARG=";
+
   for(unsigned k=0;k<weights.size();++k) {
     std::string num; Tools::convert( k+1, num );
     if( neigv[k]==0 ) {
       cvs_str += getShortcutLabel() + "_pdist-" + num + ",";
+      //readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_nwtfact" + " FUNC=exp(x)");
     } else {
       for(unsigned i=0;i<neigv[k];++i) {
         std::string eignum; Tools::convert( i+1, eignum );
         cvs_str +=  getShortcutLabel() + "_proj" + eignum + "-" + num + ",";
+        //
       }
       if( resid[k] ) {
         cvs_str +=  getShortcutLabel() + "_resid-" + num + ",";
+        //readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_nwtfact" + " FUNC=exp(x)");
       }
     }
   }
+
 
   readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_wtfact" + " FUNC=exp(x)");
   cvs_str += getShortcutLabel() + "_wtheight";
