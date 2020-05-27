@@ -27,6 +27,7 @@ PLUMED can be incorporated into an MD code and used to analyze or bias a molecul
 Some MD code could already include calls to the PLUMED library
 and be PLUMED-ready in its original distribution.
 As far as we know, the following MD codes can be used with PLUMED out of the box:
+- [Amber](http://ambermd.org/), pmemd module, since version 20.
 - [AmberTools](http://ambermd.org/), sander module, since version 15.
 - [CP2K](http://www.cp2k.org), since Feb 2015.
 - [ESPResSo](http://espressomd.org), in a version that has been patched with PLUMED can be found
