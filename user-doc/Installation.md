@@ -282,8 +282,11 @@ in the configuration file.
 
 \subsection installation-vmdplugins VMD trajectory plugins
 
-If you configure PLUMED with the VMD plugins you will be able to read
-many more trajectory formats. To this aim,
+PLUMED source code already includes a few selected VMD molfile plugins so as to read a small number
+of additional trajectory formats (e.g., dcd, gromacs files, pdb, and amber files).
+If you configure PLUMED with the full set of VMD plugins you will be able to read
+many more trajectory formats, basically all of those supported by VMD.
+To this aim,
 you need to download the SOURCE of VMD, which contains
 a plugins directory. Adapt build.sh and compile it. At
 the end, you should get the molfile plugins compiled as a static
