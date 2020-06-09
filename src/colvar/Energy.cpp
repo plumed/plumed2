@@ -32,7 +32,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR ENERGY
 /*
-Calculate the total energy of the simulation box.
+Calculate the total potential energy of the simulation box.
 
 Total energy can be biased with umbrella sampling \cite bart-karp98jpcb or with well tempered metadynamics \cite Bonomi:2009p17935.
 
