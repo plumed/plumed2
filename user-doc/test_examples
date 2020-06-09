@@ -78,6 +78,16 @@ for file in *.dat ; do
         cp ../../../$molname $inpf
    fi
 
+   # This checks if we need an auxiliary file or folder and copy it 
+   auxfile=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"AUXFILE=")){print $i}}}' | sed -e 's/AUXFILE=//'`
+   if [ ! -z $auxfile ] ; then
+      cp ../../../$auxfile . 
+   fi
+   auxfolder=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"AUXFOLDER=")){print $i}}}' | sed -e 's/AUXFOLDER=//'`
+   if [ ! -z $auxfolder ] ; then
+      cp -r ../../../$auxfolder . 
+   fi
+
    # Now running test with PLUMED
    egn=`echo $file | cut -c1-2`
    echo Testing example $egn in $file for $infile

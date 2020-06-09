@@ -37,7 +37,7 @@ namespace fisst {
 
 //+PLUMEDOC FISSTMOD_BIAS FISST
 /*
-Compute and apply the optimal linear force on an observable to enhance sampling of conformational distributions over a range of applied forces. 
+Compute and apply the optimal linear force on an observable to enhance sampling of conformational distributions over a range of applied forces.
 
 This method is described in \cite Hartmann-FISST-2019
 

@@ -112,6 +112,7 @@ In this first example the chemical shifts are used to calculate a collective var
 in NMR driven Metadynamics \cite Granata:2013dk :
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
 cs: CS2BACKBONE ATOMS=1-2612 DATADIR=data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
@@ -122,6 +123,7 @@ PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
 encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)

@@ -91,6 +91,7 @@ In addition, and only for analysis purposes, the same RDCs each single conformat
 using a Single Value Decomposition algorithm, then averaged and again compared with the experimental data.
 
 \plumedfile
+#SETTINGS NREPLICAS=2
 RDC ...
 GYROM=-72.5388
 SCALE=0.001
@@ -119,10 +120,9 @@ ATOMS5=92,93 COUPLING5=-9.152
 LABEL=svd
 ... RDC
 
-esvd: ENSEMBLE ARG=svd.*
+esvd: ENSEMBLE ARG=(svd\.rdc-.*)
 
 st_svd: STATS ARG=esvd.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
-
 
 PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 \endplumedfile

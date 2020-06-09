@@ -64,11 +64,11 @@ MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
-#SETTINGS NDX_FILE=regtest/basic/rt77/index.ndx
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
