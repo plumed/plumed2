@@ -71,7 +71,7 @@ the comparison with the experimental data can chosen using the keyword LIKELIHOO
 between gaussian or log-normal (one per data point), furthermore the evolution of the estimated average
 over an infinite number of replicas is driven by DFTILDE.
 
-As for Metainference theory there are two sigma values: SIGMA_MEAN represent the
+As for Metainference theory there are two sigma values: SIGMA_MEAN0 represent the
 error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
 in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
@@ -146,7 +146,7 @@ NOISETYPE=OUTLIERS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
 SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01
 SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
-SIGMA_MEAN=0.001
+SIGMA_MEAN0=0.001
 LABEL=spe
 ... METAINFERENCE
 \endplumedfile
