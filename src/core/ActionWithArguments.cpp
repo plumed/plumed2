@@ -74,7 +74,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 #ifdef __PLUMED_HAS_CREGEX
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
-        log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
+        //log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
 
         regex_t reg; // regular expression
 
@@ -96,6 +96,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         // select all the actions that have a value
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+        bool found_something=false;
         for(unsigned j=0; j<all.size(); j++) {
           std::vector<std::string> ss=all[j]->getComponentsVector();
           for(unsigned  k=0; k<ss.size(); ++k) {
@@ -116,14 +117,16 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
                     arg.push_back(all[j]->copyOutput(putativeVal));
+                    found_something=true;
                     //log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
-                };
+                }
                 ppstr += match.rm_eo;	/* Restart from last match */
               } while(!regexec(&reg,ppstr,reg.re_nsub,&match,0));
             }
           }
         }
+        if(!found_something) plumed_error()<<"There isn't any action matching your regex " << myregex;
 #else
         plumed_merror("Regexp support not compiled!");
 #endif
