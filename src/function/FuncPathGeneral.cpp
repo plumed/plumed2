@@ -66,9 +66,9 @@ ARG=d1,d2,d,t,drmsd
 ... FUNCPATHGENERAL
 \endplumedfile
 
-The command below is a variation of the previous one, specifying a subset of the collective variables and using a neighbour list.
+The command below is a variation of the previous one, specifying a subset of the collective variables and using a neighbor list.
 The columns are zero-indexed.
-The neighbour list will include the 10 closest frames and will be recalculated every 20 steps.
+The neighbor list will include the 10 closest frames and will be recalculated every 20 steps.
 
 \plumedfile
 FUNCPATHGENERAL ...
