@@ -989,6 +989,8 @@ Nicolaus
 Torun
 idlp
 mdtraj
+MDtraj
+matplotlib
 MDAnalysis
 mda
 vmdexec
@@ -1044,3 +1046,12 @@ Vittorio
 Limongelli
 FUNNELMOD
 macromolecule
+FISSTMOD
+HCP
+BCC
+COVID
+ipython
+fisst
+pN
+PCV
+PCVs

@@ -36,7 +36,7 @@ namespace colvar {
 Calculate a position based on the projection along and extension from a defined axis.
 
 This variable takes 3 input atoms or pseudoatoms, using the two AXIS_ATOMS to define a linear vector.
-The positon of the ATOM is then calculated relative to this vector, with two output components.
+The position of the ATOM is then calculated relative to this vector, with two output components.
 The projection on the axis (proj) is the distance along the axis from the ATOM to the origin.
 The extension (ext) is the orthogonal distance between the ATOM and the axis.
 

@@ -47,6 +47,7 @@
 !/release.sh
 !/astyle.sh
 !/funnel
+!/fisst
 
 
 # And just ignore these files

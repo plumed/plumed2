@@ -59,11 +59,12 @@ The output from this collective variable, the free energy of solvation, can be u
 \par Examples
 
 \plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
+#SETTINGS NDX_FILE=regtest/basic/rt77/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
