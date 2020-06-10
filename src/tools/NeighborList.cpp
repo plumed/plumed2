@@ -23,6 +23,7 @@
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
+#include "OpenMP.h"
 #include "Tools.h"
 #include <vector>
 #include <algorithm>
@@ -95,20 +96,28 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
 void NeighborList::update(const vector<Vector>& positions) {
   neighbors_.clear();
   const double d2=distance_*distance_;
-// check if positions array has the correct length
+  // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
-  for(unsigned int i=0; i<nallpairs_; ++i) {
-    pair<unsigned,unsigned> index=getIndexPair(i);
-    unsigned index0=index.first;
-    unsigned index1=index.second;
-    Vector distance;
-    if(do_pbc_) {
-      distance=pbc_->distance(positions[index0],positions[index1]);
-    } else {
-      distance=delta(positions[index0],positions[index1]);
+  unsigned nt=OpenMP::getNumThreads();
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<std::pair<unsigned,unsigned> > private_neigh;
+    #pragma omp for nowait
+    for(unsigned int i=0; i<nallpairs_; ++i) {
+      pair<unsigned,unsigned> index=getIndexPair(i);
+      unsigned index0=index.first;
+      unsigned index1=index.second;
+      Vector distance;
+      if(do_pbc_) {
+        distance=pbc_->distance(positions[index0],positions[index1]);
+      } else {
+        distance=delta(positions[index0],positions[index1]);
+      }
+      double value=modulo2(distance);
+      if(value<=d2) {private_neigh.push_back(index);}
     }
-    double value=modulo2(distance);
-    if(value<=d2) {neighbors_.push_back(index);}
+    #pragma omp critical
+    neighbors_.insert(neighbors_.end(), private_neigh.begin(), private_neigh.end());
   }
   setRequestList();
 }
