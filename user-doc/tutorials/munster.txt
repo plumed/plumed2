@@ -301,7 +301,7 @@ A quantitative assessment of convergence can only be obtained by performing erro
 \subsection new-munster-block Exercise 3: Performing block averaging 
 
 To understand the analysis that we will perform in the next section we need a brief digression on the block averaging technique that we will use to get the error bars for our estimate of the 
-free energy surface.  The relevant pieces of probability theory are explained in the videos below, which you are encuoraged to watch at some stage: 
+free energy surface.  The relevant pieces of probability theory are explained in the videos below, which you are encouraged to watch at some stage: 
 
 @htmlonly
 <table>
