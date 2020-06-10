@@ -1353,8 +1353,9 @@ void CS2Backbone::calculate()
 }
 
 void CS2Backbone::update_neighb() {
-  max_cs_atoms=0;
   // cycle over chemical shifts
+  unsigned nt=OpenMP::getNumThreads();
+  #pragma omp parallel for num_threads(nt)
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     const unsigned boxsize = getNumberOfAtoms();
     chemicalshifts[cs].box_nb.clear();
@@ -1368,6 +1369,9 @@ void CS2Backbone::update_neighb() {
       if(d2<cutOffNB2) chemicalshifts[cs].box_nb.push_back(bat);
     }
     chemicalshifts[cs].totcsatoms = chemicalshifts[cs].csatoms + chemicalshifts[cs].box_nb.size();
+  }
+  max_cs_atoms=0;
+  for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     if(chemicalshifts[cs].totcsatoms>max_cs_atoms) max_cs_atoms = chemicalshifts[cs].totcsatoms;
   }
 }
@@ -1382,31 +1386,22 @@ void CS2Backbone::compute_ring_parameters() {
       ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
       ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
       ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
-      vector<Vector> a(6);
-      a[0] = getPosition(ringInfo[i].atom[0]);
       // ring center
-      Vector midP = a[0];
-      for(unsigned j=1; j<size; j++) {
-        a[j] = getPosition(ringInfo[i].atom[j]);
-        midP += a[j];
-      }
+      Vector midP = getPosition(ringInfo[i].atom[0]);
+      for(unsigned j=1; j<size; j++) midP += getPosition(ringInfo[i].atom[j]);
       ringInfo[i].position = midP/6.;
       // compute normal vector to plane
-      Vector n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
-      Vector n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      Vector n1 = crossProduct(ringInfo[i].g[2], -ringInfo[i].g[4]);
+      Vector n2 = crossProduct(ringInfo[i].g[5], -ringInfo[i].g[1]);
       ringInfo[i].normVect = 0.5*(n1 + n2);
     }  else {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
       ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
       ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
-      vector<Vector> a(size);
-      for(unsigned j=0; j<size; j++) {
-        a[j] = getPosition(ringInfo[i].atom[j]);
-      }
       // ring center
-      ringInfo[i].position = (a[0]+a[2]+a[3])/3.;
+      ringInfo[i].position = (getPosition(ringInfo[i].atom[0])+getPosition(ringInfo[i].atom[2])+getPosition(ringInfo[i].atom[3]))/3.;
       // ring plane normal vector
-      ringInfo[i].normVect = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
+      ringInfo[i].normVect = crossProduct(ringInfo[i].g[1],-ringInfo[i].g[2]);
 
     }
     // calculate squared length and length of normal vector
