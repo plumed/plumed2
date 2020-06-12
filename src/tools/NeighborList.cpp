@@ -146,11 +146,13 @@ void NeighborList::update(const vector<Vector>& positions) {
     disp[i+1] = rank_size;
   }
   // Allgather neighbor list
-  comm.Allgatherv(&local_flat_nl[0], local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
+  if(comm.initialized()) comm.Allgatherv(&local_flat_nl[0], local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
+  else merge_nl = local_flat_nl;
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
-  for(unsigned i=0; i<tot_size; i+=2) {
-    neighbors_.push_back(std::make_pair(merge_nl[i],merge_nl[i+1]));
+  for(unsigned i=0; i<tot_size/2; i++) {
+    unsigned j=2*i;
+    neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
   }
 
   setRequestList();
