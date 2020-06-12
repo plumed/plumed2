@@ -180,7 +180,8 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); targs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
-      readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num + " ARG2=" + getShortcutLabel() + "_wksum FUNC=log(x/y) PERIODIC=NO");
+      readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num +
+                                                                          " ARG2=" + getShortcutLabel() + "_wksum FUNC=log(x/y) PERIODIC=NO");
       readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" +
                     num + " FUNC=x+y PERIODIC=NO"); hstring = getShortcutLabel() + "-" + num + "_wtfact";
       if( neigv[k]==0 ) {
@@ -230,9 +231,11 @@ ActionShortcut(ao)
 
   // And calculate the adaptive_wall
   std::string adaptive_wall; parse("ADAPTIVE_WALL",adaptive_wall);
-  //readInputLine( getShortcutLabel() + "_height_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + adaptive_wall + "*x PERIODIC=NO");
-  //readInputLine( getShortcutLabel() + "_adaptive_wall: AVERAGE NORMALIZATION=false CLEAR=0 STRIDE="+pacestr+" ARG1=" + getShortcutLabel() + "_ext_wkernel");
-  readInputLine( getShortcutLabel() + "_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_ext_wkernel FUNC=" + static_wall + "*x/(1-x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_height_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_wksum "+
+                                                                      "ARG2=" + getShortcutLabel() + "_ext_wkernel "+
+                                                                      "ARG3=" + getShortcutLabel() + "_wtfact FUNC="+adaptive_wall+"*y/x*exp(z) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_cum_adaptive_wall: AVERAGE NORMALIZATION=false CLEAR=0 STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_height_adaptive_wall");
+  readInputLine( getShortcutLabel() + "_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_cum_adaptive_wall ARG2=" + getShortcutLabel() + "_ext_wkernel FUNC=x*y PERIODIC=NO");
 
   // This is for the sum of these quantities
   std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_static_wall," + getShortcutLabel() + "_adaptive_wall," + getShortcutLabel() + "_wbias-1";
