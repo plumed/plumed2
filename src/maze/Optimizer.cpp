@@ -230,6 +230,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
         do_pair,
         pbc_,
         getPbc(),
+        comm,
         nl_cutoff_,
         nl_stride_
       );
@@ -240,7 +241,8 @@ Optimizer::Optimizer(const ActionOptions& ao)
         gb_list,
         do_pair,
         pbc_,
-        getPbc()
+        getPbc(),
+        comm
       );
     }
   }
@@ -250,6 +252,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
         ga_list,
         pbc_,
         getPbc(),
+        comm,
         nl_cutoff_,
         nl_stride_
       );
@@ -258,7 +261,8 @@ Optimizer::Optimizer(const ActionOptions& ao)
       neighbor_list_=new NeighborList(
         ga_list,
         pbc_,
-        getPbc()
+        getPbc(),
+        comm
       );
     }
   }

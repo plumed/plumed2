@@ -30,6 +30,7 @@
 namespace PLMD {
 
 class Pbc;
+class Communicator;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
@@ -38,6 +39,7 @@ class NeighborList
   bool reduced;
   bool do_pair_,do_pbc_,twolists_;
   const PLMD::Pbc* pbc_;
+  Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
   std::vector<std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
@@ -52,10 +54,10 @@ class NeighborList
 public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
-               const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc,
+               const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc, Communicator &cm,
                const double& distance=1.0e+30, const unsigned& stride=0);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
-               const PLMD::Pbc& pbc, const double& distance=1.0e+30,
+               const PLMD::Pbc& pbc, Communicator &cm, const double& distance=1.0e+30,
                const unsigned& stride=0);
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
   std::vector<PLMD::AtomNumber>& getFullAtomList();
