@@ -498,6 +498,39 @@ alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
 \ endplumedfile    /*** But with no space between the \ and the endplumedfile
 \endverbatim
 
+\subsection otherfiles Other actions requiring external files/folder
+
+Other actions in plumed may require reading input files, examples include reading gromacs .ndx files in \ref GROUP, reading chemical shifts in \ref CS2BACKBONE, etc.
+To make these example work correctly in the manual you can use the keywords AUXFILE and AUXFOLDER as in the following:
+
+\verbatim
+\plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# This allows us to select only non-hydrogen atoms
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+
+# We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
+solv: EEFSOLV ATOMS=protein-h
+
+# Here we actually add our calculated energy back to the potential
+bias: BIASVALUE ARG=solv
+
+PRINT ARG=solv FILE=SOLV
+
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
+encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
+RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
+
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+\endverbatim
+
 \section tutorials Writing how-to instructions
 
 On every page of the plumed user manaul there are three tabs: Main-page, Glossary and How-tos.  Here we are going to describe how to
