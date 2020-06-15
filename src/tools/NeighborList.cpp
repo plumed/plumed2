@@ -34,9 +34,9 @@ namespace PLMD {
 using namespace std;
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
-                           const bool& do_pair, const bool& do_pbc, const Pbc& pbc, Communicator& cm,
+                           const bool& serial, const bool& do_pair, const bool& do_pbc, const Pbc& pbc, Communicator& cm,
                            const double& distance, const unsigned& stride): reduced(false),
-  do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
+  serial_(serial), do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
   distance_(distance), stride_(stride)
 {
 // store full list of atoms needed
@@ -56,10 +56,10 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   lastupdate_=0;
 }
 
-NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
+NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& serial, const bool& do_pbc,
                            const Pbc& pbc, Communicator& cm, const double& distance,
                            const unsigned& stride): reduced(false),
-  do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
+  serial_(serial), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
   distance_(distance), stride_(stride) {
   fullatomlist_=list0;
   nlist0_=list0.size();
@@ -104,6 +104,11 @@ void NeighborList::update(const vector<Vector>& positions) {
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   unsigned nt=OpenMP::getNumThreads();
+  if(serial_) {
+    stride=1;
+    rank=0;
+    nt=1;
+  }
   std::vector<unsigned> local_flat_nl;
 
   #pragma omp parallel num_threads(nt)
@@ -133,7 +138,7 @@ void NeighborList::update(const vector<Vector>& positions) {
   // find total dimension of neighborlist
   vector <int> local_nl_size(stride, 0);
   local_nl_size[rank] = local_flat_nl.size();
-  comm.Sum(&local_nl_size[0], stride);
+  if(!serial_) comm.Sum(&local_nl_size[0], stride);
   int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
   // merge
   std::vector<unsigned> merge_nl(tot_size,0);
@@ -146,7 +151,7 @@ void NeighborList::update(const vector<Vector>& positions) {
     disp[i+1] = rank_size;
   }
   // Allgather neighbor list
-  if(comm.initialized()) comm.Allgatherv(&local_flat_nl[0], local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
+  if(comm.initialized()&&!serial_) comm.Allgatherv(&local_flat_nl[0], local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
   else merge_nl = local_flat_nl;
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);

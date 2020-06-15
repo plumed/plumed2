@@ -227,6 +227,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
       neighbor_list_ = new NeighborList(
         ga_list,
         gb_list,
+        serial_,
         do_pair,
         pbc_,
         getPbc(),
@@ -239,6 +240,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
       neighbor_list_=new NeighborList(
         ga_list,
         gb_list,
+        serial_,
         do_pair,
         pbc_,
         getPbc(),
@@ -250,6 +252,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
     if (do_neigh) {
       neighbor_list_ = new NeighborList(
         ga_list,
+        serial_,
         pbc_,
         getPbc(),
         comm,
@@ -260,6 +263,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
     else {
       neighbor_list_=new NeighborList(
         ga_list,
+        serial_,
         pbc_,
         getPbc(),
         comm

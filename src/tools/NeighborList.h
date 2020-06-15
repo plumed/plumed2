@@ -37,6 +37,7 @@ class Communicator;
 class NeighborList
 {
   bool reduced;
+  bool serial_;
   bool do_pair_,do_pbc_,twolists_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
@@ -54,9 +55,12 @@ class NeighborList
 public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
+               const bool& serial,
                const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc, Communicator &cm,
                const double& distance=1.0e+30, const unsigned& stride=0);
-  NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
+  NeighborList(const std::vector<PLMD::AtomNumber>& list0, 
+               const bool& serial,
+               const bool& do_pbc,
                const PLMD::Pbc& pbc, Communicator &cm, const double& distance=1.0e+30,
                const unsigned& stride=0);
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
