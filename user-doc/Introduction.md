@@ -34,7 +34,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
 - [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
 - [AceMD](http://www.multiscalelab.org/acemd/), see [this link](https://github.com/tonigi/ACEMD-PLUMED).
-- [OpenMM](http://openmm.org), using the [openmmp-plumed plugin](http://github.com/peastman/openmm-plumed).
+- [OpenMM](http://openmm.org), using the [openmm-plumed plugin](http://github.com/peastman/openmm-plumed).
 - [DL_POLY4](https://www.scd.stfc.ac.uk/Pages/DL_POLY.aspx).
 - [VNL-ATK](https://quantumwise.com), see [this link](https://docs.quantumwise.com/tutorials/metadynamics_with_plumed/metadynamics_with_plumed.html).
 - [ABIN](https://github.com/PHOTOX/ABIN).
