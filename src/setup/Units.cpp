@@ -148,6 +148,8 @@ Units::Units(const ActionOptions&ao):
     log.printf("  using physical units\n");
   }
   log.printf("  inside PLUMED, Boltzmann constant is %f\n",plumed.getAtoms().getKBoltzmann());
+
+  plumed.getAtoms().updateUnits();
 }
 
 }
