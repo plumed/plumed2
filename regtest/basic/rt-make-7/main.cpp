@@ -10,7 +10,7 @@ int main(){
   int natoms=10;
 
   std::vector<double> positions(3*natoms,0.0);
-  for(unsigned i=0;i<natoms;i++) positions[i]=i;
+  for(unsigned i=0;i<natoms;i++) positions[i]=i/10.0;
   std::vector<double> masses(natoms,1.0);
   std::vector<double> forces(3*natoms,0.0);
   std::vector<double> box(9,0.0);
@@ -19,6 +19,7 @@ int main(){
   plumed->cmd("setNatoms",&natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
+  plumed->cmd("readInputLine","UNITS LENGTH=A");
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed->cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed->cmd("readInputLine","PRINT ARG=d,d1 FILE=COLVAR");
@@ -36,7 +37,7 @@ int main(){
     plumed->cmd("setVirial",&virial[0]);
     plumed->cmd("setMasses",&masses[0]);
 // first compute using modified positions:
-    positions[0]=0.5;
+    positions[0]=0.05;
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;
