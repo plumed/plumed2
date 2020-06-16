@@ -140,8 +140,9 @@ void NeighborList::update(const vector<Vector>& positions) {
   local_nl_size[rank] = local_flat_nl.size();
   if(!serial_) comm.Sum(&local_nl_size[0], stride);
   int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+  if(tot_size==0) {setRequestList(); return;}
   // merge
-  std::vector<unsigned> merge_nl(tot_size,0);
+  std::vector<unsigned> merge_nl(tot_size, 0);
   // calculate vector of displacement
   vector<int> disp(stride);
   disp[0] = 0;
@@ -151,7 +152,7 @@ void NeighborList::update(const vector<Vector>& positions) {
     disp[i+1] = rank_size;
   }
   // Allgather neighbor list
-  if(comm.initialized()&&!serial_) comm.Allgatherv(&local_flat_nl[0], local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
+  if(comm.initialized()&&!serial_) comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL), local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
   else merge_nl = local_flat_nl;
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
