@@ -428,6 +428,8 @@ void MetainferenceBase::Initialise(const unsigned input)
     }
   }
 
+  sigma_max_est_.resize(sigma_max_.size(), 0.);
+
   IFile restart_sfile;
   restart_sfile.link(*this);
   if(getRestart()&&restart_sfile.FileExist(status_file_name_)) {
