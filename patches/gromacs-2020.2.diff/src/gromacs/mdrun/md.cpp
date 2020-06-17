@@ -1043,6 +1043,7 @@ void gmx::LegacySimulator::do_md()
               plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
             }
           }
+          bNS=true;
         }
         /* END PLUMED HREX */
 
