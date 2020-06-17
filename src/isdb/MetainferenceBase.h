@@ -142,8 +142,8 @@ private:
   std::vector< std::vector < std::vector <double> > > sigma_mean2_last_;
   unsigned optsigmamean_stride_;
   // optimize sigma max
-  unsigned N_optimized_step_; 
-  unsigned optimized_step_; 
+  unsigned N_optimized_step_;
+  unsigned optimized_step_;
   bool sigmamax_opt_done_;
   std::vector<double> sigma_max_est_;
 

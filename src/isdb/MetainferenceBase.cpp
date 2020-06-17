@@ -1381,15 +1381,15 @@ void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact,
     // endif sigma mean optimization
     // start sigma max optimization
     if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
-      for(unsigned i=0;i<sigma_max_.size();i++) {
+      for(unsigned i=0; i<sigma_max_.size(); i++) {
         sigma_max_est_[i] += sqrt(sigma_mean2_tmp[i]);
         // ready to set once and for all the value of sigma_max
         if(optimized_step_==N_optimized_step_) {
           double isteps = 1./static_cast<double>(optimized_step_);
           sigmamax_opt_done_=true;
-          for(unsigned i=0;i<sigma_max_.size();i++) sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
+          for(unsigned i=0; i<sigma_max_.size(); i++) sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
         }
-      } 
+      }
       optimized_step_++;
     }
     // end sigma max optimization
