@@ -67,6 +67,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("optional","SIGMA_MAX_STEPS", "Number of steps used to optimise SIGMA_MAX, before that the SIGMA_MAX value is used");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
@@ -124,6 +125,9 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   nsel_(1),
   iselect(0),
   optsigmamean_stride_(0),
+  N_optimized_step_(0),
+  optimized_step_(0),
+  sigmamax_opt_done_(false),
   decay_w_(1.)
 {
   parseFlag("DOSCORE", doscore_);
@@ -195,6 +199,13 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   parse("OPTSIGMAMEAN", stringa_optsigma);
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
+  else if(stringa_optsigma=="SEM_MAX")  do_optsigmamean_=2;
+
+  unsigned aver_max_steps=0;
+  parse("SIGMA_MAX_STEPS", aver_max_steps);
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
+  if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
 
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
@@ -1367,7 +1378,21 @@ void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact,
       sigma_mean2_tmp[0] = max_now;
       valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
     }
-    // endif sigma optimization
+    // endif sigma mean optimization
+    // start sigma max optimization
+    if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
+      for(unsigned i=0;i<sigma_max_.size();i++) {
+        sigma_max_est_[i] += sqrt(sigma_mean2_tmp[i]);
+        // ready to set once and for all the value of sigma_max
+        if(optimized_step_==N_optimized_step_) {
+          double isteps = 1./static_cast<double>(optimized_step_);
+          sigmamax_opt_done_=true;
+          for(unsigned i=0;i<sigma_max_.size();i++) sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
+        }
+      } 
+      optimized_step_++;
+    }
+    // end sigma max optimization
   } else {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
