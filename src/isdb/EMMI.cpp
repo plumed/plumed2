@@ -628,6 +628,16 @@ EMMI::EMMI(const ActionOptions&ao):
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
+  // Reweighting flag
+  parseFlag("REWEIGHT", do_reweight_);
+  if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide one single bias as an argument");
+  if(do_reweight_&&no_aver_) error("REWEIGHT cannot be used with NO_AVER");
+  if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas");
+  if(!getRestart()) average_weights_.resize(nrep_, 1./static_cast<double>(nrep_));
+  else average_weights_.resize(nrep_, 0.);
+
+  checkRead();
+
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
@@ -758,6 +768,13 @@ EMMI::EMMI(const ActionOptions&ao):
     addComponent("enescale");  componentIsNotPeriodic("enescale");
   }
 
+  if(do_reweight_) {
+    addComponent("biasDer");
+    componentIsNotPeriodic("biasDer");
+    addComponent("weight");
+    componentIsNotPeriodic("weight");
+  }
+
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
   // initialize random seed
@@ -769,6 +786,8 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // request the atoms
   requestAtoms(atoms);
+  setDerivatives();
+  checkRead();
 
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
