@@ -201,7 +201,6 @@ private:
 
   // Reweighting additions
   unsigned narg;
-  bool     master;
   bool do_reweight_;
   vector<double> forces;
   vector<double> forcesToApply;
@@ -1527,6 +1526,55 @@ double EMMI::get_annealing(long int step)
   return fact;
 }
 
+void EMMIMetaD::get_weights(double &fact, double &var_fact)
+{
+  const double dnrep    = static_cast<double>(nrep_);
+  const double ave_fact = 1.0/dnrep;
+
+  double norm = 0.0;
+
+// calculate the weights either from BIAS
+  if(do_reweight_) {
+    vector<double> bias(nrep_,0);
+    if(rank_==0) {
+      bias[replica_] = getArgument(0);
+      if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
+    }
+    comm.Sum(&bias[0], nrep_);
+
+    const double maxbias = *(std::max_element(bias.begin(), bias.end()));
+    for(unsigned i=0; i<nrep_; ++i) {
+      bias[i] = exp((bias[i]-maxbias)/kbt_);
+      norm   += bias[i];
+    }
+
+  // accumulate weights
+    if(first_time_) {
+      for(unsigned i=0; i<nrep_; ++i) {
+        const double delta=bias[i]/norm-average_weights_[i];
+        average_weights_[i]+=decay_w_*delta;
+      }
+    } else {
+      first_time_ = false;
+      for(unsigned i=0; i<nrep_; ++i) {
+        average_weights_[i] = bias[i]/norm;
+      }
+    }
+
+  // set average back into bias and set norm to one
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = average_weights_[i];
+  // set local weight, norm and weight variance
+    fact = bias[replica_];
+    norm = 1.0;
+    for(unsigned i=0; i<nrep_; ++i) var_fact += (bias[i]/norm-ave_fact)*(bias[i]/norm-ave_fact);
+    getPntrToComponent("weight")->set(fact);
+  } else {
+  // or arithmetic ones
+    norm = dnrep;
+    fact = 1.0/norm;
+  }
+}
+
 void EMMI::calculate()
 {
 
@@ -1534,14 +1582,24 @@ void EMMI::calculate()
   calculate_overlap();
 
   // rescale factor for ensemble average
-  double escale = 1.0 / static_cast<double>(nrep_);
+  double fact = 0.;
+  double var_fact = 0.;
+  get_weights(fact, var_fact);
+
+  // This is needed for the derivative w.r.t the bias
+  vector<double> mult(ovmd_.size(), 0.0);
 
   // in case of ensemble averaging, calculate average overlap
   if(!no_aver_ && nrep_>1) {
     // if master node, calculate average across replicas
     if(rank_==0) {
+    // Save the per-replica value for the bias derivative later,
+    // we need to do this before ny replica summation!
+      for (unsigned i = 0; i < ovmd_.size(); ++i) {
+        mult[i] = ovmd_[i] * fact;
+      }
       multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= fact;
     } else {
       for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
     }
@@ -1611,7 +1669,7 @@ void EMMI::calculate()
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * fact * scale_ / anneal_;
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
     else     pos = getPosition(im);
@@ -1630,6 +1688,16 @@ void EMMI::calculate()
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
   getPntrToComponent("scoreb")->set(ene_);
+
+// set the bias derivative
+  if(do_reweight_) {
+    double w_tmp = 0.;
+    for(unsigned i=0; i<ovdd_.size(); i++) {
+      w_tmp += (mult[i] - fact * ovmd_[i]) * GMMid_der_[i] / kbt_;
+    }
+    setArgDerivatives(getPntrToComponent("scoreb"), w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
+  }
 
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
