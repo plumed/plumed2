@@ -200,16 +200,9 @@ private:
   string       ovfilename_;
 
   // Reweighting additions
-  unsigned narg;
   bool do_reweight_;
   vector<double> forces;
   vector<double> forcesToApply;
-
-  // activate metainference
-  bool doscore_;
-  unsigned write_stride_;
-  // metainference derivatives
-  std::vector<double> metader_;
 
   // average weights
   double decay_w_;
@@ -268,20 +261,11 @@ private:
 
   // See MetainferenceBase
   void get_weights(double &fact, double &var_fact);
-  void setMetaDer(const unsigned index, const double der);
-  unsigned getNarg();
-  void setNarg(const unsigned input);
-  void setParameters(const std::vector<double>& input);
-  void setParameter(const double input);
-  void setCalcData(const unsigned index, const double datum);
-  void setCalcData(const std::vector<double>& data);
-  bool getDoScore();
-  unsigned getWstride();
-  double getScore();
-  void setScore(const double score);
+
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit EMMI(const ActionOptions&);
   void setDerivatives();
-  double getMetaDer(const unsigned index);
-  void writeStatus();
   void turnOnDerivatives() override;
   unsigned getNumberOfDerivatives() override;
   void lockRequests() override;
@@ -291,53 +275,13 @@ private:
   void setArgDerivatives(Value *v, const double &d);
   void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
   void setBoxDerivatives(Value*v, const Tensor&d);
-
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit EMMI(const ActionOptions&);
 // active methods:
   void prepare() override;
   void calculate() override;
 };
 
 inline
-void EMMIMetaD::setNarg(const unsigned input)
-{
-  narg = input;
-}
-
-inline
-bool EMMIMetaD::getDoScore()
-{
-  return doscore_;
-}
-
-inline
-unsigned EMMIMetaD::getWstride()
-{
-  return write_stride_;
-}
-
-inline
-unsigned EMMIMetaD::getNarg()
-{
-  return narg;
-}
-
-inline
-void EMMIMetaD::setMetaDer(const unsigned index, const double der)
-{
-  metader_[index] = der;
-}
-
-inline
-double EMMIMetaD::getMetaDer(const unsigned index)
-{
-  return metader_[index];
-}
-
-inline
-void EMMIMetaD::setDerivatives() {
+void EMMI::setDerivatives() {
   // Get appropriate number of derivatives
   // Derivatives are first for arguments and then for atoms
   unsigned nder;
@@ -353,12 +297,12 @@ void EMMIMetaD::setDerivatives() {
 }
 
 inline
-void EMMIMetaD::turnOnDerivatives() {
+void EMMI::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
 }
 
 inline
-unsigned EMMIMetaD::getNumberOfDerivatives() {
+unsigned EMMI::getNumberOfDerivatives() {
   if( getNumberOfAtoms()>0 ) {
     return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
   }
@@ -366,19 +310,19 @@ unsigned EMMIMetaD::getNumberOfDerivatives() {
 }
 
 inline
-void EMMIMetaD::lockRequests() {
+void EMMI::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
 }
 
 inline
-void EMMIMetaD::unlockRequests() {
+void EMMI::unlockRequests() {
   ActionAtomistic::unlockRequests();
   ActionWithArguments::unlockRequests();
 }
 
 inline
-void EMMIMetaD::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
+void EMMI::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
   if( getNumberOfArguments()>0 ) {
     ActionWithArguments::calculateNumericalDerivatives( a );
   }
@@ -395,7 +339,7 @@ void EMMIMetaD::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
 }
 
 inline
-void EMMIMetaD::apply() {
+void EMMI::apply() {
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
@@ -410,12 +354,12 @@ void EMMIMetaD::apply() {
 }
 
 inline
-void EMMIMetaD::setArgDerivatives(Value *v, const double &d) {
+void EMMI::setArgDerivatives(Value *v, const double &d) {
   v->addDerivative(0,d);
 }
 
 inline
-void EMMIMetaD::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
+void EMMI::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
   const unsigned noa=getNumberOfArguments();
   v->addDerivative(noa+3*i+0,d[0]);
   v->addDerivative(noa+3*i+1,d[1]);
@@ -423,7 +367,7 @@ void EMMIMetaD::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
 }
 
 inline
-void EMMIMetaD::setBoxDerivatives(Value* v,const Tensor&d) {
+void EMMI::setBoxDerivatives(Value* v,const Tensor&d) {
   const unsigned noa=getNumberOfArguments();
   const unsigned nat=getNumberOfAtoms();
   v->addDerivative(noa+3*nat+0,d(0,0));
@@ -498,7 +442,7 @@ EMMI::EMMI(const ActionOptions&ao):
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0),
-  do_reweight_(false), decay_w_(1.), narg(0)
+  do_reweight_(false), decay_w_(1.)
 {
   // periodic boundary conditions
   bool nopbc=!pbc_;
@@ -605,8 +549,6 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("WRITE_OV_STRIDE", ovstride_);
   parse("WRITE_OV", ovfilename_);
   if(ovstride_>0 && ovfilename_=="") error("With WRITE_OV_STRIDE you must specify WRITE_OV");
-
-  checkRead();
 
   // set parallel stuff
   size_=comm.Get_size();
@@ -1526,7 +1468,7 @@ double EMMI::get_annealing(long int step)
   return fact;
 }
 
-void EMMIMetaD::get_weights(double &fact, double &var_fact)
+void EMMI::get_weights(double &fact, double &var_fact)
 {
   const double dnrep    = static_cast<double>(nrep_);
   const double ave_fact = 1.0/dnrep;
