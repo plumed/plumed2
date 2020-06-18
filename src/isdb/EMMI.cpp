@@ -19,8 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Matrix.h"
 #include "core/SetupMolInfo.h"
@@ -106,8 +108,11 @@ PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 */
 //+ENDPLUMEDOC
 
-class EMMI : public Colvar {
-
+class EMMI :
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public ActionWithValue
+{
 private:
 
 // temperature in kbt
@@ -194,6 +199,23 @@ private:
   unsigned int ovstride_;
   string       ovfilename_;
 
+  // Reweighting additions
+  unsigned narg;
+  bool     master;
+  bool do_reweight_;
+  vector<double> forces;
+  vector<double> forcesToApply;
+
+  // activate metainference
+  bool doscore_;
+  unsigned write_stride_;
+  // metainference derivatives
+  std::vector<double> metader_;
+
+  // average weights
+  double decay_w_;
+  std::vector<double> average_weights_;
+
 // write file with model overlap
   void write_model_overlap(long int step);
 // get median of vector
@@ -245,6 +267,32 @@ private:
 // Marginal noise
   void calculate_Marginal();
 
+  // See MetainferenceBase
+  void get_weights(double &fact, double &var_fact);
+  void setMetaDer(const unsigned index, const double der);
+  unsigned getNarg();
+  void setNarg(const unsigned input);
+  void setParameters(const std::vector<double>& input);
+  void setParameter(const double input);
+  void setCalcData(const unsigned index, const double datum);
+  void setCalcData(const std::vector<double>& data);
+  bool getDoScore();
+  unsigned getWstride();
+  double getScore();
+  void setScore(const double score);
+  void setDerivatives();
+  double getMetaDer(const unsigned index);
+  void writeStatus();
+  void turnOnDerivatives() override;
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void apply() override;
+  void setArgDerivatives(Value *v, const double &d);
+  void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
+  void setBoxDerivatives(Value*v, const Tensor&d);
+
 public:
   static void registerKeywords( Keywords& keys );
   explicit EMMI(const ActionOptions&);
@@ -253,11 +301,153 @@ public:
   void calculate() override;
 };
 
+inline
+void EMMIMetaD::setNarg(const unsigned input)
+{
+  narg = input;
+}
+
+inline
+bool EMMIMetaD::getDoScore()
+{
+  return doscore_;
+}
+
+inline
+unsigned EMMIMetaD::getWstride()
+{
+  return write_stride_;
+}
+
+inline
+unsigned EMMIMetaD::getNarg()
+{
+  return narg;
+}
+
+inline
+void EMMIMetaD::setMetaDer(const unsigned index, const double der)
+{
+  metader_[index] = der;
+}
+
+inline
+double EMMIMetaD::getMetaDer(const unsigned index)
+{
+  return metader_[index];
+}
+
+inline
+void EMMIMetaD::setDerivatives() {
+  // Get appropriate number of derivatives
+  // Derivatives are first for arguments and then for atoms
+  unsigned nder;
+  if( getNumberOfAtoms()>0 ) {
+    nder = 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
+  } else {
+    nder = getNumberOfArguments();
+  }
+
+  // Resize all derivative arrays
+  forces.resize( nder ); forcesToApply.resize( nder );
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+}
+
+inline
+void EMMIMetaD::turnOnDerivatives() {
+  ActionWithValue::turnOnDerivatives();
+}
+
+inline
+unsigned EMMIMetaD::getNumberOfDerivatives() {
+  if( getNumberOfAtoms()>0 ) {
+    return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
+  }
+  return getNumberOfArguments();
+}
+
+inline
+void EMMIMetaD::lockRequests() {
+  ActionAtomistic::lockRequests();
+  ActionWithArguments::lockRequests();
+}
+
+inline
+void EMMIMetaD::unlockRequests() {
+  ActionAtomistic::unlockRequests();
+  ActionWithArguments::unlockRequests();
+}
+
+inline
+void EMMIMetaD::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
+  if( getNumberOfArguments()>0 ) {
+    ActionWithArguments::calculateNumericalDerivatives( a );
+  }
+  if( getNumberOfAtoms()>0 ) {
+    Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
+    for(int j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+    }
+    calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
+    for(int j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+    }
+  }
+}
+
+inline
+void EMMIMetaD::apply() {
+  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    if( getPntrToComponent(i)->applyForce( forces ) ) {
+      wasforced=true;
+      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
+    }
+  }
+  if( wasforced ) {
+    addForcesOnArguments( forcesToApply );
+    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+  }
+}
+
+inline
+void EMMIMetaD::setArgDerivatives(Value *v, const double &d) {
+  v->addDerivative(0,d);
+}
+
+inline
+void EMMIMetaD::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
+  const unsigned noa=getNumberOfArguments();
+  v->addDerivative(noa+3*i+0,d[0]);
+  v->addDerivative(noa+3*i+1,d[1]);
+  v->addDerivative(noa+3*i+2,d[2]);
+}
+
+inline
+void EMMIMetaD::setBoxDerivatives(Value* v,const Tensor&d) {
+  const unsigned noa=getNumberOfArguments();
+  const unsigned nat=getNumberOfAtoms();
+  v->addDerivative(noa+3*nat+0,d(0,0));
+  v->addDerivative(noa+3*nat+1,d(0,1));
+  v->addDerivative(noa+3*nat+2,d(0,2));
+  v->addDerivative(noa+3*nat+3,d(1,0));
+  v->addDerivative(noa+3*nat+4,d(1,1));
+  v->addDerivative(noa+3*nat+5,d(1,2));
+  v->addDerivative(noa+3*nat+6,d(2,0));
+  v->addDerivative(noa+3*nat+7,d(2,1));
+  v->addDerivative(noa+3*nat+8,d(2,2));
+}
+
 PLUMED_REGISTER_ACTION(EMMI,"EMMI")
 
 void EMMI::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+  Action::registerKeywords(keys);
+  ActionAtomistic::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -284,6 +474,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
+  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
@@ -291,10 +482,15 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
   keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
+  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
 }
 
 EMMI::EMMI(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  Action(ao),
+  ActionAtomistic(ao),
+  ActionWithArguments(ao),
+  ActionWithValue(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false), pbc_(true),
@@ -302,7 +498,8 @@ EMMI::EMMI(const ActionOptions&ao):
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
+  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0),
+  do_reweight_(false), decay_w_(1.), narg(0)
 {
   // periodic boundary conditions
   bool nopbc=!pbc_;
