@@ -19,6 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+/* Bias reweighting added by Dr. Faidon Brotzakis (phaedon.brotzakis@gmail.com) and Thomas Loehr (thomas@loehr.co.uk) */
+
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
@@ -104,6 +107,28 @@ emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
 PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 \endplumedfile
 
+When using EMMI with metadynamics, one should use a weighted ensemble average. This can be accomplished by passing the deposited bias to EMMI using the ARG keyword and the REWEIGHT flag:
+
+\plumedfile
+# include pdb info
+MOLINFO STRUCTURE=prot.pdb
+
+#  all heavy atoms
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+
+# metadynamics
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=10,20
+pb: PBMETAD ARG=d1,d2 SIGMA=0.05,0.05 BIASFACTOR=10 HEIGHT=1.2 PACE=500 WALKERS_MPI
+
+# create EMMI score
+gmm: EMMI NOPBC REWEIGHT ARG=pb.bias SIGMA_MIN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
+
+# translate into bias - apply every 2 steps
+emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
+
+PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -1536,7 +1561,7 @@ void EMMI::calculate()
     // if master node, calculate average across replicas
     if(rank_==0) {
     // Save the per-replica value for the bias derivative later,
-    // we need to do this before ny replica summation!
+    // we need to do this before any replica summation!
       for (unsigned i = 0; i < ovmd_.size(); ++i) {
         mult[i] = ovmd_[i] * fact;
       }
