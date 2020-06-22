@@ -209,7 +209,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
-  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart() && doscore_)
+  if(do_optsigmamean_==0 && read_sigma_mean_.size()==0 && !getRestart() && doscore_)
     error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
 
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
@@ -479,6 +479,12 @@ void MetainferenceBase::Initialise(const unsigned input)
         std::string msg;
         Tools::convert(i,msg);
         restart_sfile.scanField("sigma_"+msg,sigma_[i]);
+      }
+      for(unsigned i=0; i<sigma_max_.size(); ++i) {
+        std::string msg;
+        Tools::convert(i,msg);
+        restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
+        sigmamax_opt_done_=true;
       }
       if(noise_type_==GENERIC) {
         for(unsigned i=0; i<ftilde_.size(); ++i) {
@@ -1521,6 +1527,11 @@ void MetainferenceBase::writeStatus()
     std::string msg;
     Tools::convert(i,msg);
     sfile_.printField("sigma_"+msg,sigma_[i]);
+  }
+  for(unsigned i=0; i<sigma_max_.size(); ++i) {
+    std::string msg;
+    Tools::convert(i,msg);
+    sfile_.printField("sigma_max_"+msg,sigma_max_[i]);
   }
   if(noise_type_==GENERIC) {
     for(unsigned i=0; i<ftilde_.size(); ++i) {
