@@ -888,7 +888,7 @@ int Mdrunner::mdrunner()
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
     const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
+            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed) && (plumedswitch==0);
     const bool useModularSimulator = inputIsCompatibleWithModularSimulator
                                      && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
