@@ -1515,7 +1515,7 @@ void EMMI::get_weights(double &fact, double &var_fact)
       norm   += bias[i];
     }
 
-  // accumulate weights
+    // accumulate weights
     if(first_time_) {
       for(unsigned i=0; i<nrep_; ++i) {
         const double delta=bias[i]/norm-average_weights_[i];
@@ -1528,15 +1528,15 @@ void EMMI::get_weights(double &fact, double &var_fact)
       }
     }
 
-  // set average back into bias and set norm to one
+    // set average back into bias and set norm to one
     for(unsigned i=0; i<nrep_; ++i) bias[i] = average_weights_[i];
-  // set local weight, norm and weight variance
+    // set local weight, norm and weight variance
     fact = bias[replica_];
     norm = 1.0;
     for(unsigned i=0; i<nrep_; ++i) var_fact += (bias[i]/norm-ave_fact)*(bias[i]/norm-ave_fact);
     getPntrToComponent("weight")->set(fact);
   } else {
-  // or arithmetic ones
+    // or arithmetic ones
     norm = dnrep;
     fact = 1.0/norm;
   }
@@ -1560,8 +1560,8 @@ void EMMI::calculate()
   if(!no_aver_ && nrep_>1) {
     // if master node, calculate average across replicas
     if(rank_==0) {
-    // Save the per-replica value for the bias derivative later,
-    // we need to do this before any replica summation!
+      // Save the per-replica value for the bias derivative later,
+      // we need to do this before any replica summation!
       for (unsigned i = 0; i < ovmd_.size(); ++i) {
         mult[i] = ovmd_[i] * fact;
       }
