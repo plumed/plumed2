@@ -309,21 +309,23 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
       log.printf("    Restarting from: %s\n",kernelsFileName.c_str());
       double old_biasfactor;
       ifile.scanField("biasfactor",old_biasfactor);
-      plumed_massert(std::abs(biasfactor_-old_biasfactor)>1e-3,"restarting form different bias factor is not supported");
-      if(old_biasfactor!=biasfactor_)
+      if(std::abs(biasfactor_-old_biasfactor)>1e-6*biasfactor_)
+      {
         log.printf(" +++ WARNING +++ previous bias factor was %g while now it is %g. diff = %g\n",old_biasfactor,biasfactor_,biasfactor_-old_biasfactor);
+        error("restarting form different bias factor is not supported");
+      }
       double old_epsilon;
       ifile.scanField("epsilon",old_epsilon);
-      if(old_epsilon!=epsilon_)
+      if(std::abs(epsilon_-old_epsilon)>1e-6*epsilon_)
         log.printf(" +++ WARNING +++ previous epsilon was %g while now it is %g. diff = %g\n",old_epsilon,epsilon_,epsilon_-old_epsilon);
       double old_cutoff;
       ifile.scanField("kernel_cutoff",old_cutoff);
-      if(old_cutoff!=cutoff)
+      if(std::abs(cutoff-old_cutoff)>1e-6*cutoff)
         log.printf(" +++ WARNING +++ previous kernel_cutoff was %g while now it is %g. diff = %g\n",old_cutoff,cutoff,cutoff-old_cutoff);
       double old_threshold;
       const double threshold=sqrt(threshold2_);
       ifile.scanField("compression_threshold",old_threshold);
-      if(old_threshold!=threshold)
+      if(std::abs(threshold-old_threshold)>1e-6*threshold)
         log.printf(" +++ WARNING +++ previous compression_threshold was %g while now it is %g. diff = %g\n",old_threshold,threshold,threshold-old_threshold);
       for(unsigned i=0; i<ncv_; i++)
       {
