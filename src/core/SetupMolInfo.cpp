@@ -285,6 +285,10 @@ std::string SetupMolInfo::getAtomName(AtomNumber a)const {
   return pdb.getAtomName(a);
 }
 
+bool SetupMolInfo::checkForAtom(AtomNumber a)const {
+  return pdb.checkForAtom(a);
+}
+
 unsigned SetupMolInfo::getResidueNumber(AtomNumber a)const {
   return pdb.getResidueNumber(a);
 }
