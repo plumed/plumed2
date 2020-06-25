@@ -506,6 +506,11 @@ bool PDB::checkForAtom( const std::string& name ) const {
   return false;
 }
 
+bool PDB::checkForAtom( AtomNumber a ) const {
+  const auto p=number2index.find(a);
+  return (p!=number2index.end());
+}
+
 Log& operator<<(Log& ostr, const PDB&  pdb) {
   char buffer[1000];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
