@@ -1631,7 +1631,10 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
         if(optimized_step_==N_optimized_step_) {
           double isteps = 1./static_cast<double>(optimized_step_);
           sigmamax_opt_done_=true;
-          for(unsigned i=0; i<sigma_max_.size(); i++) sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
+          for(unsigned i=0; i<sigma_max_.size(); i++) {
+            sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
+            Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+          }
         }
       }
       optimized_step_++;
