@@ -588,8 +588,8 @@ Metainference::Metainference(const ActionOptions&ao):
     Dsigma_.resize(read_dsigma.size());
     Dsigma_=read_dsigma;
   } else {
-    Dsigma_.resize(sigma_max_.size());
-    for(unsigned i=0; i<sigma_max_.size(); i++) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+    Dsigma_.resize(sigma_max_.size(), -1.);
+    /* in this case Dsigma is initialised after reading the restart file if present */
   }
 
   // monte carlo stuff
@@ -716,6 +716,9 @@ Metainference::Metainference(const ActionOptions&ao):
     restart_sfile.scanField();
     restart_sfile.close();
   }
+
+  /* If DSIGMA is not yet initialised do it now */
+  for(unsigned i=0; i<sigma_max_.size(); i++) if(Dsigma_[i]==-1) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
 
   switch(noise_type_) {
   case GENERIC:
@@ -1514,6 +1517,7 @@ void Metainference::get_weights(const unsigned iselect, double &fact, double &va
     vector<double> bias(nrep_,0);
     if(master) {
       bias[replica_] = getArgument(narg);
+      //bias[replica_] = ((1.0/plumed.getAtoms().getKbT())- (1.0/kbt_) )*getArgument(narg);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
     }
     comm.Sum(&bias[0], nrep_);
@@ -1521,9 +1525,9 @@ void Metainference::get_weights(const unsigned iselect, double &fact, double &va
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<nrep_; ++i) {
       bias[i] = exp((bias[i]-maxbias)/kbt_);
+      //bias[i] = exp((bias[i]-maxbias));
       norm   += bias[i];
     }
-
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
     if(!firstTimeW[iselect]) {
