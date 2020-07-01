@@ -35,6 +35,9 @@ is used plumed the MOLINFO command will endeavor to recognize the various chains
 make up the molecules in your system using the chainIDs and resnumbers from the pdb file. You can
 then use this information in later commands to specify atom lists in terms residues.  For example
 using this command you can find the backbone atoms in your structure automatically.
+Starting with PLUMED 2.7 you can use multiple MOLINFO actions. Every time you perform an atom
+selection, the last available MOLINFO action will be used. This allows you to provide multiple PDB
+files, for instance using different naming conventions (see \issue{134}).
 
 \warning
 Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
