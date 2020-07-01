@@ -99,6 +99,8 @@ public:
   bool checkForResidue( const std::string& name ) const ;
 /// Check if any of the atoms are named atom
   bool checkForAtom( const std::string& name ) const ;
+/// Check if specific atom exists
+  bool checkForAtom( AtomNumber a ) const ;
 /// Return the atom named aname from residue number resnum
   AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
 /// Return the atom named aname from residue number resnum and chain.

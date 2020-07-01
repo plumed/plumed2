@@ -323,12 +323,12 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
       string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
+      if (Aname == "OT1" || Aname == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 2);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat[0]->checkForAtom(tmp_an) && moldat[0]->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OB";
         } else {
@@ -337,11 +337,11 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
         }
         cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
+      if (Aname == "OT2" || (cter == true && Aname == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat[0]->checkForAtom(tmp_an) && moldat[0]->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OH1";
         } else {
