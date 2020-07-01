@@ -342,6 +342,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
+        while(trimmed.length()<5) trimmed = std::string(" ") + trimmed;
         const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
