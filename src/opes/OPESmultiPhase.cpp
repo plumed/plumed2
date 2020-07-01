@@ -81,7 +81,7 @@ private:
   std::vector< std::vector< std::vector<double> > > deltaF_;
   double rct_;
   double my_rct_;
-  double epsilon_;
+  double barrier_;
   double current_bias_;
 
   double border_weight_;
@@ -113,7 +113,6 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PACE","10","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial steps to collect statistics."
                         " When using STEPS_TEMP and STEPS_PRESSURE it is forced to 1");
-  keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");
 //tempertature stuff
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","MIN_TEMP","the minimum of the temperature range");
@@ -128,6 +127,7 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
   keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
+  keys.add("optional","BARRIER_CV","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("ADD_P0",false,"add also P0 to the target distribution, useful to make sure the target is broader than P0");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
@@ -223,12 +223,6 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   border_weight_=1;
   parse("BORDER_WEIGHT",border_weight_);
 
-  epsilon_=0;
-  double barrier=0;
-  parse("BARRIER",barrier);
-  if(barrier!=0)
-    epsilon_=std::exp(-beta_*barrier);
-
 //set umbrellas
   parse("SIGMA",sigma_);
   double min_cv;
@@ -240,6 +234,8 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   center_.resize(tot_umbrellas_);
   for(unsigned k=0; k<tot_umbrellas_; k++)
     center_[k]=(max_cv-min_cv)/(tot_umbrellas_-1)*k+min_cv;
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
   if(add_P0)
@@ -300,8 +296,8 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   if(steps_beta_!=0 && steps_pres_!=0)
     log.printf(" +++ WARNING +++ STEPS_TEMP and STEPS_PRES are used, thus OBSERVATION_STEP is set to 1\n"
                "                 Reference energy and initial deltaFs can be set with a fake RESTART\n");
-  if(barrier!=0)
-    log.printf("  bias BARRIER = %g\n",barrier);
+  if(barrier_!=std::numeric_limits<double>::infinity())
+    log.printf("  guess for free energy BARRIER_CV = %g\n",barrier_);
   if(add_P0)
     log.printf(" --- ADD_P0: adding P0 to the target\n");
   if(walkers_mpi)
@@ -468,15 +464,6 @@ void OPESmultiPhase::calculate()
     comm.Sum(der_sum_cv);
   }
   sum+=P0_contribution_;
-
-//regularize with epsilon_
-  if(epsilon_>0)
-  {
-    der_sum_ene/=std::pow(1.+sum/tot_steps_*epsilon_,2);
-    der_sum_vol/=std::pow(1.+sum/tot_steps_*epsilon_,2);
-    der_sum_cv/=std::pow(1.+sum/tot_steps_*epsilon_,2);
-    sum=tot_steps_/(tot_steps_/sum+epsilon_);
-  }
 
   current_bias_=-1./beta_*std::log(sum/tot_steps_);
   setBias(current_bias_);
@@ -686,10 +673,17 @@ void OPESmultiPhase::init_from_obs()
 
 //initialize deltaF_
   deltaF_.resize(steps_beta_,std::vector< std::vector<double> >(steps_pres_,std::vector<double>(tot_umbrellas_)));
+  std::vector<double> first_umbrellas(tot_umbrellas_);
+  for(unsigned k=0; k<tot_umbrellas_; k++)
+  {
+    first_umbrellas[k]=0.5*std::pow((obs_cv_[0]-center_[k])/sigma_,2)/beta_;
+    if(first_umbrellas[k]>barrier_)
+      first_umbrellas[k]=barrier_;
+  }
   for(unsigned i=0; i<steps_beta_; i++)
     for(unsigned j=0; j<steps_pres_; j++)
       for(unsigned k=0; k<tot_umbrellas_; k++)
-        deltaF_[i][j][k]=(beta_p_[i]/beta_-1.)*obs_ene_[0]+(beta_p_[i]/beta_*pres_p_[j]-pres_)*obs_vol_[0]+0.5*std::pow((obs_cv_[0]-center_[k])/sigma_,2)/beta_;
+        deltaF_[i][j][k]=(beta_p_[i]/beta_-1.)*obs_ene_[0]+(beta_p_[i]/beta_*pres_p_[j]-pres_)*obs_vol_[0]+first_umbrellas[k];
   for(unsigned i=0; i<steps_beta_; i++)
     for(unsigned j=0; j<steps_pres_; j++)
       for(unsigned k=0; k<tot_umbrellas_; k++)

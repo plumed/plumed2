@@ -29,11 +29,11 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC BIAS OPES_UMBRELLAS
+//+PLUMEDOC BIAS OPES_UMBRELLAS_TEST
 /*
 \par Examples
 
-OPES_UMBRELLAS ...
+OPES_UMBRELLAS_TEST ...
   LABEL=test
   ARG=cv
   PACE=50
@@ -41,13 +41,13 @@ OPES_UMBRELLAS ...
   SIGMA=0
   MIN_CV=0
   MAX_CV=1
-... OPES_UMBRELLAS
+... OPES_UMBRELLAS_TEST
 
 
 */
 //+ENDPLUMEDOC
 
-class OPESumbrellas : public bias::Bias {
+class OPESumbrellas_test : public bias::Bias {
 
 private:
   bool isFirstStep_;
@@ -69,7 +69,7 @@ private:
   std::vector<double> deltaF_;
   double rct_;
   double my_rct_;
-  double epsilon_;
+  double barrier_;
   double current_bias_;
 
   bool calc_work_;
@@ -80,7 +80,7 @@ private:
   unsigned print_stride_;
 
 public:
-  OPESumbrellas(const ActionOptions&);
+  OPESumbrellas_test(const ActionOptions&);
   void calculate() override;
   void update() override;
   void init_from_obs();
@@ -88,15 +88,15 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(OPESumbrellas,"OPES_UMBRELLAS")
+PLUMED_REGISTER_ACTION(OPESumbrellas_test,"OPES_UMBRELLAS_TEST")
 
-void OPESumbrellas::registerKeywords(Keywords& keys) {
+void OPESumbrellas_test::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","PACE","10","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","1","number of unbiased initial steps to collect statistics for initial deltaFs guess");
-  keys.add("compulsory","BARRIER","0","the free energy barrier to be overcome. It is used to set EPSILON");//TODO make default 'inf' instead of 0
+  keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 //umbrella stuff
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
@@ -118,7 +118,7 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update"); //calculating this maybe is only a useless overhead...
 }
 
-OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
+OPESumbrellas_test::OPESumbrellas_test(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
@@ -161,11 +161,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
   obs_cv_.resize(obs_steps_);
-  epsilon_=0;
-  double barrier=0;
-  parse("BARRIER",barrier);
-  if(barrier!=0)
-    epsilon_=std::exp(-beta_*barrier);
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
 
 //deltaFs file
   std::string deltaFsFileName;
@@ -226,8 +223,8 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   log.printf("    with SIGMA = %g\n",sigma_);
   log.printf("    in CV range [%g,%g]\n",center_[0],center_[tot_umbrellas_-1]);
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
-  if(barrier!=0)
-    log.printf("  bias BARRIER = %g\n",barrier);
+  if(barrier_!=std::numeric_limits<double>::infinity())
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(add_P0)
     log.printf(" --- ADD_P0: adding P0 to the target\n");
   if(walkers_mpi)
@@ -344,7 +341,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   log.printf("\n");
 }
 
-void OPESumbrellas::calculate()
+void OPESumbrellas_test::calculate()
 {
   if(obs_steps_>0) //no bias before initialization
     return;
@@ -366,12 +363,6 @@ void OPESumbrellas::calculate()
   }
   sum+=P0_contribution_;
   const unsigned tot_steps=tot_umbrellas_+P0_contribution_;
-//regularize with epsilon_
-  if(epsilon_>0)
-  {
-    der_sum_cv/=std::pow(1.+sum/tot_steps*epsilon_,2);
-    sum=tot_steps/(tot_steps/sum+epsilon_);
-  }
 
   current_bias_=-1./beta_*std::log(sum/tot_steps);
   setBias(current_bias_);
@@ -392,7 +383,7 @@ void OPESumbrellas::calculate()
   afterCalculate_=true;
 }
 
-void OPESumbrellas::update()
+void OPESumbrellas_test::update()
 {
   if(getStep()%stride_!=0)
     return;
@@ -414,7 +405,7 @@ void OPESumbrellas::update()
     }
     return;
   }
-  plumed_massert(afterCalculate_,"OPESumbrellas::update() must be called after OPESumbrellas::calculate() to work properly");
+  plumed_massert(afterCalculate_,"OPESumbrellas_test::update() must be called after OPESumbrellas_test::calculate() to work properly");
   afterCalculate_=false;
 
 //work done by the bias in one iteration
@@ -472,7 +463,7 @@ void OPESumbrellas::update()
   }
 }
 
-void OPESumbrellas::init_from_obs()
+void OPESumbrellas_test::init_from_obs()
 {
 //in case of multiple walkers gather all the statistics
   if(NumWalkers_>1)
@@ -488,10 +479,15 @@ void OPESumbrellas::init_from_obs()
 //initialize deltaF_
   deltaF_.resize(tot_umbrellas_);
   for(unsigned i=0; i<tot_umbrellas_; i++)
+  {
     deltaF_[i]=0.5*std::pow(difference(0,center_[i],obs_cv_[0])/sigma_,2)/beta_;
+    if(deltaF_[i]>barrier_)
+      deltaF_[i]=barrier_;
+  }
   for(unsigned i=0; i<tot_umbrellas_; i++)
     for(unsigned t=1; t<obs_steps_; t++) //starts from t=1
       deltaF_[i]+=-1./beta_*std::log1p(std::exp(static_cast<long double>(-0.5*std::pow(difference(0,center_[i],obs_cv_[t])/sigma_,2)+beta_*deltaF_[i]))/t)-1./beta_*std::log1p(-1./(1.+t));
+
   if(calc_work_)
     old_deltaF_=deltaF_;
   obs_cv_.clear();
