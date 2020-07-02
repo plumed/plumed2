@@ -107,7 +107,9 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
       use_link=true; rcut=lt->getCutoff();
     } else {
       vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-      if( bt ) use_link=true; rcut=bt->getCutoff();
+      if( bt ) {
+        use_link=true; rcut=bt->getCutoff();
+      }
     }
     if( use_link ) {
       for(unsigned i=1; i<getNumberOfVessels(); ++i) {
