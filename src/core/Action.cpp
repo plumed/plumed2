@@ -93,8 +93,9 @@ Action::Action(const ActionOptions&ao):
     parse("RESTART",srestart);
     if(srestart=="YES") restart=true;
     else if(srestart=="NO")  restart=false;
-    else if(srestart=="AUTO") {}
-    else error("RESTART should be either YES, NO, or AUTO");
+    else if(srestart=="AUTO") {
+      // do nothing, this is the default
+    } else error("RESTART should be either YES, NO, or AUTO");
   }
 }
 
