@@ -405,7 +405,7 @@ EDS::EDS(const ActionOptions&ao):
   // check for weights
   if(wvalues.size() > 1) {
     error("LOGWEIGHTS can only support one weight set. Please only pass one action");
-  } else if(wvalues.size() == 1){
+  } else if(wvalues.size() == 1) {
     logweights_ = dynamic_cast<ReweightBase*> (wvalues[0]->getPntrToAction());
     b_weights_ = true;
   }
@@ -771,7 +771,7 @@ void EDS::update_statistics()  {
     wsum_ += w;
     N = wsum_;
   } else {
-      N = fmax(1,update_calls_);
+    N = fmax(1,update_calls_);
   }
 
   // Welford, West, and Hanso online variance method
