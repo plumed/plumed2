@@ -64,7 +64,7 @@
 namespace PLMD {
 
 /// Small utility just used in this file to throw arbitrary exceptions
-static void testThrow(const char* what) {
+[[noreturn]] static void testThrow(const char* what) {
   auto words=Tools::getWords(what);
   plumed_assert(words.size()>0);
 #define __PLUMED_THROW_NOMSG(type) if(words[0]==#type) throw type()

@@ -80,7 +80,7 @@ protected:
 /// Find out whether one of the command line flags is present or not
   void parseFlag(const std::string&key,bool&t);
 /// Crash the command line tool with an error
-  void error(const std::string& msg);
+  [[noreturn]] void error(const std::string& msg);
   template<class T>
   bool parseVector(const std::string&key,std::vector<T>&t);
 public:

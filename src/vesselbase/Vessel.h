@@ -99,7 +99,7 @@ protected:
 /// Return the numerical label
   int getNumericalLabel() const ;
 /// Report an error
-  void error(const std::string& errmsg);
+  [[noreturn]] void error(const std::string& errmsg);
 /// Parse something from the input
   template<class T>
   void parse(const std::string&key, T&t);

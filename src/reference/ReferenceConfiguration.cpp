@@ -58,7 +58,7 @@ std::string ReferenceConfiguration::getName() const {
   return name;
 }
 
-void ReferenceConfiguration::error(const std::string& msg) {
+[[noreturn]] void ReferenceConfiguration::error(const std::string& msg) {
   plumed_merror("error reading reference configuration of type " + name + " : " + msg );
 }
 

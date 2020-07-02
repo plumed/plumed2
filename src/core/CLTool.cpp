@@ -205,7 +205,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   return true;
 }
 
-void CLTool::error( const std::string& msg ) {
+[[noreturn]] void CLTool::error( const std::string& msg ) {
   fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",name.c_str(),msg.c_str());
   plumed_error();
 }

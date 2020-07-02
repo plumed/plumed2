@@ -86,7 +86,7 @@ private:
   std::vector<double> fake_metric;
 protected:
 /// Crash with an error
-  void error(const std::string& msg);
+  [[noreturn]] void error(const std::string& msg);
 public:
   explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
