@@ -90,7 +90,7 @@ also using a biasing method like metadynamics, you may wish to remove
 the effect of this bias in your EDS computations so that EDS works on
 the canonical values (reweighted).  For example, you may be using
 metadynamics to bias a dihedral angle to enhance sampling and be using
-EDS to set the average distance between two particular atoms. For example:
+EDS to set the average distance between two particular atoms. Specifically:
 
 plumedfile
 # set-up metadnyamics
@@ -101,6 +101,10 @@ bias: REWEIGHT_METAD TEMP=300
 # now do EDS on distance while removing effect of metadynamics
 d: DISTANCE ATOMS=4,7
 eds: EDS ARG=d CENTER=3.0 PERIOD=100 TEMP=300 LOGWEIGHTS=bias
+
+This is an approximation though because EDS uses a finte sample to get means/variances.
+At the end of a run, you should ensure this approach worked and indeed your
+reweighted CV matches the target value.
 
 \par Examples
 
