@@ -83,6 +83,25 @@ the set-points and minimizing the virial. See \cite Amirkulova2019Recent for det
 are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
 which is almost always the case.
 
+\par Weighting
+
+EDS computes means and variances as part of its algorithm. If you are
+also using a biasing method like metadynamics, you may wish to remove
+the effect of this bias in your EDS computations so that EDS works on
+the canonical values (reweighted).  For example, you may be using
+metadynamics to bias a dihedral angle to enhance sampling and be using
+EDS to set the average distance between two particular atoms. For example:
+
+plumedfile
+# set-up metadnyamics
+t: TORSION ATOMS=1,2,3,4
+md: METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500 TEMP=300
+# compute bias weights
+bias: REWEIGHT_METAD TEMP=300
+# now do EDS on distance while removing effect of metadynamics
+d: DISTANCE ATOMS=4,7
+eds: EDS ARG=d CENTER=3.0 PERIOD=100 TEMP=300 LOGWEIGHTS=bias
+
 \par Examples
 
 The following input for a harmonic oscillator of two beads will
@@ -96,7 +115,7 @@ dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
 #bias mean and variance
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
@@ -118,7 +137,7 @@ dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
 #add the option to write to a restart file
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=checkpoint.eds
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0 OUT_RESTART=checkpoint.eds
 \endplumedfile
 
 The first few lines of the restart file that is output if we run a calculation with one CV will look something like this:
@@ -140,7 +159,7 @@ Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
@@ -161,7 +180,7 @@ Read in a previous restart file and continue the bias, but use the mean from the
 \plumedfile
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds MEAN
 \endplumedfile
 
 
