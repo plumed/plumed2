@@ -26,7 +26,7 @@
 #include "core/Value.h"
 #include "tools/OFile.h"
 #include "tools/PDB.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 
 namespace PLMD {
 

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SetupMolInfo.h"
+#include "GenericMolInfo.h"
 #include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
@@ -38,7 +38,7 @@ compilation will exclude it from plumed.
 */
 
 
-void SetupMolInfo::registerKeywords( Keywords& keys ) {
+void GenericMolInfo::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
            "This is used to defines the atoms in the various residues, chains, etc . "
@@ -49,13 +49,13 @@ void SetupMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
 }
 
-SetupMolInfo::~SetupMolInfo() {
+GenericMolInfo::~GenericMolInfo() {
 // empty destructor to delete unique_ptr
 }
 
-SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
+GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   Action(ao),
-  ActionSetup(ao),
+  ActionAnyorder(ao),
   ActionPilot(ao),
   ActionAtomistic(ao)
 {
@@ -63,8 +63,8 @@ SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);
 
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) log<<"  overriding last MOLINFO with label " << moldat->getLabel()<<"\n";
 
   std::vector<AtomNumber> backbone;
   parseAtomList("CHAIN",backbone);
@@ -121,7 +121,7 @@ SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   }
 }
 
-void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone ) {
+void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone ) {
   if( fortype!=mytype ) error("cannot calculate a variable designed for " + fortype + " molecules for molecule type " + mytype );
   if( MolDataClass::numberOfAtomsPerResidueInBackbone( mytype )==0 ) error("backbone is not defined for molecule type " + mytype );
 
@@ -199,7 +199,7 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
   }
 }
 
-void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms ) {
+void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms ) {
   if(Tools::startWith(symbol,"mdt:") || Tools::startWith(symbol,"mda:") || Tools::startWith(symbol,"vmd:") || Tools::startWith(symbol,"vmdexec:")) {
 
     plumed_assert(enablePythonInterpreter);
@@ -281,27 +281,27 @@ void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomN
   if(atoms.empty()) error(symbol + " is not a label plumed knows");
 }
 
-std::string SetupMolInfo::getAtomName(AtomNumber a)const {
+std::string GenericMolInfo::getAtomName(AtomNumber a)const {
   return pdb.getAtomName(a);
 }
 
-bool SetupMolInfo::checkForAtom(AtomNumber a)const {
+bool GenericMolInfo::checkForAtom(AtomNumber a)const {
   return pdb.checkForAtom(a);
 }
 
-unsigned SetupMolInfo::getResidueNumber(AtomNumber a)const {
+unsigned GenericMolInfo::getResidueNumber(AtomNumber a)const {
   return pdb.getResidueNumber(a);
 }
 
-unsigned SetupMolInfo::getPDBsize()const {
+unsigned GenericMolInfo::getPDBsize()const {
   return pdb.size();
 }
 
-std::string SetupMolInfo::getResidueName(AtomNumber a)const {
+std::string GenericMolInfo::getResidueName(AtomNumber a)const {
   return pdb.getResidueName(a);
 }
 
-void SetupMolInfo::prepare() {
+void GenericMolInfo::prepare() {
   if(selector) {
     log<<"  MOLINFO "<<getLabel()<<": killing python interpreter\n";
     selector.reset();
