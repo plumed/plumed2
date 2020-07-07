@@ -204,7 +204,7 @@ void drrtool::mergewindows(const vector<string> &filename) {
   // Generate new file name for merged grad and count
   vector<string> tmp_name = filename;
   std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name), [&](string s) {return s.substr(0, s.find(suffix));});
-  string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""), [](string a, string b) {return a + b + "+";});
+  string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""), [](const string & a, const string & b) {return a + b + "+";});
   mergename = mergename.substr(0, mergename.size() - 1);
   cmerged.writeAll(mergename);
   cmerged.writeZCount(mergename);
