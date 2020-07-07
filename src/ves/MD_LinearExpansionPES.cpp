@@ -669,7 +669,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   if(plumed) {delete plumed;}
   if(plumed_bf) {delete plumed_bf;}
   if(potential_expansion_pntr) {delete potential_expansion_pntr;}
-  delete coeffs_pntr; //NOTE: this is always non null
+  delete coeffs_pntr;
   for(unsigned int i=0; i<args.size(); i++) {delete args[i];}
   args.clear();
   //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
