@@ -1946,21 +1946,21 @@ void MetaD::computeReweightingFactor()
     minusBetaF=1;
     minusBetaFplusV=0;
   }
-  const double big_number=minusBetaF*BiasGrid_->getMaxValue(); //to avoid exp overflow
+  max_bias_=BiasGrid_->getMaxValue(); //to avoid exp overflow
 
   const unsigned rank=comm.Get_rank();
   const unsigned stride=comm.Get_size();
   for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
     const double val=BiasGrid_->getValue(t);
-    Z_0+=std::exp(minusBetaF*val-big_number);
-    Z_V+=std::exp(minusBetaFplusV*val-big_number);
+    Z_0+=std::exp(minusBetaF*(val-max_bias_));
+    Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
   }
   if (stride>1) {
     comm.Sum(Z_0);
     comm.Sum(Z_V);
   }
 
-  reweight_factor_=kbt_*std::log(Z_0/Z_V);
+  reweight_factor_=kbt_*std::log(Z_0/Z_V)+max_bias_;
   getPntrToComponent("rct")->set(reweight_factor_);
 }
 
