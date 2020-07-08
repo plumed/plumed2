@@ -148,10 +148,7 @@ Gyration::Gyration(const ActionOptions&ao):
   log<<"\n";
 
   log.printf("  atoms involved : ");
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
-    log.printf("%d ",atoms[i].serial());
-  }
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
 
   if(nopbc) {

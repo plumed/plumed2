@@ -119,7 +119,7 @@ bool Tools::convert(const string & str,string & t) {
   return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis) {
+vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
   plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
@@ -137,7 +137,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   for(unsigned i=0; i<line.length(); i++) {
     bool found=false;
     bool onParenthesis=false;
-    if(line[i]==openpar || line[i]==closepar) onParenthesis=true;
+    if( (line[i]==openpar || line[i]==closepar) && delete_parenthesis ) onParenthesis=true;
     if(line[i]==closepar) {
       parenthesisLevel--;
       plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
@@ -161,7 +161,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
+bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments) {
   string line("");
   words.clear();
   bool stat;
@@ -169,16 +169,16 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
   int parlevel=0;
   bool mergenext=false;
   while((stat=ifile.getline(line))) {
-    trimComments(line);
+    if(trimcomments) trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line,NULL,&parlevel);
+    vector<string> w=getWords(line,NULL,&parlevel,"{",trimcomments);
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
         if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
-        w.clear();
+        w.clear(); if(!trimcomments) words.push_back("...");
       } else if(*(w.end()-1)=="...") {
         inside=true;
         w.erase(w.end()-1);
@@ -192,6 +192,8 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     }
     mergenext=(parlevel>0);
     if(!inside)break;
+    if(!trimcomments && parlevel==0) words.push_back("@newline");
+    else if(!trimcomments) words[words.size()-1] += " @newline";
   }
   plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;

@@ -65,13 +65,13 @@ public:
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{");
+  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
-  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
+  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line, const bool trimcomments=true);
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it

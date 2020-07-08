@@ -28,7 +28,7 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 
 #include <vector>
@@ -169,10 +169,10 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     }
     string moltype; parse("MOLTYPE",moltype);
     if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
-    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-    if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if( !moldat ) error("Unable to find MOLINFO in input");
     std::vector< std::vector<AtomNumber> > backatoms;
-    moldat[0]->getBackbone( resstrings, moltype, backatoms );
+    moldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
       log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
       for(unsigned j=0; j<backatoms[i].size(); ++j) log.printf("%d ",backatoms[i][j].serial() );

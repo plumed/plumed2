@@ -209,6 +209,9 @@ int main(){
     try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
     }
 
+    try { p.cmd("throw","unknown_name"); } catch (PLMD::Plumed::Exception &e) {
+    }
+
   }
 
   return 0;

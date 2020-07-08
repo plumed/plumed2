@@ -960,6 +960,7 @@ void gmx::Integrator::do_md()
               plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
             }
           }
+          bNS=true;
         }
         /* END PLUMED HREX */
 

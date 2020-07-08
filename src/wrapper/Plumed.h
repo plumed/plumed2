@@ -2676,6 +2676,11 @@ plumed plumed_f2c(const char*c) {
   assert(sizeof(p.p)<=16);
 
   assert(c);
+
+  /*
+     needed to avoid cppcheck warning on uninitialized p
+  */
+  p.p=NULL;
   cc=(unsigned char*)&p.p;
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);

@@ -69,6 +69,8 @@ public:
   std::unique_ptr<Action> create(const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
   bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
+/// Retrieve a keywords object for a particular action
+  bool getKeywords( const std::string& action, Keywords& keys );
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);

@@ -28,7 +28,7 @@
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
 
@@ -1635,12 +1635,12 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
   parameter[DT_TE5].push_back(4.44636600);
   parameter[DT_TE5].push_back(-0.79467800);
 
-  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
-      string Aname = moldat[0]->getAtomName(atoms[i]);
-      string Rname = moldat[0]->getResidueName(atoms[i]);
+      string Aname = moldat->getAtomName(atoms[i]);
+      string Rname = moldat->getResidueName(atoms[i]);
       if(Rname=="ALA") {
         if(Aname=="BB") {
           atoi[i]=ALA_BB;
@@ -2026,11 +2026,11 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
   param_a[S][3] = 1.58630; param_b[S][3] = 56.1720;
   param_a[S][4] = 0.0;     param_b[S][4] = 1.0;
 
-  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   double Iq0=0.;
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
     for(unsigned i=0; i<NTT; i++) {
       const double volr = pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
@@ -2050,7 +2050,7 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
     // cycle over the atoms to assign the atom type and calculate I0
     for(unsigned i=0; i<atoms.size(); ++i) {
       // get atom name
-      string name = moldat[0]->getAtomName(atoms[i]);
+      string name = moldat->getAtomName(atoms[i]);
       char type;
       // get atom type
       char first = name.at(0);

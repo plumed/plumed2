@@ -55,10 +55,11 @@ of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by 
 
 \plumedfile
 NOE ...
-GROUPA1=1,3 GROUPB1=2,2
-GROUPA2=5 GROUPB2=7
-GROUPA3=4,4,8,8 GROUPB3=15,16,15,16
+GROUPA1=1,3 GROUPB1=2,2 NOEDIST1=0.6
+GROUPA2=5 GROUPB2=7 NOEDIST2=0.6
+GROUPA3=4,4,8,8 GROUPB3=15,16,15,16 NOEDIST3=0.6
 DOSCORE
+SIGMA_MEAN0=1
 LABEL=noes
 ... NOE
 
@@ -130,7 +131,7 @@ NOE::NOE(const ActionOptions&ao):
   }
   if(nga.size()!=ngb.size()) error("There should be the same number of GROUPA and GROUPB keywords");
   // Create neighbour lists
-  nl.reset( new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()) );
+  nl.reset( new NeighborList(ga_lista,gb_lista,false,true,pbc,getPbc(),comm) );
 
   // Optionally add an experimental value (like with RDCs)
   vector<double> noedist;

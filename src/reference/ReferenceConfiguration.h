@@ -37,7 +37,7 @@ class Value;
 class Pbc;
 class OFile;
 class PDB;
-class SetupMolInfo;
+class GenericMolInfo;
 
 /// \ingroup TOOLBOX
 /// Abstract base class for calculating the distance from a reference configuration.

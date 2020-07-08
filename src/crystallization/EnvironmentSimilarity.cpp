@@ -125,7 +125,7 @@ ENVIRONMENTSIMILARITY ...
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
 \endplumedfile
 
-The next example is simlar to the one above but in this case 4 reference environments are specified.
+The next example is similar to the one above but in this case 4 reference environments are specified.
  Each reference environment is given in a separate pdb file.
 
 \plumedfile
