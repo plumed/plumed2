@@ -235,7 +235,7 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
   for(unsigned k=0; k<tot_umbrellas_; k++)
     center_[k]=(max_cv-min_cv)/(tot_umbrellas_-1)*k+min_cv;
   barrier_=std::numeric_limits<double>::infinity();
-  parse("BARRIER",barrier_);
+  parse("BARRIER_CV",barrier_);
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
   if(add_P0)
