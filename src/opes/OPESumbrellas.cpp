@@ -29,11 +29,11 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC BIAS OPES_UMBRELLAS_TEST
+//+PLUMEDOC BIAS OPES_UMBRELLAS
 /*
 \par Examples
 
-OPES_UMBRELLAS_TEST ...
+OPES_UMBRELLAS ...
   LABEL=test
   ARG=cv
   PACE=50
@@ -41,13 +41,13 @@ OPES_UMBRELLAS_TEST ...
   SIGMA=0
   MIN_CV=0
   MAX_CV=1
-... OPES_UMBRELLAS_TEST
+... OPES_UMBRELLAS
 
 
 */
 //+ENDPLUMEDOC
 
-class OPESumbrellas_test : public bias::Bias {
+class OPESumbrellas : public bias::Bias {
 
 private:
   bool isFirstStep_;
@@ -80,7 +80,7 @@ private:
   unsigned print_stride_;
 
 public:
-  OPESumbrellas_test(const ActionOptions&);
+  OPESumbrellas(const ActionOptions&);
   void calculate() override;
   void update() override;
   void init_from_obs();
@@ -88,9 +88,9 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(OPESumbrellas_test,"OPES_UMBRELLAS_TEST")
+PLUMED_REGISTER_ACTION(OPESumbrellas,"OPES_UMBRELLAS")
 
-void OPESumbrellas_test::registerKeywords(Keywords& keys) {
+void OPESumbrellas::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
@@ -118,7 +118,7 @@ void OPESumbrellas_test::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update"); //calculating this maybe is only a useless overhead...
 }
 
-OPESumbrellas_test::OPESumbrellas_test(const ActionOptions&ao)
+OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
@@ -340,7 +340,7 @@ OPESumbrellas_test::OPESumbrellas_test(const ActionOptions&ao)
   log.printf("\n");
 }
 
-void OPESumbrellas_test::calculate()
+void OPESumbrellas::calculate()
 {
   if(obs_steps_>0) //no bias before initialization
     return;
@@ -382,7 +382,7 @@ void OPESumbrellas_test::calculate()
   afterCalculate_=true;
 }
 
-void OPESumbrellas_test::update()
+void OPESumbrellas::update()
 {
   if(getStep()%stride_!=0)
     return;
@@ -404,7 +404,7 @@ void OPESumbrellas_test::update()
     }
     return;
   }
-  plumed_massert(afterCalculate_,"OPESumbrellas_test::update() must be called after OPESumbrellas_test::calculate() to work properly");
+  plumed_massert(afterCalculate_,"OPESumbrellas::update() must be called after OPESumbrellas::calculate() to work properly");
   afterCalculate_=false;
 
 //work done by the bias in one iteration
@@ -462,7 +462,7 @@ void OPESumbrellas_test::update()
   }
 }
 
-void OPESumbrellas_test::init_from_obs()
+void OPESumbrellas::init_from_obs()
 {
 //in case of multiple walkers gather all the statistics
   if(NumWalkers_>1)
