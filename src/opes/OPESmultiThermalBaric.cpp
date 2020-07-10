@@ -368,8 +368,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
 
 //Bibliography
   log.printf("  Bibliography: ");
-  log<<plumed.cite("P. Piaggi and M. Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
-  log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
+  log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, arXiv:2007.03055 (2020)");
   log.printf("\n");
 }
 
