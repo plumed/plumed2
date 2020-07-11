@@ -1943,7 +1943,7 @@ void MetaD::computeReweightingFactor()
   double minusBetaF=biasf_/(biasf_-1.)/kbt_;
   double minusBetaFplusV=1./(biasf_-1.)/kbt_;
   if (biasf_==-1.0) { //non well-tempered case
-    minusBetaF=1;
+    minusBetaF=1./kbt_;
     minusBetaFplusV=0;
   }
   max_bias_=BiasGrid_->getMaxValue(); //to avoid exp overflow
