@@ -514,7 +514,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   // Set up kbt for extended system
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
-  dt = getTimeStep();
+  dt = getTimeStep() * getStride();
+  log << "eABF/DRR: timestep = " << getTimeStep() << " ps with stride = " << getStride() << " steps\n";
   vector<double> ekbt(ndims, 0.0);
   if (etemp.size() != ndims) {
     etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
