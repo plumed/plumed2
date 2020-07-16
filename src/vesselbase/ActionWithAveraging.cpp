@@ -82,7 +82,7 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
       ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
       if( !val ) error("could not find value named");
       bias::ReweightBase* iswham=dynamic_cast<bias::ReweightBase*>( val );
-      if( iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
+      if( iswham && iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
       weights.push_back( val->copyOutput(val->getLabel()) );
       arg.push_back( val->copyOutput(val->getLabel()) );
       log.printf("%s ",wwstr[i].c_str() );
