@@ -183,7 +183,7 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.add("optional","PROB_WSTRIDE","write the estimated probability to a file every N steps");
   keys.addFlag("STORE_PROBS",false,"store all the probability files the calculation generates. They are overwritten if this keyword is not present");
 //miscellaneous
-  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers");
+  keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. if only one CV is used");
   keys.use("RESTART");
 
