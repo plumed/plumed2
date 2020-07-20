@@ -132,7 +132,7 @@ void OPESexplore::registerKeywords(Keywords& keys) {
            " Set to 'inf' for non-tempered flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
-  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","stride for measuring adaptive sigma. Default is one PACE");
+  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
@@ -200,7 +200,7 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     sigma0_.clear();
     adaptive_counter_=0;
     if(adaptive_sigma_stride_==0)
-      adaptive_sigma_stride_=stride_;
+      adaptive_sigma_stride_=10*stride_; //this is arbitrary, chosen from few tests
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
     plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE >= PACE");
@@ -531,6 +531,8 @@ void OPESexplore::update()
       av_cv_[i]+=diff/tau; //exponentially decaying average
       av_M2_[i]+=diff*difference(i,av_cv_[i],cv_i);
     }
+    if(adaptive_counter_<adaptive_sigma_stride_ && counter_==1) //counter_>1 if restarting
+      return;  //do not apply bias before having measured sigma
   }
 
 //other updates
