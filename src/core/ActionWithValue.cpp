@@ -345,6 +345,49 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
   return values[n].get();
 }
 
+unsigned ActionWithValue::getGridArgumentIndex( const ActionWithArguments* aa ) const { 
+  unsigned ng=0; 
+  for(unsigned i=0;i<aa->getNumberOfArguments();++i) {
+      Value* myarg = aa->getPntrToArgument(i); if( myarg->getRank()==0 ) continue;
+      if( myarg->hasDerivatives() || myarg->isTimeSeries() ) ng=i;
+  }
+  return ng;
+}
+
+void ActionWithValue::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                                            std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                                            std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ) {
+    unsigned ng = getGridArgumentIndex(aa);
+    ((aa->getPntrToArgument(ng))->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
+    return;
+  }
+  plumed_merror( "problem in getting grid data for " + getLabel() );
+}
+
+void ActionWithValue::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { 
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ) {
+    unsigned ng = getGridArgumentIndex(aa); 
+    ((aa->getPntrToArgument(ng))->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
+    return;
+  }
+  plumed_merror("problem in getting grid data for " + getLabel() ); 
+}
+
+void ActionWithValue::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ) {
+    unsigned ng = getGridArgumentIndex(aa);
+    ((aa->getPntrToArgument(ng))->getPntrToAction())->getGridPointAsCoordinate( ind, false, coords );
+    if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
+    else if( setlength ) { double val=getPntrToOutput(0)->get(ind); for(unsigned i=0; i<coords.size(); ++i) coords[i] = val*coords[i]; }
+    return;
+  }
+  plumed_merror("problem in getting grid data for " + getLabel() ); 
+}
+
 void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) {
   // Check for streams
   unsigned nstr=0; for(unsigned i=0; i<values.size(); ++i) { if( values[i]->getRank()>0 ) nstr++; }

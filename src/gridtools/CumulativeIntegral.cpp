@@ -42,11 +42,6 @@ public:
   explicit CumulativeIntegral(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void finishOutputSetup();
-  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const {}
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const ; 
@@ -96,26 +91,6 @@ void CumulativeIntegral::finishOutputSetup() {
 unsigned CumulativeIntegral::getNumberOfDerivatives() const {
   return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
 }
-
-void CumulativeIntegral::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                     std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
-} 
-  
-void CumulativeIntegral::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
-} 
-
-void CumulativeIntegral::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointAsCoordinate( ind, false, coords );
-  if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
-  else if( setlength ) {
-    double val=getPntrToOutput(0)->get(ind);
-    for(unsigned i=0; i<coords.size(); ++i) coords[i] = val*coords[i];
-  }
-}
-
 
 void CumulativeIntegral::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                             const unsigned& bufstart, std::vector<double>& buffer ) const { 

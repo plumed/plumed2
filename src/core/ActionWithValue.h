@@ -132,6 +132,7 @@ private:
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
   void setupVirtualAtomStashes( unsigned& nquants );
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
+  unsigned getGridArgumentIndex( const ActionWithArguments* aa ) const ;
 public:
 
 // -------- The action has one value only  ---------------- //
@@ -265,12 +266,10 @@ public:
 ///
   virtual void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-    plumed_merror( "problem in getting grid data for " + getLabel() );
-  }
+                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
 ///
-  virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
-  virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
+  virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ; 
 /// Make sure all tasks required for loop are done before loop starts
   virtual void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {}
 ///
