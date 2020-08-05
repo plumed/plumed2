@@ -98,7 +98,9 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( gridobject.getDimension() ); addValueWithDerivatives( shape );
+  std::vector<unsigned> shape( gridobject.getDimension() ); 
+  if( getPntrToArgument(0)->isTimeSeries() ) { addValue( shape ); getPntrToOutput(0)->makeTimeSeries(); } 
+  else addValueWithDerivatives( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
   } else {
@@ -127,10 +129,12 @@ void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std:
     if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
     else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
-  std::vector<unsigned> nn( gridcoords.getNbin( false ) );
-  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
-    if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
-    nbin[i]=nn[i];
+  if( !firststep ) { 
+    std::vector<unsigned> nn( gridcoords.getNbin( false ) );
+    for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+      if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
+      nbin[i]=nn[i];
+    }
   }
 }
 
@@ -142,13 +146,16 @@ void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals )
   std::vector<double> pos( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( current, pos );
   std::vector<double> der( gridcoords.getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); myvals.setValue( ostrn, val );
+  if( getPntrToOutput(0)->isTimeSeries() ) return ;
   for(unsigned i=0; i<gridcoords.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); }
 }
 
 void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                          const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 ); unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code; buffer[istart] += myvals.get( ostrn );
+  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code; 
+  if( getPntrToOutput(0)->isTimeSeries() ) istart = bufstart + code;
+  buffer[istart] += myvals.get( ostrn ); if( getPntrToOutput(0)->isTimeSeries() ) return ;
   for(unsigned i=0; i<gridcoords.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
 }
 
