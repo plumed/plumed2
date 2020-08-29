@@ -336,7 +336,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     kappa(getNumberOfArguments(), 0.0), tau(getNumberOfArguments(), 0.0),
     friction(getNumberOfArguments(), 0.0), etemp(getNumberOfArguments(), 0.0),
     ffict_measured(getNumberOfArguments(), 0.0),
-    reflectingWall(getNumberOfArguments(), 0.0),
     biasforceValue(getNumberOfArguments(), NULL),
     springforceValue(getNumberOfArguments(), NULL),
     fictValue(getNumberOfArguments(), NULL),
@@ -351,6 +350,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useCZARestimator(true), useUIestimator(false), textoutput(false),
     withExternalForce(false), withExternalFict(false),
+    reflectingWall(getNumberOfArguments(), 0),
     maxFactors(getNumberOfArguments(), 1.0)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
