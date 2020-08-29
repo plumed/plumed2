@@ -804,13 +804,14 @@ void DynamicReferenceRestraining::update() {
       // update position (full step)
       fict[i] += vfict[i] * dt;
       // reflecting boundary
-      if (reflectingWall[i] && fict[i]<delim[i].getMin()) {
-        fict[i]=delim[i].getMin()+(delim[i].getMin()-fict[i]);
-        vfict[i]*=-1.0;
-      }
-      if (reflectingWall[i] && fict[i]>delim[i].getMax()) {
-        fict[i]=delim[i].getMax()-(fict[i]-delim[i].getMax());
-        vfict[i]*=-1.0;
+      if (reflectingWall[i]) {
+        if (fict[i]<delim[i].getMin()) {
+          fict[i]=delim[i].getMin()+(delim[i].getMin()-fict[i]);
+          vfict[i]*=-1.0;
+        } else if (fict[i]>delim[i].getMax()) {
+          fict[i]=delim[i].getMax()-(fict[i]-delim[i].getMax());
+          vfict[i]*=-1.0;
+        }
       }
     }
   }
