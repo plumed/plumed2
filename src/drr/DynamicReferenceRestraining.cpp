@@ -259,7 +259,8 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("compulsory", "GRID_MAX", "the upper bounds for the grid (GRID_BIN "
            "or GRID_SPACING should be specified)");
   keys.add("compulsory", "REFLECTINGWALL", "0", "whether add reflecting walls "
-           "for each CV at GRID_MIN and GRID_MAX");
+           "for each CV at GRID_MIN and GRID_MAX. Setting non-zero values will "
+           "enable this feature");
   keys.add("optional", "GRID_BIN", "the number of bins for the grid");
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
