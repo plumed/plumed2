@@ -422,8 +422,13 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   }
   if (temp >= 0.0)
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
-  else
+  else {
     kbt = plumed.getAtoms().getKbT();
+    if (kbt <= std::numeric_limits<double>::epsilon()) {
+      error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
+            "Please set it by the TEMP keyword manually.");
+    }
+  }
   if (fullsamples < 0.5) {
     fullsamples = 500.0;
     log << "eABF/DRR: The fullsamples parametre is not set. Set it to "
