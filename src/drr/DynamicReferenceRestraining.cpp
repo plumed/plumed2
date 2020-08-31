@@ -220,6 +220,7 @@ private:
   bool textoutput;
   bool withExternalForce;
   bool withExternalFict;
+  vector<unsigned> reflectingWall;
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
@@ -257,6 +258,9 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
            "or GRID_SPACING should be specified)");
   keys.add("compulsory", "GRID_MAX", "the upper bounds for the grid (GRID_BIN "
            "or GRID_SPACING should be specified)");
+  keys.add("compulsory", "REFLECTINGWALL", "0", "whether add reflecting walls "
+           "for each CV at GRID_MIN and GRID_MAX. Setting non-zero values will "
+           "enable this feature");
   keys.add("optional", "GRID_BIN", "the number of bins for the grid");
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
@@ -346,6 +350,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useCZARestimator(true), useUIestimator(false), textoutput(false),
     withExternalForce(false), withExternalFict(false),
+    reflectingWall(getNumberOfArguments(), 0),
     maxFactors(getNumberOfArguments(), 1.0)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
@@ -363,16 +368,16 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   log << "eABF/DRR: This method is originally implemented in "
       "colvars(https://github.com/colvars/colvars)."
       << '\n';
-  log << "eABF/DRR: This code in plumed is heavily modified from "
+  log << "eABF/DRR: The code in plumed is heavily modified from "
       "ExtendedLagrangian.cpp and doesn't implemented all variants of "
       "eABF/DRR."
       << '\n';
-  log << "eABF/DRR: The thermostat using here maybe different from colvars."
+  log << "eABF/DRR: The thermostat used here may be different from Colvars."
       << '\n';
   log << "eABF/DRR: To integrate the gradients file, you can use abf_integrate "
       "from https://github.com/colvars/colvars/tree/master/colvartools."
       << '\n';
-  log << "eABF/DRR: Please reading relevant articles and using this bias "
+  log << "eABF/DRR: Please read relevant articles and use this biasing "
       "method carefully!"
       << '\n';
   parseFlag("NOBIAS", nobias);
@@ -385,6 +390,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseVector("FRICTION", friction);
   parseVector("EXTTEMP", etemp);
   parseVector("KAPPA", kappa);
+  parseVector("REFLECTINGWALL", reflectingWall);
   double temp = -1.0;
   parse("TEMP", temp);
   parse("FULLSAMPLES", fullsamples);
@@ -416,8 +422,13 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   }
   if (temp >= 0.0)
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
-  else
+  else {
     kbt = plumed.getAtoms().getKbT();
+    if (kbt <= std::numeric_limits<double>::epsilon()) {
+      error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
+            "Please set it by the TEMP keyword manually.");
+    }
+  }
   if (fullsamples < 0.5) {
     fullsamples = 500.0;
     log << "eABF/DRR: The fullsamples parametre is not set. Set it to "
@@ -508,7 +519,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   // Set up kbt for extended system
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
-  dt = getTimeStep();
+  dt = getTimeStep() * getStride();
+  log << "eABF/DRR: timestep = " << getTimeStep() << " ps with stride = " << getStride() << " steps\n";
   vector<double> ekbt(ndims, 0.0);
   if (etemp.size() != ndims) {
     etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
@@ -692,6 +704,9 @@ void DynamicReferenceRestraining::calculate() {
   if (firsttime) {
     for (size_t i = 0; i < ndims; ++i) {
       fict[i] = getArgument(i);
+      if(reflectingWall[i] && (fict[i]>=delim[i].getMax() || fict[i]<=delim[i].getMin())) {
+        error("eABF/DRR: initial position not in the range of [gmin, gmax]!");
+      }
     }
     firsttime = false;
   }
@@ -794,6 +809,16 @@ void DynamicReferenceRestraining::update() {
       vfict[i] += ffict[i] * 0.5 * dt / mass[i];
       // update position (full step)
       fict[i] += vfict[i] * dt;
+      // reflecting boundary
+      if (reflectingWall[i]) {
+        if (fict[i]<delim[i].getMin()) {
+          fict[i]=delim[i].getMin()+(delim[i].getMin()-fict[i]);
+          vfict[i]*=-1.0;
+        } else if (fict[i]>delim[i].getMax()) {
+          fict[i]=delim[i].getMax()-(fict[i]-delim[i].getMax());
+          vfict[i]*=-1.0;
+        }
+      }
     }
   }
 }
