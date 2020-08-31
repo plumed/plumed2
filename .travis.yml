@@ -94,9 +94,6 @@ jobs:
   allow_failures:
 # I allow this to fail temporarily
   - env: PLUMED_DOCKER=yes
-# these should be fixed:
-  - name: MacOS, MPI build
-  - name: MacOS, serial build
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
