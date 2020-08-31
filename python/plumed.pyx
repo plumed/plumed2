@@ -474,12 +474,9 @@ def _guessplumedroot(kernel=None):
     try:
         import tempfile
         log=tempfile.mkstemp()[1]
-        p=Plumed(kernel)
-        p.cmd("setLogFile",log)
-        p.cmd("init")
-        del p
-        import gc
-        gc.collect() # paranoia, to flush the buffer
+        with Plumed(kernel) as p:
+            p.cmd("setLogFile",log)
+            p.cmd("init")
         i=0
         root=""
         with open(log) as fin:
