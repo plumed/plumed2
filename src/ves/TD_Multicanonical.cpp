@@ -161,7 +161,7 @@ PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 void TD_Multicanonical::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
-  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to 10^-EPSILON.");
+  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
   keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
@@ -212,7 +212,7 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   if(epsilon_<=1.0) {
     plumed_merror(getName()+": the value of epsilon should be greater than 1.");
   }
-  log.printf("  the non relevant regions of the target distribution are set to 10^-%f \n",epsilon_);
+  log.printf("  the non relevant regions of the target distribution are set to e^-%f \n",epsilon_);
 
   setDynamic();
   setFesGridNeeded();
@@ -239,7 +239,6 @@ void TD_Multicanonical::updateGrid() {
       targetDistGrid().setValue(l,value);
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   } else {
     // Two variants: 1D and 2D
     if(targetDistGrid().getDimension()==1) {
@@ -343,11 +342,11 @@ void TD_Multicanonical::updateGrid() {
         double tmp;
         if(argument < minimum) {
           if (smoothening_) tmp = GaussianSwitchingFunc(argument,minimum,sigma_[0]);
-          else tmp = pow(10.0,-1.0*epsilon_);
+          else tmp = exp(-1.0*epsilon_);
         }
         else if(argument > maximum) {
           if (smoothening_) tmp = GaussianSwitchingFunc(argument,maximum,sigma_[0]);
-          else tmp = pow(10.0,-1.0*epsilon_);
+          else tmp = exp(-1.0*epsilon_);
         }
         else {
           tmp = 1.0;
@@ -357,7 +356,6 @@ void TD_Multicanonical::updateGrid() {
         targetDistGrid().setValue(l,value);
       }
       targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-      logTargetDistGrid().setMinToZero();
     } else if(targetDistGrid().getDimension()==2) {
       // 2D variant: Multicanonical with order parameter
       // In this variant we find for each temperature the relevant region of potential energy and order parameter.
@@ -368,7 +366,7 @@ void TD_Multicanonical::updateGrid() {
       plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_Multicanonical!");
       // Set all to zero
       for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-        double value = pow(10.0,-1.0*epsilon_);
+        double value = exp(-1.0*epsilon_);
         targetDistGrid().setValue(l,value);
       }
       // Loop over temperatures
@@ -454,9 +452,9 @@ void TD_Multicanonical::updateGrid() {
         norm += integration_weights[l]*value;
       }
       targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-      logTargetDistGrid().setMinToZero();
     } else plumed_merror(getName()+": Number of arguments for this target distribution must be 1 or 2");
   }
+  updateLogTargetDistGrid();
 }
 
 inline

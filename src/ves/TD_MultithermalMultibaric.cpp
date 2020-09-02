@@ -75,7 +75,7 @@ with \f$F_{\beta',P'}(E,\mathcal{V},s)\f$ the free energy as a function of energ
 In practice the condition \f$\beta' F_{\beta',P'}(E,\mathcal{V},s)<\epsilon\f$  is checked in equally spaced points in each dimension \f$\beta'\f$ and \f$P'\f$.
 The number of points is determined with the keywords STEPS_TEMP and STEPS_PRESSURE.
 In practice the target distribution is never set to zero but rather to a small value controlled by the keyword EPSILON.
-The small value is 10^-EPSILON.
+The small value is e^-EPSILON.
 
 Much like in the Wang-Landau algorithm \cite wanglandau or in the multicanonical ensemble \cite Berg-PRL-1992 , a flat histogram is targeted.
 The idea behind this choice of target distribution is that all regions of potential energy and volume (and optionally order parameter) that are relevant at all temperatures \f$\beta_1<\beta'<\beta_2\f$ and pressure \f$P_1<P'<P_2\f$ are included in the distribution.
@@ -235,7 +235,7 @@ PLUMED_REGISTER_ACTION(TD_MultithermalMultibaric,"TD_MULTITHERMAL_MULTIBARIC")
 void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
-  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to 10^-EPSILON.");
+  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum energy.");
   keys.add("compulsory","MAX_TEMP","Maximum energy.");
   keys.add("compulsory","MIN_PRESSURE","Minimum pressure.");
@@ -299,7 +299,7 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   if(epsilon_<=1.0) {
     plumed_merror(getName()+": the value of epsilon should be greater than 1.");
   }
-  log.printf("  the non relevant regions of the target distribution are set to 10^-%f \n",epsilon_);
+  log.printf("  the non relevant regions of the target distribution are set to e^-%f \n",epsilon_);
   setDynamic();
   setFesGridNeeded();
   checkRead();
@@ -325,7 +325,6 @@ void TD_MultithermalMultibaric::updateGrid() {
       targetDistGrid().setValue(l,value);
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   } else {
     double beta = getBeta();
     double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
@@ -333,7 +332,7 @@ void TD_MultithermalMultibaric::updateGrid() {
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_MultithermalMultibaric!");
     // Set all to current epsilon value
     for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-      double value = pow(10.0,-1.0*epsilon_);
+      double value = exp(-1.0*epsilon_);
       targetDistGrid().setValue(l,value);
     }
     // Loop over pressures and temperatures
@@ -439,8 +438,8 @@ void TD_MultithermalMultibaric::updateGrid() {
       norm += integration_weights[l]*value;
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   }
+  updateLogTargetDistGrid();
 }
 
 inline
