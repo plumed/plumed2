@@ -161,7 +161,7 @@ PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 void TD_Multicanonical::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
-  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to e^-EPSILON.");
+  keys.add("compulsory","EPSILON","10","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
   keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
@@ -176,7 +176,7 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   max_temp_(1000.0),
   sigma_(0.0),
   steps_temp_(20),
-  epsilon_(100.0),
+  epsilon_(10.0),
   smoothening_(true)
 {
   log.printf("  Multicanonical target distribution");

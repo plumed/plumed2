@@ -235,7 +235,7 @@ PLUMED_REGISTER_ACTION(TD_MultithermalMultibaric,"TD_MULTITHERMAL_MULTIBARIC")
 void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
-  keys.add("compulsory","EPSILON","100","The zeros of the target distribution are changed to e^-EPSILON.");
+  keys.add("compulsory","EPSILON","10","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum energy.");
   keys.add("compulsory","MAX_TEMP","Maximum energy.");
   keys.add("compulsory","MIN_PRESSURE","Minimum pressure.");
@@ -250,7 +250,7 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
 TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
   threshold_(5.0),
-  epsilon_(100.0),
+  epsilon_(10.0),
   min_temp_(0.0),
   max_temp_(1000.0),
   min_press_(0.0),
