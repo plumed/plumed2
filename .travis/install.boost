@@ -12,8 +12,8 @@ version_=${version//./_}
 
 echo $version $version_
 
-wget https://sourceforge.net/projects/boost/files/boost/$version/boost_${version_}.tar.gz/download > /dev/null 2> /dev/null
-tar xzf download
+wget https://dl.bintray.com/boostorg/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+tar xzf boost_${version_}.tar.gz
 
 cd boost_${version_}
 

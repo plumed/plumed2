@@ -39,7 +39,7 @@ jobs:
   - name: MacOS, serial build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode8.3
+    osx_image: xcode9.4
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -48,7 +48,7 @@ jobs:
   - name: MacOS, MPI build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode8.3
+    osx_image: xcode9.4
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -94,8 +94,6 @@ jobs:
   allow_failures:
 # I allow this to fail temporarily
   - env: PLUMED_DOCKER=yes
-# this is failing due to problems in installing MPI, should be allowed to fail until we fix it.
-  - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
