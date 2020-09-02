@@ -67,7 +67,7 @@ namespace colvar {
  \plumedfile
  #SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
  MOLINFO STRUCTURE=rna.pdb MOLTYPE=rna
- PUCKERING ATOMS=@sugar-3 LABEL=puck
+ PUCKERING ATOMS=@sugar-2 LABEL=puck
  PRINT ARG=puck.phs FILE=COLVAR
  \endplumedfile
 
