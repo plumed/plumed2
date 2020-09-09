@@ -29,27 +29,44 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC BIAS OPES_EXPLORE
+//+PLUMEDOC BIAS OPES_WT_EXPLORE
 /*
-On-the-fly probability enhanced sampling (OPES) with a well-tempered target distribution.
+On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution, exploratory version.
 
 \par Examples
 
-OPES_EXPLORE ...
+The following is a minimal working example:
+
+\plumedfile
+opes: OPES_WT_EXPLORE ARG=cv PACE=500 BARRIER=40
+\endplumedfile
+
+Another more articulated one:
+
+\plumedfile
+OPES_WT_EXPLORE ...
   LABEL=opes
-  ARG=cv
+  FILE=Kernels.data
+  TEMP=300
+  ARG=cv1,cv2
+  SIGMA=2.37,5.19
   PACE=500
-  SIGMA=0.2
-  BARRIER=15
-... OPES_EXPLORE
+  BARRIER=60
+  BIASFACTOR=10
+  STATE_WFILE=Prob.data
+  STATE_WSTRIDE=50000
+  WALKERS_MPI
+... OPES_WT_EXPLORE
+\endplumedfile
 
 
 */
 //+ENDPLUMEDOC
 
-class OPESexplore : public bias::Bias {
+class OPESwtExplore : public bias::Bias {
 
 private:
+  static const bool explore_=true; //FIXME manual toggle between standard and explore mode
   bool isFirstStep_;
   bool afterCalculate_;
   unsigned NumParallel_;
@@ -57,14 +74,15 @@ private:
   unsigned NumWalkers_;
   unsigned walker_rank_;
   unsigned ncv_;
-  unsigned counter_;
+  unsigned long counter_;
 
   double kbt_;
   double biasfactor_;
+  double bias_prefactor_;
   unsigned stride_;
   std::vector<double> sigma0_;
   unsigned adaptive_sigma_stride_;
-  long unsigned adaptive_counter_;
+  unsigned long adaptive_counter_;
   std::vector<double> av_cv_;
   std::vector<double> av_M2_;
   bool fixed_sigma_;
@@ -75,6 +93,7 @@ private:
 
   bool no_Zed_;
   double Zed_;
+  double KDEnorm_;
 
   double threshold2_;
   bool recursive_merge_;
@@ -97,29 +116,29 @@ private:
   OFile kernelsOfile_;
 
   double work_;
-  double old_counter_;
+  double old_KDEnorm_;
   double old_Zed_;
   std::vector<kernel> delta_kernels_;
 
-  OFile probOfile_;
-  int wProbStride_;
-  bool storeOldProb_;
+  OFile stateOfile_;
+  int wStateStride_;
+  bool storeOldStates_;
 
 public:
-  OPESexplore(const ActionOptions&);
+  explicit OPESwtExplore(const ActionOptions&);
   void calculate() override;
   void update() override;
   double getProbAndDerivatives(const std::vector<double>&,std::vector<double>&);
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
-  void dumpProbToFile();
+  void dumpStateToFile();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(OPESexplore,"OPES_EXPLORE")
+PLUMED_REGISTER_ACTION(OPESwtExplore,"OPES_WT_EXPLORE")
 
-void OPESexplore::registerKeywords(Keywords& keys) {
+void OPESwtExplore::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
@@ -129,45 +148,41 @@ void OPESexplore::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold. Set to zero to avoid compression");
 //extra options
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
-           " Set to 'inf' for non-tempered flat target");
+           " Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
-  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down");
-//kernels file
+  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down things");
+//kernels and state files
   keys.add("compulsory","FILE","KERNELS","a file in which the list of added kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
-//save probability estimate (compressed kernels)
-  keys.add("optional","PROB_WFILE","the file on which to write the estimated probability");
-  keys.add("optional","PROB_WSTRIDE","write the estimated probability to a file every N steps");
-  keys.addFlag("STORE_PROB",false,"store all the estimated probability files the calculation generates. They will be deleted if this keyword is not present");
+  keys.add("optional","STATE_RFILE","read from this file the compressed kernels and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_WFILE","write to this file the compressed kernels and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_WSTRIDE","numer of MD steps between writing the STATE_WFILE. Default is only on CPT events");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
-  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. 1D systems");
+  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. if only one CV is used");
   keys.use("RESTART");
 
 //output components
   componentsAreNotOptional(keys);
   keys.addOutputComponent("work","default","work done by the last kernel added");
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$");
+  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges");
+  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
-  keys.addOutputComponent("nker","default","total number of compressed kernels employed");
+  keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
 }
 
-OPESexplore::OPESexplore(const ActionOptions&ao)
+OPESwtExplore::OPESwtExplore(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
-  , counter_(0)
-  , sum_weights_(0)
-  , sum_weights2_(0)
+  , counter_(1)
   , Zed_(1)
   , work_(0)
-  , old_counter_(0)
-  , old_Zed_(1)
 {
   ncv_=getNumberOfArguments();
 //set kbt_
@@ -189,14 +204,31 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   plumed_massert(barrier>=0,"the BARRIER should be greater than zero");
 
   biasfactor_=barrier/kbt_;
-  parse("BIASFACTOR",biasfactor_);
-  plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one");
+  std::string biasfactor_str;
+  parse("BIASFACTOR",biasfactor_str);
+  if(biasfactor_str=="inf" || biasfactor_str=="INF")
+  {
+    biasfactor_=std::numeric_limits<double>::infinity();
+    bias_prefactor_=1;
+  }
+  else
+  {
+    parse("BIASFACTOR",biasfactor_);
+    plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
+    bias_prefactor_=1-1./biasfactor_;
+  }
+  if(explore_)
+  {
+    plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with EXPLORE mode");
+    bias_prefactor_=biasfactor_-1;
+  }
 
   adaptive_sigma_stride_=0;
   parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
   parseVector("SIGMA",sigma0_);
   if(sigma0_[0]==0 && sigma0_.size()==1)
   {
+    plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with adaptive SIGMA");
     sigma0_.clear();
     adaptive_counter_=0;
     if(adaptive_sigma_stride_==0)
@@ -209,15 +241,22 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   {
     plumed_massert(sigma0_.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
     plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is set then it cannot be adaptive, thus ADAPTIVE_SIGMA_STRIDE should not be set");
-    for(unsigned i=0; i<ncv_; i++)
-      sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
+    if(explore_)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
+    }
   }
 
-  epsilon_=std::exp(-barrier/(biasfactor_-1)/kbt_);
+  epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
   parse("EPSILON",epsilon_);
   plumed_massert(epsilon_>0,"you must choose a value for EPSILON greater than zero. Is your BARRIER too high?");
+  sum_weights_=std::pow(epsilon_,bias_prefactor_); //to avoid NANs we start with counter_=1 and w0=exp(beta*V0)
+  sum_weights2_=sum_weights_*sum_weights_;
 
-  double cutoff=sqrt(2.*barrier/kbt_);
+  double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
+  if(explore_)
+    cutoff=sqrt(2.*barrier/kbt_); //otherwise it is too small
   parse("KERNEL_CUTOFF",cutoff);
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
   cutoff2_=cutoff*cutoff;
@@ -234,7 +273,6 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   parseFlag("NO_ZED",no_Zed_);
   if(no_Zed_)
   {//this makes it more gentle in the initial phase
-    counter_=1;
     sum_weights_=1;
     sum_weights2_=1;
   }
@@ -245,22 +283,24 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   recursive_merge_=!recursive_merge_off;
 
 //kernels file
-  std::string kernelsFileName("KERNELS");
+  std::string kernelsFileName;
   parse("FILE",kernelsFileName);
   std::string fmt;
   parse("FMT",fmt);
 
-//output current probability estimate, as kernels
-  std::string probFileName;
-  parse("PROB_WFILE",probFileName);
-  wProbStride_=0;
-  parse("PROB_WSTRIDE",wProbStride_);
-  storeOldProb_=false;
-  parseFlag("STORE_PROB",storeOldProb_);
-  if(wProbStride_!=0 || storeOldProb_)
-    plumed_massert(probFileName.length()>0,"filename for estimated probability not specified, use PROB_WFILE");
-  if(probFileName.length()>0 && wProbStride_==0)
-    wProbStride_=-1;//will print only on CPT events
+//output checkpoint of current state
+  std::string restartFileName;
+  parse("STATE_RFILE",restartFileName);
+  std::string stateFileName;
+  parse("STATE_WFILE",stateFileName);
+  wStateStride_=0;
+  parse("STATE_WSTRIDE",wStateStride_);
+  storeOldStates_=false;
+  parseFlag("STORE_STATES",storeOldStates_);
+  if(wStateStride_!=0 || storeOldStates_)
+    plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
+  if(stateFileName.length()>0 && wStateStride_==0)
+    wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
 //multiple walkers //TODO implement also external mw for cp2k
   bool walkers_mpi=false;
@@ -296,23 +336,38 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   checkRead();
 
 //restart if needed
-  if(getRestart()) //TODO add option to restart from dumped PROB file
+  if(getRestart())
   {
+    bool stateRestart=true;
+    if(restartFileName.length()==0)
+    {
+      stateRestart=false;
+      restartFileName=kernelsFileName;
+    }
     IFile ifile;
     ifile.link(*this);
-    if(ifile.FileExist(kernelsFileName))
+    if(ifile.FileExist(restartFileName))
     {
-      ifile.open(kernelsFileName);
+      ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
-      if(sigma0_.size()==0)
-        log.printf(" +++ WARNING +++ restarting from an adaptive sigma simulation is not perfect\n");
-      log.printf("    Restarting from: %s\n",kernelsFileName.c_str());
-      double old_biasfactor;
-      ifile.scanField("biasfactor",old_biasfactor);
-      if(std::abs(biasfactor_-old_biasfactor)>1e-6*biasfactor_)
+        log.printf("    restarting from: %s\n",restartFileName.c_str());
+      if(stateRestart)
+        log.printf("    it should be a STATE file (not a KERNELS file)\n");
+      else
+        log.printf(" +++ WARNING +++ restarting from KERNELS might be approximate, use STATE_WFILE and STATE_RFILE to restart from the exact state\n");
+      std::string old_biasfactor_str;
+      ifile.scanField("biasfactor",old_biasfactor_str);
+      if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF")
       {
-        log.printf(" +++ WARNING +++ previous bias factor was %g while now it is %g. diff = %g\n",old_biasfactor,biasfactor_,biasfactor_-old_biasfactor);
-        error("restarting form different bias factor is not supported");
+        if(!std::isinf(biasfactor_))
+          log.printf(" +++ WARNING +++ previous bias factor was inf while now it is %g\n",biasfactor_);
+      }
+      else
+      {
+        double old_biasfactor;
+        ifile.scanField("biasfactor",old_biasfactor);
+        if(std::abs(biasfactor_-old_biasfactor)>1e-6*biasfactor_)
+          log.printf(" +++ WARNING +++ previous bias factor was %g while now it is %g. diff = %g\n",old_biasfactor,biasfactor_,biasfactor_-old_biasfactor);
       }
       double old_epsilon;
       ifile.scanField("epsilon",old_epsilon);
@@ -327,6 +382,45 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
       ifile.scanField("compression_threshold",old_threshold);
       if(std::abs(threshold-old_threshold)>1e-6*threshold)
         log.printf(" +++ WARNING +++ previous compression_threshold was %g while now it is %g. diff = %g\n",old_threshold,threshold,threshold-old_threshold);
+      if(stateRestart)
+      {
+        ifile.scanField("zed",Zed_);
+        ifile.scanField("sum_weights",sum_weights_);
+        ifile.scanField("sum_weights2",sum_weights2_);
+        std::string str_counter;
+        ifile.scanField("counter",str_counter); //scanField does not handle unsigned
+        counter_=std::stoul(str_counter);
+        if(sigma0_.size()==0)
+        {
+          ifile.scanField("adaptive_counter",str_counter); //scanField does not handle long unsigned
+          adaptive_counter_=std::stoul(str_counter);
+          if(NumWalkers_>1)
+          {
+            for(unsigned w=0; w<NumWalkers_; w++)
+            {
+              for(unsigned i=0; i<ncv_; i++)
+              {
+                double tmp1,tmp2;
+                ifile.scanField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),tmp1);
+                ifile.scanField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),tmp2);
+                if(w==walker_rank_)
+                {
+                  av_cv_[i]=tmp1;
+                  av_M2_[i]=tmp2;
+                }
+              }
+            }
+          }
+          else
+          {
+            for(unsigned i=0; i<ncv_; i++)
+            {
+              ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+              ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+            }
+          }
+        }
+      }
       for(unsigned i=0; i<ncv_; i++)
       {
         if(getPntrToArgument(i)->isPeriodic())
@@ -340,44 +434,64 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
           plumed_massert(file_max==arg_max,"mismatch between restart and ARG periodicity");
         }
       }
-      ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
-      double time;
-      while(ifile.scanField("time",time))
+      if(stateRestart)
       {
-        std::vector<double> center(ncv_);
-        std::vector<double> sigma(ncv_);
-        double height;
-        double logweight;
-        for(unsigned i=0; i<ncv_; i++)
-          ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
-        for(unsigned i=0; i<ncv_; i++)
-          ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-        ifile.scanField("height",height);
-        ifile.scanField("logweight",logweight);
-        ifile.scanField();
-        addKernel(height,center,sigma,false);
-        const double weight=std::exp(logweight);
-        sum_weights_+=weight; //FIXME this sum is slightly inaccurate, because when printing some precision is lost
-        sum_weights2_+=weight*weight;
-        counter_++;
+        double time;
+        while(ifile.scanField("time",time))
+        {
+          std::vector<double> center(ncv_);
+          std::vector<double> sigma(ncv_);
+          double height;
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          ifile.scanField("height",height);
+          ifile.scanField();
+          kernels_.emplace_back(height,center,sigma);
+        }
+        log.printf("    A total of %d kernels where read\n",kernels_.size());
       }
-      if(!no_Zed_)
+      else
       {
-        double sum_uprob=0;
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          for(unsigned kk=0; kk<kernels_.size(); kk++)
-            sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
-        if(NumParallel_>1)
-          comm.Sum(sum_uprob);
-        Zed_=sum_uprob/counter_/kernels_.size();
-        old_Zed_=Zed_;
+        ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
+        double time;
+        while(ifile.scanField("time",time))
+        {
+          std::vector<double> center(ncv_);
+          std::vector<double> sigma(ncv_);
+          double height;
+          double logweight;
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
+          for(unsigned i=0; i<ncv_; i++)
+            ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          ifile.scanField("height",height);
+          ifile.scanField("logweight",logweight);
+          ifile.scanField();
+          addKernel(height,center,sigma,false);
+          const double weight=std::exp(logweight);
+          sum_weights_+=weight; //this sum is slightly inaccurate, because when printing some precision is lost
+          sum_weights2_+=weight*weight;
+          counter_++;
+        }
+        if(!no_Zed_)
+        {
+          double sum_uprob=0;
+          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+            for(unsigned kk=0; kk<kernels_.size(); kk++)
+              sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+          if(NumParallel_>1)
+            comm.Sum(sum_uprob);
+          Zed_=sum_uprob/KDEnorm_/kernels_.size();
+        }
+        log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       }
-      log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
       ifile.reset(false);
       ifile.close();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but file '%s' was not found!\n",kernelsFileName.c_str());
+      log.printf(" +++ WARNING +++ restart requested, but file '%s' was not found!\n",restartFileName.c_str());
   }
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();
@@ -408,20 +522,25 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   kernelsOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
   kernelsOfile_.printField("compression_threshold",sqrt(threshold2_));
 
-//open file for storing estimated probability
-  if(wProbStride_!=0)
+//open file for storing state
+  if(wStateStride_!=0)
   {
-    probOfile_.link(*this);
+    stateOfile_.link(*this);
     if(NumWalkers_>1)
     {
       if(walker_rank_>0)
-        probFileName="/dev/null"; //only first walker writes on file
-      probOfile_.enforceSuffix("");
+        stateFileName="/dev/null"; //only first walker writes on file
+      stateOfile_.enforceSuffix("");
     }
-    probOfile_.open(probFileName);
+    stateOfile_.open(stateFileName);
     if(fmt.length()>0)
-      probOfile_.fmtField(" "+fmt);
+      stateOfile_.fmtField(" "+fmt);
   }
+
+//set initial old values for work
+  KDEnorm_=explore_?counter_:sum_weights_;
+  old_KDEnorm_=KDEnorm_;
+  old_Zed_=Zed_;
 
 //add and set output components
   addComponent("work"); componentIsNotPeriodic("work");
@@ -440,8 +559,13 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   log.printf("  depositing new kernels with PACE = %d\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
+  if(std::isinf(biasfactor_))
+    log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
   if(sigma0_.size()==0)
+  {
     log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %d\n",adaptive_sigma_stride_);
+    log.printf("    thus the first n=ADAPTIVE_SIGMA_STRIDE/PACE steps will have no bias, n = %d\n",adaptive_sigma_stride_/stride_);
+  }
   else
   {
     log.printf("  kernels have initial SIGMA = ");
@@ -450,14 +574,14 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     log.printf("\n");
   }
   if(fixed_sigma_)
-    log.printf(" -- FIXED_SIGMA: sigma will not decrease as simulation steps increases\n");
+    log.printf(" -- FIXED_SIGMA: sigma will not decrease as the simulation proceeds\n");
   log.printf("  kernels are truncated with KERNELS_CUTOFF = %g\n",cutoff);
   if(cutoff<3.5)
     log.printf(" +++ WARNING +++ probably kernels are truncated too much\n");
   log.printf("  the value at cutoff is = %g\n",val_at_cutoff_);
   log.printf("  regularization EPSILON = %g\n",epsilon_);
-  if(val_at_cutoff_>epsilon_)
-    log.printf(" +++ WARNING +++ the KERNEL_CUTOFF might be too small for the given EPSILON");
+  if(val_at_cutoff_>epsilon_*(1+1e-6))
+    log.printf(" +++ WARNING +++ the KERNEL_CUTOFF might be too small for the given EPSILON\n");
   log.printf("  kernels will be compressed when closer than COMPRESSION_THRESHOLD = %g\n",sqrt(threshold2_));
   if(threshold2_==0)
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
@@ -465,8 +589,8 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
   if(no_Zed_)
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
-  if(wProbStride_!=0 && walker_rank_==0)
-    log.printf("  probability estimate is written on file %s with stride %d\n",probFileName.c_str(),wProbStride_);
+  if(wStateStride_!=0 && walker_rank_==0)
+    log.printf("  state checkpoints are written on file %s with stride %d\n",stateFileName.c_str(),wStateStride_);
   if(walkers_mpi)
     log.printf(" -- WALKERS_MPI: if present, multiple replicas will communicate\n");
   if(NumWalkers_>1)
@@ -486,9 +610,11 @@ OPESexplore::OPESexplore(const ActionOptions&ao)
   log.printf(" Bibliography ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
+  if(explore_)
+    log.printf("We are running in EXPLORE mode!\n");
 }
 
-void OPESexplore::calculate()
+void OPESwtExplore::calculate()
 {
   std::vector<double> cv(ncv_);
   for(unsigned i=0; i<ncv_; i++)
@@ -496,26 +622,32 @@ void OPESexplore::calculate()
 
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
-  current_bias_=kbt_*(biasfactor_-1)*std::log(prob/Zed_+epsilon_);
+  current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
   setBias(current_bias_);
   for(unsigned i=0; i<ncv_; i++)
-    setOutputForce(i,der_prob[i]==0?0:-kbt_*(biasfactor_-1)/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
+    setOutputForce(i,der_prob[i]==0?0:-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
 //calculate work
   double tot_delta=0;
   for(unsigned d=0; d<delta_kernels_.size(); d++)
     tot_delta+=evaluateKernel(delta_kernels_[d],cv);
-  const double old_prob=(prob*counter_-tot_delta)/old_counter_;
-  work_+=current_bias_-kbt_*(biasfactor_-1)*std::log(old_prob/old_Zed_+epsilon_);
+  const double old_prob=(prob*KDEnorm_-tot_delta)/old_KDEnorm_;
+  work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zed_+epsilon_);
 
   afterCalculate_=true;
 }
 
-void OPESexplore::update()
+void OPESwtExplore::update()
 {
-//dump prob if requested
-  if( (wProbStride_>0 && getStep()%wProbStride_==0) || (wProbStride_==-1 && getCPT()) )
-    dumpProbToFile();
+  if(isFirstStep_)//same in MetaD, useful for restarts?
+  {
+    isFirstStep_=false;
+    return;
+  }
+
+//dump state if requested
+  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+    dumpStateToFile();
 
 //update variance if adaptive sigma
   if(sigma0_.size()==0)
@@ -535,23 +667,18 @@ void OPESexplore::update()
       return;  //do not apply bias before having measured sigma
   }
 
-//other updates
+//do update
   if(getStep()%stride_!=0)
     return;
-  if(isFirstStep_)//same in MetaD, useful for restarts?
-  {
-    isFirstStep_=false;
-    return;
-  }
-  plumed_massert(afterCalculate_,"OPESexplore::update() must be called after OPESexplore::calculate() to work properly");
-  afterCalculate_=false;
+  plumed_massert(afterCalculate_,"OPESwtExplore::update() must be called after OPESwtExplore::calculate() to work properly");
+  afterCalculate_=false; //if needed implementation can be changed to avoid this
 
 //work done by the bias in one iteration, uses as zero reference a point at inf, so that the work is always positive
-  const double min_shift=kbt_*(biasfactor_-1)*std::log(old_Zed_/Zed_*old_counter_/counter_);
+  const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
   getPntrToComponent("work")->set(work_-stride_*min_shift);
   work_=0;
   delta_kernels_.clear();
-  old_counter_=counter_;
+  old_KDEnorm_=KDEnorm_;
   old_Zed_=Zed_;
   unsigned old_nker=kernels_.size();
 
@@ -577,21 +704,40 @@ void OPESexplore::update()
   const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
-//in opes explore the kernel height=1, because it is not multiplied by the weight
-  height=1;
+  if(explore_)
+  {
+    KDEnorm_=counter_;
+  //in opes explore the kernel height=1, because it is not multiplied by the weight
+    height=1;
+  }
+  else
+    KDEnorm_=sum_weights_;
 
 //if needed, rescale sigma and height
   std::vector<double> sigma=sigma0_;
   if(sigma0_.size()==0)
   {
     sigma.resize(ncv_);
-    for(unsigned i=0; i<ncv_; i++)
-      sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_);
+    if(explore_)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_);
+    }
+    else
+    {
+      if(counter_==1+NumWalkers_)
+      { //very first estimate is from unbiased, thus must be adjusted
+        for(unsigned i=0; i<ncv_; i++)
+          av_M2_[i]/=(1-bias_prefactor_);
+      }
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+    }
   }
   if(!fixed_sigma_)
   {
-   //in opes explore rescaling is based on counter_, not on neff
-    const double s_rescaling=std::pow(counter_*(ncv_+2.)/4.,-1./(4+ncv_));
+    const double size=explore_?counter_:neff; //for EXPLORE neff is not relevant
+    const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
   //the height should be divided by sqrt(2*pi)*sigma,
@@ -670,18 +816,15 @@ void OPESexplore::update()
           delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
         }
       }
-      sum_uprob=Zed_*old_counter_*old_nker+delta_sum_uprob;
+      sum_uprob=Zed_*old_KDEnorm_*old_nker+delta_sum_uprob;
     }
-    Zed_=sum_uprob/counter_/kernels_.size();
+    Zed_=sum_uprob/KDEnorm_/kernels_.size();
     getPntrToComponent("zed")->set(Zed_);
   }
 }
 
-double OPESexplore::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
+double OPESwtExplore::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
-  if(kernels_.size()==0) //needed to avoid division by zero, counter_=0
-    return 0;
-
   double prob=0.0;
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list
     prob+=evaluateKernel(kernels_[k],cv,der_prob);
@@ -691,19 +834,19 @@ double OPESexplore::getProbAndDerivatives(const std::vector<double> &cv,std::vec
     comm.Sum(der_prob);
   }
   //normalize the estimate
-  prob/=counter_;
+  prob/=KDEnorm_;
   for(unsigned i=0; i<ncv_; i++)
-    der_prob[i]/=counter_;
+    der_prob[i]/=KDEnorm_;
 
   return prob;
 }
 
-void OPESexplore::addKernel(const kernel &new_kernel,const bool write_to_file)
+void OPESwtExplore::addKernel(const kernel &new_kernel,const bool write_to_file)
 {
   addKernel(new_kernel.height,new_kernel.center,new_kernel.sigma,write_to_file);
 }
 
-void OPESexplore::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
+void OPESwtExplore::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
 {
   bool no_match=true;
   if(threshold2_!=0)
@@ -756,11 +899,11 @@ void OPESexplore::addKernel(const double height,const std::vector<double>& cente
   }
 }
 
-unsigned OPESexplore::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
+unsigned OPESwtExplore::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list
+  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
   {
     if(k==giver_k) //a kernel should not be merged with itself
       continue;
@@ -791,44 +934,101 @@ unsigned OPESexplore::getMergeableKernel(const std::vector<double> &giver_center
   return min_k;
 }
 
-void OPESexplore::dumpProbToFile()
+void OPESwtExplore::dumpStateToFile()
 {
-  if(storeOldProb_)
-    probOfile_.clearFields();
+  if(storeOldStates_)
+    stateOfile_.clearFields();
   else if(walker_rank_==0)
-    probOfile_.rewind();
+    stateOfile_.rewind();
 
-  probOfile_.addConstantField("biasfactor");
-  probOfile_.addConstantField("epsilon");
-  probOfile_.addConstantField("kernel_cutoff");
-  probOfile_.addConstantField("compression_threshold");
-  probOfile_.addConstantField("zed");
-  probOfile_.addConstantField("sum_weights");
-  probOfile_.addConstantField("sum_weights2");
+  stateOfile_.addConstantField("biasfactor");
+  stateOfile_.addConstantField("epsilon");
+  stateOfile_.addConstantField("kernel_cutoff");
+  stateOfile_.addConstantField("compression_threshold");
+  stateOfile_.addConstantField("zed");
+  stateOfile_.addConstantField("sum_weights");
+  stateOfile_.addConstantField("sum_weights2");
+  stateOfile_.addConstantField("counter");
+  if(sigma0_.size()==0)
+  {
+    stateOfile_.addConstantField("adaptive_counter");
+    if(NumWalkers_>1)
+    {
+      for(unsigned w=0; w<NumWalkers_; w++)
+      {
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w));
+          stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w));
+        }
+      }
+    }
+    else
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
+        stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
+      }
+    }
+  }
   for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
-    probOfile_.setupPrintValue(getPntrToArgument(i));
-  probOfile_.printField("biasfactor",biasfactor_);
-  probOfile_.printField("epsilon",epsilon_);
-  probOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
-  probOfile_.printField("compression_threshold",sqrt(threshold2_));
-  probOfile_.printField("zed",Zed_);
-  probOfile_.printField("sum_weights",sum_weights_);
-  probOfile_.printField("sum_weights2",sum_weights2_);
+    stateOfile_.setupPrintValue(getPntrToArgument(i));
+  stateOfile_.printField("biasfactor",biasfactor_);
+  stateOfile_.printField("epsilon",epsilon_);
+  stateOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
+  stateOfile_.printField("compression_threshold",sqrt(threshold2_));
+  stateOfile_.printField("zed",Zed_);
+  stateOfile_.printField("sum_weights",sum_weights_);
+  stateOfile_.printField("sum_weights2",sum_weights2_);
+  stateOfile_.printField("counter",std::to_string(counter_)); //printField does not handle unsigned
+  if(sigma0_.size()==0)
+  {
+    stateOfile_.printField("adaptive_counter",std::to_string(adaptive_counter_)); //printField does not handle long unsigned
+    if(NumWalkers_>1)
+    {
+      std::vector<double> all_av_cv(NumWalkers_*ncv_,0.0);
+      std::vector<double> all_av_M2(NumWalkers_*ncv_,0.0);
+      if(comm.Get_rank()==0)
+      {
+        multi_sim_comm.Allgather(av_cv_,all_av_cv);
+        multi_sim_comm.Allgather(av_M2_,all_av_M2);
+      }
+      comm.Bcast(all_av_cv,0);
+      comm.Bcast(all_av_M2,0);
+      for(unsigned w=0; w<NumWalkers_; w++)
+      {
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),all_av_cv[w*ncv_+i]);
+          stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),all_av_M2[w*ncv_+i]);
+        }
+      }
+    }
+    else
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+        stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+      }
+    }
+  }
   for(unsigned k=0; k<kernels_.size(); k++)
   {
-    probOfile_.printField("time",getTime());
+    stateOfile_.printField("time",getTime()); //this is not very usefull
     for(unsigned i=0; i<ncv_; i++)
-      probOfile_.printField(getPntrToArgument(i),kernels_[k].center[i]);
+      stateOfile_.printField(getPntrToArgument(i),kernels_[k].center[i]);
     for(unsigned i=0; i<ncv_; i++)
-      probOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),kernels_[k].sigma[i]);
-    probOfile_.printField("height",kernels_[k].height);
-    probOfile_.printField();
+      stateOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),kernels_[k].sigma[i]);
+    stateOfile_.printField("height",kernels_[k].height);
+    stateOfile_.printField();
   }
-  if(!storeOldProb_)
-    probOfile_.flush();
+  if(!storeOldStates_)
+    stateOfile_.flush();
 }
 
-inline double OPESexplore::evaluateKernel(const kernel& G,const std::vector<double>& x) const
+inline double OPESwtExplore::evaluateKernel(const kernel& G,const std::vector<double>& x) const
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -841,7 +1041,7 @@ inline double OPESexplore::evaluateKernel(const kernel& G,const std::vector<doub
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESexplore::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
+inline double OPESwtExplore::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   std::vector<double> diff(ncv_);
@@ -858,7 +1058,7 @@ inline double OPESexplore::evaluateKernel(const kernel& G,const std::vector<doub
   return val;
 }
 
-inline void OPESexplore::kernel::merge_me_with(const kernel & other)
+inline void OPESwtExplore::kernel::merge_me_with(const kernel & other)
 {
   const double h=height+other.height;
   for(unsigned i=0; i<center.size(); i++)
