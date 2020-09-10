@@ -301,7 +301,7 @@ OPESmultiLambda::OPESmultiLambda(const ActionOptions&ao)
       ifile.close();
     }
     else
-      error("RESTART requested, but file '"+deltaFsFileName+"' was not found!");
+      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
   }
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();

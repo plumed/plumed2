@@ -491,7 +491,13 @@ OPESwtExplore::OPESwtExplore(const ActionOptions& ao)
       ifile.close();
     }
     else
-      error("RESTART requested, but file '"+restartFileName+"' was not found!");
+    { //same behaviour as METAD
+      std::string not_found_msg="RESTART requested, but file '"+restartFileName+"' was not found!";
+      if(stateRestart)
+        error(not_found_msg);
+      else
+        log.printf(" +++ WARNING +++ %s\n",not_found_msg.c_str());
+    }
   }
   else if(restartFileName.length()>0)
     log.printf(" +++ WARNING +++ the provided STATE_RFILE will be ignored, since RESTART was not requested\n");
