@@ -278,7 +278,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
     ifile.link(*this);
     if(ifile.FileExist(deltaFsFileName))
     {
-      log.printf("  Restarting from: %s\n",deltaFsFileName.c_str());
+      log.printf("  RESTART from: %s\n",deltaFsFileName.c_str());
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
       ifile.open(deltaFsFileName);
       std::vector<std::string> deltaFsName;
@@ -331,7 +331,7 @@ OPESmultiThermalBaric::OPESmultiThermalBaric(const ActionOptions&ao)
       ifile.close();
     }
     else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+      error("RESTART requested, but file '"+deltaFsFileName+"' was not found!");
   }
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();
