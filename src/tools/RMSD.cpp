@@ -117,10 +117,15 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
     double w=0.0;
     #pragma omp simd reduction(+:w)
     for(unsigned i=0; i<n; i++) w+=this->align[i];
-    plumed_massert(w>epsilon,"It looks like weights used for alignment are zero. Check your reference PDB file.");
-    double inv=1.0/w;
-    #pragma omp simd
-    for(unsigned i=0; i<n; i++) this->align[i]*=inv;
+    if(w>epsilon) {
+      double inv=1.0/w;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->align[i]*=inv;
+    } else {
+      double inv=1.0/n;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->align[i]=inv;
+    }
   }
   // recalculate the center anyway
   // just remove the center if that is asked
@@ -148,14 +153,19 @@ void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights) 
   unsigned n=reference.size();
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
-  double w=0.0;
-  #pragma omp simd reduction(+:w)
-  for(unsigned i=0; i<n; i++) w+=this->displace[i];
-  plumed_massert(w>epsilon,"It looks like weights used for displacement are zero. Check your reference PDB file.");
-  double inv=1.0/w;
   if(normalize_weights) {
-    #pragma omp simd
-    for(unsigned i=0; i<n; i++) this->displace[i]*=inv;
+    double w=0.0;
+    #pragma omp simd reduction(+:w)
+    for(unsigned i=0; i<n; i++) w+=this->displace[i];
+    if(w>epsilon) {
+      double inv=1.0/w;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->displace[i]*=inv;
+    } else {
+      double inv=1.0/n;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->displace[i]=inv;
+    }
   }
 }
 std::vector<double> RMSD::getDisplace() {
