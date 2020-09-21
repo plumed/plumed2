@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-### Get the FES estimate used by OPES from a dumped probability file (PROB_WFILE), 2D only ###
+### Get the FES estimate used by OPES from a dumped state file (STATE_WFILE), 2D only ###
 # slightly similar to plumed sum_hills
 
 import sys
@@ -9,8 +9,8 @@ import pandas as pd
 import argparse
 
 #parser
-parser = argparse.ArgumentParser(description='get the FES estimate used by OPES from a dumped PROB_WFILE, 2D only')
-parser.add_argument('--prob',dest='filename',type=str,default='PROB',help='the probability file name')
+parser = argparse.ArgumentParser(description='get the FES estimate used by OPES from a dumped STATE_WFILE, 2D only')
+parser.add_argument('--state',dest='filename',type=str,default='State.data',help='the state file name, with the compressed kernels')
 parser.add_argument('--kt',dest='kbt',type=float,required=True,help='the temperature in energy units')
 parser.add_argument('--angle1',dest='angle1',action='store_true',default=False,help='the cv1 is an angle in the range [-pi,pi]')
 parser.add_argument('--angle2',dest='angle2',action='store_true',default=False,help='the cv2 is an angle in the range [-pi,pi]')
