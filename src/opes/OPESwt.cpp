@@ -37,17 +37,19 @@ Contrary to \ref METAD, OPES is not filling the basins, but rather tries wery qu
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more (quasi-static regime).
 For this reason it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
+This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ is printed and it should converge when no new region of the CV-space is explored.
 
-Notice that if the employed CV is degenerate and maps different metastable basins onto the same CV-space region, then OPES will practically get stuck, instead of completely reshaping the bias (as \ref METAD would do, especially if BIASFACTOR is very high).
+Notice that if the employed CV is degenerate and maps different metastable basins onto the same CV-space region, then OPES will practically get stuck, instead of completely reshaping the bias (as \ref METAD would do, especially if BIASFACTOR is high).
 This can be useful to diagnostic problems with your collective variable.
-If you have no way to improve the set of CVs, you might consider using \ref OPES_EXPLORE instead.
+If you have no way to improve the set of CVs, you might consider using \ref OPES_WT_EXPLORE instead.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
 If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slower in converging.
 If you know wich one is the most stable basin of your system you should start your simulation from there.
 
 By default SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
+This might not be an optimal choice.
 
 To use uniform flat target, explicitly set BIASFACTOR=inf (but should be needed only in very specific cases).
 
@@ -138,6 +140,7 @@ private:
   std::vector<kernel> kernels_;
   OFile kernelsOfile_;
 
+  bool calc_work_;
   double work_;
   double old_KDEnorm_;
   double old_Zed_;
@@ -164,39 +167,41 @@ PLUMED_REGISTER_ACTION(OPESwt,"OPES_WT")
 void OPESwt::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
-  keys.add("compulsory","PACE","the frequency for kernel addition");
+  keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
+  keys.add("compulsory","PACE","the frequency for kernel deposition");
   keys.add("compulsory","SIGMA","0","the initial widths of the kernels. If not set, adaptive sigma will be used");
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
-  keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold. Set to zero to avoid compression");
+  keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
-  keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
+  keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$."
            " Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
-  keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance (in units of sigma)");
+  keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
-  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on");
-  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added. Faster, but total number of compressed kernels might grow and slow down things");
+  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep down the number of compressed kernels");
+  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added."
+               " Faster, but total number of compressed kernels might grow and slow down things");
 //kernels and state files
-  keys.add("compulsory","FILE","KERNELS","a file in which the list of added kernels is stored");
+  keys.add("compulsory","FILE","KERNELS","a file in which the list of deposited kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
   keys.add("optional","STATE_RFILE","read from this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the compressed kernels and all the info needed to RESTART the simulation");
-  keys.add("optional","STATE_WSTRIDE","numer of MD steps between writing the STATE_WFILE. Default is only on CPT events");
+  keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
+  keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
-  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster for small number of kernels e.g. if only one CV is used");
+  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster when number of compressed kernels is small, e.g. if only one CV is used");
   keys.use("RESTART");
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("work","default","work done by the last kernel added");
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges");
+  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighitng");
   keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
+  keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
 }
 
 OPESwt::OPESwt(const ActionOptions& ao)
@@ -304,6 +309,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
   bool recursive_merge_off=false;
   parseFlag("RECURSIVE_MERGE_OFF",recursive_merge_off);
   recursive_merge_=!recursive_merge_off;
+  parseFlag("CALC_WORK",calc_work_);
 
 //kernels file
   std::string kernelsFileName;
@@ -575,15 +581,23 @@ OPESwt::OPESwt(const ActionOptions& ao)
   old_Zed_=Zed_;
 
 //add and set output components
-  addComponent("work"); componentIsNotPeriodic("work");
-  addComponent("rct"); componentIsNotPeriodic("rct");
+  addComponent("rct");
+  componentIsNotPeriodic("rct");
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
-  addComponent("zed"); componentIsNotPeriodic("zed");
+  addComponent("zed");
+  componentIsNotPeriodic("zed");
   getPntrToComponent("zed")->set(Zed_);
-  addComponent("neff"); componentIsNotPeriodic("neff");
+  addComponent("neff");
+  componentIsNotPeriodic("neff");
   getPntrToComponent("neff")->set(std::pow(1+sum_weights_,2)/(1+sum_weights2_));
-  addComponent("nker"); componentIsNotPeriodic("nker");
+  addComponent("nker");
+  componentIsNotPeriodic("nker");
   getPntrToComponent("nker")->set(kernels_.size());
+  if(calc_work_)
+  {
+    addComponent("work");
+    componentIsNotPeriodic("work");
+  }
 
 //printing some info
   log.printf("  temperature T = %g\n",kbt_/Kb);
@@ -660,11 +674,14 @@ void OPESwt::calculate()
     setOutputForce(i,der_prob[i]==0?0:-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
 //calculate work
-  double tot_delta=0;
-  for(unsigned d=0; d<delta_kernels_.size(); d++)
-    tot_delta+=evaluateKernel(delta_kernels_[d],cv);
-  const double old_prob=(prob*KDEnorm_-tot_delta)/old_KDEnorm_;
-  work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zed_+epsilon_);
+  if(calc_work_)
+  {
+    double tot_delta=0;
+    for(unsigned d=0; d<delta_kernels_.size(); d++)
+      tot_delta+=evaluateKernel(delta_kernels_[d],cv);
+    const double old_prob=(prob*KDEnorm_-tot_delta)/old_KDEnorm_;
+    work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zed_+epsilon_);
+  }
 
   afterCalculate_=true;
 }
@@ -705,13 +722,16 @@ void OPESwt::update()
   plumed_massert(afterCalculate_,"OPESwt::update() must be called after OPESwt::calculate() to work properly");
   afterCalculate_=false; //if needed implementation can be changed to avoid this
 
-//work done by the bias in one iteration, uses as zero reference a point at inf, so that the work is always positive
-  const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
-  getPntrToComponent("work")->set(work_-stride_*min_shift);
-  work_=0;
-  delta_kernels_.clear();
-  old_KDEnorm_=KDEnorm_;
+//work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
+  if(calc_work_)
+  {
+    const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
+    getPntrToComponent("work")->set(work_-stride_*min_shift);
+    work_=0;
+  }
   old_Zed_=Zed_;
+  old_KDEnorm_=KDEnorm_;
+  delta_kernels_.clear();
   unsigned old_nker=kernels_.size();
 
 //get new kernel height
