@@ -279,7 +279,7 @@ for file in ./tutorials/others/*.txt ; do
     temp=$(echo $arrIN | tr "-" "\n"); 
     modtut=$(echo $temp | awk '{print toupper($1)}')
 
-    link=`grep link: $file | sed -e 's/link://'`
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
