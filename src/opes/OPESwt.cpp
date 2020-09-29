@@ -209,9 +209,9 @@ PLUMED_REGISTER_ACTION(OPESwt_c,"OPES_WT")
 // */
 // //+E_N_D_P_L_U_M_E_D_O_C
 
-struct exploration { static const bool explore=true; };
-typedef OPESwt<exploration> OPESwt_e;
-PLUMED_REGISTER_ACTION(OPESwt_e,"OPES_WT_EXPLORE")
+// struct exploration { static const bool explore=true; };
+// typedef OPESwt<exploration> OPESwt_e;
+// PLUMED_REGISTER_ACTION(OPESwt_e,"OPES_WT_EXPLORE")
 
 template <class mode>
 void OPESwt<mode>::registerKeywords(Keywords& keys) {
