@@ -194,11 +194,11 @@ PLUMED_REGISTER_ACTION(OPESwt_c,"OPES_WT")
 // //+P_L_U_M_E_D_O_C OPES_BIAS OPES_WT_EXPLORE
 // /*
 // On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution, exploration mode \cite future_paper .
-// 
+//
 // \par Examples
-// 
+//
 // The following is a minimal working example:
-// 
+//
 // \plumedfile
 // cv: DISTANCE ATOMS=1,2
 // opes: OPES_WT_EXPLORE ARG=cv PACE=500 BARRIER=40
