@@ -93,10 +93,6 @@ int main(){
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 SWITCH={WRONGNAME R_0=1.0}");
   test_line(ofs,plumed,"d: RMSD REFERENCE=missing.pdb");
   test_line(ofs,plumed,"d: RMSD REFERENCE=test-too-many-atoms.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb");
   test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail

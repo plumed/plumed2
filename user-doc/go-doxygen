@@ -11,18 +11,18 @@ LIST="
  InstallationPP.md
  GettingStartedPP.md
  CollectiveVariablesPP.md
-   GroupPP.md
-   FunctionsPP.md
+ GroupPP.md
+ FunctionsPP.md
  AnalysisPP.md
  BiasPP.md
  AdditionalModulesPP.md
  $LISTMORE
  CommandLineToolsPP.md
  MiscelaneousPP.md
-   RegexPP.md
-   FilesPP.md
-   ModulesPP.md
-   TutorialsPP.md
+ RegexPP.md
+ FilesPP.md
+ ModulesPP.md
+ TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
  automatic"
