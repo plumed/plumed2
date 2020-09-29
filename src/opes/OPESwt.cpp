@@ -1,23 +1,18 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+Copyright (c) 2020 of Michele Invernizzi.
 
-   See http://www.plumed.org for more information.
+The opes module is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This file is part of plumed, version 2.
+The opes module is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
 
-   plumed is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Lesser General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   plumed is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Lesser General Public License
+along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
@@ -29,29 +24,45 @@
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC BIAS OPES_WT
+//+PLUMEDOC OPES_BIAS OPES_WT
 /*
-On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution \cite Invernizzi2020opeswt .
+On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution \cite Invernizzi2020rethinking .
 
-Contrary to \ref METAD, OPES is not filling the basins, but rather tries wery quickly to get a coarse idea of the full Free Energy Surface (FES), and then slowly refines it.
+OPES aims at sampling a target distribution \f$p^{tg}(\mathbf{s})\f$ that is function of some collective variables (CVs) \f$\mathbf{s}\f$.
+To do so, it builds a bias potential defined as:
+
+\f[
+V(\mathbf{s}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{s})}{P(\mathbf{s})}
+\f]
+
+This OPES_WT action has as target the well-tempered distribution with bias factor \f$\gamma\f$: \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$.
+Similarly to \ref METAD, OPES optimizes the bias on-the-fly, with a given PACE.
+It does so by reweighting with a weighted kernel density estimation the unbiased Boltzmann distribution \f$P(\mathbf{s})\f$.
+We refer to the paper for futher details \cite Invernizzi2020rethinking .
+
+Contrary to \ref METAD, OPES is not filling the basins, but rather quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines it.
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more (quasi-static regime).
 For this reason it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
+Some python scripts are available in src/opes/postprocessing, that work in a similar way to \ref sum_hills.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
-Similarly, the \f$Z_n\f$ is printed and it should converge when no new region of the CV-space is explored.
+Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
 
-Notice that if the employed CV is degenerate and maps different metastable basins onto the same CV-space region, then OPES will practically get stuck, instead of completely reshaping the bias (as \ref METAD would do, especially if BIASFACTOR is high).
+Notice that OPES is more sensitive to degenerate CVs than \ref METAD.
+If the employed CV maps different metastable basins onto the same CV-space region, then OPES will remain stuck rather than completely reshaping the bias.
 This can be useful to diagnostic problems with your collective variable.
-If you have no way to improve the set of CVs, you might consider using \ref OPES_WT_EXPLORE instead.
+If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR (or even without well-tempering).
+This way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors.
+On the contrary, if your CVs are not degenerate (even if they are suboptimal) you should converge faster by using OPES instead of \ref METAD.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
-If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slower in converging.
-If you know wich one is the most stable basin of your system you should start your simulation from there.
+If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slightly slower in converging.
+If you know which one is the most stable basin of your system you should start your simulation from there.
 
 By default SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
-This might not be an optimal choice.
+However, notice that this might not be the optimal choice for SIGMA.
 
-To use uniform flat target, explicitly set BIASFACTOR=inf (but should be needed only in very specific cases).
+To use uniform flat target, explicitly set BIASFACTOR=inf, but should be needed only in very specific cases.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing numbers to file, or usage of adaptive SIGMA).
 For a perfect restart you need to use STATE_RFILE to read a checkpoint with all the needed info.
@@ -63,35 +74,43 @@ By default this file is overwritten, but you can instead append to it using the 
 The following is a minimal working example:
 
 \plumedfile
-opes: OPES_WT ARG=cv PACE=500 BARRIER=40
+cv: DISTANCE ATOMS=1,2
+opes: OPES_WT ARG=cv PACE=100 BARRIER=40
+PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 \endplumedfile
 
 Another more articulated one:
 
 \plumedfile
-OPES_WT ...
-  LABEL=opes
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+opes: OPES_WT ...
   FILE=Kernels.data
   TEMP=300
-  ARG=cv1,cv2
-  SIGMA=2.37,5.19
+  ARG=phi,psi
+  SIGMA=0.15,0.15
   PACE=500
-  BARRIER=60
+  BARRIER=50
   BIASFACTOR=inf
+  STATE_RFILE=Restart.data
   STATE_WFILE=State.data
   STATE_WSTRIDE=50000
+  STORE_STATES
   WALKERS_MPI
-... OPES_WT
+...
+
+PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 \endplumedfile
 
 
 */
 //+ENDPLUMEDOC
 
+template <class mode>
 class OPESwt : public bias::Bias {
 
 private:
-  static const bool explore_=false; //FIXME manual toggle between standard and explore mode
   bool isFirstStep_;
   bool afterCalculate_;
   unsigned NumParallel_;
@@ -149,41 +168,73 @@ private:
   OFile stateOfile_;
   int wStateStride_;
   bool storeOldStates_;
+  std::string action_name_;
 
 public:
   explicit OPESwt(const ActionOptions&);
   void calculate() override;
   void update() override;
+  static void registerKeywords(Keywords& keys);
+
   double getProbAndDerivatives(const std::vector<double>&,std::vector<double>&);
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void dumpStateToFile();
-  static void registerKeywords(Keywords& keys);
+
 };
 
-PLUMED_REGISTER_ACTION(OPESwt,"OPES_WT")
+struct convergence { static const bool explore=false; };
+typedef OPESwt<convergence> OPESwt_c;
+PLUMED_REGISTER_ACTION(OPESwt_c,"OPES_WT")
 
-void OPESwt::registerKeywords(Keywords& keys) {
+//OPES_WT_EXPLORE is very similar from the point of view of the code,
+//but conceptually it is better to make it a separate BIAS action
+
+// //+P_L_U_M_E_D_O_C OPES_BIAS OPES_WT_EXPLORE
+// /*
+// On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution, exploration mode \cite future_paper .
+// 
+// \par Examples
+// 
+// The following is a minimal working example:
+// 
+// \plumedfile
+// cv: DISTANCE ATOMS=1,2
+// opes: OPES_WT_EXPLORE ARG=cv PACE=500 BARRIER=40
+// PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
+// \endplumedfile
+// */
+// //+E_N_D_P_L_U_M_E_D_O_C
+
+struct exploration { static const bool explore=true; };
+typedef OPESwt<exploration> OPESwt_e;
+PLUMED_REGISTER_ACTION(OPESwt_e,"OPES_WT_EXPLORE")
+
+template <class mode>
+void OPESwt<mode>::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
-  keys.add("compulsory","SIGMA","0","the initial widths of the kernels. If not set, adaptive sigma will be used");
+  keys.add("compulsory","SIGMA","ADAPTIVE","the initial widths of the kernels. If not set, adaptive sigma will be used and the ADAPTIVE_SIGMA_STRIDE should be set");
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
-  keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$."
-           " Set to 'inf' for uniform flat target");
+  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
+  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. ");
+  if(mode::explore)
+    info_biasfactor+="Cannot be 'inf'";
+  else
+    info_biasfactor+="Set to 'inf' for uniform flat target";
+  keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
-  keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
+  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
+  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
-  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep down the number of compressed kernels");
-  keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added."
-               " Faster, but total number of compressed kernels might grow and slow down things");
 //kernels and state files
-  keys.add("compulsory","FILE","KERNELS","a file in which the list of deposited kernels is stored");
+  keys.add("compulsory","FILE","KERNELS","a file in which the list of all deposited kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
   keys.add("optional","STATE_RFILE","read from this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the compressed kernels and all the info needed to RESTART the simulation");
@@ -196,15 +247,15 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
 //output components
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\lange e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighitng");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n=\\int_\\Omega_n \\Tilde{P}_n(\\mathbf{s})\\, d\\mathbf{s}\\f$, should become flat as no new CV-space region is explored");
+  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
+  keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
 }
 
-OPESwt::OPESwt(const ActionOptions& ao)
+template <class mode>
+OPESwt<mode>::OPESwt(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
@@ -212,6 +263,12 @@ OPESwt::OPESwt(const ActionOptions& ao)
   , Zed_(1)
   , work_(0)
 {
+  action_name_="OPES_WT";
+  if(mode::explore)
+    action_name_+="_EXPLORE";
+  std::string error_in_input1("Error in input in action "+action_name_+" with label "+getLabel()+": the keyword ");
+  std::string error_in_input2(" could not be read correctly");
+
   ncv_=getNumberOfArguments();
 //set kbt_
   const double Kb=plumed.getAtoms().getKBoltzmann();
@@ -241,11 +298,12 @@ OPESwt::OPESwt(const ActionOptions& ao)
   }
   else
   {
-    parse("BIASFACTOR",biasfactor_);
+    if(biasfactor_str.length()>0)
+      plumed_massert(Tools::convert(biasfactor_str,biasfactor_),error_in_input1+"BIASFACTOR"+error_in_input2);
     plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor_;
   }
-  if(explore_)
+  if(mode::explore)
   {
     plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with EXPLORE mode");
     bias_prefactor_=biasfactor_-1;
@@ -253,25 +311,29 @@ OPESwt::OPESwt(const ActionOptions& ao)
 
   adaptive_sigma_stride_=0;
   parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
-  parseVector("SIGMA",sigma0_);
-  if(sigma0_[0]==0 && sigma0_.size()==1)
+  std::vector<std::string> sigma_str;
+  parseVector("SIGMA",sigma_str);
+  double dummy;
+  if(sigma_str.size()==1 && !Tools::convert(sigma_str[0],dummy))
   {
+    plumed_massert(sigma_str[0]=="ADAPTIVE" || sigma_str[0]=="adaptive",error_in_input1+"SIGMA"+error_in_input2);
     plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with adaptive SIGMA");
-    sigma0_.clear();
     adaptive_counter_=0;
     if(adaptive_sigma_stride_==0)
-      adaptive_sigma_stride_=10*stride_; //this is arbitrary, chosen from few tests
+      adaptive_sigma_stride_=10*stride_; //NB: this is arbitrary, chosen from few tests
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
     plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE >= PACE");
   }
   else
   {
-    plumed_massert(sigma0_.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
-    plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is set then it cannot be adaptive, thus ADAPTIVE_SIGMA_STRIDE should not be set");
-    if(explore_)
+    plumed_massert(sigma_str.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
+    plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is not ADAPTIVE you cannot set an ADAPTIVE_SIGMA_STRIDE");
+    sigma0_.resize(ncv_);
+    for(unsigned i=0; i<ncv_; i++)
     {
-      for(unsigned i=0; i<ncv_; i++)
+      plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
+      if(mode::explore)
         sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
     }
   }
@@ -283,7 +345,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
   sum_weights2_=sum_weights_*sum_weights_;
 
   double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
-  if(explore_)
+  if(mode::explore)
     cutoff=sqrt(2.*barrier/kbt_); //otherwise it is too small
   parse("KERNEL_CUTOFF",cutoff);
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
@@ -300,7 +362,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
   no_Zed_=false;
   parseFlag("NO_ZED",no_Zed_);
   if(no_Zed_)
-  {//this makes it more gentle in the initial phase
+  { //this makes it more gentle in the initial phase
     sum_weights_=1;
     sum_weights2_=1;
   }
@@ -379,11 +441,14 @@ OPESwt::OPESwt(const ActionOptions& ao)
     {
       ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
-        log.printf("    restarting from: %s\n",restartFileName.c_str());
+      log.printf("    restarting from: %s\n",restartFileName.c_str());
       if(stateRestart)
         log.printf("    it should be a STATE file (not a KERNELS file)\n");
       else
         log.printf(" +++ WARNING +++ RESTART from KERNELS might be approximate, use STATE_WFILE and STATE_RFILE to restart from the exact state\n");
+      std::string old_action_name;
+      ifile.scanField("action",old_action_name);
+      plumed_massert(action_name_==old_action_name,"RESTART - mismatch between old and new action name");
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
       if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF")
@@ -459,8 +524,8 @@ OPESwt::OPESwt(const ActionOptions& ao)
           std::string file_min,file_max;
           ifile.scanField("min_"+getPntrToArgument(i)->getName(),file_min);
           ifile.scanField("max_"+getPntrToArgument(i)->getName(),file_max);
-          plumed_massert(file_min==arg_min,"mismatch between restart and ARG periodicity");
-          plumed_massert(file_max==arg_max,"mismatch between restart and ARG periodicity");
+          plumed_massert(file_min==arg_min,"RESTART - mismatch between old and new ARG periodicity");
+          plumed_massert(file_max==arg_max,"RESTART - mismatch between old and new ARG periodicity");
         }
       }
       if(stateRestart)
@@ -504,6 +569,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
           sum_weights2_+=weight*weight;
           counter_++;
         }
+        KDEnorm_=mode::explore?counter_:sum_weights_;
         if(!no_Zed_)
         {
           double sum_uprob=0;
@@ -549,12 +615,14 @@ OPESwt::OPESwt(const ActionOptions& ao)
     kernelsOfile_.fmtField(" "+fmt);
   kernelsOfile_.setHeavyFlush(); //do I need it?
   //define and set const fields
+  kernelsOfile_.addConstantField("action");
   kernelsOfile_.addConstantField("biasfactor");
   kernelsOfile_.addConstantField("epsilon");
   kernelsOfile_.addConstantField("kernel_cutoff");
   kernelsOfile_.addConstantField("compression_threshold");
   for(unsigned i=0; i<ncv_; i++)
     kernelsOfile_.setupPrintValue(getPntrToArgument(i));
+  kernelsOfile_.printField("action",action_name_);
   kernelsOfile_.printField("biasfactor",biasfactor_);
   kernelsOfile_.printField("epsilon",epsilon_);
   kernelsOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
@@ -575,8 +643,8 @@ OPESwt::OPESwt(const ActionOptions& ao)
       stateOfile_.fmtField(" "+fmt);
   }
 
-//set initial old values for work
-  KDEnorm_=explore_?counter_:sum_weights_;
+//set initial old values
+  KDEnorm_=mode::explore?counter_:sum_weights_;
   old_KDEnorm_=KDEnorm_;
   old_Zed_=Zed_;
 
@@ -656,11 +724,10 @@ OPESwt::OPESwt(const ActionOptions& ao)
   log.printf(" Bibliography ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
-  if(explore_)
-    log.printf("We are running in EXPLORE mode!\n");
 }
 
-void OPESwt::calculate()
+template <class mode>
+void OPESwt<mode>::calculate()
 {
   std::vector<double> cv(ncv_);
   for(unsigned i=0; i<ncv_; i++)
@@ -686,7 +753,8 @@ void OPESwt::calculate()
   afterCalculate_=true;
 }
 
-void OPESwt::update()
+template <class mode>
+void OPESwt<mode>::update()
 {
   if(isFirstStep_)//same in MetaD, useful for restarts?
   {
@@ -756,10 +824,10 @@ void OPESwt::update()
   const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
-  if(explore_)
+  if(mode::explore)
   {
     KDEnorm_=counter_;
-  //in opes explore the kernel height=1, because it is not multiplied by the weight
+    //in opes explore the kernel height=1, because it is not multiplied by the weight
     height=1;
   }
   else
@@ -770,7 +838,7 @@ void OPESwt::update()
   if(sigma0_.size()==0)
   {
     sigma.resize(ncv_);
-    if(explore_)
+    if(mode::explore)
     {
       for(unsigned i=0; i<ncv_; i++)
         sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_);
@@ -788,13 +856,13 @@ void OPESwt::update()
   }
   if(!fixed_sigma_)
   {
-    const double size=explore_?counter_:neff; //for EXPLORE neff is not relevant
+    const double size=mode::explore?counter_:neff; //for EXPLORE neff is not relevant
     const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
-  //the height should be divided by sqrt(2*pi)*sigma,
-  //but this overall factor would be canceled when dividing by Zed
-  //thus we skip it altogether, but keep the s_rescaling
+    //the height should be divided by sqrt(2*pi)*sigma,
+    //but this overall factor would be canceled when dividing by Zed
+    //thus we skip it altogether, but keep the s_rescaling
     height/=std::pow(s_rescaling,ncv_);
   }
 
@@ -846,9 +914,9 @@ void OPESwt::update()
     }
     else
     {
-    // Here instead of redoing the full summation, we add only the changes, knowing that
-    // uprob = old_uprob + delta_uprob
-    // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
+      // Here instead of redoing the full summation, we add only the changes, knowing that
+      // uprob = old_uprob + delta_uprob
+      // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
       double delta_sum_uprob=0;
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       {
@@ -875,7 +943,8 @@ void OPESwt::update()
   }
 }
 
-double OPESwt::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
+template <class mode>
+double OPESwt<mode>::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list
@@ -893,12 +962,14 @@ double OPESwt::getProbAndDerivatives(const std::vector<double> &cv,std::vector<d
   return prob;
 }
 
-void OPESwt::addKernel(const kernel &new_kernel,const bool write_to_file)
+template <class mode>
+void OPESwt<mode>::addKernel(const kernel &new_kernel,const bool write_to_file)
 {
   addKernel(new_kernel.height,new_kernel.center,new_kernel.sigma,write_to_file);
 }
 
-void OPESwt::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
+template <class mode>
+void OPESwt<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
 {
   bool no_match=true;
   if(threshold2_!=0)
@@ -912,8 +983,8 @@ void OPESwt::addKernel(const double height,const std::vector<double>& center,con
       delta_kernels_.push_back(kernels_[taker_k]);
       if(recursive_merge_) //the overhead is worth it if it keeps low the total number of kernels
       {
-      //TODO this second check could run only through the kernels closer than, say, 2*threshold
-      //     the function getMergeableKernel could return a list of such neighbors
+        //TODO this second check could run only through the kernels closer than, say, 2*threshold
+        //     the function getMergeableKernel could return a list of such neighbors
         unsigned giver_k=taker_k;
         taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
         while(taker_k<kernels_.size())
@@ -951,7 +1022,8 @@ void OPESwt::addKernel(const double height,const std::vector<double>& center,con
   }
 }
 
-unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
+template <class mode>
+unsigned OPESwt<mode>::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
@@ -986,13 +1058,15 @@ unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,cons
   return min_k;
 }
 
-void OPESwt::dumpStateToFile()
+template <class mode>
+void OPESwt<mode>::dumpStateToFile()
 {
   if(storeOldStates_)
     stateOfile_.clearFields();
   else if(walker_rank_==0)
     stateOfile_.rewind();
 
+  stateOfile_.addConstantField("action");
   stateOfile_.addConstantField("biasfactor");
   stateOfile_.addConstantField("epsilon");
   stateOfile_.addConstantField("kernel_cutoff");
@@ -1026,6 +1100,7 @@ void OPESwt::dumpStateToFile()
   }
   for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
     stateOfile_.setupPrintValue(getPntrToArgument(i));
+  stateOfile_.printField("action",action_name_);
   stateOfile_.printField("biasfactor",biasfactor_);
   stateOfile_.printField("epsilon",epsilon_);
   stateOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
@@ -1080,7 +1155,8 @@ void OPESwt::dumpStateToFile()
     stateOfile_.flush();
 }
 
-inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& x) const
+template <class mode>
+inline double OPESwt<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x) const
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -1093,7 +1169,8 @@ inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& 
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
+template <class mode>
+inline double OPESwt<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   std::vector<double> diff(ncv_);
@@ -1110,7 +1187,8 @@ inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& 
   return val;
 }
 
-inline void OPESwt::kernel::merge_me_with(const kernel & other)
+template <class mode>
+inline void OPESwt<mode>::kernel::merge_me_with(const kernel & other)
 {
   const double h=height+other.height;
   for(unsigned i=0; i<center.size(); i++)
@@ -1124,6 +1202,7 @@ inline void OPESwt::kernel::merge_me_with(const kernel & other)
   }
   height=h;
 }
+
 
 }
 }

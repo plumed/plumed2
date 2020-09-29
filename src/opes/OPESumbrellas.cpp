@@ -1,23 +1,18 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+Copyright (c) 2020 of Michele Invernizzi.
 
-   See http://www.plumed.org for more information.
+The opes module is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This file is part of plumed, version 2.
+The opes module is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
 
-   plumed is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Lesser General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   plumed is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Lesser General Public License
+along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
@@ -98,9 +93,10 @@ void OPESumbrellas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","OBSERVATION_STEPS","1","number of unbiased initial steps to collect statistics for initial deltaFs guess");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 //umbrella stuff
-  keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
   keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
+  keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
+  keys.add("compulsory","SPACING","1","the distance between umbrellas, in units of SIGMA");
 //deltaFs file
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
   keys.add("optional","PRINT_STRIDE","( default=100 ) stride for printing to DELTAFS file");
@@ -145,13 +141,16 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   beta_=1./KbT;
 
 //set umbrellas
-  parse("SIGMA",sigma_);
   double min_cv;
   double max_cv;
   parse("MIN_CV",min_cv);
   parse("MAX_CV",max_cv);
   plumed_massert(min_cv<max_cv,"MIN_CV should be smaller than MAX_CV");
-  tot_umbrellas_=1+std::round((max_cv-min_cv)/sigma_);
+  parse("SIGMA",sigma_);
+  double spacing;
+  parse("SPACING",spacing);
+  plumed_massert(spacing>0,"the SPACING between umbrellas should be greater than zero");
+  tot_umbrellas_=1+std::round((max_cv-min_cv)/(spacing*sigma_));
   center_.resize(tot_umbrellas_);
   for(unsigned i=0; i<tot_umbrellas_; i++)
     center_[i]=(max_cv-min_cv)/(tot_umbrellas_-1)*i+min_cv;
@@ -221,6 +220,7 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
   log.printf("  Updating the bias with PACE = %u\n",stride_);
   log.printf("  Total number of umbrellas = %u\n",tot_umbrellas_);
   log.printf("    with SIGMA = %g\n",sigma_);
+  log.printf("    and SPACING = %g\n",spacing);
   log.printf("    in CV range [%g,%g]\n",center_[0],center_[tot_umbrellas_-1]);
   log.printf("  Initial unbiased observation done for OBSERVATION_STEPS = %u\n",obs_steps_);
   if(barrier_!=std::numeric_limits<double>::infinity())
@@ -269,10 +269,10 @@ OPESumbrellas::OPESumbrellas(const ActionOptions&ao)
       const std::string read_max_cv=lastW.substr(_pos+1,lastW.size()-_pos-1);
       const std::string used_max_cv=std::to_string(center_[center_.size()-1]);
       plumed_massert(used_max_cv==read_max_cv,"mismatch between provided MAX_CV and the one in restart");
-    //initialize
+      //initialize
       deltaF_.resize(tot_umbrellas_);
       obs_steps_=0; //avoid initializing again
-    //read steps from file
+      //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
       plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");

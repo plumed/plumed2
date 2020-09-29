@@ -1,23 +1,18 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+Copyright (c) 2020 of Michele Invernizzi.
 
-   See http://www.plumed.org for more information.
+The opes module is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This file is part of plumed, version 2.
+The opes module is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
 
-   plumed is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Lesser General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   plumed is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Lesser General Public License
+along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
@@ -112,7 +107,7 @@ void OPESmultiPhase::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("compulsory","PACE","10","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial steps to collect statistics."
-                        " When using STEPS_TEMP and STEPS_PRESSURE it is forced to 1");
+           " When using STEPS_TEMP and STEPS_PRESSURE it is forced to 1");
 //tempertature stuff
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","MIN_TEMP","the minimum of the temperature range");
@@ -351,7 +346,7 @@ OPESmultiPhase::OPESmultiPhase(const ActionOptions&ao)
       init_integration_grid();
       deltaF_.resize(steps_beta_,std::vector< std::vector<double> >(steps_pres_,std::vector<double>(tot_umbrellas_)));
       obs_steps_=0; //avoid initializing again
-    //read steps from file
+      //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
       plumed_massert(restart_stride==(int)print_stride_,"also PRINT_STRIDE must be consistent to avoid problems with multiple restarts");
@@ -713,7 +708,7 @@ unsigned OPESmultiPhase::estimate_steps(const double left_side,const double righ
   }
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
-  //func: Neff/N-0.5 is a function between -0.5 and 0.5
+    //func: Neff/N-0.5 is a function between -0.5 and 0.5
     auto func=[](const long double delta,const std::vector<double> obs, const double av_obs)
     {
       long double sum_w=0;
@@ -726,8 +721,8 @@ unsigned OPESmultiPhase::estimate_steps(const double left_side,const double righ
       }
       return sum_w*sum_w/sum_w2/obs.size()-0.5;
     };
-  //here we find the root of func using the regula falsi (false position) method
-  //but any method would be OK, not much precision is needed. src/tools/RootFindingBase.h looked complicated
+    //here we find the root of func using the regula falsi (false position) method
+    //but any method would be OK, not much precision is needed. src/tools/RootFindingBase.h looked complicated
     const double tolerance=1e-4; //seems to be a good default
     double a=0; //default is right side case
     double func_a=0.5;

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-### Get the running FES estimate used by OPES, 1D only ###
+### Get the running FES estimate used by OPES_WT, 1D only ###
 # similar to plumed sum_hills
 
 import sys
@@ -39,7 +39,18 @@ line=f.readline() #header
 if len(line.split())!=7:
   sys.exit('  something is wrong with file '+filename)
 cvname=line.split()[3]
+line=f.readline() #action
+if line.split()[-1]=="OPES_WT":
+  explore=False
+  print(' building free energy from OPES_WT')
+elif line.split()[-1]=="OPES_WT_EXPLORE":
+  explore=True
+  print(' building free energy from OPES_WT_EXPLORE')
+else:
+  sys.exit("This script works onyl with OPES_WT and OPER_WT_EXPLORE")
 line=f.readline() #biasfactor
+if explore:
+  kbt*=float(line.split()[-1])
 line=f.readline() #epsilon
 epsilon=float(line.split()[-1])
 line=f.readline() #cutoff
