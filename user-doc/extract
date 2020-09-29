@@ -288,6 +288,7 @@ for file in ./tutorials/others/*.txt ; do
     nf=`echo $splits | awk '{print NF}'`
     fname=`echo $splits | awk -v n=$nf '{print $n}'`
     cp $file automatic/$fname 
+   ./test_examples automatic/$fname
 done
 
 
