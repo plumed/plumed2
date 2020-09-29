@@ -119,8 +119,8 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned ncv_;
   unsigned long counter_;
+  std::size_t ncv_;
 
   double kbt_;
   double biasfactor_;
@@ -546,7 +546,7 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
           ifile.scanField();
           kernels_.emplace_back(height,center,sigma);
         }
-        log.printf("    A total of %d kernels where read\n",kernels_.size());
+        log.printf("    A total of %u kernels where read\n",kernels_.size());
       }
       else
       {
@@ -582,7 +582,7 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
+        log.printf("    A total of %u kernels where read, and compressed to %u\n",counter_,kernels_.size());
       }
       ifile.reset(false);
       ifile.close();
