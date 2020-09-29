@@ -38,7 +38,7 @@ V(\mathbf{s}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{s})}{P(\mathbf{s})}
 This OPES_WT action has as target the well-tempered distribution with bias factor \f$\gamma\f$: \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$.
 Similarly to \ref METAD, OPES optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting with a weighted kernel density estimation the unbiased Boltzmann distribution \f$P(\mathbf{s})\f$.
-We refer to the paper for futher details \cite Invernizzi2020rethinking .
+See the paper for futher details \cite Invernizzi2020rethinking .
 
 Contrary to \ref METAD, OPES is not filling the basins, but rather quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines it.
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more (quasi-static regime).
@@ -947,7 +947,7 @@ template <class mode>
 double OPESwt<mode>::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list
+  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
     prob+=evaluateKernel(kernels_[k],cv,der_prob);
   if(NumParallel_>1)
   {
