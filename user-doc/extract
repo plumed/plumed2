@@ -284,6 +284,7 @@ for file in ./tutorials/others/*.txt ; do
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
 
+    cp $file automatic/$fname 
 done
 
 
