@@ -14,8 +14,8 @@ The OPES module contains the implementation of the on-the-fly probability enhanc
 This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features.
 
 ## Usage
-Currently, all features of the OPES_WT module are included in a single OPES_WT bias function: \ref OPES_WT
-In the folder 'src/opes/postprocessing' python scripts for the most common postprocessing are available.
+Currently, the OPES module is composed only by a bias action: \ref OPES_WT
+In the folder 'src/opes/postprocessing' python scripts for the most common post-processing are available.
 
 ## Module Contents
 - \subpage OPES_bias
