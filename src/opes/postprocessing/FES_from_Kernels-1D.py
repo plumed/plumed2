@@ -72,6 +72,14 @@ del data
 print('  all data loaded')
 
 #set grid
+if args.grid_min is None:
+  grid_min=min(center)
+else:
+  grid_min=args.grid_min
+if args.grid_max is None:
+  grid_max=max(center)
+else:
+  grid_max=args.grid_max
 grid_bin=args.grid_bin+1
 period=0
 if args.angle:
@@ -84,14 +92,6 @@ if args.angle:
   if calc_der:
     print(' +++ WARNING: derivative is not supported for periodic CV +++')
     calc_der=False
-if args.grid_min is None:
-  grid_min=min(center)
-else:
-  grid_min=args.grid_min
-if args.grid_max is None:
-  grid_max=max(center)
-else:
-  grid_max=args.grid_max
 cv_grid=np.linspace(grid_min,grid_max,grid_bin)
 
 #output files
