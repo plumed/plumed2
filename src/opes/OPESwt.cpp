@@ -35,15 +35,15 @@ To do so, it builds a bias potential defined as:
 V(\mathbf{s}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{s})}{P(\mathbf{s})}
 \f]
 
-This OPES_WT action has as target the well-tempered distribution with bias factor \f$\gamma\f$: \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$.
+This OPES_WT action targets the well-tempered distribution with bias factor \f$\gamma\f$, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$.
 Similarly to \ref METAD, OPES optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting with a weighted kernel density estimation the unbiased Boltzmann distribution \f$P(\mathbf{s})\f$.
 See the paper for futher details \cite Invernizzi2020rethinking .
 
-Contrary to \ref METAD, OPES is not filling the basins, but rather quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines it.
-It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more (quasi-static regime).
-For this reason it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-Some python scripts are available in src/opes/postprocessing, that work in a similar way to \ref sum_hills.
+As an intuitive picture, OPES is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
+It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more, to assure a regime of quasi-static bias.
+For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
+Some python scripts are also available in src/opes/postprocessing, that work in a similar way to \ref sum_hills.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
@@ -51,9 +51,9 @@ Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should con
 Notice that OPES is more sensitive to degenerate CVs than \ref METAD.
 If the employed CV maps different metastable basins onto the same CV-space region, then OPES will remain stuck rather than completely reshaping the bias.
 This can be useful to diagnostic problems with your collective variable.
-If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR (or even without well-tempering).
-This way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors.
-On the contrary, if your CVs are not degenerate (even if they are suboptimal) you should converge faster by using OPES instead of \ref METAD.
+If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR, or even without well-tempering.
+In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors.
+On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES instead of \ref METAD \cite Invernizzi2020rethinking.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
 If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slightly slower in converging.
@@ -68,6 +68,8 @@ Restart can be done from a KERNELS file, but it might not be perfect (due to lim
 For a perfect restart you need to use STATE_RFILE to read a checkpoint with all the needed info.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
+
+Multiple walkers are supported only with MPI communication.
 
 \par Examples
 
