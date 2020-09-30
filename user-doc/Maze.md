@@ -1,7 +1,7 @@
 \page MAZE MAZE
 
 <!-- 
-description: Module that implements enhanced sampling methods for ligand unbinding from protein tunnels.
+description: Module that implements enhanced sampling methods for ligand unbinding from protein tunnels
 authors: Jakub Rydzewski
 reference: \cite RydzewskiMaze 
 -->
