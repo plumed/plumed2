@@ -123,8 +123,7 @@ PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs .
 
 \plumedfile
-#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
-#SETTINGS NREPLICAS=2
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
 encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
