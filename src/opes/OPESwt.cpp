@@ -112,7 +112,6 @@ PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 class OPESwt : public bias::Bias {
 
 private:
-  static const bool explore_=false; //will change this for OPES_WT_EXPLORE
   bool isFirstStep_;
   bool afterCalculate_;
   unsigned NumParallel_;
@@ -231,10 +230,8 @@ OPESwt::OPESwt(const ActionOptions& ao)
   , counter_(1)
   , Zed_(1)
   , work_(0)
+  , action_name_("OPES_WT")
 {
-  action_name_="OPES_WT";
-  if(explore_)
-    action_name_+="_EXPLORE";
   std::string error_in_input1("Error in input in action "+action_name_+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
 
@@ -272,11 +269,6 @@ OPESwt::OPESwt(const ActionOptions& ao)
     plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor_;
   }
-  if(explore_)
-  {
-    plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with EXPLORE mode");
-    bias_prefactor_=biasfactor_-1;
-  }
 
   adaptive_sigma_stride_=0;
   parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
@@ -302,8 +294,6 @@ OPESwt::OPESwt(const ActionOptions& ao)
     for(unsigned i=0; i<ncv_; i++)
     {
       plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
-      if(explore_)
-        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
     }
   }
 
@@ -314,8 +304,6 @@ OPESwt::OPESwt(const ActionOptions& ao)
   sum_weights2_=sum_weights_*sum_weights_;
 
   double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
-  if(explore_)
-    cutoff=sqrt(2.*barrier/kbt_); //otherwise it is too small
   parse("KERNEL_CUTOFF",cutoff);
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
   cutoff2_=cutoff*cutoff;
@@ -538,7 +526,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
           sum_weights2_+=weight*weight;
           counter_++;
         }
-        KDEnorm_=explore_?counter_:sum_weights_;
+        KDEnorm_=sum_weights_;
         if(!no_Zed_)
         {
           double sum_uprob=0;
@@ -613,7 +601,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
   }
 
 //set initial old values
-  KDEnorm_=explore_?counter_:sum_weights_;
+  KDEnorm_=sum_weights_;
   old_KDEnorm_=KDEnorm_;
   old_Zed_=Zed_;
 
@@ -791,39 +779,24 @@ void OPESwt::update()
   const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
-  if(explore_)
-  {
-    KDEnorm_=counter_;
-    //in opes explore the kernel height=1, because it is not multiplied by the weight
-    height=1;
-  }
-  else
-    KDEnorm_=sum_weights_;
+  KDEnorm_=sum_weights_;
 
 //if needed, rescale sigma and height
   std::vector<double> sigma=sigma0_;
   if(sigma0_.size()==0)
   {
     sigma.resize(ncv_);
-    if(explore_)
-    {
+    if(counter_==1+NumWalkers_)
+    { //very first estimate is from unbiased, thus must be adjusted
       for(unsigned i=0; i<ncv_; i++)
-        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_);
+        av_M2_[i]/=(1-bias_prefactor_);
     }
-    else
-    {
-      if(counter_==1+NumWalkers_)
-      { //very first estimate is from unbiased, thus must be adjusted
-        for(unsigned i=0; i<ncv_; i++)
-          av_M2_[i]/=(1-bias_prefactor_);
-      }
-      for(unsigned i=0; i<ncv_; i++)
-        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
-    }
+    for(unsigned i=0; i<ncv_; i++)
+      sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
   }
   if(!fixed_sigma_)
   {
-    const double size=explore_?counter_:neff; //for EXPLORE neff is not relevant
+    const double size=neff; //for EXPLORE neff is not relevant
     const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
