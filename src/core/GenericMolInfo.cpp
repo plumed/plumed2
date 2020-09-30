@@ -278,7 +278,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
     return;
   }
   MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );
-  if(atoms.empty()) error(symbol + " is not a label plumed knows");
+  if(atoms.empty()) error(symbol + " not found in your MOLINFO molecule");
 }
 
 std::string GenericMolInfo::getAtomName(AtomNumber a)const {
