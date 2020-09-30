@@ -32,6 +32,8 @@
 #include <unistd.h>
 #endif
 
+#include <iomanip>
+
 using namespace std;
 namespace PLMD {
 
@@ -66,13 +68,34 @@ bool Tools::convert(const string & str,AtomNumber &a) {
 
 template<class T>
 bool Tools::convertToInt(const string & str,T & t) {
+  // First try standard conversion
   if(convertToAny(str,t)) return true;
+  // Then use lepton
   try {
     double r=lepton::Parser::parse(str).evaluate(lepton::Constants());
-    if(std::round(r)==r) {
-      t=static_cast<T>(r);
-      return true;
-    }
+
+    // now sanity checks on the resulting number
+
+    // it should not overflow the requested int type:
+    // (see https://stackoverflow.com/a/526092)
+    if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) return false;
+    if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) return false;
+   
+    // do the actual conversion
+    auto tmp=static_cast<T>(std::round(r));
+
+    // it should be *very close* to itself if converted back to double
+    double diff= r-static_cast<double>(tmp);
+    if(diff*diff > 1e-20) return false;
+    // this is to accomodate small numerical errors and allow e.g. exp(log(7)) to be integer
+
+    // it should be change if incremented or decremented by one (see https://stackoverflow.com/a/43656140)
+    if(r == static_cast<double>(tmp-1)) return false;
+    if(r == static_cast<double>(tmp+1)) return false;
+   
+    // everything is fine, then store in t
+    t=tmp;
+    return true;
   } catch(PLMD::lepton::Exception& exc) {
   }
   return false;
