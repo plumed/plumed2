@@ -35,7 +35,7 @@ BEGIN{inside=0}{
        else if( match($i,"<pre") ) { tstr=$i; sub("<pre","",tstr); print tstr; }
        if( match($i,"DATADIR=") ) { datadir=$i; sub("DATADIR=","",datadir); }
     }
-    if( datadir!="" ) { system("cp ../../"datadir"/* ."); }
+    if( datadir!="" ) { system("cp -r ../../"datadir"/* ."); }
     next;
   }
   if(!inside){
