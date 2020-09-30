@@ -43,7 +43,7 @@ See the paper for futher details \cite Invernizzi2020rethinking .
 As an intuitive picture, OPES is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more, to assure a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-Some python scripts are also available in src/opes/postprocessing, that work in a similar way to \ref sum_hills.
+At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing"> this link </a> you can also find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
