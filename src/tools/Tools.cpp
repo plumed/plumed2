@@ -80,7 +80,7 @@ bool Tools::convertToInt(const string & str,T & t) {
     // (see https://stackoverflow.com/a/526092)
     if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) return false;
     if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) return false;
-   
+
     // do the actual conversion
     auto tmp=static_cast<T>(std::round(r));
 
@@ -92,7 +92,7 @@ bool Tools::convertToInt(const string & str,T & t) {
     // it should be change if incremented or decremented by one (see https://stackoverflow.com/a/43656140)
     if(r == static_cast<double>(tmp-1)) return false;
     if(r == static_cast<double>(tmp+1)) return false;
-   
+
     // everything is fine, then store in t
     t=tmp;
     return true;
