@@ -45,11 +45,11 @@ The collective variables (CVs) used to construct the bias potential must be:
  2. the energy and an order parameter.
 
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
-The second CV, the order parameter, must be used when one aims at studying a first order phase transition in the chosen temperature interval \cite Piaggi-arXiv-2019.
+The second CV, the order parameter, must be used when one aims at studying a first order phase transition in the chosen temperature interval \cite Piaggi-JCP-2019.
 
 The algorithm will explore the free energy at each temperature up to a predefined free
  energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
-If only the energy is biased, i.e. no phase transition is considered, then TRESHOLD can be set to 1.
+If only the energy is biased, i.e. no phase transition is considered, then THRESHOLD can be set to 1.
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
 
@@ -164,7 +164,7 @@ void TD_Multicanonical::registerKeywords(Keywords& keys) {
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
   keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
-  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
+  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
 }
 
 
@@ -181,7 +181,7 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   log.printf("  Please read and cite ");
   log << plumed.cite("Piaggi and Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
   log.printf(" and ");
-  log << plumed.cite("Piaggi and Parrinello, arXiv preprint arXiv:1904.05624 (2019)");
+  log << plumed.cite("Piaggi and Parrinello, J. Chem. Phys. 150 (24), 244119 (2019)");
   log.printf("\n");
   parse("THRESHOLD",threshold_);
   if(threshold_<=0.0) {
@@ -227,7 +227,7 @@ void TD_Multicanonical::updateGrid() {
     if(targetDistGrid().getDimension()==1) {
       // 1D variant: Multicanonical without order parameter
       // In this variant we find the minimum and maximum relevant potential energies.
-      // Using this information we construct a uniform target distribution inbetween these two.
+      // Using this information we construct a uniform target distribution in between these two.
       double beta = getBeta();
       double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
       double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);

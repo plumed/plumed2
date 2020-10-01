@@ -181,8 +181,8 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
   keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
   keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
   keys.add("compulsory","MM","0","the value of m in the switching function (only needed for TYPE=RATIONAL); 0 implies 2*NN");
-  keys.add("compulsory","A","the value of a in the switching funciton (only needed for TYPE=SMAP)");
-  keys.add("compulsory","B","the value of b in the switching funciton (only needed for TYPE=SMAP)");
+  keys.add("compulsory","A","the value of a in the switching function (only needed for TYPE=SMAP)");
+  keys.add("compulsory","B","the value of b in the switching function (only needed for TYPE=SMAP)");
 }
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {

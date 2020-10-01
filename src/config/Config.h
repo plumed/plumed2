@@ -81,7 +81,7 @@ std::string getVersion();
 /// E.g. "2.2.3"
 std::string getVersionLong();
 
-/// Return the git PLUMED verion
+/// Return the git PLUMED version
 /// E.g. "c5badb091cd30"
 std::string getVersionGit();
 

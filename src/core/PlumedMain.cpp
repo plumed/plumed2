@@ -43,6 +43,7 @@
 #include "lepton/Exception.h"
 #include "DataFetchingObject.h"
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <unordered_map>
@@ -346,13 +347,18 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTNULL(val,word);
         readInputLine(static_cast<char*>(val));
         break;
+      case cmd_readInputLines:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        readInputLines(static_cast<char*>(val));
+        break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=7;
+        *(static_cast<int*>(val))=8;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -650,6 +656,36 @@ void PlumedMain::readInputLine(const std::string & str) {
   }
 }
 
+void PlumedMain::readInputLines(const std::string & str) {
+  plumed_assert(initialized);
+  if(str.empty()) return;
+  char tmpname[L_tmpnam];
+  // Generate temporary name
+  // Although tmpnam generates a warning as a deprecated function, it is part of the C++ standard
+  // so it should be ok.
+  {
+    auto ret=std::tmpnam(tmpname);
+    plumed_assert(ret);
+  }
+  // write buffer
+  {
+    FILE* fp=std::fopen(tmpname,"w");
+    plumed_assert(fp);
+    // make sure file is closed also if an exception occurs
+    auto deleter=[](FILE* fp) { std::fclose(fp); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+    auto ret=std::fputs(str.c_str(),fp);
+    plumed_assert(ret!=EOF);
+  }
+  // read file
+  {
+    // make sure file is deleted also if an exception occurs
+    auto deleter=[](const char* name) { std::remove(name); };
+    std::unique_ptr<char,decltype(deleter)> file_deleter(&tmpname[0],deleter);
+    readInputFile(tmpname);
+  }
+}
+
 void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   plumed_assert(initialized);
   if(words.empty())return;
@@ -901,22 +937,22 @@ void PlumedMain::load(const std::string& ss) {
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
-      if(comm.Get_rank()==0) system(cmd.c_str());
+      if(comm.Get_rank()==0) {
+        int ret=system(cmd.c_str());
+        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+      }
       comm.Barrier();
       base="./"+base;
     }
     s=base+"."+config::getSoExt();
     void *p=dlloader.load(s);
     if(!p) {
-      const std::string error_msg="I cannot load library " + ss + " " + dlloader.error();
-      log<<"ERROR\n";
-      log<<error_msg<<"\n";
-      plumed_merror(error_msg);
+      plumed_error()<<"I cannot load library " << ss << " " << dlloader.error();
     }
     log<<"Loading shared library "<<s.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
-  } else plumed_merror("loading not enabled, please recompile with -D__PLUMED_HAS_DLOPEN");
+  } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
 }
 
 double PlumedMain::getBias() const {

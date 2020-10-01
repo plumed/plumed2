@@ -375,7 +375,7 @@ PIV::PIV(const ActionOptions&ao):
   // In the following P stands for Point (either an Atom or a COM)
   unsigned resnum=0;
   // Presind (array size: number of residues) contains the contains the residue number
-  //   this is because the residue numbers may not alwyas be ordered from 1 to resnum
+  //   this is because the residue numbers may not always be ordered from 1 to resnum
   std:: vector<unsigned> Presind;
   // Build Presind
   for (unsigned i=0; i<mypdb.getAtomNumbers().size(); i++) {
@@ -512,19 +512,19 @@ PIV::PIV(const ActionOptions&ao):
     }
     log << "Creating Neighbor Lists \n";
     // WARNING: is nl_cut meaningful here?
-    nlall= new NeighborList(listall,pbc,getPbc(),nl_cut[0],nl_st[0]);
+    nlall= new NeighborList(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
     if(com) {
       //Build lists of Atoms for every COM
       for (unsigned i=0; i<compos.size(); i++) {
         // WARNING: is nl_cut meaningful here?
-        nlcom[i]= new NeighborList(comatm[i],pbc,getPbc(),nl_cut[0],nl_st[0]);
+        nlcom[i]= new NeighborList(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
       }
     }
     unsigned ncnt=0;
     // Direct blocks AA, BB, CC, ...
     if(direct) {
       for (unsigned j=0; j<Natm; j++) {
-        nl[ncnt]= new NeighborList(Plist[j],pbc,getPbc(),nl_cut[j],nl_st[j]);
+        nl[ncnt]= new NeighborList(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
         ncnt+=1;
       }
     }
@@ -532,16 +532,16 @@ PIV::PIV(const ActionOptions&ao):
     if(cross) {
       for (unsigned j=0; j<Natm; j++) {
         for (unsigned i=j+1; i<Natm; i++) {
-          nl[ncnt]= new NeighborList(Plist[i],Plist[j],false,pbc,getPbc(),nl_cut[ncnt],nl_st[ncnt]);
+          nl[ncnt]= new NeighborList(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
           ncnt+=1;
         }
       }
     }
   } else {
     log << "WARNING: Neighbor List not activated this has not been tested!!  \n";
-    nlall= new NeighborList(listall,pbc,getPbc());
+    nlall= new NeighborList(listall,true,pbc,getPbc(),comm);
     for (unsigned j=0; j<Nlist; j++) {
-      nl[j]= new NeighborList(Plist[j],Plist[j],true,pbc,getPbc());
+      nl[j]= new NeighborList(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
     }
   }
   // Output Nlist
@@ -721,7 +721,7 @@ PIV::~PIV()
 void PIV::calculate()
 {
 
-  // Local varaibles
+  // Local variables
   // The following are probably needed as static arrays
   static int prev_stp=-1;
   static int init_stp=1;
@@ -921,7 +921,7 @@ void PIV::calculate()
           std:: vector<int> Vpos(stride,0);
           // Vectors collecting occupancies: OrdVec one rank, OrdVecAll all ranks
           std:: vector<int> OrdVecAll(stride*Nprec);
-          // Big vectors contining all Atom indexes for every occupancy (Atom0O(Nprec,n) and Atom1O(Nprec,n) matrices in one vector)
+          // Big vectors containing all Atom indexes for every occupancy (Atom0O(Nprec,n) and Atom1O(Nprec,n) matrices in one vector)
           std:: vector<int> Atom0F;
           std:: vector<int> Atom1F;
           // Vector used to reconstruct arrays
@@ -963,7 +963,7 @@ void PIV::calculate()
           // build big vectors for atom pairs on all ranks for all ranks
           std:: vector<int> Atom0FAll(Fdim);
           std:: vector<int> Atom1FAll(Fdim);
-          // TO BE IMPROVED: Allgathers may be substituded by gathers by proc 0
+          // TO BE IMPROVED: Allgathers may be substituted by gathers by proc 0
           //   Moreover vectors are gathered head-to-tail and assembled later-on in a serial step.
           // Gather the full Ordering Vector (occupancies). This is what we need to build the PIV
           comm.Allgather(&OrdVec[0],Nprec,&OrdVecAll[0],Nprec);
@@ -972,7 +972,7 @@ void PIV::calculate()
           comm.Allgatherv(&Atom1F[0],Atom1F.size(),&Atom1FAll[0],&Vdim[0],&Vpos[0]);
 
           // Reconstruct the full vectors from collections of Allgathered parts (this is a serial step)
-          // This is the tricky serial step, to assemble toghether PIV and atom-pair info from head-tail big vectors
+          // This is the tricky serial step, to assemble together PIV and atom-pair info from head-tail big vectors
           // Loop before on l and then on i would be better but the allgather should be modified
           // Loop on blocks
           //for(unsigned m=0;m<Nlist;m++) {

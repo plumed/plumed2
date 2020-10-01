@@ -240,7 +240,7 @@ esac
 case "$action" in
   (patch)
     if [ ! -e "$diff" ] ; then
-      echo "ERROR: MD engine not supported (or mispelled)"
+      echo "ERROR: MD engine not supported (or misspelled)"
       exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
@@ -413,7 +413,7 @@ EOF
   ;;
   (revert)
     if [ ! -e "$diff" ] ; then
-      echo "ERROR: MD engine not supported (or mispelled)"
+      echo "ERROR: MD engine not supported (or misspelled)"
       exit 1
     fi
     if type -t plumed_before_revert 1>/dev/null ; then

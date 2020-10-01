@@ -408,7 +408,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       if(!found)plumed_merror("variable "+idw[i]+" is not found in the bunch of cvs: revise your --idw option" );
     }
     plumed_massert( idw.size()<=cvs.size(),"the number of variables to be integrated should be at most equal to the total number of cvs  ");
-    // in this case you neeed a beta factor!
+    // in this case you need a beta factor!
   }
 
   std::string kt; kt=std::string("1.");// assign an arbitrary value just in case that idw.size()==cvs.size()

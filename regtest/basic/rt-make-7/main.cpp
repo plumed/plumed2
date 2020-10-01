@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 
 using namespace PLMD;
 
@@ -29,16 +30,71 @@ void small_test_mpi() {
   plumed_assert(y[0]==y0[0] && y[1]==y0[1] && y[2]==y0[2]);
 }
 
+template<typename T>
+void test_convert() {
+  Plumed plumed;
+  int size=sizeof(T);
+  T t=0.0;
+  plumed.cmd("setRealPrecision",&size);
+  plumed.cmd("convert cos(0.0)",&t);
+  plumed_assert(t==1.0);
+}
+
+void test_checkAction() {
+  Plumed plumed;
+  int i=10;
+  plumed.cmd("checkAction DISTANCE",&i);
+  plumed_assert(i==1);
+  i=10;
+  plumed.cmd("checkAction ANY_NONEXISTING_NAME",&i);
+  plumed_assert(i==0);
+}
+
+void test_cl() {
+  {
+    Plumed plumed;
+    int ret;
+    plumed.cmd("CLTool setArgvLine","plumed --help");
+    ret=10;
+    plumed.cmd("CLTool run",&ret);
+    plumed_assert(ret==0);
+  }
+  {
+    Plumed plumed;
+    auto fp=std::fopen("tmp_out","w");
+    int ret;
+    plumed.cmd("CLTool setArgvLine","plumed --help");
+    plumed.cmd("CLTool setOut",fp);
+    ret=10;
+    plumed.cmd("CLTool run",&ret);
+    plumed_assert(ret==0);
+    std::fclose(fp);
+
+    std::ifstream check("tmp_out");
+    std::string line;
+    auto found=false;
+    while(std::getline(check,line)) {
+      if(line=="Commands:") found=true;
+    }
+    plumed_assert(found);
+  }
+}
+
 int main(){
 
   small_test_mpi();
+
+  test_convert<double>();
+  test_convert<float>();
+
+  test_cl();
 
   Plumed* plumed=new Plumed;
 
   int natoms=10;
 
   std::vector<double> positions(3*natoms,0.0);
-  for(unsigned i=0;i<natoms;i++) positions[i]=i;
+  for(unsigned i=0;i<natoms;i++) positions[i]=i/10.0;
   std::vector<double> masses(natoms,1.0);
   std::vector<double> forces(3*natoms,0.0);
   std::vector<double> box(9,0.0);
@@ -47,12 +103,18 @@ int main(){
   plumed->cmd("setNatoms",&natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
+  plumed->cmd("readInputLine","UNITS LENGTH=A");
+
+  plumed->cmd("readInputLine","d: TORSION ATOMS=1,1,1,1");
+  plumed->cmd("clear"); // this is to test the clear command
+
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed->cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed->cmd("readInputLine","PRINT ARG=d,d1 FILE=COLVAR");
-  plumed->cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
-  plumed->cmd("readInputLine","METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1");
-  plumed->cmd("readInputLine","METAD ARG=d PACE=2 SIGMA=1 HEIGHT=0 FILE=H2");
+  plumed->cmd("readInputLines","RESTRAINT ARG=d AT=0 KAPPA=1\n"
+                               "METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1\n"
+                               "METAD ARG=d PACE=2 SIGMA=1 HEIGHT=0 FILE=H2"
+             );
 
   std::ofstream ofs("output");
 
@@ -64,7 +126,7 @@ int main(){
     plumed->cmd("setVirial",&virial[0]);
     plumed->cmd("setMasses",&masses[0]);
 // first compute using modified positions:
-    positions[0]=0.5;
+    positions[0]=0.05;
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;

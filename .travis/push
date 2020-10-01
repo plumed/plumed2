@@ -161,7 +161,7 @@ EOF
 esac
 
 case "$branchtype" in
-(unsupported|unofficial)
+(unsupported|unofficial|master)
 # this is to avoid a huge log file:
 set +x
   for file in $(find . -name "*.html") ; do

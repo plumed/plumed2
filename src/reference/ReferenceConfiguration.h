@@ -37,7 +37,7 @@ class Value;
 class Pbc;
 class OFile;
 class PDB;
-class SetupMolInfo;
+class GenericMolInfo;
 
 /// \ingroup TOOLBOX
 /// Abstract base class for calculating the distance from a reference configuration.
@@ -130,7 +130,7 @@ public:
                                       const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ) { plumed_error(); }
-/// Move the reference configuration by an ammount specified using a Direction
+/// Move the reference configuration by an amount specified using a Direction
   void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };
 

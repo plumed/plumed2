@@ -957,7 +957,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   if( !matsums ) {
     for(unsigned i=0; i<myatoms.getNumberOfAtoms(); ++i) {
       if( atom_lab[myatoms.getIndex(i)].first==0 ) continue;
-      // Only need to do first two atoms for thigns like TopologyMatrix, HbondMatrix, Bridge and so on
+      // Only need to do first two atoms for things like TopologyMatrix, HbondMatrix, Bridge and so on
       if( allthirdblockintasks && i>1 ) break;
       unsigned mmc = atom_lab[myatoms.getIndex(i)].first - 1;
       weight *= mybasedata[mmc]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(i)].second );

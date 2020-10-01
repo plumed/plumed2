@@ -47,7 +47,7 @@ The collective variables (CVs) used to construct the bias potential must be:
   2. the potential energy, the volume, and an order parameter.
 
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
-The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition \cite Piaggi-arXiv-2019 .
+The third CV, the order parameter, must be used when the region of the phase diagram under study is crossed by a first order phase transition \cite Piaggi-JCP-2019 .
 
 The algorithm will explore the free energy at each temperature and pressure up to a predefined free
  energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
@@ -60,7 +60,7 @@ This is done through the keywords STEPS_TEMP and STEPS_PRESSURE.
 If the number of intermediate temperature and pressures is too small, then holes might appear in the target distribution.
 If it is too large, the performance will deteriorate with no additional advantage.
 
-We now describe the algorithm more rigurously.
+We now describe the algorithm more rigorously.
 The target distribution is given by
 \f[
 p(E,\mathcal{V},s)=
@@ -86,7 +86,7 @@ with \f$C\f$ such that \f$F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0\f$ with \f$E_{m
 \f$ \beta F_{\beta,P}(E,\mathcal{V},s) \f$ is not know from the start and is instead found during the simulation.
 Therefore \f$ p(E,\mathcal{V},s) \f$ is determined iteratively as done in the well tempered target distribution \cite Valsson-JCTC-2015.
 
-The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of TP plane.
+The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of Temperature-Pressure plane.
 The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
 
 The multicanonical ensemble (fixed volume) can be targeted using \ref TD_MULTICANONICAL.
@@ -109,13 +109,13 @@ vol: VOLUME
 bf1: BF_LEGENDRE ORDER=10 MINIMUM=-14750 MAXIMUM=-12250
 bf2: BF_LEGENDRE ORDER=10 MINIMUM=6.5 MAXIMUM=8.25
 
-# Target distribution
+# Target distribution - 1 bar = 0.06022140857 and 300 MPa = 180.66422571
 TD_MULTITHERMAL_MULTIBARIC ...
  MIN_TEMP=260
  MAX_TEMP=350
- MAX_PRESSURE=180.66422571 # 300 MPa
- MIN_PRESSURE=0.06022140857 # 1 bar
- PRESSURE=0.06022140857 # 1 bar
+ MAX_PRESSURE=180.66422571
+ MIN_PRESSURE=0.06022140857
+ PRESSURE=0.06022140857
  STEPS_PRESSURE=20
  STEPS_TEMP=20
  SIGMA=50.,0.05
@@ -150,9 +150,9 @@ OPT_AVERAGED_SGD ...
 
 
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
-Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
+Consider a system of 250 atoms that crystallizes in the FCC crystal structure.
 The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa.
-We assume that inside this region we can find the liquid-fcc coexistence line that we would like to obtain.
+We assume that inside this region we can find the liquid-FCC coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
 The energy, volume, and an order parameter are used as collective variables to construct the bias potential.
 We choose as order parameter the \ref FCCUBIC.
@@ -242,7 +242,7 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PRESSURE","Target pressure of the barostat used in the MD engine.");
   keys.add("compulsory","STEPS_TEMP","20","Number of temperature steps.");
   keys.add("compulsory","STEPS_PRESSURE","20","Number of pressure steps.");
-  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
+  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smoothing is performed, this is the default behavior.");
 }
 
 
@@ -263,7 +263,7 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   log.printf("  Please read and cite ");
   log << plumed.cite("Piaggi and Parrinello, Phys. Rev. Lett. 122 (5), 050601 (2019)");
   log.printf(" and ");
-  log << plumed.cite("Piaggi and Parrinello, arXiv preprint arXiv:1904.05624 (2019)");
+  log << plumed.cite("Piaggi and Parrinello, J. Chem. Phys. 150 (24), 244119 (2019)");
   log.printf("\n");
 
 

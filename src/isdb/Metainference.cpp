@@ -71,7 +71,7 @@ the comparison with the experimental data can chosen using the keyword LIKELIHOO
 between gaussian or log-normal (one per data point), furthermore the evolution of the estimated average
 over an infinite number of replicas is driven by DFTILDE.
 
-As for Metainference theory there are two sigma values: SIGMA_MEAN represent the
+As for Metainference theory there are two sigma values: SIGMA_MEAN0 represent the
 error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
 in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
@@ -132,13 +132,14 @@ cv2: TORSION ATOMS=2,3,4,5
 mm: METAD ARG=cv1,cv2 HEIGHT=0.5 SIGMA=0.3,0.3 PACE=200 BIASFACTOR=8 WALKERS_MPI
 
 METAINFERENCE ...
+#SETTINGS NREPLICAS=2
 ARG=rdc.*,mm.bias
 REWEIGHT
 NOISETYPE=OUTLIERS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
 SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01
 SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
-SIGMA_MEAN=0.001
+SIGMA_MEAN0=0.001
 LABEL=spe
 ... METAINFERENCE
 \endplumedfile
@@ -232,6 +233,11 @@ class Metainference : public bias::Bias
   // optimize sigma mean
   vector< vector < vector <double> > > sigma_mean2_last_;
   unsigned optsigmamean_stride_;
+  // optimize sigma max
+  unsigned N_optimized_step_;
+  unsigned optimized_step_;
+  bool sigmamax_opt_done_;
+  std::vector<double> sigma_max_est_;
 
   // average weights
   unsigned                   average_weights_stride_;
@@ -303,6 +309,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("optional","SIGMA_MAX_STEPS", "Number of steps used to optimise SIGMA_MAX, before that the SIGMA_MAX value is used");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
@@ -352,6 +359,9 @@ Metainference::Metainference(const ActionOptions&ao):
   do_reweight_(false),
   do_optsigmamean_(0),
   optsigmamean_stride_(0),
+  N_optimized_step_(0),
+  optimized_step_(0),
+  sigmamax_opt_done_(false),
   average_weights_stride_(1)
 {
   bool noensemble = false;
@@ -442,6 +452,13 @@ Metainference::Metainference(const ActionOptions&ao):
   parse("OPTSIGMAMEAN", stringa_optsigma);
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
+  else if(stringa_optsigma=="SEM_MAX")  do_optsigmamean_=2;
+
+  unsigned aver_max_steps=0;
+  parse("SIGMA_MAX_STEPS", aver_max_steps);
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
+  if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
 
   // resize vector for sigma_mean history
   sigma_mean2_last_.resize(nsel);
@@ -449,7 +466,7 @@ Metainference::Metainference(const ActionOptions&ao):
 
   vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
-  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart())
+  if(do_optsigmamean_==0 && read_sigma_mean_.size()==0 && !getRestart())
     error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
 
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
@@ -563,8 +580,8 @@ Metainference::Metainference(const ActionOptions&ao):
     Dsigma_.resize(read_dsigma.size());
     Dsigma_=read_dsigma;
   } else {
-    Dsigma_.resize(sigma_max_.size());
-    for(unsigned i=0; i<sigma_max_.size(); i++) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+    Dsigma_.resize(sigma_max_.size(), -1.);
+    /* in this case Dsigma is initialised after reading the restart file if present */
   }
 
   // monte carlo stuff
@@ -606,6 +623,8 @@ Metainference::Metainference(const ActionOptions&ao):
       error("DSIGMA can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
     }
   }
+
+  sigma_max_est_.resize(sigma_max_.size(), 0.);
 
   IFile restart_sfile;
   restart_sfile.link(*this);
@@ -657,6 +676,12 @@ Metainference::Metainference(const ActionOptions&ao):
         Tools::convert(i,msg);
         restart_sfile.scanField("sigma_"+msg,sigma_[i]);
       }
+      for(unsigned i=0; i<sigma_max_.size(); ++i) {
+        std::string msg;
+        Tools::convert(i,msg);
+        restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
+        sigmamax_opt_done_=true;
+      }
       if(noise_type_==GENERIC) {
         for(unsigned i=0; i<ftilde_.size(); ++i) {
           std::string msg;
@@ -683,6 +708,9 @@ Metainference::Metainference(const ActionOptions&ao):
     restart_sfile.scanField();
     restart_sfile.close();
   }
+
+  /* If DSIGMA is not yet initialised do it now */
+  for(unsigned i=0; i<sigma_max_.size(); i++) if(Dsigma_[i]==-1) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
 
   switch(noise_type_) {
   case GENERIC:
@@ -1481,6 +1509,7 @@ void Metainference::get_weights(const unsigned iselect, double &fact, double &va
     vector<double> bias(nrep_,0);
     if(master) {
       bias[replica_] = getArgument(narg);
+      //bias[replica_] = ((1.0/plumed.getAtoms().getKbT())- (1.0/kbt_) )*getArgument(narg);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
     }
     comm.Sum(&bias[0], nrep_);
@@ -1488,9 +1517,9 @@ void Metainference::get_weights(const unsigned iselect, double &fact, double &va
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<nrep_; ++i) {
       bias[i] = exp((bias[i]-maxbias)/kbt_);
+      //bias[i] = exp((bias[i]-maxbias));
       norm   += bias[i];
     }
-
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
     if(!firstTimeW[iselect]) {
@@ -1585,7 +1614,24 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
       sigma_mean2_tmp[0] = max_now;
       valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
     }
-    // endif sigma optimization
+    // endif sigma mean optimization
+    // start sigma max optimization
+    if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
+      for(unsigned i=0; i<sigma_max_.size(); i++) {
+        sigma_max_est_[i] += sqrt(sigma_mean2_tmp[i]);
+        // ready to set once and for all the value of sigma_max
+        if(optimized_step_==N_optimized_step_) {
+          double isteps = 1./static_cast<double>(optimized_step_);
+          sigmamax_opt_done_=true;
+          for(unsigned i=0; i<sigma_max_.size(); i++) {
+            sigma_max_[i]=sigma_max_est_[i]*isteps*sqrt(dnrep);
+            Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+          }
+        }
+      }
+      optimized_step_++;
+    }
+    // end sigma max optimization
   } else {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
@@ -1716,6 +1762,11 @@ void Metainference::writeStatus()
     std::string msg;
     Tools::convert(i,msg);
     sfile_.printField("sigma_"+msg,sigma_[i]);
+  }
+  for(unsigned i=0; i<sigma_max_.size(); ++i) {
+    std::string msg;
+    Tools::convert(i,msg);
+    sfile_.printField("sigma_max_"+msg,sigma_max_[i]);
   }
   if(noise_type_==GENERIC) {
     for(unsigned i=0; i<ftilde_.size(); ++i) {

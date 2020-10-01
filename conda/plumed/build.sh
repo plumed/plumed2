@@ -17,12 +17,13 @@ export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT
 export CXXFLAGS="${CXXFLAGS//-O2/-O3}"
 
 # libraries are explicitly listed here due to --disable-libsearch
-export LIBS="-lgsl -lgslcblas -llapack -lblas -lxdrfile -lz $LIBS"
+export LIBS="-lfftw3 -lgsl -lgslcblas -llapack -lblas -lxdrfile -lz $LIBS"
 
 # python is disabled since it should be provided as a separate package
 # --disable-libsearch forces to link only explicitely requested libraries
 # --disable-static-patch avoid tests that are only required for static patches
 # --disable-static-archive makes package smaller
+# --enable-asmjit enables bundled asmjit implementation
 ./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --enable-asmjit
 
 make -j${CPU_COUNT}

@@ -544,7 +544,7 @@ for i in range(1,15):
         sample_variance = ( len( sq ) / ( len(sq) - 1 ) )*population_variance
         # Print out the length of the blocks, the final average taken over all blocks and the square 
         # root of the sample variance divided by the number of data points that this estimate was 
-        # calcualted from.  This last term is a measure of the eror bar
+        # calcualted from.  This last term is a measure of the error bar
         print( fmult, mean, math.sqrt( sample_variance / len(sq) ) )
 \endcode
 
@@ -573,7 +573,7 @@ above and to understand what is being done in the PLUMED inputs and the python s
 are telling you.  
 </b>
 
-\subsection triete-2-alltogether Putting it all together
+\subsection triete-2-altogether Putting it all together
 
 In this final exercise we are going to try to combine everything we have seen in the previous sections.  We are going to sample from the distribution 
 that was introduced in \ref trieste-2-biases.  This time though we are not going to generate random variables from the Gaussian directly.  We are instead going to

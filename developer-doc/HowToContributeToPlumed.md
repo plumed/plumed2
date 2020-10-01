@@ -25,7 +25,7 @@ wrote the functionalities they are using and not to simply assume that we (the c
 everything in PLUMED.  
 - The author of any feature is responsible for ensuring their feature is maintained in perpetuity.  
 That is to say we (the core developers) will not take responsibility for maintaining features that we
-did not ourselves write.  Furthermore, this maintenence involves answering users questions on the mail
+did not ourselves write.  Furthermore, this maintenance involves answering users questions on the mail
 lists as well as the occasional fix to the relevant cpp files.
 
 In addition, to these two requirements we do not want the core-developer team to expand as we believe that
@@ -116,7 +116,7 @@ include ../maketools/make.module
 You should only need to modify the first line of this file - the line starting with USE=.  This line is used to tell PLUMED at compile time
 what other modules are required in order for this module to function.  This module relies on functionality that is contained in the core, tools, 
 vesselbase and multicolvar modules and so these modules are all required during compilation of this particular module.  For your new module you 
-will most likely always need to use core and tools.  The other modules that are required will depend on what you are implemening. 
+will most likely always need to use core and tools.  The other modules that are required will depend on what you are implementing.
 
 The last thing you will need to do before you start programming is that you will need to modify the .gitignore file in the src directory in order 
 to stop git from ignoring your new module directory.   If you look in the .gitignore file you will see that it reads something like this:

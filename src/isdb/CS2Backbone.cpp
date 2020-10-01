@@ -112,6 +112,7 @@ In this first example the chemical shifts are used to calculate a collective var
 in NMR driven Metadynamics \cite Granata:2013dk :
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
 cs: CS2BACKBONE ATOMS=1-2612 DATADIR=data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
@@ -119,9 +120,10 @@ metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
 
-In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
+In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs .
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
 encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
@@ -134,6 +136,7 @@ PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
@@ -395,7 +398,7 @@ class CS2Backbone : public MetainferenceBase {
     Value *comp;                // a pointer to the component
     unsigned res_kind;          // residue type (STD/GLY/PRO)
     unsigned atm_kind;          // nuclues (HA/CA/CB/CO/NH/HN)
-    unsigned res_type_prev;     // previuos residue (ALA/VAL/..)
+    unsigned res_type_prev;     // previous residue (ALA/VAL/..)
     unsigned res_type_curr;     // current residue (ALA/VAL/..)
     unsigned res_type_next;     // next residue (ALA/VAL/..)
     string res_name;            // residue name
@@ -552,7 +555,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   string stringadb  = stringa_data + string("/camshift.db");
   string stringapdb = stringa_data + string("/") + stringa_template;
 
-  /* Lenght conversion (parameters are tuned for angstrom) */
+  /* Length conversion (parameters are tuned for angstrom) */
   double scale=1.;
   if(!plumed.getAtoms().usingNaturalUnits()) {
     scale = 10.*atoms.getUnits().getLength();
@@ -1351,8 +1354,9 @@ void CS2Backbone::calculate()
 }
 
 void CS2Backbone::update_neighb() {
-  max_cs_atoms=0;
   // cycle over chemical shifts
+  unsigned nt=OpenMP::getNumThreads();
+  #pragma omp parallel for num_threads(nt)
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     const unsigned boxsize = getNumberOfAtoms();
     chemicalshifts[cs].box_nb.clear();
@@ -1366,6 +1370,9 @@ void CS2Backbone::update_neighb() {
       if(d2<cutOffNB2) chemicalshifts[cs].box_nb.push_back(bat);
     }
     chemicalshifts[cs].totcsatoms = chemicalshifts[cs].csatoms + chemicalshifts[cs].box_nb.size();
+  }
+  max_cs_atoms=0;
+  for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     if(chemicalshifts[cs].totcsatoms>max_cs_atoms) max_cs_atoms = chemicalshifts[cs].totcsatoms;
   }
 }
@@ -1380,31 +1387,22 @@ void CS2Backbone::compute_ring_parameters() {
       ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
       ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
       ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
-      vector<Vector> a(6);
-      a[0] = getPosition(ringInfo[i].atom[0]);
       // ring center
-      Vector midP = a[0];
-      for(unsigned j=1; j<size; j++) {
-        a[j] = getPosition(ringInfo[i].atom[j]);
-        midP += a[j];
-      }
+      Vector midP = getPosition(ringInfo[i].atom[0]);
+      for(unsigned j=1; j<size; j++) midP += getPosition(ringInfo[i].atom[j]);
       ringInfo[i].position = midP/6.;
       // compute normal vector to plane
-      Vector n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
-      Vector n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      Vector n1 = crossProduct(ringInfo[i].g[2], -ringInfo[i].g[4]);
+      Vector n2 = crossProduct(ringInfo[i].g[5], -ringInfo[i].g[1]);
       ringInfo[i].normVect = 0.5*(n1 + n2);
     }  else {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
       ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
       ringInfo[i].g[2] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
-      vector<Vector> a(size);
-      for(unsigned j=0; j<size; j++) {
-        a[j] = getPosition(ringInfo[i].atom[j]);
-      }
       // ring center
-      ringInfo[i].position = (a[0]+a[2]+a[3])/3.;
+      ringInfo[i].position = (getPosition(ringInfo[i].atom[0])+getPosition(ringInfo[i].atom[2])+getPosition(ringInfo[i].atom[3]))/3.;
       // ring plane normal vector
-      ringInfo[i].normVect = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
+      ringInfo[i].normVect = crossProduct(ringInfo[i].g[1],-ringInfo[i].g[2]);
 
     }
     // calculate squared length and length of normal vector

@@ -26,7 +26,7 @@
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 
@@ -59,15 +59,16 @@ The output from this collective variable, the free energy of solvation, can be u
 \par Examples
 
 \plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -310,24 +311,24 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
   map<string, map<string, string> > typemap;
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
-  vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  auto * moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   bool cter=false;
-  if (moldat.size() == 1) {
-    log << "  MOLINFO DATA found, using proper atom names\n";
+  if (moldat) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
 
       // Get atom and residue names
-      string Aname = moldat[0]->getAtomName(atoms[i]);
-      string Rname = moldat[0]->getResidueName(atoms[i]);
+      string Aname = moldat->getAtomName(atoms[i]);
+      string Rname = moldat->getResidueName(atoms[i]);
       string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
+      if (Aname == "OT1" || Aname == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 2);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OB";
         } else {
@@ -336,11 +337,11 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
         }
         cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
+      if (Aname == "OT2" || (cter == true && Aname == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OH1";
         } else {
