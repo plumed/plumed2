@@ -41,7 +41,6 @@ BEGIN{inside=0}{
   if(!inside){
     print;
     fflush();
-    system("");
     next;
   }
 
