@@ -40,6 +40,7 @@ BEGIN{inside=0}{
   }
   if(!inside){
     print;
+    system("");
     fflush();
     next;
   }
