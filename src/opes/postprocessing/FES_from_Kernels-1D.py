@@ -151,7 +151,7 @@ def build_fes(c,s,h):
       dist=np.minimum(dx,period-dx)/s
     prob[x]=np.sum(h*np.maximum(np.exp(-0.5*dist**2)-val_at_cutoff,0))
     if calc_der:
-      der_prob[x]=np.sum(dist/s*h*np.maximum(np.exp(-0.5*dist**2)-val_at_cutoff,0))
+      der_prob[x]=np.sum(-dist/s*h*np.maximum(np.exp(-0.5*dist**2)-val_at_cutoff,0))
   if not faster:
     Zed=0
     for j in range(nker):
