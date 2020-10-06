@@ -28,7 +28,17 @@ namespace opes {
 
 //+PLUMEDOC BIAS OPES_EXPANDED
 /*
-On-the-fly probability enhanced sampling (OPES) with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified .
+On-the-fly probability enhanced sampling (OPES) with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
+
+OPES aims at sampling a given target distribution over the configuration space \f$p^{tg}(\mathbf{x})\f$,
+different form the equilibrium Boltzmann distribution \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
+To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions
+\f[
+V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
+\f]
+The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
+
+Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
 \par Examples
 
