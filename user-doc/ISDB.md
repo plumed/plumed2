@@ -10,12 +10,8 @@ Here are listed the collective variables, functions and biases originally develo
 
 - \subpage ISDBColvar
 - \subpage ISDBFunction
+- \subpage ISDBGeneric
 - \subpage ISDBBias
-
-Furthermore using \subpage SELECTOR it is possible to define a variable
-inside the PLUMED code that can be used and modified by other actions. For example,
-a \ref SELECTOR can be used in combination with \ref RESCALE to activate
-a simulated-tempering like approach.
 
 Additional tutorials focused on the ISDB module are included in the following and are meant as advanced tutorials.
 
@@ -33,6 +29,14 @@ These collective variables are related to the definitions of models to interpret
 The following list contains descriptions of functions originally developed for the PLUMED-ISDB module. They can be used in combination with any other collective variable, function or bias also outside the ISDB module.
 
 @ISDB_FUNCTION@
+
+\page ISDBGeneric General Actions Documentation
+
+The following list contains descriptions of actions originally developed for the PLUMED-ISDB module. They can be used in combination with any other collective variable, function or bias also outside the ISDB module. 
+
+Using \ref SELECTOR it is possible to define a variable inside the PLUMED code that can be used and modified by other actions. For example, a \ref SELECTOR can be used in combination with \ref RESCALE to activate a simulated-tempering like approach.
+
+@ISDB_GENERIC@
 
 \page ISDBBias Biases Documentation
 
