@@ -24,23 +24,26 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC OPES_BIAS OPES_WT
+//+PLUMEDOC OPES_BIAS OPES_METAD
 /*
-On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution \cite Invernizzi2020rethinking .
+On-the-fly probability enhanced sampling (OPES) with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
-OPES aims at sampling a target distribution \f$p^{tg}(\mathbf{s})\f$ that is function of some collective variables (CVs) \f$\mathbf{s}\f$.
-To do so, it builds a bias potential defined as:
-
+OPES aims at sampling a given target distribution over the configuration space \f$p^{tg}(\mathbf{x})\f$,
+different form the equilibrium Boltzmann distribution \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
+To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions
 \f[
-V(\mathbf{s}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{s})}{P(\mathbf{s})}
+V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
 \f]
+The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
 
-This OPES_WT action targets the well-tempered distribution with bias factor \f$\gamma\f$, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$.
-Similarly to \ref METAD, OPES optimizes the bias on-the-fly, with a given PACE.
-It does so by reweighting with a weighted kernel density estimation the unbiased Boltzmann distribution \f$P(\mathbf{s})\f$.
-See the paper for futher details \cite Invernizzi2020rethinking .
+OPES_METAD samples target distributions defined via their marginal \f$p^{tg}(\mathbf{s})\f$ over some collective variables (CVs) \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+By default OPES_METAD targets the well-tempered distribution, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
+Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
+It does so by reweighting with a weighted kernel density estimation the unbiased distribution \f$P(\mathbf{s})\f$ in the CV space.
+A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
+See Ref.\cite Invernizzi2020rethinking for all the details on the method.
 
-As an intuitive picture, OPES is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
+As an intuitive picture, OPES_METAD is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more, to assure a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
 At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing"> this link </a> you can also find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
@@ -48,28 +51,28 @@ The estimated \f$c(t)\f$ is printed for reference only, since it should converge
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
 
-Notice that OPES is more sensitive to degenerate CVs than \ref METAD.
-If the employed CV maps different metastable basins onto the same CV-space region, then OPES will remain stuck rather than completely reshaping the bias.
+Notice that OPES_METAD is more sensitive to degenerate CVs than \ref METAD.
+If the employed CVs map different metastable basins onto the same CV-space region, then OPES_METAD will remain stuck rather than completely reshaping the bias.
 This can be useful to diagnostic problems with your collective variable.
 If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR, or even without well-tempering.
 In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors.
-On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES instead of \ref METAD \cite Invernizzi2020rethinking.
+On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES_METAD instead of \ref METAD \cite Invernizzi2020rethinking.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
 If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slightly slower in converging.
 If you know which one is the most stable basin of your system you should start your simulation from there.
 
-By default SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
-However, notice that this might not be the optimal choice for SIGMA.
+By default the kernels SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
+However, notice that depending on the system this might not be the optimal choice for SIGMA.
 
 To use uniform flat target, explicitly set BIASFACTOR=inf, but should be needed only in very specific cases.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing numbers to file, or usage of adaptive SIGMA).
-For a perfect restart you need to use STATE_RFILE to read a checkpoint with all the needed info.
+For an exact restart you need to use STATE_RFILE to read a checkpoint with all the needed info.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
 
-Multiple walkers are supported only with MPI communication.
+Multiple walkers are supported only with MPI communication, via the keyword WALKERS_MPI.
 
 \par Examples
 
@@ -77,7 +80,7 @@ The following is a minimal working example:
 
 \plumedfile
 cv: DISTANCE ATOMS=1,2
-opes: OPES_WT ARG=cv PACE=100 BARRIER=40
+opes: OPES_METAD ARG=cv PACE=100 BARRIER=40
 PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 \endplumedfile
 
@@ -87,7 +90,7 @@ Another more articulated one:
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
-opes: OPES_WT ...
+opes: OPES_METAD ...
   FILE=Kernels.data
   TEMP=300
   ARG=phi,psi
@@ -109,7 +112,7 @@ PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 */
 //+ENDPLUMEDOC
 
-class OPESwt : public bias::Bias {
+class OPESmetad : public bias::Bias {
 
 private:
   bool isFirstStep_;
@@ -172,7 +175,7 @@ private:
   std::string action_name_;
 
 public:
-  explicit OPESwt(const ActionOptions&);
+  explicit OPESmetad(const ActionOptions&);
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
@@ -184,9 +187,9 @@ public:
   void dumpStateToFile();
 };
 
-PLUMED_REGISTER_ACTION(OPESwt,"OPES_WT")
+PLUMED_REGISTER_ACTION(OPESmetad,"OPES_METAD")
 
-void OPESwt::registerKeywords(Keywords& keys) {
+void OPESmetad::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
@@ -223,14 +226,14 @@ void OPESwt::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
 }
 
-OPESwt::OPESwt(const ActionOptions& ao)
+OPESmetad::OPESmetad(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(1)
   , Zed_(1)
   , work_(0)
-  , action_name_("OPES_WT")
+  , action_name_("OPES_METAD")
 {
   std::string error_in_input1("Error in input in action "+action_name_+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
@@ -683,7 +686,7 @@ OPESwt::OPESwt(const ActionOptions& ao)
   log.printf("\n");
 }
 
-void OPESwt::calculate()
+void OPESmetad::calculate()
 {
   std::vector<double> cv(ncv_);
   for(unsigned i=0; i<ncv_; i++)
@@ -709,7 +712,7 @@ void OPESwt::calculate()
   afterCalculate_=true;
 }
 
-void OPESwt::update()
+void OPESmetad::update()
 {
   if(isFirstStep_)//same in MetaD, useful for restarts?
   {
@@ -742,7 +745,7 @@ void OPESwt::update()
 //do update
   if(getStep()%stride_!=0)
     return;
-  plumed_massert(afterCalculate_,"OPESwt::update() must be called after OPESwt::calculate() to work properly");
+  plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
   afterCalculate_=false; //if needed implementation can be changed to avoid this
 
 //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
@@ -883,7 +886,7 @@ void OPESwt::update()
   }
 }
 
-double OPESwt::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
+double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
@@ -901,12 +904,12 @@ double OPESwt::getProbAndDerivatives(const std::vector<double> &cv,std::vector<d
   return prob;
 }
 
-void OPESwt::addKernel(const kernel &new_kernel,const bool write_to_file)
+void OPESmetad::addKernel(const kernel &new_kernel,const bool write_to_file)
 {
   addKernel(new_kernel.height,new_kernel.center,new_kernel.sigma,write_to_file);
 }
 
-void OPESwt::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
+void OPESmetad::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
 {
   bool no_match=true;
   if(threshold2_!=0)
@@ -959,7 +962,7 @@ void OPESwt::addKernel(const double height,const std::vector<double>& center,con
   }
 }
 
-unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
+unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
@@ -994,7 +997,7 @@ unsigned OPESwt::getMergeableKernel(const std::vector<double> &giver_center,cons
   return min_k;
 }
 
-void OPESwt::dumpStateToFile()
+void OPESmetad::dumpStateToFile()
 {
   if(storeOldStates_)
     stateOfile_.clearFields();
@@ -1090,7 +1093,7 @@ void OPESwt::dumpStateToFile()
     stateOfile_.flush();
 }
 
-inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& x) const
+inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x) const
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -1103,7 +1106,7 @@ inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& 
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
+inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   std::vector<double> diff(ncv_);
@@ -1120,7 +1123,7 @@ inline double OPESwt::evaluateKernel(const kernel& G,const std::vector<double>& 
   return val;
 }
 
-inline void OPESwt::kernel::merge_me_with(const kernel & other)
+inline void OPESmetad::kernel::merge_me_with(const kernel & other)
 {
   const double h=height+other.height;
   for(unsigned i=0; i<center.size(); i++)
