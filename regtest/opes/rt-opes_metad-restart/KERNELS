@@ -1,5 +1,5 @@
 #! FIELDS time psi phi sigma_psi sigma_phi height logweight
-#! SET action OPES_METAD
+#! SET action OPES_METAD_kernels
 #! SET biasfactor  inf
 #! SET epsilon  0.001000
 #! SET kernel_cutoff  6.000000

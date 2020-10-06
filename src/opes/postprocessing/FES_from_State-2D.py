@@ -35,14 +35,14 @@ if len(line.split())!=8:
 cv1name=line.split()[3]
 cv2name=line.split()[4]
 line=f.readline() #action
-if line.split()[-1]=="OPES_METAD":
+if line.split()[-1]=="OPES_METAD_state":
   explore=False
   print(' building free energy from OPES_METAD')
-elif line.split()[-1]=="OPES_METAD_EXPLORE":
+elif line.split()[-1]=="OPES_METAD_EXPLORE_state":
   explore=True
   print(' building free energy from OPES_METAD_EXPLORE')
 else:
-  sys.exit("This script works onyl with OPES_METAD and OPES_METAD_EXPLORE")
+  sys.exit("This script works only with OPES_METAD_state and OPES_METAD_EXPLORE_state")
 line=f.readline() #biasfactor
 if explore:
   kbt*=float(line.split()[-1])

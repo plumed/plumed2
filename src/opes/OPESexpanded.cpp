@@ -124,10 +124,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(0)
+  , ncv_(getNumberOfArguments())
   , rct_(0)
   , work_(0)
 {
-  ncv_=getNumberOfArguments();
 //set kbt_
   const double Kb=plumed.getAtoms().getKBoltzmann();
   kbt_=plumed.getAtoms().getKbT();
@@ -382,7 +382,7 @@ void OPESexpanded::update()
     counter_++;
     if(counter_==obs_steps_)
     {
-      log.printf("\nAction OPES_EXPANDED\n");
+      log.printf("\nAction %s\n",getName().c_str());
       init_from_obs();
       log.printf("Finished initialization\n\n");
       counter_=NumWalkers_; //all preliminary observations count 1
@@ -448,7 +448,7 @@ void OPESexpanded::init_pntrToECVsClass()
   plumed_massert(all_pntrToECVsClass.size()>0,"no Expansion CVs found");
   for(unsigned j=0; j<ncv_; j++)
   {
-    std::string error_notECV("all the ARG of OPES_EXPANDED must be Expansion Collective Variables (ECV)");
+    std::string error_notECV("all the ARG of "+getName()+" must be Expansion Collective Variables (ECV)");
     const unsigned dot_pos=getPntrToArgument(j)->getName().find(".");
     plumed_massert(dot_pos<getPntrToArgument(j)->getName().size(),error_notECV+", thus contain a dot in the name");
     unsigned matched_l=all_pntrToECVsClass.size();
