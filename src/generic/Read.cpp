@@ -162,6 +162,8 @@ Read::Read(const ActionOptions&ao):
   // Find out what we are reading
   std::vector<std::string> valread; parseVector("VALUES",valread);
 
+  if(nlinesPerStep>1 && cloned_file) error("Opening a file multiple times and using EVERY is not allowed");
+
   std::size_t dot=valread[0].find_first_of('.');
   if( valread[0].find(".")!=std::string::npos ) {
     std::string label=valread[0].substr(0,dot);
