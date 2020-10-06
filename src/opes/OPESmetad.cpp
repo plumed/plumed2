@@ -172,7 +172,6 @@ private:
   OFile stateOfile_;
   int wStateStride_;
   bool storeOldStates_;
-  std::string action_name_;
 
 public:
   explicit OPESmetad(const ActionOptions&);
@@ -231,24 +230,25 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
   , counter_(1)
+  , ncv_(getNumberOfArguments())
   , Zed_(1)
   , work_(0)
-  , action_name_("OPES_METAD")
 {
-  std::string error_in_input1("Error in input in action "+action_name_+" with label "+getLabel()+": the keyword ");
+  std::string error_in_input1("Error in input in action "+getName()+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
 
-  ncv_=getNumberOfArguments();
 //set kbt_
   const double Kb=plumed.getAtoms().getKBoltzmann();
+  kbt_=plumed.getAtoms().getKbT();
   double temp=-1;
   parse("TEMP",temp);
-  kbt_=Kb*temp;
-  if(kbt_<0)
+  if(temp>0)
   {
-    kbt_=plumed.getAtoms().getKbT();
-    plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
+    kbt_=Kb*temp;
   }
+  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
 
 //other compulsory input
   parse("PACE",stride_);
@@ -402,13 +402,20 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
       ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
       log.printf("    restarting from: %s\n",restartFileName.c_str());
+      std::string action_name=getName();
       if(stateRestart)
+      {
         log.printf("    it should be a STATE file (not a KERNELS file)\n");
+        action_name+="_state";
+      }
       else
+      {
         log.printf(" +++ WARNING +++ RESTART from KERNELS might be approximate, use STATE_WFILE and STATE_RFILE to restart from the exact state\n");
+        action_name+="_kernels";
+      }
       std::string old_action_name;
       ifile.scanField("action",old_action_name);
-      plumed_massert(action_name_==old_action_name,"RESTART - mismatch between old and new action name");
+      plumed_massert(action_name==old_action_name,"RESTART - mismatch between old and new action name. Expected '"+action_name+"', but found '"+old_action_name+"'");
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
       if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF")
@@ -504,7 +511,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
           ifile.scanField();
           kernels_.emplace_back(height,center,sigma);
         }
-        log.printf("    A total of %lu kernels where read\n",kernels_.size());
+        log.printf("    a total of %lu kernels where read\n",kernels_.size());
       }
       else
       {
@@ -540,7 +547,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    A total of %lu kernels where read, and compressed to %lu\n",counter_,kernels_.size());
+        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_,kernels_.size());
       }
       ifile.reset(false);
       ifile.close();
@@ -582,7 +589,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   kernelsOfile_.addConstantField("compression_threshold");
   for(unsigned i=0; i<ncv_; i++)
     kernelsOfile_.setupPrintValue(getPntrToArgument(i));
-  kernelsOfile_.printField("action",action_name_);
+  kernelsOfile_.printField("action",getName()+"_kernels");
   kernelsOfile_.printField("biasfactor",biasfactor_);
   kernelsOfile_.printField("epsilon",epsilon_);
   kernelsOfile_.printField("kernel_cutoff",sqrt(cutoff2_));
@@ -628,7 +635,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
 
 //printing some info
-  log.printf("  temperature T = %g\n",kbt_/Kb);
+  log.printf("  temperature = %g\n",kbt_/Kb);
   log.printf("  beta = %g\n",1./kbt_);
   log.printf("  depositing new kernels with PACE = %d\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
@@ -1038,7 +1045,7 @@ void OPESmetad::dumpStateToFile()
   }
   for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
     stateOfile_.setupPrintValue(getPntrToArgument(i));
-  stateOfile_.printField("action",action_name_);
+  stateOfile_.printField("action",getName()+"_state");
   stateOfile_.printField("biasfactor",biasfactor_);
   stateOfile_.printField("epsilon",epsilon_);
   stateOfile_.printField("kernel_cutoff",sqrt(cutoff2_));

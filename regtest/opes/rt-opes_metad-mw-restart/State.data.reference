@@ -1,5 +1,5 @@
 #! FIELDS time psi phi sigma_psi sigma_phi height
-#! SET action OPES_METAD
+#! SET action OPES_METAD_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
@@ -27,7 +27,7 @@
  20.000000 -1.341386 1.478705 0.621196 0.586908 0.020753
  20.000000 1.893253 -2.131678 0.461628 0.434469 3.798198
 #! FIELDS time psi phi sigma_psi sigma_phi height
-#! SET action OPES_METAD
+#! SET action OPES_METAD_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
