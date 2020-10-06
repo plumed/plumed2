@@ -56,7 +56,7 @@ private:
   std::vector<opes::ExpansionCVs*> pntrToECVsClass_;
   std::vector< std::vector<unsigned> > index_k_;
 
-  double beta_;
+  double kbt_;
   unsigned stride_;
   std::vector<double> deltaF_;
   double rct_;
@@ -118,20 +118,18 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , work_(0)
 {
   ncv_=getNumberOfArguments();
-//set beta_
+//set kbt_
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  double KbT=plumed.getAtoms().getKbT();
+  kbt_=plumed.getAtoms().getKbT();
   double temp=-1;
   parse("TEMP",temp);
   if(temp>0)
   {
-    if(KbT>0 && std::abs(KbT-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,KbT/Kb);
-    KbT=Kb*temp;
+    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
+    kbt_=Kb*temp;
   }
-  plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  beta_=1./KbT;
-  temp=1./(Kb*beta_);
+  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
 
 //set pace
   parse("PACE",stride_);
@@ -261,7 +259,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         ifile.scanField();
         counter_++;
       }
-      log.printf("  Successfully read %d lines, up to t=%g\n",counter_,time);
+      log.printf("  successfully read %d lines, up to t=%g\n",counter_,time);
       counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
       ifile.reset(false);
       ifile.close();
@@ -297,20 +295,20 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   }
 
 //printing some info
-  log.printf("  Running at TEMP = %g\n",1./(Kb*beta_));
-  log.printf("  Beta = %g\n",beta_);
-  log.printf("  Updating the bias with PACE = %u\n",stride_);
-  log.printf("  Initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
+  log.printf("  temperature = %g\n",kbt_/Kb);
+  log.printf("  beta = %g\n",1./kbt_);
+  log.printf("  updating the bias with PACE = %u\n",stride_);
+  log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
   if(walkers_mpi)
     log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
   if(NumWalkers_>1)
   {
-    log.printf("  Using multiple walkers\n");
+    log.printf("  using multiple walkers\n");
     log.printf("    number of walkers: %u\n",NumWalkers_);
     log.printf("    walker rank: %u\n",walker_rank);
   }
   if(NumParallel_>1)
-    log.printf("  Using multiple threads per simulation: %u\n",NumParallel_);
+    log.printf("  using multiple threads per simulation: %u\n",NumParallel_);
 //Bibliography
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, arXiv:2007.03055 (2020)");
@@ -326,7 +324,7 @@ void OPESexpanded::calculate()
   std::vector<long double> der_sum_cv(ncv_,0);
   for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
   {
-    long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+beta_*deltaF_[i]));
+    long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
     sum+=add_i;
     //set derivatives
     for(unsigned j=0; j<ncv_; j++)
@@ -338,20 +336,20 @@ void OPESexpanded::calculate()
     comm.Sum(der_sum_cv);
   }
 
-  current_bias_=-1./beta_*std::log(sum/deltaF_.size());
+  current_bias_=-kbt_*std::log(sum/deltaF_.size());
   setBias(current_bias_);
   for(unsigned j=0; j<ncv_; j++)
-    setOutputForce(j,1./beta_*der_sum_cv[j]/sum);
+    setOutputForce(j,kbt_*der_sum_cv[j]/sum);
 
 //calculate work
   if(calc_work_)
   {
     long double old_sum=0;
     for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
-      old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+beta_*old_deltaF_[i]));
+      old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
     if(NumParallel_>1)
       comm.Sum(old_sum);
-    work_+=-1./beta_*std::log(sum/old_sum);
+    work_+=-kbt_*std::log(sum/old_sum);
   }
 
   afterCalculate_=true;
@@ -535,7 +533,7 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
   }
   for(unsigned i=0; i<deltaF_.size(); i++)
     for(unsigned j=0; j<ncv_; j++)
-      deltaF_[i]+=std::min(barrier[j],ECVs_[j][index_k_[i][j]]/beta_);
+      deltaF_[i]+=std::min(barrier[j],kbt_*ECVs_[j][index_k_[i][j]]);
   for(unsigned t=1; t<obs_steps_; t++) //starts from t=1
   {
     unsigned index_j=0;
@@ -546,10 +544,11 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
     }
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const long double diff_i=static_cast<long double>(-getExpansion(i)+beta_*deltaF_[i]);
-      deltaF_[i]+=-1./beta_*std::log1p(std::exp(diff_i)/t)-1./beta_*std::log1p(-1./(1.+t));
+      const long double diff_i=static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_);
+      deltaF_[i]+=-kbt_*std::log1p(std::exp(diff_i)/t)-kbt_*std::log1p(-1./(1.+t));
     }
   }
+  obs_cvs_.clear();
   if(calc_work_)
     old_deltaF_=deltaF_;
 
@@ -578,13 +577,13 @@ inline void OPESexpanded::update_deltaF(double bias)
 {
   //plumed_massert(counter_>1,"something went wrong");
   counter_++;
-  const double increment=1./beta_*std::log1p(std::exp(static_cast<long double>(beta_*(bias-rct_)))/(counter_-1.));
+  const double increment=kbt_*std::log1p(std::exp(static_cast<long double>((bias-rct_)/kbt_))/(counter_-1.));
   for(unsigned i=0; i<deltaF_.size(); i++)
   {
-    const long double diff_i=static_cast<long double>(-getExpansion(i)+beta_*(bias-rct_+deltaF_[i]));
-    deltaF_[i]+=increment-1./beta_*std::log1p(std::exp(diff_i)/(counter_-1.));
+    const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
+    deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
   }
-  rct_+=increment+1./beta_*std::log1p(-1./counter_);
+  rct_+=increment+kbt_*std::log1p(-1./counter_);
 }
 
 inline double OPESexpanded::getExpansion(unsigned i) const

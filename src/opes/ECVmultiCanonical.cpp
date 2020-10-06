@@ -136,6 +136,8 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
+    if(min_temp==max_temp && steps_temp==0)
+      steps_temp=1;
     const double min_beta=1./(Kb*max_temp);
     const double max_beta=1./(Kb*min_temp);
     if(steps_temp>0)
@@ -148,10 +150,13 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
       beta_[1]=max_beta;
     }
   }
-
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
   if(temp<(1-tol)*min_temp || temp>(1+tol)*max_temp)
     log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp);
+
+//print some info
+  log.printf("  running at TEMP=%g\n",temp);
+  log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
 }
 
 void ECVmultiCanonical::calculateECVs(const double * ene) {
@@ -194,7 +199,8 @@ std::vector<std::string> ECVmultiCanonical::getLambdas() const
 void ECVmultiCanonical::setBetaSteps(double min_beta,double max_beta,unsigned steps_beta)
 {
   plumed_massert(beta_.size()==0 || beta_.size()==2,"you should not set the beta steps twice...");
-  plumed_massert(min_beta==max_beta && steps_beta>1,"cannot have multiple STEPS_TEMP if MIN_TEMP==MAX_TEMP");
+  plumed_massert(min_beta<=max_beta,"this should not happen");
+  plumed_massert(!(min_beta==max_beta && steps_beta>1),"cannot have multiple STEPS_TEMP if MIN_TEMP==MAX_TEMP");
   beta_.resize(steps_beta);
   if(steps_beta==1)
   {

@@ -112,7 +112,7 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   derECVs_.resize(getNumberOfArguments(),std::vector<double>(totNumECVs_));
 
 //printing some info
-  log.printf("  Total number of umbrellas = %u\n",sizeUmbrellas);
+  log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
   log.printf("    with SIGMA = %g\n",sigma_);
   log.printf("    and SPACING = %g\n",spacing);
   if(P0_contribution_==1)

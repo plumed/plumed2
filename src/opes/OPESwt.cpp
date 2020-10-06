@@ -43,7 +43,7 @@ See the paper for futher details \cite Invernizzi2020rethinking .
 As an intuitive picture, OPES is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more, to assure a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-Some python scripts are also available in src/opes/postprocessing, that work in a similar way to \ref sum_hills.
+At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing"> this link </a> you can also find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
@@ -119,8 +119,8 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned ncv_;
   unsigned long counter_;
+  std::size_t ncv_;
 
   double kbt_;
   double biasfactor_;
@@ -264,8 +264,8 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
   , counter_(1)
   , Zed_(1)
   , work_(0)
+  , action_name_("OPES_WT")
 {
-  action_name_="OPES_WT";
   if(mode::explore)
     action_name_+="_EXPLORE";
   std::string error_in_input1("Error in input in action "+action_name_+" with label "+getLabel()+": the keyword ");
@@ -274,14 +274,16 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
   ncv_=getNumberOfArguments();
 //set kbt_
   const double Kb=plumed.getAtoms().getKBoltzmann();
+  kbt_=plumed.getAtoms().getKbT();
   double temp=-1;
   parse("TEMP",temp);
-  kbt_=Kb*temp;
-  if(kbt_<0)
+  if(temp>0)
   {
-    kbt_=plumed.getAtoms().getKbT();
-    plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
+    kbt_=Kb*temp;
   }
+  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
 
 //other compulsory input
   parse("PACE",stride_);
@@ -546,7 +548,7 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
           ifile.scanField();
           kernels_.emplace_back(height,center,sigma);
         }
-        log.printf("    A total of %d kernels where read\n",kernels_.size());
+        log.printf("    a total of %lu kernels where read\n",kernels_.size());
       }
       else
       {
@@ -582,7 +584,7 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    A total of %d kernels where read, and compressed to %d\n",counter_,kernels_.size());
+        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_,kernels_.size());
       }
       ifile.reset(false);
       ifile.close();
@@ -670,7 +672,7 @@ OPESwt<mode>::OPESwt(const ActionOptions& ao)
   }
 
 //printing some info
-  log.printf("  temperature T = %g\n",kbt_/Kb);
+  log.printf("  temperature = %g\n",kbt_/Kb);
   log.printf("  beta = %g\n",1./kbt_);
   log.printf("  depositing new kernels with PACE = %d\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);

@@ -114,7 +114,6 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
 
   checkRead();
 
-  log.printf("  running at LAMBDA = %g\n",lambda0_);
 //set the lambdas
   if(lambda_.size()>0)
   {
@@ -140,6 +139,8 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
       log.printf("  no MAX_LAMBDA provided, using MAX_LAMBDA = %g\n",max_lambda);
     }
     plumed_massert(max_lambda>=min_lambda,"MAX_LAMBDA should be bigger than MIN_LAMBDA");
+    if(min_lambda==max_lambda && steps_lambda==0)
+      steps_lambda=1;
     if(steps_lambda>0)
       setLambdaSteps(min_lambda,max_lambda,steps_lambda);
     else
@@ -152,6 +153,10 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
   }
   if(lambda0_<min_lambda || lambda0_>max_lambda)
     log.printf(" +++ WARNING +++ running at LAMBDA=%g which is outside the chosen lambda range\n",lambda0_);
+
+//print some info
+  log.printf("  running at LAMBDA=%g\n",lambda0_);
+  log.printf("  targeting a lambda range from MIN_LAMBDA=%g to MAX_LAMBDA=%g\n",min_lambda,max_lambda);
 }
 
 void ECVlinear::calculateECVs(const double * DeltaU) {
@@ -193,7 +198,8 @@ std::vector<std::string> ECVlinear::getLambdas() const
 void ECVlinear::setLambdaSteps(double min_lambda,double max_lambda,unsigned steps_lambda)
 {
   plumed_massert(lambda_.size()==0 || lambda_.size()==2,"you should not set the lambda steps twice...");
-  plumed_massert(min_lambda==max_lambda && steps_lambda>1,"cannot have multiple STEPS_LAMBDA if MIN_LAMBDA==MAX_LAMBDA");
+  plumed_massert(min_lambda<=max_lambda,"this should not happen");
+  plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_LAMBDA if MIN_LAMBDA==MAX_LAMBDA");
   lambda_.resize(steps_lambda);
   if(steps_lambda==1)
   {

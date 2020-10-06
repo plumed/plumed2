@@ -196,7 +196,7 @@ unsigned ExpansionCVs::estimate_steps(const double left_side,const double right_
     return 2;
   }
   const double grid_spacing=left_HWHM+right_HWHM;
-  log.printf("    estimated %s spacing = %g\n",msg.c_str(),grid_spacing);
+  log.printf("   estimated %s spacing = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
   plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
   return steps;
