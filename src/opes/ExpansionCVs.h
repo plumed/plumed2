@@ -34,6 +34,7 @@ class ExpansionCVs:
 {
 protected:
   bool isReady_; //true only after initECVs
+  double kbt_;
   double barrier_;
   unsigned totNumECVs_;
   unsigned estimate_steps(const double,const double,const std::vector<double>&,const std::string) const; //for linear expansions
@@ -46,7 +47,7 @@ public:
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() override {return getNumberOfArguments();};
 
-  double getBarrier() const {return barrier_;};
+  double getKbT() const {return kbt_;};
   unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
   virtual std::vector< std::vector<unsigned> > getIndex_k() const;
 

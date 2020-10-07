@@ -18,9 +18,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+
 #include "ExpansionCVs.h"
 
 namespace PLMD {
@@ -128,19 +128,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , rct_(0)
   , work_(0)
 {
-//set kbt_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  kbt_=plumed.getAtoms().getKbT();
-  double temp=-1;
-  parse("TEMP",temp);
-  if(temp>0)
-  {
-    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
-    kbt_=Kb*temp;
-  }
-  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-
 //set pace
   parse("PACE",stride_);
   parse("OBSERVATION_STEPS",obs_steps_);
@@ -193,6 +180,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
 
 //check ECVs and link them
   init_pntrToECVsClass();
+//set kbt_
+  kbt_=pntrToECVsClass_[0]->getKbT();
+  for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
+    plumed_massert(std::abs(kbt_-pntrToECVsClass_[l]->getKbT())<1e-4,"must set same TEMP for each ECV");
 
 //restart if needed
   if(getRestart())
@@ -204,7 +195,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       log.printf("  RESTART from: %s\n",deltaFsFileName.c_str());
       log.printf(" +++ make sure all simulation options are consistent! +++\n");
       ifile.open(deltaFsFileName);
-    //get deltaFs names
+      //get deltaFs names
       ifile.scanFieldList(deltaF_name_);
       plumed_massert(deltaF_name_.size()>=4,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
       plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
@@ -218,7 +209,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_massert(pos<deltaF_name_[0].length(),"RESTART - fewer '_' than expected in DeltaF fields: did you remove any CV?");
       pos = deltaF_name_[0].find("_", pos+1);
       plumed_massert(pos>deltaF_name_[0].length(),"RESTART - more '_' than expected in DeltaF fields: did you add new CV?");
-    //get lambdas, init ECVs and Link them
+      //get lambdas, init ECVs and Link them
       auto getLambdaName=[](const std::string& name, const unsigned start, const unsigned dim)
       {
         std::size_t pos_start=5;//each name starts with "DeltaF"
@@ -253,7 +244,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
       obs_steps_=0; //avoid initializing again
-    //read steps from file
+      //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
       plumed_massert(restart_stride==(int)print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
@@ -305,8 +296,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   }
 
 //printing some info
-  log.printf("  temperature = %g\n",kbt_/Kb);
-  log.printf("  beta = %g\n",1./kbt_);
   log.printf("  updating the bias with PACE = %u\n",stride_);
   log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
   if(walkers_mpi)
@@ -448,15 +437,15 @@ void OPESexpanded::init_pntrToECVsClass()
   plumed_massert(all_pntrToECVsClass.size()>0,"no Expansion CVs found");
   for(unsigned j=0; j<ncv_; j++)
   {
-    std::string error_notECV("all the ARG of "+getName()+" must be Expansion Collective Variables (ECV)");
+    std::string error_notECV("all the ARGs of "+getName()+" must be Expansion Collective Variables (ECV)");
     const unsigned dot_pos=getPntrToArgument(j)->getName().find(".");
     plumed_massert(dot_pos<getPntrToArgument(j)->getName().size(),error_notECV+", thus contain a dot in the name");
-    unsigned matched_l=all_pntrToECVsClass.size();
+    unsigned foundECV_l=all_pntrToECVsClass.size();
     for(unsigned l=0; l<all_pntrToECVsClass.size(); l++)
     {
       if(getPntrToArgument(j)->getName().substr(0,dot_pos)==all_pntrToECVsClass[l]->getLabel())
       {
-        matched_l=l;
+        foundECV_l=l;
         pntrToECVsClass_.push_back(all_pntrToECVsClass[l]);
         std::string missing_arg="some ECV component is missing from ARG";
         plumed_massert(j+all_pntrToECVsClass[l]->getNumberOfArguments()<=getNumberOfArguments(),missing_arg);
@@ -470,7 +459,7 @@ void OPESexpanded::init_pntrToECVsClass()
         break;
       }
     }
-    plumed_massert(matched_l<all_pntrToECVsClass.size(),error_notECV);//TODO add support for custom CVs as ECVs ?
+    plumed_massert(foundECV_l<all_pntrToECVsClass.size(),error_notECV);//TODO add support for custom CVs as ECVs ?
   }
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
     for(unsigned ll=l+1; ll<pntrToECVsClass_.size(); ll++)
@@ -516,16 +505,13 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
     obs_steps_*=NumWalkers_;
   }
 
-//initialize ECVs and get barrier
-  std::vector<double> barrier(ncv_);
+//initialize ECVs from observations
   unsigned index_j=0;
   unsigned totNumECVs=1;
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
   {
     pntrToECVsClass_[l]->initECVs_observ(obs_cvs_,ncv_,index_j);
     totNumECVs*=pntrToECVsClass_[l]->getTotNumECVs(); //ECVs from different exansions will be combined
-    for(unsigned h=0; h<pntrToECVsClass_[l]->getNumberOfArguments(); h++)
-      barrier[index_j+h]=pntrToECVsClass_[l]->getBarrier();
     index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
   }
   plumed_massert(index_j==getNumberOfArguments(),"mismatch between number of linked CVs and number of ARG");
@@ -535,15 +521,11 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
   init_linkECVs();
 
 //initialize deltaF_ from obs
-  index_j=0; //add firtst point, t=0
-  for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
-  {
-    pntrToECVsClass_[l]->calculateECVs(&obs_cvs_[index_j]);
-    index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
-  }
+//for the first point t=0, the ECVs are calculated by initECVs_observ, setting also any initial guess
+  index_j=0;
   for(unsigned i=0; i<deltaF_.size(); i++)
     for(unsigned j=0; j<ncv_; j++)
-      deltaF_[i]+=std::min(barrier[j],kbt_*ECVs_[j][index_k_[i][j]]);
+      deltaF_[i]+=kbt_*ECVs_[j][index_k_[i][j]];
   for(unsigned t=1; t<obs_steps_; t++) //starts from t=1
   {
     unsigned index_j=0;

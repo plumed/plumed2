@@ -16,8 +16,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -65,7 +63,6 @@ void ECVlinear::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","provide the label of the difference in energy \\f$\\Delta\\f$U");
-  keys.add("compulsory","TEMP","-1","temperature, needed to make ARG dimensionless. If not specified tries to get it from MD engine");
   keys.add("compulsory","LAMBDA","0","the lambda at which the underlying simulation runs");
   keys.add("optional","MIN_LAMBDA","( default=0 ) the minimum of the lambda range");
   keys.add("optional","MAX_LAMBDA","( default=1 ) the maximum of the lambda range");
@@ -81,26 +78,13 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
 {
   plumed_massert(getNumberOfArguments()==1,"only DeltaU should be given as ARG");
 
-//set Kb and beta0_
-  double temp=-1;
-  parse("TEMP",temp);
+//set beta0_
   bool dimensionless;
   parseFlag("DIMENSIONLESS",dimensionless);
   if(dimensionless)
     beta0_=1;
   else
-  {
-    const double Kb=plumed.getAtoms().getKBoltzmann();
-    double KbT=plumed.getAtoms().getKbT();
-    if(temp>0)
-    {
-      if(KbT>0 && std::abs(KbT-Kb*temp)>1e-4)
-        log.printf(" +++ WARNING +++ using LAMBDA=%g while MD engine uses %g\n",temp,KbT/Kb);
-      KbT=Kb*temp;
-    }
-    plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using LAMBDA");
-    beta0_=1./KbT;
-  }
+    beta0_=1./kbt_;
 
 //parse lambda info
   parse("LAMBDA",lambda0_);
@@ -171,14 +155,14 @@ void ECVlinear::calculateECVs(const double * DeltaU) {
 const double * ECVlinear::getPntrToECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0,"ECV_LINEAR has only one CV, the DeltaU");
+  plumed_massert(j==0,getName()+" has only one CV, the DeltaU");
   return &ECVs_[0];
 }
 
 const double * ECVlinear::getPntrToDerECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0,"ECV_LINEAR has only one CV, the DeltaU");
+  plumed_massert(j==0,getName()+" has only one CV, the DeltaU");
   return &derECVs_[0];
 }
 
@@ -220,7 +204,7 @@ void ECVlinear::initECVs()
   ECVs_.resize(lambda_.size());
   derECVs_.resize(lambda_.size());
   isReady_=true;
-  log.printf("  *%4u lambdas for ECV_LINEAR\n",lambda_.size());
+  log.printf("  *%4u lambdas for %s\n",lambda_.size(),getName().c_str());
 }
 
 void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
@@ -239,17 +223,21 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     setLambdaSteps(min_lambda,max_lambda,steps_lambda);
   }
   initECVs();
+
+  calculateECVs(&all_obs_cvs[index_j]);
+  for(unsigned k=0; k<lambda_.size(); k++)
+    ECVs_[k]=std::min(barrier_/kbt_,ECVs_[k]);
 }
 
 void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=lambdas[0].find("_");
-  plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in ECV_LINEAR");
+  plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
     setLambdaSteps(lambda_[0],lambda_[1],lambdas.size());
   std::vector<std::string> myLambdas=getLambdas();
-  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of ECV_LINEAR");
-  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of ECV_LINEAR");
+  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
+  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());
 
   initECVs();
 }

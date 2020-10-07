@@ -14,9 +14,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ExpansionCVs.h"
 #include "tools/OpenMP.h"
-#include "tools/Communicator.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
+
+#include "ExpansionCVs.h"
 
 namespace PLMD {
 namespace opes {
@@ -26,6 +28,7 @@ void ExpansionCVs::registerKeywords(Keywords& keys) {
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   ActionWithValue::useCustomisableComponents(keys);
+  keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 //  keys.reserve("compulsory","PERIODIC","NO","if the output of your ECVs is periodic then you should specify the periodicity.");
 }
@@ -37,6 +40,27 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   , isReady_(false)
   , totNumECVs_(0)
 {
+//set kbt_
+  const double Kb=plumed.getAtoms().getKBoltzmann();
+  kbt_=plumed.getAtoms().getKbT();
+  double temp=-1;
+  parse("TEMP",temp);
+  if(temp>0)
+  {
+    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
+    kbt_=Kb*temp;
+  }
+  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+  log.printf("  temperature = %g, beta = %g\n",kbt_/Kb,1./kbt_);
+
+//set barrier_
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
+  if(barrier_!=std::numeric_limits<double>::infinity())
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
+
+//set components
   plumed_massert( getNumberOfArguments()!=0, "you must specify the underlying CV");
   for(unsigned i=0; i<getNumberOfArguments(); i++)
   {
@@ -45,10 +69,6 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
     getPntrToComponent(i)->setNotPeriodic();
     getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
   }
-  barrier_=std::numeric_limits<double>::infinity();
-  parse("BARRIER",barrier_);
-  if(barrier_!=std::numeric_limits<double>::infinity())
-    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
 }
 
 void ExpansionCVs::calculate()

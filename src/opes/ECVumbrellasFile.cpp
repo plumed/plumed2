@@ -16,11 +16,12 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
+#include "tools/File.h"
 
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_LINE
+//+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_FILE
 /*
 Place Gaussian umbrellas on a line.
 The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.
@@ -28,24 +29,25 @@ Can be used with any Colvar as ARG.
 
 \par Examples
 
-us: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=-1 MAX_CV=1 SIMGA=0.1
+us: ECV_UMBRELLAS_FILE ARG=cv MIN_CV=-1 MAX_CV=1 SIMGA=0.1
 
 */
 //+ENDPLUMEDOC
 
-class ECVumbrellasLine :
+class ECVumbrellasFile :
   public ExpansionCVs
 {
 private:
-  double sigma_;
   unsigned P0_contribution_;
-  std::vector<std::vector <double> > center_; //FIXME is this efficient??
-  std::vector<std::vector <double> > ECVs_;
-  std::vector<std::vector <double> > derECVs_;
+  std::vector<double> deltaFguess_;
+  std::vector< std::vector<double> > centers_;
+  std::vector< std::vector<double> > sigmas_;
+  std::vector< std::vector<double> > ECVs_;
+  std::vector< std::vector<double> > derECVs_;
   void initECVs();
 
 public:
-  explicit ECVumbrellasLine(const ActionOptions&);
+  explicit ECVumbrellasFile(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void calculateECVs(const double *) override;
   const double * getPntrToECVs(unsigned) override;
@@ -56,22 +58,25 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVumbrellasLine,"ECV_UMBRELLAS_LINE")
+PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
 
-void ECVumbrellasLine::registerKeywords(Keywords& keys) {
+void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
-  keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
-  keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
-  keys.add("compulsory","SPACING","1","the distance between umbrellas, in units of SIGMA");
+  keys.add("compulsory","FILE","the name of the file containing the umbrellas");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it for an initial guess DeltaF_i=-kbt*log(h_i)");
 }
 
-ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
+ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
   Action(ao),
   ExpansionCVs(ao)
 {
+//get number of CVs
+  const unsigned ncv=getNumberOfArguments();
+  centers_.resize(ncv);
+  sigmas_.resize(ncv);
+
 //set P0_contribution_
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
@@ -79,73 +84,86 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     P0_contribution_=1;
   else
     P0_contribution_=0;
+
 //set umbrellas
-  parse("SIGMA",sigma_);
-  std::vector<double> min_cv;
-  std::vector<double> max_cv;
-  parseVector("MIN_CV",min_cv);
-  parseVector("MAX_CV",max_cv);
-  plumed_massert(min_cv.size()==getNumberOfArguments(),"wrong number of MIN_CVs");
-  plumed_massert(max_cv.size()==getNumberOfArguments(),"wrong number of MAX_CVs");
-  double spacing;
-  parse("SPACING",spacing);
-  double length=0;
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
-    length+=std::pow(max_cv[j]-min_cv[j],2);
-  length=std::sqrt(length);
-  const unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
-  center_.resize(getNumberOfArguments()); //center_[cv][umbrellas]
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  bool read_height;
+  parseFlag("READ_HEIGHT",read_height);
+  std::string umbrellasFileName;
+  parse("FILE",umbrellasFileName);
+  IFile ifile;
+  ifile.link(*this);
+  if(ifile.FileExist(umbrellasFileName))
   {
-    center_[j].resize(sizeUmbrellas+P0_contribution_);
-    if(P0_contribution_==1)
-      center_[j][0]=std::numeric_limits<double>::quiet_NaN(); // fake center
-    for(unsigned k=0; k<sizeUmbrellas; k++)
-      center_[j][P0_contribution_+k]=min_cv[j]+k*(max_cv[j]-min_cv[j])/(sizeUmbrellas-1);
+    log.printf("  reading from FILE '%s'\n",umbrellasFileName.c_str());
+    ifile.open(umbrellasFileName);
+    ifile.allowIgnoredFields();
+    double time;//first field is ignored
+    while(ifile.scanField("time",time))
+    {
+      for(unsigned j=0; j<ncv; j++)
+      {
+        double centers_j;
+        ifile.scanField(getPntrToArgument(j)->getName(),centers_j);
+        centers_[j].push_back(centers_j);//this might be slow
+      }
+      for(unsigned j=0; j<ncv; j++)
+      {
+        double sigmas_j;
+        ifile.scanField("sigma_"+getPntrToArgument(j)->getName(),sigmas_j);
+        sigmas_[j].push_back(sigmas_j);
+      }
+      if(read_height)
+      {
+        double height;
+        ifile.scanField("height",height);
+        deltaFguess_.push_back(-kbt_*std::log(height));
+      }
+      ifile.scanField();
+    }
   }
+  else
+    plumed_merror("Umbrellas FILE '"+umbrellasFileName+"' not found");
 
   checkRead();
 
 //set ECVs stuff
-  totNumECVs_=sizeUmbrellas+P0_contribution_;
-  ECVs_.resize(getNumberOfArguments(),std::vector<double>(totNumECVs_));
-  derECVs_.resize(getNumberOfArguments(),std::vector<double>(totNumECVs_));
+  totNumECVs_=centers_[0].size()+P0_contribution_;
+  ECVs_.resize(ncv,std::vector<double>(totNumECVs_));
+  derECVs_.resize(ncv,std::vector<double>(totNumECVs_));
 
 //printing some info
-  log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
-  log.printf("    with SIGMA = %g\n",sigma_);
-  log.printf("    and SPACING = %g\n",spacing);
+  log.printf("  total number of umbrellas = %lu\n",centers_[0].size());
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
 
-void ECVumbrellasLine::calculateECVs(const double * cv) {
+void ECVumbrellasFile::calculateECVs(const double * cv) {
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
     {
-      const double dist_jk=difference(j,center_[j][k],cv[j])/sigma_; //PBC might be present
+      const double dist_jk=difference(j,centers_[j][k],cv[j])/sigmas_[j][k]; //PBC might be present
       ECVs_[j][k]=0.5*std::pow(dist_jk,2);
-      derECVs_[j][k]=dist_jk/sigma_;
+      derECVs_[j][k]=dist_jk/sigmas_[j][k];
     }
   }
 }
 
-const double * ECVumbrellasLine::getPntrToECVs(unsigned j)
+const double * ECVumbrellasFile::getPntrToECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &ECVs_[j][0];
 }
 
-const double * ECVumbrellasLine::getPntrToDerECVs(unsigned j)
+const double * ECVumbrellasFile::getPntrToDerECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &derECVs_[j][0];
 }
 
-std::vector< std::vector<unsigned> > ECVumbrellasLine::getIndex_k() const
+std::vector< std::vector<unsigned> > ECVumbrellasFile::getIndex_k() const
 {
   std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(getNumberOfArguments()));
   for(unsigned k=0; k<totNumECVs_; k++)
@@ -154,38 +172,47 @@ std::vector< std::vector<unsigned> > ECVumbrellasLine::getIndex_k() const
   return index_k;
 }
 
-std::vector<std::string> ECVumbrellasLine::getLambdas() const
-{
+std::vector<std::string> ECVumbrellasFile::getLambdas() const
+{ //FIXME check also sigma?
   std::vector<std::string> lambdas(totNumECVs_);
   for(unsigned k=0; k<totNumECVs_; k++)
   {
     std::ostringstream subs;
-    subs<<center_[0][k];
+    subs<<centers_[0][k];
     for(unsigned j=1; j<getNumberOfArguments(); j++)
-      subs<<"_"<<center_[j][k];
+      subs<<"_"<<centers_[j][k];
     lambdas[k]=subs.str();
   }
   return lambdas;
 }
 
-void ECVumbrellasLine::initECVs()
+void ECVumbrellasFile::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   isReady_=true;
   log.printf("  *%4u windows for %s\n",totNumECVs_,getName().c_str());
 }
 
-void ECVumbrellasLine::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
+void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned j)
 {
-  //this non-linear exansion never uses automatic initialization
   initECVs();
-  calculateECVs(&all_obs_cvs[index_j]);
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-      ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
+  if(deltaFguess_.size()>0)
+  {
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+        ECVs_[j][k]=std::min(barrier_,deltaFguess_[k])/kbt_;
+    deltaFguess_.clear();
+  }
+  else
+  {
+    calculateECVs(&all_obs_cvs[j]);
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+        ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
+  }
 }
 
-void ECVumbrellasLine::initECVs_restart(const std::vector<std::string>& lambdas)
+void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)

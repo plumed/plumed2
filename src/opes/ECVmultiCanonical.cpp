@@ -64,7 +64,6 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","provide the label of the potential energy of the system, you can calculate it with the \\ref ENERGY colvar");
-  keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("optional","MIN_TEMP","the minimum of the temperature range");
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
@@ -78,20 +77,10 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
 {
   plumed_massert(getNumberOfArguments()==1,"only ENERGY should be given as ARG");
 
-//set Kb and beta0_
+//set temp0 and beta0_
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  double KbT=plumed.getAtoms().getKbT();
-  double temp=-1;
-  parse("TEMP",temp);
-  if(temp>0)
-  {
-    if(KbT>0 && std::abs(KbT-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,KbT/Kb);
-    KbT=Kb*temp;
-  }
-  plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  beta0_=1./KbT;
-  temp=KbT/Kb;
+  double temp0=kbt_/Kb;
+  beta0_=1./kbt_;
 
 //parse temp range
   double min_temp=-1;
@@ -127,12 +116,12 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
     plumed_massert(min_temp!=-1 || max_temp!=-1,"MIN_TEMP, MAX_TEMP or both, should be set");
     if(min_temp==-1)
     {
-      min_temp=temp;
+      min_temp=temp0;
       log.printf("  no MIN_TEMP provided, using MIN_TEMP=TEMP\n");
     }
     if(max_temp==-1)
     {
-      max_temp=temp;
+      max_temp=temp0;
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
@@ -151,11 +140,10 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
     }
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp<(1-tol)*min_temp || temp>(1+tol)*max_temp)
-    log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp);
+  if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
+    log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp0);
 
 //print some info
-  log.printf("  running at TEMP=%g\n",temp);
   log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
 }
 
@@ -171,14 +159,14 @@ void ECVmultiCanonical::calculateECVs(const double * ene) {
 const double * ECVmultiCanonical::getPntrToECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0,"ECV_MULTICANONICAL has only one CV, the ENERGY");
+  plumed_massert(j==0,getName()+" has only one CV, the ENERGY");
   return &ECVs_[0];
 }
 
 const double * ECVmultiCanonical::getPntrToDerECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0,"ECV_MULTICANONICAL has only one CV, the ENERGY");
+  plumed_massert(j==0,getName()+" has only one CV, the ENERGY");
   return &derECVs_[0];
 }
 
@@ -221,7 +209,7 @@ void ECVmultiCanonical::initECVs()
   ECVs_.resize(beta_.size());
   derECVs_.resize(beta_.size());
   isReady_=true;
-  log.printf("  *%4u temperatures for ECV_MULTICANONICAL\n",beta_.size());
+  log.printf("  *%4u temperatures for %s\n",beta_.size(),getName().c_str());
 }
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
@@ -239,17 +227,21 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     setBetaSteps(min_beta,max_beta,steps_temp);
   }
   initECVs();
+
+  calculateECVs(&all_obs_cvs[index_j]);
+  for(unsigned k=0; k<beta_.size(); k++)
+    ECVs_[k]=std::min(barrier_/kbt_,ECVs_[k]);
 }
 
 void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=lambdas[0].find("_");
-  plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in ECV_MULTICANONICAL");
+  plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
     setBetaSteps(beta_[0],beta_[1],lambdas.size());
   std::vector<std::string> myLambdas=getLambdas();
-  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of ECV_MULTICANONICAL");
-  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of ECV_MULTICANONICAL");
+  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
+  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());
 
   initECVs();
 }

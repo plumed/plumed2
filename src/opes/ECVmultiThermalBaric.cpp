@@ -88,7 +88,6 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.remove("ARG");
   keys.add("compulsory","ARG","provide the labels of the potential energy and of the volume of the system, you can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
 //temperature
-  keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("optional","MIN_TEMP","the minimum of the temperature range");
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
@@ -111,20 +110,10 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao):
 {
   plumed_massert(getNumberOfArguments()==2,"ENERGY and VOLUME should be given as ARG");
 
-//set Kb and beta0_
+//set beta0_
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  double KbT=plumed.getAtoms().getKbT();
-  double temp=-1;
-  parse("TEMP",temp);
-  if(temp>0)
-  {
-    if(KbT>0 && std::abs(KbT-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,KbT/Kb);
-    KbT=Kb*temp;
-  }
-  plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  beta0_=1./KbT;
-  temp=KbT/Kb;
+  double temp0=kbt_/Kb;
+  beta0_=1./kbt_;
 
 //parse temp range
   double min_temp=-1;
@@ -171,12 +160,12 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao):
   { //get MIN_TEMP and MAX_TEMP
     if(min_temp==-1)
     {
-      min_temp=temp;
+      min_temp=temp0;
       log.printf("  no MIN_TEMP provided, using MIN_TEMP=TEMP\n");
     }
     if(max_temp==-1)
     {
-      max_temp=temp;
+      max_temp=temp0;
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
@@ -195,8 +184,8 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao):
     }
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp<(1-tol)*min_temp || temp>(1+tol)*max_temp)
-    log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp);
+  if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
+    log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp0);
 
 //set the intermediate pressures
   if(pres_.size()>0)
@@ -266,7 +255,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao):
   }
 
 //print some info
-  log.printf("  running at TEMP=%g and PRESSURE=%g\n",temp,pres0_);
+  log.printf("  running at TEMP=%g and PRESSURE=%g\n",temp0,pres0_);
   log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
   if(min_temp==max_temp)
     log.printf(" +++ WARNING +++ if you only need a multibaric simulation it is more efficient to set it up with ECV_LINEAR\n");
@@ -299,7 +288,7 @@ void ECVmultiThermalBaric::calculateECVs(const double * ene_vol) {
 const double * ECVmultiThermalBaric::getPntrToECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0 || j==1,"ECV_MULTITHERMAL_MULTIBARIC has only two CVs, the ENERGY and the VOLUME");
+  plumed_massert(j==0 || j==1,getName()+" has only two CVs, the ENERGY and the VOLUME");
   if(j==0)
     return &ECVs_beta_[0];
   else //if (j==1)
@@ -309,7 +298,7 @@ const double * ECVmultiThermalBaric::getPntrToECVs(unsigned j)
 const double * ECVmultiThermalBaric::getPntrToDerECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
-  plumed_massert(j==0 || j==1,"ECV_MULTITHERMAL_MULTIBARIC has only two CVs, the ENERGY and the VOLUME");
+  plumed_massert(j==0 || j==1,getName()+" has only two CVs, the ENERGY and the VOLUME");
   if(j==0)
     return &derECVs_beta_[0];
   else //if (j==1)
@@ -328,7 +317,7 @@ std::vector< std::vector<unsigned> > ECVmultiThermalBaric::getIndex_k() const
     {
       if(coeff_==0 || pres_[kk]>=line_k) //important to be inclusive, thus >=, not just >
       {
-        index_k.emplace_back(std::vector<unsigned>{k,i});
+        index_k.emplace_back(std::vector<unsigned> {k,i});
         i++;
       }
     }
@@ -405,8 +394,8 @@ void ECVmultiThermalBaric::initECVs()
   ECVs_pres_.resize(totNumECVs_);
   derECVs_pres_.resize(totNumECVs_);
   isReady_=true;
-  log.printf("  *%4u temperatures for ECV_MULTITHERMAL_MULTIBARIC\n",beta_.size());
-  log.printf("  *%4u pressures for ECV_MULTITHERMAL_MULTIBARIC\n",pres_.size());
+  log.printf("  *%4u temperatures for %s\n",beta_.size(),getName().c_str());
+  log.printf("  *%4u pressures for %s\n",pres_.size(),getName().c_str());
   if(coeff_!=0)
     log.printf("    -- CUT_CORNER: %u temp-pres points were excluded, thus total is %u\n",beta_.size()*pres_.size()-totNumECVs_,totNumECVs_);
 }
@@ -438,14 +427,20 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     setPresSteps(min_pres,max_pres,steps_pres);
   }
   initECVs();
+
+  calculateECVs(&all_obs_cvs[index_j]);
+  for(unsigned k=0; k<ECVs_beta_.size(); k++)
+    ECVs_beta_[k]=std::min(barrier_/kbt_,ECVs_beta_[k]);
+  for(unsigned kk=0; kk<ECVs_pres_.size(); kk++)
+    ECVs_pres_[kk]=std::min(barrier_/kbt_,ECVs_pres_[kk]);
 }
 
 void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=lambdas[0].find("_");
-  plumed_massert(pos!=std::string::npos,"this should not happen, two CVs are used in ECV_MULTITHERMAL_MULTIBARIC, not less");
+  plumed_massert(pos!=std::string::npos,"this should not happen, two CVs are used in "+getName()+", not less");
   lambdas[0].find("_",pos+1);
-  plumed_massert(pos==std::string::npos,"this should not happen, two CVs are used in ECV_MULTITHERMAL_MULTIBARIC, not more");
+  plumed_massert(pos==std::string::npos,"this should not happen, two CVs are used in "+getName()+", not more");
 
   auto getLambdaName=[](std::string name,const unsigned index_j) //slightly different from the one in OPESexpanded.cpp
   {
@@ -480,8 +475,8 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
     setBetaSteps(beta_[0],beta_[1],steps_temp);
   }
   std::vector<std::string> myLambdas=getLambdas();
-  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of ECV_MULTITHERMAL_MULTIBARIC");
-  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of ECV_MULTITHERMAL_MULTIBARIC");
+  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
+  plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());
 
   initECVs();
 }
