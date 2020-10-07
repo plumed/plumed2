@@ -59,8 +59,8 @@ argument with suffix _pfunc.
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11
 
-pw: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1
-ppww: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1,dist2
+pw: PIECEWISE POINT0=1,10 POINT1=2,PI POINT2=3,10 ARG=dist1
+ppww: PIECEWISE POINT0=1,10 POINT1=2,PI POINT2=3,10 ARG=dist1,dist2
 PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 \endplumedfile
 

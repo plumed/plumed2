@@ -94,6 +94,11 @@ ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 However notice that many extra atoms with zero weight might slow down the calculation, so
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
+Starting with PLUMED 2.7, if all the weights are set to zero they will be normalized to be equal to the
+inverse of the number of involved atoms. This means that it will be possible to use files with
+the weight columns set to zero obtaining a meaningful result. In previous PLUMED versions,
+setting all weights to zero was resulting in an error instead.
+
 
 \par Systems with more than 100k atoms
 

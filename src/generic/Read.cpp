@@ -162,6 +162,8 @@ Read::Read(const ActionOptions&ao):
   // Find out what we are reading
   std::vector<std::string> valread; parseVector("VALUES",valread);
 
+  if(nlinesPerStep>1 && cloned_file) error("Opening a file multiple times and using EVERY is not allowed");
+
   std::size_t dot=valread[0].find_first_of('.');
   if( valread[0].find(".")!=std::string::npos ) {
     std::string label=valread[0].substr(0,dot);
@@ -245,7 +247,7 @@ void Read::update() {
   if( !cloned_file ) {
     for(unsigned i=0; i<nlinesPerStep; ++i) {
       ifile->scanField(); double du_time;
-      if( plumed.getAtoms().getNatoms()==0 && !ifile->scanField("time",du_time) ) plumed.stop();
+      if( !ifile->scanField("time",du_time) && plumed.getAtoms().getNatoms()==0 ) plumed.stop();
     }
   }
 }
