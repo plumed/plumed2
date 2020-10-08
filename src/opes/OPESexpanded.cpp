@@ -26,7 +26,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC BIAS OPES_EXPANDED
+//+PLUMEDOC OPES_BIAS OPES_EXPANDED
 /*
 On-the-fly probability enhanced sampling (OPES) with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
 
@@ -64,7 +64,7 @@ private:
   std::vector<const double *> ECVs_;
   std::vector<const double *> derECVs_;
   std::vector<opes::ExpansionCVs*> pntrToECVsClass_;
-  std::vector< std::vector<unsigned> > index_k_;
+  std::vector< std::vector<unsigned> > index_k_; //FIXME is it better to store it or to get it each time?
 
   double kbt_;
   unsigned stride_;
@@ -90,7 +90,7 @@ public:
   static void registerKeywords(Keywords& keys);
 
   void init_pntrToECVsClass();
-  void init_linkECVs(); //must run after ECVs have been initalizated and deltaF_ resized
+  void init_linkECVs();
   void init_from_obs();
   inline void update_deltaF(double);
   inline double getExpansion(const unsigned) const;
@@ -244,7 +244,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
       obs_steps_=0; //avoid initializing again
-      //read steps from file
+    //read steps from file
       int restart_stride;
       ifile.scanField("print_stride",restart_stride);
       plumed_massert(restart_stride==(int)print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
@@ -459,7 +459,7 @@ void OPESexpanded::init_pntrToECVsClass()
         break;
       }
     }
-    plumed_massert(foundECV_l<all_pntrToECVsClass.size(),error_notECV);//TODO add support for custom CVs as ECVs ?
+    plumed_massert(foundECV_l<all_pntrToECVsClass.size(),error_notECV);
   }
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
     for(unsigned ll=l+1; ll<pntrToECVsClass_.size(); ll++)
@@ -515,13 +515,12 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
     index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
   }
   plumed_massert(index_j==getNumberOfArguments(),"mismatch between number of linked CVs and number of ARG");
-
 //link ECVs and initialize index_k_, mapping each deltaF to a single ECVs set
   deltaF_.resize(totNumECVs);
   init_linkECVs();
 
 //initialize deltaF_ from obs
-//for the first point t=0, the ECVs are calculated by initECVs_observ, setting also any initial guess
+//for the first point, t=0, the ECVs are calculated by initECVs_observ, setting also any initial guess
   index_j=0;
   for(unsigned i=0; i<deltaF_.size(); i++)
     for(unsigned j=0; j<ncv_; j++)

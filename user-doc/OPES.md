@@ -14,13 +14,22 @@ The OPES module contains the implementation of the on-the-fly probability enhanc
 This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features.
 
 ## Usage
-Currently, the OPES module is composed only by a bias action: \ref OPES_METAD
+The OPES module is composed by two bias actions, \ref OPES_METAD that samples metadynamics-like target distributions (e.g. the well-tempered one),
+and \ref OPES_EXPANDED that samples expanded ensembles target distributions (replica-exchange-like). 
+It also contains various expansion collective variables (ECVs) to define such expanded targets.
 
 ## Module Contents
-- \subpage OPES_bias
+- \subpage OPES_BIAS
+- \subpage EXPANSION_CV
 
-\page OPES_bias Biases
+\page OPES_BIAS Biases
 
 The following list contains the biases available in the OPES module.
 
 @OPES_BIAS@
+
+\page EXPANSION_CV Expansion Collective Variables
+
+The following list contains the expansion CVs available in the OPES module.
+
+@EXPANSION_CV@

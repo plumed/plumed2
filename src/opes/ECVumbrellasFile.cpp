@@ -142,9 +142,10 @@ void ECVumbrellasFile::calculateECVs(const double * cv) {
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
     {
-      const double dist_jk=difference(j,centers_[j][k],cv[j])/sigmas_[j][k]; //PBC might be present
+      const unsigned kk=k-P0_contribution_;
+      const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
       ECVs_[j][k]=0.5*std::pow(dist_jk,2);
-      derECVs_[j][k]=dist_jk/sigmas_[j][k];
+      derECVs_[j][k]=dist_jk/sigmas_[j][kk];
     }
   }
 }
@@ -175,12 +176,21 @@ std::vector< std::vector<unsigned> > ECVumbrellasFile::getIndex_k() const
 std::vector<std::string> ECVumbrellasFile::getLambdas() const
 { //FIXME check also sigma?
   std::vector<std::string> lambdas(totNumECVs_);
-  for(unsigned k=0; k<totNumECVs_; k++)
+  if(P0_contribution_==1)
   {
     std::ostringstream subs;
-    subs<<centers_[0][k];
+    subs<<"P0";
     for(unsigned j=1; j<getNumberOfArguments(); j++)
-      subs<<"_"<<centers_[j][k];
+      subs<<"_P0";
+    lambdas[0]=subs.str();
+  }
+  for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+  {
+    const unsigned kk=k-P0_contribution_;
+    std::ostringstream subs;
+    subs<<centers_[0][kk];
+    for(unsigned j=1; j<getNumberOfArguments(); j++)
+      subs<<"_"<<centers_[j][kk];
     lambdas[k]=subs.str();
   }
   return lambdas;

@@ -28,47 +28,48 @@ namespace opes {
 /*
 On-the-fly probability enhanced sampling (OPES) with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
-OPES aims at sampling a given target distribution over the configuration space \f$p^{tg}(\mathbf{x})\f$,
-different form the equilibrium Boltzmann distribution \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
-To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions
+The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{tg}(\mathbf{x})\f$,
+different from the equilibrium Boltzmann distribution, \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
+To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions:
 \f[
 V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
 \f]
 The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
 
-OPES_METAD samples target distributions defined via their marginal \f$p^{tg}(\mathbf{s})\f$ over some collective variables (CVs) \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+This OPES_METAD action samples target distributions defined via their marginal \f$p^{tg}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 By default OPES_METAD targets the well-tempered distribution, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
 Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
-It does so by reweighting with a weighted kernel density estimation the unbiased distribution \f$P(\mathbf{s})\f$ in the CV space.
+It does so by reweighting via kernel density estimation the unbiased distribution in the CV space, \f$P(\mathbf{s})\f$.
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
-See Ref.\cite Invernizzi2020rethinking for all the details on the method.
+See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 
-As an intuitive picture, OPES_METAD is not gradually filling the metastable basins, but rather it quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
-It is very fast in exploring in the first phase, and then becomes extremely conservative and does not change significantly the shape of the deposited bias any more, to assure a regime of quasi-static bias.
+As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
+It has a fast initial exploration phase, and then becomes extremely conservative and does not significantly change the shape of the deposited bias any more, reaching a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing"> this link </a> you can also find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
+At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
 
 Notice that OPES_METAD is more sensitive to degenerate CVs than \ref METAD.
 If the employed CVs map different metastable basins onto the same CV-space region, then OPES_METAD will remain stuck rather than completely reshaping the bias.
-This can be useful to diagnostic problems with your collective variable.
-If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR, or even without well-tempering.
-In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors.
+This can be useful to diagnose problems with your collective variable.
+If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref OPES_METAD_EXPLORE or \ref METAD.
+In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors (see e.g. Fig.3 in \cite Pietrucci2017review).
 On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES_METAD instead of \ref METAD \cite Invernizzi2020rethinking.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
-If it is much lower than that, you will not cross the barrier, if it is much higher, you will be slightly slower in converging.
-If you know which one is the most stable basin of your system you should start your simulation from there.
+If it is much lower than that, you will not cross the barrier, if it is much higher, convergence might take a little longer.
+If the system has a basin that is clearly more stable than the others, it is better to start the simulation from there.
 
-By default the kernels SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts will appear and the bias will converge to the correct one).
+By default, the kernels SIGMA is adaptive, estimated from the fluctuations over ADAPTIVE_SIGMA_STRIDE simulation steps (similar to \ref METAD ADAPTIVE=DIFF, but contrary to that, no artifacts are introduced and the bias will converge to the correct one).
 However, notice that depending on the system this might not be the optimal choice for SIGMA.
 
-To use uniform flat target, explicitly set BIASFACTOR=inf, but should be needed only in very specific cases.
+You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
+However, this should be useful only in very specific cases.
 
-Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing numbers to file, or usage of adaptive SIGMA).
-For an exact restart you need to use STATE_RFILE to read a checkpoint with all the needed info.
+Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
+For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
 

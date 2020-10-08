@@ -141,6 +141,8 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
 //print some info
   log.printf("  running at LAMBDA=%g\n",lambda0_);
   log.printf("  targeting a lambda range from MIN_LAMBDA=%g to MAX_LAMBDA=%g\n",min_lambda,max_lambda);
+  if(dimensionless)
+    log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
 }
 
 void ECVlinear::calculateECVs(const double * DeltaU) {
