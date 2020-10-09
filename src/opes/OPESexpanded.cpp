@@ -143,7 +143,6 @@ PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
 void OPESexpanded::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
 //deltaFs file
