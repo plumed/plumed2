@@ -51,7 +51,7 @@ The third CV, the order parameter, must be used when the region of the phase dia
 
 The algorithm will explore the free energy at each temperature and pressure up to a predefined free
  energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
-If only the energy and the volume are being biased, i.e. no phase transition is considered, then THRESHOLD can be set to 1.
+If only the energy and the volume are being biased, i.e. no phase transition is considered, then THRESHOLD can be set to around 5.
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
 
@@ -74,6 +74,8 @@ p(E,\mathcal{V},s)=
 with \f$F_{\beta',P'}(E,\mathcal{V},s)\f$ the free energy as a function of energy \f$E\f$ and volume \f$\mathcal{V}\f$ (and optionally the order parameter \f$s\f$) at temperature \f$\beta'\f$ and pressure \f$P'\f$, \f$\Omega_{E,\mathcal{V},s}\f$ is a normalization constant, and \f$\epsilon\f$ is the THRESHOLD.
 In practice the condition \f$\beta' F_{\beta',P'}(E,\mathcal{V},s)<\epsilon\f$  is checked in equally spaced points in each dimension \f$\beta'\f$ and \f$P'\f$.
 The number of points is determined with the keywords STEPS_TEMP and STEPS_PRESSURE.
+In practice the target distribution is never set to zero but rather to a small value controlled by the keyword EPSILON.
+The small value is e^-EPSILON.
 
 Much like in the Wang-Landau algorithm \cite wanglandau or in the multicanonical ensemble \cite Berg-PRL-1992 , a flat histogram is targeted.
 The idea behind this choice of target distribution is that all regions of potential energy and volume (and optionally order parameter) that are relevant at all temperatures \f$\beta_1<\beta'<\beta_2\f$ and pressure \f$P_1<P'<P_2\f$ are included in the distribution.
@@ -116,10 +118,6 @@ TD_MULTITHERMAL_MULTIBARIC ...
  MAX_PRESSURE=180.66422571
  MIN_PRESSURE=0.06022140857
  PRESSURE=0.06022140857
- STEPS_PRESSURE=20
- STEPS_TEMP=20
- SIGMA=50.,0.05
- THRESHOLD=1
  LABEL=td_multi
 ... TD_MULTITHERMAL_MULTIBARIC
 
@@ -217,6 +215,8 @@ class TD_MultithermalMultibaric: public TargetDistribution {
 private:
   double threshold_, min_temp_, max_temp_;
   double min_press_, max_press_, press_;
+  double epsilon_;
+  bool smoothening_;
   std::vector<double> sigma_;
   unsigned steps_temp_, steps_pressure_;
 public:
@@ -234,7 +234,8 @@ PLUMED_REGISTER_ACTION(TD_MultithermalMultibaric,"TD_MULTITHERMAL_MULTIBARIC")
 
 void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","THRESHOLD","1","Maximum exploration free energy in kT.");
+  keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
+  keys.add("compulsory","EPSILON","10","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum energy.");
   keys.add("compulsory","MAX_TEMP","Maximum energy.");
   keys.add("compulsory","MIN_PRESSURE","Minimum pressure.");
@@ -248,14 +249,15 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
 
 TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  threshold_(1.0),
+  threshold_(5.0),
+  epsilon_(10.0),
   min_temp_(0.0),
   max_temp_(1000.0),
   min_press_(0.0),
   max_press_(1000.0),
-  sigma_(0.0),
   steps_temp_(20),
-  steps_pressure_(20)
+  steps_pressure_(20),
+  smoothening_(true)
 {
   log.printf("  Multithermal-multibaric target distribution");
   log.printf("\n");
@@ -269,20 +271,35 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
 
   parse("THRESHOLD",threshold_);
   if(threshold_<=0.0) {
-    plumed_merror("TD_MULTITHERMAL_MULTIBARIC target distribution: the value of the threshold should be positive.");
+    plumed_merror(getName()+": the value of the threshold should be positive.");
   }
+  log.printf("  exploring free energy up to %f kT for each temperature and pressure\n",threshold_);
   parse("MIN_TEMP",min_temp_);
   parse("MAX_TEMP",max_temp_);
+  log.printf("  temperatures between %f and %f will be explored \n",min_temp_,max_temp_);
   parse("MIN_PRESSURE",min_press_);
   parse("MAX_PRESSURE",max_press_);
+  log.printf("  pressures between %f and %f will be explored \n",min_press_,max_press_);
   parse("PRESSURE",press_);
+  log.printf("  pressure of the barostat should have been set to %f. Please check this in the MD engine \n",press_);
   parseVector("SIGMA",sigma_);
-  if(sigma_.size()<2 || sigma_.size()>3) plumed_merror(getName()+": SIGMA takes 2 or 3 values as input.");
+  if(sigma_.size()==0) smoothening_=false;
+  if(smoothening_ && (sigma_.size()<2 || sigma_.size()>3) ) plumed_merror(getName()+": SIGMA takes 2 or 3 values as input.");
+  if (smoothening_) {
+    log.printf("  the target distribution will be smoothed using sigma values");
+    for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_[i]);
+    log.printf("\n");
+  }
   parse("STEPS_TEMP",steps_temp_);
   parse("STEPS_PRESSURE",steps_pressure_);
+  log.printf("  %d steps in temperatures and %d steps in pressure will be employed \n",steps_temp_,steps_pressure_);
   steps_temp_ += 1;
   steps_pressure_ += 1;
-
+  parse("EPSILON",epsilon_);
+  if(epsilon_<=1.0) {
+    plumed_merror(getName()+": the value of epsilon should be greater than 1.");
+  }
+  log.printf("  the non relevant regions of the target distribution are set to e^-%f \n",epsilon_);
   setDynamic();
   setFesGridNeeded();
   checkRead();
@@ -298,7 +315,7 @@ double TD_MultithermalMultibaric::getValue(const std::vector<double>& argument) 
 void TD_MultithermalMultibaric::updateGrid() {
   if (getStep() == 0) {
     if(targetDistGrid().getDimension()>3 && targetDistGrid().getDimension()<2) plumed_merror(getName()+" works only with 2 or 3 arguments, i.e. energy and volume, or energy, volume, and CV");
-    if(sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
     double norm = 0.0;
@@ -308,15 +325,14 @@ void TD_MultithermalMultibaric::updateGrid() {
       targetDistGrid().setValue(l,value);
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   } else {
     double beta = getBeta();
     double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
     double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_MultithermalMultibaric!");
-    // Set all to zero
+    // Set all to current epsilon value
     for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-      double value = 0.0;
+      double value = exp(-1.0*epsilon_);
       targetDistGrid().setValue(l,value);
     }
     // Loop over pressures and temperatures
@@ -348,53 +364,33 @@ void TD_MultithermalMultibaric::updateGrid() {
         }
       }
     }
-    std::vector<unsigned> nbin=targetDistGrid().getNbin();
-    std::vector<double> dx=targetDistGrid().getDx();
-    unsigned dim=targetDistGrid().getDimension();
-    // Smoothening
-    for(Grid::index_t index=0; index<targetDistGrid().getSize(); index++) {
-      std::vector<unsigned> indices = targetDistGrid().getIndices(index);
-      std::vector<double> point = targetDistGrid().getPoint(index);
-      double value = targetDistGrid().getValue(index);
-      if (value>(1-1.e-5)) { // Apply only if this grid point was 1.
-        // Apply gaussians around
-        std::vector<int> minBin(dim), maxBin(dim); // These cannot be unsigned
-        // Only consider contributions less than n*sigma bins apart from the actual distance
-        for(unsigned k=0; k<dim; k++) {
-          int deltaBin=std::floor(5*sigma_[k]/dx[k]);
-          minBin[k]=indices[k] - deltaBin;
-          if (minBin[k] < 0) minBin[k]=0;
-          if (minBin[k] > (nbin[k]-1)) minBin[k]=nbin[k]-1;
-          maxBin[k]=indices[k] + deltaBin;
-          if (maxBin[k] > (nbin[k]-1)) maxBin[k]=nbin[k]-1;
-        }
-        if (dim==2) {
-          for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-            for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
-              std::vector<unsigned> indices_prime(dim);
-              indices_prime[0]=l;
-              indices_prime[1]=m;
-              Grid::index_t index_prime = targetDistGrid().getIndex(indices_prime);
-              std::vector<double> point_prime = targetDistGrid().getPoint(index_prime);
-              double value_prime = targetDistGrid().getValue(index_prime);
-              // Apply gaussian
-              double gaussian_value = 1;
-              for(unsigned k=0; k<dim; k++) {
-                gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]);
-              }
-              if (value_prime<gaussian_value) {
-                targetDistGrid().setValue(index_prime,gaussian_value);
-              }
-            }
+    if (smoothening_) {
+      std::vector<unsigned> nbin=targetDistGrid().getNbin();
+      std::vector<double> dx=targetDistGrid().getDx();
+      unsigned dim=targetDistGrid().getDimension();
+      // Smoothening
+      for(Grid::index_t index=0; index<targetDistGrid().getSize(); index++) {
+        std::vector<unsigned> indices = targetDistGrid().getIndices(index);
+        std::vector<double> point = targetDistGrid().getPoint(index);
+        double value = targetDistGrid().getValue(index);
+        if (value>(1-1.e-5)) { // Apply only if this grid point was 1.
+          // Apply gaussians around
+          std::vector<int> minBin(dim), maxBin(dim); // These cannot be unsigned
+          // Only consider contributions less than n*sigma bins apart from the actual distance
+          for(unsigned k=0; k<dim; k++) {
+            int deltaBin=std::floor(6*sigma_[k]/dx[k]);
+            minBin[k]=indices[k] - deltaBin;
+            if (minBin[k] < 0) minBin[k]=0;
+            if (minBin[k] > (nbin[k]-1)) minBin[k]=nbin[k]-1;
+            maxBin[k]=indices[k] + deltaBin;
+            if (maxBin[k] > (nbin[k]-1)) maxBin[k]=nbin[k]-1;
           }
-        } else if (dim==3) {
-          for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-            for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
-              for(unsigned n=minBin[2]; n<maxBin[2]+1; n++) {
+          if (dim==2) {
+            for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
+              for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
                 std::vector<unsigned> indices_prime(dim);
                 indices_prime[0]=l;
                 indices_prime[1]=m;
-                indices_prime[2]=n;
                 Grid::index_t index_prime = targetDistGrid().getIndex(indices_prime);
                 std::vector<double> point_prime = targetDistGrid().getPoint(index_prime);
                 double value_prime = targetDistGrid().getValue(index_prime);
@@ -405,6 +401,28 @@ void TD_MultithermalMultibaric::updateGrid() {
                 }
                 if (value_prime<gaussian_value) {
                   targetDistGrid().setValue(index_prime,gaussian_value);
+                }
+              }
+            }
+          } else if (dim==3) {
+            for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
+              for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
+                for(unsigned n=minBin[2]; n<maxBin[2]+1; n++) {
+                  std::vector<unsigned> indices_prime(dim);
+                  indices_prime[0]=l;
+                  indices_prime[1]=m;
+                  indices_prime[2]=n;
+                  Grid::index_t index_prime = targetDistGrid().getIndex(indices_prime);
+                  std::vector<double> point_prime = targetDistGrid().getPoint(index_prime);
+                  double value_prime = targetDistGrid().getValue(index_prime);
+                  // Apply gaussian
+                  double gaussian_value = 1;
+                  for(unsigned k=0; k<dim; k++) {
+                    gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]);
+                  }
+                  if (value_prime<gaussian_value) {
+                    targetDistGrid().setValue(index_prime,gaussian_value);
+                  }
                 }
               }
             }
@@ -420,8 +438,8 @@ void TD_MultithermalMultibaric::updateGrid() {
       norm += integration_weights[l]*value;
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   }
+  updateLogTargetDistGrid();
 }
 
 inline
