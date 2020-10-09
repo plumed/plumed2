@@ -141,6 +141,10 @@ configure_file(version.h.cmakein version.h)
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
           ${CMAKE_CURRENT_BINARY_DIR}/version.h
+	  analysisdata.h
+	  options.h
+	  selection.h
+	  trajectoryanalysis.h
           DESTINATION include/gromacs)
 endif()
 
@@ -351,11 +355,16 @@ endif()
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            INCLUDES DESTINATION include
-            COMPONENT libraries)
+            LIBRARY
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT libraries
+            RUNTIME
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                COMPONENT libraries
+            ARCHIVE
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT libraries
+            INCLUDES DESTINATION include)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
