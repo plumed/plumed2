@@ -25,12 +25,28 @@ namespace opes {
 //+PLUMEDOC EXPANSION_CV ECV_MULTICANONICAL
 /*
 Expand a canonical simulation to sample multiple temperatures.
-If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and add the volume contribution.
+\warning
+  If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and add the volume contribution.
 The \ref ENERGY of the system should be used as ARG.
+
+By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
+Otherwise you can manually set this number with STEPS_TEMP.
+In both cases the steps will have a geometric distriution in the temperature, thus uniform in beta.
+For more fine controll you can use the keywork SET_ALL_TEMPS and explicitly provide each temperature.
 
 \par Examples
 
-mc: ECV_MULTICANONICAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=500
+\plumedfile
+ene: ENERGY
+mc: ECV_MULTICANONICAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
+\endplumedfile
+
+which, if your MD code passes the temperature to PLUMED, is equivalent to:
+
+\plumedfile
+ene: ENERGY
+mc: ECV_MULTICANONICAL ARG=ene MAX_TEMP=800
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

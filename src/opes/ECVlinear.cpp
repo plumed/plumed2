@@ -22,13 +22,39 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_LINEAR
 /*
-Expand a canonical simulation to sample multiple temperatures.
-If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and add the volume contribution.
-The \ref ENERGY of the system should be used as ARG.
+Expand a simulation linearly accoding to a parameter lambda.
+This can be used e.g. for thermodynamic integration, or for multibaric simulations, in which case lambda=pressure.
+It can also be used for multicanonical simulations, but for simplicity it is more convenient to use \ref ECV_MULTICANONICAL.
+
+Notice that if your volume changes, e.g. in the NPT ensemble, you cannot simply combine a temperature expansion and a pressure expansion to obtain a multithermal-multibaric simulation.
+You should instead use \ref ECV_MULTITHERMAL_MULTIBARIC.
 
 \par Examples
 
-mc: ECV_LINEAR ARG=ene LAMBDA=300 MIN_LAMBDA=300 MAX_LAMBDA=500
+Typical multibaric simulation:
+
+\plumedfile
+vol: VOLUME
+ecv: ECV_LINEAR ...
+  ARG=vol
+  TEMP=300
+  LAMBDA=0.06022140857*2000 #2 kbar
+  MIN_LAMBDA=0.06022140857  #1 bar
+  MAX_LAMBDA=0.06022140857*4000 #4 kbar
+...
+opes: OPES_EXPANDED ARG=ecv.vol PACE=500
+\endplumedfile
+
+Typical thermodynamic integration:
+
+\plumedfile
+DeltaU: EXTRACV NAME=energy_difference
+ecv: ECV_LINEAR ARG=DeltaU TEMP=300
+opes: OPES_EXPANDED ARG=ecv.* PACE=100
+\endplumedfile
+
+Notice that by defauly LAMBDA=0, MIN_LAMBDA=0 and MAX_LAMBDA=1, which is the typical case for thermodynamic integration.
+
 
 */
 //+ENDPLUMEDOC

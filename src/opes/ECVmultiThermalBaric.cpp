@@ -24,15 +24,26 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL_MULTIBARIC
 /*
-Expand a canonical simulation to sample multiple temperatures.
-If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and add the volume contribution.
-The \ref ENERGY of the system should be used as ARG.
+Expand a simulation to sample multiple temperatures and pressures.
+The \ref ENERGY and \ref VOLUME of the system should be used as ARG.
+
+If the volume is constant (NVT simulation) you should use \ref ECV_MULTICANONICAL to sample multiple temperatures.
+If instead the volume changes (NPT simulation) you must use this ECV and not set MIN/MAX pressure to obtain a multitemperature-singlepressure simulation.
+
+The STEPS_TEMP and STEPS_PRESSURE are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
+The temperatures are chosen with geometric distribution (uniform in beta), while the pressures are uniformely spaced.
+For more detailed control you can use SET_ALL_TEMPS and SET_ALL_PRESSURES.
+The temperatures and pressures are then combined in a 2D grid.
+
+You can use CUT_CORNER to avoid a high temperature - low pressure region.
+This can be useful e.g. to increase the temperature for greater ergodicity, while avoiding water to vaporize, as in Ref.\cite Invernizzi2020unified.
 
 \par Examples
 
+\plumedfile
 ene: ENERGY
 vol: VOLUME
-mtp: ECV_MULTITHERMAL_MULTIBARIC
+mtp: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=500
   MIN_TEMP=270
@@ -42,6 +53,7 @@ mtp: ECV_MULTITHERMAL_MULTIBARIC
   MAX_PRESSURE=0.06022140857*4000 #4 kbar
 ...
 opes: OPES_EXPANDED ARG=mtp.* FILE=DeltaF.data PACE=500 WALKERS_MPI
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

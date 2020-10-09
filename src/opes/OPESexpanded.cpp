@@ -42,10 +42,52 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 
 \par Examples
 
+\plumedfile
 ene: ENERGY
-mc: ECV_MULTICANONICAL ARG=ene MAX_TEMP=1000
+ecv: ECV_MULTICANONICAL ARG=ene MAX_TEMP=1000
 opes: OPES_EXPANDED ARG=mc.ene PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
+\endplumedfile
+
+You can easily combine multiple ECVs.
+The OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
+
+\plumedfile
+ene: ENERGY
+dst: DISTANCE ATOMS=1,2
+
+ecv1: ECV_MULTICANONICAL ARG=ene SET_ALL_TEMPS=200,300,500,1000
+ecv2: ECV_UMBRELLAS_LINE ARG=dst MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
+opes: OPES_EXPANDED ARG=ecv1.ene,ecv2.dst PACE=500 OBSERVATION_STEPS=1
+
+PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
+\endplumedfile
+
+If an ECV is based on more than one CV you must provide all the output component, in the proper order.
+You can use regex for that, like in the following example.
+
+\plumedfile
+ene: ENERGY
+vol: VOLUME
+mtp: ECV_MULTITHERMAL_MULTIBARIC ...
+  ARG=ene,vol
+  TEMP=300
+  MIN_TEMP=200
+  MAX_TEMP=800
+  PRESSURE=0.06022140857*1000 #1 kbar
+  MIN_PRESSURE=0
+  MAX_PRESSURE=0.06022140857*2000 #2 kbar
+...
+
+cv1: DISTANCE ATOMS=1,2
+cv2: DISTANCE ATOMS=3,4
+umb: ECV_UMBRELLAS_FILE ARG=cv1,cv2 TEMP=300 FILE=Umbrellas.data BARRIER=70
+
+opes: OPES_EXPANDED ARG=mtp.*,umb.* PACE=500 WALKERS_MPI PRINT_STRIDE=1000
+
+PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC

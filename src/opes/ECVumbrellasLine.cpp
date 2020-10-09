@@ -22,13 +22,23 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_LINE
 /*
-Place Gaussian umbrellas on a line.
+Target a multiumbrella ensemble, obtained as sum of different systems each with a parabolic bias potential at a different location.
+Any collective variable can be used as ARG.
+
+ECV_UMBRELLAS_LINE places the Gaussian umbrellas on a line, from MIN_CV to MAX_CV.
+The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use \ref ECV_UMBRELLAS_FILE.
+The unbiased fluctuations in the basin usually are a reasonable guess for the value of SIGMA.
 The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.
-Can be used with any Colvar as ARG.
+
+The keyword BARRIER can be helpful to avoid breaking your system due to a too strong initial bias.
+If you think the placed umbrellas will not cover the whole unbiased probability distribution you should add it explicitly to the target, with the flag ADD_P0, for more robust convergence.
 
 \par Examples
 
-us: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=-1 MAX_CV=1 SIMGA=0.1
+\plumedfile
+cv: DISTANCE ATOMS=1,2
+us: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=1.2 MAX_CV=4.3 SIMGA=0.5
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

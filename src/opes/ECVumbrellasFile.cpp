@@ -23,13 +23,39 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_FILE
 /*
-Place Gaussian umbrellas on a line.
-The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.
-Can be used with any Colvar as ARG.
+Target a multiumbrella ensemble, obtained as sum of different systems each with a parabolic bias potential at a different location.
+Any collective variable can be used as ARG.
+
+The positions and dimension (SIGMA) of the umbrellas is read from file.
+You can choose the umbrellas manually or via some automated technique such as Gaussian mixture.
+Notice that the umbrellas have diagonal SIGMA, thus only one SIGMA per CV has to be specified.
+You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
+
+Use the option READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
+The first column of the umbrellas file is always ignored.
+
+The flag ADD_P0 is available, as in \ref ECV_UMBRELLAS_LINE.
 
 \par Examples
 
-us: ECV_UMBRELLAS_FILE ARG=cv MIN_CV=-1 MAX_CV=1 SIMGA=0.1
+\plumedfile
+cv1: DISTANCE ATOMS=1,2
+cv2: DISTANCE ATOMS=3,4
+cv3: DISTANCE ATOMS=5,6
+us: ECV_UMBRELLAS_FILE ARG=cv1,cv2,cv3 FILE=Umbrellas.data BARRIER=70
+opes: OPES_EXPANDED ARG=us.* PACE=500
+PRINT FILE=COLVAR STRIDE=500 ARG=cv1,cv2,cv3,opes.bias
+\endplumedfile
+
+The umbrellas file might look like this:
+\auxfile{Umbrellas.data}
+#! FIELDS count cv1 cv2 cv3 cv1_sigma cv2_sigma cv3_sigma
+1  -1.17958  -2.93697  -1.06109  0.242158  0.242158  0.242158  1.60875e-08
+2  -2.04023  -2.69714  -1.84770  0.242156  0.242156  0.242156  3.21763e-08
+3  -1.99693  -1.10299  -1.13351  0.242154  0.242154  0.242154  4.82625e-08
+4  -1.15954  -1.37447  -2.25975  0.242153  0.242153  0.242153  6.43501e-08
+5  -1.10126  -2.45936  -2.40260  0.242156  0.242156  0.242156  8.05509e-08
+\endauxfile
 
 */
 //+ENDPLUMEDOC
