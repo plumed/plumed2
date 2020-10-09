@@ -160,9 +160,15 @@
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
 
-#if GMX_FAHCORE
-#    include "corewrap.h"
-#endif
+/* PLUMED */
+#include "../../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain; 
+/* END PLUMED */
+
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
 
 namespace gmx
 {
@@ -196,7 +202,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 #pragma GCC diagnostic ignored "-Wunused-result"
     devFlags.enableGpuBufferOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr)
                                   && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
-    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
+    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
     devFlags.enableGpuHaloExchange =
             (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm =
@@ -878,7 +884,7 @@ int Mdrunner::mdrunner()
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
     const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
+            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed) && (plumedswitch==0);
     const bool useModularSimulator = inputIsCompatibleWithModularSimulator
                                      && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
@@ -1004,13 +1010,6 @@ int Mdrunner::mdrunner()
         }
     }
 
-#if GMX_FAHCORE
-    if (MASTER(cr))
-    {
-        fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
-    }
-#endif
-
     /* NMR restraints must be initialized before load_checkpoint,
      * since with time averaging the history is added to t_state.
      * For proper consistency check we therefore need to extend
@@ -1026,6 +1025,21 @@ int Mdrunner::mdrunner()
     init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
     auto deform = prepareBoxDeformation(globalState->box, cr, *inputrec);
+
+#if GMX_FAHCORE
+    /* We have to remember the generation's first step before reading checkpoint.
+       This way, we can report to the F@H core both the generation's first step
+       and the restored first step, thus making it able to distinguish between
+       an interruption/resume and start of the n-th generation simulation.
+       Having this information, the F@H core can correctly calculate and report
+       the progress.
+     */
+    int gen_first_step = 0;
+    if (MASTER(cr))
+    {
+        gen_first_step = inputrec->init_step;
+    }
+#endif
 
     ObservablesHistory observablesHistory = {};
 
@@ -1056,6 +1070,13 @@ int Mdrunner::mdrunner()
             mdlog    = logOwner.logger();
         }
     }
+
+#if GMX_FAHCORE
+    if (MASTER(cr))
+    {
+        fcRegisterSteps(inputrec->nsteps + inputrec->init_step, gen_first_step);
+    }
+#endif
 
     if (mdrunOptions.numStepsCommandline > -2)
     {
@@ -1568,6 +1589,18 @@ int Mdrunner::mdrunner()
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
 
+        /* PLUMED */
+        if(plumedswitch){
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(emntDefault);
+             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+        }
+        /* END PLUMED */
+
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
                 inputIsCompatibleWithModularSimulator, fplog, cr, ms, mdlog,
@@ -1641,6 +1674,12 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
+
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)
