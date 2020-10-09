@@ -196,9 +196,12 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 //OPES_METAD_EXPLORE is very similar from the point of view of the code,
 //but conceptually it is better to make it a separate BIAS action
 
-// //+P_L_U_M_E_D_O_C OPES_BIAS OPES_METAD_EXPLORE
+// //+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
 // /*
 // On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution, exploration mode \cite future_paper .
+//
+// OPES_METAD_EXPLORE is more similar to \ref METAD, in the sense that it allows the bias to vary significantly, thus enhancing exploration, with possibly slower convergence compared to \ref OPES_METAD.
+// Useful to look around when you have no idea of the BARRIER, or if your CV is degenerate or not.
 //
 // \par Examples
 //
@@ -210,7 +213,7 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 // PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 // \endplumedfile
 // */
-// //+E_N_D_P_L_U_M_E_D_O_C
+// //+ENDPLUMEDOC
 
 struct exploration { static const bool explore=true; };
 typedef OPESmetad<exploration> OPESmetad_e;
