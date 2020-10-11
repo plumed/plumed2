@@ -125,7 +125,17 @@ void ExpansionCVs::apply()
   if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
 }
 
-unsigned ExpansionCVs::estimate_steps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string msg) const
+std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
+{
+  plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
+  plumed_massert(getNumberOfArguments()==1,"buggy ECV: you should override getIndex_k() if you have more than one ARG");
+  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(1));
+  for(unsigned k=0; k<totNumECVs_; k++)
+    index_k[k][0]=k; //it is trivial when only one ARG is used
+  return index_k;
+}
+
+unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string msg) const
 { //for linear expansions only, it uses Neff to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {
@@ -222,14 +232,21 @@ unsigned ExpansionCVs::estimate_steps(const double left_side,const double right_
   return steps;
 }
 
-std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
+void ExpansionCVs::setSteps(std::vector<double>& lambda,const unsigned steps_lambda,const std::string msg)
 {
-  plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
-  plumed_massert(getNumberOfArguments()==1,"buggy ECV: you should override getIndex_k() if you have more than one ARG");
-  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(1));
-  for(unsigned k=0; k<totNumECVs_; k++)
-    index_k[k][0]=k; //it is trivial when only one ARG is used
-  return index_k;
+  plumed_massert(lambda.size()==2,"buggy ECV: min and max "+msg+" should be given to setSteps");
+  const double min_lambda=lambda[0];
+  const double max_lambda=lambda[1];
+  plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_"+msg+" if MIN_"+msg+"==MAX_"+msg);
+  lambda.resize(steps_lambda);
+  if(steps_lambda==1)
+  {
+    lambda[0]=(min_lambda+max_lambda)/2.;
+    log.printf(" +++ WARNING +++ using one single %s as target = %g\n",msg.c_str(),lambda[0]);
+  }
+  else
+    for(unsigned k=0; k<lambda.size(); k++)
+      lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
 }
 
 }

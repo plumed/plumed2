@@ -47,11 +47,12 @@ class ECVumbrellasLine :
   public ExpansionCVs
 {
 private:
-  double sigma_;
   unsigned P0_contribution_;
-  std::vector<std::vector <double> > centers_; //FIXME is this efficient??
-  std::vector<std::vector <double> > ECVs_;
-  std::vector<std::vector <double> > derECVs_;
+  std::vector< std::vector<double> > centers_;
+  double sigma_;
+
+  std::vector< std::vector<double> > ECVs_;
+  std::vector< std::vector<double> > derECVs_;
   void initECVs();
 
 public:
@@ -89,6 +90,7 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     P0_contribution_=1;
   else
     P0_contribution_=0;
+
 //set umbrellas
   parse("SIGMA",sigma_);
   std::vector<double> min_cv;

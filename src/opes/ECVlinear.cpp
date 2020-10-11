@@ -55,7 +55,6 @@ opes: OPES_EXPANDED ARG=ecv.* PACE=100
 
 Notice that by defauly LAMBDA=0, MIN_LAMBDA=0 and MAX_LAMBDA=1, which is the typical case for thermodynamic integration.
 
-
 */
 //+ENDPLUMEDOC
 
@@ -69,7 +68,6 @@ private:
   std::vector<double> lambda_;
   std::vector<double> ECVs_;
   std::vector<double> derECVs_;
-  void setLambdaSteps(double,double,unsigned);
   void initECVs();
 
 public:
@@ -98,9 +96,11 @@ void ECVlinear::registerKeywords(Keywords& keys) {
 //  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
-ECVlinear::ECVlinear(const ActionOptions&ao):
-  Action(ao),
-  ExpansionCVs(ao)
+ECVlinear::ECVlinear(const ActionOptions&ao)
+  : Action(ao)
+  , ExpansionCVs(ao)
+  , todoAutomatic_(false)
+  , beta0_(1./kbt_)
 {
   plumed_massert(getNumberOfArguments()==1,"only DeltaU should be given as ARG");
 
@@ -109,8 +109,6 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
   parseFlag("DIMENSIONLESS",dimensionless);
   if(dimensionless)
     beta0_=1;
-  else
-    beta0_=1./kbt_;
 
 //parse lambda info
   parse("LAMBDA",lambda0_);
@@ -127,12 +125,11 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
 //set the lambdas
   if(lambda_.size()>0)
   {
-    todoAutomatic_=false;
     plumed_massert(steps_lambda==0,"cannot set both STEPS_LAMBDA and SET_ALL_LAMBDAS");
     plumed_massert(std::isnan(min_lambda) && std::isnan(max_lambda),"cannot set both SET_ALL_LAMBDAS and MIN/MAX_LAMBDA");
     plumed_massert(lambda_.size()>=2,"set at least 2 lambdas with SET_ALL_LAMBDAS");
     for(unsigned k=0; k<lambda_.size()-1; k++)
-      plumed_massert(lambda_[k]<lambda_[k+1],"SET_ALL_LAMBDAS must be properly ordered");
+      plumed_massert(lambda_[k]<=lambda_[k+1],"SET_ALL_LAMBDAS must be properly ordered");
     min_lambda=lambda_[0];
     max_lambda=lambda_[lambda_.size()-1];
   }
@@ -149,17 +146,15 @@ ECVlinear::ECVlinear(const ActionOptions&ao):
       log.printf("  no MAX_LAMBDA provided, using MAX_LAMBDA = %g\n",max_lambda);
     }
     plumed_massert(max_lambda>=min_lambda,"MAX_LAMBDA should be bigger than MIN_LAMBDA");
+    lambda_.resize(2);
+    lambda_[0]=min_lambda;
+    lambda_[1]=max_lambda;
     if(min_lambda==max_lambda && steps_lambda==0)
       steps_lambda=1;
     if(steps_lambda>0)
-      setLambdaSteps(min_lambda,max_lambda,steps_lambda);
+      setSteps(lambda_,steps_lambda,"LAMBDA");
     else
-    {
       todoAutomatic_=true;
-      lambda_.resize(2);
-      lambda_[0]=min_lambda;
-      lambda_[1]=max_lambda;
-    }
   }
   if(lambda0_<min_lambda || lambda0_>max_lambda)
     log.printf(" +++ WARNING +++ running at LAMBDA=%g which is outside the chosen lambda range\n",lambda0_);
@@ -207,23 +202,6 @@ std::vector<std::string> ECVlinear::getLambdas() const
   return lambdas;
 }
 
-void ECVlinear::setLambdaSteps(double min_lambda,double max_lambda,unsigned steps_lambda)
-{
-  plumed_massert(lambda_.size()==0 || lambda_.size()==2,"you should not set the lambda steps twice...");
-  plumed_massert(min_lambda<=max_lambda,"this should not happen");
-  plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_LAMBDA if MIN_LAMBDA==MAX_LAMBDA");
-  lambda_.resize(steps_lambda);
-  if(steps_lambda==1)
-  {
-    lambda_[0]=(min_lambda+max_lambda)/2.;
-    log.printf(" +++ WARNING +++ using one single temperature as target, corresponding to lambda = %g\n",lambda_[0]);
-  }
-  else
-    for(unsigned k=0; k<lambda_.size(); k++)
-      lambda_[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
-  todoAutomatic_=false;
-}
-
 void ECVlinear::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
@@ -243,12 +221,11 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     std::vector<double> obs_cv(all_obs_cvs.size()/ncv);//copy only useful observation //TODO we should avoid this...
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
-    const double min_lambda=lambda_[0];
-    const double max_lambda=lambda_[1];
-    const unsigned steps_lambda=estimate_steps(beta0_*(min_lambda-lambda0_),beta0_*(max_lambda-lambda0_),obs_cv,"LAMBDA");
+    const unsigned steps_lambda=estimateSteps(beta0_*(lambda_[0]-lambda0_),beta0_*(lambda_[1]-lambda0_),obs_cv,"LAMBDA");
     if(beta0_!=1)
       log.printf("    (spacing is in beta0 units)\n");
-    setLambdaSteps(min_lambda,max_lambda,steps_lambda);
+    setSteps(lambda_,steps_lambda,"LAMBDA");
+    todoAutomatic_=false;
   }
   initECVs();
 
@@ -262,7 +239,10 @@ void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
   std::size_t pos=lambdas[0].find("_");
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
-    setLambdaSteps(lambda_[0],lambda_[1],lambdas.size());
+  {
+    setSteps(lambda_,lambdas.size(),"LAMBDA");
+    todoAutomatic_=false;
+  }
   std::vector<std::string> myLambdas=getLambdas();
   plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
   plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());

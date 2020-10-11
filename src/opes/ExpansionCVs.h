@@ -37,7 +37,10 @@ protected:
   double kbt_;
   double barrier_;
   unsigned totNumECVs_;
-  unsigned estimate_steps(const double,const double,const std::vector<double>&,const std::string) const; //for linear expansions
+
+//methods useful for linear expansions
+  unsigned estimateSteps(const double,const double,const std::vector<double>&,const std::string) const;
+  void setSteps(std::vector<double>&,const unsigned,const std::string);
 
 public:
   explicit ExpansionCVs(const ActionOptions&);

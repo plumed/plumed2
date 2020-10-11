@@ -68,6 +68,7 @@ private:
   std::vector<double> deltaFguess_;
   std::vector< std::vector<double> > centers_;
   std::vector< std::vector<double> > sigmas_;
+
   std::vector< std::vector<double> > ECVs_;
   std::vector< std::vector<double> > derECVs_;
   void initECVs();
@@ -90,8 +91,8 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it for an initial guess DeltaF_i=-kbt*log(h_i)");
+  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
@@ -200,7 +201,7 @@ std::vector< std::vector<unsigned> > ECVumbrellasFile::getIndex_k() const
 }
 
 std::vector<std::string> ECVumbrellasFile::getLambdas() const
-{ //FIXME check also sigma?
+{ //notice that sigmas are not considered!
   std::vector<std::string> lambdas(totNumECVs_);
   if(P0_contribution_==1)
   {

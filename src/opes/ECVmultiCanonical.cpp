@@ -60,7 +60,6 @@ private:
   std::vector<double> beta_;
   std::vector<double> ECVs_;
   std::vector<double> derECVs_;
-  void setBetaSteps(double,double,unsigned);
   void initECVs();
 
 public:
@@ -87,16 +86,17 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys) {
 //  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
-ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
-  Action(ao),
-  ExpansionCVs(ao)
+ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
+  : Action(ao)
+  , ExpansionCVs(ao)
+  , todoAutomatic_(false)
+  , beta0_(1./kbt_)
 {
   plumed_massert(getNumberOfArguments()==1,"only ENERGY should be given as ARG");
 
 //set temp0 and beta0_
   const double Kb=plumed.getAtoms().getKBoltzmann();
   double temp0=kbt_/Kb;
-  beta0_=1./kbt_;
 
 //parse temp range
   double min_temp=-1;
@@ -113,7 +113,6 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
 //set the intermediate temperatures
   if(temps.size()>0)
   {
-    todoAutomatic_=false;
     plumed_massert(steps_temp==0,"cannot set both STEPS_TEMP and SET_ALL_TEMPS");
     plumed_massert(min_temp==-1 && max_temp==-1,"cannot set both SET_ALL_TEMPS and MIN/MAX_TEMP");
     plumed_massert(temps.size()>=2,"set at least 2 temperatures");
@@ -124,7 +123,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
     {
       beta_[k]=1./(Kb*temps[k]);
       if(k<beta_.size()-1)
-        plumed_massert(temps[k]<temps[k+1],"SET_ALL_TEMPS must be properly ordered");
+        plumed_massert(temps[k]<=temps[k+1],"SET_ALL_TEMPS must be properly ordered");
     }
   }
   else
@@ -141,19 +140,15 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao):
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
+    beta_.resize(2);
+    beta_[0]=1./(Kb*min_temp);//ordered temp, inverted beta
+    beta_[1]=1./(Kb*max_temp);
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
-    const double min_beta=1./(Kb*max_temp);
-    const double max_beta=1./(Kb*min_temp);
     if(steps_temp>0)
-      setBetaSteps(min_beta,max_beta,steps_temp);
+      setSteps(beta_,steps_temp,"TEMP");
     else
-    {
       todoAutomatic_=true;
-      beta_.resize(2);
-      beta_[0]=min_beta;
-      beta_[1]=max_beta;
-    }
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
   if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
@@ -200,23 +195,6 @@ std::vector<std::string> ECVmultiCanonical::getLambdas() const
   return lambdas;
 }
 
-void ECVmultiCanonical::setBetaSteps(double min_beta,double max_beta,unsigned steps_beta)
-{
-  plumed_massert(beta_.size()==0 || beta_.size()==2,"you should not set the beta steps twice...");
-  plumed_massert(min_beta<=max_beta,"this should not happen");
-  plumed_massert(!(min_beta==max_beta && steps_beta>1),"cannot have multiple STEPS_TEMP if MIN_TEMP==MAX_TEMP");
-  beta_.resize(steps_beta);
-  if(steps_beta==1)
-  {
-    beta_[0]=(min_beta+max_beta)/2.;
-    log.printf(" +++ WARNING +++ using one single temperature as target, corresponding to beta = %g\n",beta_[0]);
-  }
-  else
-    for(unsigned k=0; k<beta_.size(); k++)//betas are stored in reversed order, so temps are in correct order
-      beta_[k]=max_beta-k*(max_beta-min_beta)/(steps_beta-1);
-  todoAutomatic_=false;
-}
-
 void ECVmultiCanonical::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
@@ -236,11 +214,10 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observation //TODO we should avoid this...
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
-    const double min_beta=beta_[0];
-    const double max_beta=beta_[1];
-    const unsigned steps_temp=estimate_steps(max_beta-beta0_,min_beta-beta0_,obs_ene,"TEMP");
+    const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    setBetaSteps(min_beta,max_beta,steps_temp);
+    setSteps(beta_,steps_temp,"TEMP");
+    todoAutomatic_=false;
   }
   initECVs();
 
@@ -254,7 +231,10 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   std::size_t pos=lambdas[0].find("_");
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
-    setBetaSteps(beta_[0],beta_[1],lambdas.size());
+  {
+    setSteps(beta_,lambdas.size(),"TEMP");
+    todoAutomatic_=false;
+  }
   std::vector<std::string> myLambdas=getLambdas();
   plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
   plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());

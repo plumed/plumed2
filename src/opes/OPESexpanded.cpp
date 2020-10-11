@@ -38,6 +38,13 @@ V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
 \f]
 The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
 
+An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
+Such ensembles can be sampled via methods like replica exchange, or this OPES_EXPANDED bias action.
+A typical example is mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
+
+In oreder to define an expanded target ensemble we use expansion collective variables.
+See Ref.\cite Invernizzi2020unified for more details on the method.
+
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
 \par Examples
@@ -106,7 +113,13 @@ private:
   std::vector<const double *> ECVs_;
   std::vector<const double *> derECVs_;
   std::vector<opes::ExpansionCVs*> pntrToECVsClass_;
-  std::vector< std::vector<unsigned> > index_k_; //FIXME is it better to store it or to get it each time?
+  std::vector< std::vector<unsigned> > index_k_;
+  // j is for the underlying CVs
+  // i is for the DeltaFs
+  // k is for the ECVs, which might not be trivially numbered
+  // l is for the pntrToECVsClass
+  // h is for the internal arguments of ECVsClass
+  // w is for walkers
 
   double kbt_;
   unsigned stride_;
