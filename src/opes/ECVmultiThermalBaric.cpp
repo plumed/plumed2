@@ -407,7 +407,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
 {
   std::size_t pos=lambdas[0].find("_");
   plumed_massert(pos!=std::string::npos,"this should not happen, two CVs are used in "+getName()+", not less");
-  lambdas[0].find("_",pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos==std::string::npos,"this should not happen, two CVs are used in "+getName()+", not more");
 
   auto getLambdaName=[](std::string name,const unsigned index_j) //slightly different from the one in OPESexpanded.cpp
