@@ -410,22 +410,14 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
   pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos==std::string::npos,"this should not happen, two CVs are used in "+getName()+", not more");
 
-  auto getLambdaName=[](std::string name,const unsigned index_j) //slightly different from the one in OPESexpanded.cpp
-  {
-    std::size_t pos=0;
-    for(unsigned j=0; j<index_j; j++)
-      pos=name.find("_",pos+1);
-    std::size_t pos_end=name.find("_",pos+1);
-    pos+=index_j;
-    return name.substr(pos,pos_end-pos);
-  };
+  auto getPres=[&lambdas](const unsigned i){return lambdas[i].substr(lambdas[i].find("_")+1);};
   if(todoAutomatic_pres_)
   {
-    unsigned steps_pres=0;
-    std::string pres_min=getLambdaName(lambdas[0],1);
+    unsigned steps_pres=1;
+    std::string pres_min=getPres(0);
     for(unsigned i=1; i<lambdas.size(); i++)//pres is second, thus increas by 1
     {
-      if(getLambdaName(lambdas[i],1)==pres_min)
+      if(getPres(i)==pres_min)
         break;
       steps_pres++;
     }
@@ -435,10 +427,10 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
   if(todoAutomatic_beta_)
   {
     unsigned steps_temp=1;
-    std::string pres_max=getLambdaName(lambdas[pres_.size()-1],1);
+    std::string pres_max=getPres(pres_.size()-1);
     for(unsigned i=pres_.size(); i<lambdas.size(); i++)
     { //even if CUT_CORNER, the max pressures are all present, for each temp
-      if(getLambdaName(lambdas[i],1)==pres_max)
+      if(getPres(i)==pres_max)
         steps_temp++;
     }
     setSteps(beta_,steps_temp,"TEMP");
