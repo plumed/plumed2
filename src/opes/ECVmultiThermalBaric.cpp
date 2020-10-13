@@ -231,7 +231,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   if(pres0_<min_pres || pres0_>max_pres)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
-//other
+//set CUT_CORNER 
   if(cut_corner.size()>0)
   {
     const double low_temp=cut_corner[0];
@@ -246,10 +246,12 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     plumed_massert(low_pres<high_pres,"low_pres="+std::to_string(low_pres)+" should be smaller than high_pres="+std::to_string(high_pres)+", "+cc_usage);
     plumed_massert(low_pres>=min_pres && low_pres<=max_pres,"low_pres="+std::to_string(low_pres)+" is out of pressure range. "+cc_usage);
     plumed_massert(high_pres>=min_pres && high_pres<=max_pres,"high_pres="+std::to_string(high_pres)+" is out of pressure range. "+cc_usage);
-    low_pres_=low_pres;
     low_temp_Kb_=low_temp*Kb;
     coeff_=(high_pres-low_pres)/(high_temp-low_temp)/Kb;
-    plumed_massert(coeff_!=0,"it should not be possible");
+    plumed_massert(coeff_!=0,"this should not be possible");
+    const double small_value=(high_temp-low_pres)/1e4;
+    low_pres_=low_pres-small_value;//make sure max_pres is included
+    plumed_massert(max_pres>=coeff_*(1./beta_[beta_.size()-1]-low_temp_Kb_)+low_pres_,"please chose a high_pres slightly smaller than MAX_PRESSURE in "+cc_usage);
   }
   else
   {
@@ -265,7 +267,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ if you only need a multibaric simulation it is more efficient to set it up with ECV_LINEAR\n");
   log.printf("   and a pressure range from MIN_PRESSURE=%g to MAX_PRESSURE=%g\n",min_pres,max_pres);
   if(coeff_!=0)
-    log.printf("  ignoring some high temperature and low pressure values, according to CUT_CORNER\n");
+    log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
 }
 
 void ECVmultiThermalBaric::calculateECVs(const double * ene_vol) {
@@ -333,10 +335,8 @@ std::vector< std::vector<unsigned> > ECVmultiThermalBaric::getIndex_k() const
 std::vector<std::string> ECVmultiThermalBaric::getLambdas() const
 {
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"cannot access lambdas before initializing them");
-  std::vector< std::vector<unsigned> > index_k=getIndex_k();//slow, but not in a critical place...
-  std::vector<std::string> lambdas(index_k.size());
+  std::vector<std::string> lambdas;
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  unsigned i=0;
   for(unsigned k=0; k<beta_.size(); k++)
   {
     const double line_k=coeff_*(1./beta_[k]-low_temp_Kb_)+low_pres_;
@@ -346,11 +346,11 @@ std::vector<std::string> ECVmultiThermalBaric::getLambdas() const
       {
         std::ostringstream subs;
         subs<<1./(Kb*beta_[k])<<"_"<<pres_[kk];
-        lambdas[i]=subs.str();
-        i++;
+        lambdas.emplace_back(subs.str());
       }
     }
   }
+  plumed_massert(lambdas.size()==getIndex_k().size(),"this should not happen, something is wrong with CUT_CORNER");//slow, but not in a critical place
   return lambdas;
 }
 
@@ -437,7 +437,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
     todoAutomatic_beta_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();
-  plumed_massert(myLambdas.size()==lambdas.size(),"RESTART - mismatch in number of "+getName());
+  plumed_assert(myLambdas.size()==lambdas.size())<<"RESTART - mismatch in number of "<<getName()<<".\nFrom "<<lambdas.size()<<" labels "<<beta_.size()<<" temperatures and "<<pres_.size()<<" pressures were found, for a total of "<<myLambdas.size()<<" estimated steps.\nCheck if the CUT_CORNER option is consistent\n";
   plumed_massert(std::equal(myLambdas.begin(),myLambdas.end(),lambdas.begin()),"RESTART - mismatch in lambda values of "+getName());
 
   initECVs();
