@@ -1246,7 +1246,11 @@ public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
     Exception(const Exception & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
-    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Exception() throw() {}
+#endif
   };
 
   /**
@@ -1258,7 +1262,11 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
     ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
-    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionError() throw() {}
+#endif
   };
 
   /**
@@ -1270,7 +1278,11 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
     ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
-    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionDebug() throw() {}
+#endif
   };
 
   /**
@@ -1282,7 +1294,11 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
     Invalid(const Invalid & other) : Exception(other.what()) {}
-    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Invalid() throw() {}
+#endif
   };
 
   /**
@@ -1297,7 +1313,11 @@ public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
     LeptonException(const LeptonException & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
-    ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~LeptonException() throw() {}
+#endif
   };
 
 private:
