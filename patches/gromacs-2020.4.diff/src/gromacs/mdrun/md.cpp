@@ -210,6 +210,8 @@ void gmx::LegacySimulator::do_md()
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
     matrix plumed_vir;
+    real lambdaForce=0;
+    real realFepState=0;
     /* END PLUMED */
 
     /* Domain decomposition could incorrectly miss a bonded
@@ -720,6 +722,9 @@ void gmx::LegacySimulator::do_md()
           plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
         }
       }
+      realFepState = state->fep_state;
+      plumed_cmd(plumedmain, "setExtraCV lambda", &realFepState);
+      plumed_cmd(plumedmain, "setExtraCVForce lambda", &lambdaForce);
     }
     /* END PLUMED */
 
@@ -1306,7 +1311,7 @@ void gmx::LegacySimulator::do_md()
                do update the velocities and the tau_t. */
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state,
-                                              state->dfhist, step, state->v.rvec_array(), mdatoms);
+                                              state->dfhist, step, state->v.rvec_array(), mdatoms, &realFepState);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
@@ -1752,6 +1757,10 @@ void gmx::LegacySimulator::do_md()
             /* Have to do this part _after_ outputting the logfile and the edr file */
             /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
+            if(plumedswitch)
+            {
+                realFepState = state->fep_state;
+            }
         }
         /* Print the remaining wall clock time for the run */
         if (isMasterSimMasterRank(ms, MASTER(cr)) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)
