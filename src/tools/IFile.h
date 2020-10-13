@@ -72,8 +72,11 @@ public:
   IFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field
   IFile& scanField(const std::string&,double&);
-/// Read a int field
+/// Read a int type field
   IFile& scanField(const std::string&,int&);
+  IFile& scanField(const std::string&,long int&);
+  IFile& scanField(const std::string&,unsigned&);
+  IFile& scanField(const std::string&,long unsigned&);
 /// Read a string field
   IFile& scanField(const std::string&,std::string&);
   /**

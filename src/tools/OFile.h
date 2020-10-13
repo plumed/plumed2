@@ -226,8 +226,11 @@ public:
   OFile& fmtField();
 /// Set the value of a double precision field
   OFile& printField(const std::string&,double);
-/// Set the value of a int field
+/// Set the value of a int type field
   OFile& printField(const std::string&,int);
+  OFile& printField(const std::string&,long int);
+  OFile& printField(const std::string&,unsigned);
+  OFile& printField(const std::string&,long unsigned);
 /// Set the value of a string field
   OFile& printField(const std::string&,const std::string&);
 ///
