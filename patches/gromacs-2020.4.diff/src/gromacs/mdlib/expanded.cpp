@@ -1325,15 +1325,6 @@ int ExpandedEnsembleDynamics(FILE*                 log,
 
     if (plumedswitch)
     {
-        // Version string was added to avoid confusions during development
-        // TODO: Remove next 6 lines before merging with main Plumed
-        static bool firstCall = true;
-        if (firstCall)
-        {
-            fprintf(log, "\nLAMBDA METAD VERSION 0.1.3a\n");
-            firstCall = false;
-        }
-
         // Update weights at all lambda states with current values from Plumed.
         // For acceptance criterion, expanded ensemble is expecting the weight at
         // lambda i=0 to be zero.
