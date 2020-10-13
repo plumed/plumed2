@@ -82,7 +82,7 @@ The following is a minimal working example:
 \plumedfile
 cv: DISTANCE ATOMS=1,2
 opes: OPES_METAD ARG=cv PACE=100 BARRIER=40
-PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
+PRINT STRIDE=100 FILE=COLVAR ARG=*
 \endplumedfile
 
 Another more articulated one:
@@ -449,13 +449,10 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
         ifile.scanField("zed",Zed_);
         ifile.scanField("sum_weights",sum_weights_);
         ifile.scanField("sum_weights2",sum_weights2_);
-        std::string str_counter;
-        ifile.scanField("counter",str_counter); //scanField does not handle unsigned
-        counter_=std::stoul(str_counter);
+        ifile.scanField("counter",counter_);
         if(sigma0_.size()==0)
         {
-          ifile.scanField("adaptive_counter",str_counter); //scanField does not handle long unsigned
-          adaptive_counter_=std::stoul(str_counter);
+          ifile.scanField("adaptive_counter",adaptive_counter_);
           if(NumWalkers_>1)
           {
             for(unsigned w=0; w<NumWalkers_; w++)
@@ -1054,10 +1051,10 @@ void OPESmetad::dumpStateToFile()
   stateOfile_.printField("zed",Zed_);
   stateOfile_.printField("sum_weights",sum_weights_);
   stateOfile_.printField("sum_weights2",sum_weights2_);
-  stateOfile_.printField("counter",std::to_string(counter_)); //printField does not handle unsigned
+  stateOfile_.printField("counter",counter_);
   if(sigma0_.size()==0)
   {
-    stateOfile_.printField("adaptive_counter",std::to_string(adaptive_counter_)); //printField does not handle long unsigned
+    stateOfile_.printField("adaptive_counter",adaptive_counter_);
     if(NumWalkers_>1)
     {
       std::vector<double> all_av_cv(NumWalkers_*ncv_,0.0);
