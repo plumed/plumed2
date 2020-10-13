@@ -165,6 +165,27 @@ IFile& IFile::scanField(const std::string&name,int &x) {
   return *this;
 }
 
+IFile& IFile::scanField(const std::string&name,long int &x) {
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
+IFile& IFile::scanField(const std::string&name,unsigned &x) {
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
+IFile& IFile::scanField(const std::string&name,long unsigned &x) {
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
 IFile& IFile::scanField(Value* val) {
   double ff=std::numeric_limits<double>::quiet_NaN(); // this is to be sure a NaN value is replaced upon failure
   scanField(  val->getName(), ff );

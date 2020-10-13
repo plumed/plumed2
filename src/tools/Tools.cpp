@@ -59,6 +59,10 @@ bool Tools::convert(const string & str,unsigned & t) {
   return convertToInt(str,t);
 }
 
+bool Tools::convert(const string & str,long unsigned & t) {
+  return convertToInt(str,t);
+}
+
 bool Tools::convert(const string & str,AtomNumber &a) {
   // Note: AtomNumber's are NOT converted as int, so as to
   // avoid using lepton conversions.

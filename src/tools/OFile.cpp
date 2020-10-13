@@ -179,6 +179,24 @@ OFile& OFile::printField(const std::string&name,int v) {
   return *this;
 }
 
+OFile& OFile::printField(const std::string&name,long int v) {
+  sprintf(buffer_string.get()," %ld",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,unsigned v) {
+  sprintf(buffer_string.get()," %u",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long unsigned v) {
+  sprintf(buffer_string.get()," %lu",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
 OFile& OFile::printField(const std::string&name,const std::string & v) {
   unsigned i;
   for(i=0; i<const_fields.size(); i++) if(const_fields[i].name==name) break;
