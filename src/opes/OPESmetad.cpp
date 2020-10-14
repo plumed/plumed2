@@ -82,7 +82,7 @@ The following is a minimal working example:
 \plumedfile
 cv: DISTANCE ATOMS=1,2
 opes: OPES_METAD ARG=cv PACE=100 BARRIER=40
-PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
+PRINT STRIDE=100 FILE=COLVAR ARG=*
 \endplumedfile
 
 Another more articulated one:
@@ -495,29 +495,25 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
         ifile.scanField("zed",Zed_);
         ifile.scanField("sum_weights",sum_weights_);
         ifile.scanField("sum_weights2",sum_weights2_);
-        std::string str_counter;
-        ifile.scanField("counter",str_counter); //scanField does not handle unsigned
-        counter_=std::stoul(str_counter);
+        ifile.scanField("counter",counter_);
         if(sigma0_.size()==0)
         {
-          ifile.scanField("adaptive_counter",str_counter); //scanField does not handle long unsigned
-          adaptive_counter_=std::stoul(str_counter);
+          ifile.scanField("adaptive_counter",adaptive_counter_);
           if(NumWalkers_>1)
           {
             for(unsigned w=0; w<NumWalkers_; w++)
-            {
               for(unsigned i=0; i<ncv_; i++)
               {
                 double tmp1,tmp2;
-                ifile.scanField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),tmp1);
-                ifile.scanField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),tmp2);
+                const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+                ifile.scanField("av_cv_"+arg_iw,tmp1);
+                ifile.scanField("av_M2_"+arg_iw,tmp2);
                 if(w==walker_rank_)
                 {
                   av_cv_[i]=tmp1;
                   av_M2_[i]=tmp2;
                 }
               }
-            }
           }
           else
           {
@@ -1075,11 +1071,29 @@ unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double> &giver_ce
 template <class mode>
 void OPESmetad<mode>::dumpStateToFile()
 {
+//gather adaptive sigma info if needed
+//doing this while writing to file can lead to misterious slowdowns
+  std::vector<double> all_av_cv;
+  std::vector<double> all_av_M2;
+  if(sigma0_.size()==0 && NumWalkers_>1)
+  {
+    all_av_cv.resize(NumWalkers_*ncv_);
+    all_av_M2.resize(NumWalkers_*ncv_);
+    if(comm.Get_rank()==0)
+    {
+      multi_sim_comm.Allgather(av_cv_,all_av_cv);
+      multi_sim_comm.Allgather(av_M2_,all_av_M2);
+    }
+    comm.Bcast(all_av_cv,0);
+    comm.Bcast(all_av_M2,0);
+  }
+
+//rewrite header or rewind file
   if(storeOldStates_)
     stateOfile_.clearFields();
   else if(walker_rank_==0)
     stateOfile_.rewind();
-
+//define fields
   stateOfile_.addConstantField("action");
   stateOfile_.addConstantField("biasfactor");
   stateOfile_.addConstantField("epsilon");
@@ -1095,13 +1109,12 @@ void OPESmetad<mode>::dumpStateToFile()
     if(NumWalkers_>1)
     {
       for(unsigned w=0; w<NumWalkers_; w++)
-      {
         for(unsigned i=0; i<ncv_; i++)
         {
-          stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w));
-          stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w));
+          const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+          stateOfile_.addConstantField("av_cv_"+arg_iw);
+          stateOfile_.addConstantField("av_M2_"+arg_iw);
         }
-      }
     }
     else
     {
@@ -1112,7 +1125,8 @@ void OPESmetad<mode>::dumpStateToFile()
       }
     }
   }
-  for(unsigned i=0; i<ncv_; i++) //print periodicity of CVs
+//print fields
+  for(unsigned i=0; i<ncv_; i++) //periodicity of CVs
     stateOfile_.setupPrintValue(getPntrToArgument(i));
   stateOfile_.printField("action",getName()+"_state");
   stateOfile_.printField("biasfactor",biasfactor_);
@@ -1122,29 +1136,19 @@ void OPESmetad<mode>::dumpStateToFile()
   stateOfile_.printField("zed",Zed_);
   stateOfile_.printField("sum_weights",sum_weights_);
   stateOfile_.printField("sum_weights2",sum_weights2_);
-  stateOfile_.printField("counter",std::to_string(counter_)); //printField does not handle unsigned
+  stateOfile_.printField("counter",counter_);
   if(sigma0_.size()==0)
   {
-    stateOfile_.printField("adaptive_counter",std::to_string(adaptive_counter_)); //printField does not handle long unsigned
+    stateOfile_.printField("adaptive_counter",adaptive_counter_);
     if(NumWalkers_>1)
     {
-      std::vector<double> all_av_cv(NumWalkers_*ncv_,0.0);
-      std::vector<double> all_av_M2(NumWalkers_*ncv_,0.0);
-      if(comm.Get_rank()==0)
-      {
-        multi_sim_comm.Allgather(av_cv_,all_av_cv);
-        multi_sim_comm.Allgather(av_M2_,all_av_M2);
-      }
-      comm.Bcast(all_av_cv,0);
-      comm.Bcast(all_av_M2,0);
       for(unsigned w=0; w<NumWalkers_; w++)
-      {
         for(unsigned i=0; i<ncv_; i++)
         {
-          stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),all_av_cv[w*ncv_+i]);
-          stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName()+"_"+std::to_string(w),all_av_M2[w*ncv_+i]);
+          const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+          stateOfile_.printField("av_cv_"+arg_iw,all_av_cv[w*ncv_+i]);
+          stateOfile_.printField("av_M2_"+arg_iw,all_av_M2[w*ncv_+i]);
         }
-      }
     }
     else
     {
@@ -1155,6 +1159,7 @@ void OPESmetad<mode>::dumpStateToFile()
       }
     }
   }
+//print kernels
   for(unsigned k=0; k<kernels_.size(); k++)
   {
     stateOfile_.printField("time",getTime()); //this is not very usefull
@@ -1165,6 +1170,7 @@ void OPESmetad<mode>::dumpStateToFile()
     stateOfile_.printField("height",kernels_[k].height);
     stateOfile_.printField();
   }
+//make sure file is written even if small
   if(!storeOldStates_)
     stateOfile_.flush();
 }
