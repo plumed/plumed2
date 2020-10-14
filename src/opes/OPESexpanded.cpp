@@ -299,9 +299,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
       obs_steps_=0; //avoid initializing again
     //read steps from file
-      int restart_stride;
+      unsigned restart_stride;
       ifile.scanField("print_stride",restart_stride);
-      plumed_massert(restart_stride==(int)print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
+      plumed_massert(restart_stride==print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
       ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
       double time;
       while(ifile.scanField("time",time)) //room for improvements: only number of lines and last line is important
@@ -340,7 +340,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     deltaFsOfile_.fmtField(" "+fmt);
   deltaFsOfile_.setHeavyFlush(); //do I need it?
   deltaFsOfile_.addConstantField("print_stride");
-  deltaFsOfile_.printField("print_stride",(int)print_stride_);
+  deltaFsOfile_.printField("print_stride",print_stride_);
 
 //add output components
   if(calc_work_)
