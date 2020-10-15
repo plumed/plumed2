@@ -1336,6 +1336,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
             plumed_cmd(plumedmain, "prepareCalc", nullptr);
             plumed_cmd(plumedmain, "performCalcNoUpdate", nullptr);
             plumed_cmd(plumedmain, "getBias", &bias);
+            bias /= expand->mc_temp * BOLTZ;
             if (i == 0)
             {
                 zeroBias = bias;
