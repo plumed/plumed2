@@ -237,12 +237,12 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 //set CUT_CORNER
   if(cut_corner.size()>0)
   {
+    std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
+    plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
     const double low_temp=cut_corner[0];
     const double low_pres=cut_corner[1];
     const double high_temp=cut_corner[2];
     const double high_pres=cut_corner[3];
-    std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
-    plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
     plumed_massert(low_temp<high_temp,"low_temp="+std::to_string(low_temp)+" should be smaller than high_temp="+std::to_string(high_temp)+", "+cc_usage);
     plumed_massert(low_temp>=min_temp && low_temp<=max_temp,"low_temp="+std::to_string(low_temp)+" is out of temperature range. "+cc_usage);
     plumed_massert(high_temp>=min_temp && high_temp<=max_temp,"high_temp="+std::to_string(high_temp)+" is out of temperature range. "+cc_usage);

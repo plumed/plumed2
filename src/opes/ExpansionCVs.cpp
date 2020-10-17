@@ -14,11 +14,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "ExpansionCVs.h"
+
 #include "tools/OpenMP.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-#include "ExpansionCVs.h"
 
 namespace PLMD {
 namespace opes {
@@ -135,7 +135,7 @@ std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
   return index_k;
 }
 
-unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string msg) const
+unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string& msg) const
 { //for linear expansions only, it uses Neff to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {
@@ -145,7 +145,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
     //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const long double delta,const std::vector<double> obs, const double av_obs)
+    auto func=[](const long double delta,const std::vector<double>& obs, const double av_obs)
     {
       long double sum_w=0;
       long double sum_w2=0;
@@ -232,7 +232,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
   return steps;
 }
 
-void ExpansionCVs::setSteps(std::vector<double>& lambda,const unsigned steps_lambda,const std::string msg)
+void ExpansionCVs::setSteps(std::vector<double>& lambda,const unsigned steps_lambda,const std::string& msg)
 {
   plumed_massert(lambda.size()==2,"buggy ECV: min and max "+msg+" should be given to setSteps");
   const double min_lambda=lambda[0];
