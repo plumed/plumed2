@@ -300,7 +300,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
       obs_steps_=0; //avoid initializing again
-    //read steps from file
+      //read steps from file
       unsigned restart_stride;
       ifile.scanField("print_stride",restart_stride);
       plumed_massert(restart_stride==print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");

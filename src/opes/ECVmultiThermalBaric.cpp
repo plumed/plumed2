@@ -234,7 +234,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   if(pres0_<min_pres || pres0_>max_pres)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
-//set CUT_CORNER 
+//set CUT_CORNER
   if(cut_corner.size()>0)
   {
     const double low_temp=cut_corner[0];
@@ -413,7 +413,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
   pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos==std::string::npos,"this should not happen, two CVs are used in "+getName()+", not more");
 
-  auto getPres=[&lambdas](const unsigned i){return lambdas[i].substr(lambdas[i].find("_")+1);};
+  auto getPres=[&lambdas](const unsigned i) {return lambdas[i].substr(lambdas[i].find("_")+1);};
   if(todoAutomatic_pres_)
   {
     unsigned steps_pres=1;
