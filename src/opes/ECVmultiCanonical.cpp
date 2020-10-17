@@ -34,6 +34,9 @@ Otherwise you can manually set this number with STEPS_TEMP.
 In both cases the steps will have a geometric distriution in the temperature, thus uniform in beta.
 For more fine controll you can use the keywork SET_ALL_TEMPS and explicitly provide each temperature.
 
+You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
+A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
+
 \par Examples
 
 \plumedfile

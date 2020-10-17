@@ -45,6 +45,8 @@ A typical example is mutlticanonical simulation, in which a whole range of tempe
 In oreder to define an expanded target ensemble we use expansion collective variables.
 See Ref.\cite Invernizzi2020unified for more details on the method.
 
+Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
+
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
 \par Examples

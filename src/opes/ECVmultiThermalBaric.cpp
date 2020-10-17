@@ -38,6 +38,9 @@ The temperatures and pressures are then combined in a 2D grid.
 You can use CUT_CORNER to avoid a high temperature - low pressure region.
 This can be useful e.g. to increase the temperature for greater ergodicity, while avoiding water to vaporize, as in Ref.\cite Invernizzi2020unified.
 
+You can reweight the resulting simulation at any temperature and pressure in chosen target, using e.g. \ref REWEIGHT_TEMP_PRESS.
+A similar target distribution can be sampled using \ref TD_MULTITHERMAL_MULTIBARIC.
+
 \par Examples
 
 \plumedfile
