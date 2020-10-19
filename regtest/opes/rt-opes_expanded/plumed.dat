@@ -14,7 +14,7 @@ opes: OPES_EXPANDED ...
   PRINT_STRIDE=10
   CALC_WORK
   FILE=DeltaFs.data
-  FMT=%f
+  FMT={% f}
   SERIAL
 ...
 
