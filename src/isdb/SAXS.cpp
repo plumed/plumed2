@@ -2041,10 +2041,10 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
         FF_tmp[k][i] = param_c[i];
         // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
         for(unsigned j=0; j<4; j++) {
-          FF_tmp[k][i] += param_a[i][j]*exp(-param_b[i][j]*s*s);
+          FF_tmp[k][i] += (long double) param_a[i][j] * exp(-param_b[i][j]*s*s);
         }
         // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
-        FF_tmp[k][i] -= rho*param_v[i]*exp(-volr*q*q);
+        FF_tmp[k][i] -= (long double) rho*param_v[i]*exp(-volr*q*q);
       }
     }
     // cycle over the atoms to assign the atom type and calculate I0

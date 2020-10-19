@@ -983,7 +983,7 @@ void CS2Backbone::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*2>chemicalshifts.size()) nt=1;
+  if((long) nt * (long) stride * 2 > chemicalshifts.size()) nt=1;
 
   // a single loop over all chemical shifts
   #pragma omp parallel num_threads(nt)

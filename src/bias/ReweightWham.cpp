@@ -134,7 +134,7 @@ double ReweightWham::getWeight( const unsigned& iweight ) const {
 }
 
 void ReweightWham::calculateWeights( const unsigned& nframes ) {
-  if( stored_biases.size()!=nreplicas*nframes ) error("wrong number of weights stored");
+  if( stored_biases.size()!=(unsigned long) nreplicas*nframes ) error("wrong number of weights stored");
   // Get the minimum value of the bias
   double minv = *min_element(std::begin(stored_biases), std::end(stored_biases));
   // Resize final weights array

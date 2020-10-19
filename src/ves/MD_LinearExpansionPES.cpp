@@ -307,7 +307,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       }
     }
   }
-  else if(initPosTmp.size()==dim*replicas) {
+  else if(initPosTmp.size()==(unsigned long) dim*replicas) {
     for(unsigned int i=0; i<replicas; i++) {
       for(unsigned int k=0; k<dim; k++) {
         initPos[i][k]=initPosTmp[i*dim+k];
