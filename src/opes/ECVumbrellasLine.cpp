@@ -199,7 +199,7 @@ void ECVumbrellasLine::initECVs_observ(const std::vector<double>& all_obs_cvs,co
 {
   //this non-linear exansion never uses automatic initialization
   initECVs();
-  calculateECVs(&all_obs_cvs[index_j]);
+  calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
       ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);

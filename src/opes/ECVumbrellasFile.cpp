@@ -153,13 +153,23 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 
   checkRead();
 
+//extra consistency checks
+  const unsigned sizeUmbrellas=centers_[0].size();
+  for(unsigned j=0; j<ncv; j++)
+  {
+    plumed_massert(centers_[j].size()==sizeUmbrellas,"mismatch in the number of centers read from file");
+    plumed_massert(sigmas_[j].size()==sizeUmbrellas,"mismatch in the number of sigmas read from file");
+  }
+  if(read_height)
+    plumed_massert(deltaFguess_.size()==sizeUmbrellas,"mismatch in the number of heights read from file");
+
 //set ECVs stuff
-  totNumECVs_=centers_[0].size()+P0_contribution_;
+  totNumECVs_=sizeUmbrellas+P0_contribution_;
   ECVs_.resize(ncv,std::vector<double>(totNumECVs_));
   derECVs_.resize(ncv,std::vector<double>(totNumECVs_));
 
 //printing some info
-  log.printf("  total number of umbrellas = %lu\n",centers_[0].size());
+  log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
@@ -237,12 +247,12 @@ void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,co
   {
     for(unsigned j=0; j<getNumberOfArguments(); j++)
       for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-        ECVs_[j][k]=std::min(barrier_,deltaFguess_[k])/kbt_;
+        ECVs_[j][k]=std::min(barrier_,deltaFguess_[k-P0_contribution_])/kbt_;
     deltaFguess_.clear();
   }
   else
   {
-    calculateECVs(&all_obs_cvs[index_j]);
+    calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
     for(unsigned j=0; j<getNumberOfArguments(); j++)
       for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
         ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
