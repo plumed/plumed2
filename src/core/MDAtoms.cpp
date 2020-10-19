@@ -122,7 +122,7 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits) {
 
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const {
-  if(this->box) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=this->box[3*i+j]*scaleb;
+  if(this->box) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=(double) this->box[3*i+j] * (double) scaleb;
   else box.zero();
 }
 
@@ -130,9 +130,9 @@ template <class T>
 void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positions)const {
 // cannot be parallelized with omp because access to positions is not ordered
   for(unsigned i=0; i<index.size(); ++i) {
-    positions[index[i]][0]=px[stride*i]*scalep;
-    positions[index[i]][1]=py[stride*i]*scalep;
-    positions[index[i]][2]=pz[stride*i]*scalep;
+    positions[index[i]][0]=(double) px[stride*i] * (double) scalep;
+    positions[index[i]][1]=(double) py[stride*i] * (double) scalep;
+    positions[index[i]][2]=(double) pz[stride*i] * (double) scalep;
   }
 }
 
@@ -141,9 +141,9 @@ void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
   for(const auto & p : index) {
-    positions[p.index()][0]=px[stride*i[k]]*scalep;
-    positions[p.index()][1]=py[stride*i[k]]*scalep;
-    positions[p.index()][2]=pz[stride*i[k]]*scalep;
+    positions[p.index()][0]=(double) px[stride*i[k]] * (double) scalep;
+    positions[p.index()][1]=(double) py[stride*i[k]] * (double) scalep;
+    positions[p.index()][2]=(double) pz[stride*i[k]] * (double) scalep;
     k++;
   }
 }
@@ -152,9 +152,9 @@ template <class T>
 void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&positions)const {
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
   for(unsigned i=j; i<k; ++i) {
-    positions[i][0]=px[stride*i]*scalep;
-    positions[i][1]=py[stride*i]*scalep;
-    positions[i][2]=pz[stride*i]*scalep;
+    positions[i][0]=(double) px[stride*i] * (double) scalep;
+    positions[i][1]=(double) py[stride*i] * (double) scalep;
+    positions[i][2]=(double) pz[stride*i] * (double) scalep;
   }
 }
 
@@ -163,22 +163,22 @@ template <class T>
 void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const {
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0; i<positions.size(); ++i) {
-    positions[i][0]=px[stride*i]*scalep;
-    positions[i][1]=py[stride*i]*scalep;
-    positions[i][2]=pz[stride*i]*scalep;
+    positions[i][0]=(double) px[stride*i] * (double) scalep;
+    positions[i][1]=(double) py[stride*i] * (double) scalep;
+    positions[i][2]=(double) pz[stride*i] * (double) scalep;
   }
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const {
-  if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*m[i];
+  if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=(double) scalem  * (double) m[i];
   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)const {
-  if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*c[i];
+  if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=(double) scalec * (double) c[i];
   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
 }
 
