@@ -206,7 +206,7 @@ void ECVmultiCanonical::initECVs()
   ECVs_.resize(beta_.size());
   derECVs_.resize(beta_.size());
   isReady_=true;
-  log.printf("  *%4u temperatures for %s\n",beta_.size(),getName().c_str());
+  log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
 }
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)

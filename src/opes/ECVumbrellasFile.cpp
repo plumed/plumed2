@@ -230,7 +230,7 @@ void ECVumbrellasFile::initECVs()
   log.printf("  *%4u windows for %s\n",totNumECVs_,getName().c_str());
 }
 
-void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned j)
+void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
   initECVs();
   if(deltaFguess_.size()>0)
@@ -242,7 +242,7 @@ void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,co
   }
   else
   {
-    calculateECVs(&all_obs_cvs[j]);
+    calculateECVs(&all_obs_cvs[index_j]);
     for(unsigned j=0; j<getNumberOfArguments(); j++)
       for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
         ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);

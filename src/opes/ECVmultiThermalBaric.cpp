@@ -367,10 +367,10 @@ void ECVmultiThermalBaric::initECVs()
   ECVs_pres_.resize(totNumECVs_);
   derECVs_pres_.resize(totNumECVs_);
   isReady_=true;
-  log.printf("  *%4u temperatures for %s\n",beta_.size(),getName().c_str());
-  log.printf("  *%4u pressures for %s\n",pres_.size(),getName().c_str());
+  log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
+  log.printf("  *%4lu pressures for %s\n",pres_.size(),getName().c_str());
   if(coeff_!=0)
-    log.printf("    -- CUT_CORNER: %u temp-pres points were excluded, thus total is %u\n",beta_.size()*pres_.size()-totNumECVs_,totNumECVs_);
+    log.printf("    -- CUT_CORNER: %lu temp-pres points were excluded, thus total is %u\n",beta_.size()*pres_.size()-totNumECVs_,totNumECVs_);
 }
 
 void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)

@@ -210,7 +210,7 @@ void ECVlinear::initECVs()
   ECVs_.resize(lambda_.size());
   derECVs_.resize(lambda_.size());
   isReady_=true;
-  log.printf("  *%4u lambdas for %s\n",lambda_.size(),getName().c_str());
+  log.printf("  *%4lu lambdas for %s\n",lambda_.size(),getName().c_str());
 }
 
 void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)

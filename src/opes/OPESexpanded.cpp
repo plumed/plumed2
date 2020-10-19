@@ -298,7 +298,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_massert(sizeSkip==deltaF_name_.size(),"RESTART - this should not happen");
       deltaF_.resize(deltaF_name_.size());
       init_linkECVs(); //link ECVs and initializes index_k_
-      log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
+      log.printf(" ->%4lu DeltaFs in total\n",deltaF_.size());
       obs_steps_=0; //avoid initializing again
       //read steps from file
       unsigned restart_stride;
@@ -316,7 +316,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         ifile.scanField();
         counter_++;
       }
-      log.printf("  successfully read %d lines, up to t=%g\n",counter_,time);
+      log.printf("  successfully read %lu lines, up to t=%g\n",counter_,time);
       counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
       ifile.reset(false);
       ifile.close();
@@ -592,7 +592,7 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       const long double diff_i=static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_);
-      deltaF_[i]+=-kbt_*std::log1p(std::exp(diff_i)/t)-kbt_*std::log1p(-1./(1.+t));
+      deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i)/t)+std::log1p(-1./(1.+t)));
     }
   }
   obs_cvs_.clear();
@@ -612,7 +612,7 @@ void OPESexpanded::init_from_obs() //TODO improve speed?
   }
 
 //print initialization to file
-  log.printf(" ->%4u DeltaFs in total\n",deltaF_.size());
+  log.printf(" ->%4lu DeltaFs in total\n",deltaF_.size());
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
   for(unsigned i=0; i<deltaF_.size(); i++)
