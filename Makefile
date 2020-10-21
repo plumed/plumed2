@@ -51,6 +51,9 @@ $(SRCDIRS):
 # compile plumed before tests:
 test: src
 
+unit_test: src
+	ld -lSystem -L /Users/jandom/workspace/googletest/build/lib -lgtest -lgmock -lc++ -lgtest_main src/tools/bar.o src/tools/bar_test.o src/tools/AtomNumber.o src/tools/AtomNumberTest.o -o unit_test
+
 # doxygen
 doc:
 	$(MAKE) -C user-doc
