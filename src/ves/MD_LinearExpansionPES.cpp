@@ -139,7 +139,7 @@ public:
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
-  unsigned int dim;
+  size_t dim;
   std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
@@ -217,7 +217,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   PLMD::PlumedMain* plumed=NULL;
   PLMD::PlumedMain* plumed_bf=NULL;
 
-  unsigned int replicas;
+  size_t replicas;
   unsigned int coresPerReplica;
   parse("replicas",replicas);
   if(replicas==1) {

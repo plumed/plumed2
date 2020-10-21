@@ -188,7 +188,8 @@ private:
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
   int updatePIV;
-  unsigned Nprec,Natm,Nlist,NLsize;
+  size_t Nprec;
+  unsigned Natm,Nlist,NLsize;
   double Fvol,Vol0,m_PIVdistance;
   std::string ref_file;
   NeighborList *nlall;
@@ -731,7 +732,7 @@ void PIV::calculate()
   static std:: vector<std:: vector<int> > Atom1(Nlist);
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
-  unsigned stride=1;
+  size_t stride=1;
   unsigned rank=0;
 
   if(!serial) {
