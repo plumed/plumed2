@@ -1409,13 +1409,13 @@ void MetaD::addGaussian(const Gaussian& hill)
 {
   if(!grid_) hills_.push_back(hill);
   else {
-    unsigned ncv=getNumberOfArguments();
+    size_t ncv=getNumberOfArguments();
     vector<unsigned> nneighb=getGaussianSupport(hill);
     vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
     vector<double> der(ncv);
     vector<double> xx(ncv);
     if(comm.Get_size()==1) {
-      for(unsigned i=0; i<neighbors.size(); ++i) {
+      for(size_t i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
