@@ -1,1 +1,4 @@
-int bar() { return 42; }
+
+namespace PLMD {
+    int bar() { return 42; }
+}
