@@ -116,6 +116,7 @@ install:
       brew update > /dev/null ;
       brew install ccache ;
       brew install gawk ;
+      brew upgrade gnupg ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
   - if [[ "$TRAVIS_DIST" == xenial ]] || [[ "$TRAVIS_DIST" == bionic ]] ; then
