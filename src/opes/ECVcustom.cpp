@@ -23,19 +23,30 @@ namespace opes {
 //+PLUMEDOC EXPANSION_CV ECV_CUSTOM
 /*
 Turn any set of CVs into an Expansion CV.
-Notice that it will run faster if you code a new ECV, but can be useful for testing.
+It can be useful for testing new ECVs, but from a performance point of view it is better to code a new class.
+
+By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
+You can use the DIMENSIONLESS flag to avoid this.
+
+The flag ADD_P0 will add the unbiased distribution to the target.
 
 \par Examples
 
+\plumedfile
 ene: ENERGY
 t1: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/500-1)*x
 t2: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/1000-1)*x
 ecv: ECV_CUSTOM ARG=t1,t2 TEMP=300 ADD_P0
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
+\endplumedfile
 
-## equivalent to the following (but slower):
-#ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
-#opes: OPES_EXPANDED ARG=ecv.ene PACE=500
+It is equivalent to the following:
+
+\plumedfile
+ene: ENERGY
+ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
+opes: OPES_EXPANDED ARG=ecv.* PACE=500
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -153,7 +164,8 @@ std::vector<std::string> ECVcustom::getLambdas() const
   {
     const unsigned kk=k-P0_contribution_;
     std::ostringstream subs;
-    if(kk==0)//this method is const, so it complains if I try to access a non-const pointer, hence the const_cast
+//the getLambdas method is const, so it complains if one tries to access a non-const pointer, hence the const_cast
+    if(kk==0)
       subs<<const_cast<ECVcustom *>(this)->getPntrToArgument(kk)->getName();
     else
       subs<<"NaN";

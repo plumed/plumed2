@@ -46,7 +46,7 @@ A similar target distribution can be sampled using \ref TD_MULTITHERMAL_MULTIBAR
 \plumedfile
 ene: ENERGY
 vol: VOLUME
-mtp: ECV_MULTITHERMAL_MULTIBARIC ...
+ecv: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=500
   MIN_TEMP=270
@@ -54,8 +54,9 @@ mtp: ECV_MULTITHERMAL_MULTIBARIC ...
   PRESSURE=0.06022140857*2000 #2 kbar
   MIN_PRESSURE=0.06022140857  #1 bar
   MAX_PRESSURE=0.06022140857*4000 #4 kbar
+  CUT_CORNER=500,0.06022140857,800,0.06022140857*1000
 ...
-opes: OPES_EXPANDED ARG=mtp.* FILE=DeltaF.data PACE=500 WALKERS_MPI
+opes: OPES_EXPANDED ARG=ecv.* FILE=DeltaF.data PACE=500 WALKERS_MPI
 \endplumedfile
 
 */
@@ -235,11 +236,10 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
 //set CUT_CORNER
-  std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
   if(cut_corner.size()>0)
-    plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
-  if(cut_corner.size()==4)//this way codecheck is happy
   {
+    std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
+    plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
     const double low_temp=cut_corner[0];
     const double low_pres=cut_corner[1];
     const double high_temp=cut_corner[2];

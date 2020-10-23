@@ -26,15 +26,21 @@ namespace opes {
 Target a multiumbrella ensemble, obtained as sum of different systems each with a parabolic bias potential at a different location.
 Any collective variable can be used as ARG.
 
-The positions and dimension (SIGMA) of the umbrellas is read from file.
-You can choose the umbrellas manually or via some automated technique such as Gaussian mixture.
-Notice that the umbrellas have diagonal SIGMA, thus only one SIGMA per CV has to be specified.
-You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
+The positions \f$\mathbf{s}_i\f$ and dimension \f$\mathbf{\sigma}_i\f$ of the umbrellas are read from file.
+\f[
+  \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{(s_j-s_{ji})^2}{2\sigma_{ji}^2}.
+\f]
+Notice that \f$\mathbf{\sigma}_i\f$ is diagonal, thus only one SIGMA per CV has to be specified for each umbrella.
+You can choose the umbrellas manually, or place them on a grid, or along a path, similar to \ref PATH.
+They must cover all the CV space that one wishes to sample.
 
-Use the option READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
+You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
+As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
 The first column of the umbrellas file is always ignored.
 
-The flag ADD_P0 is available, as in \ref ECV_UMBRELLAS_LINE.
+Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
+You can also use BARRIER to set the maximum barrier height to be explored, and avoid huge biases at the beginning of your simulation.
+See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
 
 \par Examples
 
@@ -42,8 +48,8 @@ The flag ADD_P0 is available, as in \ref ECV_UMBRELLAS_LINE.
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
 cv3: DISTANCE ATOMS=5,6
-us: ECV_UMBRELLAS_FILE ARG=cv1,cv2,cv3 FILE=Umbrellas.data BARRIER=70
-opes: OPES_EXPANDED ARG=us.* PACE=500
+ecv: ECV_UMBRELLAS_FILE ARG=cv1,cv2,cv3 FILE=Umbrellas.data ADD_P0 BARRIER=70
+opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=cv1,cv2,cv3,opes.bias
 \endplumedfile
 
@@ -91,7 +97,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it for an initial guess DeltaF_i=-kbt*log(h_i)");
+  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess DeltaF_i=-kbt*log(h_i)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
 }
 
@@ -172,6 +178,8 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
   log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
+  if(read_height)
+    log.printf(" -- READ_HEIGHT: the height of the umbrellas is used to estimate an initial guess for the DeltaFs\n");
 }
 
 void ECVumbrellasFile::calculateECVs(const double * cv) {

@@ -26,8 +26,8 @@ Expand a simulation linearly accoding to a parameter lambda.
 This can be used e.g. for thermodynamic integration, or for multibaric simulations, in which case lambda=pressure.
 It can also be used for multicanonical simulations, but for simplicity it is more convenient to use \ref ECV_MULTICANONICAL.
 
-Notice that if your volume changes, e.g. in the NPT ensemble, you cannot simply combine a temperature expansion and a pressure expansion to obtain a multithermal-multibaric simulation.
-You should instead use \ref ECV_MULTITHERMAL_MULTIBARIC.
+By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
+You can use the DIMENSIONLESS flag to avoid this.
 
 \par Examples
 

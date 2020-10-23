@@ -32,12 +32,27 @@ The umbrellas can be multidimensional, but you should rescale the dimensions so 
 
 The keyword BARRIER can be helpful to avoid breaking your system due to a too strong initial bias.
 If you think the placed umbrellas will not cover the whole unbiased probability distribution you should add it explicitly to the target, with the flag ADD_P0, for more robust convergence.
+See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
 
 \par Examples
 
 \plumedfile
 cv: DISTANCE ATOMS=1,2
-us: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=1.2 MAX_CV=4.3 SIMGA=0.5
+ecv: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5 SPACING=1.5
+opes: OPES_EXPANDED ARG=ecv.* PACE=500
+\endplumedfile
+
+It is also possible to combine different ECV_UMBRELLAS_LINE to build a grid of CV values that will be sampled.
+For example the following code will sample a whole 2D region of cv1 and cv2.
+
+\plumedfile
+cv1: DISTANCE ATOMS=1,2
+ecv2: ECV_UMBRELLAS_LINE ARG=cv1 MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
+
+cv2: DISTANCE ATOMS=3,4
+ecv1: ECV_UMBRELLAS_LINE ARG=cv2 MIN_CV=13.8 MAX_CV=21.4 SIGMA=4.3
+
+opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500
 \endplumedfile
 
 */

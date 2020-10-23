@@ -26,7 +26,7 @@ namespace opes {
 /*
 Expand a canonical simulation to sample multiple temperatures.
 \warning
-  If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and add the volume contribution.
+  If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and set a single pressure.
 The \ref ENERGY of the system should be used as ARG.
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
@@ -41,14 +41,16 @@ A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
 
 \plumedfile
 ene: ENERGY
-mc: ECV_MULTICANONICAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
+ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
+opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
 which, if your MD code passes the temperature to PLUMED, is equivalent to:
 
 \plumedfile
 ene: ENERGY
-mc: ECV_MULTICANONICAL ARG=ene MAX_TEMP=800
+ecv: ECV_MULTICANONICAL ARG=ene MAX_TEMP=800
+opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
 */
