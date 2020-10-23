@@ -1,47 +1,71 @@
-#include "plumed/tools/Vector.h"
 #include "plumed/tools/Angle.h"
 #include "plumed/tools/Stopwatch.h"
+#include "plumed/tools/Vector.h"
 #include <fstream>
 #include <iostream>
 
 using namespace PLMD;
 
-
-int testCompute2Vectors90Degrees(std::ofstream& ofs)
-{
-  Vector vector1(1.0,0.0,0.0);
-  Vector vector2(0.0,1.0,0.0);
+int testCompute2Vectors90Degrees(std::ofstream &ofs) {
+  ofs << "testCompute2Vectors90Degrees" << std::endl;
+  Vector vector1(1.0, 0.0, 0.0);
+  Vector vector2(0.0, 1.0, 0.0);
   Angle angle;
   double result = angle.compute(vector1, vector2);
-  ofs<<result<<"\n";
+  ofs << result << std::endl;
   return 0;
 }
 
-int testCompute2Vectors45Degrees(std::ofstream& ofs)
-{
-  Vector vector1(1.0,0.0,0.0);
-  Vector vector2(1.0,1.0,0.0);
+int testCompute2Vectors45Degrees(std::ofstream &ofs) {
+  ofs << "testCompute2Vectors45Degrees" << std::endl;
+  Vector vector1(1.0, 0.0, 0.0);
+  Vector vector2(1.0, 1.0, 0.0);
   Angle angle;
   double result = angle.compute(vector1, vector2);
-  ofs<<result<<"\n";
+  ofs << result << std::endl;
   return 0;
 }
 
-int testCompute4Vectors45Degrees(std::ofstream& ofs)
-{
-  Vector vector1(1.0,0.0,0.0);
-  Vector vector2(1.0,1.0,0.0);
-  Vector d1,d2; Angle angle;
+int testCompute4Vectors45Degrees(std::ofstream &ofs) {
+  ofs << "testCompute4Vectors45Degrees" << std::endl;
+  Vector vector1(1.0, 1.0, 0.0);
+  Vector vector2(1.0, 0.0, 0.0);
+  Vector d1, d2;
+  Angle angle;
   double result = angle.compute(vector1, vector2, d1, d2);
-  ofs<<result<<"\n";
-  ofs<< d1[0] << " " << d1[1] << " " << d1[2] << "\n";
-  ofs<< d2[0] << " " << d2[1] << " " << d2[2] << "\n";
+  ofs << result << std::endl;
+  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
+  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
   return 0;
 }
 
+int testCompute4VectorsParallel(std::ofstream &ofs) {
+  ofs << "testCompute4VectorsParallel" << std::endl;
+  Vector vector1(1.0, 1.0, 0.0);
+  Vector vector2(1.0, 1.0, 0.0);
+  Vector d1, d2;
+  Angle angle;
+  double result = angle.compute(vector1, vector2, d1, d2);
+  ofs << result << std::endl;
+  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
+  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
+  return 0;
+}
 
+int testCompute4VectorsAntiParallel(std::ofstream &ofs) {
+  ofs << "testCompute4VectorsAntiParallel" << std::endl;
+  Vector vector1(1.0, 1.0, 0.0);
+  Vector vector2(-1.0, -1.0, 0.0);
+  Vector d1, d2;
+  Angle angle;
+  double result = angle.compute(vector1, vector2, d1, d2);
+  ofs << result << std::endl;
+  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
+  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
+  return 0;
+}
 
-int main(){
+int main() {
   Stopwatch sw;
   sw.start();
   std::ofstream ofs("output");
@@ -50,8 +74,10 @@ int main(){
   testCompute2Vectors45Degrees(ofs);
 
   testCompute4Vectors45Degrees(ofs);
+  testCompute4VectorsParallel(ofs);
+  testCompute4VectorsAntiParallel(ofs);
 
   sw.stop();
-  std::cout<<sw;
+  std::cout << sw;
   return 0;
 }
