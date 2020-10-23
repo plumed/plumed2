@@ -12,7 +12,7 @@ int testReduce(std::ofstream &ofs) {
   LatticeReduction::reduce(tensor);
   ofs << tensor[0][1] << " " << tensor[0][2] << " " << tensor[0][3] << std::endl;
   ofs << tensor[1][1] << " " << tensor[1][2] << " " << tensor[1][3] << std::endl;
-  ofs << tensor[2][1] << " " << tensor[2][2] << " " << tensor[2][3] << std::endl;
+  ofs << tensor[2][1] << " " << tensor[2][2] << std::endl;
   return 0;
 }
 
@@ -22,7 +22,7 @@ int testReduceSlow(std::ofstream &ofs) {
   LatticeReduction::reduce(tensor);
   ofs << tensor[0][1] << " " << tensor[0][2] << " " << tensor[0][3] << std::endl;
   ofs << tensor[1][1] << " " << tensor[1][2] << " " << tensor[1][3] << std::endl;
-  ofs << tensor[2][1] << " " << tensor[2][2] << " " << tensor[2][3] << std::endl;
+  ofs << tensor[2][1] << " " << tensor[2][2] << std::endl;
   return 0;
 }
 
@@ -32,7 +32,7 @@ int testReduceFast(std::ofstream &ofs) {
   LatticeReduction::reduce(tensor);
   ofs << tensor[0][1] << " " << tensor[0][2] << " " << tensor[0][3] << std::endl;
   ofs << tensor[1][1] << " " << tensor[1][2] << " " << tensor[1][3] << std::endl;
-  ofs << tensor[2][1] << " " << tensor[2][2] << " " << tensor[2][3] << std::endl;
+  ofs << tensor[2][1] << " " << tensor[2][2] << std::endl;
   return 0;
 }
 
