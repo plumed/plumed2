@@ -42,7 +42,7 @@ An expanded ensemble is obtained by summing a set of ensembles at slightly diffe
 Such ensembles can be sampled via methods like replica exchange, or this OPES_EXPANDED bias action.
 A typical example is mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
-In oreder to define an expanded target ensemble we use expansion collective variables.
+In oreder to define an expanded target ensemble we use expansion collective variables (ECVs).
 See Ref.\cite Invernizzi2020unified for more details on the method.
 
 Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
@@ -116,12 +116,13 @@ private:
   std::vector<const double *> derECVs_;
   std::vector<opes::ExpansionCVs*> pntrToECVsClass_;
   std::vector< std::vector<unsigned> > index_k_;
-  // j is for the underlying CVs
-  // i is for the DeltaFs
-  // k is for the ECVs, which might not be trivially numbered
-  // l is for the pntrToECVsClass
-  // h is for the internal arguments of ECVsClass
-  // w is for walkers
+// A note on indexes usage:
+//  j -> underlying CVs
+//  i -> DeltaFs
+//  k -> single ECVs, which might not be trivially numbered
+//  l -> groups of ECVs, pntrToECVsClass
+//  h -> subgroups of ECVs, arguments in ECVsClass
+//  w -> walkers
 
   double kbt_;
   unsigned stride_;

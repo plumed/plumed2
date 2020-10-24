@@ -115,7 +115,6 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
 //other
 //  keys.add("optional","SET_GRID_TEMPS_PRESSURES","manually set the whole temperature-pressure grid. Comma separated points, with internal underscore, e.g.: temp1_pres1,temp1_pres2,...");
   keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: T_low,P_low,T_high,P_high");
-//  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
 ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
@@ -129,7 +128,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 
 //set temp0
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  double temp0=kbt_/Kb;
+  const double temp0=kbt_/Kb;
 
 //parse temp range
   double min_temp=-1;
@@ -399,12 +398,7 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     todoAutomatic_pres_=false;
   }
   initECVs();
-
   calculateECVs(&all_obs_cvs[index_j]);
-  for(unsigned k=0; k<ECVs_beta_.size(); k++)
-    ECVs_beta_[k]=std::min(barrier_/kbt_,ECVs_beta_[k]);
-  for(unsigned kk=0; kk<ECVs_pres_.size(); kk++)
-    ECVs_pres_[kk]=std::min(barrier_/kbt_,ECVs_pres_[kk]);
 }
 
 void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lambdas)

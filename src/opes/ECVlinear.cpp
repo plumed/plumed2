@@ -93,7 +93,6 @@ void ECVlinear::registerKeywords(Keywords& keys) {
   keys.add("optional","STEPS_LAMBDA","uniformly place the lambda values, for a total of STEPS_LAMBDA");
   keys.add("optional","SET_ALL_LAMBDAS","manually set all the lamdbas");
   keys.addFlag("DIMENSIONLESS",false,"ARG is dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
-//  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
 ECVlinear::ECVlinear(const ActionOptions&ao)
@@ -228,10 +227,7 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     todoAutomatic_=false;
   }
   initECVs();
-
   calculateECVs(&all_obs_cvs[index_j]);
-  for(unsigned k=0; k<lambda_.size(); k++)
-    ECVs_[k]=std::min(barrier_/kbt_,ECVs_[k]);
 }
 
 void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)

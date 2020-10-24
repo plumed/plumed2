@@ -55,8 +55,10 @@ class ECVcustom :
   public ExpansionCVs
 {
 private:
-  double beta0_;
   unsigned P0_contribution_;
+  double barrier_;
+  double beta0_;
+
   std::vector< std::vector<double> > ECVs_;
   std::vector< std::vector<double> > derECVs_;
   void initECVs();
@@ -80,8 +82,8 @@ void ECVcustom::registerKeywords(Keywords& keys) {
   keys.remove("ARG");
   keys.add("compulsory","ARG","provide the label of the difference in energy \\f$\\Delta\\f$U");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("DIMENSIONLESS",false,"ARG is dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
-//  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
 ECVcustom::ECVcustom(const ActionOptions&ao)
@@ -103,6 +105,10 @@ ECVcustom::ECVcustom(const ActionOptions&ao)
   else
     P0_contribution_=0;
 
+//set barrier_
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
+
   checkRead();
 
 //set ECVs stuff
@@ -115,6 +121,12 @@ ECVcustom::ECVcustom(const ActionOptions&ao)
 //print some info
   if(dimensionless)
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
+  if(barrier_!=std::numeric_limits<double>::infinity())
+  {
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
+    if(dimensionless)
+      log.printf("    also the BARRIER is considered to be DIMENSIONLESS\n");
+  }
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
@@ -193,7 +205,7 @@ void ECVcustom::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
   initECVs();
   calculateECVs(&all_obs_cvs[index_j]);
   for(unsigned j=0; j<getNumberOfArguments(); j++)
-    ECVs_[j][j+P0_contribution_]=std::min(barrier_/kbt_,ECVs_[j][j+P0_contribution_]);
+    ECVs_[j][j+P0_contribution_]=std::min(barrier_*beta0_,ECVs_[j][j+P0_contribution_]);
 }
 
 void ECVcustom::initECVs_restart(const std::vector<std::string>& lambdas)

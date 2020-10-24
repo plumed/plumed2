@@ -35,7 +35,6 @@ class ExpansionCVs:
 protected:
   bool isReady_; //true only after initECVs
   double kbt_;
-  double barrier_;
   unsigned totNumECVs_;
 
 //methods useful for linear expansions

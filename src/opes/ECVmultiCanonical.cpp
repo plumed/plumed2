@@ -88,7 +88,6 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys) {
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
-//  keys.add("optional","BORDER_WEIGHT","set it greater than 1 to obtain better sampling of the max and min thermodynamics conditions");
 }
 
 ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
@@ -225,10 +224,7 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     todoAutomatic_=false;
   }
   initECVs();
-
   calculateECVs(&all_obs_cvs[index_j]);
-  for(unsigned k=0; k<beta_.size(); k++)
-    ECVs_[k]=std::min(barrier_/kbt_,ECVs_[k]);
 }
 
 void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas)

@@ -29,7 +29,6 @@ void ExpansionCVs::registerKeywords(Keywords& keys) {
   ActionWithArguments::registerKeywords(keys);
   ActionWithValue::useCustomisableComponents(keys);
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
-  keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 //  keys.reserve("compulsory","PERIODIC","NO","if the output of your ECVs is periodic then you should specify the periodicity.");
 }
 
@@ -54,21 +53,23 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
   log.printf("  temperature = %g, beta = %g\n",kbt_/Kb,1./kbt_);
 
-//set barrier_
-  barrier_=std::numeric_limits<double>::infinity();
-  parse("BARRIER",barrier_);
-  if(barrier_!=std::numeric_limits<double>::infinity())
-    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
-
 //set components
   plumed_massert( getNumberOfArguments()!=0, "you must specify the underlying CV");
-  for(unsigned i=0; i<getNumberOfArguments(); i++)
+  for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
-    std::string name_i=getPntrToArgument(i)->getName();
-    ActionWithValue::addComponentWithDerivatives(name_i);
-    getPntrToComponent(i)->setNotPeriodic();
-    getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
+    std::string name_j=getPntrToArgument(j)->getName();
+    ActionWithValue::addComponentWithDerivatives(name_j);
+    getPntrToComponent(j)->resizeDerivatives(getNumberOfArguments());
+    if(getPntrToArgument(j)->isPeriodic())//it should not be necessary, but why not
+    {
+      std::string min,max;
+      getPntrToArgument(j)->getDomain(min,max);
+      getPntrToComponent(j)->setDomain(min,max);
+    }
+    else
+      getPntrToComponent(j)->setNotPeriodic();
   }
+  plumed_massert((int)getNumberOfArguments()==getNumberOfComponents(),"Expansion CVs have same number of arguments and components");
 }
 
 void ExpansionCVs::calculate()
@@ -89,7 +90,7 @@ void ExpansionCVs::calculate()
     calculateECVs(&args[0]);
 }
 
-void ExpansionCVs::apply()
+void ExpansionCVs::apply() //copied from src/function/Function.cpp
 {
   const unsigned noa=getNumberOfArguments();
   const unsigned ncp=getNumberOfComponents();

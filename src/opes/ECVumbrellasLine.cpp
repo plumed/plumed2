@@ -63,6 +63,8 @@ class ECVumbrellasLine :
 {
 private:
   unsigned P0_contribution_;
+  double barrier_;
+
   std::vector< std::vector<double> > centers_;
   double sigma_;
 
@@ -92,6 +94,7 @@ void ECVumbrellasLine::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","SPACING","1","the distance between umbrellas, in units of SIGMA");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 }
 
 ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
@@ -105,6 +108,10 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     P0_contribution_=1;
   else
     P0_contribution_=0;
+
+//set barrier_
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
 
 //set umbrellas
   parse("SIGMA",sigma_);
@@ -140,6 +147,8 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
   log.printf("    with SIGMA = %g\n",sigma_);
   log.printf("    and SPACING = %g\n",spacing);
+  if(barrier_!=std::numeric_limits<double>::infinity())
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }

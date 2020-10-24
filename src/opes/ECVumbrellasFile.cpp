@@ -71,6 +71,8 @@ class ECVumbrellasFile :
 {
 private:
   unsigned P0_contribution_;
+  double barrier_;
+
   std::vector<double> deltaFguess_;
   std::vector< std::vector<double> > centers_;
   std::vector< std::vector<double> > sigmas_;
@@ -99,6 +101,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
   keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess DeltaF_i=-kbt*log(h_i)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
@@ -117,6 +120,10 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     P0_contribution_=1;
   else
     P0_contribution_=0;
+
+//set barrier_
+  barrier_=std::numeric_limits<double>::infinity();
+  parse("BARRIER",barrier_);
 
 //set umbrellas
   bool read_height;
@@ -176,6 +183,8 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 
 //printing some info
   log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
+  if(barrier_!=std::numeric_limits<double>::infinity())
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
   if(read_height)
