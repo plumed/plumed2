@@ -78,7 +78,6 @@ public:
   void calculateECVs(const double *) override;
   const double * getPntrToECVs(unsigned) override;
   const double * getPntrToDerECVs(unsigned) override;
-  std::vector< std::vector<unsigned> > getIndex_k() const override;
   std::vector<std::string> getLambdas() const override;
   void initECVs_observ(const std::vector<double>&,const unsigned,const unsigned) override;
   void initECVs_restart(const std::vector<std::string>&) override;
@@ -178,15 +177,6 @@ const double * ECVumbrellasLine::getPntrToDerECVs(unsigned j)
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &derECVs_[j][0];
-}
-
-std::vector< std::vector<unsigned> > ECVumbrellasLine::getIndex_k() const
-{
-  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(getNumberOfArguments()));
-  for(unsigned k=0; k<totNumECVs_; k++)
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-      index_k[k][j]=k; //this is trivial, since each center has a unique set of CVs
-  return index_k;
 }
 
 std::vector<std::string> ECVumbrellasLine::getLambdas() const

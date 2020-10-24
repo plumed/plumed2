@@ -235,10 +235,11 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
 //set CUT_CORNER
+  std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
   if(cut_corner.size()>0)
-  {
-    std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
     plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
+  if(cut_corner.size()==4) //this keeps cppcheck happy
+  {
     const double low_temp=cut_corner[0];
     const double low_pres=cut_corner[1];
     const double high_temp=cut_corner[2];
@@ -316,7 +317,7 @@ const double * ECVmultiThermalBaric::getPntrToDerECVs(unsigned j)
 
 std::vector< std::vector<unsigned> > ECVmultiThermalBaric::getIndex_k() const
 {
-  plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"cannot access index_k before initializing lambdas");
+  plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
   std::vector< std::vector<unsigned> > index_k;
   unsigned i=0;
   for(unsigned k=0; k<beta_.size(); k++)
@@ -331,7 +332,7 @@ std::vector< std::vector<unsigned> > ECVmultiThermalBaric::getIndex_k() const
       }
     }
   }
-  plumed_massert(beta_.size()*pres_.size()>=index_k.size(),"this should not happen, something is wrong with CUT_CORNER");
+  plumed_massert(totNumECVs_==index_k.size(),"this should not happen, something is wrong with CUT_CORNER ?");
   return index_k;
 }
 
@@ -353,7 +354,6 @@ std::vector<std::string> ECVmultiThermalBaric::getLambdas() const
       }
     }
   }
-  plumed_massert(lambdas.size()==getIndex_k().size(),"this should not happen, something is wrong with CUT_CORNER");//slow, but not in a critical place
   return lambdas;
 }
 
@@ -361,10 +361,11 @@ void ECVmultiThermalBaric::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"this should not happen");
-  totNumECVs_=getIndex_k().size();//get it again, to be sure
+  totNumECVs_=getLambdas().size();//slow, but runs only once
+  plumed_massert(beta_.size()*pres_.size()>=totNumECVs_,"this should not happen, something is wrong with CUT_CORNER ?");
   ECVs_beta_.resize(beta_.size());
   derECVs_beta_.resize(beta_.size());
-  ECVs_pres_.resize(totNumECVs_);
+  ECVs_pres_.resize(totNumECVs_);//pres is mixed with temp (beta*p*V), thus we need to store all possible
   derECVs_pres_.resize(totNumECVs_);
   isReady_=true;
   log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());

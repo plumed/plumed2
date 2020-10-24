@@ -97,10 +97,10 @@ void ExpansionCVs::apply()
 std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
 {
   plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
-  plumed_massert(getNumberOfArguments()==1,"buggy ECV: you should override getIndex_k() if you have more than one ARG");
-  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(1));
+  std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(getNumberOfArguments()));
   for(unsigned k=0; k<totNumECVs_; k++)
-    index_k[k][0]=k; //when only one ARG is used, this is the only possibility
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+      index_k[k][j]=k; //each CV gives rise to the same number of ECVs
   return index_k;
 }
 

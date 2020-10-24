@@ -638,7 +638,7 @@ inline double OPESexpanded::getExpansion(unsigned i) const
 {
   double expansion=0;
   for(unsigned j=0; j<ncv_; j++)
-    expansion+=ECVs_[j][index_k_[i][j]];
+    expansion+=ECVs_[j][index_k_[i][j]];//the index_k could be trivially guessed for most ECVs, but unfourtunately not all
   return expansion;
 }
 
