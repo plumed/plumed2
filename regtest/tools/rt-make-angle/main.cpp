@@ -65,6 +65,7 @@ int testCompute4VectorsAntiParallel(std::ofstream &ofs) {
 }
 
 int main() {
+  std::ofstream ofs("output");
   testCompute2Vectors90Degrees(ofs);
   testCompute2Vectors45Degrees(ofs);
   testCompute4Vectors45Degrees(ofs);
