@@ -52,6 +52,14 @@ int testString(std::ofstream &ofs) {
   return 0;
 }
 
+int testGaussian(std::ofstream &ofs) {
+  ofs << "testGaussian" << std::endl;
+  Random* random = new Random("random");
+  double result = random->Gaussian();
+  ofs << result << std::endl;
+  return 0;
+}
+
 int testShuffle(std::ofstream &ofs) {
   ofs << "testShuffle" << std::endl;
   Random* random = new Random("random");
@@ -71,6 +79,7 @@ int main() {
   testU01(ofs);
   testWriteStateFull(ofs);
   testString(ofs);
+  testGaussian(ofs);
   testShuffle(ofs);
   sw.stop();
   std::cout << sw;
