@@ -1,5 +1,4 @@
 #include "plumed/tools/LatticeReduction.h"
-#include "plumed/tools/Stopwatch.h"
 #include "plumed/tools/Tensor.h"
 #include <fstream>
 #include <iostream>
@@ -47,14 +46,10 @@ int testIsReduced(std::ofstream &ofs) {
 }
 
 int main() {
-  Stopwatch sw;
-  sw.start();
   std::ofstream ofs("output");
   testReduce(ofs);
   testReduceSlow(ofs);
   testReduceFast(ofs);
   testIsReduced(ofs);
-  sw.stop();
-  std::cout << sw;
   return 0;
 }

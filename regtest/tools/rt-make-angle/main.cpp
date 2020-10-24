@@ -1,5 +1,4 @@
 #include "plumed/tools/Angle.h"
-#include "plumed/tools/Stopwatch.h"
 #include "plumed/tools/Vector.h"
 #include <fstream>
 #include <iostream>
@@ -66,18 +65,10 @@ int testCompute4VectorsAntiParallel(std::ofstream &ofs) {
 }
 
 int main() {
-  Stopwatch sw;
-  sw.start();
-  std::ofstream ofs("output");
-
   testCompute2Vectors90Degrees(ofs);
   testCompute2Vectors45Degrees(ofs);
-
   testCompute4Vectors45Degrees(ofs);
   testCompute4VectorsParallel(ofs);
   testCompute4VectorsAntiParallel(ofs);
-
-  sw.stop();
-  std::cout << sw;
   return 0;
 }

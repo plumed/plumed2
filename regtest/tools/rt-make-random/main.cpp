@@ -1,5 +1,4 @@
 #include "plumed/tools/LatticeReduction.h"
-#include "plumed/tools/Stopwatch.h"
 #include "plumed/tools/Random.h"
 #include <fstream>
 #include <iostream>
@@ -70,8 +69,6 @@ int testShuffle(std::ofstream &ofs) {
 }
 
 int main() {
-  Stopwatch sw;
-  sw.start();
   std::ofstream ofs("output");
   testConstructor(ofs);
   testRandU01(ofs);
@@ -81,7 +78,5 @@ int main() {
   testString(ofs);
   testGaussian(ofs);
   testShuffle(ofs);
-  sw.stop();
-  std::cout << sw;
   return 0;
 }
