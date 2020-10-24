@@ -25,7 +25,9 @@ namespace opes {
 
 /*
 \ingroup INHERIT
-This is the abstract base class to use for implementing new expansion CVs
+This is the abstract base class to use for implementing expansion CVs (ECVs).
+ECVs should be used together with the OPESexpanded action.
+They take as argument regular CVs, and output them as components without modification.
 */
 
 class ExpansionCVs:
