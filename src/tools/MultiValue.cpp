@@ -23,7 +23,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
+MultiValue::MultiValue( const size_t& nvals, const size_t& nder ):
   values(nvals),
   nderivatives(nder),
   derivatives(nvals*nder),
@@ -36,7 +36,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
   hasDerivatives.createIndexListFromVector( myind );
 }
 
-void MultiValue::resize( const unsigned& nvals, const unsigned& nder ) {
+void MultiValue::resize( const size_t& nvals, const size_t& nder ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;

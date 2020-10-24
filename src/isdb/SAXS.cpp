@@ -529,8 +529,8 @@ void SAXS::calculate()
 {
   if(pbc) makeWhole();
 
-  const unsigned size = getNumberOfAtoms();
-  const unsigned numq = q_list.size();
+  const size_t size = getNumberOfAtoms();
+  const size_t numq = q_list.size();
 
   vector<Vector> deriv(numq*size);
   if(gpu) calculate_gpu(deriv);

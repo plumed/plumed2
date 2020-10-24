@@ -48,8 +48,8 @@ private:
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
 public:
-  MultiValue( const unsigned&, const unsigned& );
-  void resize( const unsigned&, const unsigned& );
+  MultiValue( const size_t&, const size_t& );
+  void resize( const size_t&, const size_t& );
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();

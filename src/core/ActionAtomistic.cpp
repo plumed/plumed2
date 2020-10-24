@@ -101,8 +101,8 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     plumed_massert(a,"only Actions with a value can be differentiated");
   }
 
-  const int nval=a->getNumberOfComponents();
-  const int natoms=getNumberOfAtoms();
+  const size_t nval=a->getNumberOfComponents();
+  const size_t natoms=getNumberOfAtoms();
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
   std::vector<Vector> savedPositions(natoms);
