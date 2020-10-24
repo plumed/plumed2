@@ -38,8 +38,8 @@ protected:
   unsigned totNumECVs_;
 
 //methods useful for linear expansions
-  unsigned estimateSteps(const double,const double,const std::vector<double>&,const std::string&) const;
   void setSteps(std::vector<double>&,const unsigned,const std::string&);
+  unsigned estimateSteps(const double,const double,const std::vector<double>&,const std::string&) const;
 
 public:
   explicit ExpansionCVs(const ActionOptions&);
@@ -47,7 +47,7 @@ public:
   void apply() override;
   void calculate() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives() override {return getNumberOfArguments();};
+  unsigned getNumberOfDerivatives() override {return 1;};
 
   double getKbT() const {return kbt_;};
   unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
