@@ -26,21 +26,17 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_METAD
 /*
-On-the-fly probability enhanced sampling (OPES) with metadynamics-like target distribution \cite Invernizzi2020rethinking.
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
-The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{tg}(\mathbf{x})\f$,
-different from the equilibrium Boltzmann distribution, \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
-To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions:
-\f[
-V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
-\f]
-The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
-
-This OPES_METAD action samples target distributions defined via their marginal \f$p^{tg}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
-By default OPES_METAD targets the well-tempered distribution, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
+This OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+By default OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
 Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting via kernel density estimation the unbiased distribution in the CV space, \f$P(\mathbf{s})\f$.
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
+The bias at step \f$n\f$ is
+\f[
+V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{\tilde{P}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+\f]
 See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 
 As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
@@ -198,10 +194,22 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
 //+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
 /*
-On-the-fly probability enhanced sampling (OPES) with well-tempered target distribution, exploration mode \cite future_paper .
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite future_paper .
 
-OPES_METAD_EXPLORE is more similar to \ref METAD, in the sense that it allows the bias to vary significantly, thus enhancing exploration, with possibly slower convergence compared to \ref OPES_METAD.
-Useful to look around when you have no idea of the BARRIER, or if your CV is degenerate or not.
+This OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
+The bias at step \f$n\f$ is
+\f[
+V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{\tilde{P}^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+\f]
+See Ref.\cite future_paper for a complete description of the method.
+
+Compared to \ref OPES_METAD, OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
+This goes at the expenses of a possibly slower convergence of the reweight estimate.
+It is useful to look around when you have no idea of the BARRIER, or if you want to quickly test the effectiveness of a new CV, and see if it is degenerate or not.
+
+Like \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with an on-the-fly compression algorithm.
+The only difference is that it does not perfom reweight, since it estimates the sampled distribution and not the unbiased one.
 
 \par Examples
 

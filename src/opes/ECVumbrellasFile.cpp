@@ -23,12 +23,12 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_FILE
 /*
-Target a multiumbrella ensemble, obtained as sum of different systems each with a parabolic bias potential at a different location.
-Any collective variable can be used as ARG.
+Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 
+Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
 The positions \f$\mathbf{s}_i\f$ and dimension \f$\mathbf{\sigma}_i\f$ of the umbrellas are read from file.
 \f[
-  \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{(s_j-s_{ji})^2}{2\sigma_{ji}^2}.
+  \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{([s]_j-[s_i]_j)^2}{2[\sigma_i]_j^2}\, .
 \f]
 Notice that \f$\mathbf{\sigma}_i\f$ is diagonal, thus only one SIGMA per CV has to be specified for each umbrella.
 You can choose the umbrellas manually, or place them on a grid, or along a path, similar to \ref PATH.

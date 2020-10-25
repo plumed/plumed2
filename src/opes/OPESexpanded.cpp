@@ -28,21 +28,17 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_EXPANDED
 /*
-On-the-fly probability enhanced sampling (OPES) with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
-
-OPES aims at sampling a given target distribution over the configuration space \f$p^{tg}(\mathbf{x})\f$,
-different form the equilibrium Boltzmann distribution \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
-To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions
-\f[
-V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
-\f]
-The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
 Such ensembles can be sampled via methods like replica exchange, or this OPES_EXPANDED bias action.
-A typical example is mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
+A typical example is a mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
-In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs).
+In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs), \f$\Delta u_\lambda(\mathbf{x})\f$.
+The bias at step \f$n\f$ is
+\f[
+  V_n(\mathbf{x})=-\frac{1}{\beta}\log \left(\frac{1}{N_{\{\lambda\}}}\sum_\lambda e^{-\Delta u_\lambda(\mathbf{x})+\beta\Delta F_n(\lambda)}\right)\, .
+\f]
 See Ref.\cite Invernizzi2020unified for more details on the method.
 
 Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
@@ -54,7 +50,7 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 \plumedfile
 ene: ENERGY
 ecv: ECV_MULTICANONICAL ARG=ene MAX_TEMP=1000
-opes: OPES_EXPANDED ARG=mc.ene PACE=500
+opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
 \endplumedfile
 
@@ -67,7 +63,7 @@ dst: DISTANCE ATOMS=1,2
 
 ecv1: ECV_MULTICANONICAL ARG=ene SET_ALL_TEMPS=200,300,500,1000
 ecv2: ECV_UMBRELLAS_LINE ARG=dst MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
-opes: OPES_EXPANDED ARG=ecv1.ene,ecv2.dst PACE=500 OBSERVATION_STEPS=1
+opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500 OBSERVATION_STEPS=1
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
 \endplumedfile
@@ -90,7 +86,7 @@ mtp: ECV_MULTITHERMAL_MULTIBARIC ...
 
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
-umb: ECV_UMBRELLAS_FILE ARG=cv1,cv2 TEMP=300 FILE=Umbrellas.data BARRIER=70
+umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
 
 opes: OPES_EXPANDED ARG=mtp.*,umb.* PACE=500 WALKERS_MPI PRINT_STRIDE=1000
 
@@ -158,7 +154,8 @@ PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
 
 void OPESexpanded::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
+  keys.remove("ARG");
+  keys.add("compulsory","ARG","provide the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
 //deltaFs file

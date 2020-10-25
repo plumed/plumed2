@@ -22,10 +22,13 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_LINE
 /*
-Target a multiumbrella ensemble, obtained as sum of different systems each with a parabolic bias potential at a different location.
-Any collective variable can be used as ARG.
+Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 
-ECV_UMBRELLAS_LINE places the Gaussian umbrellas on a line, from MIN_CV to MAX_CV.
+Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
+\f[
+  \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{([s]_j-[s_i]_j)^2}{2\sigma^2}\, .
+\f]
+The Gaussian umbrellas are placed along a line, from MIN_CV to MAX_CV.
 The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use \ref ECV_UMBRELLAS_FILE.
 The unbiased fluctuations in the basin usually are a reasonable guess for the value of SIGMA.
 The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.

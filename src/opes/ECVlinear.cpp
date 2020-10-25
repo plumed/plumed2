@@ -22,12 +22,16 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_LINEAR
 /*
-Expand a simulation linearly accoding to a parameter lambda.
+Linear expansion, according to a parameter lambda.
+
 This can be used e.g. for thermodynamic integration, or for multibaric simulations, in which case lambda=pressure.
 It can also be used for multicanonical simulations, but for simplicity it is more convenient to use \ref ECV_MULTICANONICAL.
 
-By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
-You can use the DIMENSIONLESS flag to avoid this.
+The difference in Hamiltonian \f$\Delta U\f$ is expected as ARG.
+\f[
+  \Delta u_\lambda=\beta \lambda \Delta U\, .
+\f]
+Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature \f$\beta\f$.
 
 \par Examples
 
@@ -86,13 +90,13 @@ PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
 void ECVlinear::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","provide the label of the difference in energy \\f$\\Delta\\f$U");
+  keys.add("compulsory","ARG","provide the label of the Hamiltonian difference \\f$\\Delta U\\f$");
   keys.add("compulsory","LAMBDA","0","the lambda at which the underlying simulation runs");
   keys.add("optional","MIN_LAMBDA","( default=0 ) the minimum of the lambda range");
   keys.add("optional","MAX_LAMBDA","( default=1 ) the maximum of the lambda range");
   keys.add("optional","STEPS_LAMBDA","uniformly place the lambda values, for a total of STEPS_LAMBDA");
   keys.add("optional","SET_ALL_LAMBDAS","manually set all the lamdbas");
-  keys.addFlag("DIMENSIONLESS",false,"ARG is dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
+  keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
 }
 
 ECVlinear::ECVlinear(const ActionOptions&ao)

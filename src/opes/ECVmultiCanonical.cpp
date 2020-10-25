@@ -25,9 +25,12 @@ namespace opes {
 //+PLUMEDOC EXPANSION_CV ECV_MULTICANONICAL
 /*
 Expand a canonical simulation to sample multiple temperatures.
-\warning
-  If instead of fixed volume NVT you are running with fixed pressure NPT, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and set a single pressure.
+
 The \ref ENERGY of the system should be used as ARG.
+\f[
+  \Delta u_{\beta'}=(\beta-\beta') \text{ENERGY}\, .
+\f]
+If instead of fixed volume \f$NVT\f$ you are running with fixed pressure \f$NPT\f$, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and set a single pressure, in order to sample multiple temperatures.
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
 Otherwise you can manually set this number with STEPS_TEMP.
@@ -36,6 +39,7 @@ For more fine controll you can use the keywork SET_ALL_TEMPS and explicitly prov
 
 You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
 A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
+
 
 \par Examples
 

@@ -25,7 +25,11 @@ namespace opes {
 //+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL_MULTIBARIC
 /*
 Expand a simulation to sample multiple temperatures and pressures.
+
 The \ref ENERGY and \ref VOLUME of the system should be used as ARG.
+\f[
+  \Delta u_{\beta',p'}=(\beta-\beta') \text{ENERGY} + (\beta p -\beta' p') \text{VOLUME}\, .
+\f]
 
 If the volume is constant (NVT simulation) you should use \ref ECV_MULTICANONICAL to sample multiple temperatures.
 If instead the volume changes (NPT simulation) you must use this ECV and not set MIN/MAX pressure to obtain a multitemperature-singlepressure simulation.

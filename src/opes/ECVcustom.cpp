@@ -22,13 +22,18 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_CUSTOM
 /*
-Turn any set of CVs into an Expansion CV.
-It can be useful for testing new ECVs, but from a performance point of view it is better to code a new class.
+Turn any set of CVs into expansion collective variables.
+
+This can be useful for testing new ECVs, but from a performance point of view it is better to code a new class.
 
 By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
-You can use the DIMENSIONLESS flag to avoid this.
+\f[
+  \Delta u_i=\beta \text{ARG}_i\, .
+\f]
+Use the DIMENSIONLESS flag to avoid this multiplication.
 
-The flag ADD_P0 will add the unbiased distribution to the target.
+The flag ADD_P0 adds also the unbiased distribution to the target.
+It is possible to specify a BARRIER as in \ref ECV_UMBRELLAS_LINE, to avoid a too high initial bias.
 
 \par Examples
 
@@ -80,10 +85,10 @@ PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
 void ECVcustom::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","provide the label of the difference in energy \\f$\\Delta\\f$U");
+  keys.add("compulsory","ARG","provide the labels of the single ECVs, in energy units \\f$\\Delta u/\\beta\\f$");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.addFlag("DIMENSIONLESS",false,"consider ARG as dimensionless rather than an energy, thus do not multiply it by \\f$\\beta\\f$");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
-  keys.addFlag("DIMENSIONLESS",false,"ARG is dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
 }
 
 ECVcustom::ECVcustom(const ActionOptions&ao)
