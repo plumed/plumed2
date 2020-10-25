@@ -1,2 +1,6 @@
 testCreate
 dimensions= 1
+testGetMax
+0 1.32 
+testGetMin
+0 1.14 
