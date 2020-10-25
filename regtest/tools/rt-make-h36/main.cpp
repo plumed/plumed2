@@ -6,7 +6,7 @@ using namespace PLMD::h36;
 
 int testHy36encode(std::ofstream &ofs) {
   ofs << "testHy36encode" << std::endl;
-  char result[4+1];
+  char result[4 + 1];
   hy36encode(4, 12345, result);
   ofs << "result= " << result << std::endl;
   return 0;

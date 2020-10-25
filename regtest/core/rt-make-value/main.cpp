@@ -2,10 +2,10 @@
 #include "plumed/core/ActionWithValue.h"
 #include "plumed/core/PlumedMain.h"
 #include "plumed/core/Value.h"
-#include <vector>
-#include <string>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
 
 using namespace PLMD;
 
