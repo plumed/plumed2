@@ -45,6 +45,22 @@ Value::Value():
 {
 }
 
+Value::Value(const std::string& name):
+  action(NULL),
+  value_set(false),
+  value(0.0),
+  inputForce(0.0),
+  hasForce(false),
+  hasDeriv(true),
+  name(name),
+  periodicity(unset),
+  min(0.0),
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
+{
+}
+
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
   action(av),
   value_set(false),
