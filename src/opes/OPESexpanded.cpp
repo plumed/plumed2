@@ -42,7 +42,7 @@ An expanded ensemble is obtained by summing a set of ensembles at slightly diffe
 Such ensembles can be sampled via methods like replica exchange, or this OPES_EXPANDED bias action.
 A typical example is mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
-In oreder to define an expanded target ensemble we use expansion collective variables (ECVs).
+In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs).
 See Ref.\cite Invernizzi2020unified for more details on the method.
 
 Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
@@ -228,7 +228,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parseFlag("SERIAL",serial);
   if(serial)
   {
-    log.printf(" -- SERIAL: running without loop parallelization\n");
     NumParallel_=1;
     rank_=0;
   }
@@ -356,15 +355,23 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   log.printf("  updating the bias with PACE = %u\n",stride_);
   log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
   if(walkers_mpi)
-    log.printf("  WALKERS_MPI: multiple walkers will share the same bias via mpi\n");
+    log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
   {
     log.printf("  using multiple walkers\n");
     log.printf("    number of walkers: %u\n",NumWalkers_);
     log.printf("    walker rank: %u\n",walker_rank);
   }
+  int mw_warning=0;
+  if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_)
+    mw_warning=1;
+  comm.Bcast(mw_warning,0);
+  if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
+    log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %u\n",NumParallel_);
+  if(serial)
+    log.printf(" -- SERIAL: running without loop parallelization\n");
 //Bibliography
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, arXiv:2007.03055 (2020)");

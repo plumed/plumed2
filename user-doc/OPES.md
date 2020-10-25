@@ -30,6 +30,10 @@ The following list contains the biases available in the OPES module.
 
 \page EXPANSION_CV Expansion Collective Variables
 
+Expansion collective variables (ECVs) are used to define the expanded ensemble to be sampled by \ref OPES_EXPANDED.
+See Ref.\cite Invernizzi2020unified for details.
+ECVs take as argument some underlying colvar and have as output component the same colvars.
+
 The following list contains the expansion CVs available in the OPES module.
 
 @EXPANSION_CV@

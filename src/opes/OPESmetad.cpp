@@ -428,7 +428,6 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseFlag("SERIAL",serial);
   if(serial)
   {
-    log.printf(" -- SERIAL: running without loop parallelization\n");
     NumParallel_=1;
     rank_=0;
   }
@@ -718,7 +717,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(wStateStride_!=0 && walker_rank_==0)
     log.printf("  state checkpoints are written on file %s with stride %d\n",stateFileName.c_str(),wStateStride_);
   if(walkers_mpi)
-    log.printf(" -- WALKERS_MPI: if present, multiple replicas will communicate\n");
+    log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
   {
     log.printf("  using multiple walkers\n");
@@ -733,6 +732,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
+  if(serial)
+    log.printf(" -- SERIAL: running without loop parallelization\n");
   log.printf(" Bibliography ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
