@@ -12,12 +12,20 @@ using namespace PLMD;
 int testConstructor(std::ofstream &ofs) {
   ofs << "testConstructor" << std::endl;
   Value *value = new Value();
-  ofs << value->getMaxMinusMin() << std::endl;
+  ofs << value->get() << std::endl;
+  return 0;
+}
+
+int testConstructorWithName(std::ofstream &ofs) {
+  ofs << "testConstructorWithName" << std::endl;
+  Value *value = new Value("name");
+  ofs << value->get() << std::endl;
   return 0;
 }
 
 int main() {
   std::ofstream ofs("output");
   testConstructor(ofs);
+  testConstructorWithName(ofs);
   return 0;
 }
