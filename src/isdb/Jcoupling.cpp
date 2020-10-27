@@ -248,7 +248,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   for (unsigned i = 0; i < ncoupl_; ++i) {
     log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",
-               i+1, atoms[2*i].serial(), atoms[2*i+1].serial(), atoms[2*i+2].serial(), atoms[2*i+3].serial());
+               i+1, atoms[6*i].serial(), atoms[6*i+1].serial(), atoms[6*i+3].serial(), atoms[6*i+5].serial());
     if (addcoupling) {
       log.printf(" Experimental J-Coupling is %f.", coupl[i]);
     }
