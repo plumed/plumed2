@@ -4,3 +4,21 @@ testGetMax
 0 1.32 
 testGetMin
 0 1.14 
+testGetDx
+0 0.036 
+testGetBinVolume
+0.036
+testGetNbin
+0 6 
+testGetIsPeriodic
+0 0 
+testGetDimension
+1
+testGetArgNames
+0 d1 
+testHasDerivatives
+0
+testGetIndiciesByIndex
+0 4 
+testGetIndiciesByPointVector
+0 5 
