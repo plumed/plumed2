@@ -28,16 +28,16 @@ namespace opes {
 /*
 On-the-fly probability enhanced sampling (OPES) with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
-The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{tg}(\mathbf{x})\f$,
+The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{\text{tg}}(\mathbf{x})\f$,
 different from the equilibrium Boltzmann distribution, \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
 To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions:
 \f[
-V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{tg}(\mathbf{x})}{P(\mathbf{x})}\, .
+V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{\text{tg}}(\mathbf{x})}{P(\mathbf{x})}\, .
 \f]
 The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
 
-This OPES_METAD action samples target distributions defined via their marginal \f$p^{tg}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
-By default OPES_METAD targets the well-tempered distribution, \f$p^{tg}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
+This OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+By default OPES_METAD targets the well-tempered distribution, \f$p^{\text{tg}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
 Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting via kernel density estimation the unbiased distribution in the CV space, \f$P(\mathbf{s})\f$.
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
@@ -46,7 +46,7 @@ See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It has a fast initial exploration phase, and then becomes extremely conservative and does not significantly change the shape of the deposited bias any more, reaching a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-At <a href="https://github.com/invemichele/plumed2/tree/opes/src/opes/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
+At <a href="https://github.com/invemichele/opes/tree/master/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
@@ -380,7 +380,6 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   parseFlag("SERIAL",serial);
   if(serial)
   {
-    log.printf(" -- SERIAL: running without loop parallelization\n");
     NumParallel_=1;
     rank_=0;
   }
@@ -670,7 +669,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   if(wStateStride_!=0 && walker_rank_==0)
     log.printf("  state checkpoints are written on file %s with stride %d\n",stateFileName.c_str(),wStateStride_);
   if(walkers_mpi)
-    log.printf(" -- WALKERS_MPI: if present, multiple replicas will communicate\n");
+    log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
   {
     log.printf("  using multiple walkers\n");
@@ -685,6 +684,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
     log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
+  if(serial)
+    log.printf(" -- SERIAL: running without loop parallelization\n");
   log.printf(" Bibliography ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
