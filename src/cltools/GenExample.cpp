@@ -115,6 +115,12 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   if( config::getVersionLong().find("dev")==std::string::npos ) version=config::getVersion();
   std::string fname, egname, outfile; parse("--plumed",fname);
   parse("--name",egname); parse("--out",outfile); parse("--status",status);
+
+  int r=0;
+  if(intracomm.Get_rank()==0) r=intercomm.Get_rank();
+  intracomm.Bcast(r,0);
+  if(r>0) outfile="/dev/null";
+
   IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile); std::vector<bool> shortcuts;
   bool hasshortcuts=false, endplumed=false; std::vector<std::vector<std::string> > input; std::vector<std::string> words;
   while( Tools::getParsedLine(ifile, words, false) ) {
