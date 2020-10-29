@@ -250,7 +250,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool    walkers_mpi;
-  unsigned mpi_nw_;
+  size_t mpi_nw_;
   unsigned mpi_id_;
   vector<string> hillsfname;
   vector<std::unique_ptr<IFile>> ifiles;

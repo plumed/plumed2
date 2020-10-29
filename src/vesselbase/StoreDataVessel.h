@@ -47,9 +47,9 @@ private:
 /// have to store when using lowmem option
   unsigned max_lowmem_stash;
 /// The size of the vector we are computing
-  unsigned vecsize;
+  size_t vecsize;
 /// The amount of data per vector element
-  unsigned nspace;
+  size_t nspace;
 /// The currently active values
 //  std::vector<unsigned> active_val;
 /// The active derivative elements
