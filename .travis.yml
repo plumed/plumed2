@@ -39,7 +39,7 @@ jobs:
   - name: MacOS, serial build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode9.4
+    osx_image: xcode11.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -48,7 +48,7 @@ jobs:
   - name: MacOS, MPI build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode9.4
+    osx_image: xcode11.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
