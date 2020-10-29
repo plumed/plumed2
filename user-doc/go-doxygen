@@ -94,7 +94,7 @@ awk -v version="$version" '{
     print "</script>"
   } else print
 }' $file |
-stdbuf -oL gawk -f ../../plumed-syntax.awk > $file.tmp
+gawk -f ../../plumed-syntax.awk > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
