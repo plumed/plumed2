@@ -43,7 +43,7 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS gen_example
 /*
-gen_example is a tool that you can use to construct a example for the manual that users can interact with to understand
+gen_example is a tool that you can use to construct an example for the manual that users can interact with to understand
 
 The example constructed by this action is in html. In all probability you will never need to use this
 tool. However, it is used within the scripts that generate the html manual for PLUMED.  If you need to use this
@@ -146,6 +146,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   else if(status=="incomplete") ofile<<version<<"-incomplete-yellow";
   else error("unknown status");
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
+  ofile.flush();
   if( hasshortcuts ) {
     // Write out the short version of the input
     ofile<<"<div style=\"width: 100%; float:left\" id=\"input_"<<egname<<"\"></div>"<<std::endl;
@@ -342,6 +343,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\"> You cannot view the components that are calculated by each action for this input file. Sorry </span>"<<std::endl;
       } else ofile<<std::endl;
     }
+    ofile.flush();
   }
   ofile<<"</pre>"<<std::endl;
 }
