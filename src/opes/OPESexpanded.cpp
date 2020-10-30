@@ -42,6 +42,9 @@ The bias at step \f$n\f$ is
 See Ref.\cite Invernizzi2020unified for more details on the method.
 
 Notice that the estimates in the DELTAFS file are expressed in energy units, and should be multiplied by \f$\beta\f$ to be dimensionless as in Ref.\cite Invernizzi2020unified.
+The DELTAFS file also contains an estimate of \f$c(t)=\frac{1}{\beta} \log \langle e^{\beta V}\rangle\f$.
+Similarly to \ref OPES_METAD, it is printed only for reference, since \f$c(t)\f$ reaches a fixed value as the bias converges, and should NOT be used for reweighting.
+Its value is also needed for restarting a simulation.
 
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
@@ -155,11 +158,11 @@ PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
 void OPESexpanded::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","provide the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
+  keys.add("compulsory","ARG","the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
 //deltaFs file
-  keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target");
+  keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target and of the global \\f$c(t)\\f$");
   keys.add("compulsory","PRINT_STRIDE","100","stride for printing to DELTAFS file, in units of PACE");
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous

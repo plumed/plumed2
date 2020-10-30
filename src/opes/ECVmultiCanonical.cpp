@@ -87,7 +87,7 @@ PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTICANONICAL")
 void ECVmultiCanonical::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","provide the label of the potential energy of the system, you can calculate it with the \\ref ENERGY colvar");
+  keys.add("compulsory","ARG","the label of the potential energy of the system. You can calculate it with the \\ref ENERGY colvar");
   keys.add("optional","MIN_TEMP","the minimum of the temperature range");
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");

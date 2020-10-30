@@ -104,7 +104,7 @@ PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,"ECV_MULTITHERMAL_MULTIBARIC")
 void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","provide the labels of the potential energy and of the volume of the system, you can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
+  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
 //temperature
   keys.add("optional","MIN_TEMP","the minimum of the temperature range");
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
@@ -118,7 +118,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.add("optional","SET_ALL_PRESSURES","manually set all the pressures");
 //other
 //  keys.add("optional","SET_GRID_TEMPS_PRESSURES","manually set the whole temperature-pressure grid. Comma separated points, with internal underscore, e.g.: temp1_pres1,temp1_pres2,...");
-  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: T_low,P_low,T_high,P_high");
+  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: \\f$T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}\\f$");
 }
 
 ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)

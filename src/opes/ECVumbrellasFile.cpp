@@ -36,7 +36,7 @@ They must cover all the CV space that one wishes to sample.
 
 You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
 As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
-The first column of the umbrellas file is always ignored.
+The first column of the umbrellas file is always ignored and must be called "time".
 
 Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
 You can also use BARRIER to set the maximum barrier height to be explored, and avoid huge biases at the beginning of your simulation.
@@ -47,7 +47,7 @@ See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these
 \plumedfile
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
-cv3: DISTANCE ATOMS=5,6
+cv3: DISTANCE ATOMS=4,1
 ecv: ECV_UMBRELLAS_FILE ARG=cv1,cv2,cv3 FILE=Umbrellas.data ADD_P0 BARRIER=70
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=cv1,cv2,cv3,opes.bias
@@ -55,12 +55,12 @@ PRINT FILE=COLVAR STRIDE=500 ARG=cv1,cv2,cv3,opes.bias
 
 The umbrellas file might look like this:
 \auxfile{Umbrellas.data}
-#! FIELDS count cv1 cv2 cv3 cv1_sigma cv2_sigma cv3_sigma
-1  -1.17958  -2.93697  -1.06109  0.242158  0.242158  0.242158  1.60875e-08
-2  -2.04023  -2.69714  -1.84770  0.242156  0.242156  0.242156  3.21763e-08
-3  -1.99693  -1.10299  -1.13351  0.242154  0.242154  0.242154  4.82625e-08
-4  -1.15954  -1.37447  -2.25975  0.242153  0.242153  0.242153  6.43501e-08
-5  -1.10126  -2.45936  -2.40260  0.242156  0.242156  0.242156  8.05509e-08
+#! FIELDS time cv1 cv2 cv3 sigma_cv1 sigma_cv2 sigma_cv3
+1  1.17958  2.93697  1.06109  0.19707  0.28275  0.32427
+2  2.04023  2.69714  1.84770  0.22307  0.25933  0.31783
+3  1.99693  1.10299  1.13351  0.19517  0.26260  0.37427
+4  1.15954  1.37447  2.25975  0.20096  0.27168  0.33353
+5  1.10126  2.45936  2.40260  0.19747  0.24215  0.35523
 \endauxfile
 
 */
