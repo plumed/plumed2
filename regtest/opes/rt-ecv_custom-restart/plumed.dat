@@ -1,0 +1,17 @@
+# vim:ft=plumed
+RESTART
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#ene: ENERGY #cannot get the energy in driver!
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+
+t1: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/500-1)*x
+t2: CUSTOM PERIODIC=NO ARG=ene FUNC=(300/1000-1)*x
+mc: ECV_CUSTOM ARG=t1,t2 TEMP=300 ADD_P0
+opes: OPES_EXPANDED FMT={% f} ARG=mc.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
+

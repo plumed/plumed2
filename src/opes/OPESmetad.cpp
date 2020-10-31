@@ -26,21 +26,17 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_METAD
 /*
-On-the-fly probability enhanced sampling (OPES) with metadynamics-like target distribution \cite Invernizzi2020rethinking.
-
-The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{\text{tg}}(\mathbf{x})\f$,
-different from the equilibrium Boltzmann distribution, \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
-To do so, it incrementally builds a bias potential \f$V(\mathbf{x})\f$, by estimating on-the-fly the needed probability distributions:
-\f[
-V(\mathbf{x}) = -\frac{1}{\beta}\log\frac{p^{\text{tg}}(\mathbf{x})}{P(\mathbf{x})}\, .
-\f]
-The bias quickly becomes quasi-static and the desired properties, such as the free energy, can be calculated with a simple reweighting \ref REWEIGHT_BIAS.
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
 This OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
-By default OPES_METAD targets the well-tempered distribution, \f$p^{\text{tg}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
+By default OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
 Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting via kernel density estimation the unbiased distribution in the CV space, \f$P(\mathbf{s})\f$.
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
+The bias at step \f$n\f$ is
+\f[
+V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{\tilde{P}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+\f]
 See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 
 As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
@@ -54,7 +50,7 @@ Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should con
 Notice that OPES_METAD is more sensitive to degenerate CVs than \ref METAD.
 If the employed CVs map different metastable basins onto the same CV-space region, then OPES_METAD will remain stuck rather than completely reshaping the bias.
 This can be useful to diagnose problems with your collective variable.
-If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref METAD with a high BIASFACTOR, or even without well-tempering.
+If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref OPES_METAD_EXPLORE or \ref METAD.
 In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors (see e.g. Fig.3 in \cite Pietrucci2017review).
 On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES_METAD instead of \ref METAD \cite Invernizzi2020rethinking.
 
@@ -113,6 +109,7 @@ PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 */
 //+ENDPLUMEDOC
 
+template <class mode>
 class OPESmetad : public bias::Bias {
 
 private:
@@ -185,11 +182,55 @@ public:
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void dumpStateToFile();
+
 };
 
-PLUMED_REGISTER_ACTION(OPESmetad,"OPES_METAD")
+struct convergence { static const bool explore=false; };
+typedef OPESmetad<convergence> OPESmetad_c;
+PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
-void OPESmetad::registerKeywords(Keywords& keys) {
+//OPES_METAD_EXPLORE is very similar from the point of view of the code,
+//but conceptually it is better to make it a separate BIAS action
+
+//+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
+/*
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite future_paper .
+
+This OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
+The bias at step \f$n\f$ is
+\f[
+V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{\tilde{P}^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+\f]
+See Ref.\cite future_paper for a complete description of the method.
+
+Compared to \ref OPES_METAD, OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
+This goes at the expenses of a possibly slower convergence of the reweight estimate.
+It is useful to look around when you have no idea of the BARRIER, or if you want to quickly test the effectiveness of a new CV, and see if it is degenerate or not.
+
+Like \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with an on-the-fly compression algorithm.
+The only difference is that it does not perfom reweight, since it estimates the sampled distribution and not the unbiased one.
+
+\par Examples
+
+The following is a minimal working example:
+
+\plumedfile
+cv: DISTANCE ATOMS=1,2
+opes: OPES_METAD_EXPLORE ARG=cv PACE=500 BARRIER=40
+PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
+\endplumedfile
+*/
+//+ENDPLUMEDOC
+
+struct exploration { static const bool explore=true; };
+typedef OPESmetad<exploration> OPESmetad_e;
+// For some reason, this is not seen correctly by cppcheck
+// cppcheck-suppress unknownMacro
+PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
+
+template <class mode>
+void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
@@ -199,7 +240,12 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
-  keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. Set to 'inf' for uniform flat target");
+  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. ");
+  if(mode::explore)
+    info_biasfactor+="Cannot be 'inf'";
+  else
+    info_biasfactor+="Set to 'inf' for uniform flat target";
+  keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
@@ -226,7 +272,8 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
 }
 
-OPESmetad::OPESmetad(const ActionOptions& ao)
+template <class mode>
+OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
   , afterCalculate_(false)
@@ -273,6 +320,11 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor_;
   }
+  if(mode::explore)
+  {
+    plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with EXPLORE mode");
+    bias_prefactor_=biasfactor_-1;
+  }
 
   adaptive_sigma_stride_=0;
   parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
@@ -298,6 +350,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     for(unsigned i=0; i<ncv_; i++)
     {
       plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
+      if(mode::explore)
+        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
     }
   }
 
@@ -308,6 +362,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   sum_weights2_=sum_weights_*sum_weights_;
 
   double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
+  if(mode::explore)
+    cutoff=sqrt(2.*barrier/kbt_); //otherwise it is too small
   parse("KERNEL_CUTOFF",cutoff);
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
   cutoff2_=cutoff*cutoff;
@@ -532,7 +588,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
           sum_weights2_+=weight*weight;
           counter_++;
         }
-        KDEnorm_=sum_weights_;
+        KDEnorm_=mode::explore?counter_:sum_weights_;
         if(!no_Zed_)
         {
           double sum_uprob=0;
@@ -607,7 +663,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
 
 //set initial old values
-  KDEnorm_=sum_weights_;
+  KDEnorm_=mode::explore?counter_:sum_weights_;
   old_KDEnorm_=KDEnorm_;
   old_Zed_=Zed_;
 
@@ -691,7 +747,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   log.printf("\n");
 }
 
-void OPESmetad::calculate()
+template <class mode>
+void OPESmetad<mode>::calculate()
 {
   std::vector<double> cv(ncv_);
   for(unsigned i=0; i<ncv_; i++)
@@ -717,7 +774,8 @@ void OPESmetad::calculate()
   afterCalculate_=true;
 }
 
-void OPESmetad::update()
+template <class mode>
+void OPESmetad<mode>::update()
 {
   if(isFirstStep_)//same in MetaD, useful for restarts?
   {
@@ -787,24 +845,39 @@ void OPESmetad::update()
   const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
-  KDEnorm_=sum_weights_;
+  if(mode::explore)
+  {
+    KDEnorm_=counter_;
+    //in opes explore the kernel height=1, because it is not multiplied by the weight
+    height=1;
+  }
+  else
+    KDEnorm_=sum_weights_;
 
 //if needed, rescale sigma and height
   std::vector<double> sigma=sigma0_;
   if(sigma0_.size()==0)
   {
     sigma.resize(ncv_);
-    if(counter_==1+NumWalkers_)
-    { //very first estimate is from unbiased, thus must be adjusted
+    if(mode::explore)
+    {
       for(unsigned i=0; i<ncv_; i++)
-        av_M2_[i]/=(1-bias_prefactor_);
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_);
     }
-    for(unsigned i=0; i<ncv_; i++)
-      sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+    else
+    {
+      if(counter_==1+NumWalkers_)
+      { //very first estimate is from unbiased, thus must be adjusted
+        for(unsigned i=0; i<ncv_; i++)
+          av_M2_[i]/=(1-bias_prefactor_);
+      }
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+    }
   }
   if(!fixed_sigma_)
   {
-    const double size=neff; //for EXPLORE neff is not relevant
+    const double size=mode::explore?counter_:neff; //for EXPLORE neff is not relevant
     const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
     for(unsigned i=0; i<ncv_; i++)
       sigma[i]*=s_rescaling;
@@ -891,7 +964,8 @@ void OPESmetad::update()
   }
 }
 
-double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
+template <class mode>
+double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
@@ -909,12 +983,14 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
   return prob;
 }
 
-void OPESmetad::addKernel(const kernel &new_kernel,const bool write_to_file)
+template <class mode>
+void OPESmetad<mode>::addKernel(const kernel &new_kernel,const bool write_to_file)
 {
   addKernel(new_kernel.height,new_kernel.center,new_kernel.sigma,write_to_file);
 }
 
-void OPESmetad::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
+template <class mode>
+void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const bool write_to_file)
 {
   bool no_match=true;
   if(threshold2_!=0)
@@ -967,7 +1043,8 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
   }
 }
 
-unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
+template <class mode>
+unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
@@ -1002,7 +1079,8 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
   return min_k;
 }
 
-void OPESmetad::dumpStateToFile()
+template <class mode>
+void OPESmetad<mode>::dumpStateToFile()
 {
 //gather adaptive sigma info if needed
 //doing this while writing to file can lead to misterious slowdowns
@@ -1108,7 +1186,8 @@ void OPESmetad::dumpStateToFile()
     stateOfile_.flush();
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x) const
+template <class mode>
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x) const
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -1121,7 +1200,8 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
+template <class mode>
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   std::vector<double> diff(ncv_);
@@ -1138,7 +1218,8 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return val;
 }
 
-inline void OPESmetad::kernel::merge_me_with(const kernel & other)
+template <class mode>
+inline void OPESmetad<mode>::kernel::merge_me_with(const kernel & other)
 {
   const double h=height+other.height;
   for(unsigned i=0; i<center.size(); i++)
