@@ -1073,7 +1073,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // for performance
-  dp_.reset( new double[getNumberOfArguments()] );
+  dp_=Tools::make_unique<double[]>(getNumberOfArguments());
 
   // initializing and checking grid
   if(grid_) {
@@ -1670,7 +1670,7 @@ void MetaD::calculate()
 
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
-  std::unique_ptr<double[]> der(new double[ncv]);
+  auto der = Tools::make_unique<double[]>(ncv);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
     der[i]=0.;
