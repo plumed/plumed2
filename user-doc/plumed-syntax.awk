@@ -9,6 +9,7 @@ BEGIN{inside=0}{
     sub("</pre>","");
     if(!match($0,"BEGIN_PLUMED_FILE")) { 
        print;
+       fflush();
        next;
     }
   }
