@@ -22,3 +22,16 @@ testGetIndiciesByIndex
 0 4 
 testGetIndiciesByPointVector
 0 5 
+testGetPointByIndex
+0 1.14 
+testGetNearestNeighbors
+0 0 
+1 2 
+testGetSize
+6
+testGetValue
+0.0031
+testAddValue
+0.0031
+1.0031
+testOutputFormat

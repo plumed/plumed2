@@ -120,9 +120,8 @@ int testGetIndiciesByIndex(std::ofstream &ofs) {
   std::unique_ptr<GridBase> gridBase = createGrid();
   std::vector<unsigned> property = gridBase->getIndices(4);
   for (int i = 0; i < property.size(); ++i) {
-    ofs << i << " " << property[i] << ' ';
+    ofs << i << " " << property[i] << ' ' << std::endl;
   }
-  ofs << std::endl;
   return 0;
 }
 
@@ -132,9 +131,61 @@ int testGetIndiciesByPointVector(std::ofstream &ofs) {
   const std::vector<double> vector = {1.32};
   std::vector<unsigned> property = gridBase->getIndices(vector);
   for (int i = 0; i < property.size(); ++i) {
-    ofs << i << " " << property[i] << ' ';
+    ofs << i << " " << property[i] << ' ' << std::endl;
   }
-  ofs << std::endl;
+  return 0;
+}
+
+int testGetPointByIndex(std::ofstream &ofs) {
+  ofs << "testGetPointByIndex" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  std::vector<double> property = gridBase->getPoint(0);
+  for (int i = 0; i < property.size(); ++i) {
+    ofs << i << " " << property[i] << ' ' << std::endl;
+  }
+  return 0;
+}
+
+int testGetNearestNeighbors(std::ofstream &ofs) {
+  ofs << "testGetNearestNeighbors" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  std::vector<GridBase::index_t> property = gridBase->getNearestNeighbors(1);
+  for (int i = 0; i < property.size(); ++i) {
+    ofs << i << " " << property[i] << ' ' << std::endl;
+  }
+  return 0;
+}
+
+int testGetSize(std::ofstream &ofs) {
+  ofs << "testGetSize" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  unsigned property = gridBase->getSize();
+  ofs << property << std::endl;
+  return 0;
+}
+
+int testGetValue(std::ofstream &ofs) {
+  ofs << "testGetValue" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  double property = gridBase->getValue(0);
+  ofs << property << std::endl;
+  return 0;
+}
+
+int testAddValue(std::ofstream &ofs) {
+  ofs << "testAddValue" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  ofs << gridBase->getValue(0) << std::endl;
+  gridBase->addValue(0, 1.0);
+  ofs << gridBase->getValue(0) << std::endl;
+  return 0;
+}
+
+int testOutputFormat(std::ofstream &ofs) {
+  ofs << "testOutputFormat" << std::endl;
+  std::unique_ptr<GridBase> gridBase = createGrid();
+  gridBase->setOutputFmt("%14.9f");
+  gridBase->resetToDefaultOutputFmt();
   return 0;
 }
 
@@ -152,5 +203,11 @@ int main() {
   testHasDerivatives(ofs);
   testGetIndiciesByIndex(ofs);
   testGetIndiciesByPointVector(ofs);
+  testGetPointByIndex(ofs);
+  testGetNearestNeighbors(ofs);
+  testGetSize(ofs);
+  testGetValue(ofs);
+  testAddValue(ofs);
+  testOutputFormat(ofs);
   return 0;
 }
