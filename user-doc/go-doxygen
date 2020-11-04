@@ -54,7 +54,7 @@ cd build
 for file in ../../html/*.html
 do
 echo final processing of html for file: $file
-awk -v version="$version" '{
+gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
     sub("Page","("version")",$0);
