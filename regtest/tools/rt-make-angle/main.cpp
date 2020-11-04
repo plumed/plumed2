@@ -33,8 +33,8 @@ int testCompute4Vectors45Degrees(std::ofstream &ofs) {
   Angle angle;
   double result = angle.compute(vector1, vector2, d1, d2);
   ofs << result << std::endl;
-  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
-  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
+  ofs << d1 << std::endl;
+  ofs << d2 << std::endl;
   return 0;
 }
 
@@ -46,8 +46,8 @@ int testCompute4VectorsParallel(std::ofstream &ofs) {
   Angle angle;
   double result = angle.compute(vector1, vector2, d1, d2);
   ofs << result << std::endl;
-  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
-  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
+  ofs << d1 << std::endl;
+  ofs << d2 << std::endl;
   return 0;
 }
 
@@ -59,8 +59,8 @@ int testCompute4VectorsAntiParallel(std::ofstream &ofs) {
   Angle angle;
   double result = angle.compute(vector1, vector2, d1, d2);
   ofs << result << std::endl;
-  ofs << d1[0] << " " << d1[1] << " " << d1[2] << std::endl;
-  ofs << d2[0] << " " << d2[1] << " " << d2[2] << std::endl;
+  ofs << d1 << std::endl;
+  ofs << d2 << std::endl;
   return 0;
 }
 

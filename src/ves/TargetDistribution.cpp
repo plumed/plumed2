@@ -33,7 +33,6 @@
 #include "tools/Keywords.h"
 
 #include "GridProjWeights.h"
-#include <iostream>
 
 namespace PLMD {
 namespace ves {

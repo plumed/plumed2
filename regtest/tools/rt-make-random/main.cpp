@@ -13,60 +13,81 @@ int testConstructor(std::ofstream &ofs) {
 
 int testRandU01(std::ofstream &ofs) {
   ofs << "testRandU01" << std::endl;
-  Random *random = new Random("random");
-  ofs << random->RandU01() << std::endl;
-  random->IncreasedPrecis(true);
-  ofs << random->RandU01() << std::endl;
+  Random random("random");
+  ofs << random.RandU01() << std::endl;
+  random.IncreasedPrecis(true);
+  ofs << random.RandU01() << std::endl;
   return 0;
 }
 
 int testU01d(std::ofstream &ofs) {
   ofs << "testU01d" << std::endl;
-  Random *random = new Random("random");
-  ofs << random->U01d() << std::endl;
+  Random random("random");
+  ofs << random.U01d() << std::endl;
   return 0;
 }
 
 int testU01(std::ofstream &ofs) {
   ofs << "testU01" << std::endl;
-  Random *random = new Random("random");
-  ofs << random->U01() << std::endl;
+  Random random("random");
+  ofs << random.U01() << std::endl;
   return 0;
 }
 
 int testWriteStateFull(std::ofstream &ofs) {
   ofs << "testWriteStateFull" << std::endl;
-  Random *random = new Random("random");
-  random->WriteStateFull(ofs);
+  Random random("random");
+  random.WriteStateFull(ofs);
   return 0;
 }
 
-int testString(std::ofstream &ofs) {
-  ofs << "testString" << std::endl;
-  Random *random = new Random("random");
+int testStringSimple(std::ofstream &ofs) {
+  ofs << "testStringSimple" << std::endl;
+  Random random("random");
   std::string str = "";
-  random->toString(str);
+  random.U01();
+  random.toString(str);
   ofs << str << std::endl;
-  random->fromString(str);
+  random.fromString(str);
+  return 0;
+}
+
+int testStringComplex(std::ofstream &ofs) {
+  ofs << "testStringComplex" << std::endl;
+  Random random("random");
+  std::string str = "";
+  random.toString(str);
+  ofs << str << std::endl;
+  random.fromString(str);
   return 0;
 }
 
 int testGaussian(std::ofstream &ofs) {
   ofs << "testGaussian" << std::endl;
-  Random *random = new Random("random");
-  double result = random->Gaussian();
+  Random random("random");
+  double result = random.Gaussian();
   ofs << result << std::endl;
   return 0;
 }
 
-int testShuffle(std::ofstream &ofs) {
-  ofs << "testShuffle" << std::endl;
-  Random *random = new Random("random");
+int testShuffleSimple(std::ofstream &ofs) {
+  ofs << "testShuffleSimple" << std::endl;
+  Random random("random");
   std::vector<unsigned> vector = {1, 2};
-  random->Shuffle(vector);
+  random.Shuffle(vector);
   ofs << vector[0] << " " << vector[1] << std::endl;
   return 0;
 }
+
+int testShuffleComplex(std::ofstream &ofs) {
+  ofs << "testShuffleComplex" << std::endl;
+  Random random("random");
+  std::vector<unsigned> vector = {1, 2, 3, 4};
+  random.Shuffle(vector);
+  ofs << vector[0] << " " << vector[1] << " " << vector[2] << " " << vector[3] << std::endl;
+  return 0;
+}
+
 
 int main() {
   std::ofstream ofs("output");
@@ -75,8 +96,10 @@ int main() {
   testU01d(ofs);
   testU01(ofs);
   testWriteStateFull(ofs);
-  testString(ofs);
+  testStringSimple(ofs);
+  testStringComplex(ofs);
   testGaussian(ofs);
-  testShuffle(ofs);
+  testShuffleSimple(ofs);
+  testShuffleComplex(ofs);
   return 0;
 }

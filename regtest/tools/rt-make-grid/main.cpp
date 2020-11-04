@@ -15,6 +15,7 @@ std::unique_ptr<GridBase> createGrid() {
   const std::vector<Value *> grid_args_ = {value};
   std::unique_ptr<GridBase> gridBase = GridBase::create(
       "external.bias", grid_args_, gridfile, false, false, false);
+  delete value;
   return gridBase;
 }
 

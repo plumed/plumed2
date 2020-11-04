@@ -11,14 +11,14 @@ using namespace PLMD;
 
 int testConstructor(std::ofstream &ofs) {
   ofs << "testConstructor" << std::endl;
-  Value *value = new Value();
+  std::unique_ptr<Value> value (new Value());
   ofs << value->get() << std::endl;
   return 0;
 }
 
 int testConstructorWithName(std::ofstream &ofs) {
   ofs << "testConstructorWithName" << std::endl;
-  Value *value = new Value("name");
+  std::unique_ptr<Value> value (new Value());
   ofs << value->get() << std::endl;
   return 0;
 }
