@@ -36,6 +36,8 @@ jobs:
       matrix:
         variant: [ "" , "+allmodules" ]
         # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
+    env:
+      PYVERS: "py36 py37"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -56,8 +58,14 @@ jobs:
       run: |
         sudo port -N -k install plumed ${{ matrix.variant }}
         plumed config show
+        for p in $PYVERS ; do
+          sudo port -N install $p-plumed
+        done
         source ./macports-ci ccache --save
     - name: Run tests
       run: |
         # these can fail for numerical reasons in Catalina with v2.4
         sudo port -N -d test plumed ${{ matrix.variant }} || true
+        for p in $PYVERS ; do
+          sudo port test $p-plumed
+        done
