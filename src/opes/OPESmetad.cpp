@@ -977,7 +977,7 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
       continue;
     double dist2=0;
     for(unsigned i=0; i<ncv_; i++)
-    { 
+    {
       const double d=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
       dist2+=d*d;
       if(dist2>=min_dist2)
