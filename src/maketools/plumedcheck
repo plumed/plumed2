@@ -264,7 +264,10 @@ BEGINFILE{
 # DOC: When you modify the latter, the former should be regenerated using `autoconf` and
 # DOC: committed to git. This error indicates that the `./configure.ac` and `./configure` files
 # DOC: in the repository are not consistent.
-    if(s!=0) error("autoconf","autoconf not satisfied")
+# DOC: Notice that Ubuntu 16 ships with an autoconf version that is not standard
+# DOC: (2.69 + some patch). This makes this test report a false positive.
+# DOC: This is thus changed to a style warning.
+    if(s!=0) style("autoconf","autoconf not satisfied")
     system("rm " tempfile)
   }
 

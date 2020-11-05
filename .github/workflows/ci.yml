@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  codecheck:
+    env:
+      CC: gcc
+      CXX: g++
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set path
+      run: |
+         echo "$HOME/opt/bin" >> $GITHUB_PATH
+    - name: Install requirements
+      run: |
+        ./.travis/install.cppcheck 1.87
+        ./.travis/install.gawk 4.2.1
+    - name: Build astyle
+      run: |
+        make -j 4 -C astyle
+    - name: Checking code
+      run: |
+        # this is required so as to have all the include files in place
+        # notice that this is done automatically in build
+        make -C src/lib/ dirslinks
+        make codecheck
