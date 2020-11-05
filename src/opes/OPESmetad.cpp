@@ -161,8 +161,16 @@ private:
   double val_at_cutoff_;
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
   inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
-  std::vector<kernel> kernels_;
+  std::vector<kernel> kernels_; // all kernels
   OFile kernelsOfile_;
+
+  // neighbour list stuff
+  bool use_Kneighb_;
+  std::vector<kernel> neigh_kernels_;
+  double neigh_cutoff2_;
+  std::vector<double> neigh_center_;
+  std::vector<double> neigh_dev2_;
+  bool neigh_update_;
 
   bool calc_work_;
   double work_;
@@ -184,6 +192,7 @@ public:
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
+  void update_Kneighb();
   void dumpStateToFile();
 };
 
@@ -202,6 +211,7 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
+  keys.addFlag("NEIGHBOR",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
@@ -318,6 +328,14 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   threshold2_*=threshold2_;
   if(threshold2_!=0)
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
+
+  /*setup neighbor list stuff*/
+  use_Kneighb_=false;
+  parseFlag("NEIGHBOR", use_Kneighb_); 
+  neigh_cutoff2_=2.3*cutoff2_;
+  neigh_center_.resize(ncv_);
+  neigh_dev2_.resize(ncv_);
+
 
 //optional stuff
   no_Zed_=false;
@@ -694,8 +712,15 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 void OPESmetad::calculate()
 {
   std::vector<double> cv(ncv_);
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     cv[i]=getArgument(i);
+    if(use_Kneighb_) {
+      double d = difference(i, cv[i], neigh_center_[i]);
+      double nk_dist2 = d*d/neigh_dev2_[i];
+      if(nk_dist2>0.6) neigh_update_=true;
+    }
+  }
+  if(neigh_update_&&use_Kneighb_) update_Kneighb();
 
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
@@ -889,13 +914,20 @@ void OPESmetad::update()
     Zed_=sum_uprob/KDEnorm_/kernels_.size();
     getPntrToComponent("zed")->set(Zed_);
   }
+  neigh_update_=true;
 }
 
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
-    prob+=evaluateKernel(kernels_[k],cv,der_prob);
+  if(!use_Kneighb_) {
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+      prob+=evaluateKernel(kernels_[k],cv,der_prob);
+  } else {
+    for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
+      prob+=evaluateKernel(neigh_kernels_[k],cv,der_prob);
+  }
+
   if(NumParallel_>1)
   {
     comm.Sum(prob);
@@ -996,10 +1028,38 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
     comm.Allgather(min_dist2,all_min_dist2);
     comm.Allgather(min_k,all_min_k);
     const unsigned best=std::distance(std::begin(all_min_dist2),std::min_element(std::begin(all_min_dist2),std::end(all_min_dist2)));
-    if(all_min_dist2[best]<threshold2_)
-      min_k=all_min_k[best];
+    min_k=all_min_k[best];
   }
   return min_k;
+}
+
+void OPESmetad::update_Kneighb() {
+  neigh_kernels_.clear();
+  for(unsigned k=0; k<kernels_.size(); k++)
+  {
+    double dist2=0;
+    for(unsigned i=0; i<ncv_; i++)
+    { 
+      const double d=difference(i,getArgument(i),kernels_[k].center[i])/kernels_[k].sigma[i];
+      dist2+=d*d;
+    }
+    if(dist2<=neigh_cutoff2_) neigh_kernels_.push_back(kernels_[k]);
+  }
+  std::vector<double> dev2;
+  dev2.resize(ncv_,0);
+  for(unsigned k=0; k<neigh_kernels_.size(); k++)
+  {
+    for(unsigned i=0; i<ncv_; i++)
+    { 
+      const double d=difference(i,getArgument(i),neigh_kernels_[k].center[i]);
+      dev2[i]+=d*d;
+    }
+  }
+  for(unsigned i=0; i<ncv_; i++) {
+    neigh_center_[i]=getArgument(i);
+    neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_kernels_.size());
+  }
+  neigh_update_=false;
 }
 
 void OPESmetad::dumpStateToFile()
