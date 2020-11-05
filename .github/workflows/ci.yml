@@ -17,8 +17,8 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 1.87
-        ./.travis/install.gawk 4.2.1
+        ./.travis/install.cppcheck 1.88
+        ./.travis/install.gawk 5.0.1
     - name: Build astyle
       run: |
         make -j 4 -C astyle
