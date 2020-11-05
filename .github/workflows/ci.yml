@@ -28,3 +28,44 @@ jobs:
         # notice that this is done automatically in build
         make -C src/lib/ dirslinks
         make codecheck
+
+  macports:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ "" , "+allmodules" ]
+        # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
+    env:
+      PYVERS: "py36 py37"
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.macports-ci-ccache
+        key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
+        restore-keys: ccache-macports-${{ matrix.variant }}-
+    - name: Install MacPorts
+      run: |
+        wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
+        source ./macports-ci install
+        source ./macports-ci ccache
+    - name: Build local Portfile
+      run: |
+        make macports
+        source ./macports-ci localports macports
+    - name: Build PLUMED
+      run: |
+        sudo port -N -k install plumed ${{ matrix.variant }}
+        plumed config show
+        for p in $PYVERS ; do
+          sudo port -N install $p-plumed
+        done
+        source ./macports-ci ccache --save
+    - name: Run tests
+      run: |
+        # these can fail for numerical reasons in Catalina with v2.5
+        sudo port -N -d test plumed ${{ matrix.variant }} || true
+        for p in $PYVERS ; do
+          sudo port test $p-plumed
+        done
