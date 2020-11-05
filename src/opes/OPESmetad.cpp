@@ -331,7 +331,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 
   /*setup neighbor list stuff*/
   use_Kneighb_=false;
-  parseFlag("NEIGHBOR", use_Kneighb_); 
+  parseFlag("NEIGHBOR", use_Kneighb_);
   neigh_cutoff2_=2.3*cutoff2_;
   neigh_center_.resize(ncv_);
   neigh_dev2_.resize(ncv_);
@@ -1009,7 +1009,7 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
       continue;
     double dist2=0;
     for(unsigned i=0; i<ncv_; i++)
-    { 
+    {
       const double d=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
       dist2+=d*d;
       if(dist2>=min_dist2)
@@ -1039,7 +1039,7 @@ void OPESmetad::update_Kneighb() {
   {
     double dist2=0;
     for(unsigned i=0; i<ncv_; i++)
-    { 
+    {
       const double d=difference(i,getArgument(i),kernels_[k].center[i])/kernels_[k].sigma[i];
       dist2+=d*d;
     }
@@ -1050,7 +1050,7 @@ void OPESmetad::update_Kneighb() {
   for(unsigned k=0; k<neigh_kernels_.size(); k++)
   {
     for(unsigned i=0; i<ncv_; i++)
-    { 
+    {
       const double d=difference(i,getArgument(i),neigh_kernels_[k].center[i]);
       dev2[i]+=d*d;
     }
