@@ -716,7 +716,7 @@ void OPESmetad::calculate()
     if(use_Kneighb_) {
       double d = difference(i, cv[i], neigh_center_[i]);
       double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) neigh_update_=true;
+      if(nk_dist2>0.6) {neigh_update_=true; break;}
     }
   }
   if(neigh_update_&&use_Kneighb_) update_Kneighb();
@@ -1027,7 +1027,8 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
     comm.Allgather(min_dist2,all_min_dist2);
     comm.Allgather(min_k,all_min_k);
     const unsigned best=std::distance(std::begin(all_min_dist2),std::min_element(std::begin(all_min_dist2),std::end(all_min_dist2)));
-    min_k=all_min_k[best];
+    if(all_min_dist2[best]<threshold2_)
+      min_k=all_min_k[best];
   }
   return min_k;
 }
