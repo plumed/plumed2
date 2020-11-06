@@ -21,6 +21,7 @@ jobs:
       matrix:
         variant:
         - -doc-mpi-
+        - -coverage-mpi-
         - -debug-
         - -debug-mpi-
     steps:
@@ -61,8 +62,12 @@ jobs:
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         ./.travis/install.doxygen Release_1_8_14
-        ./.travis/install.lcov v1.13
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov --enable-pdfdoc CXXFLAGS=-O0" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc " >> $GITHUB_ENV
+    - name: Install lcov
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+        ./.travis/install.lcov v1.14
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
     - name: Setup debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
@@ -78,9 +83,9 @@ jobs:
     - name: Build PLUMED
       run: |
         ccache -s
-        ./configure --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG
+        ./configure --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
         make -j 4
-        make install prefix="$HOME/opt"
+        make install
         ccache -s
     - name: Run tests
       run: |
@@ -90,8 +95,11 @@ jobs:
     - name: Build doc
       if: contains( matrix.variant, '-doc-' )
       run: |
-         make -C developer-doc coverage
          make doc >/dev/null
+    - name: Coverage
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+         make -C developer-doc coverage
 
   codecheck:
     runs-on: ubuntu-latest
