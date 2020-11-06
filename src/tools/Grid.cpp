@@ -367,7 +367,7 @@ void GridBase::addKernel( const KernelFunctions& kernel ) {
   std::vector<std::unique_ptr<Value>> vv( dimension_ );
   std::string str_min, str_max;
   for(unsigned i=0; i<dimension_; ++i) {
-    vv[i].reset(new Value());
+    vv[i]=Tools::make_unique<Value>();
     if( pbc_[i] ) {
       Tools::convert(min_[i],str_min);
       Tools::convert(max_[i],str_max);
@@ -598,8 +598,8 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
     }
   }
 
-  if(!dosparse) {grid.reset(new Grid(funcl,args,gmin,gmax,gbin,dospline,doder));}
-  else {grid.reset(new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder));}
+  if(!dosparse) {grid=Tools::make_unique<Grid>(funcl,args,gmin,gmax,gbin,dospline,doder);}
+  else {grid=Tools::make_unique<SparseGrid>(funcl,args,gmin,gmax,gbin,dospline,doder);}
 
   vector<double> xx(nvar),dder(nvar);
   vector<double> dx=grid->getDx();

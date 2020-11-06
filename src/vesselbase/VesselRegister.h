@@ -67,7 +67,7 @@ VesselRegister& vesselRegister();
 
 #define PLUMED_REGISTER_VESSEL(classname,keyword) \
   static class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::vesselbase::Vessel> create(const PLMD::vesselbase::VesselOptions&da){return std::unique_ptr<classname>( new classname(da) );} \
+    static std::unique_ptr<PLMD::vesselbase::Vessel> create(const PLMD::vesselbase::VesselOptions&da){return Tools::make_unique<classname>(da);} \
   public: \
     classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);} \

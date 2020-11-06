@@ -37,7 +37,7 @@ PammObject::PammObject( const PammObject& in ):
   min(in.min),
   max(in.max)
 {
-  for(unsigned i=0; i<in.kernels.size(); ++i) kernels.emplace_back( new KernelFunctions( in.kernels[i].get() ) );
+  for(unsigned i=0; i<in.kernels.size(); ++i) kernels.emplace_back( Tools::make_unique<KernelFunctions>( in.kernels[i].get() ) );
 }
 
 void PammObject::setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
@@ -55,7 +55,7 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
   max.resize( valnames.size() );
   for(unsigned i=0; i<valnames.size(); ++i) {
     pbc[i]=pbcin[i]; min[i]=imin[i]; max[i]=imax[i];
-    pos.emplace_back( new Value() );
+    pos.emplace_back( Tools::make_unique<Value>() );
     if( !pbc[i] ) pos[i]->setNotPeriodic();
     else pos[i]->setDomain( min[i], max[i] );
   }
@@ -74,7 +74,7 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
 void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>& outvals, std::vector<std::vector<double> >& der ) const {
   std::vector<std::unique_ptr<Value>> pos;
   for(unsigned i=0; i<pbc.size(); ++i) {
-    pos.emplace_back( new Value() );
+    pos.emplace_back( Tools::make_unique<Value>() );
     if( !pbc[i] ) pos[i]->setNotPeriodic();
     else pos[i]->setDomain( min[i], max[i] );
     // And set the value

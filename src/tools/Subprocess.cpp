@@ -97,7 +97,7 @@ Subprocess::Subprocess(const std::string & cmd) {
   }
 // PARENT::
   default:
-    this->pid.reset(new SubprocessPid(pid));
+    this->pid=Tools::make_unique<SubprocessPid>(pid);
     if(close(pc[0])<0) plumed_error()<<"error closing file";
     if(close(cp[1])<0) plumed_error()<<"error closing file";
     fpc=pc[1];
