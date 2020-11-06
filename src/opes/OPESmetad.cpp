@@ -170,6 +170,7 @@ private:
   std::vector<double> neigh_center_;
   std::vector<double> neigh_dev2_;
   bool neigh_update_;
+  unsigned neigh_steps_;
 
   bool calc_work_;
   double work_;
@@ -233,6 +234,8 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
+  keys.addOutputComponent("nbker","NEIGHBOR","number of kernels in the neighbor list");
+  keys.addOutputComponent("nbsteps","NEIGHBOR","number of steps from last neighbor list update");
 }
 
 OPESmetad::OPESmetad(const ActionOptions& ao)
@@ -334,7 +337,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   neigh_cutoff2_=2.3*cutoff2_;
   neigh_center_.resize(ncv_);
   neigh_dev2_.resize(ncv_);
-
+  neigh_steps_=0;
+  neigh_update_=false;
 
 //optional stuff
   no_Zed_=false;
@@ -406,6 +410,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 //restart if needed
   if(getRestart())
   {
+    neigh_update_=true;
     bool stateRestart=true;
     if(restartFileName.length()==0)
     {
@@ -646,6 +651,13 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     addComponent("work");
     componentIsNotPeriodic("work");
   }
+  if(use_Kneighb_)
+  {
+    addComponent("nbker");
+    componentIsNotPeriodic("nbker");
+    addComponent("nbsteps");
+    componentIsNotPeriodic("nbsteps");
+  }
 
 //printing some info
   log.printf("  temperature = %g\n",kbt_/Kb);
@@ -710,6 +722,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 
 void OPESmetad::calculate()
 {
+  if(use_Kneighb_) neigh_steps_++;
   std::vector<double> cv(ncv_);
   for(unsigned i=0; i<ncv_; i++) {
     cv[i]=getArgument(i);
@@ -1035,6 +1048,9 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
 }
 
 void OPESmetad::update_Kneighb() {
+  // no need to check for neighbors
+  if(kernels_.size()==0) return;
+
   neigh_kernels_.clear();
   for(unsigned k=0; k<kernels_.size(); k++)
   {
@@ -1058,8 +1074,12 @@ void OPESmetad::update_Kneighb() {
   }
   for(unsigned i=0; i<ncv_; i++) {
     neigh_center_[i]=getArgument(i);
-    neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_kernels_.size());
+    if(dev2[i]>0.) neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_kernels_.size());
+    else neigh_dev2_[i]=kernels_.back().sigma[i]*kernels_.back().sigma[i];
   }
+  getPntrToComponent("nbker")->set(neigh_kernels_.size());
+  getPntrToComponent("nbsteps")->set(neigh_steps_);
+  neigh_steps_=0;
   neigh_update_=false;
 }
 
