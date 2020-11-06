@@ -178,9 +178,9 @@ jobs:
     - name: Build PLUMED
       run: |
         brew update > /dev/null
-        ./configure --disable-dependency-tracking
+        ./configure --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
-        make install prefix="$HOME/opt"
+        make install
     - name: Run tests
       run: |
          make --no-print-directory -C regtest
