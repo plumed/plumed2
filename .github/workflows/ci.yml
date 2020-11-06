@@ -74,11 +74,12 @@ jobs:
         sudo apt-get install -y libopenmpi-dev openmpi-bin
         echo "CC=mpicc" >> $GITHUB_ENV
         echo "CXX=mpic++" >> $GITHUB_ENV
-        echo "PLUMED_MPIRUN=mpirun --mca btl_base_verbose 0 --mca btl_base_warn_component_unused 0" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
         ccache -s
-        ./configure --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG
         make -j 4
         make install prefix="$HOME/opt"
         ccache -s
