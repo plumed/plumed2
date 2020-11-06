@@ -194,6 +194,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
-    - name: Test
+    - name: Install conda
       run: |
+        curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
+        source ./conda-ci install
+        source ./conda-ci install-conda-build
+    - name: Build PLUMED
+      run: |
+        source activate base
         VERSION=none make -C conda
