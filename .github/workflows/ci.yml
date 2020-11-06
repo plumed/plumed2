@@ -160,11 +160,9 @@ jobs:
       run: |
         # these can fail for numerical reasons in Catalina with v2.5
         sudo port -N -d test plumed ${{ matrix.variant }} || true
-<<<<<<< HEAD
         for p in $PYVERS ; do
           sudo port test $p-plumed
         done
-=======
 
   macsimple:
     runs-on: macos-latest
@@ -188,4 +186,3 @@ jobs:
          make --no-print-directory -C regtest
          # these can fail for numerical reasons
          make -C regtest checkfail || true
->>>>>>> v2.4-gh-workflow
