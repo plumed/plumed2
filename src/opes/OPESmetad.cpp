@@ -719,6 +719,7 @@ void OPESmetad::calculate()
       if(nk_dist2>0.6) {neigh_update_=true; break;}
     }
   }
+  if(getExchangeStep()) neigh_update_=true;
   if(neigh_update_&&use_Kneighb_) update_Kneighb();
 
   std::vector<double> der_prob(ncv_,0);
