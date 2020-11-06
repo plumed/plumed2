@@ -5,10 +5,12 @@ set -e
 # Anywhere but outside of the repository
 export CONDA_HOME=/var/tmp/miniconda
 
-if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+if [[ "$(uname)" == Linux ]]; then
     csys=Linux
-elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    OS_NAME=linux
+elif [[ "$(uname)" == "Darwin" ]]; then
     csys=MacOSX
+    OS_NAME=osx
     PREV=$(pwd)
     cd /var/tmp
     mkdir MacOSX-SDKs
@@ -18,7 +20,7 @@ elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     rm MacOSX10.9.sdk.tar.xz
     cd $PREV
 else
-    echo "Unsupported system $TRAVIS_OS_NAME"
+    echo "Unsupported system $(uname)"
     exit 1
 fi
     
@@ -37,5 +39,5 @@ conda-build -c conda-forge plumed
 conda-build -c conda-forge py-plumed
 
 ls -l $CONDA_HOME/conda-bld/
-ls -l $CONDA_HOME/conda-bld/$TRAVIS_OS_NAME-64
+ls -l $CONDA_HOME/conda-bld/$OS_NAME-64
 

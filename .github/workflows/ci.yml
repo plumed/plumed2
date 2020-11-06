@@ -186,3 +186,15 @@ jobs:
          make --no-print-directory -C regtest
          # these can fail for numerical reasons
          make -C regtest checkfail || true
+
+  conda:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest , macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test
+      run: |
+        VERSION=none make -C conda
