@@ -683,7 +683,8 @@ void Keywords::removeComponent( const std::string& name ) {
   bool found=false;
 
   while(true) {
-    for(unsigned j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
+    unsigned j;
+    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
     if(j<cnames.size()) {
       cnames.erase(cnames.begin()+j);
       found=true;
