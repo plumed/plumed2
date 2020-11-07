@@ -195,6 +195,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
-    - name: Test
+    - name: Build
       run: |
-        VERSION=none make -C conda
+        export VERSION=none
+        if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+          VERSION=${GITHUB_REF#refs/tag}
+          VERSION=${VERSION//-/_}
+        fi
+        make -C conda
+    - name: Deploy
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+      if: startsWith( github.ref , "refs/tags/" )
+      run: |
+        export CONDA_LABEL=tag
+        make -C conda upload
