@@ -16,7 +16,7 @@ jobs:
       with:
         ref: ${{ matrix.branch }}
     - name: Install conda
-        run: |
+      run: |
           curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
           source ./conda-ci install
           source ./conda-ci install-conda-build
