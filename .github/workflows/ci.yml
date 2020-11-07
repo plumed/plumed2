@@ -201,6 +201,7 @@ jobs:
         if [[ $GITHUB_REF == "refs/tags/"* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION//-/_}
+          VERSION=${VERSION#v}
         fi
         make -C conda
     - name: Deploy
