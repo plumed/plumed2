@@ -202,4 +202,17 @@ jobs:
     - name: Build PLUMED
       run: |
         source activate base
+        export VERSION=none
+        if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+          VERSION=${GITHUB_REF#refs/tag}
+          VERSION=${VERSION//-/_}
+        fi
         VERSION=none make -C conda
+    - name: Deploy
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+      if: ${{ startsWith( github.ref , 'refs/tags/' ) }}
+      run: |
+        source activate base
+        export CONDA_LABEL=tag
+        make -C conda upload
