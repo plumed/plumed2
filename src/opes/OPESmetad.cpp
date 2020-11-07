@@ -1217,7 +1217,8 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
   return val;
 }
 
-inline void OPESmetad::mergeKernels(kernel & k1,const kernel & k2)
+template <class mode>
+inline void OPESmetad<mode>::mergeKernels(kernel & k1,const kernel & k2)
 {
   const double h=k1.height+k2.height;
   for(unsigned i=0; i<k1.center.size(); i++)
