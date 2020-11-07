@@ -220,12 +220,6 @@ script:
 
   - CONDA_VERSION=none
   - export CONDA_LABEL=
-# set CONDA_VERSION to TRAVIS_TAG, if available
-  - if test -n "${TRAVIS_TAG}" ; then
-       CONDA_VERSION="${TRAVIS_TAG//-/_}" ;
-       CONDA_VERSION="${CONDA_VERSION#v}" ;
-       CONDA_LABEL=tags ;
-    fi
 # set CONDA_VERSION to branch + date when on nightly build
   - if test "$TRAVIS_EVENT_TYPE" = cron ; then
        if test "$TRAVIS_BRANCH" = master ; then CONDA_VERSION=2.99.$(date +%y%m%d) ; fi ;
