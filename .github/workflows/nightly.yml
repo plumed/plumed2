@@ -1,7 +1,7 @@
 name: Nightly builds
 on: 
   schedule:
-   - cron: "20 22 * * 6"
+   - cron: "0 6 * * 0"
 
 jobs:
   conda:
