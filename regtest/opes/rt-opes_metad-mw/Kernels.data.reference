@@ -1,9 +1,9 @@
 #! FIELDS time psi phi sigma_psi sigma_phi height logweight
 #! SET action OPES_METAD_kernels
-#! SET biasfactor   8.018158
-#! SET epsilon   0.000105
-#! SET kernel_cutoff   4.280338
-#! SET compression_threshold   1.500000
+#! SET biasfactor  8.018158
+#! SET epsilon  0.000105
+#! SET kernel_cutoff  4.280338
+#! SET compression_threshold  1.500000
 #! SET min_psi -pi
 #! SET max_psi pi
 #! SET min_phi -pi
