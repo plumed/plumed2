@@ -736,8 +736,8 @@ void OPESmetad::calculate()
     {
       for(unsigned i=0; i<ncv_; i++)
       {
-        const double d=difference(i,cv[i],neigh_center_[i]);
-        if(d*d>0.6*neigh_dev2_[i])
+        const double diff_i=difference(i,cv[i],neigh_center_[i]);
+        if(diff_i*diff_i>0.6*neigh_dev2_[i])
         {
           neigh_update_=true;
           break;
@@ -791,9 +791,9 @@ void OPESmetad::update()
     for(unsigned i=0; i<ncv_; i++)
     { //Welford's online algorithm for standard deviation
       const double cv_i=getArgument(i);
-      const double diff=difference(i,av_cv_[i],cv_i);
-      av_cv_[i]+=diff/tau; //exponentially decaying average
-      av_M2_[i]+=diff*difference(i,av_cv_[i],cv_i);
+      const double diff_i=difference(i,av_cv_[i],cv_i);
+      av_cv_[i]+=diff_i/tau; //exponentially decaying average
+      av_M2_[i]+=diff_i*difference(i,av_cv_[i],cv_i);
     }
     if(adaptive_counter_<adaptive_sigma_stride_ && counter_==1) //counter_>1 if restarting
       return;  //do not apply bias before having measured sigma
@@ -1027,33 +1027,33 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
 unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
-  double min_dist2=threshold2_;
+  double min_norm2=threshold2_;
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
   {
     if(k==giver_k) //a kernel should not be merged with itself
       continue;
-    double dist2=0;
+    double norm2=0;
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double d=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-      dist2+=d*d;
-      if(dist2>=min_dist2)
+      const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+      norm2+=dist_i*dist_i;
+      if(norm2>=min_norm2)
         break;
     }
-    if(dist2<min_dist2)
+    if(norm2<min_norm2)
     {
-      min_dist2=dist2;
+      min_norm2=norm2;
       min_k=k;
     }
   }
   if(NumParallel_>1)
   {
-    std::vector<double> all_min_dist2(NumParallel_);
+    std::vector<double> all_min_norm2(NumParallel_);
     std::vector<unsigned> all_min_k(NumParallel_);
-    comm.Allgather(min_dist2,all_min_dist2);
+    comm.Allgather(min_norm2,all_min_norm2);
     comm.Allgather(min_k,all_min_k);
-    const unsigned best=std::distance(std::begin(all_min_dist2),std::min_element(std::begin(all_min_dist2),std::end(all_min_dist2)));
-    if(all_min_dist2[best]<threshold2_)
+    const unsigned best=std::distance(std::begin(all_min_norm2),std::min_element(std::begin(all_min_norm2),std::end(all_min_norm2)));
+    if(all_min_norm2[best]<threshold2_)
       min_k=all_min_k[best];
   }
   return min_k;
@@ -1068,25 +1068,22 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
   neigh_kernels_.clear();
   for(unsigned k=0; k<kernels_.size(); k++)
   {
-    double dist2=0;
+    double norm2_k=0;
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double d=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-      dist2+=d*d;
-      if(dist2<=neigh_cutoff2_)
-      {
-        neigh_kernels_.push_back(kernels_[k]);
-        break;
-      }
+      const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+      norm2_k+=dist_ik*dist_ik;
     }
+    if(norm2_k<=neigh_cutoff2_)
+      neigh_kernels_.push_back(kernels_[k]);
   }
   for(unsigned i=0; i<ncv_; i++)
   {
     double dev2_i=0;
     for(unsigned k=0; k<neigh_kernels_.size(); k++)
     {
-      const double d=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
-      dev2_i+=d*d;
+      const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
+      dev2_i+=diff_ik*diff_ik;
     }
     if(dev2_i==0) //e.g. if neigh_kernels_.size()==0
       neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
@@ -1210,8 +1207,8 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
   {
-    const double diff_i=difference(i,G.center[i],x[i])/G.sigma[i];
-    norm2+=diff_i*diff_i;
+    const double dist_i=difference(i,G.center[i],x[i])/G.sigma[i];
+    norm2+=dist_i*dist_i;
     if(norm2>=cutoff2_)
       return 0;
   }
@@ -1221,17 +1218,17 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
 inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
-  std::vector<double> diff(ncv_);
+  std::vector<double> dist(ncv_);
   for(unsigned i=0; i<ncv_; i++)
   {
-    diff[i]=difference(i,G.center[i],x[i])/G.sigma[i];
-    norm2+=diff[i]*diff[i];
+    dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];
+    norm2+=dist[i]*dist[i];
     if(norm2>=cutoff2_)
       return 0;
   }
   const double val=G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
   for(unsigned i=0; i<ncv_; i++)
-    acc_der[i]-=diff[i]/G.sigma[i]*val; //NB: we accumulate the derivative into der
+    acc_der[i]-=dist[i]/G.sigma[i]*val; //NB: we accumulate the derivative into der
   return val;
 }
 
