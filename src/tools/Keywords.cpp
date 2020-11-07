@@ -680,9 +680,10 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
 }
 
 void Keywords::removeComponent( const std::string& name ) {
-  bool found=false; unsigned j=0, n=0;
+  bool found=false;
 
   while(true) {
+    unsigned j;
     for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
     if(j<cnames.size()) {
       cnames.erase(cnames.begin()+j);

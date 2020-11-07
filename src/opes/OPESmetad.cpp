@@ -143,19 +143,18 @@ private:
 
   double threshold2_;
   bool recursive_merge_;
-//kernels for now are diagonal truncated Gaussians
+//kernels are truncated diagonal Gaussians
   struct kernel
   {
     double height;
     std::vector<double> center;
     std::vector<double> sigma;
-
-    inline void merge_me_with(const kernel & );
     kernel(double h, const std::vector<double> & c,const std::vector<double> & s):
       height(h),center(c),sigma(s) {}
   };
   double cutoff2_;
   double val_at_cutoff_;
+  inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
   inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
   std::vector<kernel> kernels_;
@@ -1000,7 +999,7 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
     {
       no_match=false;
       delta_kernels_.emplace_back(-1*kernels_[taker_k].height,kernels_[taker_k].center,kernels_[taker_k].sigma);
-      kernels_[taker_k].merge_me_with(kernel(height,center,sigma));
+      mergeKernels(kernels_[taker_k],kernel(height,center,sigma));
       delta_kernels_.push_back(kernels_[taker_k]);
       if(recursive_merge_) //the overhead is worth it if it keeps low the total number of kernels
       {
@@ -1014,7 +1013,7 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
           delta_kernels_.emplace_back(-1*kernels_[taker_k].height,kernels_[taker_k].center,kernels_[taker_k].sigma);
           if(taker_k>giver_k) //saves time when erasing
             std::swap(taker_k,giver_k);
-          kernels_[taker_k].merge_me_with(kernels_[giver_k]);
+          mergeKernels(kernels_[taker_k],kernels_[giver_k]);
           delta_kernels_.push_back(kernels_[taker_k]);
           kernels_.erase(kernels_.begin()+giver_k);
           giver_k=taker_k;
@@ -1054,8 +1053,8 @@ unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double> &giver_ce
       continue;
     double dist2=0;
     for(unsigned i=0; i<ncv_; i++)
-    { //TODO implement merging through the border for periodic CVs
-      const double d=(kernels_[k].center[i]-giver_center[i])/kernels_[k].sigma[i];
+    {
+      const double d=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
       dist2+=d*d;
       if(dist2>=min_dist2)
         break;
@@ -1218,20 +1217,25 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
   return val;
 }
 
-template <class mode>
-inline void OPESmetad<mode>::kernel::merge_me_with(const kernel & other)
+inline void OPESmetad::mergeKernels(kernel & k1,const kernel & k2)
 {
-  const double h=height+other.height;
-  for(unsigned i=0; i<center.size(); i++)
+  const double h=k1.height+k2.height;
+  for(unsigned i=0; i<k1.center.size(); i++)
   {
-    const double c_i=(height*center[i]+other.height*other.center[i])/h;
-    const double s_my_part=height*(sigma[i]*sigma[i]+center[i]*center[i]);
-    const double s_other_part=other.height*(other.sigma[i]*other.sigma[i]+other.center[i]*other.center[i]);
-    const double s2_i=(s_my_part+s_other_part)/h-c_i*c_i;
-    center[i]=c_i;
-    sigma[i]=sqrt(s2_i);
+    const bool isPeriodic_i=getPntrToArgument(i)->isPeriodic();
+    if(isPeriodic_i)
+      k1.center[i]=k2.center[i]+difference(i,k2.center[i],k1.center[i]); //fix PBC
+    const double c_i=(k1.height*k1.center[i]+k2.height*k2.center[i])/h;
+    const double ss_k1_part=k1.height*(k1.sigma[i]*k1.sigma[i]+k1.center[i]*k1.center[i]);
+    const double ss_k2_part=k2.height*(k2.sigma[i]*k2.sigma[i]+k2.center[i]*k2.center[i]);
+    const double ss_i=(ss_k1_part+ss_k2_part)/h-c_i*c_i;
+    if(isPeriodic_i)
+      k1.center[i]=bringBackInPbc(i,c_i);
+    else
+      k1.center[i]=c_i;
+    k1.sigma[i]=sqrt(ss_i);
   }
-  height=h;
+  k1.height=h;
 }
 
 
