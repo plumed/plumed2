@@ -207,7 +207,7 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION//-/_}
         fi
-        VERSION=none make -C conda
+        make -C conda
     - name: Deploy
       env:
         CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
