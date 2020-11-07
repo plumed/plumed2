@@ -7,7 +7,7 @@ using namespace PLMD;
 
 int testConstructor(std::ofstream &ofs) {
   ofs << "testConstructor" << std::endl;
-  new Random("random");
+  Random random("random");
   return 0;
 }
 
