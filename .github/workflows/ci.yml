@@ -204,7 +204,7 @@ jobs:
         source activate base
         export VERSION=none
         if [[ $GITHUB_REF == "refs/tags/"* ]]; then
-          VERSION=${GITHUB_REF#refs/tag}
+          VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION//-/_}
         fi
         VERSION=none make -C conda
