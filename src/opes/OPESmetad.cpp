@@ -160,10 +160,9 @@ private:
   inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
   inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
-  std::vector<kernel> kernels_; // all kernels
+  std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
-
-  // neighbour list stuff
+//neighbour list stuff
   bool use_Kneighb_;
   std::vector<kernel> neigh_kernels_;
   double neigh_cutoff2_;
@@ -192,7 +191,7 @@ public:
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
-  void update_Kneighb();
+  void update_Kneighb(const std::vector<double>&);
   void dumpStateToFile();
 };
 
@@ -331,7 +330,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   if(threshold2_!=0)
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
 
-  /*setup neighbor list stuff*/
+//setup neighbor list
   use_Kneighb_=false;
   parseFlag("NEIGHBOR", use_Kneighb_);
   neigh_cutoff2_=2.3*cutoff2_;
@@ -722,19 +721,34 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 
 void OPESmetad::calculate()
 {
-  if(use_Kneighb_) neigh_steps_++;
+//get cv
   std::vector<double> cv(ncv_);
-  for(unsigned i=0; i<ncv_; i++) {
+  for(unsigned i=0; i<ncv_; i++)
     cv[i]=getArgument(i);
-    if(use_Kneighb_) {
-      double d = difference(i, cv[i], neigh_center_[i]);
-      double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) {neigh_update_=true; break;}
-    }
-  }
-  if(getExchangeStep()) neigh_update_=true;
-  if(neigh_update_&&use_Kneighb_) update_Kneighb();
 
+//check neighbor list
+  if(use_Kneighb_)
+  {
+    neigh_steps_++;
+    if(getExchangeStep())
+      neigh_update_=true;
+    else
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double d=difference(i,cv[i],neigh_center_[i]);
+        if(d*d>0.6*neigh_dev2_[i])
+        {
+          neigh_update_=true;
+          break;
+        }
+      }
+    }
+    if(neigh_update_)
+      update_Kneighb(cv);
+  }
+
+//set bias and forces
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
   current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
@@ -933,20 +947,18 @@ void OPESmetad::update()
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
-  if(!use_Kneighb_) {
+  if(!use_Kneighb_)
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       prob+=evaluateKernel(kernels_[k],cv,der_prob);
-  } else {
+  else
     for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
       prob+=evaluateKernel(neigh_kernels_[k],cv,der_prob);
-  }
-
   if(NumParallel_>1)
   {
     comm.Sum(prob);
     comm.Sum(der_prob);
   }
-  //normalize the estimate
+//normalize the estimate
   prob/=KDEnorm_;
   for(unsigned i=0; i<ncv_; i++)
     der_prob[i]/=KDEnorm_;
@@ -1016,7 +1028,7 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_dist2=threshold2_;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) //TODO add neighbor list!
+  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
   {
     if(k==giver_k) //a kernel should not be merged with itself
       continue;
@@ -1047,35 +1059,39 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
   return min_k;
 }
 
-void OPESmetad::update_Kneighb() {
-  // no need to check for neighbors
-  if(kernels_.size()==0) return;
+void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
+{
+  if(kernels_.size()==0) //no need to check for neighbors
+    return;
 
+  neigh_center_=new_center;
   neigh_kernels_.clear();
   for(unsigned k=0; k<kernels_.size(); k++)
   {
     double dist2=0;
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double d=difference(i,getArgument(i),kernels_[k].center[i])/kernels_[k].sigma[i];
+      const double d=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
       dist2+=d*d;
+      if(dist2<=neigh_cutoff2_)
+      {
+        neigh_kernels_.push_back(kernels_[k]);
+        break;
+      }
     }
-    if(dist2<=neigh_cutoff2_) neigh_kernels_.push_back(kernels_[k]);
   }
-  std::vector<double> dev2;
-  dev2.resize(ncv_,0);
-  for(unsigned k=0; k<neigh_kernels_.size(); k++)
+  for(unsigned i=0; i<ncv_; i++)
   {
-    for(unsigned i=0; i<ncv_; i++)
+    double dev2_i=0;
+    for(unsigned k=0; k<neigh_kernels_.size(); k++)
     {
-      const double d=difference(i,getArgument(i),neigh_kernels_[k].center[i]);
-      dev2[i]+=d*d;
+      const double d=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
+      dev2_i+=d*d;
     }
-  }
-  for(unsigned i=0; i<ncv_; i++) {
-    neigh_center_[i]=getArgument(i);
-    if(dev2[i]>0.) neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_kernels_.size());
-    else neigh_dev2_[i]=kernels_.back().sigma[i]*kernels_.back().sigma[i];
+    if(dev2_i==0) //e.g. if neigh_kernels_.size()==0
+      neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
+    else
+      neigh_dev2_[i]=dev2_i/static_cast<double>(neigh_kernels_.size());
   }
   getPntrToComponent("nbker")->set(neigh_kernels_.size());
   getPntrToComponent("nbsteps")->set(neigh_steps_);
