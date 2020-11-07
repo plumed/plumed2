@@ -2,6 +2,7 @@
 #include "plumed/tools/Tensor.h"
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 using namespace PLMD;
 
