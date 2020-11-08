@@ -958,7 +958,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
       std::vector<double> omp_deriv(der_prob.size());
       #pragma omp for reduction(+:prob) nowait
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
-        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+        prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
         if(nt==1) for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
       }
       #pragma omp critical
