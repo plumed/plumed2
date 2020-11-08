@@ -161,8 +161,8 @@ private:
     {
       height=data[0];
       size_t ncv=(data.size()-1)/2;
-      for(size_t i=0; i<ncv; i++) center[i]=data[i+1];
-      for(size_t i=0; i<ncv; i++) sigma[i]=data[i+ncv+1];
+      for(size_t i=0; i<ncv; i++) center.push_back(data[i+1]);
+      for(size_t i=0; i<ncv; i++) sigma.push_back(data[i+ncv+1]);
     }
     std::vector<double> flatten() {
       size_t ksize=2*center.size()+1;
@@ -352,7 +352,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   /*setup neighbor list stuff*/
   use_Kneighb_=false;
   parseFlag("NEIGHBOR", use_Kneighb_);
-  neigh_cutoff2_=2.3*cutoff2_;
+  neigh_cutoff2_=3.*cutoff2_;
   neigh_center_.resize(ncv_);
   neigh_dev2_.resize(ncv_);
   neigh_steps_=0;
@@ -747,7 +747,7 @@ void OPESmetad::calculate()
     if(use_Kneighb_) {
       double d = difference(i, cv[i], neigh_center_[i]);
       double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) neigh_update_=true;
+      if(nk_dist2>0.5) neigh_update_=true;
     }
   }
   if(getExchangeStep()) neigh_update_=true;
@@ -959,12 +959,9 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
       #pragma omp for reduction(+:prob) nowait
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
         prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
-        if(nt==1) for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
       }
       #pragma omp critical
-      if(nt>1) {
-        for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
-      }
+      for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
     }
   } else {
     #pragma omp parallel num_threads(nt)
@@ -973,12 +970,9 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
       #pragma omp for reduction(+:prob) nowait
       for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_) {
         prob+=evaluateKernel(neigh_kernels_[k],cv,omp_deriv);
-        if(nt==1) for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
       }
       #pragma omp critical
-      if(nt>1) {
-        for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
-      }
+      for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
     }
   }
 
@@ -1123,8 +1117,8 @@ void OPESmetad::update_Kneighb() {
   if(tot_size!=0) {
     if(comm.initialized()&&NumParallel_>1) {
       std::vector<double> simple_local_flat;
-      std::vector<double> simple_neigh_kernels; simple_neigh_kernels.resize(tot_size*(2*ncv_+1));
-      for(unsigned k=0; k<local_flat_nl.size(); k++) simple_local_flat.insert(simple_local_flat.end(),local_flat_nl[k].flatten().begin(),local_flat_nl[k].flatten().begin());
+      std::vector<double> simple_neigh_kernels; simple_neigh_kernels.resize(tot_size*(2*ncv_+1),0.);
+      for(unsigned k=0; k<local_flat_nl.size(); k++) simple_local_flat.insert(simple_local_flat.end(),local_flat_nl[k].flatten().begin(),local_flat_nl[k].flatten().end());
       // calculate vector of displacement
       std::vector<int> disp(NumParallel_);
       disp[0] = 0;
