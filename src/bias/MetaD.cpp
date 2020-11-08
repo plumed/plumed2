@@ -1546,28 +1546,28 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     if(!use_Kneighb_) {
       #pragma omp parallel num_threads(nt)
       {
-        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]);
+        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          bias+=evaluateGaussian(cv,hills_[i],omp_deriv.get());
-          if(nt==1) for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+          if(der) bias+=evaluateGaussian(cv,hills_[i],omp_deriv.get());
+          else bias+=evaluateGaussian(cv,hills_[i],der);
         }
         #pragma omp critical
-        if(nt>1) {
+        if(der) {
           for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
         }
       }
     } else {
       #pragma omp parallel num_threads(nt)
       {
-        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]);
+        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
-          bias+=evaluateGaussian(cv,neigh_hills_[i],omp_deriv.get());
-          if(nt==1) for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+          if(der) bias+=evaluateGaussian(cv,neigh_hills_[i],omp_deriv.get());
+          else bias+=evaluateGaussian(cv,neigh_hills_[i],der);
         }
         #pragma omp critical
-        if(nt>1) {
+        if(der) {
           for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
         }
       }
@@ -1738,7 +1738,7 @@ void MetaD::calculate()
     if(use_Kneighb_) {
       double d = difference(i, cv[i], neigh_center_[i]);
       double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) {neigh_update_=true; break;}
+      if(nk_dist2>0.6) neigh_update_=true;
     }
   }
   if(getExchangeStep()) neigh_update_=true;
