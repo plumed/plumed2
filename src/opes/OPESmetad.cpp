@@ -210,7 +210,7 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
-  keys.addFlag("NEIGHBOR",false,"Use neighbor list for kernels summation, faster but experimental");
+  keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
@@ -233,8 +233,8 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
-  keys.addOutputComponent("nbker","NEIGHBOR","number of kernels in the neighbor list");
-  keys.addOutputComponent("nbsteps","NEIGHBOR","number of steps from last neighbor list update");
+  keys.addOutputComponent("nlker","NLIST","number of kernels in the neighbor list");
+  keys.addOutputComponent("nlsteps","NLIST","number of steps from last neighbor list update");
 }
 
 OPESmetad::OPESmetad(const ActionOptions& ao)
@@ -332,7 +332,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 
 //setup neighbor list
   use_Kneighb_=false;
-  parseFlag("NEIGHBOR", use_Kneighb_);
+  parseFlag("NLIST", use_Kneighb_);
   neigh_cutoff2_=2.3*cutoff2_;
   neigh_center_.resize(ncv_);
   neigh_dev2_.resize(ncv_);
@@ -652,10 +652,10 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
   if(use_Kneighb_)
   {
-    addComponent("nbker");
-    componentIsNotPeriodic("nbker");
-    addComponent("nbsteps");
-    componentIsNotPeriodic("nbsteps");
+    addComponent("nlker");
+    componentIsNotPeriodic("nlker");
+    addComponent("nlsteps");
+    componentIsNotPeriodic("nlsteps");
   }
 
 //printing some info
@@ -1090,8 +1090,8 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
     else
       neigh_dev2_[i]=dev2_i/static_cast<double>(neigh_kernels_.size());
   }
-  getPntrToComponent("nbker")->set(neigh_kernels_.size());
-  getPntrToComponent("nbsteps")->set(neigh_steps_);
+  getPntrToComponent("nlker")->set(neigh_kernels_.size());
+  getPntrToComponent("nlsteps")->set(neigh_steps_);
   neigh_steps_=0;
   neigh_update_=false;
 }
