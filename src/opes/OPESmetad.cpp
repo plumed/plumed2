@@ -1066,29 +1066,87 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
 
   neigh_center_=new_center;
   neigh_kernels_.clear();
-  for(unsigned k=0; k<kernels_.size(); k++)
+  if(NumParallel_==1)
   {
-    double norm2_k=0;
+    for(unsigned k=0; k<kernels_.size(); k++)
+    {
+      double norm2_k=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2_k+=dist_ik*dist_ik;
+      }
+      if(norm2_k<=neigh_cutoff2_)
+        neigh_kernels_.push_back(kernels_[k]);
+    }
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-      norm2_k+=dist_ik*dist_ik;
+      double dev2_i=0;
+      for(unsigned k=0; k<neigh_kernels_.size(); k++)
+      {
+        const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
+        dev2_i+=diff_ik*diff_ik;
+      }
+      if(dev2_i==0) //e.g. if neigh_kernels_size==0
+        neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
+      else
+        neigh_dev2_[i]=dev2_i/neigh_kernels_.size();
     }
-    if(norm2_k<=neigh_cutoff2_)
-      neigh_kernels_.push_back(kernels_[k]);
   }
-  for(unsigned i=0; i<ncv_; i++)
+  else
   {
-    double dev2_i=0;
-    for(unsigned k=0; k<neigh_kernels_.size(); k++)
+    //first we gather all the neigh_index
+    std::vector<unsigned> neigh_index;
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
-      const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
-      dev2_i+=diff_ik*diff_ik;
+      double norm2_k=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2_k+=dist_ik*dist_ik;
+      }
+      if(norm2_k<=neigh_cutoff2_)
+        neigh_index.push_back(k);
     }
-    if(dev2_i==0) //e.g. if neigh_kernels_.size()==0
-      neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
-    else
-      neigh_dev2_[i]=dev2_i/static_cast<double>(neigh_kernels_.size());
+    //the following should probably be done with an Allgatherv
+    std::vector<unsigned> all_neigh_size(NumParallel_);
+    all_neigh_size[rank_]=neigh_index.size();
+    comm.Sum(all_neigh_size);
+    unsigned tot_neigh_size=0;
+    for(unsigned r=0; r<NumParallel_; r++)
+      tot_neigh_size+=all_neigh_size[r];
+    std::vector<unsigned> all_neigh_index(tot_neigh_size);
+    unsigned it=0;
+    for(unsigned r=0; r<NumParallel_; r++)
+    {
+      if(r==rank_)
+        for(unsigned k=0; k<neigh_index.size(); k++)
+          all_neigh_index[it+k]=neigh_index[k];
+      it+=all_neigh_size[r];
+    }
+    comm.Sum(all_neigh_index);
+    //now that whe have the indexes we can use them to fill neigh_kernels_
+    neigh_kernels_.reserve(tot_neigh_size); //is this helpful?
+    for(unsigned k=0; k<tot_neigh_size; k++)
+      neigh_kernels_.push_back(kernels_[all_neigh_index[k]]);
+    //calculate the square deviation
+    std::vector<double> dev2(ncv_,0.);
+    for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
+        dev2[i]+=diff_ik*diff_ik;
+      }
+    }
+    comm.Sum(dev2);
+    for(unsigned i=0; i<ncv_; i++)
+    {
+      if(dev2[i]==0) //e.g. if neigh_kernels_.size()==0
+        neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
+      else
+        neigh_dev2_[i]=dev2[i]/neigh_kernels_.size();
+    }
   }
   getPntrToComponent("nlker")->set(neigh_kernels_.size());
   getPntrToComponent("nlsteps")->set(neigh_steps_);
