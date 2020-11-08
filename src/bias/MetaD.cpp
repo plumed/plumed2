@@ -28,6 +28,7 @@
 #include "tools/Exception.h"
 #include "core/FlexibleBin.h"
 #include "tools/Matrix.h"
+#include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include <string>
 #include <cstring>
@@ -36,6 +37,8 @@
 #include <limits>
 #include <ctime>
 #include <memory>
+#include <algorithm>
+#include <numeric>
 
 #define DP2CUTOFF 6.25
 
@@ -455,6 +458,14 @@ private:
   unsigned rct_ustride_;
   double work_;
   long int last_step_warn_grid;
+  // neighbour list stuff
+  bool use_Kneighb_;
+  std::vector<Gaussian> neigh_hills_;
+  double neigh_cutoff2_;
+  std::vector<double> neigh_center_;
+  std::vector<double> neigh_dev2_;
+  bool neigh_update_;
+  unsigned neigh_steps_;
 
   static void   registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
@@ -472,6 +483,7 @@ private:
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
   void updateFrequencyAdaptiveStride();
+  void update_Kneighb();
   string fmt;
 
 public:
@@ -523,6 +535,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
+  keys.addFlag("NEIGHBOR",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
@@ -786,6 +799,16 @@ MetaD::MetaD(const ActionOptions& ao):
   if(!grid_&&gridfilename_.length()> 0) error("To write a grid you need first to define it!");
   if(!grid_&&gridreadfilename_.length()>0) error("To read a grid you need first to define it!");
 
+  /*setup neighbor list stuff*/
+  use_Kneighb_=false;
+  parseFlag("NEIGHBOR", use_Kneighb_);
+  neigh_cutoff2_=2.3*DP2CUTOFF;
+  neigh_center_.resize(getNumberOfArguments());
+  neigh_dev2_.resize(getNumberOfArguments());
+  neigh_steps_=0;
+  neigh_update_=false;
+  if(use_Kneighb_&&grid_) error("NEIGHBOR and GRID cannot be combined!");
+
   // Reweighting factor rct
   parseFlag("CALC_RCT",calc_rct_);
   if (calc_rct_)
@@ -965,6 +988,14 @@ MetaD::MetaD(const ActionOptions& ao):
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
+  }
+
+  if(use_Kneighb_)
+  {
+    addComponent("nbker");
+    componentIsNotPeriodic("nbker");
+    addComponent("nbsteps");
+    componentIsNotPeriodic("nbsteps");
   }
 
   if(calc_rct_) {
@@ -1501,17 +1532,45 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
   double bias=0.0;
   if(!grid_) {
-    if(hills_.size()>10000 && (getStep()-last_step_warn_grid)>10000) {
+    if(hills_.size()>10000 && (getStep()-last_step_warn_grid)>10000&&!use_Kneighb_) {
       std::string msg;
       Tools::convert(hills_.size(),msg);
-      msg="You have accumulated "+msg+" hills, you should enable GRIDs to avoid serious performance hits";
+      msg="You have accumulated "+msg+" hills, you should enable GRIDs or NEIGHBOR to avoid serious performance hits";
       warning(msg);
       last_step_warn_grid=getStep();
     }
+    unsigned nt=OpenMP::getNumThreads();
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    for(unsigned i=rank; i<hills_.size(); i+=stride) {
-      bias+=evaluateGaussian(cv,hills_[i],der);
+
+    if(!use_Kneighb_) {
+      #pragma omp parallel num_threads(nt)
+      {
+        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]);
+        #pragma omp for reduction(+:bias) nowait
+        for(unsigned i=rank; i<hills_.size(); i+=stride) {
+          bias+=evaluateGaussian(cv,hills_[i],omp_deriv.get());
+          if(nt==1) for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        }
+        #pragma omp critical
+        if(nt>1) {
+          for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        }
+      }
+    } else {
+      #pragma omp parallel num_threads(nt)
+      {
+        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]);
+        #pragma omp for reduction(+:bias) nowait
+        for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
+          bias+=evaluateGaussian(cv,neigh_hills_[i],omp_deriv.get());
+          if(nt==1) for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        }
+        #pragma omp critical
+        if(nt>1) {
+          for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        }
+      }
     }
     comm.Sum(bias);
     if(der) comm.Sum(der,getNumberOfArguments());
@@ -1668,13 +1727,23 @@ void MetaD::calculate()
   // on adaptive hills (diff) after exchanges:
   if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) error("ADAPTIVE=DIFF is not compatible with replica exchange");
 
+  if(use_Kneighb_) neigh_steps_++;
+
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
   std::unique_ptr<double[]> der(new double[ncv]);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
     der[i]=0.;
+    if(use_Kneighb_) {
+      double d = difference(i, cv[i], neigh_center_[i]);
+      double nk_dist2 = d*d/neigh_dev2_[i];
+      if(nk_dist2>0.6) {neigh_update_=true; break;}
+    }
   }
+  if(getExchangeStep()) neigh_update_=true;
+  if(neigh_update_&&use_Kneighb_) update_Kneighb();
+
   double ene = getBiasAndDerivatives(cv,der.get());
 // special case for gamma=1.0
   if(biasf_==1.0) {
@@ -1859,6 +1928,8 @@ void MetaD::update() {
     updateFrequencyAdaptiveStride();
   }
 
+  // this is to update the hills neighbor list
+  neigh_update_=true;
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
@@ -2018,6 +2089,61 @@ bool MetaD::checkNeedsGradients()const
     if(getStep()%stride_==0 && !isFirstStep) return true;
     else return false;
   } else return false;
+}
+
+void MetaD::update_Kneighb() {
+  // no need to check for neighbors
+  if(hills_.size()==0) return;
+
+  // here we generate the neighbor list
+  neigh_hills_.clear();
+  std::vector<Gaussian> local_flat_nl;
+  unsigned nt=OpenMP::getNumThreads();
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<Gaussian> private_flat_nl;
+    #pragma omp for nowait
+    for(unsigned k=rank; k<hills_.size(); k+=stride)
+    {
+      double dist2=0;
+      for(unsigned i=0; i<getNumberOfArguments(); i++)
+      {
+        const double d=difference(i,getArgument(i),hills_[k].center[i])/hills_[k].sigma[i];
+        dist2+=d*d;
+      }
+      if(dist2<=neigh_cutoff2_) private_flat_nl.push_back(hills_[k]);
+    }
+    #pragma omp critical
+    local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
+  }
+
+  neigh_hills_ = local_flat_nl;
+
+  // here we set some properties that are used to decide when to update it again
+  std::vector<double> dev2;
+  dev2.resize(getNumberOfArguments(),0);
+  for(unsigned k=0; k<neigh_hills_.size(); k++)
+  {
+    for(unsigned i=0; i<getNumberOfArguments(); i++)
+    {
+      const double d=difference(i,getArgument(i),neigh_hills_[k].center[i]);
+      dev2[i]+=d*d;
+    }
+  }
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    neigh_center_[i]=getArgument(i);
+    if(dev2[i]>0.) neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_hills_.size());
+    else neigh_dev2_[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
+  }
+
+  // we are done
+  getPntrToComponent("nbker")->set(neigh_hills_.size());
+  getPntrToComponent("nbsteps")->set(neigh_steps_);
+  neigh_steps_=0;
+  neigh_update_=false;
 }
 
 }
