@@ -271,6 +271,5 @@ script:
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
-  - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
 # upload conda package
   - if test -n "$PLUMED_CONDA" && test -n "$CONDA_LABEL" ; then make -C conda upload ; fi

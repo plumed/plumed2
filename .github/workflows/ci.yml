@@ -117,6 +117,7 @@ jobs:
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
+         bash <(curl -s https://codecov.io/bash) > /dev/null
 
   codecheck:
     runs-on: ubuntu-latest
