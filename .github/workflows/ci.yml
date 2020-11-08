@@ -69,6 +69,12 @@ jobs:
         pip install --user Cython
         pip install --user numpy
         pip install --user nose
+        pip install --user six ;
+        pip install --user pandas ;
+        pip install --user mdtraj ;
+        pip install --user MDAnalysis ;
+        python -c "import MDAnalysis" ;
+        python -c "import mdtraj" ;
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |
