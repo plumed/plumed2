@@ -2099,14 +2099,12 @@ void MetaD::update_Kneighb() {
   neigh_hills_.clear();
   std::vector<Gaussian> local_flat_nl;
   unsigned nt=OpenMP::getNumThreads();
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
 
   #pragma omp parallel num_threads(nt)
   {
     std::vector<Gaussian> private_flat_nl;
     #pragma omp for nowait
-    for(unsigned k=rank; k<hills_.size(); k+=stride)
+    for(unsigned k=0; k<hills_.size(); k++)
     {
       double dist2=0;
       for(unsigned i=0; i<getNumberOfArguments(); i++)
