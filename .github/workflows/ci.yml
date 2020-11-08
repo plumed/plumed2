@@ -111,7 +111,7 @@ jobs:
       run: |
          make --no-print-directory -C regtest
          # these can fail for numerical reasons
-         make -C regtest checkfail || true
+         make -C regtest checkfail
     - name: Run python tests
       run: |
          nosetests -v -w python
@@ -199,6 +199,7 @@ jobs:
     - name: Build PLUMED
       run: |
         brew update > /dev/null
+        brew install gawk
         ./configure --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
         make install
@@ -206,7 +207,7 @@ jobs:
       run: |
          make --no-print-directory -C regtest
          # these can fail for numerical reasons
-         make -C regtest checkfail || true
+         make -C regtest checkfail
 
   conda:
     strategy:
