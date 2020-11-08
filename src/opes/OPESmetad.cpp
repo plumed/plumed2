@@ -20,6 +20,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/OpenMP.h"
+#include <algorithm>
+#include <numeric>
 
 namespace PLMD {
 namespace opes {
@@ -154,6 +157,21 @@ private:
     std::vector<double> sigma;
     kernel(double h, const std::vector<double> & c,const std::vector<double> & s):
       height(h),center(c),sigma(s) {}
+    kernel(std::vector<double> data)
+    {
+      height=data[0];
+      size_t ncv=(data.size()-1)/2;
+      for(size_t i=0; i<ncv; i++) center[i]=data[i+1];
+      for(size_t i=0; i<ncv; i++) sigma[i]=data[i+ncv+1];
+    }
+    std::vector<double> flatten() {
+      size_t ksize=2*center.size()+1;
+      std::vector<double> flat; flat.resize(ksize);
+      flat[0]=height;
+      for(size_t i=0; i<center.size(); i++) flat[i+1] = center[i];
+      for(size_t i=0; i<center.size(); i++) flat[i+center.size()+1] = sigma[i];
+      return flat;
+    }
   };
   double cutoff2_;
   double val_at_cutoff_;
@@ -932,13 +950,36 @@ void OPESmetad::update()
 
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
+  unsigned nt=OpenMP::getNumThreads();
   double prob=0.0;
   if(!use_Kneighb_) {
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-      prob+=evaluateKernel(kernels_[k],cv,der_prob);
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<double> omp_deriv(der_prob.size());
+      #pragma omp for reduction(+:prob) nowait
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
+        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+        if(nt==1) for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
+      }
+      #pragma omp critical
+      if(nt>1) {
+        for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
+      }
+    }
   } else {
-    for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
-      prob+=evaluateKernel(neigh_kernels_[k],cv,der_prob);
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<double> omp_deriv(der_prob.size());
+      #pragma omp for reduction(+:prob) nowait
+      for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_) {
+        prob+=evaluateKernel(neigh_kernels_[k],cv,omp_deriv);
+        if(nt==1) for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
+      }
+      #pragma omp critical
+      if(nt>1) {
+        for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
+      }
+    }
   }
 
   if(NumParallel_>1)
@@ -1051,17 +1092,60 @@ void OPESmetad::update_Kneighb() {
   // no need to check for neighbors
   if(kernels_.size()==0) return;
 
+  // here we generate the neighbor list
   neigh_kernels_.clear();
-  for(unsigned k=0; k<kernels_.size(); k++)
+  std::vector<kernel> local_flat_nl;
+  unsigned nt=OpenMP::getNumThreads();
+
+  #pragma omp parallel num_threads(nt)
   {
-    double dist2=0;
-    for(unsigned i=0; i<ncv_; i++)
+    std::vector<kernel> private_flat_nl;
+    #pragma omp for nowait
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
-      const double d=difference(i,getArgument(i),kernels_[k].center[i])/kernels_[k].sigma[i];
-      dist2+=d*d;
+      double dist2=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double d=difference(i,getArgument(i),kernels_[k].center[i])/kernels_[k].sigma[i];
+        dist2+=d*d;
+      }
+      if(dist2<=neigh_cutoff2_) private_flat_nl.push_back(kernels_[k]);
     }
-    if(dist2<=neigh_cutoff2_) neigh_kernels_.push_back(kernels_[k]);
+    #pragma omp critical
+    local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
   }
+
+  // find total dimension of neighborlist
+  std::vector<int> local_nl_size(NumParallel_, 0);
+  local_nl_size[rank_] = local_flat_nl.size();
+  if(NumParallel_>1) comm.Sum(&local_nl_size[0], NumParallel_);
+  int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+  if(tot_size!=0) {
+    if(comm.initialized()&&NumParallel_>1) {
+      std::vector<double> simple_local_flat;
+      std::vector<double> simple_neigh_kernels; simple_neigh_kernels.resize(tot_size*(2*ncv_+1));
+      for(unsigned k=0; k<local_flat_nl.size(); k++) simple_local_flat.insert(simple_local_flat.end(),local_flat_nl[k].flatten().begin(),local_flat_nl[k].flatten().begin());
+      // calculate vector of displacement
+      std::vector<int> disp(NumParallel_);
+      disp[0] = 0;
+      int rank_size = 0;
+      for(unsigned i=0; i<NumParallel_-1; ++i) {
+        local_nl_size[i]*=(2*ncv_+1);  //this is number of kernel for the size of each kernel
+        rank_size += local_nl_size[i];
+        disp[i+1] = rank_size;
+      }
+      // Allgather neighbor list
+      comm.Allgatherv((!simple_local_flat.empty()?&simple_local_flat[0]:NULL), local_nl_size[rank_], &simple_neigh_kernels[0], &local_nl_size[0], &disp[0]);
+      // put it back in the kernel list
+      for (std::vector<double>::iterator i = std::begin(simple_neigh_kernels); i != std::end(simple_neigh_kernels); i+=(2*ncv_+1)) {
+        std::vector<double> data;
+        data.insert(data.end(), i, (i+(2*ncv_+1)));
+        neigh_kernels_.push_back(kernel(data));
+      }
+    } else neigh_kernels_ = local_flat_nl;
+  }
+
+  // here we set some properties that are used to decide when to update it again
   std::vector<double> dev2;
   dev2.resize(ncv_,0);
   for(unsigned k=0; k<neigh_kernels_.size(); k++)
@@ -1077,6 +1161,8 @@ void OPESmetad::update_Kneighb() {
     if(dev2[i]>0.) neigh_dev2_[i]=dev2[i]/static_cast<double>(neigh_kernels_.size());
     else neigh_dev2_[i]=kernels_.back().sigma[i]*kernels_.back().sigma[i];
   }
+
+  // we are done
   getPntrToComponent("nbker")->set(neigh_kernels_.size());
   getPntrToComponent("nbsteps")->set(neigh_steps_);
   neigh_steps_=0;
