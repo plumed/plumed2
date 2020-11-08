@@ -1,7 +1,7 @@
 name: Nightly builds
 on: 
   schedule:
-   - cron: "0 7 * * 0"
+   - cron: "30 17 * * 0"
 
 jobs:
   conda:
@@ -29,6 +29,8 @@ jobs:
         if [[ "$BRANCH" =~ ^v2.[0-9]+$ ]] ; then VERSION=${BRANCH#v}.$(date +%y%m%d) ; fi
         make -C conda
     - name: Deploy
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
       run: |
         source activate base
         export CONDA_LABEL=nightly
