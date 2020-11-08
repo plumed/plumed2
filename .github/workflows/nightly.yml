@@ -1,7 +1,7 @@
 name: Nightly builds
 on: 
   schedule:
-   - cron: "0 6 * * 0"
+   - cron: "0 7 * * 0"
 
 jobs:
   conda:
@@ -22,6 +22,7 @@ jobs:
           source ./conda-ci install-conda-build
     - name: Build
       run: |
+        source activate base
         export VERSION=
         BRANCH=${{ matrix.branch }}
         if test "$BRANCH" = master ; then VERSION=2.99.$(date +%y%m%d) ; fi
@@ -29,4 +30,6 @@ jobs:
         make -C conda
     - name: Deploy
       run: |
-        CONDA_LABEL=nightly make -C conda upload
+        source activate base
+        export CONDA_LABEL=nightly
+        make -C conda upload
