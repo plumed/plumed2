@@ -955,7 +955,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
   if(!use_Kneighb_) {
     #pragma omp parallel num_threads(nt)
     {
-      std::vector<double> omp_deriv(der_prob.size());
+      std::vector<double> omp_deriv(der_prob.size(),0.);
       #pragma omp for reduction(+:prob) nowait
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
         prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
@@ -969,7 +969,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
   } else {
     #pragma omp parallel num_threads(nt)
     {
-      std::vector<double> omp_deriv(der_prob.size());
+      std::vector<double> omp_deriv(der_prob.size(),0.);
       #pragma omp for reduction(+:prob) nowait
       for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_) {
         prob+=evaluateKernel(neigh_kernels_[k],cv,omp_deriv);
