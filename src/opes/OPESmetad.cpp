@@ -747,7 +747,7 @@ void OPESmetad::calculate()
     if(use_Kneighb_) {
       double d = difference(i, cv[i], neigh_center_[i]);
       double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) {neigh_update_=true; break;}
+      if(nk_dist2>0.6) neigh_update_=true;
     }
   }
   if(getExchangeStep()) neigh_update_=true;
