@@ -45,6 +45,12 @@ if test "$TRAVIS" == true ; then
   version="${TRAVIS_BRANCH}"
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    version="${GITHUB_REF#refs/heads/}"
+  fi
+fi
+
 # THIS IS FOR DOXYGEN <= 1.8.10
 # I leave it here for the moment
 mkdir build_examples
