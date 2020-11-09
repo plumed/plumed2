@@ -992,8 +992,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
 
-  if(use_Kneighb_)
-  {
+  if(use_Kneighb_) {
     addComponent("nbker");
     componentIsNotPeriodic("nbker");
     addComponent("nbsteps");
@@ -1243,6 +1242,9 @@ MetaD::MetaD(const ActionOptions& ao):
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
     }
   }
+
+  // if this is a restart the neighbor list should be immediately updated
+  if(getRestart()&&use_Kneighb_) neigh_update_=true;
 
   // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
   if(getRestart() && calc_rct_) computeReweightingFactor();
@@ -1553,11 +1555,12 @@ double MetaD::getBias(const vector<double>& cv)
     }
     comm.Sum(bias);
   } else {
-      bias = BiasGrid_->getValue(cv);
+    bias = BiasGrid_->getValue(cv);
   }
 
   return bias;
 }
+
 double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
   double bias=0.0;
@@ -1726,14 +1729,10 @@ double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gau
     }
     if(dp2<DP2CUTOFF) {
       bias=hill.height*exp(-dp2);
-      if(der) {
-        for(unsigned i=0; i<cv.size(); ++i) {
-          double tmp=0.0;
-          for(unsigned j=0; j<cv.size(); ++j) {
-            tmp += dp_[j]*mymatrix(i,j)*bias;
-          }
-          der[i]-=tmp;
-        }
+      for(unsigned i=0; i<cv.size(); ++i) {
+        double tmp=0.0;
+        for(unsigned j=0; j<cv.size(); ++j) tmp += dp_[j]*mymatrix(i,j)*bias;
+        der[i]-=tmp;
       }
     }
   } else {
@@ -1745,13 +1744,11 @@ double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gau
     dp2*=0.5;
     if(dp2<DP2CUTOFF) {
       bias=hill.height*exp(-dp2);
-      if(der) {
-        for(unsigned i=0; i<cv.size(); ++i) {der[i]+=-bias*dp_[i]*hill.invsigma[i];}
-      }
+      for(unsigned i=0; i<cv.size(); ++i) der[i]+=-bias*dp_[i]*hill.invsigma[i];
     }
   }
 
-  if(doInt_ && der) {
+  if(doInt_) {
     if(cv[0]<lowI_ || cv[0]>uppI_) for(unsigned i=0; i<cv.size(); ++i) der[i]=0;
   }
 
