@@ -137,7 +137,7 @@ git config user.name "${GIT_BOT}"
 git checkout -b gh-pages
 # this is not to show the GIT_TOKEN on Travis log
 set +x
-git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}doc-${BRANCH}.git
+git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}-${BRANCH}.git
 set -x
 
 case "$WHAT" in

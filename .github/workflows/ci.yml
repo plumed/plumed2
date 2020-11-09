@@ -121,7 +121,7 @@ jobs:
          make doc >/dev/null
     - name: Coverage
       env:
-	GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
@@ -132,7 +132,7 @@ jobs:
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
-         ./.travis/pushdoc
+         ./.travis/push doc
 
   codecheck:
     runs-on: ubuntu-latest
