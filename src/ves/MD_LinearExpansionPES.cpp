@@ -139,7 +139,7 @@ public:
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
-  unsigned int dim;
+  size_t dim;
   std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
@@ -217,7 +217,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   PLMD::PlumedMain* plumed=NULL;
   PLMD::PlumedMain* plumed_bf=NULL;
 
-  unsigned int replicas;
+  size_t replicas;
   unsigned int coresPerReplica;
   parse("replicas",replicas);
   if(replicas==1) {
@@ -481,7 +481,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_coeffsout.close();
 
   if(pc.Get_rank() == 0) {
-    fprintf(out,"Replicas                              %u\n",replicas);
+    fprintf(out,"Replicas                              %zu\n",replicas);
     fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
     fprintf(out,"Number of steps                       %u\n",nsteps);
     fprintf(out,"Timestep                              %f\n",tstep);
@@ -494,7 +494,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     fprintf(out,"Random seed                           %d",seeds_vec[0]);
     for(unsigned int i=1; i<seeds_vec.size(); i++) {fprintf(out,",%d",seeds_vec[i]);}
     fprintf(out,"\n");
-    fprintf(out,"Dimensions                            %u\n",dim);
+    fprintf(out,"Dimensions                            %zu\n",dim);
     for(unsigned int i=0; i<dim; i++) {
       fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
     }

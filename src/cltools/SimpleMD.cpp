@@ -458,7 +458,7 @@ private:
     std::unique_ptr<PlumedMain> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed.reset(new PLMD::PlumedMain);
+    plumed=Tools::make_unique<PLMD::PlumedMain>();
 
     if(plumed) {
       int s=sizeof(double);

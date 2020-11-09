@@ -306,7 +306,7 @@ void DumpAtoms::update() {
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
-    std::unique_ptr<rvec[]> pos(new rvec [natoms]);
+    auto pos = Tools::make_unique<rvec[]>(natoms);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);

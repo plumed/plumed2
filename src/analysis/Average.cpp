@@ -128,7 +128,7 @@ Average::Average( const ActionOptions& ao ):
   vesselbase::VesselOptions da("myaverage","",-1,instring,this);
   Keywords keys; AverageVessel::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  std::unique_ptr<AverageVessel> average( new AverageVessel(dar) );
+  auto average=Tools::make_unique<AverageVessel>(dar);
   myaverage = average.get();
   setAveragingAction( std::move(average), false );
 }

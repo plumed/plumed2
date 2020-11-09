@@ -257,8 +257,8 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
 
-  const int nval=a->getNumberOfComponents();
-  const int npar=arguments.size();
+  const size_t nval=a->getNumberOfComponents();
+  const size_t npar=arguments.size();
   std::vector<double> value (nval*npar);
   for(int i=0; i<npar; i++) {
     double arg0=arguments[i]->get();

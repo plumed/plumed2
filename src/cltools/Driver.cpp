@@ -557,7 +557,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
           else error("this file format does not provide number of atoms; use --natoms on the command line");
         }
-        ts_in_coords.reset(new float [3*natoms]);
+        ts_in_coords=Tools::make_unique<float[]>(3*natoms);
         ts_in.coords = ts_in_coords.get();
 #endif
       } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
@@ -801,7 +801,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int localstep;
         float time;
         matrix box;
-        std::unique_ptr<rvec[]> pos(new rvec[natoms]);
+        auto pos=Tools::make_unique<rvec[]>(natoms);
         float prec,lambda;
         int ret=exdrOK;
         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);
