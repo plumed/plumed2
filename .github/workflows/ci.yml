@@ -161,6 +161,14 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
+  centos7:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and run tests
+      run: |
+        make -C docker centos7
+
   macports:
     runs-on: macos-latest
     strategy:

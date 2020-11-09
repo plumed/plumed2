@@ -62,7 +62,7 @@ docs:
 # regtests
 # perform tests using non-installed plumed
 check:
-	PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C regtest
+	LD_LIBRARY_PATH="$(realpath .)/src/lib":${LD_LIBRARY_PATH} PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
 
 # perform tests using the installed version of plumed
