@@ -953,6 +953,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
   unsigned nt=OpenMP::getNumThreads();
   double prob=0.0;
   if(!use_Kneighb_) {
+    if(kernels_.size()<2*nt*NumParallel_) nt=1;
     #pragma omp parallel num_threads(nt)
     {
       std::vector<double> omp_deriv(der_prob.size(),0.);
@@ -964,6 +965,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
       for(unsigned j=0; j<ncv_; j++) der_prob[j]+=omp_deriv[j];
     }
   } else {
+    if(neigh_kernels_.size()<2*nt*NumParallel_) nt=1;
     #pragma omp parallel num_threads(nt)
     {
       std::vector<double> omp_deriv(der_prob.size(),0.);
@@ -1090,6 +1092,7 @@ void OPESmetad::update_Kneighb() {
   neigh_kernels_.clear();
   std::vector<kernel> local_flat_nl;
   unsigned nt=OpenMP::getNumThreads();
+  if(kernels_.size()<2*nt*NumParallel_) nt=1;
 
   #pragma omp parallel num_threads(nt)
   {
