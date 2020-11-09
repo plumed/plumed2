@@ -134,8 +134,8 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    if [ "$TRAVIS" = true ]; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] || [ "$GITHUB_ACTIONS" = true ]  ; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
       else
         echo "SKIP_ON_TRAVIS found!"
