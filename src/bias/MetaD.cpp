@@ -1581,7 +1581,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, vector<double> &de
     unsigned rank=comm.Get_rank();
 
     if(!use_Kneighb_) {
-      if(hills_.size()<2*nt) nt=1;
+      if(hills_.size()<2*nt*stride) nt=1;
       #pragma omp parallel num_threads(nt)
       {
         std::vector<double> omp_deriv(getNumberOfArguments(),0.);
@@ -1593,7 +1593,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, vector<double> &de
         for(unsigned i=0; i<getNumberOfArguments(); i++) der[i]+=omp_deriv[i];
       }
     } else {
-      if(neigh_hills_.size()<2*nt) nt=1;
+      if(neigh_hills_.size()<2*nt*stride) nt=1;
       #pragma omp parallel num_threads(nt)
       {
         std::vector<double> omp_deriv(getNumberOfArguments(),0.);
