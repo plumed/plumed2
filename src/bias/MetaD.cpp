@@ -806,7 +806,7 @@ MetaD::MetaD(const ActionOptions& ao):
   /*setup neighbor list stuff*/
   use_Kneighb_=false;
   parseFlag("NEIGHBOR", use_Kneighb_);
-  neigh_cutoff2_=2.3*DP2CUTOFF;
+  neigh_cutoff2_=4.*DP2CUTOFF;
   neigh_center_.resize(getNumberOfArguments());
   neigh_dev2_.resize(getNumberOfArguments());
   neigh_steps_=0;
@@ -1581,7 +1581,9 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     if(!use_Kneighb_) {
       #pragma omp parallel num_threads(nt)
       {
-        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
+        auto omp_deriv = Tools::make_unique<double[]>(getNumberOfArguments());
+        for(unsigned i=0; i<getNumberOfArguments(); i++) omp_deriv[i]=0.;
+
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<hills_.size(); i+=stride) {
           bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv.get());
@@ -1592,7 +1594,8 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     } else {
       #pragma omp parallel num_threads(nt)
       {
-        std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
+        auto omp_deriv = Tools::make_unique<double[]>(getNumberOfArguments());
+        for(unsigned i=0; i<getNumberOfArguments(); i++) omp_deriv[i]=0.;
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
           bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv.get());
@@ -1799,22 +1802,26 @@ void MetaD::calculate()
   // on adaptive hills (diff) after exchanges:
   if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) error("ADAPTIVE=DIFF is not compatible with replica exchange");
 
-  if(use_Kneighb_) neigh_steps_++;
-
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
   auto der = Tools::make_unique<double[]>(ncv);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
     der[i]=0.;
-    if(use_Kneighb_) {
-      double d = difference(i, cv[i], neigh_center_[i]);
-      double nk_dist2 = d*d/neigh_dev2_[i];
-      if(nk_dist2>0.6) neigh_update_=true;
-    }
   }
-  if(getExchangeStep()) neigh_update_=true;
-  if(neigh_update_&&use_Kneighb_) update_Kneighb();
+
+  if(use_Kneighb_) {
+    neigh_steps_++;
+    if(getExchangeStep()) neigh_update_=true;
+    else {
+      for(unsigned i=0; i<ncv; ++i) {
+        double d = difference(i, cv[i], neigh_center_[i]);
+        double nk_dist2 = d*d/neigh_dev2_[i];
+        if(nk_dist2>0.6) { neigh_update_=true; break; }
+      }
+    }
+    if(neigh_update_) update_Kneighb();
+  }
 
   double ene = getBiasAndDerivatives(cv,der.get());
 // special case for gamma=1.0
@@ -1927,6 +1934,9 @@ void MetaD::update() {
       // print on HILLS file
       writeGaussian(newhill,hillsOfile_);
     }
+
+    // this is to update the hills neighbor list
+    if(use_Kneighb_) neigh_update_=true;
   }
 
 // this should be outside of the if block in case
@@ -1982,6 +1992,8 @@ void MetaD::update() {
         ifiles[i]->reset(false);
       }
     }
+    // this is to update the hills neighbor list
+    if(use_Kneighb_) neigh_update_=true;
   }
   // Recalculate special bias quantities whenever the bias has been changed by the update.
   bool bias_has_changed = (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0));
@@ -1999,9 +2011,6 @@ void MetaD::update() {
   if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
     updateFrequencyAdaptiveStride();
   }
-
-  // this is to update the hills neighbor list
-  neigh_update_=true;
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
