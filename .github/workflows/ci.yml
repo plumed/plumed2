@@ -63,6 +63,8 @@ jobs:
         ./.travis/install.doxygen Release_1_8_14
         ./.travis/install.lcov v1.13
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov --enable-pdfdoc CXXFLAGS=-O0" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
