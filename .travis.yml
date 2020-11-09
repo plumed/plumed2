@@ -269,7 +269,5 @@ script:
 # script which check if coding policies are satisfied
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
-  - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
-  - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
 # upload conda package
   - if test -n "$PLUMED_CONDA" && test -n "$CONDA_LABEL" ; then make -C conda upload ; fi

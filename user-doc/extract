@@ -191,6 +191,12 @@ Manual built on Travis CI for branch $TRAVIS_BRANCH.
 EOF
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+cat >> automatic/VERSION.list << EOF
+Manual built on GitHub Actions on ref $GITHUB_REF.
+EOF
+fi
+
 if test -d regtests ; then
 cat >> automatic/VERSION.list << EOF
 

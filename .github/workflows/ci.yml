@@ -118,10 +118,19 @@ jobs:
       run: |
          make doc >/dev/null
     - name: Coverage
+      env:
+	GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
+         ./.travis/push coverage
          bash <(curl -s https://codecov.io/bash) > /dev/null
+    - name: Push doc
+      if: contains( matrix.variant, '-doc-' )
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      run: |
+         ./.travis/pushdoc
 
   codecheck:
     runs-on: ubuntu-latest
