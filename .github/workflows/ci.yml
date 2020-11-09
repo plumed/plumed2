@@ -95,6 +95,12 @@ jobs:
       run: |
          make -C developer-doc coverage
          make doc >/dev/null
+    - name: Push doc
+      if: contains( matrix.variant, '-doc-' )
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      run: |
+         ./.travis/pushdoc
 
   codecheck:
     runs-on: ubuntu-latest
