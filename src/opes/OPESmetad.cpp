@@ -165,7 +165,7 @@ private:
 //neighbour list stuff
   bool use_Kneighb_;
   std::vector<kernel> neigh_kernels_;
-  double neigh_cutoff2_;
+  double neigh_param_[2];
   std::vector<double> neigh_center_;
   std::vector<double> neigh_dev2_;
   bool neigh_update_;
@@ -210,6 +210,7 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
+  keys.add("optional","NLIST_PARAMETERS","( default=3.,0.5 ) the two cutoff parameters for the kernels neighbor list");
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
@@ -333,7 +334,20 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 //setup neighbor list
   use_Kneighb_=false;
   parseFlag("NLIST", use_Kneighb_);
-  neigh_cutoff2_=2.3*cutoff2_;
+  std::vector<double> neigh_param;
+  parseVector("NLIST_PARAMETERS",neigh_param);
+  if(neigh_param.size()==0)
+  {
+    neigh_param_[0]=3.0;//*cutoff2_ -> max distance of neighbors
+    neigh_param_[1]=0.5;//*neigh_dev2_[i] -> condition for rebuilding
+  }
+  else
+  {
+    plumed_massert(use_Kneighb_,"set the flag NLIST if you want to use neighbor list");
+    plumed_massert(neigh_param.size()==2,"two cutoff parameters are needed for the neighbor list");
+    neigh_param_[0]=neigh_param[0];
+    neigh_param_[1]=neigh_param[1];
+  }
   neigh_center_.resize(ncv_);
   neigh_dev2_.resize(ncv_);
   neigh_steps_=0;
@@ -692,6 +706,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
   if(!recursive_merge_)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
+  if(use_Kneighb_)
+    log.printf(" -- NLIST: using neighbor list for kernels, with parameters: %g,%g\n",neigh_param_[0],neigh_param_[1]);
   if(no_Zed_)
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
   if(wStateStride_!=0 && walker_rank_==0)
@@ -737,7 +753,7 @@ void OPESmetad::calculate()
       for(unsigned i=0; i<ncv_; i++)
       {
         const double diff_i=difference(i,cv[i],neigh_center_[i]);
-        if(diff_i*diff_i>0.6*neigh_dev2_[i])
+        if(diff_i*diff_i>neigh_param_[1]*neigh_dev2_[i])
         {
           neigh_update_=true;
           break;
@@ -1076,7 +1092,7 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
         const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
         norm2_k+=dist_ik*dist_ik;
       }
-      if(norm2_k<=neigh_cutoff2_)
+      if(norm2_k<=neigh_param_[0]*cutoff2_)
         neigh_kernels_.push_back(kernels_[k]);
     }
     for(unsigned i=0; i<ncv_; i++)
@@ -1105,7 +1121,7 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
         const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
         norm2_k+=dist_ik*dist_ik;
       }
-      if(norm2_k<=neigh_cutoff2_)
+      if(norm2_k<=neigh_param_[0]*cutoff2_)
         neigh_index.push_back(k);
     }
     //the following should probably be done with an Allgatherv
