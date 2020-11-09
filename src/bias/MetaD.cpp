@@ -476,9 +476,9 @@ private:
   double getHeight(const vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const vector<double>&);
-  double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
+  double getBiasAndDerivatives(const vector<double>&,vector<double> &der);
   double evaluateGaussian(const vector<double>&, const Gaussian&);
-  double evaluateGaussianAndDerivatives(const vector<double>&, const Gaussian&,double* der=NULL);
+  double evaluateGaussianAndDerivatives(const vector<double>&, const Gaussian&,vector<double> &der);
   double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
@@ -1456,18 +1456,20 @@ void MetaD::addGaussian(const Gaussian& hill)
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
-        double bias=evaluateGaussianAndDerivatives(xx,hill,&der[0]);
+        double bias=evaluateGaussianAndDerivatives(xx,hill,der);
         BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
       }
     } else {
       unsigned stride=comm.Get_size();
       unsigned rank=comm.Get_rank();
       vector<double> allder(ncv*neighbors.size(),0.0);
+      vector<double> n_der(ncv,0.0);
       vector<double> allbias(neighbors.size(),0.0);
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
         BiasGrid_->getPoint(ineigh,xx);
-        allbias[i]=evaluateGaussianAndDerivatives(xx,hill,&allder[ncv*i]);
+        allbias[i]=evaluateGaussianAndDerivatives(xx,hill,n_der);
+        for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=n_der[j];
       }
       comm.Sum(allbias);
       comm.Sum(allder);
@@ -1563,7 +1565,7 @@ double MetaD::getBias(const vector<double>& cv)
   return bias;
 }
 
-double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
+double MetaD::getBiasAndDerivatives(const vector<double>& cv, vector<double> &der)
 {
   double bias=0.0;
   if(!grid_) {
@@ -1579,33 +1581,32 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     unsigned rank=comm.Get_rank();
 
     if(!use_Kneighb_) {
+      if(hills_.size()<2*nt) nt=1;
       #pragma omp parallel num_threads(nt)
       {
-        auto omp_deriv = Tools::make_unique<double[]>(getNumberOfArguments());
-        for(unsigned i=0; i<getNumberOfArguments(); i++) omp_deriv[i]=0.;
-
-        #pragma omp for reduction(+:bias) nowait
+        std::vector<double> omp_deriv(getNumberOfArguments(),0.);
+        #pragma omp for reduction(+:bias)
         for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv.get());
+          bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv);
         }
         #pragma omp critical
-        for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        for(unsigned i=0; i<getNumberOfArguments(); i++) der[i]+=omp_deriv[i];
       }
     } else {
+      if(neigh_hills_.size()<2*nt) nt=1;
       #pragma omp parallel num_threads(nt)
       {
-        auto omp_deriv = Tools::make_unique<double[]>(getNumberOfArguments());
-        for(unsigned i=0; i<getNumberOfArguments(); i++) omp_deriv[i]=0.;
+        std::vector<double> omp_deriv(getNumberOfArguments(),0.);
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
-          bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv.get());
+          bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv);
         }
         #pragma omp critical
-        for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
+        for(unsigned i=0; i<getNumberOfArguments(); i++) der[i]+=omp_deriv[i];
       }
     }
     comm.Sum(bias);
-    comm.Sum(der,getNumberOfArguments());
+    comm.Sum(der);
   } else {
     vector<double> vder(getNumberOfArguments());
     bias=BiasGrid_->getValueAndDerivatives(cv,vder);
@@ -1692,7 +1693,7 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill)
 
   return bias;
 }
-double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gaussian& hill, double* der)
+double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gaussian& hill, vector<double> &der)
 {
   double dp2=0.0;
   double bias=0.0;
@@ -1749,7 +1750,7 @@ double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gau
     dp2*=0.5;
     if(dp2<DP2CUTOFF) {
       bias=hill.height*exp(-dp2);
-      for(unsigned i=0; i<cv.size(); ++i) der[i]+=-bias*dp_[i]*hill.invsigma[i];
+      for(unsigned i=0; i<cv.size(); ++i) der[i]-=bias*dp_[i]*hill.invsigma[i];
     }
   }
 
@@ -1804,11 +1805,8 @@ void MetaD::calculate()
 
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
-  auto der = Tools::make_unique<double[]>(ncv);
-  for(unsigned i=0; i<ncv; ++i) {
-    cv[i]=getArgument(i);
-    der[i]=0.;
-  }
+  vector<double> der(ncv,0.);
+  for(unsigned i=0; i<ncv; ++i) cv[i]=getArgument(i);
 
   if(use_Kneighb_) {
     neigh_steps_++;
@@ -1823,12 +1821,8 @@ void MetaD::calculate()
     if(neigh_update_) update_Kneighb();
   }
 
-  double ene = getBiasAndDerivatives(cv,der.get());
-// special case for gamma=1.0
-  if(biasf_==1.0) {
-    ene=0.0;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {der[i]=0.0;}
-  }
+  double ene = 0.;
+  if(biasf_!=1.0) ene = getBiasAndDerivatives(cv,der);
 
   setBias(ene);
   if(calc_rct_) getPntrToComponent("rbias")->set(ene - reweight_factor_);
@@ -2184,6 +2178,7 @@ void MetaD::update_Kneighb() {
   #pragma omp parallel num_threads(nt)
   {
     std::vector<Gaussian> private_flat_nl;
+    if(hills_.size()<2*nt) nt=1;
     #pragma omp for nowait
     for(unsigned k=0; k<hills_.size(); k++)
     {
