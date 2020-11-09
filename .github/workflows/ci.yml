@@ -76,11 +76,15 @@ jobs:
         sudo apt-get install -y doxygen-latex
         ./.travis/install.doxygen Release_1_8_14
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc " >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
         ./.travis/install.lcov v1.14
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
