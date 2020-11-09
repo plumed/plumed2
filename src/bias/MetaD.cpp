@@ -475,8 +475,10 @@ private:
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
+  double getBias(const vector<double>&);
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
-  double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
+  double evaluateGaussian(const vector<double>&, const Gaussian&);
+  double evaluateGaussianAndDerivatives(const vector<double>&, const Gaussian&,double* der=NULL);
   double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
@@ -1450,7 +1452,7 @@ void MetaD::addGaussian(const Gaussian& hill)
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
-        double bias=evaluateGaussian(xx,hill,&der[0]);
+        double bias=evaluateGaussianAndDerivatives(xx,hill,&der[0]);
         BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
       }
     } else {
@@ -1461,7 +1463,7 @@ void MetaD::addGaussian(const Gaussian& hill)
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
         BiasGrid_->getPoint(ineigh,xx);
-        allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
+        allbias[i]=evaluateGaussianAndDerivatives(xx,hill,&allder[ncv*i]);
       }
       comm.Sum(allbias);
       comm.Sum(allder);
@@ -1528,6 +1530,34 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
   return nneigh;
 }
 
+double MetaD::getBias(const vector<double>& cv)
+{
+  double bias=0.0;
+  if(!grid_) {
+    unsigned nt=OpenMP::getNumThreads();
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+
+    if(!use_Kneighb_) {
+      #pragma omp parallel num_threads(nt)
+      {
+        #pragma omp for reduction(+:bias) nowait
+        for(unsigned i=rank; i<hills_.size(); i+=stride) bias+=evaluateGaussian(cv,hills_[i]);
+      }
+    } else {
+      #pragma omp parallel num_threads(nt)
+      {
+        #pragma omp for reduction(+:bias) nowait
+        for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) bias+=evaluateGaussian(cv,neigh_hills_[i]);
+      }
+    }
+    comm.Sum(bias);
+  } else {
+      bias = BiasGrid_->getValue(cv);
+  }
+
+  return bias;
+}
 double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
   double bias=0.0;
@@ -1549,13 +1579,10 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
         std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          if(der) bias+=evaluateGaussian(cv,hills_[i],omp_deriv.get());
-          else bias+=evaluateGaussian(cv,hills_[i],der);
+          bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv.get());
         }
         #pragma omp critical
-        if(der) {
-          for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
-        }
+        for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
       }
     } else {
       #pragma omp parallel num_threads(nt)
@@ -1563,25 +1590,18 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
         std::unique_ptr<double[]> omp_deriv(new double[getNumberOfArguments()]());
         #pragma omp for reduction(+:bias) nowait
         for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
-          if(der) bias+=evaluateGaussian(cv,neigh_hills_[i],omp_deriv.get());
-          else bias+=evaluateGaussian(cv,neigh_hills_[i],der);
+          bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv.get());
         }
         #pragma omp critical
-        if(der) {
-          for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
-        }
+        for(unsigned j=0; j<cv.size(); j++) der[j]+=omp_deriv[j];
       }
     }
     comm.Sum(bias);
-    if(der) comm.Sum(der,getNumberOfArguments());
+    comm.Sum(der,getNumberOfArguments());
   } else {
-    if(der) {
-      vector<double> vder(getNumberOfArguments());
-      bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {der[i]=vder[i];}
-    } else {
-      bias = BiasGrid_->getValue(cv);
-    }
+    vector<double> vder(getNumberOfArguments());
+    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) der[i]=vder[i];
   }
 
   return bias;
@@ -1611,7 +1631,60 @@ double MetaD::getGaussianNormalization( const Gaussian& hill )
   return norm*pow(2*pi,static_cast<double>(ncv)/2.0);
 }
 
-double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill, double* der)
+double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill)
+{
+  double dp2=0.0;
+  double bias=0.0;
+  // I use a pointer here because cv is const (and should be const)
+  // but when using doInt it is easier to locally replace cv[0] with
+  // the upper/lower limit in case it is out of range
+  const double *pcv=NULL; // pointer to cv
+  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
+  if(cv.size()>0) pcv=&cv[0];
+  if(doInt_) {
+    plumed_assert(cv.size()==1);
+    tmpcv[0]=cv[0];
+    if(cv[0]<lowI_) tmpcv[0]=lowI_;
+    if(cv[0]>uppI_) tmpcv[0]=uppI_;
+    pcv=&(tmpcv[0]);
+  }
+  if(hill.multivariate) {
+    unsigned k=0;
+    unsigned ncv=cv.size();
+    // recompose the full sigma from the upper diag cholesky
+    Matrix<double> mymatrix(ncv,ncv);
+    for(unsigned i=0; i<ncv; i++) {
+      for(unsigned j=i; j<ncv; j++) {
+        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
+        k++;
+      }
+    }
+    for(unsigned i=0; i<cv.size(); ++i) {
+      double dp_i=difference(i,hill.center[i],pcv[i]);
+      dp_[i]=dp_i;
+      for(unsigned j=i; j<cv.size(); ++j) {
+        if(i==j) {
+          dp2+=dp_i*dp_i*mymatrix(i,j)*0.5;
+        } else {
+          double dp_j=difference(j,hill.center[j],pcv[j]);
+          dp2+=dp_i*dp_j*mymatrix(i,j);
+        }
+      }
+    }
+  } else {
+    for(unsigned i=0; i<cv.size(); ++i) {
+      double dp=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
+      dp2+=dp*dp;
+      dp_[i]=dp;
+    }
+    dp2*=0.5;
+  }
+
+  if(dp2<DP2CUTOFF) bias=hill.height*exp(-dp2);
+
+  return bias;
+}
+double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gaussian& hill, double* der)
 {
   double dp2=0.0;
   double bias=0.0;
@@ -1689,7 +1762,7 @@ double MetaD::getHeight(const vector<double>& cv)
 {
   double height=height0_;
   if(welltemp_) {
-    double vbias = getBiasAndDerivatives(cv);
+    double vbias = getBias(cv);
     if(biasf_>1.0) {
       height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
     } else {
@@ -1788,7 +1861,7 @@ void MetaD::update() {
 
   for(unsigned i=0; i<cv.size(); ++i) cv[i] = getArgument(i);
 
-  double vbias=getBiasAndDerivatives(cv);
+  double vbias=getBias(cv);
 
   // if you use adaptive, call the FlexibleBin
   if(adaptive_!=FlexibleBin::none) {
@@ -1863,7 +1936,7 @@ void MetaD::update() {
     hillsOfile_.flush();
   }
 
-  double vbias1=getBiasAndDerivatives(cv);
+  double vbias1=getBias(cv);
   work_+=vbias1-vbias;
 
   // dump grid on file
@@ -2039,7 +2112,7 @@ double MetaD::getTransitionBarrierBias() {
 
   // If there is only one well of interest, return the bias at that well point.
   if (transitionwells_.size() == 1) {
-    double tb_bias = getBiasAndDerivatives(transitionwells_[0], NULL);
+    double tb_bias = getBias(transitionwells_[0]);
     return tb_bias;
 
     // Otherwise, check for the least barrier bias between all pairs of wells.
