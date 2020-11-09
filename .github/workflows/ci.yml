@@ -114,6 +114,8 @@ jobs:
       run: |
          nosetests -v -w python
     - name: Build doc
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-doc-' )
       run: |
          make doc >/dev/null
