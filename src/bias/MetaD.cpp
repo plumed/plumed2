@@ -508,6 +508,8 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
   keys.addOutputComponent("transbias", "CALC_TRANSITION_BIAS", "the metadynamics transition bias V*(t)");
   keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","the hill addition frequency when employing frequency adaptive metadynamics");
+  keys.addOutputComponent("nbker","NEIGHBOR","number of hills in the neighbor list");
+  keys.addOutputComponent("nbsteps","NEIGHBOR","number of steps from last neighbor list update");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
