@@ -152,7 +152,7 @@ private:
     double height;
     std::vector<double> center;
     std::vector<double> sigma;
-    kernel(double h, const std::vector<double> & c,const std::vector<double> & s):
+    kernel(double h, const std::vector<double>& c,const std::vector<double>& s):
       height(h),center(c),sigma(s) {}
   };
   double cutoff2_;
@@ -163,13 +163,14 @@ private:
   std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
 //neighbour list stuff
-  bool use_Kneighb_;
-  double neigh_param_[2];
-  std::vector<unsigned> neigh_index_;
-  std::vector<double> neigh_center_;
-  std::vector<double> neigh_dev2_;
-  bool neigh_update_;
-  unsigned neigh_steps_;
+  bool nlist_;
+  double nlist_param_[2];
+  std::vector<unsigned> nlist_index_;
+  std::vector<double> nlist_center_;
+  std::vector<double> nlist_dev2_;
+  unsigned nlist_steps_;
+  bool nlist_update_;
+  bool nlist_pace_reset_;
 
   bool calc_work_;
   double work_;
@@ -191,7 +192,7 @@ public:
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
-  void update_Kneighb(const std::vector<double>&);
+  void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
 };
 
@@ -211,7 +212,8 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
   keys.add("optional","NLIST_PARAMETERS","( default=3.,0.5 ) the two cutoff parameters for the kernels neighbor list");
-  keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
+  keys.addFlag("NLIST",false,"use neighbor list for kernels summation, faster but experimental");
+  keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
@@ -332,26 +334,30 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
 
 //setup neighbor list
-  use_Kneighb_=false;
-  parseFlag("NLIST", use_Kneighb_);
-  std::vector<double> neigh_param;
-  parseVector("NLIST_PARAMETERS",neigh_param);
-  if(neigh_param.size()==0)
+  nlist_=false;
+  parseFlag("NLIST",nlist_);
+  nlist_pace_reset_=false;
+  parseFlag("NLIST_PACE_RESET",nlist_pace_reset_);
+  if(nlist_pace_reset_)
+    nlist_=true;
+  std::vector<double> nlist_param;
+  parseVector("NLIST_PARAMETERS",nlist_param);
+  if(nlist_param.size()==0)
   {
-    neigh_param_[0]=3.0;//*cutoff2_ -> max distance of neighbors
-    neigh_param_[1]=0.5;//*neigh_dev2_[i] -> condition for rebuilding
+    nlist_param_[0]=3.0;//*cutoff2_ -> max distance of neighbors
+    nlist_param_[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
   }
   else
   {
-    use_Kneighb_=true;
-    plumed_massert(neigh_param.size()==2,"two cutoff parameters are needed for the neighbor list");
-    neigh_param_[0]=neigh_param[0];
-    neigh_param_[1]=neigh_param[1];
+    nlist_=true;
+    plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
+    nlist_param_[0]=nlist_param[0];
+    nlist_param_[1]=nlist_param[1];
   }
-  neigh_center_.resize(ncv_);
-  neigh_dev2_.resize(ncv_,0.);
-  neigh_steps_=0;
-  neigh_update_=false;
+  nlist_center_.resize(ncv_);
+  nlist_dev2_.resize(ncv_,0.);
+  nlist_steps_=0;
+  nlist_update_=false;
 
 //optional stuff
   no_Zed_=false;
@@ -423,7 +429,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 //restart if needed
   if(getRestart())
   {
-    neigh_update_=true;
+    nlist_update_=true;
     bool stateRestart=true;
     if(restartFileName.length()==0)
     {
@@ -487,7 +493,15 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
         if(sigma0_.size()==0)
         {
           ifile.scanField("adaptive_counter",adaptive_counter_);
-          if(NumWalkers_>1)
+          if(NumWalkers_==1)
+          {
+            for(unsigned i=0; i<ncv_; i++)
+            {
+              ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+              ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+            }
+          }
+          else
           {
             for(unsigned w=0; w<NumWalkers_; w++)
               for(unsigned i=0; i<ncv_; i++)
@@ -502,14 +516,6 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
                   av_M2_[i]=tmp2;
                 }
               }
-          }
-          else
-          {
-            for(unsigned i=0; i<ncv_; i++)
-            {
-              ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
-              ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
-            }
           }
         }
       }
@@ -664,7 +670,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     addComponent("work");
     componentIsNotPeriodic("work");
   }
-  if(use_Kneighb_)
+  if(nlist_)
   {
     addComponent("nlker");
     componentIsNotPeriodic("nlker");
@@ -706,8 +712,10 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
   if(!recursive_merge_)
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
-  if(use_Kneighb_)
-    log.printf(" -- NLIST: using neighbor list for kernels, with parameters: %g,%g\n",neigh_param_[0],neigh_param_[1]);
+  if(nlist_)
+    log.printf(" -- NLIST: using neighbor list for kernels, with parameters: %g,%g\n",nlist_param_[0],nlist_param_[1]);
+  if(nlist_pace_reset_)
+    log.printf(" -- NLIST_PACE_RESET: forcing the neighbor list to update every PACE\n");
   if(no_Zed_)
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
   if(wStateStride_!=0 && walker_rank_==0)
@@ -743,25 +751,25 @@ void OPESmetad::calculate()
     cv[i]=getArgument(i);
 
 //check neighbor list
-  if(use_Kneighb_)
+  if(nlist_)
   {
-    neigh_steps_++;
+    nlist_steps_++;
     if(getExchangeStep())
-      neigh_update_=true;
+      nlist_update_=true;
     else
     {
       for(unsigned i=0; i<ncv_; i++)
       {
-        const double diff_i=difference(i,cv[i],neigh_center_[i]);
-        if(diff_i*diff_i>neigh_param_[1]*neigh_dev2_[i])
+        const double diff_i=difference(i,cv[i],nlist_center_[i]);
+        if(diff_i*diff_i>nlist_param_[1]*nlist_dev2_[i])
         {
-          neigh_update_=true;
+          nlist_update_=true;
           break;
         }
       }
     }
-    if(neigh_update_)
-      update_Kneighb(cv);
+    if(nlist_update_)
+      updateNlist(cv);
   }
 
 //set bias and forces
@@ -888,43 +896,45 @@ void OPESmetad::update()
     center[i]=getArgument(i);
 
 //add new kernel(s)
-  if(NumWalkers_>1)
+  if(NumWalkers_==1)
+    addKernel(height,center,sigma,true);
+  else
   {
     std::vector<double> all_height(NumWalkers_,0.0);
     std::vector<double> all_center(NumWalkers_*ncv_,0.0);
     std::vector<double> all_sigma(NumWalkers_*ncv_,0.0);
     if(comm.Get_rank()==0)
     {
-      multi_sim_comm.Allgather(height,all_height); //TODO heights should be communicated only once
+      multi_sim_comm.Allgather(height,all_height); //heights were communicated also before...
       multi_sim_comm.Allgather(center,all_center);
       multi_sim_comm.Allgather(sigma,all_sigma);
     }
     comm.Bcast(all_height,0);
     comm.Bcast(all_center,0);
     comm.Bcast(all_sigma,0);
-    if(use_Kneighb_)
-    { //gather all the neigh_index_, so merging can be done using it
-      std::vector<int> all_neigh_size(NumWalkers_);
+    if(nlist_)
+    { //gather all the nlist_index_, so merging can be done using it
+      std::vector<int> all_nlist_size(NumWalkers_);
       if(comm.Get_rank()==0)
       {
-        all_neigh_size[multi_sim_comm.Get_rank()]=neigh_index_.size();
-        multi_sim_comm.Sum(all_neigh_size);
+        all_nlist_size[multi_sim_comm.Get_rank()]=nlist_index_.size();
+        multi_sim_comm.Sum(all_nlist_size);
       }
-      comm.Bcast(all_neigh_size,0);
-      unsigned tot_neigh=0;
+      comm.Bcast(all_nlist_size,0);
+      unsigned tot_size=0;
       for(unsigned w=0; w<NumWalkers_; w++)
-        tot_neigh+=all_neigh_size[w];
-      if(tot_neigh>0)
+        tot_size+=all_nlist_size[w];
+      if(tot_size>0)
       {
         std::vector<int> disp(NumWalkers_);
         for(unsigned w=0; w<NumWalkers_-1; w++)
-          disp[w+1]=disp[w]+all_neigh_size[w];
-        std::vector<unsigned> all_neigh_index(tot_neigh);
+          disp[w+1]=disp[w]+all_nlist_size[w];
+        std::vector<unsigned> all_nlist_index(tot_size);
         if(comm.Get_rank()==0)
-          multi_sim_comm.Allgatherv(neigh_index_,all_neigh_index,&all_neigh_size[0],&disp[0]);
-        comm.Bcast(all_neigh_index,0);
-        std::set<unsigned> neigh_index_set(all_neigh_index.begin(),all_neigh_index.end()); //remove duplicates and sort
-        neigh_index_.assign(neigh_index_set.begin(),neigh_index_set.end());
+          multi_sim_comm.Allgatherv(nlist_index_,all_nlist_index,&all_nlist_size[0],&disp[0]);
+        comm.Bcast(all_nlist_index,0);
+        std::set<unsigned> nlist_index_set(all_nlist_index.begin(),all_nlist_index.end()); //remove duplicates and sort
+        nlist_index_.assign(nlist_index_set.begin(),nlist_index_set.end());
       }
     }
     for(unsigned w=0; w<NumWalkers_; w++)
@@ -934,14 +944,16 @@ void OPESmetad::update()
       addKernel(all_height[w],center_w,sigma_w,true);
     }
   }
-  else
-    addKernel(height,center,sigma,true);
   getPntrToComponent("nker")->set(kernels_.size());
-  if(use_Kneighb_)
-    getPntrToComponent("nlker")->set(neigh_index_.size());
+  if(nlist_)
+  {
+    getPntrToComponent("nlker")->set(nlist_index_.size());
+    if(nlist_pace_reset_)
+      nlist_update_=true;
+  }
 
   //update Zed_
-  if(!no_Zed_)
+  if(!no_Zed_) //TODO use NLIST also here
   {
     double sum_uprob=0;
     const unsigned ks=kernels_.size();
@@ -989,12 +1001,12 @@ void OPESmetad::update()
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
   double prob=0.0;
-  if(!use_Kneighb_)
+  if(!nlist_)
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       prob+=evaluateKernel(kernels_[k],cv,der_prob);
   else
-    for(unsigned nk=rank_; nk<neigh_index_.size(); nk+=NumParallel_)
-      prob+=evaluateKernel(kernels_[neigh_index_[nk]],cv,der_prob);
+    for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+      prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
   if(NumParallel_>1)
   {
     comm.Sum(prob);
@@ -1040,22 +1052,22 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
           mergeKernels(kernels_[taker_k],kernels_[giver_k]);
           delta_kernels_.push_back(kernels_[taker_k]);
           kernels_.erase(kernels_.begin()+giver_k);
-          if(use_Kneighb_)
+          if(nlist_)
           {
             unsigned giver_nk=0;
             bool found_giver=false;
-            for(unsigned nk=0; nk<neigh_index_.size(); nk++)
+            for(unsigned nk=0; nk<nlist_index_.size(); nk++)
             {
               if(found_giver)
-                neigh_index_[nk]--; //all the indexes shift due to erase
-              if(neigh_index_[nk]==giver_k)
+                nlist_index_[nk]--; //all the indexes shift due to erase
+              if(nlist_index_[nk]==giver_k)
               {
                 giver_nk=nk;
                 found_giver=true;
               }
             }
             plumed_dbg_massert(found_giver,"problem with merging and NLIST");
-            neigh_index_.erase(neigh_index_.begin()+giver_nk);
+            nlist_index_.erase(nlist_index_.begin()+giver_nk);
           }
           giver_k=taker_k;
           taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
@@ -1067,8 +1079,8 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
   {
     kernels_.emplace_back(height,center,sigma);
     delta_kernels_.emplace_back(height,center,sigma);
-    if(use_Kneighb_)
-      neigh_index_.push_back(kernels_.size()-1);
+    if(nlist_)
+      nlist_index_.push_back(kernels_.size()-1);
   }
 
 //write to file
@@ -1089,7 +1101,7 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_norm2=threshold2_;
-  if(!use_Kneighb_)
+  if(!nlist_)
   {
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
@@ -1112,9 +1124,9 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
   }
   else
   {
-    for(unsigned nk=rank_; nk<neigh_index_.size(); nk+=NumParallel_)
+    for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
     {
-      const unsigned k=neigh_index_[nk];
+      const unsigned k=nlist_index_[nk];
       if(k==giver_k) //a kernel should not be merged with itself
         continue;
       double norm2=0;
@@ -1145,52 +1157,52 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
   return min_k;
 }
 
-void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
+void OPESmetad::updateNlist(const std::vector<double> &new_center)
 {
   if(kernels_.size()==0) //no need to check for neighbors
     return;
 
-  neigh_center_=new_center;
-  neigh_index_.clear();
-  //first we gather all the neigh_index
+  nlist_center_=new_center;
+  nlist_index_.clear();
+  //first we gather all the nlist_index
   for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
   {
     double norm2_k=0;
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+      const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
       norm2_k+=dist_ik*dist_ik;
     }
-    if(norm2_k<=neigh_param_[0]*cutoff2_)
-      neigh_index_.push_back(k);
+    if(norm2_k<=nlist_param_[0]*cutoff2_)
+      nlist_index_.push_back(k);
   }
   if(NumParallel_>1)
   {
-    std::vector<int> all_neigh_size(NumParallel_);
-    all_neigh_size[rank_]=neigh_index_.size();
-    comm.Sum(all_neigh_size);
-    unsigned tot_neigh=0;
+    std::vector<int> all_nlist_size(NumParallel_);
+    all_nlist_size[rank_]=nlist_index_.size();
+    comm.Sum(all_nlist_size);
+    unsigned tot_size=0;
     for(unsigned r=0; r<NumParallel_; r++)
-      tot_neigh+=all_neigh_size[r];
-    if(tot_neigh>0)
+      tot_size+=all_nlist_size[r];
+    if(tot_size>0)
     {
       std::vector<int> disp(NumParallel_);
       for(unsigned r=0; r<NumParallel_-1; r++)
-        disp[r+1]=disp[r]+all_neigh_size[r];
-      std::vector<unsigned> local_neigh_index=neigh_index_;
-      neigh_index_.resize(tot_neigh);
-      comm.Allgatherv(local_neigh_index,neigh_index_,&all_neigh_size[0],&disp[0]);
+        disp[r+1]=disp[r]+all_nlist_size[r];
+      std::vector<unsigned> local_nlist_index=nlist_index_;
+      nlist_index_.resize(tot_size);
+      comm.Allgatherv(local_nlist_index,nlist_index_,&all_nlist_size[0],&disp[0]);
       if(recursive_merge_)
-        std::sort(neigh_index_.begin(),neigh_index_.end());
+        std::sort(nlist_index_.begin(),nlist_index_.end());
     }
   }
   //calculate the square deviation
   std::vector<double> dev2(ncv_,0.);
-  for(unsigned k=rank_; k<neigh_index_.size(); k+=NumParallel_)
+  for(unsigned k=rank_; k<nlist_index_.size(); k+=NumParallel_)
   {
     for(unsigned i=0; i<ncv_; i++)
     {
-      const double diff_ik=difference(i,neigh_center_[i],kernels_[neigh_index_[k]].center[i]);
+      const double diff_ik=difference(i,nlist_center_[i],kernels_[nlist_index_[k]].center[i]);
       dev2[i]+=diff_ik*diff_ik;
     }
   }
@@ -1198,15 +1210,15 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
     comm.Sum(dev2);
   for(unsigned i=0; i<ncv_; i++)
   {
-    if(dev2[i]==0) //e.g. if neigh_index_.size()==0
-      neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
+    if(dev2[i]==0) //e.g. if nlist_index_.size()==0
+      nlist_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
     else
-      neigh_dev2_[i]=dev2[i]/neigh_index_.size();
+      nlist_dev2_[i]=dev2[i]/nlist_index_.size();
   }
-  getPntrToComponent("nlker")->set(neigh_index_.size());
-  getPntrToComponent("nlsteps")->set(neigh_steps_);
-  neigh_steps_=0;
-  neigh_update_=false;
+  getPntrToComponent("nlker")->set(nlist_index_.size());
+  getPntrToComponent("nlsteps")->set(nlist_steps_);
+  nlist_steps_=0;
+  nlist_update_=false;
 }
 
 void OPESmetad::dumpStateToFile()
@@ -1246,7 +1258,15 @@ void OPESmetad::dumpStateToFile()
   if(sigma0_.size()==0)
   {
     stateOfile_.addConstantField("adaptive_counter");
-    if(NumWalkers_>1)
+    if(NumWalkers_==1)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
+        stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
+      }
+    }
+    else
     {
       for(unsigned w=0; w<NumWalkers_; w++)
         for(unsigned i=0; i<ncv_; i++)
@@ -1255,14 +1275,6 @@ void OPESmetad::dumpStateToFile()
           stateOfile_.addConstantField("av_cv_"+arg_iw);
           stateOfile_.addConstantField("av_M2_"+arg_iw);
         }
-    }
-    else
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
-        stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
-      }
     }
   }
 //print fields
@@ -1280,7 +1292,15 @@ void OPESmetad::dumpStateToFile()
   if(sigma0_.size()==0)
   {
     stateOfile_.printField("adaptive_counter",adaptive_counter_);
-    if(NumWalkers_>1)
+    if(NumWalkers_==1)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
+        stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
+      }
+    }
+    else
     {
       for(unsigned w=0; w<NumWalkers_; w++)
         for(unsigned i=0; i<ncv_; i++)
@@ -1289,14 +1309,6 @@ void OPESmetad::dumpStateToFile()
           stateOfile_.printField("av_cv_"+arg_iw,all_av_cv[w*ncv_+i]);
           stateOfile_.printField("av_M2_"+arg_iw,all_av_M2[w*ncv_+i]);
         }
-    }
-    else
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
-        stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
-      }
     }
   }
 //print kernels
@@ -1328,7 +1340,7 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double> & acc_der)
+inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   std::vector<double> dist(ncv_);
@@ -1345,7 +1357,7 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return val;
 }
 
-inline void OPESmetad::mergeKernels(kernel & k1,const kernel & k2)
+inline void OPESmetad::mergeKernels(kernel& k1,const kernel& k2)
 {
   const double h=k1.height+k2.height;
   for(unsigned i=0; i<k1.center.size(); i++)
@@ -1365,7 +1377,6 @@ inline void OPESmetad::mergeKernels(kernel & k1,const kernel & k2)
   }
   k1.height=h;
 }
-
 
 }
 }
