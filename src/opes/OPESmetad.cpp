@@ -156,21 +156,6 @@ private:
     std::vector<double> sigma;
     kernel(double h, const std::vector<double>& c,const std::vector<double>& s):
       height(h),center(c),sigma(s) {}
-    kernel(std::vector<double> data)
-    {
-      height=data[0];
-      size_t ncv=(data.size()-1)/2;
-      for(size_t i=0; i<ncv; i++) center.push_back(data[i+1]);
-      for(size_t i=0; i<ncv; i++) sigma.push_back(data[i+ncv+1]);
-    }
-    std::vector<double> flatten() {
-      size_t ksize=2*center.size()+1;
-      std::vector<double> flat; flat.resize(ksize);
-      flat[0]=height;
-      for(size_t i=0; i<center.size(); i++) flat[i+1] = center[i];
-      for(size_t i=0; i<center.size(); i++) flat[i+center.size()+1] = sigma[i];
-      return flat;
-    }
   };
   double cutoff2_;
   double val_at_cutoff_;
@@ -1036,7 +1021,6 @@ void OPESmetad::update()
 
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
 {
-  unsigned nt=OpenMP::getNumThreads();
   double prob=0.0;
   if(!nlist_)
   {
