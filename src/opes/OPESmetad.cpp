@@ -902,22 +902,43 @@ void OPESmetad::update()
     comm.Bcast(all_height,0);
     comm.Bcast(all_center,0);
     comm.Bcast(all_sigma,0);
-    bool tmp_use_Kneighb=use_Kneighb_; //FIXME
-    use_Kneighb_=false;
-//    std::set<unsigned> neigh_index_set(all_neigh_index.begin(),all_neigh_index.end());//order it and remove duplicates
-//    neigh_index_.assign(neigh_index_set.begin(),neigh_index_set.end());
+    if(use_Kneighb_)
+    { //gather all the neigh_index_, so merging can be done using it
+      std::vector<int> all_neigh_size(NumWalkers_);
+      if(comm.Get_rank()==0)
+      {
+        all_neigh_size[multi_sim_comm.Get_rank()]=neigh_index_.size();
+        multi_sim_comm.Sum(all_neigh_size);
+      }
+      comm.Bcast(all_neigh_size,0);
+      unsigned tot_neigh=0;
+      for(unsigned w=0; w<NumWalkers_; w++)
+        tot_neigh+=all_neigh_size[w];
+      if(tot_neigh>0)
+      {
+        std::vector<int> disp(NumWalkers_);
+        for(unsigned w=0; w<NumWalkers_-1; w++)
+          disp[w+1]=disp[w]+all_neigh_size[w];
+        std::vector<unsigned> all_neigh_index(tot_neigh);
+        if(comm.Get_rank()==0)
+          multi_sim_comm.Allgatherv(neigh_index_,all_neigh_index,&all_neigh_size[0],&disp[0]);
+        comm.Bcast(all_neigh_index,0);
+        std::set<unsigned> neigh_index_set(all_neigh_index.begin(),all_neigh_index.end()); //remove duplicates and sort
+        neigh_index_.assign(neigh_index_set.begin(),neigh_index_set.end());
+      }
+    }
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
       std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
       addKernel(all_height[w],center_w,sigma_w,true);
     }
-    use_Kneighb_=tmp_use_Kneighb;
-    neigh_update_=true;
   }
   else
     addKernel(height,center,sigma,true);
   getPntrToComponent("nker")->set(kernels_.size());
+  if(use_Kneighb_)
+    getPntrToComponent("nlker")->set(neigh_index_.size());
 
   //update Zed_
   if(!no_Zed_)
