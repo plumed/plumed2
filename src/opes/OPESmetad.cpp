@@ -357,7 +357,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   nlist_center_.resize(ncv_);
   nlist_dev2_.resize(ncv_,0.);
   nlist_steps_=0;
-  nlist_update_=false;
+  nlist_update_=true;
 
 //optional stuff
   no_Zed_=false;
@@ -429,7 +429,6 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 //restart if needed
   if(getRestart())
   {
-    nlist_update_=true;
     bool stateRestart=true;
     if(restartFileName.length()==0)
     {
@@ -440,6 +439,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     ifile.link(*this);
     if(ifile.FileExist(restartFileName))
     {
+      bool tmp_nlist=nlist_;
+      nlist_=false; // NLIST is not needed while restarting
       ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
       log.printf("    restarting from: %s\n",restartFileName.c_str());
@@ -588,6 +589,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
       }
       ifile.reset(false);
       ifile.close();
+      nlist_=tmp_nlist;
     }
     else
     { //same behaviour as METAD
@@ -1039,8 +1041,6 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
       delta_kernels_.push_back(kernels_[taker_k]);
       if(recursive_merge_) //the overhead is worth it if it keeps low the total number of kernels
       {
-        //TODO this second check could run only through the kernels closer than, say, 2*threshold
-        //     the function getMergeableKernel could return a list of such neighbors
         unsigned giver_k=taker_k;
         taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
         while(taker_k<kernels_.size())
