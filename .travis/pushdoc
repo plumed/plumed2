@@ -1,5 +1,10 @@
 #! /bin/bash
 
+if test -z "$GIT_TOKEN" ; then
+  echo "No GIT_TOKEN, cannot push"
+  exit 0
+fi
+
 set -e
 set -x
 
