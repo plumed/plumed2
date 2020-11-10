@@ -164,8 +164,8 @@ private:
   OFile kernelsOfile_;
 //neighbour list stuff
   bool use_Kneighb_;
-  std::vector<kernel> neigh_kernels_;
   double neigh_param_[2];
+  std::vector<unsigned> neigh_index_;
   std::vector<double> neigh_center_;
   std::vector<double> neigh_dev2_;
   bool neigh_update_;
@@ -343,13 +343,13 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
   else
   {
-    plumed_massert(use_Kneighb_,"set the flag NLIST if you want to use neighbor list");
+    use_Kneighb_=true;
     plumed_massert(neigh_param.size()==2,"two cutoff parameters are needed for the neighbor list");
     neigh_param_[0]=neigh_param[0];
     neigh_param_[1]=neigh_param[1];
   }
   neigh_center_.resize(ncv_);
-  neigh_dev2_.resize(ncv_);
+  neigh_dev2_.resize(ncv_,0.);
   neigh_steps_=0;
   neigh_update_=false;
 
@@ -902,12 +902,18 @@ void OPESmetad::update()
     comm.Bcast(all_height,0);
     comm.Bcast(all_center,0);
     comm.Bcast(all_sigma,0);
+    bool tmp_use_Kneighb=use_Kneighb_; //FIXME
+    use_Kneighb_=false;
+//    std::set<unsigned> neigh_index_set(all_neigh_index.begin(),all_neigh_index.end());//order it and remove duplicates
+//    neigh_index_.assign(neigh_index_set.begin(),neigh_index_set.end());
     for(unsigned w=0; w<NumWalkers_; w++)
     {
       std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
       std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
       addKernel(all_height[w],center_w,sigma_w,true);
     }
+    use_Kneighb_=tmp_use_Kneighb;
+    neigh_update_=true;
   }
   else
     addKernel(height,center,sigma,true);
@@ -957,7 +963,6 @@ void OPESmetad::update()
     Zed_=sum_uprob/KDEnorm_/kernels_.size();
     getPntrToComponent("zed")->set(Zed_);
   }
-  neigh_update_=true;
 }
 
 double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
@@ -967,8 +972,8 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       prob+=evaluateKernel(kernels_[k],cv,der_prob);
   else
-    for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
-      prob+=evaluateKernel(neigh_kernels_[k],cv,der_prob);
+    for(unsigned nk=rank_; nk<neigh_index_.size(); nk+=NumParallel_)
+      prob+=evaluateKernel(kernels_[neigh_index_[nk]],cv,der_prob);
   if(NumParallel_>1)
   {
     comm.Sum(prob);
@@ -1014,6 +1019,23 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
           mergeKernels(kernels_[taker_k],kernels_[giver_k]);
           delta_kernels_.push_back(kernels_[taker_k]);
           kernels_.erase(kernels_.begin()+giver_k);
+          if(use_Kneighb_)
+          {
+            unsigned giver_nk=0;
+            bool found_giver=false;
+            for(unsigned nk=0; nk<neigh_index_.size(); nk++)
+            {
+              if(found_giver)
+                neigh_index_[nk]--; //all the indexes shift due to erase
+              if(neigh_index_[nk]==giver_k)
+              {
+                giver_nk=nk;
+                found_giver=true;
+              }
+            }
+            plumed_dbg_massert(found_giver,"problem with merging and NLIST");
+            neigh_index_.erase(neigh_index_.begin()+giver_nk);
+          }
           giver_k=taker_k;
           taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
         }
@@ -1024,6 +1046,8 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
   {
     kernels_.emplace_back(height,center,sigma);
     delta_kernels_.emplace_back(height,center,sigma);
+    if(use_Kneighb_)
+      neigh_index_.push_back(kernels_.size()-1);
   }
 
 //write to file
@@ -1044,22 +1068,47 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_norm2=threshold2_;
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+  if(!use_Kneighb_)
   {
-    if(k==giver_k) //a kernel should not be merged with itself
-      continue;
-    double norm2=0;
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
-      const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-      norm2+=dist_i*dist_i;
-      if(norm2>=min_norm2)
-        break;
+      if(k==giver_k) //a kernel should not be merged with itself
+        continue;
+      double norm2=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2+=dist_i*dist_i;
+        if(norm2>=min_norm2)
+          break;
+      }
+      if(norm2<min_norm2)
+      {
+        min_norm2=norm2;
+        min_k=k;
+      }
     }
-    if(norm2<min_norm2)
+  }
+  else
+  {
+    for(unsigned nk=rank_; nk<neigh_index_.size(); nk+=NumParallel_)
     {
-      min_norm2=norm2;
-      min_k=k;
+      const unsigned k=neigh_index_[nk];
+      if(k==giver_k) //a kernel should not be merged with itself
+        continue;
+      double norm2=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2+=dist_i*dist_i;
+        if(norm2>=min_norm2)
+          break;
+      }
+      if(norm2<min_norm2)
+      {
+        min_norm2=norm2;
+        min_k=k;
+      }
     }
   }
   if(NumParallel_>1)
@@ -1081,90 +1130,59 @@ void OPESmetad::update_Kneighb(const std::vector<double> &new_center)
     return;
 
   neigh_center_=new_center;
-  neigh_kernels_.clear();
-  if(NumParallel_==1)
+  neigh_index_.clear();
+  //first we gather all the neigh_index
+  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
   {
-    for(unsigned k=0; k<kernels_.size(); k++)
-    {
-      double norm2_k=0;
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2_k+=dist_ik*dist_ik;
-      }
-      if(norm2_k<=neigh_param_[0]*cutoff2_)
-        neigh_kernels_.push_back(kernels_[k]);
-    }
+    double norm2_k=0;
     for(unsigned i=0; i<ncv_; i++)
     {
-      double dev2_i=0;
-      for(unsigned k=0; k<neigh_kernels_.size(); k++)
-      {
-        const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
-        dev2_i+=diff_ik*diff_ik;
-      }
-      if(dev2_i==0) //e.g. if neigh_kernels_size==0
-        neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
-      else
-        neigh_dev2_[i]=dev2_i/neigh_kernels_.size();
+      const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+      norm2_k+=dist_ik*dist_ik;
     }
+    if(norm2_k<=neigh_param_[0]*cutoff2_)
+      neigh_index_.push_back(k);
   }
-  else
+  if(NumParallel_>1)
   {
-    //first we gather all the neigh_index
-    std::vector<unsigned> neigh_index;
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-    {
-      double norm2_k=0;
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        const double dist_ik=difference(i,neigh_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2_k+=dist_ik*dist_ik;
-      }
-      if(norm2_k<=neigh_param_[0]*cutoff2_)
-        neigh_index.push_back(k);
-    }
-    //the following should probably be done with an Allgatherv
-    std::vector<unsigned> all_neigh_size(NumParallel_);
-    all_neigh_size[rank_]=neigh_index.size();
+    std::vector<int> all_neigh_size(NumParallel_);
+    all_neigh_size[rank_]=neigh_index_.size();
     comm.Sum(all_neigh_size);
-    unsigned tot_neigh_size=0;
+    unsigned tot_neigh=0;
     for(unsigned r=0; r<NumParallel_; r++)
-      tot_neigh_size+=all_neigh_size[r];
-    std::vector<unsigned> all_neigh_index(tot_neigh_size);
-    unsigned it=0;
-    for(unsigned r=0; r<NumParallel_; r++)
+      tot_neigh+=all_neigh_size[r];
+    if(tot_neigh>0)
     {
-      if(r==rank_)
-        for(unsigned k=0; k<neigh_index.size(); k++)
-          all_neigh_index[it+k]=neigh_index[k];
-      it+=all_neigh_size[r];
-    }
-    comm.Sum(all_neigh_index);
-    //now that whe have the indexes we can use them to fill neigh_kernels_
-    neigh_kernels_.reserve(tot_neigh_size); //is this helpful?
-    for(unsigned k=0; k<tot_neigh_size; k++)
-      neigh_kernels_.push_back(kernels_[all_neigh_index[k]]);
-    //calculate the square deviation
-    std::vector<double> dev2(ncv_,0.);
-    for(unsigned k=rank_; k<neigh_kernels_.size(); k+=NumParallel_)
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        const double diff_ik=difference(i,neigh_center_[i],neigh_kernels_[k].center[i]);
-        dev2[i]+=diff_ik*diff_ik;
-      }
-    }
-    comm.Sum(dev2);
-    for(unsigned i=0; i<ncv_; i++)
-    {
-      if(dev2[i]==0) //e.g. if neigh_kernels_.size()==0
-        neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
-      else
-        neigh_dev2_[i]=dev2[i]/neigh_kernels_.size();
+      std::vector<int> disp(NumParallel_);
+      for(unsigned r=0; r<NumParallel_-1; r++)
+        disp[r+1]=disp[r]+all_neigh_size[r];
+      std::vector<unsigned> local_neigh_index=neigh_index_;
+      neigh_index_.resize(tot_neigh);
+      comm.Allgatherv(local_neigh_index,neigh_index_,&all_neigh_size[0],&disp[0]);
+      if(recursive_merge_)
+        std::sort(neigh_index_.begin(),neigh_index_.end());
     }
   }
-  getPntrToComponent("nlker")->set(neigh_kernels_.size());
+  //calculate the square deviation
+  std::vector<double> dev2(ncv_,0.);
+  for(unsigned k=rank_; k<neigh_index_.size(); k+=NumParallel_)
+  {
+    for(unsigned i=0; i<ncv_; i++)
+    {
+      const double diff_ik=difference(i,neigh_center_[i],kernels_[neigh_index_[k]].center[i]);
+      dev2[i]+=diff_ik*diff_ik;
+    }
+  }
+  if(NumParallel_>1)
+    comm.Sum(dev2);
+  for(unsigned i=0; i<ncv_; i++)
+  {
+    if(dev2[i]==0) //e.g. if neigh_index_.size()==0
+      neigh_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
+    else
+      neigh_dev2_[i]=dev2[i]/neigh_index_.size();
+  }
+  getPntrToComponent("nlker")->set(neigh_index_.size());
   getPntrToComponent("nlsteps")->set(neigh_steps_);
   neigh_steps_=0;
   neigh_update_=false;
