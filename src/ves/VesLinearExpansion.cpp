@@ -172,12 +172,12 @@ order of the basis functions, the interval on which the
 basis functions are defined, and the step size used
 in the optimizer, are left unfilled.
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=d1
  BASIS_FUNCTIONS=bf1
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=200
  LABEL=b1
 ... VES_LINEAR_EXPANSION
@@ -186,7 +186,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
 ... OPT_AVERAGED_SGD
@@ -201,15 +201,15 @@ dynamic and needs to be iteratively updated with a stride that is given
 using the TARGETDIST_STRIDE within the optimizer.
 
 \plumedfile
-bf1: BF_FOURIER  ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_FOURIER  ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 td_wt: TD_WELLTEMPERED BIASFACTOR=10.0
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  TARGET_DISTRIBUTION=td_wt
@@ -219,7 +219,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
@@ -232,13 +232,13 @@ only fills the free energy landscape up a certain level. In this case
 the target distribution is also dynamic and needs to iteratively updated.
 
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0
@@ -248,7 +248,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
@@ -260,13 +260,13 @@ kinetics. For this you need read in the final coefficients from file
 (e.g. coeffs_final.data in this case) by using the
 COEFFS keyword (also, no optimizer should be defined in the input)
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0

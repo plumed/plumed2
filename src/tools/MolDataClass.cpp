@@ -318,10 +318,10 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
       } else if( name=="omega" && !isTerminalGroup("protein",resname) ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum-1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum-1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
-        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum,chainid));
-        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
-        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum+1,chainid));
       } else if( name=="chi1" && !isTerminalGroup("protein",resname) ) {
         if ( resname=="GLY" || resname=="ALA" || resname=="SFO" ) plumed_merror("chi-1 is not defined for ALA, GLY and SFO");
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));

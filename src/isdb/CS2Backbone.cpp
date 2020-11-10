@@ -120,7 +120,7 @@ metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
 
-In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
+In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs .
 
 \plumedfile
 #SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
@@ -136,6 +136,7 @@ PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
 csbias: BIASVALUE ARG=cs.score
 

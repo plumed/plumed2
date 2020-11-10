@@ -640,7 +640,7 @@ MetaD::MetaD(const ActionOptions& ao):
       for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
     }
 
-    flexbin.reset(new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_));
+    flexbin=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
@@ -1073,7 +1073,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // for performance
-  dp_.reset( new double[getNumberOfArguments()] );
+  dp_=Tools::make_unique<double[]>(getNumberOfArguments());
 
   // initializing and checking grid
   if(grid_) {
@@ -1090,8 +1090,8 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
-    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1141,8 +1141,8 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
-    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1172,7 +1172,7 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    ifiles.emplace_back(new IFile());
+    ifiles.emplace_back(Tools::make_unique<IFile>());
     // this is just a shortcut pointer to the last element:
     IFile *ifile = ifiles.back().get();
     ifilesnames.push_back(fname);
@@ -1409,13 +1409,13 @@ void MetaD::addGaussian(const Gaussian& hill)
 {
   if(!grid_) hills_.push_back(hill);
   else {
-    unsigned ncv=getNumberOfArguments();
+    size_t ncv=getNumberOfArguments();
     vector<unsigned> nneighb=getGaussianSupport(hill);
     vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
     vector<double> der(ncv);
     vector<double> xx(ncv);
     if(comm.Get_size()==1) {
-      for(unsigned i=0; i<neighbors.size(); ++i) {
+      for(size_t i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
@@ -1670,7 +1670,7 @@ void MetaD::calculate()
 
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
-  std::unique_ptr<double[]> der(new double[ncv]);
+  auto der = Tools::make_unique<double[]>(ncv);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
     der[i]=0.;
@@ -1943,24 +1943,24 @@ void MetaD::computeReweightingFactor()
   double minusBetaF=biasf_/(biasf_-1.)/kbt_;
   double minusBetaFplusV=1./(biasf_-1.)/kbt_;
   if (biasf_==-1.0) { //non well-tempered case
-    minusBetaF=1;
+    minusBetaF=1./kbt_;
     minusBetaFplusV=0;
   }
-  const double big_number=minusBetaF*BiasGrid_->getMaxValue(); //to avoid exp overflow
+  max_bias_=BiasGrid_->getMaxValue(); //to avoid exp overflow
 
   const unsigned rank=comm.Get_rank();
   const unsigned stride=comm.Get_size();
   for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
     const double val=BiasGrid_->getValue(t);
-    Z_0+=std::exp(minusBetaF*val-big_number);
-    Z_V+=std::exp(minusBetaFplusV*val-big_number);
+    Z_0+=std::exp(minusBetaF*(val-max_bias_));
+    Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
   }
   if (stride>1) {
     comm.Sum(Z_0);
     comm.Sum(Z_V);
   }
 
-  reweight_factor_=kbt_*std::log(Z_0/Z_V);
+  reweight_factor_=kbt_*std::log(Z_0/Z_V)+max_bias_;
   getPntrToComponent("rct")->set(reweight_factor_);
 }
 

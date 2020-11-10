@@ -39,7 +39,7 @@ jobs:
   - name: MacOS, serial build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode8.3
+    osx_image: xcode11.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -48,7 +48,7 @@ jobs:
   - name: MacOS, MPI build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode8.3
+    osx_image: xcode11.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -94,8 +94,6 @@ jobs:
   allow_failures:
 # I allow this to fail temporarily
   - env: PLUMED_DOCKER=yes
-# this is failing due to problems in installing MPI, should be allowed to fail until we fix it.
-  - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -236,12 +234,6 @@ script:
 
   - CONDA_VERSION=none
   - export CONDA_LABEL=
-# set CONDA_VERSION to TRAVIS_TAG, if available
-  - if test -n "${TRAVIS_TAG}" ; then
-       CONDA_VERSION="${TRAVIS_TAG//-/_}" ;
-       CONDA_VERSION="${CONDA_VERSION#v}" ;
-       CONDA_LABEL=tags ;
-    fi
 # set CONDA_VERSION to branch + date when on nightly build
   - if test "$TRAVIS_EVENT_TYPE" = cron ; then
        if test "$TRAVIS_BRANCH" = master ; then CONDA_VERSION=2.99.$(date +%y%m%d) ; fi ;
@@ -297,8 +289,5 @@ script:
 # script which check if coding policies are satisfied
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
-  - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
-  - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
-  - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
 # upload conda package
   - if test -n "$PLUMED_CONDA" && test -n "$CONDA_LABEL" ; then make -C conda upload ; fi

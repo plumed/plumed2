@@ -25,7 +25,7 @@
 #include "h36.h"
 #include <cstdio>
 #include <iostream>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "Tensor.h"
 
 using namespace std;
@@ -94,6 +94,11 @@ ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 However notice that many extra atoms with zero weight might slow down the calculation, so
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
+Starting with PLUMED 2.7, if all the weights are set to zero they will be normalized to be equal to the
+inverse of the number of involved atoms. This means that it will be possible to use files with
+the weight columns set to zero obtaining a meaningful result. In previous PLUMED versions,
+setting all weights to zero was resulting in an error instead.
+
 
 \par Systems with more than 100k atoms
 
@@ -342,6 +347,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
+        while(trimmed.length()<5) trimmed = std::string(" ") + trimmed;
         const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
@@ -506,6 +512,11 @@ bool PDB::checkForAtom( const std::string& name ) const {
   return false;
 }
 
+bool PDB::checkForAtom( AtomNumber a ) const {
+  const auto p=number2index.find(a);
+  return (p!=number2index.end());
+}
+
 Log& operator<<(Log& ostr, const PDB&  pdb) {
   char buffer[1000];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
@@ -529,7 +540,7 @@ std::string PDB::getMtype() const {
   return mtype;
 }
 
-void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
+void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
   if( argnames.size()>0 ) {
     ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
     for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );

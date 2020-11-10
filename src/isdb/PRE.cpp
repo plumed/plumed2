@@ -191,7 +191,7 @@ PRE::PRE(const ActionOptions&ao):
   if(getDoScore()&&!addexp) error("with DOSCORE you need to set the PREINT values");
 
   // Create neighbour lists
-  nl.reset( new NeighborList(gb_lista,ga_lista,false,true,pbc,getPbc(),comm) );
+  nl=Tools::make_unique<NeighborList>(gb_lista,ga_lista,false,true,pbc,getPbc(),comm);
 
   // Output details of all contacts
   unsigned index=0;

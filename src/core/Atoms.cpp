@@ -274,7 +274,7 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
 void Atoms::wait() {
   dataCanBeSet=false; // Everything should be set by this stage
 // How many double per atom should be scattered
-  int ndata=3;
+  size_t ndata=3;
   if(!massAndChargeOK)ndata=5;
 
   if(dd) {
@@ -288,7 +288,7 @@ void Atoms::wait() {
 // receive toBeReceived
     if(asyncSent) {
       Communicator::Status status;
-      int count=0;
+      size_t count=0;
       for(int i=0; i<dd.Get_size(); i++) {
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();

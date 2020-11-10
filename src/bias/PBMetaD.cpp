@@ -250,7 +250,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool    walkers_mpi;
-  unsigned mpi_nw_;
+  size_t mpi_nw_;
   unsigned mpi_id_;
   vector<string> hillsfname;
   vector<std::unique_ptr<IFile>> ifiles;
@@ -651,8 +651,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
         if(getRestart()) restartedFromGrid=true;
       } else {
-        if(!sparsegrid) {BiasGrid_.reset( new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
-        else           {BiasGrid_.reset( new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
+        if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
+        else           {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
         std::vector<std::string> actualmin=BiasGrid_->getMin();
         std::vector<std::string> actualmax=BiasGrid_->getMax();
         std::string is;
@@ -688,7 +688,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[i];
         }
       }
-      ifiles.emplace_back(new IFile());
+      ifiles.emplace_back(Tools::make_unique<IFile>());
       // this is just a shortcut pointer to the last element:
       IFile *ifile = ifiles.back().get();
       ifile->link(*this);
@@ -714,7 +714,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // open hills files for writing
   for(unsigned i=0; i<hillsfname.size(); ++i) {
-    std::unique_ptr<OFile> ofile(new OFile());
+    auto ofile=Tools::make_unique<OFile>();
     ofile->link(*this);
     // if MPI multiple walkers, only rank 0 will write to file
     if(walkers_mpi) {
@@ -743,7 +743,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // Dump grid to files
   if(wgridstride_ > 0) {
     for(unsigned i = 0; i < gridfilenames_.size(); ++i) {
-      std::unique_ptr<OFile> ofile(new OFile());
+      auto ofile=Tools::make_unique<OFile>();
       ofile->link(*this);
       string gridfname_tmp = gridfilenames_[i];
       if(walkers_mpi) {

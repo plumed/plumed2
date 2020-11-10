@@ -28,7 +28,7 @@
 #include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
 #include "vesselbase/ActionWithInputVessel.h"

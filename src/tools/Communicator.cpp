@@ -187,7 +187,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
     plumed_assert(rc);
     plumed_assert(rc[0]==in.size);
     plumed_assert(di);
-    if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
+    if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
   }
 #else
   plumed_assert(in.nbytes==out.nbytes);
@@ -195,7 +195,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
   plumed_assert(rc);
   plumed_assert(rc[0]==in.size);
   plumed_assert(di);
-  if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
+  if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
 #endif
 }
 
@@ -209,12 +209,12 @@ void Communicator::Allgather(ConstData in,Data out) {
   } else {
     plumed_assert(in.nbytes==out.nbytes);
     plumed_assert(in.size==out.size);
-    if(s) std::memcpy(r,s,in.size*in.nbytes);
+    if(s) std::memcpy(r,s,size_t(in.size)*in.nbytes);
   }
 #else
   plumed_assert(in.nbytes==out.nbytes);
   plumed_assert(in.size==out.size);
-  if(s) std::memcpy(r,s,in.size*in.nbytes);
+  if(s) std::memcpy(r,s,size_t(in.size)*in.nbytes);
 #endif
 }
 
@@ -275,6 +275,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+template<> MPI_Datatype Communicator::getMPIType<long double>()   { return MPI_LONG_DOUBLE;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_Datatype();}
@@ -283,6 +284,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype()
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<long double>() { return MPI_Datatype();}
 #endif
 
 

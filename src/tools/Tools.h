@@ -59,6 +59,9 @@ class Tools {
 /// T should be either float, double, or long double
   template<class T>
   static bool convertToReal(const std::string & str,T &t);
+/// class to convert a string to a int type T
+  template<class T>
+  static bool convertToInt(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -86,6 +89,8 @@ public:
   static bool convert(const std::string & str,long int & t);
 /// Convert a string to an unsigned int, reading it
   static bool convert(const std::string & str,unsigned & t);
+/// Convert a string to a long unsigned int, reading it
+  static bool convert(const std::string & str,long unsigned & t);
 /// Convert a string to a atom number, reading it
   static bool convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
@@ -185,6 +190,30 @@ public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
   };
+/// Mimic C++14 std::make_unique
+  template<class T> struct _Unique_if {
+    typedef std::unique_ptr<T> _Single_object;
+  };
+  template<class T> struct _Unique_if<T[]> {
+    typedef std::unique_ptr<T[]> _Unknown_bound;
+  };
+  template<class T, size_t N> struct _Unique_if<T[N]> {
+    typedef void _Known_bound;
+  };
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Single_object
+  make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  }
+  template<class T>
+  static typename _Unique_if<T>::_Unknown_bound
+  make_unique(size_t n) {
+    typedef typename std::remove_extent<T>::type U;
+    return std::unique_ptr<T>(new U[n]());
+  }
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Known_bound
+  make_unique(Args&&...) = delete;
 };
 
 template <class T>

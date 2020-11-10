@@ -50,8 +50,8 @@ public:
     vesselbase::VesselOptions da("mygrid","",-1,vstring,NULL);
     Keywords keys; gridtools::GridVessel::registerKeywords( keys );
     vesselbase::VesselOptions dar( da, keys );
-    mygrid.reset( new GridVessel(dar) );
-    if( nfg[0]>0 ) myfgrid.reset( new GridVessel(dar) );
+    mygrid=Tools::make_unique<GridVessel>(dar);
+    if( nfg[0]>0 ) myfgrid=Tools::make_unique<GridVessel>(dar);
 
     // Now setup the min and max values for the grid
     std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() ); std::vector<double> dummy_spacing;

@@ -531,6 +531,7 @@ lplumed
 dl
 progname
 openmm
+OpenMM
 erm
 arse
 autocompletion
@@ -1040,6 +1041,7 @@ AdaGrad
 fesA
 ann
 dlb
+octahedron
 Stefano
 Raniolo
 Vittorio

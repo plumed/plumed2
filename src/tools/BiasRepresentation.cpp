@@ -88,7 +88,7 @@ void  BiasRepresentation::addGrid( const vector<string> & gmin, const vector<str
   string ss; ss="file.free";
   vector<Value*> vv; for(unsigned i=0; i<values.size(); i++)vv.push_back(values[i]);
   //cerr<<" initializing grid "<<endl;
-  BiasGrid_.reset(new Grid(ss,vv,gmin,gmax,nbin,false,true));
+  BiasGrid_=Tools::make_unique<Grid>(ss,vv,gmin,gmax,nbin,false,true);
   hasgrid=true;
 }
 bool BiasRepresentation::hasSigmaInInput() {
@@ -125,7 +125,7 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile)
     ifile->scanField(names[i],cc[i]);
   }
   double h=1.0;
-  return std::unique_ptr<KernelFunctions>( new KernelFunctions(cc,histosigma,"gaussian","DIAGONAL",h) );
+  return Tools::make_unique<KernelFunctions>(cc,histosigma,"gaussian","DIAGONAL",h);
 }
 void BiasRepresentation::pushKernel( IFile *ifile ) {
   std::unique_ptr<KernelFunctions> kk;

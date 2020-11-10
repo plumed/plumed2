@@ -17,7 +17,7 @@ t13: TORSION ATOMS=@phi-2
 t13b: TORSION ATOMS=@psi-2
 t13c: TORSION ATOMS=@chi1-2
 t13d: TORSION ATOMS=@chi2-2
-t13e: TORSION ATOMS=@omega-2
+t13e: TORSION ATOMS=@omega-3
 # test chain_residue syntax where chain is a number
 t14: TORSION ATOMS=@chi-5_8
 

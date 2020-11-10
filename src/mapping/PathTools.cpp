@@ -175,7 +175,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     // Generate stuff to reparameterize
     Pbc fake_pbc; std::vector<std::unique_ptr<Value>> vals;
     for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
-      vals.emplace_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
+      vals.emplace_back(Tools::make_unique<Value>()); vals[vals.size()-1]->setNotPeriodic();
     }
 
     // temporary pointes used to make the conversion once
@@ -244,7 +244,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   Pbc fpbc;
   std::vector<std::unique_ptr<Value>> args;
   for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
-    args.emplace_back(new Value()); args[args.size()-1]->setNotPeriodic();
+    args.emplace_back(Tools::make_unique<Value>()); args[args.size()-1]->setNotPeriodic();
   }
 
   // convert pointer once:

@@ -69,7 +69,13 @@ public:
     extraCVForce[name]=static_cast<T*>(p);
   }
   double getExtraCV(const std::string &name) override {
-    return static_cast<double>(*extraCV[name]);
+
+    auto search=extraCV.find(name);
+    if(search != extraCV.end()) {
+      return static_cast<double>(*search->second);
+    } else {
+      plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
+    }
   }
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name]+=static_cast<T>(f);
@@ -303,9 +309,9 @@ MDAtomsTyped<T>::MDAtomsTyped():
 
 std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
+    return Tools::make_unique<MDAtomsTyped<double>>();
   } else if (p==sizeof(float)) {
-    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
+    return Tools::make_unique<MDAtomsTyped<float>>();
   }
   std::string pp;
   Tools::convert(p,pp);

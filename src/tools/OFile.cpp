@@ -81,10 +81,10 @@ OFile::OFile():
   fmtField();
   buflen=1;
   actual_buffer_length=0;
-  buffer.reset(new char [buflen]);
+  buffer=Tools::make_unique<char[]>(buflen);
 // these are set to zero to avoid valgrind errors
   for(int i=0; i<buflen; ++i) buffer[i]=0;
-  buffer_string.reset(new char [1000]);
+  buffer_string=Tools::make_unique<char[]>(1000);
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0; i<1000; ++i) buffer_string[i]=0;
 }
@@ -109,7 +109,7 @@ int OFile::printf(const char*fmt,...) {
   if(r>=buflen-actual_buffer_length) {
     int newlen=buflen;
     while(newlen<=r+actual_buffer_length) newlen*=2;
-    std::unique_ptr<char[]> newbuf{new char [newlen]};
+    auto newbuf=Tools::make_unique<char[]>(newlen);
     memmove(newbuf.get(),buffer.get(),buflen);
     for(int k=buflen; k<newlen; k++) newbuf[k]=0;
     buffer=std::move(newbuf);
@@ -175,6 +175,24 @@ OFile& OFile::printField(const std::string&name,double v) {
 
 OFile& OFile::printField(const std::string&name,int v) {
   sprintf(buffer_string.get()," %d",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long int v) {
+  sprintf(buffer_string.get()," %ld",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,unsigned v) {
+  sprintf(buffer_string.get()," %u",v);
+  printField(name,buffer_string.get());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long unsigned v) {
+  sprintf(buffer_string.get()," %lu",v);
   printField(name,buffer_string.get());
   return *this;
 }

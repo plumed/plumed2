@@ -402,7 +402,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
       ifile->scanField("sigma_"+valnames[i],sig[i]);
       if( !cholesky ) sig[i]=sqrt(sig[i]);
     }
-    return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "DIAGONAL", h ) );
+    return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "DIAGONAL", h);
   }
 
   unsigned ncv=valnames.size();
@@ -420,8 +420,8 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   for(unsigned i=0; i<ncv; i++) {
     for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
   }
-  if( sss=="true" ) return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h ) );
-  return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
+  if( sss=="true" ) return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "MULTIVARIATE", h);
+  return Tools::make_unique<KernelFunctions>( cc, sig, ktype, "VON-MISSES", h );
 }
 
 }

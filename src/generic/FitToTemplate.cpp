@@ -31,7 +31,7 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 
@@ -266,7 +266,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) positions[i]-=center;
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
-    rmsd.reset(new RMSD());
+    rmsd=Tools::make_unique<RMSD>();
     rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
     log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
   }

@@ -58,6 +58,27 @@ def test6():
             assert d.plumed_constants[0][2]=="pi"
             i=i+1
 
+def test7():
+    with cd('test/'):
+        d=plumed.read_as_pandas("COLVAR")
+        plumed.write_pandas(d,"COLVAR_write1")
+        assert filecmp.cmp("COLVAR_write1","COLVAR_write.ref")
+        d=plumed.read_as_pandas("COLVAR",index_col='time')
+        plumed.write_pandas(d,"COLVAR_write2")
+        assert filecmp.cmp("COLVAR_write2","COLVAR_write.ref")
+        d=plumed.read_as_pandas("COLVAR",index_col=('time','psi'))
+        try:
+            plumed.write_pandas(d,"COLVAR_write3")
+            assert False
+        except TypeError:
+            pass
+
 if __name__ == "__main__":
-    test()
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    test6()
+    test7()
 

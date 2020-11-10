@@ -80,7 +80,7 @@ std::unique_ptr<KernelFunctions> HistogramOnGrid::getKernelAndNeighbors( std::ve
     num_neigh=1; for(unsigned i=0; i<dimension; ++i) point[i] += 0.5*dx[i];
     neighbors[0] = getIndex( point ); return NULL;
   } else if( getType()=="flat" ) {
-    std::unique_ptr<KernelFunctions> kernel(new KernelFunctions( point, bandwidths, kerneltype, "DIAGONAL", 1.0 ));
+    auto kernel=Tools::make_unique<KernelFunctions>( point, bandwidths, kerneltype, "DIAGONAL", 1.0 );
 // GB: Now values is destroyed when exiting this function.
 // I think before there was a leak
     std::vector<std::unique_ptr<Value>> values=getVectorOfValues();
@@ -98,7 +98,7 @@ std::unique_ptr<KernelFunctions> HistogramOnGrid::getKernelAndNeighbors( std::ve
 std::vector<std::unique_ptr<Value>> HistogramOnGrid::getVectorOfValues() const {
   std::vector<std::unique_ptr<Value>> vv;
   for(unsigned i=0; i<dimension; ++i) {
-    vv.emplace_back(new Value());
+    vv.emplace_back(Tools::make_unique<Value>());
     if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
     else vv[i]->setNotPeriodic();
   }

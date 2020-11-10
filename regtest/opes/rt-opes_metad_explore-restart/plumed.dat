@@ -1,0 +1,28 @@
+# vim:ft=plumed
+RESTART
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+opes: OPES_METAD_EXPLORE ...
+  ARG=psi,phi
+  PACE=5
+  TEMP=300.0
+  BARRIER=20
+  SIGMA=0.15,0.15
+  FMT=%f
+  NO_ZED
+  CALC_WORK
+  EPSILON=0.001
+  BIASFACTOR=100
+  KERNEL_CUTOFF=6
+  RESTART=YES
+  SERIAL
+  RECURSIVE_MERGE_OFF
+  FIXED_SIGMA
+...
+
+PRINT FMT=%g STRIDE=5 FILE=Colvar.data ARG=phi,psi,opes.bias,opes.rct,opes.neff,opes.nker,opes.work
+
+ENDPLUMED
+
