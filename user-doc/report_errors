@@ -113,7 +113,7 @@ if test "$GITHUB_ACTIONS" == true ; then
 fi
 
 # only comment from github actions (TRAVIS to be retired)
-if test "$GITHUB_ACTIONS" == true ; then
+if test "$GITHUB_ACTIONS" == true && test -n "GIT_TOKEN" ; then
 # If not a pull request add a comment on the commit message
 if [ $PULL_REQUEST=="false" ] ; then
     if [ "$GIT_OWNER" = plumed ] ; then
