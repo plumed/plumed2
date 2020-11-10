@@ -20,6 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/OpenMP.h"
 
 namespace PLMD {
 namespace opes {
@@ -118,6 +119,7 @@ class OPESmetad : public bias::Bias {
 private:
   bool isFirstStep_;
   bool afterCalculate_;
+  unsigned NumOMP_;
   unsigned NumParallel_;
   unsigned rank_;
   unsigned NumWalkers_;
@@ -227,7 +229,7 @@ void OPESmetad::registerKeywords(Keywords& keys) {
 //miscellaneous
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
-  keys.addFlag("SERIAL",false,"perform calculations in serial. Might be faster when number of compressed kernels is small, e.g. if only one CV is used");
+  keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
 
 //output components
@@ -414,12 +416,14 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
 
 //parallelization stuff
+  NumOMP_=OpenMP::getNumThreads();
   NumParallel_=comm.Get_size();
   rank_=comm.Get_rank();
   bool serial=false;
   parseFlag("SERIAL",serial);
   if(serial)
   {
+    NumOMP_=1;
     NumParallel_=1;
     rank_=0;
   }
@@ -822,7 +826,7 @@ void OPESmetad::update()
       av_M2_[i]+=diff_i*difference(i,av_cv_[i],cv_i);
     }
     if(adaptive_counter_<adaptive_sigma_stride_ && counter_==1) //counter_>1 if restarting
-      return;  //do not apply bias before having measured sigma
+      return; //do not apply bias before having measured sigma
   }
 
 //do update
@@ -919,7 +923,7 @@ void OPESmetad::update()
       std::vector<int> all_nlist_size(NumWalkers_);
       if(comm.Get_rank()==0)
       {
-        all_nlist_size[multi_sim_comm.Get_rank()]=nlist_index_.size();
+        all_nlist_size[walker_rank_]=nlist_index_.size();
         multi_sim_comm.Sum(all_nlist_size);
       }
       comm.Bcast(all_nlist_size,0);
@@ -1019,11 +1023,39 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
 {
   double prob=0.0;
   if(!nlist_)
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-      prob+=evaluateKernel(kernels_[k],cv,der_prob);
+  {
+    if(NumOMP_==1 || kernels_.size()<2*NumOMP_*NumParallel_)
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+    else
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      std::vector<double> omp_deriv(der_prob.size(),0.);
+      #pragma omp for reduction(+:prob) nowait
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+        prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
+      #pragma omp critical
+      for(unsigned i=0; i<ncv_; i++)
+        der_prob[i]+=omp_deriv[i];
+    }
+  }
   else
-    for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-      prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
+  {
+    if(NumOMP_==1 || nlist_index_.size()<2*NumOMP_*NumParallel_)
+      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
+    else
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      std::vector<double> omp_deriv(der_prob.size(),0.);
+      #pragma omp for reduction(+:prob) nowait
+      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
+      #pragma omp critical
+      for(unsigned i=0; i<ncv_; i++)
+        der_prob[i]+=omp_deriv[i];
+    }
+  }
   if(NumParallel_>1)
   {
     comm.Sum(prob);
@@ -1180,16 +1212,38 @@ void OPESmetad::updateNlist(const std::vector<double> &new_center)
   nlist_center_=new_center;
   nlist_index_.clear();
   //first we gather all the nlist_index
-  for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+  if(NumOMP_==1 || kernels_.size()<2*NumOMP_*NumParallel_)
   {
-    double norm2_k=0;
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
-      const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-      norm2_k+=dist_ik*dist_ik;
+      double norm2_k=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2_k+=dist_ik*dist_ik;
+      }
+      if(norm2_k<=nlist_param_[0]*cutoff2_)
+        nlist_index_.push_back(k);
     }
-    if(norm2_k<=nlist_param_[0]*cutoff2_)
-      nlist_index_.push_back(k);
+  }
+  else
+  #pragma omp parallel num_threads(NumOMP_)
+  {
+    std::vector<unsigned> private_nlist_index;
+    #pragma omp for nowait
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+    {
+      double norm2_k=0;
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+        norm2_k+=dist_ik*dist_ik;
+      }
+      if(norm2_k<=nlist_param_[0]*cutoff2_)
+        private_nlist_index.push_back(k);
+    }
+    #pragma omp critical
+    nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
   }
   if(NumParallel_>1)
   {
