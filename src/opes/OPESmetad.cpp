@@ -975,12 +975,27 @@ void OPESmetad::update()
       // uprob = old_uprob + delta_uprob
       // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
       double delta_sum_uprob=0;
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+      if(!nlist_)
       {
-        for(unsigned d=0; d<delta_kernels_.size(); d++)
+        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
         {
-          const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-          delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+          for(unsigned d=0; d<delta_kernels_.size(); d++)
+          {
+            const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+            delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+          }
+        }
+      }
+      else
+      {
+        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+        {
+          const unsigned k=nlist_index_[nk];
+          for(unsigned d=0; d<delta_kernels_.size(); d++)
+          {
+            const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+            delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+          }
         }
       }
       if(NumParallel_>1)
