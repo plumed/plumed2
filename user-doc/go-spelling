@@ -83,7 +83,7 @@ if test "$GITHUB_ACTIONS" == true ; then
 fi
 
 # only comment from github actions (TRAVIS to be retired)
-if test -z $GITHUB_ACTIONS ; then
+if test -z $GITHUB_ACTIONS || test -z "$GIT_TOKEN" ; then
     awk '{for(i=1;i<=NF;++i){ if($i=="\\n") {printf("\n"); } else {printf("%s ", $i)} }}' spelling_results
 # If not a pull request add a comment on the commit message
 elif [ $PULL_REQUEST=="false" ] ; then
