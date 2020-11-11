@@ -15,7 +15,7 @@ env:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +135,7 @@ jobs:
          ./.travis/push doc
 
   codecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: Set path
@@ -156,7 +156,7 @@ jobs:
         make codecheck
 
   macports:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
@@ -197,7 +197,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: Set paths
