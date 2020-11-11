@@ -15,6 +15,7 @@ env:
 
 jobs:
   linux:
+# I keep 18.04 since there are a few issues with the pdf manual compilation on ubuntu 20
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
@@ -162,7 +163,7 @@ jobs:
         make codecheck
 
   centos7:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Build and run tests
