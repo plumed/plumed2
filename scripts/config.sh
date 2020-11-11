@@ -97,7 +97,7 @@ case $action in
   echo "Version: $long (git: $git)"
  ;;
 (mpiexec)
-  mpi=$(echo "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  mpi=$(echo "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") { sub(" *mpiexec ","",$0);  print} }')
   if test -n "$mpi" ; then
     retval=0
     test "$quiet" = no && echo "$mpi"
