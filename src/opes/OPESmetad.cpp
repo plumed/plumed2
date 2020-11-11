@@ -959,7 +959,7 @@ void OPESmetad::update()
   }
 
   //update Zed_
-  if(!no_Zed_) //TODO use NLIST also here
+  if(!no_Zed_)
   {
     double sum_uprob=0;
     const unsigned ks=kernels_.size();
@@ -1019,7 +1019,7 @@ void OPESmetad::update()
   }
 }
 
-double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vector<double> &der_prob)
+double OPESmetad::getProbAndDerivatives(const std::vector<double>& cv,std::vector<double>& der_prob)
 {
   double prob=0.0;
   if(!nlist_)
@@ -1148,7 +1148,7 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
   }
 }
 
-unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,const unsigned giver_k)
+unsigned OPESmetad::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k)
 { //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_norm2=threshold2_;
@@ -1202,13 +1202,12 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double> &giver_center,c
     comm.Allgather(min_norm2,all_min_norm2);
     comm.Allgather(min_k,all_min_k);
     const unsigned best=std::distance(std::begin(all_min_norm2),std::min_element(std::begin(all_min_norm2),std::end(all_min_norm2)));
-    if(all_min_norm2[best]<threshold2_)
-      min_k=all_min_k[best];
+    min_k=all_min_k[best];
   }
   return min_k;
 }
 
-void OPESmetad::updateNlist(const std::vector<double> &new_center)
+void OPESmetad::updateNlist(const std::vector<double>& new_center)
 {
   if(kernels_.size()==0) //no need to check for neighbors
     return;
