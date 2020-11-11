@@ -353,6 +353,9 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   {
     nlist_=true;
     plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
+    if(nlist_param[0]<=1.0) error("NLIST_PARAMETERS MUST BE (1,Inf) and [0.,1.], the smaller the first the smaller should be the second as well");
+    if(nlist_param[1]>((1.-1./sqrt(nlist_param[0]))+0.16)) 
+      error("The second parameter for NLIST_PARAMETERS is too large and will give systematic errors, the largest suggested value is " + std::to_string(((1.-1./sqrt(nlist_param[0]))+0.16)));
     nlist_param_[0]=nlist_param[0];
     nlist_param_[1]=nlist_param[1];
   }
