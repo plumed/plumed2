@@ -1024,36 +1024,40 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double> &cv,std::vecto
   double prob=0.0;
   if(!nlist_)
   {
-    if(NumOMP_==1 || kernels_.size()<2*NumOMP_*NumParallel_)
+    if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
         prob+=evaluateKernel(kernels_[k],cv,der_prob);
     else
-    #pragma omp parallel num_threads(NumOMP_)
     {
-      std::vector<double> omp_deriv(der_prob.size(),0.);
-      #pragma omp for reduction(+:prob) nowait
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-        prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
-      #pragma omp critical
-      for(unsigned i=0; i<ncv_; i++)
-        der_prob[i]+=omp_deriv[i];
+      #pragma omp parallel num_threads(NumOMP_)
+      {
+        std::vector<double> omp_deriv(der_prob.size(),0.);
+        #pragma omp for reduction(+:prob) nowait
+        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+          prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
+        #pragma omp critical
+        for(unsigned i=0; i<ncv_; i++)
+          der_prob[i]+=omp_deriv[i];
+      }
     }
   }
   else
   {
-    if(NumOMP_==1 || nlist_index_.size()<2*NumOMP_*NumParallel_)
+    if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_)
       for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
         prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
     else
-    #pragma omp parallel num_threads(NumOMP_)
     {
-      std::vector<double> omp_deriv(der_prob.size(),0.);
-      #pragma omp for reduction(+:prob) nowait
-      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
-      #pragma omp critical
-      for(unsigned i=0; i<ncv_; i++)
-        der_prob[i]+=omp_deriv[i];
+      #pragma omp parallel num_threads(NumOMP_)
+      {
+        std::vector<double> omp_deriv(der_prob.size(),0.);
+        #pragma omp for reduction(+:prob) nowait
+        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
+        #pragma omp critical
+        for(unsigned i=0; i<ncv_; i++)
+          der_prob[i]+=omp_deriv[i];
+      }
     }
   }
   if(NumParallel_>1)
@@ -1212,7 +1216,7 @@ void OPESmetad::updateNlist(const std::vector<double> &new_center)
   nlist_center_=new_center;
   nlist_index_.clear();
   //first we gather all the nlist_index
-  if(NumOMP_==1 || kernels_.size()<2*NumOMP_*NumParallel_)
+  if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
   {
     for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
     {
@@ -1227,23 +1231,27 @@ void OPESmetad::updateNlist(const std::vector<double> &new_center)
     }
   }
   else
-  #pragma omp parallel num_threads(NumOMP_)
   {
-    std::vector<unsigned> private_nlist_index;
-    #pragma omp for nowait
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+    #pragma omp parallel num_threads(NumOMP_)
     {
-      double norm2_k=0;
-      for(unsigned i=0; i<ncv_; i++)
+      std::vector<unsigned> private_nlist_index;
+      #pragma omp for nowait
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       {
-        const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2_k+=dist_ik*dist_ik;
+        double norm2_k=0;
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+          norm2_k+=dist_ik*dist_ik;
+        }
+        if(norm2_k<=nlist_param_[0]*cutoff2_)
+          private_nlist_index.push_back(k);
       }
-      if(norm2_k<=nlist_param_[0]*cutoff2_)
-        private_nlist_index.push_back(k);
+      #pragma omp critical
+      nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
     }
-    #pragma omp critical
-    nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
+    if(recursive_merge_)
+      std::sort(nlist_index_.begin(),nlist_index_.end());
   }
   if(NumParallel_>1)
   {
