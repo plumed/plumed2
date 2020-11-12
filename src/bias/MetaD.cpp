@@ -1467,15 +1467,16 @@ void MetaD::addGaussian(const Gaussian& hill)
       vector<double> allbias(neighbors.size(),0.0);
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
+        for(unsigned j=0; j<ncv; ++j) n_der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
         allbias[i]=evaluateGaussianAndDerivatives(xx,hill,n_der);
-        for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=n_der[j];
+        for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=+n_der[j];
       }
       comm.Sum(allbias);
       comm.Sum(allder);
       for(unsigned i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
-        for(unsigned j=0; j<ncv; ++j) {der[j]=allder[ncv*i+j];}
+        for(unsigned j=0; j<ncv; ++j) der[j]=allder[ncv*i+j];
         BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
       }
     }
