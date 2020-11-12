@@ -155,13 +155,11 @@ private:
     kernel(double h, const std::vector<double>& c,const std::vector<double>& s):
       height(h),center(c),sigma(s) {}
   };
-// this vector allow to halv the cost of calculate()
-  std::vector<double> dist_;
   double cutoff2_;
   double val_at_cutoff_;
   inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
-  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
+  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
   std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
 //neighbour list stuff
@@ -390,7 +388,6 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
   cutoff2_=cutoff*cutoff;
   val_at_cutoff_=std::exp(-0.5*cutoff2_);
-  dist_.resize(ncv_);
 
   threshold2_=1;
   parse("COMPRESSION_THRESHOLD",threshold2_);
@@ -1142,16 +1139,22 @@ double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std:
   if(!nlist_)
   {
     if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+        prob+=evaluateKernel(kernels_[k],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[k],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1161,16 +1164,22 @@ double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std:
   else
   {
     if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
+        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1540,19 +1549,19 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
 }
 
 template <class mode>
-inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der)
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
   {
-    dist_[i]=difference(i,G.center[i],x[i])/G.sigma[i];
-    norm2+=dist_[i]*dist_[i];
+    dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];
+    norm2+=dist[i]*dist[i];
     if(norm2>=cutoff2_)
       return 0;
   }
   const double val=G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
   for(unsigned i=0; i<ncv_; i++)
-    acc_der[i]-=dist_[i]/G.sigma[i]*val; //NB: we accumulate the derivative into der
+    acc_der[i]-=dist[i]/G.sigma[i]*val; //NB: we accumulate the derivative into der
   return val;
 }
 
