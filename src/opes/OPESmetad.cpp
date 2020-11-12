@@ -611,6 +611,19 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
       else
         log.printf(" +++ WARNING +++ %s\n",not_found_msg.c_str());
     }
+    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
+    {
+      const unsigned kernels_size=kernels_.size();
+      std::vector<unsigned> all_kernels_size(NumWalkers_);
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Allgather(kernels_size,all_kernels_size);
+      comm.Bcast(all_kernels_size,0);
+      bool same_number_of_kernels=true;
+      for(unsigned w=1; w<NumWalkers_; w++)
+        if(all_kernels_size[0]!=all_kernels_size[w])
+          same_number_of_kernels=false;
+      plumed_massert(same_number_of_kernels,"RESTART - not all walkers are reading the same file!");
+    }
   }
   else if(restartFileName.length()>0)
     log.printf(" +++ WARNING +++ the provided STATE_RFILE will be ignored, since RESTART was not requested\n");
