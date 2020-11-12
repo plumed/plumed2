@@ -44,7 +44,6 @@
 
 using namespace std;
 
-
 namespace PLMD {
 namespace bias {
 
@@ -378,15 +377,18 @@ class MetaD : public Bias {
 
 private:
   struct Gaussian {
+    bool   multivariate; // this is required to discriminate the one dimensional case
+    double height;
     vector<double> center;
     vector<double> sigma;
-    double height;
-    bool   multivariate; // this is required to discriminate the one dimensional case
     vector<double> invsigma;
-    Gaussian(const vector<double> & center,const vector<double> & sigma,double height, bool multivariate ):
-      center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
+    Gaussian(const bool m, const double h, const vector<double>& c, const vector<double>& s):
+      multivariate(m),height(h),center(c),sigma(s),invsigma(s) {
       // to avoid troubles from zero element in flexible hills
-        for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
+      for(unsigned i=0; i<invsigma.size(); ++i) {
+        if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ;
+        else invsigma[i]=0.0;
+      }
     }
   };
   struct TemperingSpecs {
@@ -422,42 +424,40 @@ private:
   int stride_;
   bool welltemp_;
   //
-  int current_stride;
+  int current_stride_;
   bool freq_adaptive_;
   int fa_update_frequency_;
   int fa_max_stride_;
   double fa_min_acceleration_;
   //
-  std::unique_ptr<double[]> dp_;
   int adaptive_;
-  std::unique_ptr<FlexibleBin> flexbin;
+  std::unique_ptr<FlexibleBin> flexbin_;
   int mw_n_;
   string mw_dir_;
   int mw_id_;
   int mw_rstride_;
-  bool walkers_mpi;
+  bool walkers_mpi_;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
-  bool flying;
-  bool acceleration;
-  double acc;
+  bool flying_;
+  bool acceleration_;
+  double acc_;
   double acc_restart_mean_;
   bool calc_max_bias_;
   double max_bias_;
   bool calc_transition_bias_;
   double transition_bias_;
   vector<vector<double> > transitionwells_;
-  vector<std::unique_ptr<IFile>> ifiles;
-  vector<string> ifilesnames;
+  vector<std::unique_ptr<IFile>> ifiles_;
+  vector<string> ifilesnames_;
   double uppI_;
   double lowI_;
   bool doInt_;
-  bool isFirstStep;
+  bool isFirstStep_;
   bool calc_rct_;
   double reweight_factor_;
   unsigned rct_ustride_;
   double work_;
-  long int last_step_warn_grid;
   // neighbour list stuff
   bool use_Kneighb_;
   std::vector<Gaussian> neigh_hills_;
@@ -466,8 +466,9 @@ private:
   std::vector<double> neigh_dev2_;
   bool neigh_update_;
   unsigned neigh_steps_;
+  string fmt_;
 
-  static void   registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
+  static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
   void   readGaussians(IFile*);
@@ -476,17 +477,16 @@ private:
   double getHeight(const vector<double>&);
   void   temperHeight(double &height, const TemperingSpecs &t_specs, const double tempering_bias);
   double getBias(const vector<double>&);
-  double getBiasAndDerivatives(const vector<double>&,vector<double> &der);
+  double getBiasAndDerivatives(const vector<double>&, vector<double>&);
   double evaluateGaussian(const vector<double>&, const Gaussian&);
-  double evaluateGaussianAndDerivatives(const vector<double>&, const Gaussian&,vector<double> &der);
-  double getGaussianNormalization( const Gaussian& );
+  double evaluateGaussianAndDerivatives(const vector<double>&, const Gaussian&,vector<double>&);
+  double getGaussianNormalization(const Gaussian&);
   vector<unsigned> getGaussianSupport(const Gaussian&);
-  bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
+  bool   scanOneHill(IFile* ifile, vector<Value>& v, vector<double>& center, vector<double>& sigma, double& height, bool& multivariate);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
-  void updateFrequencyAdaptiveStride();
-  void update_Kneighb();
-  string fmt;
+  void   updateFrequencyAdaptiveStride();
+  void   update_Kneighb();
 
 public:
   explicit MetaD(const ActionOptions&);
@@ -582,7 +582,7 @@ MetaD::MetaD(const ActionOptions& ao):
   kbt_(0.0),
   stride_(0), welltemp_(false),
 // frequency adaptive
-  current_stride(0),
+  current_stride_(0),
   freq_adaptive_(false),
   fa_update_frequency_(0),
   fa_max_stride_(0),
@@ -591,20 +591,19 @@ MetaD::MetaD(const ActionOptions& ao):
   adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
-  walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
+  walkers_mpi_(false), mpi_nw_(0), mpi_mw_(0),
 // Flying Gaussian
-  flying(false),
-  acceleration(false), acc(0.0), acc_restart_mean_(0.0),
+  flying_(false),
+  acceleration_(false), acc_(0.0), acc_restart_mean_(0.0),
   calc_max_bias_(false), max_bias_(0.0),
   calc_transition_bias_(false), transition_bias_(0.0),
 // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
-  isFirstStep(true),
+  isFirstStep_(true),
   calc_rct_(false),
   reweight_factor_(0.0),
   rct_ustride_(1),
-  work_(0),
-  last_step_warn_grid(0)
+  work_(0)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -622,7 +621,7 @@ MetaD::MetaD(const ActionOptions& ao):
     error("I do not know this type of adaptive scheme");
   }
 
-  parse("FMT",fmt);
+  parse("FMT",fmt_);
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
@@ -657,13 +656,13 @@ MetaD::MetaD(const ActionOptions& ao):
       for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
     }
 
-    flexbin=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
+    flexbin_=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
-  current_stride = stride_;
+  current_stride_ = stride_;
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
 
@@ -831,10 +830,10 @@ MetaD::MetaD(const ActionOptions& ao):
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
   // MPI version
-  parseFlag("WALKERS_MPI",walkers_mpi);
+  parseFlag("WALKERS_MPI",walkers_mpi_);
 
   // Flying Gaussian
-  parseFlag("FLYING_GAUSSIAN", flying);
+  parseFlag("FLYING_GAUSSIAN", flying_);
 
   // Inteval keyword
   vector<double> tmpI(2);
@@ -849,11 +848,10 @@ MetaD::MetaD(const ActionOptions& ao):
     doInt_=true;
   }
 
-  acceleration=false;
-  parseFlag("ACCELERATION",acceleration);
+  parseFlag("ACCELERATION",acceleration_);
   // Check for a restart acceleration if acceleration is active.
   string acc_rfilename;
-  if (acceleration) {
+  if(acceleration_) {
     parse("ACCELERATION_RFILE", acc_rfilename);
   }
 
@@ -968,13 +966,13 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   if(mw_n_>1) {
-    if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
+    if(walkers_mpi_) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
     log.printf("  %d multiple walkers active\n",mw_n_);
     log.printf("  walker id %d\n",mw_id_);
     log.printf("  reading stride %d\n",mw_rstride_);
     if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   } else {
-    if(walkers_mpi) {
+    if(walkers_mpi_) {
       log.printf("  Multiple walkers active using MPI communnication\n");
       if(mw_dir_!="")log.printf("  directory with hills files %s\n",mw_dir_.c_str());
       if(comm.Get_rank()==0) {
@@ -989,8 +987,8 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
-  if(flying) {
-    if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
+  if(flying_) {
+    if(!walkers_mpi_) error("Flying Gaussian method must be used with MPI version of multiple walkers");
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
 
@@ -1009,7 +1007,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
   addComponent("work"); componentIsNotPeriodic("work");
 
-  if(acceleration) {
+  if(acceleration_) {
     if (kbt_ == 0.0) {
       error("The calculation of the acceleration works only if simulation temperature has been defined");
     }
@@ -1083,10 +1081,10 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   if(freq_adaptive_) {
-    if(!acceleration) {
+    if(!acceleration_) {
       plumed_merror("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
     }
-    if(walkers_mpi) {
+    if(walkers_mpi_) {
       plumed_merror("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
     }
 
@@ -1105,9 +1103,6 @@ MetaD::MetaD(const ActionOptions& ao):
     addComponent("pace"); componentIsNotPeriodic("pace");
     updateFrequencyAdaptiveStride();
   }
-
-  // for performance
-  dp_=Tools::make_unique<double[]>(getNumberOfArguments());
 
   // initializing and checking grid
   if(grid_) {
@@ -1193,7 +1188,7 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mw_n_>1) {
         stringstream out; out << i;
         fname = mw_dir_+"/"+hillsfname+"."+out.str();
-      } else if(walkers_mpi) {
+      } else if(walkers_mpi_) {
         fname = mw_dir_+"/"+hillsfname;
       } else {
         fname = hillsfname;
@@ -1206,20 +1201,20 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    ifiles.emplace_back(Tools::make_unique<IFile>());
+    ifiles_.emplace_back(Tools::make_unique<IFile>());
     // this is just a shortcut pointer to the last element:
-    IFile *ifile = ifiles.back().get();
-    ifilesnames.push_back(fname);
+    IFile *ifile = ifiles_.back().get();
+    ifilesnames_.push_back(fname);
     ifile->link(*this);
     if(ifile->FileExist(fname)) {
       ifile->open(fname);
       if(getRestart()&&!restartedFromGrid) {
-        log.printf("  Restarting from %s:",ifilesnames[i].c_str());
-        readGaussians(ifiles[i].get());
+        log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
+        readGaussians(ifiles_[i].get());
       }
-      ifiles[i]->reset(false);
+      ifiles_[i]->reset(false);
       // close only the walker own hills file for later writing
-      if(i==mw_id_) ifiles[i]->close();
+      if(i==mw_id_) ifiles_[i]->close();
     } else {
       // in case a file does not exist and we are restarting, complain that the file was not found
       if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
@@ -1234,7 +1229,7 @@ MetaD::MetaD(const ActionOptions& ao):
   // it would introduce troubles when using replicas without METAD
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
-  if(comm.Get_rank()==0 && walkers_mpi) multi_sim_comm.Barrier();
+  if(comm.Get_rank()==0 && walkers_mpi_) multi_sim_comm.Barrier();
   if(targetfilename_.length()>0) {
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
@@ -1245,25 +1240,26 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
-  // if this is a restart the neighbor list should be immediately updated
-  if(getRestart()&&use_Kneighb_) neigh_update_=true;
-
-  // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
-  if(getRestart() && calc_rct_) computeReweightingFactor();
-  // Calculate all special bias quantities desired if restarting with nonzero bias.
-  if(getRestart() && calc_max_bias_) {
-    max_bias_ = BiasGrid_->getMaxValue();
-    getPntrToComponent("maxbias")->set(max_bias_);
-  }
-  if(getRestart() && calc_transition_bias_) {
-    transition_bias_ = getTransitionBarrierBias();
-    getPntrToComponent("transbias")->set(transition_bias_);
+  if(getRestart()) {
+    // if this is a restart the neighbor list should be immediately updated
+    if(use_Kneighb_) neigh_update_=true;
+    // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
+    if(calc_rct_) computeReweightingFactor();
+    // Calculate all special bias quantities desired if restarting with nonzero bias.
+    if(calc_max_bias_) {
+      max_bias_ = BiasGrid_->getMaxValue();
+      getPntrToComponent("maxbias")->set(max_bias_);
+    }
+    if(calc_transition_bias_) {
+      transition_bias_ = getTransitionBarrierBias();
+      getPntrToComponent("transbias")->set(transition_bias_);
+    }
   }
 
   // open grid file for writing
   if(wgridstride_>0) {
     gridfile_.link(*this);
-    if(walkers_mpi) {
+    if(walkers_mpi_) {
       int r=0;
       if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
       comm.Bcast(r,0);
@@ -1276,16 +1272,16 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // open hills file for writing
   hillsOfile_.link(*this);
-  if(walkers_mpi) {
+  if(walkers_mpi_) {
     int r=0;
     if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
     comm.Bcast(r,0);
-    if(r>0) ifilesnames[mw_id_]="/dev/null";
+    if(r>0) ifilesnames_[mw_id_]="/dev/null";
     hillsOfile_.enforceSuffix("");
   }
   if(mw_n_>1) hillsOfile_.enforceSuffix("");
-  hillsOfile_.open(ifilesnames[mw_id_]);
-  if(fmt.length()>0) hillsOfile_.fmtField(fmt);
+  hillsOfile_.open(ifilesnames_[mw_id_]);
+  if(fmt_.length()>0) hillsOfile_.fmtField(fmt_);
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.addConstantField("kerneltype");
   if(doInt_) {
@@ -1301,7 +1297,7 @@ MetaD::MetaD(const ActionOptions& ao):
   for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p.get())) { concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
   if(rect_biasf_.size()>0) {
-    if(walkers_mpi) {
+    if(walkers_mpi_) {
       log<<"  You are using RECT in its 'altruistic' implementation\n";
     }{
       log<<"  You are using RECT\n";
@@ -1309,25 +1305,24 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
-  if(welltemp_) log<<plumed.cite(
-                       "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
+  if(welltemp_) log<<plumed.cite("Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
   if(tt_specs_.is_active) {
     log << plumed.cite("Dama, Rotskoff, Parrinello, and Voth, J. Chem. Theory Comput. 10, 3626 (2014)");
     log << plumed.cite("Dama, Parrinello, and Voth, Phys. Rev. Lett. 112, 240602 (2014)");
   }
-  if(mw_n_>1||walkers_mpi) log<<plumed.cite(
-                                  "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+  if(mw_n_>1||walkers_mpi_) log<<plumed.cite(
+                                   "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
                                           "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   if(doInt_) log<<plumed.cite(
                     "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
-  if(acceleration) log<<plumed.cite(
-                          "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(acceleration_) log<<plumed.cite(
+                           "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(calc_rct_) log<<plumed.cite(
                        "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
   if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
           "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
-  if(rect_biasf_.size()>0 && walkers_mpi) log<<plumed.cite(
+  if(rect_biasf_.size()>0 && walkers_mpi_) log<<plumed.cite(
           "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
@@ -1381,12 +1376,12 @@ void MetaD::readGaussians(IFile *ifile)
   std::vector<Value> tmpvalues;
   for(unsigned j=0; j<getNumberOfArguments(); ++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
 
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
+  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate))
+  {
     nhills++;
-// note that for gamma=1 we store directly -F
-    if(welltemp_ && biasf_>1.0) {height*=(biasf_-1.0)/biasf_;}
-    addGaussian(Gaussian(center,sigma,height,multivariate));
+    // note that for gamma=1 we store directly -F
+    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_;
+    addGaussian(Gaussian(multivariate,height,center,sigma));
   }
   log.printf("      %d Gaussians read\n",nhills);
 }
@@ -1444,8 +1439,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
 
 void MetaD::addGaussian(const Gaussian& hill)
 {
-  if(!grid_) hills_.push_back(hill);
-  else {
+  if(grid_) {
     size_t ncv=getNumberOfArguments();
     vector<unsigned> nneighb=getGaussianSupport(hill);
     vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
@@ -1470,7 +1464,7 @@ void MetaD::addGaussian(const Gaussian& hill)
         for(unsigned j=0; j<ncv; ++j) n_der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
         allbias[i]=evaluateGaussianAndDerivatives(xx,hill,n_der);
-        for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=+n_der[j];
+        for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=n_der[j];
       }
       comm.Sum(allbias);
       comm.Sum(allder);
@@ -1480,7 +1474,7 @@ void MetaD::addGaussian(const Gaussian& hill)
         BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
       }
     }
-  }
+  } else hills_.push_back(hill);
 }
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
@@ -1540,7 +1534,8 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 double MetaD::getBias(const vector<double>& cv)
 {
   double bias=0.0;
-  if(!grid_) {
+  if(grid_) bias = BiasGrid_->getValue(cv);
+  else {
     unsigned nt=OpenMP::getNumThreads();
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
@@ -1559,65 +1554,67 @@ double MetaD::getBias(const vector<double>& cv)
       }
     }
     comm.Sum(bias);
-  } else {
-    bias = BiasGrid_->getValue(cv);
   }
 
   return bias;
 }
 
-double MetaD::getBiasAndDerivatives(const vector<double>& cv, vector<double> &der)
+double MetaD::getBiasAndDerivatives(const vector<double>& cv, vector<double>& der)
 {
+  unsigned ncv=getNumberOfArguments();
   double bias=0.0;
-  if(!grid_) {
-    if(hills_.size()>10000 && (getStep()-last_step_warn_grid)>10000&&!use_Kneighb_) {
-      std::string msg;
-      Tools::convert(hills_.size(),msg);
-      msg="You have accumulated "+msg+" hills, you should enable GRIDs or NEIGHBOR to avoid serious performance hits";
-      warning(msg);
-      last_step_warn_grid=getStep();
-    }
+  if(grid_) {
+    vector<double> vder(ncv);
+    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
+    for(unsigned i=0; i<ncv; i++) der[i]=vder[i];
+  } else {
     unsigned nt=OpenMP::getNumThreads();
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
 
     if(!use_Kneighb_) {
-      if(hills_.size()<2*nt*stride) nt=1;
-      #pragma omp parallel num_threads(nt)
-      {
-        std::vector<double> omp_deriv(getNumberOfArguments(),0.);
-        #pragma omp for reduction(+:bias)
+      if(hills_.size()<2*nt*stride||nt==1) {
         for(unsigned i=rank; i<hills_.size(); i+=stride) {
-          bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv);
+          bias+=evaluateGaussianAndDerivatives(cv,hills_[i],der);
         }
-        #pragma omp critical
-        for(unsigned i=0; i<getNumberOfArguments(); i++) der[i]+=omp_deriv[i];
+      } else {
+        #pragma omp parallel num_threads(nt)
+        {
+          vector<double> omp_deriv(ncv,0.);
+          #pragma omp for reduction(+:bias)
+          for(unsigned i=rank; i<hills_.size(); i+=stride) {
+            bias+=evaluateGaussianAndDerivatives(cv,hills_[i],omp_deriv);
+          }
+          #pragma omp critical
+          for(unsigned i=0; i<ncv; i++) der[i]+=omp_deriv[i];
+        }
       }
     } else {
-      if(neigh_hills_.size()<2*nt*stride) nt=1;
-      #pragma omp parallel num_threads(nt)
-      {
-        std::vector<double> omp_deriv(getNumberOfArguments(),0.);
-        #pragma omp for reduction(+:bias) nowait
+      if(hills_.size()<2*nt*stride||nt==1) {
         for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
-          bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv);
+          bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],der);
         }
-        #pragma omp critical
-        for(unsigned i=0; i<getNumberOfArguments(); i++) der[i]+=omp_deriv[i];
+      } else {
+        #pragma omp parallel num_threads(nt)
+        {
+          vector<double> omp_deriv(ncv,0.);
+          #pragma omp for reduction(+:bias) nowait
+          for(unsigned i=rank; i<neigh_hills_.size(); i+=stride) {
+            bias+=evaluateGaussianAndDerivatives(cv,neigh_hills_[i],omp_deriv);
+          }
+          #pragma omp critical
+          for(unsigned i=0; i<ncv; i++) der[i]+=omp_deriv[i];
+        }
       }
     }
     comm.Sum(bias);
     comm.Sum(der);
-  } else {
-    vector<double> vder(getNumberOfArguments());
-    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) der[i]=vder[i];
   }
 
   return bias;
 }
 
-double MetaD::getGaussianNormalization( const Gaussian& hill )
+double MetaD::getGaussianNormalization(const Gaussian& hill)
 {
   double norm=1;
   unsigned ncv=hill.center.size();
@@ -1635,7 +1632,7 @@ double MetaD::getGaussianNormalization( const Gaussian& hill )
       norm = exp( ldet );  // Not sure here if mymatrix is sigma or inverse
     }
   } else {
-    for(unsigned i=0; i<hill.sigma.size(); ++i) norm*=hill.sigma[i];
+    for(unsigned i=0; i<hill.sigma.size(); i++) norm*=hill.sigma[i];
   }
 
   return norm*pow(2*pi,static_cast<double>(ncv)/2.0);
@@ -1643,24 +1640,25 @@ double MetaD::getGaussianNormalization( const Gaussian& hill )
 
 double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill)
 {
-  double dp2=0.0;
-  double bias=0.0;
+  unsigned ncv=cv.size();
+
   // I use a pointer here because cv is const (and should be const)
   // but when using doInt it is easier to locally replace cv[0] with
   // the upper/lower limit in case it is out of range
+  double tmpcv[1];
   const double *pcv=NULL; // pointer to cv
-  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
-  if(cv.size()>0) pcv=&cv[0];
+  if(ncv>0) pcv=&cv[0];
   if(doInt_) {
-    plumed_assert(cv.size()==1);
+    plumed_assert(ncv==1);
     tmpcv[0]=cv[0];
     if(cv[0]<lowI_) tmpcv[0]=lowI_;
     if(cv[0]>uppI_) tmpcv[0]=uppI_;
     pcv=&(tmpcv[0]);
   }
+
+  double dp2=0.0;
   if(hill.multivariate) {
     unsigned k=0;
-    unsigned ncv=cv.size();
     // recompose the full sigma from the upper diag cholesky
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0; i<ncv; i++) {
@@ -1669,10 +1667,9 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill)
         k++;
       }
     }
-    for(unsigned i=0; i<cv.size(); ++i) {
+    for(unsigned i=0; i<ncv; i++) {
       double dp_i=difference(i,hill.center[i],pcv[i]);
-      dp_[i]=dp_i;
-      for(unsigned j=i; j<cv.size(); ++j) {
+      for(unsigned j=i; j<ncv; j++) {
         if(i==j) {
           dp2+=dp_i*dp_i*mymatrix(i,j)*0.5;
         } else {
@@ -1682,38 +1679,45 @@ double MetaD::evaluateGaussian(const vector<double>& cv, const Gaussian& hill)
       }
     }
   } else {
-    for(unsigned i=0; i<cv.size(); ++i) {
+    for(unsigned i=0; i<ncv; i++) {
       double dp=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
       dp2+=dp*dp;
-      dp_[i]=dp;
     }
     dp2*=0.5;
   }
 
+  double bias=0.0;
   if(dp2<DP2CUTOFF) bias=hill.height*exp(-dp2);
 
   return bias;
 }
 double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gaussian& hill, vector<double> &der)
 {
-  double dp2=0.0;
-  double bias=0.0;
+  unsigned ncv=cv.size();
+
   // I use a pointer here because cv is const (and should be const)
   // but when using doInt it is easier to locally replace cv[0] with
   // the upper/lower limit in case it is out of range
   const double *pcv=NULL; // pointer to cv
   double tmpcv[1]; // tmp array with cv (to be used with doInt_)
-  if(cv.size()>0) pcv=&cv[0];
+  if(ncv>0) pcv=&cv[0];
   if(doInt_) {
-    plumed_assert(cv.size()==1);
+    plumed_assert(ncv==1);
     tmpcv[0]=cv[0];
     if(cv[0]<lowI_) tmpcv[0]=lowI_;
     if(cv[0]>uppI_) tmpcv[0]=uppI_;
     pcv=&(tmpcv[0]);
   }
+
+  bool int_der=false;
+  if(doInt_) {
+    if(cv[0]<lowI_ || cv[0]>uppI_) int_der=true;
+  }
+
+  double dp2=0.0;
+  double bias=0.0;
   if(hill.multivariate) {
     unsigned k=0;
-    unsigned ncv=cv.size();
     // recompose the full sigma from the upper diag cholesky
     Matrix<double> mymatrix(ncv,ncv);
     for(unsigned i=0; i<ncv; i++) {
@@ -1722,41 +1726,45 @@ double MetaD::evaluateGaussianAndDerivatives(const vector<double>& cv, const Gau
         k++;
       }
     }
-    for(unsigned i=0; i<cv.size(); ++i) {
-      double dp_i=difference(i,hill.center[i],pcv[i]);
-      dp_[i]=dp_i;
-      for(unsigned j=i; j<cv.size(); ++j) {
+    vector<double> dp_(ncv);
+    for(unsigned i=0; i<ncv; i++) {
+      dp_[i]=difference(i,hill.center[i],pcv[i]);
+      for(unsigned j=i; j<ncv; j++) {
         if(i==j) {
-          dp2+=dp_i*dp_i*mymatrix(i,j)*0.5;
+          dp2+=dp_[i]*dp_[i]*mymatrix(i,j)*0.5;
         } else {
           double dp_j=difference(j,hill.center[j],pcv[j]);
-          dp2+=dp_i*dp_j*mymatrix(i,j);
+          dp2+=dp_[i]*dp_j*mymatrix(i,j);
         }
       }
     }
     if(dp2<DP2CUTOFF) {
       bias=hill.height*exp(-dp2);
-      for(unsigned i=0; i<cv.size(); ++i) {
-        double tmp=0.0;
-        for(unsigned j=0; j<cv.size(); ++j) tmp += dp_[j]*mymatrix(i,j)*bias;
-        der[i]-=tmp;
+      if(!int_der) {
+        for(unsigned i=0; i<ncv; i++) {
+          double tmp=0.0;
+          for(unsigned j=0; j<ncv; j++) tmp += dp_[j]*mymatrix(i,j)*bias;
+          der[i]-=tmp;
+        }
+      } else {
+        for(unsigned i=0; i<ncv; i++) der[i]=0.;
       }
     }
   } else {
-    for(unsigned i=0; i<cv.size(); ++i) {
-      double dp=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
-      dp2+=dp*dp;
-      dp_[i]=dp;
+    vector<double> dp_(ncv);
+    for(unsigned i=0; i<ncv; i++) {
+      dp_[i]=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
+      dp2+=dp_[i]*dp_[i];
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF) {
       bias=hill.height*exp(-dp2);
-      for(unsigned i=0; i<cv.size(); ++i) der[i]-=bias*dp_[i]*hill.invsigma[i];
+      if(!int_der) {
+        for(unsigned i=0; i<ncv; i++) der[i]-=bias*dp_[i]*hill.invsigma[i];
+      } else {
+        for(unsigned i=0; i<ncv; i++) der[i]=0.;
+      }
     }
-  }
-
-  if(doInt_) {
-    if(cv[0]<lowI_ || cv[0]>uppI_) for(unsigned i=0; i<cv.size(); ++i) der[i]=0;
   }
 
   return bias;
@@ -1806,7 +1814,6 @@ void MetaD::calculate()
 
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
-  vector<double> der(ncv,0.);
   for(unsigned i=0; i<ncv; ++i) cv[i]=getArgument(i);
 
   if(use_Kneighb_) {
@@ -1823,75 +1830,71 @@ void MetaD::calculate()
   }
 
   double ene = 0.;
+  vector<double> der(ncv,0.);
   if(biasf_!=1.0) ene = getBiasAndDerivatives(cv,der);
-
   setBias(ene);
+  for(unsigned i=0; i<ncv; i++) setOutputForce(i,-der[i]);
+
+  getPntrToComponent("work")->set(work_);
   if(calc_rct_) getPntrToComponent("rbias")->set(ene - reweight_factor_);
   // calculate the acceleration factor
-  if(acceleration&&!isFirstStep) {
-    acc += static_cast<double>(getStride()) * exp(ene/(kbt_));
-    const double mean_acc = acc/((double) getStep());
+  if(acceleration_&&!isFirstStep_) {
+    acc_ += static_cast<double>(getStride()) * exp(ene/(kbt_));
+    const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
-    acc = acc_restart_mean_ * static_cast<double>(getStep());
+  } else if (acceleration_ && isFirstStep_ && acc_restart_mean_ > 0.0) {
+    acc_ = acc_restart_mean_ * static_cast<double>(getStep());
     if(freq_adaptive_) {
       // has to be done here if restarting, as the acc is not defined before
       updateFrequencyAdaptiveStride();
     }
   }
-
-  getPntrToComponent("work")->set(work_);
-  // set Forces
-  for(unsigned i=0; i<ncv; ++i) {
-    setOutputForce(i,-der[i]);
-  }
 }
 
-void MetaD::update() {
-  vector<double> cv(getNumberOfArguments());
-  vector<double> thissigma;
-  bool multivariate;
-
+void MetaD::update()
+{
   // adding hills criteria (could be more complex though)
   bool nowAddAHill;
-  if(getStep()%current_stride==0 && !isFirstStep )nowAddAHill=true;
+  if(getStep()%current_stride_==0 && !isFirstStep_) nowAddAHill=true;
   else {
     nowAddAHill=false;
-    isFirstStep=false;
+    isFirstStep_=false;
   }
 
-  for(unsigned i=0; i<cv.size(); ++i) cv[i] = getArgument(i);
+  unsigned ncv=getNumberOfArguments();
+  vector<double> cv(ncv);
+  for(unsigned i=0; i<ncv; ++i) cv[i] = getArgument(i);
 
   double vbias=getBias(cv);
 
   // if you use adaptive, call the FlexibleBin
+  bool multivariate=false;
   if(adaptive_!=FlexibleBin::none) {
-    flexbin->update(nowAddAHill);
+    flexbin_->update(nowAddAHill);
     multivariate=true;
-  } else {
-    multivariate=false;
   }
 
+  vector<double> thissigma;
   if(nowAddAHill) {
     // add a Gaussian
     double height=getHeight(cv);
     // returns upper diagonal inverse
-    if(adaptive_!=FlexibleBin::none) thissigma=flexbin->getInverseMatrix();
+    if(adaptive_!=FlexibleBin::none) thissigma=flexbin_->getInverseMatrix();
     // returns normal sigma
     else thissigma=sigma0_;
 
     // In case we use walkers_mpi, it is now necessary to communicate with other replicas.
-    if(walkers_mpi) {
+    if(walkers_mpi_) {
       // Allocate arrays to store all walkers hills
-      std::vector<double> all_cv(mpi_nw_*cv.size(),0.0);
-      std::vector<double> all_sigma(mpi_nw_*thissigma.size(),0.0);
-      std::vector<double> all_height(mpi_nw_,0.0);
-      std::vector<int>    all_multivariate(mpi_nw_,0);
+      vector<double> all_cv(mpi_nw_*ncv,0.0);
+      vector<double> all_sigma(mpi_nw_*thissigma.size(),0.0);
+      vector<double> all_height(mpi_nw_,0.0);
+      vector<int>    all_multivariate(mpi_nw_,0);
       if(comm.Get_rank()==0) {
         // Communicate (only root)
         multi_sim_comm.Allgather(cv,all_cv);
         multi_sim_comm.Allgather(thissigma,all_sigma);
-// notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        // notice that if gamma=1 we store directly -F so this scaling is not necessary:
         multi_sim_comm.Allgather(height*(biasf_>1.0?biasf_/(biasf_-1.0):1.0),all_height);
         multi_sim_comm.Allgather(int(multivariate),all_multivariate);
       }
@@ -1902,31 +1905,26 @@ void MetaD::update() {
       comm.Bcast(all_multivariate,0);
 
       // Flying Gaussian
-      if (flying) {
+      if (flying_) {
         hills_.clear();
         comm.Barrier();
       }
 
       for(unsigned i=0; i<mpi_nw_; i++) {
         // actually add hills one by one
-        std::vector<double> cv_now(cv.size());
-        std::vector<double> sigma_now(thissigma.size());
-        for(unsigned j=0; j<cv.size(); j++) cv_now[j]=all_cv[i*cv.size()+j];
+        vector<double> cv_now(ncv);
+        vector<double> sigma_now(thissigma.size());
+        for(unsigned j=0; j<ncv; j++) cv_now[j]=all_cv[i*ncv+j];
         for(unsigned j=0; j<thissigma.size(); j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
-// notice that if gamma=1 we store directly -F so this scaling is not necessary:
-        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
+        // notice that if gamma=1 we store directly -F so this scaling is not necessary:
+        double fact=(biasf_>1.0?(biasf_-1.0)/biasf_:1.0);
+        Gaussian newhill=Gaussian(all_multivariate[i],all_height[i]*fact,cv_now,sigma_now);
         addGaussian(newhill);
-
-        // Flying Gaussian
-        if (!flying) {
-          writeGaussian(newhill,hillsOfile_);
-        }
-
+        if(!flying_) writeGaussian(newhill,hillsOfile_);
       }
     } else {
-      Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
+      Gaussian newhill=Gaussian(multivariate,height,cv,thissigma);
       addGaussian(newhill);
-      // print on HILLS file
       writeGaussian(newhill,hillsOfile_);
     }
 
@@ -1934,11 +1932,9 @@ void MetaD::update() {
     if(use_Kneighb_) neigh_update_=true;
   }
 
-// this should be outside of the if block in case
-// mw_rstride_ is not a multiple of stride_
-  if(mw_n_>1 && getStep()%mw_rstride_==0) {
-    hillsOfile_.flush();
-  }
+  // this should be outside of the if block in case
+  // mw_rstride_ is not a multiple of stride_
+  if(mw_n_>1 && getStep()%mw_rstride_==0) hillsOfile_.flush();
 
   double vbias1=getBias(cv);
   work_+=vbias1-vbias;
@@ -1952,7 +1948,7 @@ void MetaD::update() {
     // this will overwrite previously written grids
     else {
       int r = 0;
-      if(walkers_mpi) {
+      if(walkers_mpi_) {
         if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
         comm.Bcast(r,0);
       }
@@ -1974,22 +1970,23 @@ void MetaD::update() {
       // don't read your own Gaussians
       if(i==mw_id_) continue;
       // if the file is not open yet
-      if(!(ifiles[i]->isOpen())) {
+      if(!(ifiles_[i]->isOpen())) {
         // check if it exists now and open it!
-        if(ifiles[i]->FileExist(ifilesnames[i])) {
-          ifiles[i]->open(ifilesnames[i]);
-          ifiles[i]->reset(false);
+        if(ifiles_[i]->FileExist(ifilesnames_[i])) {
+          ifiles_[i]->open(ifilesnames_[i]);
+          ifiles_[i]->reset(false);
         }
         // otherwise read the new Gaussians
       } else {
-        log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
-        readGaussians(ifiles[i].get());
-        ifiles[i]->reset(false);
+        log.printf("  Reading hills from %s:",ifilesnames_[i].c_str());
+        readGaussians(ifiles_[i].get());
+        ifiles_[i]->reset(false);
       }
     }
     // this is to update the hills neighbor list
     if(use_Kneighb_) neigh_update_=true;
   }
+
   // Recalculate special bias quantities whenever the bias has been changed by the update.
   bool bias_has_changed = (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0));
   if (calc_rct_ && bias_has_changed && getStep()%(stride_*rct_ustride_)==0) computeReweightingFactor();
@@ -2009,12 +2006,12 @@ void MetaD::update() {
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
-bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate)
+bool MetaD::scanOneHill(IFile* ifile, vector<Value>& tmpvalues, vector<double>& center, vector<double>& sigma, double& height, bool& multivariate)
 {
   double dummy;
   multivariate=false;
   if(ifile->scanField("time",dummy)) {
-    unsigned ncv; ncv=tmpvalues.size();
+    unsigned ncv=tmpvalues.size();
     for(unsigned i=0; i<ncv; ++i) {
       ifile->scanField( &tmpvalues[i] );
       if( tmpvalues[i].isPeriodic() && ! getPntrToArgument(i)->isPeriodic() ) {
@@ -2147,22 +2144,22 @@ double MetaD::getTransitionBarrierBias() {
 
 void MetaD::updateFrequencyAdaptiveStride() {
   plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
-  plumed_massert(acceleration,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
-  const double mean_acc = acc/((double) getStep());
+  plumed_massert(acceleration_,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
+  const double mean_acc = acc_/((double) getStep());
   int tmp_stride= stride_*floor((mean_acc/fa_min_acceleration_)+0.5);
   if(mean_acc >= fa_min_acceleration_) {
-    if(tmp_stride > current_stride) {current_stride = tmp_stride;}
+    if(tmp_stride > current_stride_) {current_stride_ = tmp_stride;}
   }
-  if(fa_max_stride_!=0 && current_stride>fa_max_stride_) {
-    current_stride=fa_max_stride_;
+  if(fa_max_stride_!=0 && current_stride_>fa_max_stride_) {
+    current_stride_=fa_max_stride_;
   }
-  getPntrToComponent("pace")->set(current_stride);
+  getPntrToComponent("pace")->set(current_stride_);
 }
 
 bool MetaD::checkNeedsGradients()const
 {
   if(adaptive_==FlexibleBin::geometry) {
-    if(getStep()%stride_==0 && !isFirstStep) return true;
+    if(getStep()%stride_==0 && !isFirstStep_) return true;
     else return false;
   } else return false;
 }
