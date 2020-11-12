@@ -58,12 +58,9 @@ The advantage with respect to Wang-Landau is that instead of sampling the potent
 
 The algorithm works as follows.
 The target distribution for the potential energy is chosen to be:
-\f[
-p(E)= \begin{cases}
-         \frac{1}{E_2-E_1} & \mathrm{if} \quad E_1<E<E_2 \\
-         0 & \mathrm{otherwise}
-      \end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
+
 where the energy limits \f$E_1\f$ and \f$E_2\f$ are yet to be determined.
 Clearly the interval \f$E_1–E_2\f$ chosen is related to the interval of temperatures \f$T_1-T_2\f$.
 To link these two intervals we make use of the following relation:

@@ -35,16 +35,8 @@ Uniform target distribution (static).
 Using this keyword you can define a uniform target distribution which is a
 product of one-dimensional distributions \f$p_{k}(s_{k})\f$ that are uniform
 over a given interval \f$[a_{k},b_{k}]\f$
-\f[
-p_{k}(s_{k}) =
-\begin{cases}
-\frac{1}{(b_{k}-a_{k})}
-& \mathrm{if} \ a_{k} \leq s_{k} \leq b_{k} \\
-\\
-\ 0
-& \mathrm{otherwise}
-\end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
 
 The overall distribution is then given as
 \f[
