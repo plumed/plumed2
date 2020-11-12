@@ -380,7 +380,7 @@ private:
       multivariate(m),height(h),center(c),sigma(s),invsigma(s) {
       // to avoid troubles from zero element in flexible hills
       for(unsigned i=0; i<invsigma.size(); ++i) {
-        if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ;
+        if(std::abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ;
         else invsigma[i]=0.0;
       }
     }
@@ -616,7 +616,7 @@ MetaD::MetaD(const ActionOptions& ao):
   nlist_(false),
   nlist_update_(false),
   nlist_steps_(0),
-  nlist_cutoff2_(8.*DP2CUTOFF)
+  nlist_cutoff2_(6.*DP2CUTOFF)
 {
 
   dp_.resize(getNumberOfArguments());
@@ -1522,11 +1522,11 @@ std::vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
     for(unsigned i=0; i<ncv; i++) {
-      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
+      cutoff.push_back(std::sqrt(2.0*DP2CUTOFF)*std::abs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
     for(unsigned i=0; i<ncv; ++i) {
-      cutoff.push_back(sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
+      cutoff.push_back(std::sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
     }
   }
 
@@ -1645,13 +1645,13 @@ double MetaD::getGaussianNormalization(const Gaussian& hill)
         k++;
       }
       double ldet; logdet( mymatrix, ldet );
-      norm = exp( ldet );  // Not sure here if mymatrix is sigma or inverse
+      norm = std::exp( ldet );  // Not sure here if mymatrix is sigma or inverse
     }
   } else {
     for(unsigned i=0; i<hill.sigma.size(); i++) norm*=hill.sigma[i];
   }
 
-  return norm*pow(2*pi,static_cast<double>(ncv)/2.0);
+  return norm*std::pow(2*pi,static_cast<double>(ncv)/2.0);
 }
 
 double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hill)
@@ -1703,7 +1703,7 @@ double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hi
   }
 
   double bias=0.0;
-  if(dp2<DP2CUTOFF) bias=hill.height*exp(-dp2);
+  if(dp2<DP2CUTOFF) bias=hill.height*std::exp(-dp2);
 
   return bias;
 }
@@ -1755,7 +1755,7 @@ double MetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, cons
       }
     }
     if(dp2<DP2CUTOFF) {
-      bias=hill.height*exp(-dp2);
+      bias=hill.height*std::exp(-dp2);
       if(!int_der) {
         for(unsigned i=0; i<ncv; i++) {
           double tmp=0.0;
@@ -1773,7 +1773,7 @@ double MetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, cons
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF) {
-      bias=hill.height*exp(-dp2);
+      bias=hill.height*std::exp(-dp2);
       if(!int_der) {
         for(unsigned i=0; i<ncv; i++) der[i]-=bias*dp_[i]*hill.invsigma[i];
       } else {
@@ -1791,16 +1791,16 @@ double MetaD::getHeight(const std::vector<double>& cv)
   if(welltemp_) {
     double vbias = getBias(cv);
     if(biasf_>1.0) {
-      height = height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
+      height = height0_*std::exp(-vbias/(kbt_*(biasf_-1.0)));
     } else {
       // notice that if gamma=1 we store directly -F
-      height = height0_*exp(-vbias/kbt_);
+      height = height0_*std::exp(-vbias/kbt_);
     }
   }
   if(dampfactor_>0.0) {
     plumed_assert(BiasGrid_);
     double m=BiasGrid_->getMaxValue();
-    height*=exp(-m/(kbt_*(dampfactor_)));
+    height*=std::exp(-m/(kbt_*(dampfactor_)));
   }
   if (tt_specs_.is_active) {
     double vbarrier = transition_bias_;
@@ -1808,7 +1808,7 @@ double MetaD::getHeight(const std::vector<double>& cv)
   }
   if(TargetGrid_) {
     double f=TargetGrid_->getValue(cv)-TargetGrid_->getMaxValue();
-    height*=exp(f/kbt_);
+    height*=std::exp(f/kbt_);
   }
   return height;
 }
@@ -1816,9 +1816,9 @@ double MetaD::getHeight(const std::vector<double>& cv)
 void MetaD::temperHeight(double& height, const TemperingSpecs& t_specs, const double tempering_bias)
 {
   if (t_specs.alpha == 1.0) {
-    height *= exp(-std::max(0.0, tempering_bias - t_specs.threshold) / (kbt_ * (t_specs.biasf - 1.0)));
+    height *= std::exp(-std::max(0.0, tempering_bias - t_specs.threshold) / (kbt_ * (t_specs.biasf - 1.0)));
   } else {
-    height *= pow(1 + (1 - t_specs.alpha) / t_specs.alpha * std::max(0.0, tempering_bias - t_specs.threshold) / (kbt_ * (t_specs.biasf - 1.0)), - t_specs.alpha / (1 - t_specs.alpha));
+    height *= std::pow(1 + (1 - t_specs.alpha) / t_specs.alpha * std::max(0.0, tempering_bias - t_specs.threshold) / (kbt_ * (t_specs.biasf - 1.0)), - t_specs.alpha / (1 - t_specs.alpha));
   }
 }
 
@@ -1855,7 +1855,7 @@ void MetaD::calculate()
   if(calc_rct_) getPntrToComponent("rbias")->set(ene - reweight_factor_);
   // calculate the acceleration factor
   if(acceleration_&&!isFirstStep_) {
-    acc_ += static_cast<double>(getStride()) * exp(ene/(kbt_));
+    acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration_ && isFirstStep_ && acc_restart_mean_ > 0.0) {
@@ -2116,8 +2116,8 @@ void MetaD::computeReweightingFactor()
   const unsigned stride=comm.Get_size();
   for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
     const double val=BiasGrid_->getValue(t);
-    Z_0+=exp(minusBetaF*(val-max_bias_));
-    Z_V+=exp(minusBetaFplusV*(val-max_bias_));
+    Z_0+=std::exp(minusBetaF*(val-max_bias_));
+    Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
   }
   if (stride>1) {
     comm.Sum(Z_0);
@@ -2220,22 +2220,19 @@ void MetaD::updateNlist()
   for(unsigned i=0; i<getNumberOfArguments(); i++) nlist_center_[i]=getArgument(i);
 
   // here we set some properties that are used to decide when to update it again
-  if(adaptive_==FlexibleBin::none) for(unsigned i=0; i<getNumberOfArguments(); i++) nlist_dev2_[i]=nlist_cutoff2_*sigma0_[i]*sigma0_[i];
-  else {
-    std::vector<double> dev2;
-    dev2.resize(getNumberOfArguments(),0);
-    for(unsigned k=0; k<nlist_hills_.size(); k++)
+  std::vector<double> dev2;
+  dev2.resize(getNumberOfArguments(),0);
+  for(unsigned k=0; k<nlist_hills_.size(); k++)
+  {
+    for(unsigned i=0; i<getNumberOfArguments(); i++)
     {
-      for(unsigned i=0; i<getNumberOfArguments(); i++)
-      {
-        const double d=difference(i,getArgument(i),nlist_hills_[k].center[i]);
-        dev2[i]+=d*d;
-      }
+      const double d=difference(i,getArgument(i),nlist_hills_[k].center[i]);
+      dev2[i]+=d*d;
     }
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(dev2[i]>0.) nlist_dev2_[i]=dev2[i]/static_cast<double>(nlist_hills_.size());
-      else nlist_dev2_[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
-    }
+  }
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    if(dev2[i]>0.) nlist_dev2_[i]=dev2[i]/static_cast<double>(nlist_hills_.size());
+    else nlist_dev2_[i]=hills_.back().sigma[i]*hills_.back().sigma[i];
   }
 
   // we are done
