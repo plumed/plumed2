@@ -1449,7 +1449,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
   // note that for gamma=1 we store directly -F
   if(welltemp_ && biasf_>1.0) height*=biasf_/(biasf_-1.0);
   file.printField("height",height).printField("biasf",biasf_);
-  if(mw_n_>1) file.printField("clock",int(time(0)));
+  if(mw_n_>1) file.printField("clock",int(std::time(0)));
   file.printField();
 }
 
