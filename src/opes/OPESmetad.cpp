@@ -132,6 +132,7 @@ private:
   double bias_prefactor_;
   unsigned stride_;
   std::vector<double> sigma0_;
+  std::vector<double> sigma_min_;
   unsigned adaptive_sigma_stride_;
   unsigned long adaptive_counter_;
   std::vector<double> av_cv_;
@@ -210,6 +211,7 @@ void OPESmetad::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
+  keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
   keys.add("optional","BIASFACTOR","the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. Set to 'inf' for uniform flat target");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
@@ -316,6 +318,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
       plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
     }
   }
+  parseVector("SIGMA_MIN",sigma_min_);
+  plumed_massert(sigma_min_.size()==0 || sigma_min_.size()==ncv_,"number of SIGMA_MIN does not match number of arguments");
 
   epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
   parse("EPSILON",epsilon_);
@@ -353,9 +357,10 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   {
     nlist_=true;
     plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
-    if(nlist_param[0]<=1.0) error("NLIST_PARAMETERS MUST BE (1,Inf) and [0.,1.], the smaller the first the smaller should be the second as well");
-    if(nlist_param[1]>((1.-1./sqrt(nlist_param[0]))+0.16))
-      error("The second parameter for NLIST_PARAMETERS is too large and will give systematic errors, the largest suggested value is " + std::to_string(((1.-1./sqrt(nlist_param[0]))+0.16)));
+    plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
+    const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]))+0.16;
+    plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
+    plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0) = "+std::to_string(min_PARAM_1));
     nlist_param_[0]=nlist_param[0];
     nlist_param_[1]=nlist_param[1];
   }
@@ -602,9 +607,22 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     { //same behaviour as METAD
       std::string not_found_msg="RESTART requested, but file '"+restartFileName+"' was not found!";
       if(stateRestart)
-        error(not_found_msg);
+        plumed_merror(not_found_msg);
       else
         log.printf(" +++ WARNING +++ %s\n",not_found_msg.c_str());
+    }
+    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
+    {
+      const unsigned kernels_size=kernels_.size();
+      std::vector<unsigned> all_kernels_size(NumWalkers_);
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Allgather(kernels_size,all_kernels_size);
+      comm.Bcast(all_kernels_size,0);
+      bool same_number_of_kernels=true;
+      for(unsigned w=1; w<NumWalkers_; w++)
+        if(all_kernels_size[0]!=all_kernels_size[w])
+          same_number_of_kernels=false;
+      plumed_massert(same_number_of_kernels,"RESTART - not all walkers are reading the same file!");
     }
   }
   else if(restartFileName.length()>0)
@@ -705,6 +723,13 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     log.printf("  kernels have initial SIGMA = ");
     for(unsigned i=0; i<ncv_; i++)
       log.printf(" %g",sigma0_[i]);
+    log.printf("\n");
+  }
+  if(sigma_min_.size()>0)
+  {
+    log.printf("  kernels have a SIGMA_MIN = ");
+    for(unsigned i=0; i<ncv_; i++)
+      log.printf(" %g",sigma_min_[i]);
     log.printf("\n");
   }
   if(fixed_sigma_)
@@ -891,12 +916,24 @@ void OPESmetad::update()
   {
     const double size=neff; //for EXPLORE neff is not relevant
     const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
-    for(unsigned i=0; i<ncv_; i++)
-      sigma[i]*=s_rescaling;
-    //the height should be divided by sqrt(2*pi)*sigma,
-    //but this overall factor would be canceled when dividing by Zed
-    //thus we skip it altogether, but keep the s_rescaling
-    height/=std::pow(s_rescaling,ncv_);
+    if(sigma_min_.size()==0)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]*=s_rescaling;
+      //the height should be divided by sqrt(2*pi)*sigma,
+      //but this overall factor would be canceled when dividing by Zed
+      //thus we skip it altogether, but keep the s_rescaling
+      height/=std::pow(s_rescaling,ncv_);
+    }
+    else
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double s_rescaling_i=std::max(s_rescaling,sigma_min_[i]/sigma[i]);
+        sigma[i]*=s_rescaling_i;
+        height/=s_rescaling_i;
+      }
+    }
   }
 
 //get new kernel center
