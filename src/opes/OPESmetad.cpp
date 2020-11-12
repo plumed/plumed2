@@ -254,7 +254,6 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
-<<<<<<< HEAD
   std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. ");
   if(mode::explore)
     info_biasfactor+="Cannot be 'inf'";
