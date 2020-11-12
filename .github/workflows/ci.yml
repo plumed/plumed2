@@ -15,7 +15,8 @@ env:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+# I keep 18.04 since there are a few issues with the pdf manual compilation on ubuntu 20
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -81,12 +82,16 @@ jobs:
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         ./.travis/install.doxygen Release_1_8_14
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc " >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc --enable-asmjit" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
         ./.travis/install.lcov v1.14
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --enable-asmjit --disable-external-blas --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
@@ -116,17 +121,28 @@ jobs:
       run: |
          nosetests -v -w python
     - name: Build doc
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-doc-' )
       run: |
          make doc >/dev/null
     - name: Coverage
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
+         ./.travis/push coverage
          bash <(curl -s https://codecov.io/bash) > /dev/null
+    - name: Push doc
+      if: contains( matrix.variant, '-doc-' )
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      run: |
+         ./.travis/push doc
 
   codecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: Set path
@@ -146,8 +162,16 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
+  centos7:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and run tests
+      run: |
+        make -C docker centos7
+
   macports:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
@@ -187,7 +211,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: Set paths
@@ -214,7 +238,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest , macos-latest]
+        os: [ubuntu-18.04 , macos-10.15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2

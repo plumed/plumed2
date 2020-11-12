@@ -1,9 +1,0 @@
-*.edr
-*.trr
-*.xtc
-*.log
-*.cpt
-\#*
-bk*
-COLVAR*
-*.pdb

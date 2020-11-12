@@ -1,8 +1,9 @@
 type=driver
+plumed_needs=asmjit
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
 
-export PLUMED_USE_ASMJIT=no
+export PLUMED_USE_ASMJIT=yes
 
 function plumed_regtest_before(){
 awk 'BEGIN{
