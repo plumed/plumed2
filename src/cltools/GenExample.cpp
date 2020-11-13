@@ -112,7 +112,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     intracomm.Set_comm(pc.Get_comm());
   }
 
-  if( config::getVersionLong().find("dev")==std::string::npos ) version=config::getVersion();
+  if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
   std::string fname, egname, outfile; parse("--plumed",fname);
   parse("--name",egname); parse("--out",outfile); parse("--status",status);
 
