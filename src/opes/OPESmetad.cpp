@@ -162,7 +162,7 @@ private:
   double val_at_cutoff_;
   inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
-  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
+  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
   std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
 //neighbour list stuff
@@ -1065,16 +1065,22 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double>& cv,std::vecto
   if(!nlist_)
   {
     if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+        prob+=evaluateKernel(kernels_[k],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[k],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1084,16 +1090,22 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double>& cv,std::vecto
   else
   {
     if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
+        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1456,10 +1468,9 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der)
+inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
-  std::vector<double> dist(ncv_);
   for(unsigned i=0; i<ncv_; i++)
   {
     dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];

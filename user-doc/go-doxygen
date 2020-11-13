@@ -2,6 +2,12 @@
 
 source ../sourceme.sh
 
+if plumed --no-mpi config mpiexec ; then
+   mpirun=$(plumed --no-mpi config mpiexec)
+else
+   mpirun=mpirun
+fi
+
 LISTMORE=`ls *PP.md | grep -wvFf basic.list`
 
 LIST="
@@ -100,7 +106,7 @@ gawk -v version="$version" '{
     print "</script>"
   } else print
 }' $file |
-gawk -f ../../plumed-syntax.awk > $file.tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit

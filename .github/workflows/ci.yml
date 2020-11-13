@@ -15,7 +15,7 @@ env:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -87,7 +87,7 @@ jobs:
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        ./.travis/install.lcov v1.14
+        ./.travis/install.lcov v1.15
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -104,6 +104,7 @@ jobs:
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
+        echo "MPIEXEC=mpirun --oversubscribe" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
         ccache -s
@@ -141,7 +142,7 @@ jobs:
          ./.travis/push doc
 
   codecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: Set path
@@ -162,7 +163,7 @@ jobs:
         make codecheck
 
   centos7:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Build and run tests
@@ -170,7 +171,7 @@ jobs:
         make -C docker centos7
 
   macports:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
@@ -210,7 +211,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: Set paths
@@ -237,7 +238,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest , macos-latest]
+        os: [ubuntu-18.04 , macos-10.15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
