@@ -15,8 +15,7 @@ env:
 
 jobs:
   linux:
-# I keep 18.04 since there are a few issues with the pdf manual compilation on ubuntu 20
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +87,7 @@ jobs:
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        ./.travis/install.lcov v1.14
+        ./.travis/install.lcov v1.15
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --enable-asmjit --disable-external-blas --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -105,6 +104,7 @@ jobs:
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
+        echo "MPIEXEC=mpirun --oversubscribe" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
         ccache -s

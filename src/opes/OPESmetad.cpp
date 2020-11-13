@@ -129,6 +129,7 @@ private:
   double bias_prefactor_;
   unsigned stride_;
   std::vector<double> sigma0_;
+  std::vector<double> sigma_min_;
   unsigned adaptive_sigma_stride_;
   unsigned long adaptive_counter_;
   std::vector<double> av_cv_;
@@ -158,7 +159,7 @@ private:
   double val_at_cutoff_;
   inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
   inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
-  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&);
+  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
   std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
 //neighbour list stuff
@@ -193,6 +194,7 @@ public:
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
+
 };
 
 struct convergence { static const bool explore=false; };
@@ -256,6 +258,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   else
     info_biasfactor+="Set to 'inf' for uniform flat target";
   keys.add("optional","BIASFACTOR",info_biasfactor);
+  keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
   keys.add("optional","NLIST_PARAMETERS","( default=3.,0.5 ) the two cutoff parameters for the kernels neighbor list");
@@ -369,6 +372,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
         sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
     }
   }
+  parseVector("SIGMA_MIN",sigma_min_);
+  plumed_massert(sigma_min_.size()==0 || sigma_min_.size()==ncv_,"number of SIGMA_MIN does not match number of arguments");
 
   epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
   parse("EPSILON",epsilon_);
@@ -408,9 +413,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   {
     nlist_=true;
     plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
-    plumed_massert(nlist_param[0]<=1.0,"the first of NLIST_PARAMETERS must be greater than 1. Also, the smaller the first the smaller should be the second as well");
-    const double min_param1=(1.-1./std::sqrt(nlist_param[0]))+0.16;
-    plumed_massert(nlist_param[1]>min_param1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is "+std::to_string(min_param1));
+    plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
+    const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]))+0.16;
+    plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
+    plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0) = "+std::to_string(min_PARAM_1));
     nlist_param_[0]=nlist_param[0];
     nlist_param_[1]=nlist_param[1];
   }
@@ -657,9 +663,22 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     { //same behaviour as METAD
       std::string not_found_msg="RESTART requested, but file '"+restartFileName+"' was not found!";
       if(stateRestart)
-        error(not_found_msg);
+        plumed_merror(not_found_msg);
       else
         log.printf(" +++ WARNING +++ %s\n",not_found_msg.c_str());
+    }
+    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
+    {
+      const unsigned kernels_size=kernels_.size();
+      std::vector<unsigned> all_kernels_size(NumWalkers_);
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Allgather(kernels_size,all_kernels_size);
+      comm.Bcast(all_kernels_size,0);
+      bool same_number_of_kernels=true;
+      for(unsigned w=1; w<NumWalkers_; w++)
+        if(all_kernels_size[0]!=all_kernels_size[w])
+          same_number_of_kernels=false;
+      plumed_massert(same_number_of_kernels,"RESTART - not all walkers are reading the same file!");
     }
   }
   else if(restartFileName.length()>0)
@@ -760,6 +779,13 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     log.printf("  kernels have initial SIGMA = ");
     for(unsigned i=0; i<ncv_; i++)
       log.printf(" %g",sigma0_[i]);
+    log.printf("\n");
+  }
+  if(sigma_min_.size()>0)
+  {
+    log.printf("  kernels have a SIGMA_MIN = ");
+    for(unsigned i=0; i<ncv_; i++)
+      log.printf(" %g",sigma_min_[i]);
     log.printf("\n");
   }
   if(fixed_sigma_)
@@ -932,7 +958,7 @@ void OPESmetad<mode>::update()
   if(mode::explore)
   {
     KDEnorm_=counter_;
-    //in EXPLORE mode height=1, because it is not multiplied by the weight
+    //in opes explore the kernel height=1, because it is not multiplied by the weight
     height=1;
   }
   else
@@ -963,12 +989,24 @@ void OPESmetad<mode>::update()
   {
     const double size=mode::explore?counter_:neff; //for EXPLORE neff is not relevant
     const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
-    for(unsigned i=0; i<ncv_; i++)
-      sigma[i]*=s_rescaling;
-    //the height should be divided by sqrt(2*pi)*sigma,
-    //but this overall factor would be canceled when dividing by Zed
-    //thus we skip it altogether, but keep the s_rescaling
-    height/=std::pow(s_rescaling,ncv_);
+    if(sigma_min_.size()==0)
+    {
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]*=s_rescaling;
+      //the height should be divided by sqrt(2*pi)*sigma,
+      //but this overall factor would be canceled when dividing by Zed
+      //thus we skip it altogether, but keep the s_rescaling
+      height/=std::pow(s_rescaling,ncv_);
+    }
+    else
+    {
+      for(unsigned i=0; i<ncv_; i++)
+      {
+        const double s_rescaling_i=std::max(s_rescaling,sigma_min_[i]/sigma[i]);
+        sigma[i]*=s_rescaling_i;
+        height/=s_rescaling_i;
+      }
+    }
   }
 
 //get new kernel center
@@ -1101,16 +1139,22 @@ double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std:
   if(!nlist_)
   {
     if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-        prob+=evaluateKernel(kernels_[k],cv,der_prob);
+        prob+=evaluateKernel(kernels_[k],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          prob+=evaluateKernel(kernels_[k],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[k],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1120,16 +1164,22 @@ double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std:
   else
   {
     if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_)
+    {
+      // for performances and thread safety
+      std::vector<double> dist(ncv_);
       for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob);
+        prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob,dist);
+    }
     else
     {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
+        // for performances and thread safety
+        std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
         for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv);
+          prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv,dist);
         #pragma omp critical
         for(unsigned i=0; i<ncv_; i++)
           der_prob[i]+=omp_deriv[i];
@@ -1499,10 +1549,9 @@ inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<
 }
 
 template <class mode>
-inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der)
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
-  std::vector<double> dist(ncv_);
   for(unsigned i=0; i<ncv_; i++)
   {
     dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];
