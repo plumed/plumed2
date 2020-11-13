@@ -623,7 +623,7 @@ void EMMI::read_status()
 {
   double MDtime;
 // open file
-  IFile *ifile = new IFile();
+  auto ifile = Tools::make_unique<IFile>();
   ifile->link(*this);
   if(ifile->FileExist(statusfilename_)) {
     ifile->open(statusfilename_);
@@ -641,7 +641,6 @@ void EMMI::read_status()
   } else {
     error("Cannot find status file "+statusfilename_+"\n");
   }
-  delete ifile;
 }
 
 void EMMI::print_status(long int step)
@@ -897,7 +896,7 @@ void EMMI::get_GMM_d(string GMM_file)
   VectorGeneric<6> cov;
 
 // open file
-  std::unique_ptr<IFile> ifile(new IFile);
+  auto ifile=Tools::make_unique<IFile>();
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
     int idcomp;

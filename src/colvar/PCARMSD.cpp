@@ -137,7 +137,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + f_average );
 
-  rmsd.reset( new RMSD() );
+  rmsd=Tools::make_unique<RMSD>();
   bool remove_com=true;
   bool normalize_weights=true;
   // here align and displace are a simple vector of ones

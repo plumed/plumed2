@@ -32,6 +32,8 @@
 #include <unistd.h>
 #endif
 
+#include <iomanip>
+
 using namespace std;
 namespace PLMD {
 
@@ -46,23 +48,65 @@ bool Tools::convertToAny(const string & str,T & t) {
 }
 
 bool Tools::convert(const string & str,int & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,long int & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,unsigned & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
+}
+
+bool Tools::convert(const string & str,long unsigned & t) {
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,AtomNumber &a) {
+  // Note: AtomNumber's are NOT converted as int, so as to
+  // avoid using lepton conversions.
   unsigned i;
-  bool r=convert(str,i);
+  bool r=convertToAny(str,i);
   if(r) a.setSerial(i);
   return r;
 }
+
+template<class T>
+bool Tools::convertToInt(const string & str,T & t) {
+  // First try standard conversion
+  if(convertToAny(str,t)) return true;
+  // Then use lepton
+  try {
+    double r=lepton::Parser::parse(str).evaluate(lepton::Constants());
+
+    // now sanity checks on the resulting number
+
+    // it should not overflow the requested int type:
+    // (see https://stackoverflow.com/a/526092)
+    if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) return false;
+    if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) return false;
+
+    // do the actual conversion
+    auto tmp=static_cast<T>(std::round(r));
+
+    // it should be *very close* to itself if converted back to double
+    double diff= r-static_cast<double>(tmp);
+    if(diff*diff > 1e-20) return false;
+    // this is to accomodate small numerical errors and allow e.g. exp(log(7)) to be integer
+
+    // it should be change if incremented or decremented by one (see https://stackoverflow.com/a/43656140)
+    if(r == static_cast<double>(tmp-1)) return false;
+    if(r == static_cast<double>(tmp+1)) return false;
+
+    // everything is fine, then store in t
+    t=tmp;
+    return true;
+  } catch(PLMD::lepton::Exception& exc) {
+  }
+  return false;
+}
+
 
 template<class T>
 bool Tools::convertToReal(const string & str,T & t) {
@@ -264,15 +308,15 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
     size_t dash=p.find("-");
     if(dash==string::npos) continue;
     int first;
-    if(!Tools::convert(p.substr(0,dash),first)) continue;
+    if(!Tools::convertToAny(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
     size_t colon=p.substr(dash+1).find(":");
     if(colon!=string::npos) {
-      if(!Tools::convert(p.substr(dash+1).substr(0,colon),second) ||
-          !Tools::convert(p.substr(dash+1).substr(colon+1),stride)) continue;
+      if(!Tools::convertToAny(p.substr(dash+1).substr(0,colon),second) ||
+          !Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      if(!Tools::convert(p.substr(dash+1),second)) continue;
+      if(!Tools::convertToAny(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second) {

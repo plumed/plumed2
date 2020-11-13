@@ -32,7 +32,7 @@ namespace crystallization {
 class GradientVessel : public vesselbase::FunctionVessel {
 private:
   bool isdens;
-  unsigned nweights, ncomponents;
+  size_t nweights, ncomponents;
   std::vector<unsigned> starts;
 public:
   static void registerKeywords( Keywords& keys );

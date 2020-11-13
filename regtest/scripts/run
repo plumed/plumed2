@@ -79,7 +79,7 @@ mpi="$mpi -np $mpiprocs"
 
 if ! $plumed config -q has mpi
 then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
       else
@@ -99,7 +99,7 @@ fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
       else
@@ -116,7 +116,7 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($need NOT ENABLED)"
       else
@@ -134,7 +134,7 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
       else
@@ -149,7 +149,7 @@ done
 
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLIABLE (plumed_custom_skip)"
       else

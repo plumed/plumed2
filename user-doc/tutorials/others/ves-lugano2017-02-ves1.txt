@@ -109,6 +109,7 @@ of the expansion is not critical as long as we obtain good sampling at
 convergence. If this is the case, it is possible to obtain finer features of
 the FES through reweighting. The syntax for this basis set in Plumed is:
 \plumedfile
+__FILL__
 BF_LEGENDRE ...
  ORDER=10
  MINIMUM=0.23
@@ -131,6 +132,7 @@ This is the same relation that holds for non-tempered metadynamics.
 
 The syntax for the bias potential in Plumed is:
 \plumedfile
+__FILL__
 td1: TD_UNIFORM
 
 VES_LINEAR_EXPANSION ...
@@ -158,6 +160,7 @@ the bias can grow fast enough to overcome them. For this example we have
 chosen a stride of 500 steps and a step size of 0.5 kJ/mol. The syntax in
 Plumed is:
 \plumedfile
+__FILL__
 OPT_AVERAGED_SGD ...
   BIAS=b1
   STRIDE=500
@@ -269,17 +272,13 @@ files needed for this example are contained in the directory Example2. Instead
 of introducing a barrier as done in the example above, in this case we will
 use a uniform target distribution in the interval [0.23:0.6] nm and decaying to
 zero in the interval [0.6:0.8] nm. The expression is:
-\f[
-p(s)=
-        \begin{cases}
-                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
-                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
-\mathrm{if} \: s>s_0\\
-        \end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
+
 where \f$ s_0=0.6\f$ nm and \f$ \sigma=0.05\f$.
 To define this \f$ p(s) \f$ in Plumed the input is:
 \plumedfile
+__FILL__
 td1: TD_UNIFORM MINIMA=0.23 MAXIMA=0.6 SIGMA_MAXIMA=0.05
 
 VES_LINEAR_EXPANSION ...
@@ -297,6 +296,7 @@ the FES with detail. If you are doing this example in a group, each member of
 the group can choose a different order in the expansion, for instance 5, 10,
 20, and 40. The syntax in Plumed is:
 \plumedfile
+__FILL__
 BF_LEGENDRE ...
  ORDER=20
  MINIMUM=0.23
@@ -359,6 +359,7 @@ histogram with equal weights for all points. This distribution should be equal
 to the target distribution \f$ p(s) \f$. The histogram can be calculated in
 plumed using the following input in the plumed.dat file:
 \plumedfile
+__FILL__
 distance: READ FILE=COLVAR  IGNORE_TIME VALUES=d1
 
 HISTOGRAM ...
@@ -443,6 +444,7 @@ continuously.
 As an exercise, you can use a target distribution consisting in a gaussian
 centered at the dissociation barrier. The syntax in Plumed is:
 \plumedfile
+__FILL__
 td1: TD_GAUSSIAN CENTER1=0.325 SIGMA1=0.03
 
 VES_LINEAR_EXPANSION ...

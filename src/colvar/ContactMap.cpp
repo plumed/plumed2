@@ -180,7 +180,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
-  nl.reset(new NeighborList(ga_lista,gb_lista,serial,true,pbc,getPbc(),comm));
+  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,true,pbc,getPbc(),comm);
 
   // Read in switching functions
   std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;

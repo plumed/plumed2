@@ -216,7 +216,7 @@ class Constants(list):
            else:
                raise ValueError("plumed.Constants should be initialized with a list of 2- or 3-plets")
 
-def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,kernel=None,chunksize=None,usecols=None,skiprows=None,nrows=None):
+def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,kernel=None,chunksize=None,usecols=None,skiprows=None,nrows=None,index_col=None):
     """Import a plumed data file as a pandas dataset.
 
        file_or_path : str or file
@@ -243,6 +243,8 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
        skiprows : list-like, int or callable, optional
            Directly passed to pandas.
        nrows : int, optional
+           Directly passed to pandas.
+       index_col : int, str, sequence of int / str, or False, default None
            Directly passed to pandas.
 
        Returns
@@ -400,7 +402,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
 # read the rest of the file
 # notice that if chunksize was provided the result will be an iterable object
     df=pd.read_csv(file_or_path, delim_whitespace=True, comment="#", header=None,names=columns,
-                    usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize)
+                    usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize,index_col=index_col)
 
     if chunksize is None:
 # just perform conversions and attach constants to the dataframe
@@ -443,12 +445,21 @@ def write_pandas(df,file_or_path=None):
     """
 # importing pandas is pretty slow, so we only do it when needed
     import pandas as pd
+# check if there is an index. if so, write it as an additional field
+    has_index=hasattr(df.index,'name') and df.index.name is not None
+# check if there is a multi-index
+    has_mindex=(not has_index) and hasattr(df.index,'names') and df.index.names[0] is not None
+# writing multiindex is currently not supported
+    if has_mindex:
+        raise TypeError("Writing dataframes with MultiIndexes is not supported at this time")
 # handle file
     if file_or_path is None:
         file_or_path=sys.stdout
     file_or_path=_fix_file(file_or_path,'wt')
 # write header
     file_or_path.write("#! FIELDS")
+    if has_index:
+        file_or_path.write(" "+str(df.index.name))
     for n in df.columns:
         file_or_path.write(" "+str(n))
     file_or_path.write("\n")
@@ -459,6 +470,8 @@ def write_pandas(df,file_or_path=None):
             file_or_path.write("#! SET "+c[0]+" "+c[2]+"\n")
 # write data
     for i in range(df.shape[0]):
+        if has_index:
+            file_or_path.write(" "+str(df.index[i]))
         for j in df.columns:
             file_or_path.write(" "+str(df[j][i]))
         file_or_path.write("\n")

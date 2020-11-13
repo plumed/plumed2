@@ -162,7 +162,7 @@ void PathMSDBase::calculate() {
 // THIS IS THE HEAVY PART (RMSD STUFF)
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  unsigned nat=pdbv[0].size();
+  size_t nat=pdbv[0].size();
   plumed_assert(nat>0);
   plumed_assert(nframes>0);
   plumed_assert(imgVec.size()>0);
@@ -254,7 +254,7 @@ void PathMSDBase::calculate() {
     }
   }
 // assign imgVec[i].distance and imgVec[i].distder
-  for(unsigned i=0; i<imgVec.size(); i++) {
+  for(size_t i=0; i<imgVec.size(); i++) {
     imgVec[i].distance=tmp_distances[i];
     imgVec[i].distder.assign(&tmp_derivs2[i*nat],nat+&tmp_derivs2[i*nat]);
   }

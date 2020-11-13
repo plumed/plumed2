@@ -542,7 +542,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         atoms.setExtraCVForce(words[1],val);
         break;
       case cmd_GREX:
-        if(!grex) grex.reset(new GREX(*this));
+        if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
         {
           std::string kk=words[1];
@@ -552,7 +552,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_CLTool:
         CHECK_NOTINIT(initialized,word);
-        if(!cltool) cltool.reset(new CLToolMain);
+        if(!cltool) cltool=Tools::make_unique<CLToolMain>();
         {
           std::string kk=words[1];
           for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];

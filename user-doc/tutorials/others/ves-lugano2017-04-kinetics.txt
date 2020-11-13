@@ -58,6 +58,7 @@ In the above, the first line sets the energy units. The second and third line de
 Next we will use VES to drive the transformation at 1700 K. We bias the formation of bonds DB and AC shown in Figure \ref stone-wales using CV2 which changes from 0 to 2 during the transformation. (Although a more rigorous treatment would bias both CVs, for this tutorial we will simplify things and work in only one dimension). We choose a Chebyshev polynomial basis set up to order 36
 
 \plumedfile
+__FILL__
 # The basis set to use
 bf1: BF_CHEBYSHEV ORDER=36 MINIMUM=0.0 MAXIMUM=2.0
 \endplumedfile
@@ -65,6 +66,7 @@ bf1: BF_CHEBYSHEV ORDER=36 MINIMUM=0.0 MAXIMUM=2.0
 and we tell PLUMED to use VES acting on CV2 with a free energy cutoff
 
 \plumedfile
+__FILL__
 td_uniform: TD_UNIFORM
 
 VES_LINEAR_EXPANSION ...
@@ -87,6 +89,7 @@ where \f$\lambda\f$ (inverse energy units) controls how sharply the function goe
 
 The following input updates the VES bias every 200 steps, writing out the bias every 10 iterations. To enforce the energy cutoff we also need to update the target distribution which we do every 40 iterations with the TARGETDIST_STRIDE flag.
 \plumedfile
+__FILL__
 OPT_AVERAGED_SGD ...
   BIAS=variational
   STRIDE=200
@@ -103,6 +106,7 @@ OPT_AVERAGED_SGD ...
 Finally, we will stop the simulation when the transition occurs using the COMMITTOR in PLUMED
 
 \plumedfile
+__FILL__
 COMMITTOR ARG=d1 BASIN_LL1=-2.0 BASIN_UL1=-1.0 STRIDE=600
 \endplumedfile
 
@@ -154,6 +158,7 @@ tail -n 47 coeffs.dat > fixed-coeffs.dat
 Now create a new directory from which you will run a new simulation and copy the necessary input files (including the fixed-coeffs.dat) into this directory. Modify the PLUMED file so that the optimized coefficients are read by the VES_LINEAR_EXPANSION
 
 \plumedfile
+__FILL__
 td_uniform: TD_UNIFORM
 
 VES_LINEAR_EXPANSION ...
@@ -175,6 +180,7 @@ Make sure to remove the lines for the stochastic optimization (OPT_AVERAGED_SGD)
 We will also perform metadynamics with an infrequent deposition stride to ensure that the trajectory does not get stuck in any regions where the bias potential is not fully converged The following implements metadynamics on both CV1 and CV2 with a deposition stride of 4000 steps and a hill height of 0.15 eV.
 
 \plumedfile
+__FILL__
 METAD ...
    ARG=CV1,CV2
    SIGMA=0.2,0.2
@@ -187,6 +193,7 @@ METAD ...
 Again we will use the COMMITTOR to stop the trajectory after the transition.
 
 \plumedfile
+__FILL__
 COMMITTOR ARG=d1 BASIN_LL1=-2.0 BASIN_UL1=-1.0
 \endplumedfile
 

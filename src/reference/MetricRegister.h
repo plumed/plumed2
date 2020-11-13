@@ -62,7 +62,7 @@ MetricRegister& metricRegister();
 
 #define PLUMED_REGISTER_METRIC(classname,type) \
   static class classname##RegisterMe{ \
-    static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return std::unique_ptr<ReferenceConfiguration>( new classname(ro) );} \
+    static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return PLMD::Tools::make_unique<classname>(ro);} \
   public: \
     classname##RegisterMe(){PLMD::metricRegister().add(type,create);}; \
     ~classname##RegisterMe(){PLMD::metricRegister().remove(create);}; \
