@@ -767,12 +767,14 @@ unsigned ActionWithArguments::getArgumentPositionInStream( const unsigned& jder,
 void ActionWithArguments::resizeForFinalTasks() {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
   if( av->getFullNumberOfTasks()==0 ) { 
-      unsigned nscalars=0, nvalues;
+      unsigned nscalars=0, nvalues=0;
       for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+        unsigned tnval = 0;
         for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
             if( arguments[j]->getNumberOfValues( getLabel() )==1 ) nscalars++;
-            else nvalues=arguments[j]->getShape()[0];
+            else tnval += arguments[j]->getShape()[0];
         }
+        if( tnval>0 && (nvalues==0 || tnval<nvalues) ) nvalues = tnval; 
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
       for(unsigned i=0;i<nvalues;++i) av->addTaskToList( i );

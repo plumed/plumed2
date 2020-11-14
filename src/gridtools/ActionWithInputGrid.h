@@ -33,6 +33,7 @@ class ActionWithInputGrid :
   public ActionWithValue,
   public ActionWithArguments {
 private:
+  enum {spline,floor} interpolation_type;
   void doTheCalculation();
 protected:
   bool firststep;
@@ -57,12 +58,14 @@ public:
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
+  if( getPntrToArgument(0)->isTimeSeries() && ipoint==getPntrToArgument(0)->getShape()[0] ) return getPntrToArgument(0)->get( ipoint-1 );
+  plumed_dbg_assert( ipoint<getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
   return getPntrToArgument(0)->get( ipoint );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
-  return getPntrToArgument(0)->get( gridobject.getIndex(ip) );
+  return getFunctionValue( gridobject.getIndex(ip) );
 }
 
 inline

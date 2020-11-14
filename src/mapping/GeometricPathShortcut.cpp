@@ -50,13 +50,9 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::vector<std::string> refactions;
-  std::string mtype; parse("TYPE",mtype);
-  std::string refname; parse("REFERENCE",refname); 
-  std::vector<std::string> argnames; parseVector("ARG",argnames);
-  if( argnames.size()>0 && mtype=="OPTIMAL_FAST" ) mtype="EUCLIDEAN";
+  std::vector<std::string> refactions; std::string mtype, refname;
   // Create list of reference configurations that PLUMED will use
-  Path::createActionsToComputeDistances( mtype, refname, true, this, argnames, refactions );
+  Path::readInputFrames( mtype, refname, true, this, refactions );
   // Now get coordinates on spath
   std::string pname, coord_str, ref_str; parse("PROPERTY",pname); 
   FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;

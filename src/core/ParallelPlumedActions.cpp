@@ -147,6 +147,16 @@ void ParallelPlumedActions::clearDerivatives( const bool& force ) {
   forcesWereSet=false;
 }
 
+void ParallelPlumedActions::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                                                  std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                                                  std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues( getLabel() ); spacing[0] = 1;
+}
+
+void ParallelPlumedActions::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  coords[0] = ind;
+}
+
 void ParallelPlumedActions::activate() {
   // Activate all actions here so that atoms are collected for all actions
   for(unsigned i=0;i<action_lists.size();++i) {

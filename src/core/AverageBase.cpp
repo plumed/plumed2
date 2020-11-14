@@ -48,6 +48,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
   clearnextstep(false),
   DRotDPos(3,3),
   firststep(true),
+  starttime(0.0),
   clearnorm(false),
   n_real_args(getNumberOfArguments())
 {
@@ -158,28 +159,6 @@ unsigned AverageBase::getNumberOfDerivatives() const {
   return 0;
 }
 
-void AverageBase::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                        std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                        std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
-}
-
-void AverageBase::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
-}
-
-void AverageBase::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointAsCoordinate( ind, false, coords );
-  if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
-  else if( setlength ) {
-    double val=getPntrToOutput(0)->get(ind);
-    for(unsigned i=0; i<coords.size(); ++i) coords[i] = val*coords[i];
-  }
-}
-
 void AverageBase::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
@@ -206,7 +185,7 @@ void AverageBase::clearDerivatives( const bool& force ) {
 
 void AverageBase::update() {
   // Resize values if they need resizing
-  if( firststep ) { setReferenceConfig(); firststep=false; }
+  if( firststep ) { setReferenceConfig(); firststep=false; starttime=getStep()*getTimeStep(); }
   // Check if we need to accumulate
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 
@@ -217,7 +196,7 @@ void AverageBase::update() {
       if( clearnorm ) {
           for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setNorm(0.0);
       }
-      setReferenceConfig(); clearnextstep=false; 
+      setReferenceConfig(); clearnextstep=false; starttime=getStep()*getTimeStep(); 
   }
 
   if( atom_pos.size()>0 ) { 

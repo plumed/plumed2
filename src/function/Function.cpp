@@ -404,28 +404,6 @@ void Function::runFinalJobs() {
   resizeForFinalTasks(); evaluateAllFunctions();
 }
 
-void Function::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                     std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
-}
-
-void Function::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
-}
-
-void Function::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getGridPointAsCoordinate( ind, false, coords );
-  if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
-  else if( setlength ) {
-    double val=getPntrToOutput(0)->get(ind);
-    for(unsigned i=0; i<coords.size(); ++i) coords[i] = val*coords[i];
-  }
-}
-
 bool Function::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   if( actionInChain() || !matinp ) return true; plumed_dbg_assert( controller==getLabel() );
   unsigned colno = index2; if( index2>=getFullNumberOfTasks() ) colno = index2-getFullNumberOfTasks();

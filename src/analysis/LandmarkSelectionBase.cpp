@@ -112,6 +112,16 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
   }
 }
 
+void LandmarkSelectionBase::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  if( indices[0]>landmarks.size() ) { 
+      getPntrToArgument(0)->getPntrToAction()->getGridPointIndicesAndCoordinates( ind, indices, coords );
+  } else if( getPntrToOutput(0)->isTimeSeries() ) { 
+      ActionWithValue* cf = getPntrToArgument(0)->getPntrToAction(); 
+      std::vector<double> first(1), second(1); cf->getGridPointIndicesAndCoordinates( 0, indices, first ); cf->getGridPointIndicesAndCoordinates( 1, indices, second ); 
+      coords[0] = first[0] + landmarks[ind]*getTimeStep()*( second[0] - first[0] );
+  } else getPntrToArgument(0)->getPntrToAction()->getGridPointIndicesAndCoordinates( landmarks[ind], indices, coords );
+}
+
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
       Value* val0=getPntrToOutput(i); 

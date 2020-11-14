@@ -91,6 +91,17 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
 }
 
+void CollectFrames::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                                     std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues( getLabel() ); spacing[0] = getStride()*getTimeStep();
+  pbc[0]=false; Tools::convert( spacing[0]*starttime, min[0] ); Tools::convert( spacing[0]*(starttime+nbin[0]), max[0] );
+}
+
+void CollectFrames::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  coords[0] = starttime + ind*getStride()*getTimeStep();
+}
+
 void CollectFrames::turnOnBiasHistory() {
   if( getNumberOfArguments()==n_real_args ) error("cannot compute bias history if no bias is stored");
   save_all_bias=true; std::vector<unsigned> shape(2);

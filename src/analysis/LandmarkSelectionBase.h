@@ -49,6 +49,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LandmarkSelectionBase( const ActionOptions& ao );
   unsigned getNumberOfDerivatives() const { return 0; }
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
   void calculate();
   void apply() {}

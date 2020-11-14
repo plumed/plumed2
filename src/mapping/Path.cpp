@@ -102,35 +102,31 @@ PLUMED_REGISTER_ACTION(Path,"PATH")
 PLUMED_REGISTER_ACTION(Path,"GPROPERTYMAP")
 
 void Path::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys );
+  ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
+  keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
+  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+}
+
+void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
   keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
-  keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
 }
 
 Path::Path( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
 {
-  // Check if we need to read in properties from the reference file
+  // Setup the properties
   std::vector<std::string> properties, pnames;
-  if( getName()=="GPROPERTYMAP") {
-      parseVector("PROPERTY",pnames); properties.resize( pnames.size() );
-  } else {
-      plumed_assert(getName()=="PATH"); properties.resize( 1 );
-  }
-  std::vector<std::string> argnames; parseVector("ARG",argnames);
-  std::string mtype; parse("TYPE",mtype);
-  if( argnames.size()>0 && mtype=="OPTIMAL_FAST" ) mtype="EUCLIDEAN";
-
-  std::string refname; parse("REFERENCE",refname); 
+  if( getName()=="PATH") { properties.resize(1); }
+  else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
+  for(unsigned i=0;i<properties.size();++i) properties[i] = "COEFFICIENTS=";
   // Create list of reference configurations that PLUMED will use
-  std::vector<std::string> refactions;
-  createActionsToComputeDistances( mtype, refname, false, this, argnames, refactions );
+  std::string mtype, refname; std::vector<std::string> refactions;
+  readInputFrames( mtype, refname, false, this, refactions );
   // Now create all other parts of the calculation
   std::string lambda; parse("LAMBDA",lambda);
   // Now create MATHEVAL object to compute exponential functions
@@ -140,25 +136,7 @@ Path::Path( const ActionOptions& ao ):
   // Now compte zpath variable
   readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
   // Now get coefficients for properies for spath
-  FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
-  while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
-      // Break if we are done
-      if( !do_read ) break ;
-      // This creates the coefficients
-      if( pnames.size()>0 ) {
-          double pval; std::string propstr;
-          for(unsigned i=0; i<pnames.size(); ++i) {
-              if( !mypdb.getArgumentValue(pnames[i], pval) ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
-              Tools::convert( pval, propstr ); 
-              if( nfram==0 ) { properties[i] = "COEFFICIENTS=" + propstr; } else { properties[i] += "," + propstr; }
-          }
-      } else {
-          std::string propstr; Tools::convert( nfram+1, propstr );
-          if( nfram==0 ) { properties[0] = "COEFFICIENTS=" + propstr; } else { properties[0] += "," + propstr; }
-      }
-      nfram++;
-  }
+  readPropertyData( refname, pnames, properties );
   // Now create COMBINE objects to compute numerator of path
   for(unsigned i=0;i<properties.size();++i) {
       std::string numer_input, path_input; 
@@ -176,8 +154,34 @@ Path::Path( const ActionOptions& ao ):
   }
 }
 
-void Path::createActionsToComputeDistances( const std::string mtype, const std::string& refname, const bool& geometric, 
-                                            ActionShortcut* action, const std::vector<std::string>& argnames, std::vector<std::string>& refactions ) {
+void Path::readPropertyData( const std::string& refname, const std::vector<std::string>& pnames, std::vector<std::string>& properties ) {
+  FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
+  while (do_read ) {
+      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
+      // Break if we are done
+      if( !do_read ) break ;
+      // This creates the coefficients
+      if( pnames.size()>0 ) {
+          double pval; std::string propstr;
+          for(unsigned i=0; i<pnames.size(); ++i) {
+              if( !mypdb.getArgumentValue(pnames[i], pval) ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
+              Tools::convert( pval, propstr ); 
+              if( nfram==0 ) { properties[i] += propstr; } else { properties[i] += "," + propstr; }
+          }
+      } else {
+          std::string propstr; Tools::convert( nfram+1, propstr ); 
+          if( nfram==0 ) { properties[0] += propstr; } else { properties[0] += "," + propstr; }
+      }
+      nfram++;
+  }
+}
+
+void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
+                            ActionShortcut* action, std::vector<std::string>& refactions ) {
+  std::vector<std::string> argnames; action->parseVector("ARG",argnames);
+  action->parse("TYPE",mtype); if( argnames.size()>0 && mtype=="OPTIMAL-FAST" ) mtype="EUCLIDEAN";
+
+  action->parse("REFERENCE",refname); 
   std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
   FILE* fp=std::fopen(refname.c_str(),"r"); std::string scut_lab = action->getShortcutLabel();
   if(!fp) action->error("could not open reference file " + refname );

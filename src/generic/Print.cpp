@@ -164,7 +164,11 @@ Print::Print(const ActionOptions&ao):
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { timeseries=true; break; }
+          if( getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) { 
+              if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+              ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(i)->getPntrToAction() );
+              if(as) { timeseries=true; break; }
+          }
       }
       if( timeseries ) {
           std::vector<Value*> myvals;
@@ -175,7 +179,7 @@ Print::Print(const ActionOptions&ao):
           for(unsigned i=0; i<myvals.size();++i) {
               if( myvals[i]->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
           }
-          requestArguments( myvals, false ); 
+          log.printf("  input is printed as time series\n"); requestArguments( myvals, false ); 
       }
   }
   if(file.length()>0) {
@@ -463,8 +467,13 @@ void Print::update() {
         AverageBase* myav = dynamic_cast<AverageBase*>( getPntrToArgument(j)->getPntrToAction() );
         if( myav ) { std::size_t dot=arg_names[j].find_first_of("."); arg_names[j] = arg_names[j].substr(dot+1); }
     }
-    for(unsigned i=0; i<nv; ++i) {  
+    std::vector<double> time(1), time2(1); std::vector<unsigned> ind(1); ind[0]=nv;
+    for(unsigned i=0; i<nv; ++i) {
+        (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time ); 
+        ogfile.fmtField(" %f"); ogfile.printField("time",time[0]);  
         for(unsigned j=0;j<getNumberOfArguments();++j) {
+            (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time2 );
+            if( time[0]!=time2[0] ) error("mismatched times in printed time series"); 
             ogfile.fmtField(fmt); 
             if( getPntrToArgument(j)->isPeriodic() ) { 
                 std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );

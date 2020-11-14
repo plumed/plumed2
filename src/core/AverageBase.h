@@ -45,6 +45,7 @@ private:
   std::vector<Vector> der, centeredpos, centeredreference;
 protected:
   bool firststep;
+  double starttime;
   std::vector<Vector> atom_pos;
   bool clearnorm;
   unsigned clearstride;
@@ -63,11 +64,6 @@ public:
   bool hasClear() const ;
   unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfVirtualAtoms() const ;
-  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
 /// These are required because we inherit from both ActionAtomistic and ActionWithArguments
   void lockRequests();
   void unlockRequests();

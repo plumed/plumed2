@@ -30,6 +30,7 @@ namespace setup {
 class ReadReferenceCluster: public SetupReferenceBase {
 private:
   std::vector<std::string> read_args;
+  void setCenterFromVector( const std::vector<double>& center );
 public:
   static void registerKeywords( Keywords& keys );
   static std::string convertFileToLine( const std::string& reference, const unsigned& number, const std::vector<std::string>& names );
