@@ -42,7 +42,7 @@ metadynamics applied to ENERGY can be used to decrease the
 number of required replicas.
 
 \bug This \ref ENERGY does not include long tail corrections.
-Thus when using e.g. LAMMPS `"tail modify yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
+Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
 the potential energy from \ref ENERGY will be slightly different form the one of the MD code.
 You should still be able to use \ref ENERGY and then reweight your simulation with the correct MD energy value.
 
