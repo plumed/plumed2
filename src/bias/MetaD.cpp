@@ -86,7 +86,8 @@ PLUMED will use 1/5 of the Gaussian width (SIGMA) as grid spacing if the width i
 Gaussian with (SIGMA_MIN) if the width is variable. This default choice should be reasonable for most applications.
 
 Alternatively to the use of grids, it is possible to use a neighbor list to decrease the cost of evaluating the bias,
-this can be enabled using NLIST. The neighbor list will be updated everytime the CVs go farther than a cut-off value
+this can be enabled using NLIST. NLIST can be beneficial with more than 2 collective variables, where GRID becomes
+expensive and memory consuming. The neighbor list will be updated everytime the CVs go farther than a cut-off value
 from the position they were at last neighbor list update. Gaussians are added to the neigbhor list if their center
 is within 6.*DP2CUTOFF*sigma*sigma. While the list is updated if the CVs are farther from the center than 0.5 of the
 standard deviation of the Gaussian center distribution of the list. These parameters (6 and 0.5) can be modified using
@@ -1479,12 +1480,12 @@ void MetaD::addGaussian(const Gaussian& hill)
     std::vector<double> der(ncv);
     std::vector<double> xx(ncv);
     if(comm.Get_size()==1) {
+      // for performance reasons and thread safety
+      std::vector<double> dp(ncv);
       for(size_t i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
-        // for performance reasons and thread safety
-        std::vector<double> dp(ncv);
         double bias=evaluateGaussianAndDerivatives(xx,hill,der,dp);
         BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
       }
@@ -1494,12 +1495,12 @@ void MetaD::addGaussian(const Gaussian& hill)
       std::vector<double> allder(ncv*neighbors.size(),0.0);
       std::vector<double> n_der(ncv,0.0);
       std::vector<double> allbias(neighbors.size(),0.0);
+      // for performance reasons and thread safety
+      std::vector<double> dp(ncv);
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
         for(unsigned j=0; j<ncv; ++j) n_der[j]=0.0;
         BiasGrid_->getPoint(ineigh,xx);
-        // for performance reasons and thread safety
-        std::vector<double> dp(ncv);
         allbias[i]=evaluateGaussianAndDerivatives(xx,hill,n_der,dp);
         for(unsigned j=0; j<ncv; j++) allder[ncv*i+j]=n_der[j];
       }
