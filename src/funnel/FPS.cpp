@@ -28,7 +28,7 @@ namespace funnel {
 /*
 FUNNEL_PS implements the Funnel-Metadynamics (FM) technique in PLUMED 2.
 
-Please read the FM \cite FM \cite FM-protocol papers to better understand the notions hereby reported.
+Please read the FM \cite limongelli2013funnel \cite raniolo2020ligand papers to better understand the notions hereby reported.
 
 This colvar evaluates the position of a ligand of interest with respect to a given line, built from the two points
 A and B, and should be used together with the \ref FUNNEL bias.
