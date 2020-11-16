@@ -22,13 +22,13 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_CUSTOM
 /*
-Turn any set of CVs into expansion collective variables.
+Use some given CVs as a set of expansion collective variables (ECVs).
 
-This can be useful for testing new ECVs, but from a performance point of view it is better to code a new class.
+This can be useful e.g. for quickly testing new ECVs, but from a performance point of view it is probably better to implement a new ECV class.
 
-By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
+By default the ARGs are expeted to be energies, \f$\Delta U_i\f$, and are then multiplied by the inverse temperature \f$\beta\f$
 \f[
-  \Delta u_i=\beta \text{ARG}_i\, .
+  \Delta u_i=\beta \Delta U_i\, .
 \f]
 Use the DIMENSIONLESS flag to avoid this multiplication.
 
@@ -49,7 +49,7 @@ It is equivalent to the following:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
+ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 \endplumedfile
 
@@ -85,7 +85,7 @@ PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
 void ECVcustom::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the single ECVs, in energy units \\f$\\Delta u/\\beta\\f$");
+  keys.add("compulsory","ARG","the labels of the single ECVs, \\f$\\Delta U_i\\f$, in energy units");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("DIMENSIONLESS",false,"consider ARG as dimensionless rather than an energy, thus do not multiply it by \\f$\\beta\\f$");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
