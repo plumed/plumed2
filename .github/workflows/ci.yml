@@ -80,7 +80,7 @@ jobs:
       run: |
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        ./.travis/install.doxygen Release_1_8_14
+        ./.travis/install.doxygen Release_1_8_17
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc --enable-asmjit" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
