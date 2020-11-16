@@ -805,10 +805,10 @@ MetaD::MetaD(const ActionOptions& ao):
   if(grid_ && gridfilename_.length()>0) {
     if(wgridstride_==0 ) error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
-
   if(grid_ && wgridstride_>0) {
     if(gridfilename_.length()==0) error("grid filename not specified use GRID_WFILE");
   }
+
   std::string gridreadfilename_;
   parse("GRID_RFILE",gridreadfilename_);
 
@@ -823,8 +823,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // Reweighting factor rct
   parseFlag("CALC_RCT",calc_rct_);
-  if (calc_rct_)
-    plumed_massert(grid_,"CALC_RCT is supported only if bias is on a grid");
+  if (calc_rct_) plumed_massert(grid_,"CALC_RCT is supported only if bias is on a grid");
   parse("RCT_USTRIDE",rct_ustride_);
 
   if(dampfactor_>0.0) {
@@ -902,6 +901,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  Hills relaxation time (tau) %f\n",tau);
     log.printf("  KbT %f\n",kbt_);
   }
+
   // Transition tempered metadynamics options
   if (tt_specs_.is_active) {
     logTemperingSpecs(tt_specs_);
@@ -959,6 +959,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   if(doInt_) log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
+
   if(grid_) {
     log.printf("  Grid min");
     for(unsigned i=0; i<gmin.size(); ++i) log.printf(" %s",gmin[i].c_str() );
@@ -1014,6 +1015,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  The c(t) reweighting factor will be calculated every %u hills\n",rct_ustride_);
     getPntrToComponent("rct")->set(reweight_factor_);
   }
+
   if(calc_work_) { addComponent("work"); componentIsNotPeriodic("work"); }
 
   if(acceleration_) {
@@ -1027,7 +1029,8 @@ MetaD::MetaD(const ActionOptions& ao):
     if (acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
       if(getRestart()) {
-        log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+        log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results.\n");
+        log.printf("           You should use the ACCELERATION_RFILE keyword.\n");
       }
       // Otherwise, read and set the restart value.
     } else {
@@ -1058,12 +1061,14 @@ MetaD::MetaD(const ActionOptions& ao):
       log.printf("  initial acceleration factor read from file %s: value of %f at time %f\n",acc_rfilename.c_str(),acc_rmean,acc_rtime);
     }
   }
+
   if (calc_max_bias_) {
     if (!grid_) error("Calculating the maximum bias on the fly works only with a grid");
     log.printf("  calculation on the fly of the maximum bias max(V(s,t)) \n");
     addComponent("maxbias");
     componentIsNotPeriodic("maxbias");
   }
+
   if (calc_transition_bias_) {
     if (!grid_) error("Calculating the transition bias on the fly works only with a grid");
     log.printf("  calculation on the fly of the transition bias V*(t)\n");
@@ -1114,78 +1119,55 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // initializing and checking grid
+  bool restartedFromGrid=false;  // restart from external grid
   if(grid_) {
-    // check for mesh and sigma size
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(adaptive_==FlexibleBin::none) {
-        if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-      } else {
-        if(mesh>0.5*sigma0min_[i]||sigma0min_[i]<0.) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians \n";
+    if(!(gridreadfilename_.length()>0)) {
+      // check for mesh and sigma size
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        double a,b;
+        Tools::convert(gmin[i],a);
+        Tools::convert(gmax[i],b);
+        double mesh=(b-a)/((double)gbin[i]);
+        if(adaptive_==FlexibleBin::none) {
+          if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width (SIGMA) can produce artifacts\n";
+        } else {
+          if(sigma0min_[i]<0.) error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
+          if(mesh>0.5*sigma0min_[i]) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians (SIGMA_MIN) \n";
+        }
       }
-    }
-    std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      std::string is;
-      Tools::convert(i,is);
-      if(gmin[i]!=actualmin[i]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
-      if(gmax[i]!=actualmax[i]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
-    }
-  }
-
-  // restart from external grid
-  bool restartedFromGrid=false;
-  if(gridreadfilename_.length()>0) {
-    // read the grid in input, find the keys
-    IFile gridfile;
-    gridfile.link(*this);
-    if(gridfile.FileExist(gridreadfilename_)) {
-      gridfile.open(gridreadfilename_);
+      std::string funcl=getLabel() + ".bias";
+      if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+      else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+      std::vector<std::string> actualmin=BiasGrid_->getMin();
+      std::vector<std::string> actualmax=BiasGrid_->getMax();
+      for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        std::string is;
+        Tools::convert(i,is);
+        if(gmin[i]!=actualmin[i]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
+        if(gmax[i]!=actualmax[i]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
+      }
     } else {
-      error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
-    }
-    std::string funcl=getLabel() + ".bias";
-    BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
-    if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
-      double a, b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-    }
-    log.printf("  Restarting from %s:",gridreadfilename_.c_str());
-    if(getRestart()) restartedFromGrid=true;
-  }
-
-  // initializing and checking grid
-  if(grid_&&!(gridreadfilename_.length()>0)) {
-    // check for adaptive and sigma_min
-    if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-    // check for mesh and sigma size
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
-      if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
-    }
-    std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    std::vector<std::string> actualmin=BiasGrid_->getMin();
-    std::vector<std::string> actualmax=BiasGrid_->getMax();
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+      // read the grid in input, find the keys
+      IFile gridfile;
+      gridfile.link(*this);
+      if(gridfile.FileExist(gridreadfilename_)) {
+        gridfile.open(gridreadfilename_);
+      } else {
+        error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
+      }
+      std::string funcl=getLabel() + ".bias";
+      BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
+      if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+        double a, b;
+        Tools::convert(gmin[i],a);
+        Tools::convert(gmax[i],b);
+        double mesh=(b-a)/((double)gbin[i]);
+        if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+      }
+      log.printf("  Restarting from %s:",gridreadfilename_.c_str());
+      if(getRestart()) restartedFromGrid=true;
     }
   }
 
@@ -1239,6 +1221,7 @@ MetaD::MetaD(const ActionOptions& ao):
   // (e.g. in bias exchange with a neutral replica)
   // see issue #168 on github
   if(comm.Get_rank()==0 && walkers_mpi_) multi_sim_comm.Barrier();
+
   if(targetfilename_.length()>0) {
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
