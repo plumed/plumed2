@@ -78,17 +78,25 @@ calculation increases with the length of the simulation as one has to, at every 
 the values of a larger and larger number of Gaussian kernels. To avoid this issue you can
 store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the
 advantage that the grid spacing is independent on the Gaussian width.
-Notice that you should
-provide either the number of bins for every collective variable (GRID_BIN) or
-the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
-the most conservative choice (highest number of bins) for each dimension.
+Notice that you should provide the grid boundaries (GRID_MIN and GRID_MAX) and either the number of bins
+for every collective variable (GRID_BIN) or the desired grid spacing (GRID_SPACING).
+In case you provide both PLUMED will use the most conservative choice (highest number of bins) for each dimension.
 In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
-and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
-This default choice should be reasonable for most applications.
+PLUMED will use 1/5 of the Gaussian width (SIGMA) as grid spacing if the width is fixed or 1/5 of the minimum
+Gaussian with (SIGMA_MIN) if the width is variable. This default choice should be reasonable for most applications.
+
+Alternatively to the use of grids, it is possible to use a neighbor list to decrease the cost of evaluating the bias,
+this can be enabled using NLIST. The neighbor list will be updated everytime the CVs go farther than a cut-off value
+from the position they were at last neighbor list update. Gaussians are added to the neigbhor list if their center
+is within 6.*DP2CUTOFF*sigma*sigma. While the list is updated if the CVs are farther from the center than 0.5 of the
+standard deviation of the Gaussian center distribution of the list. These parameters (6 and 0.5) can be modified using
+NLIST_PARAMETERS. Note that the use of neighbor list does not provide the exact bias.
 
 Metadynamics can be restarted either from a HILLS file as well as from a GRID, in this second
 case one can first save a GRID using GRID_WFILE (and GRID_WSTRIDE) and at a later stage read
 it using GRID_RFILE.
+
+The work performed by the METAD bias can be calculated using CALC_WORK, note that this is expensive when not using grids.
 
 Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
 variant of metadynamics the heights of the Gaussian hills are scaled at each step so the bias is now
@@ -471,7 +479,7 @@ private:
   bool nlist_;
   bool nlist_update_;
   unsigned nlist_steps_;
-  double nlist_cutoff2_;
+  std::array<double,2> nlist_param_;
   std::vector<Gaussian> nlist_hills_;
   std::vector<double> nlist_center_;
   std::vector<double> nlist_dev2_;
@@ -549,6 +557,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
+  keys.add("optional", "NLIST_PARAMETERS","(default=6.,0.5) the two cutoff parameters for the Gaussians neighbor list");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -613,8 +622,7 @@ MetaD::MetaD(const ActionOptions& ao):
   work_(0),
   nlist_(false),
   nlist_update_(false),
-  nlist_steps_(0),
-  nlist_cutoff2_(6.*DP2CUTOFF)
+  nlist_steps_(0)
 {
   // parse the flexible hills
   std::string adaptiveoption;
@@ -822,6 +830,23 @@ MetaD::MetaD(const ActionOptions& ao):
   nlist_center_.resize(getNumberOfArguments());
   nlist_dev2_.resize(getNumberOfArguments());
   if(nlist_&&grid_) error("NLIST and GRID cannot be combined!");
+  std::vector<double> nlist_param;
+  parseVector("NLIST_PARAMETERS",nlist_param);
+  if(nlist_param.size()==0)
+  {
+    nlist_param_[0]=6.0;//*DP2CUTOFF -> max distance of neighbors
+    nlist_param_[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
+  }
+  else
+  {
+    plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
+    plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
+    const double min_PARAM_1=(1.-1./std::sqrt(nlist_param[0]/2))+0.16;
+    plumed_massert(nlist_param[1]>0,"the second of NLIST_PARAMETERS must be greater than 0");
+    plumed_massert(nlist_param[1]<=min_PARAM_1,"the second of NLIST_PARAMETERS must be smaller to avoid systematic errors. Largest suggested value is: 1.16-1/sqrt(PARAM_0/2) = "+std::to_string(min_PARAM_1));
+    nlist_param_[0]=nlist_param[0];
+    nlist_param_[1]=nlist_param[1];
+  }
 
   // Reweighting factor rct
   parseFlag("CALC_RCT",calc_rct_);
@@ -1843,7 +1868,7 @@ void MetaD::calculate()
       for(unsigned i=0; i<ncv; ++i) {
         double d = difference(i, cv[i], nlist_center_[i]);
         double nk_dist2 = d*d/nlist_dev2_[i];
-        if(nk_dist2>0.5) {nlist_update_=true; break;}
+        if(nk_dist2>nlist_param_[1]) {nlist_update_=true; break;}
       }
     }
     if(nlist_update_) updateNlist();
@@ -2210,7 +2235,7 @@ void MetaD::updateNlist()
         const double d=difference(i,getArgument(i),hills_[k].center[i])/hills_[k].sigma[i];
         dist2+=d*d;
       }
-      if(dist2<=nlist_cutoff2_) private_flat_nl.push_back(hills_[k]);
+      if(dist2<=nlist_param_[0]*DP2CUTOFF) private_flat_nl.push_back(hills_[k]);
     }
     #pragma omp critical
     local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
