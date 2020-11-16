@@ -1325,28 +1325,19 @@ MetaD::MetaD(const ActionOptions& ao):
     log << plumed.cite("Dama, Rotskoff, Parrinello, and Voth, J. Chem. Theory Comput. 10, 3626 (2014)");
     log << plumed.cite("Dama, Parrinello, and Voth, Phys. Rev. Lett. 112, 240602 (2014)");
   }
-  if(mw_n_>1||walkers_mpi_) log<<plumed.cite(
-                                   "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
-  if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
-                                          "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
-  if(doInt_) log<<plumed.cite(
-                    "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
-  if(acceleration_) log<<plumed.cite(
-                           "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
-  if(calc_rct_) log<<plumed.cite(
-                       "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
-  if(concurrent || rect_biasf_.size()>0) log<<plumed.cite(
-          "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
-  if(rect_biasf_.size()>0 && walkers_mpi_) log<<plumed.cite(
-          "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
+  if(mw_n_>1||walkers_mpi_) log<<plumed.cite("Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+  if(adaptive_!=FlexibleBin::none) log<<plumed.cite("Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
+  if(doInt_) log<<plumed.cite("Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
+  if(acceleration_) log<<plumed.cite("Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(calc_rct_) log<<plumed.cite("Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
+  if(concurrent || rect_biasf_.size()>0) log<<plumed.cite("Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+  if(rect_biasf_.size()>0 && walkers_mpi_) log<<plumed.cite("Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
-  if(freq_adaptive_) {
-    log<<plumed.cite("Wang, Valsson, Tiwary, Parrinello, and Lindorff-Larsen, J. Chem. Phys. 149, 072309 (2018)");
-  }
+  if(freq_adaptive_) log<<plumed.cite("Wang, Valsson, Tiwary, Parrinello, and Lindorff-Larsen, J. Chem. Phys. 149, 072309 (2018)");
   log<<"\n";
 }
 
@@ -2132,10 +2123,8 @@ void MetaD::computeReweightingFactor()
     Z_0+=std::exp(minusBetaF*(val-max_bias_));
     Z_V+=std::exp(minusBetaFplusV*(val-max_bias_));
   }
-  if (stride>1) {
-    comm.Sum(Z_0);
-    comm.Sum(Z_V);
-  }
+  comm.Sum(Z_0);
+  comm.Sum(Z_V);
 
   reweight_factor_=kbt_*std::log(Z_0/Z_V)+max_bias_;
   getPntrToComponent("rct")->set(reweight_factor_);
@@ -2229,10 +2218,8 @@ void MetaD::updateNlist()
 
   nlist_hills_ = local_flat_nl;
 
-
-  for(unsigned i=0; i<getNumberOfArguments(); i++) nlist_center_[i]=getArgument(i);
-
   // here we set some properties that are used to decide when to update it again
+  for(unsigned i=0; i<getNumberOfArguments(); i++) nlist_center_[i]=getArgument(i);
   std::vector<double> dev2;
   dev2.resize(getNumberOfArguments(),0);
   for(unsigned k=0; k<nlist_hills_.size(); k++)
