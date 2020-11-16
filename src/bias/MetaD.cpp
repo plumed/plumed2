@@ -534,14 +534,14 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
-  keys.add("optional","GRID_MIN","the lower bounds for the grid");
-  keys.add("optional","GRID_MAX","the upper bounds for the grid");
-  keys.add("optional","GRID_BIN","the number of bins for the grid");
-  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("CALC_RCT",false,"calculate the \\f$c(t)\\f$ reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
   keys.add("optional","RCT_USTRIDE","the update stride for calculating the \\f$c(t)\\f$ reweighting factor."
            "The default 1, so \\f$c(t)\\f$ is updated every time the bias is updated.");
+  keys.add("optional","GRID_MIN","the lower bounds for the grid");
+  keys.add("optional","GRID_MAX","the upper bounds for the grid");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
@@ -550,14 +550,14 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
   keys.addFlag("NLIST",false,"Use neighbor list for kernels summation, faster but experimental");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
+  keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
-  keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
+  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
@@ -669,6 +669,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
     flexbin_=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
+
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
@@ -761,8 +762,8 @@ MetaD::MetaD(const ActionOptions& ao):
   parseVector("GRID_SPACING",gspacing);
   if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
   if(gmin.size()!=gmax.size()) error("GRID_MAX and GRID_MIN should be either present or absent");
-  if(gspacing.size()!=0 && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
-  if(gbin.size()!=0     && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
+  if(gspacing.size()!=0 && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN and GRID_MAX should be present");
+  if(gbin.size()!=0     && gmin.size()==0) error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
   if(gmin.size()!=0) {
     if(gbin.size()==0 && gspacing.size()==0) {
       if(adaptive_==FlexibleBin::none) {
@@ -772,7 +773,7 @@ MetaD::MetaD(const ActionOptions& ao):
         for(unsigned i=0; i<gspacing.size(); i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
-        for(unsigned i=0; i<sigma0min_.size(); i++) if(sigma0min_[i]<=0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        for(unsigned i=0; i<sigma0min_.size(); i++) if(sigma0min_[i]<=0) error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0; i<gspacing.size(); i++) gspacing[i]=0.2*sigma0min_[i];
@@ -792,12 +793,13 @@ MetaD::MetaD(const ActionOptions& ao):
         if(gbin[i]<n) gbin[i]=n;
       }
   }
+  if(gbin.size()>0) grid_=true;
+
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
   bool nospline=false;
   parseFlag("GRID_NOSPLINE",nospline);
   bool spline=!nospline;
-  if(gbin.size()>0) {grid_=true;}
   parse("GRID_WSTRIDE",wgridstride_);
   std::string gridfilename_;
   parse("GRID_WFILE",gridfilename_);
@@ -869,7 +871,7 @@ MetaD::MetaD(const ActionOptions& ao):
   fa_update_frequency_=0;
   parse("FA_UPDATE_FREQUENCY",fa_update_frequency_);
   if(fa_update_frequency_!=0 && !freq_adaptive_) {
-    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   if(fa_update_frequency_==0 && freq_adaptive_) {
     fa_update_frequency_=stride_;
@@ -878,13 +880,13 @@ MetaD::MetaD(const ActionOptions& ao):
   fa_max_stride_=0;
   parse("FA_MAX_PACE",fa_max_stride_);
   if(fa_max_stride_!=0 && !freq_adaptive_) {
-    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
   //
   fa_min_acceleration_=1.0;
   parse("FA_MIN_ACCELERATION",fa_min_acceleration_);
   if(fa_min_acceleration_!=1.0 && !freq_adaptive_) {
-    plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+    plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive METAD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
 
   checkRead();
@@ -1104,7 +1106,8 @@ MetaD::MetaD(const ActionOptions& ao):
 
     log.printf("  Frequency adaptive metadynamics enabled\n");
     if(getRestart() && acc_rfilename.length() == 0) {
-      log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+      log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results.\n");
+      log.printf("           You should use the ACCELERATION_RFILE keyword.\n");
     }
     log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
     log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
@@ -1119,7 +1122,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // initializing and checking grid
-  bool restartedFromGrid=false;  // restart from external grid
+  bool restartedFromGrid=false;  // restart from grid file
   if(grid_) {
     if(!(gridreadfilename_.length()>0)) {
       // check for mesh and sigma size
@@ -1171,8 +1174,18 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
+  // if we are restarting from GRID and using WALKERS_MPI we can check that all walkers have actually read the grid
+  if(getRestart()&&walkers_mpi_) {
+    std::vector<int> restarted(mpi_nw_,0);
+    if(comm.Get_rank()==0) multi_sim_comm.Allgather(int(restartedFromGrid), restarted);
+    comm.Bcast(restarted,0);
+    int result = accumulate(restarted.begin(),restarted.end(),0);
+    if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
+  }
+
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
+  bool restartedFromHills=false;  // restart from hills files
   for(int i=0; i<mw_n_; ++i) {
     std::string fname;
     if(mw_dir_!="") {
@@ -1202,6 +1215,7 @@ MetaD::MetaD(const ActionOptions& ao):
       if(getRestart()&&!restartedFromGrid) {
         log.printf("  Restarting from %s:",ifilesnames_[i].c_str());
         readGaussians(ifiles_[i].get());
+        restartedFromHills=true;
       }
       ifiles_[i]->reset(false);
       // close only the walker own hills file for later writing
@@ -1210,6 +1224,15 @@ MetaD::MetaD(const ActionOptions& ao):
       // in case a file does not exist and we are restarting, complain that the file was not found
       if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
     }
+  }
+
+  // if we are restarting from FILE and using WALKERS_MPI we can check that all walkers have actually read the FILE
+  if(getRestart()&&walkers_mpi_) {
+    std::vector<int> restarted(mpi_nw_,0);
+    if(comm.Get_rank()==0) multi_sim_comm.Allgather(int(restartedFromHills), restarted);
+    comm.Bcast(restarted,0);
+    int result = accumulate(restarted.begin(),restarted.end(),0);
+    if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from FILE while other do not!");
   }
 
   comm.Barrier();
