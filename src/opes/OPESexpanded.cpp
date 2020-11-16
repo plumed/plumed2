@@ -323,6 +323,18 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
+    {
+      std::vector<unsigned> all_counter(NumWalkers_);
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Allgather(counter_,all_counter);
+      comm.Bcast(all_counter,0);
+      bool same_number_of_steps=true;
+      for(unsigned w=1; w<NumWalkers_; w++)
+        if(all_counter[0]!=all_counter[w])
+          same_number_of_steps=false;
+      plumed_massert(same_number_of_steps,"RESTART - not all walkers are reading the same file!");
+    }
   }
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();
