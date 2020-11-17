@@ -2222,11 +2222,10 @@ void MetaD::updateNlist()
   nlist_hills_.clear();
   std::vector<Gaussian> local_flat_nl;
   unsigned nt=OpenMP::getNumThreads();
-
+  if(hills_.size()<2*nt) nt=1;
   #pragma omp parallel num_threads(nt)
   {
     std::vector<Gaussian> private_flat_nl;
-    if(hills_.size()<2*nt) nt=1;
     #pragma omp for nowait
     for(unsigned k=0; k<hills_.size(); k++)
     {
@@ -2241,7 +2240,6 @@ void MetaD::updateNlist()
     #pragma omp critical
     local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
   }
-
   nlist_hills_ = local_flat_nl;
 
   // here we set some properties that are used to decide when to update it again
