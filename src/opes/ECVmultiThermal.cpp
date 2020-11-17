@@ -22,15 +22,16 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_MULTICANONICAL
+//+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL
 /*
-Expand a canonical simulation to sample multiple temperatures.
+Expand a simulation to sample multiple temperatures simultaneously.
 
-The \ref ENERGY of the system should be used as ARG.
+The internal energy \f$U\f$ of of the system should be used as ARG.
 \f[
-  \Delta u_{\beta'}=(\beta-\beta') \text{ENERGY}\, .
+  \Delta u_{\beta'}=(\beta-\beta') U\, .
 \f]
-If instead of fixed volume \f$NVT\f$ you are running with fixed pressure \f$NPT\f$, you must use \ref ECV_MULTITHERMAL_MULTIBARIC and set a single pressure, in order to sample multiple temperatures.
+In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
+If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
 Otherwise you can manually set this number with STEPS_TEMP.
@@ -43,9 +44,11 @@ A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
 
 \par Examples
 
+Fixed volume, multicanonical simulation:
+
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
+ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
@@ -53,9 +56,21 @@ which, if your MD code passes the temperature to PLUMED, is equivalent to:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTICANONICAL ARG=ene MAX_TEMP=800
+ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
+
+If instead the pressure is fixed and the volume changes, you must calculate the internal energy first, \f$U=E+pV\f$
+
+\plumedfile
+ene: ENERGY
+vol: VOLUME
+intEne: CUSTOM PERIODIC=NO ARG=ene,vol FUNC=x+0.06022140857*y
+ecv: ECV_MULTITHERMAL ARG=intEne MAX_TEMP=800
+opes: OPES_EXPANDED ARG=ecv.intEne PACE=500
+\endplumedfile
+
+Notice that \f$p=0.06022140857\f$ corresponds to 1 bar when using the default PLUMED units.
 
 */
 //+ENDPLUMEDOC
@@ -82,12 +97,12 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTICANONICAL")
+PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTITHERMAL")
 
 void ECVmultiCanonical::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the label of the potential energy of the system. You can calculate it with the \\ref ENERGY colvar");
+  keys.add("compulsory","ARG","the label of the internal energy of the system. If volume is fixed it is calculated by the \\ref ENERGY colvar");
   keys.add("optional","MIN_TEMP","the minimum of the temperature range");
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
@@ -100,7 +115,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   , todoAutomatic_(false)
   , beta0_(1./kbt_)
 {
-  plumed_massert(getNumberOfArguments()==1,"only ENERGY should be given as ARG");
+  plumed_massert(getNumberOfArguments()==1,"only the internal energy should be given as ARG");
 
 //set temp0 and beta0_
   const double Kb=plumed.getAtoms().getKBoltzmann();
@@ -219,7 +234,7 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
   if(todoAutomatic_)//estimate the steps in beta from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observation //TODO we should avoid this...
+    std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");

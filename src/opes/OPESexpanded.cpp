@@ -52,7 +52,7 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTICANONICAL ARG=ene MAX_TEMP=1000
+ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
 \endplumedfile
@@ -64,7 +64,7 @@ The OPES_EXPANDED bias will create a multidimensional target grid to sample all 
 ene: ENERGY
 dst: DISTANCE ATOMS=1,2
 
-ecv1: ECV_MULTICANONICAL ARG=ene SET_ALL_TEMPS=200,300,500,1000
+ecv1: ECV_MULTITHERMAL ARG=ene SET_ALL_TEMPS=200,300,500,1000
 ecv2: ECV_UMBRELLAS_LINE ARG=dst MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
 opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500 OBSERVATION_STEPS=1
 
@@ -323,6 +323,18 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     }
     else
       log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
+    {
+      std::vector<unsigned> all_counter(NumWalkers_);
+      if(comm.Get_rank()==0)
+        multi_sim_comm.Allgather(counter_,all_counter);
+      comm.Bcast(all_counter,0);
+      bool same_number_of_steps=true;
+      for(unsigned w=1; w<NumWalkers_; w++)
+        if(all_counter[0]!=all_counter[w])
+          same_number_of_steps=false;
+      plumed_massert(same_number_of_steps,"RESTART - not all walkers are reading the same file!");
+    }
   }
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();
@@ -374,7 +386,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     log.printf(" -- SERIAL: running without loop parallelization\n");
 //Bibliography
   log.printf("  Bibliography: ");
-  log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, arXiv:2007.03055 (2020)");
+  log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, Phys. Rev. X 10, 041034 (2020)");
   log.printf("\n");
 }
 
@@ -556,7 +568,7 @@ void OPESexpanded::init_linkECVs()
   plumed_massert(sizeSkip==1,"this should not happen!");
 }
 
-void OPESexpanded::init_from_obs() //TODO improve speed?
+void OPESexpanded::init_from_obs() //This could probably be faster and/or require less memory...
 {
 //in case of multiple walkers gather all the statistics
   if(NumWalkers_>1)

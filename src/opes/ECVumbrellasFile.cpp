@@ -35,7 +35,7 @@ You can choose the umbrellas manually, or place them on a grid, or along a path,
 They must cover all the CV space that one wishes to sample.
 
 You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
-As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
+As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the \f$\Delta F(\mathbf{s}_i)\f$.
 The first column of the umbrellas file is always ignored and must be called "time".
 
 Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
@@ -98,7 +98,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess DeltaF_i=-kbt*log(h_i)");
+  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess \\f$\\Delta F_i=-\\frac{1}{\\beta}\\log(h_i)\\f$");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 }
