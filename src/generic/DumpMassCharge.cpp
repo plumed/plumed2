@@ -26,8 +26,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-using namespace std;
-
 namespace PLMD
 {
 namespace generic {
@@ -93,7 +91,7 @@ class DumpMassCharge:
   public ActionAtomistic,
   public ActionPilot
 {
-  string file;
+  std::string file;
   bool first;
   bool second;
   bool print_masses;
@@ -130,7 +128,7 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   print_masses(true),
   print_charges(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parse("FILE",file);
   if(file.length()==0) error("name of output file was not specified");
   log.printf("  output written to file %s\n",file.c_str());
@@ -173,7 +171,7 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
 
 void DumpMassCharge::prepare() {
   if(!first && second) {
-    requestAtoms(vector<AtomNumber>());
+    requestAtoms(std::vector<AtomNumber>());
     second=false;
   }
 }
