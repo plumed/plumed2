@@ -386,7 +386,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     log.printf(" -- SERIAL: running without loop parallelization\n");
 //Bibliography
   log.printf("  Bibliography: ");
-  log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, arXiv:2007.03055 (2020)");
+  log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, Phys. Rev. X 10, 041034 (2020)");
   log.printf("\n");
 }
 
