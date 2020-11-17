@@ -1276,7 +1276,7 @@ MetaD::MetaD(const ActionOptions& ao):
       if(i==mw_id_) ifiles_[i]->close();
     } else {
       // in case a file does not exist and we are restarting, complain that the file was not found
-      if(getRestart()) error("restart file "+fname+" not found");
+      if(getRestart()&&!restartedFromGrid) error("restart file "+fname+" not found");
     }
   }
 
