@@ -31,7 +31,7 @@ The internal energy \f$U\f$ of of the system should be used as ARG.
   \Delta u_{\beta'}=(\beta-\beta') U\, .
 \f]
 In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
-If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below). 
+If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
 Otherwise you can manually set this number with STEPS_TEMP.

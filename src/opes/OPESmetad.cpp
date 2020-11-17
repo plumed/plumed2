@@ -194,7 +194,6 @@ public:
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
-
 };
 
 struct convergence { static const bool explore=false; };
@@ -958,8 +957,7 @@ void OPESmetad<mode>::update()
   if(mode::explore)
   {
     KDEnorm_=counter_;
-    //in opes explore the kernel height=1, because it is not multiplied by the weight
-    height=1;
+    height=1; //plain KDE, bias reweight does not enter here
   }
   else
     KDEnorm_=sum_weights_;
