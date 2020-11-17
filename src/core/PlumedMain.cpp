@@ -60,8 +60,6 @@
 #endif
 
 
-using namespace std;
-
 namespace PLMD {
 
 /// Small utility just used in this file to throw arbitrary exceptions
@@ -704,7 +702,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
       log << msg;
       log.flush();
       plumed_merror(msg);
-    };
+    }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
   };
