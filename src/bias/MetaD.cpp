@@ -83,7 +83,7 @@ for every collective variable (GRID_BIN) or the desired grid spacing (GRID_SPACI
 In case you provide both PLUMED will use the most conservative choice (highest number of bins) for each dimension.
 In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
 PLUMED will use 1/5 of the Gaussian width (SIGMA) as grid spacing if the width is fixed or 1/5 of the minimum
-Gaussian with (SIGMA_MIN) if the width is variable. This default choice should be reasonable for most applications.
+Gaussian width (SIGMA_MIN) if the width is variable. This default choice should be reasonable for most applications.
 
 Alternatively to the use of grids, it is possible to use a neighbor list to decrease the cost of evaluating the bias,
 this can be enabled using NLIST. NLIST can be beneficial with more than 2 collective variables, where GRID becomes
