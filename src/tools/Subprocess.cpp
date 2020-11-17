@@ -27,7 +27,6 @@
 #include <csignal>
 #endif
 
-using namespace std;
 namespace PLMD {
 
 /// Retrieve PLUMED_ENABLE_SIGNALS.

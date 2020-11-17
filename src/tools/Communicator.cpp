@@ -25,8 +25,6 @@
 #include <cstdlib>
 #include <cstring>
 
-using namespace std;
-
 namespace PLMD {
 
 Communicator::Communicator()
@@ -232,10 +230,6 @@ void Communicator::Recv(Data data,int source,int tag,Status&status) {
 #endif
 }
 
-
-
-
-
 void Communicator::Barrier()const {
 #ifdef __PLUMED_HAS_MPI
   if(initialized()) MPI_Barrier(communicator);
@@ -286,7 +280,6 @@ template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Da
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long double>() { return MPI_Datatype();}
 #endif
-
 
 void Communicator::Split(int color,int key,Communicator&pc)const {
 #ifdef __PLUMED_HAS_MPI
