@@ -25,8 +25,6 @@
 #include "core/Atoms.h"
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace vatom {
 
@@ -153,7 +151,7 @@ Center::Center(const ActionOptions&ao):
   first(true),
   phases(false)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
@@ -215,7 +213,7 @@ void Center::calculate() {
     first=false;
   }
 
-  vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   if( plumed.getAtoms().chargesWereSet() ) {
     double charge(0.0);
