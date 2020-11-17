@@ -72,7 +72,7 @@ GridBase::GridBase(const std::string& funcl, const std::vector<Value*> & args, c
 }
 
 GridBase::GridBase(const std::string& funcl, const std::vector<std::string> &names, const std::vector<std::string> & gmin,
-                   const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, bool usederiv, 
+                   const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, bool usederiv,
                    const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax ) {
 // this calls the initializator
   Init(funcl,names,gmin,gmax,nbin,dospline,usederiv,isperiodic,pmin,pmax);
@@ -535,8 +535,8 @@ void GridBase::writeCubeFile(OFile& ofile, const double& lunit) {
 }
 
 std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile,
-                                           const std::vector<std::string> & gmin,const std::vector<std::string> & gmax,
-                                           const std::vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
+    const std::vector<std::string> & gmin,const std::vector<std::string> & gmax,
+    const std::vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
   std::unique_ptr<GridBase> grid=GridBase::create(funcl,args,ifile,dosparse,dospline,doder);
   std::vector<unsigned> cbin( grid->getNbin() );
   std::vector<std::string> cmin( grid->getMin() ), cmax( grid->getMax() );

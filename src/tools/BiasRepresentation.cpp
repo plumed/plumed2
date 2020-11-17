@@ -43,7 +43,7 @@ BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Co
 
 /// overload the constructor: add the sigma  at constructor time
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<double> & sigma ):
-hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc) 
+  hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc)
 {
   lowI_=0.0;
   uppI_=0.0;
@@ -58,7 +58,7 @@ hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc)
 /// overload the constructor: add the grid at constructor time
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
                                        const std::vector<unsigned> & nbin, bool doInt, double lowI, double uppI):
-hasgrid(false), rescaledToBias(false), mycomm(cc)
+  hasgrid(false), rescaledToBias(false), mycomm(cc)
 {
   ndim=tmpvalues.size();
   for(int i=0; i<ndim; i++) {
@@ -73,9 +73,9 @@ hasgrid(false), rescaledToBias(false), mycomm(cc)
 }
 
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, 
+BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
                                        const std::vector<unsigned> & nbin, const std::vector<double> & sigma):
-hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc)
+  hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc)
 {
   lowI_=0.0;
   uppI_=0.0;

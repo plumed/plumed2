@@ -30,11 +30,11 @@ namespace PLMD {
 
 
 FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d, std::vector<double> &smin, std::vector<double> &smax):
-type(type),
-paction(paction),
-sigma(d),
-sigmamin(smin),
-sigmamax(smax) 
+  type(type),
+  paction(paction),
+  sigma(d),
+  sigmamin(smin),
+  sigmamax(smax)
 {
   // initialize the averages and the variance matrices
   if(type==diffusion) {
