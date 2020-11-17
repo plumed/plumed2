@@ -1181,7 +1181,7 @@ MetaD::MetaD(const ActionOptions& ao):
     } else {
       // read the grid in input, find the keys
 #ifdef __PLUMED_HAS_GETCWD
-      if(walkers_mpi_) {
+      if(walkers_mpi_&&gridreadfilename_.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
         char cwd[4096]= {0};
         const char* ret=getcwd(cwd,4096);
@@ -1225,7 +1225,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
 #ifdef __PLUMED_HAS_GETCWD
-  if(walkers_mpi_&&mw_dir_=="") {
+  if(walkers_mpi_&&mw_dir_==""&&hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
     char cwd[4096]= {0};
     const char* ret=getcwd(cwd,4096);
@@ -1276,7 +1276,7 @@ MetaD::MetaD(const ActionOptions& ao):
       if(i==mw_id_) ifiles_[i]->close();
     } else {
       // in case a file does not exist and we are restarting, complain that the file was not found
-      if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
+      if(getRestart()) error("restart file "+fname+" not found");
     }
   }
 
