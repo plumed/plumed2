@@ -39,6 +39,9 @@
 #include <memory>
 #include <algorithm>
 #include <numeric>
+#if defined(__PLUMED_HAS_GETCWD)
+#include <unistd.h>
+#endif
 
 #define DP2CUTOFF 6.25
 
@@ -1177,6 +1180,18 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     } else {
       // read the grid in input, find the keys
+#ifdef __PLUMED_HAS_GETCWD
+      if(walkers_mpi_) {
+        //if possible the root replica will share its current folder so that all walkers will read the same file
+        char cwd[4096]= {0};
+        const char* ret=getcwd(cwd,4096);
+        plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+        gridreadfilename_ = "/" + gridreadfilename_;
+        gridreadfilename_ = ret + gridreadfilename_;
+        if(comm.Get_rank()==0) multi_sim_comm.Bcast(gridreadfilename_,0);
+        comm.Bcast(gridreadfilename_,0);
+      }
+#endif
       IFile gridfile;
       gridfile.link(*this);
       if(gridfile.FileExist(gridreadfilename_)) {
@@ -1195,7 +1210,7 @@ MetaD::MetaD(const ActionOptions& ao):
         double mesh=(b-a)/((double)gbin[i]);
         if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
       }
-      log.printf("  Restarting from %s:",gridreadfilename_.c_str());
+      log.printf("  Restarting from %s\n",gridreadfilename_.c_str());
       if(getRestart()) restartedFromGrid=true;
     }
   }
@@ -1208,6 +1223,19 @@ MetaD::MetaD(const ActionOptions& ao):
     int result = accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
   }
+
+#ifdef __PLUMED_HAS_GETCWD
+  if(walkers_mpi_&&mw_dir_=="") {
+    //if possible the root replica will share its current folder so that all walkers will read the same file
+    char cwd[4096]= {0};
+    const char* ret=getcwd(cwd,4096);
+    plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+    mw_dir_ = ret;
+    mw_dir_ = mw_dir_ + "/";
+    if(comm.Get_rank()==0) multi_sim_comm.Bcast(mw_dir_,0);
+    comm.Bcast(mw_dir_,0);
+  }
+#endif
 
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting
