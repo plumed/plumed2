@@ -26,9 +26,6 @@
 #include "reference/ArgumentOnlyDistance.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
-#include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
