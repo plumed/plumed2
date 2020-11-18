@@ -65,6 +65,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
        std::size_t dot = fieldnames[i].find_first_of("d" + valuestr + "_" );
        if( fieldnames[i].find("d" + valuestr + "_")!=std::string::npos ) labels.push_back( fieldnames[i].substr(dot+2+valuestr.length()) );
    }
+   if( flatgrid && labels.size()==0 ) error("could not find any derivatives for value " + valuestr + " in input file.  Header should contain at least columns with a name starting d" + valuestr + "_");
    // Now get all the header data for the grid
    std::vector<std::string> gmin( labels.size() ), gmax( labels.size() ); std::string pstring;
    int gbin1; std::vector<unsigned> gbin( labels.size() ); std::vector<bool> ipbc( labels.size() );
@@ -77,9 +78,13 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
        ifile.scanField( "max_" + labels[i], gmax[i]);
        ifile.scanField( "periodic_" + labels[i], pstring );
        ifile.scanField( "nbins_" + labels[i], gbin1); gbin[i]=gbin1;
-       if( pstring=="true" ) ipbc[i]=true; 
-       else if( pstring=="false" ) ipbc[i]=false; 
-       else error("do not understand periodidicy of " + labels[i] );
+       if( pstring=="true" ) {
+           log.printf("   for periodic coordinate %s minimum is %s maximum is %s and number of bins is %d \n",labels[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+           ipbc[i]=true; 
+       } else if( pstring=="false" ) {
+           log.printf("   for coordinate %s minimum is %s maximum is %s and number of bins is %d \n",labels[i].c_str(),gmin[i].c_str(),gmax[i].c_str(),gbin[i]);
+           ipbc[i]=false; 
+       } else error("do not understand periodidicy of " + labels[i] );
  
        bool hasder=ifile.FieldExist( "d" + valuestr + "_" + labels[i] );
        if( !hasder ) plumed_merror("missing derivatives from grid file");
@@ -104,7 +109,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
        }
      }
      for(unsigned j=0; j<labels.size(); ++j) ifile.scanField( "d" + valuestr + "_" + labels[j], dder[j] );  
- 
+
      unsigned index=gridobject.getIndex(xx); if( !flatgrid ) index=i;
      valout->setNorm( norm ); valout->add( index*(labels.size()+1), norm*val );
      for(unsigned j=0; j<labels.size(); ++j) valout->add( index*(labels.size()+1)+1+j, norm*dder[j] );  
