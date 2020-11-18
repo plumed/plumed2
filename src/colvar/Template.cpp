@@ -22,11 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -76,7 +71,7 @@ Template::Template(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=2)
     error("Number of specified atoms should be 2");
