@@ -235,7 +235,7 @@ SAXS::SAXS(const ActionOptions&ao):
       atoi[i]=i;
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*std::powl(static_cast<long double>(q_list[k]),j);
+          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
     }
@@ -249,7 +249,7 @@ SAXS::SAXS(const ActionOptions&ao):
     for(unsigned i=0; i<NMARTINI; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*std::powl(static_cast<long double>(q_list[k]),j);
+          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
     }
