@@ -31,13 +31,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include "tools/File.h"
-#include <string>
-#include <cstring>
-#include <iostream>
-#include <limits>
 #include <ctime>
-#include <memory>
-#include <algorithm>
 #include <numeric>
 #if defined(__PLUMED_HAS_GETCWD)
 #include <unistd.h>
@@ -1220,7 +1214,7 @@ MetaD::MetaD(const ActionOptions& ao):
     std::vector<int> restarted(mpi_nw_,0);
     if(comm.Get_rank()==0) multi_sim_comm.Allgather(int(restartedFromGrid), restarted);
     comm.Bcast(restarted,0);
-    int result = accumulate(restarted.begin(),restarted.end(),0);
+    int result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
   }
 
@@ -1285,7 +1279,7 @@ MetaD::MetaD(const ActionOptions& ao):
     std::vector<int> restarted(mpi_nw_,0);
     if(comm.Get_rank()==0) multi_sim_comm.Allgather(int(restartedFromHills), restarted);
     comm.Bcast(restarted,0);
-    int result = accumulate(restarted.begin(),restarted.end(),0);
+    int result = std::accumulate(restarted.begin(),restarted.end(),0);
     if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from FILE while other do not!");
   }
 
