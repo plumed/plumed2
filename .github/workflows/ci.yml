@@ -82,7 +82,7 @@ jobs:
       if: contains( matrix.variant, '-coverage-' )
       run: |
         ./.travis/install.lcov v1.14
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
