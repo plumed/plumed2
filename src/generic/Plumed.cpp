@@ -33,8 +33,6 @@
 
 #include <iostream>
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 

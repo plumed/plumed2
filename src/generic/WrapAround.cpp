@@ -31,10 +31,6 @@
 #include "core/GenericMolInfo.h"
 
 #include <vector>
-#include <string>
-#include <limits>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -152,8 +148,8 @@ class WrapAround:
   public ActionPilot,
   public ActionAtomistic
 {
-  vector<AtomNumber> atoms;
-  vector<AtomNumber> reference;
+  std::vector<AtomNumber> atoms;
+  std::vector<AtomNumber> reference;
   unsigned groupby;
 public:
   explicit WrapAround(const ActionOptions&ao);
@@ -199,7 +195,7 @@ WrapAround::WrapAround(const ActionOptions&ao):
   if(groupby<=1) Tools::removeDuplicates(atoms);
   Tools::removeDuplicates(reference);
 
-  vector<AtomNumber> merged(atoms.size()+reference.size());
+  std::vector<AtomNumber> merged(atoms.size()+reference.size());
   merge(atoms.begin(),atoms.end(),reference.begin(),reference.end(),merged.begin());
   Tools::removeDuplicates(merged);
   requestAtoms(merged);

@@ -33,8 +33,6 @@
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 
-using namespace std;
-
 namespace PLMD {
 
 ActionAtomistic::~ActionAtomistic() {
@@ -58,7 +56,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
+void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -156,7 +154,7 @@ void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumbe
 
 void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t) {
   plumed_massert( keywords.style(key,"atoms") || keywords.style(key,"hidden"), "keyword " + key + " should be registered as atoms");
-  vector<string> strings;
+  std::vector<std::string> strings;
   if( num<0 ) {
     parseVector(key,strings);
     if(strings.empty()) return;
@@ -166,7 +164,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   interpretAtomList( strings, t );
 }
 
-void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
+void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0; i<strings.size(); ++i) {
     AtomNumber atom;
@@ -188,7 +186,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
       } else {
         auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
         if( moldat ) {
-          vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
+          std::vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
           if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
           else { error(strings[i] + " is not a label plumed knows"); }
         } else {
@@ -221,22 +219,21 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
   }
 }
 
-
 void ActionAtomistic::retrieveAtoms() {
   pbc=atoms.pbc;
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
   if(donotretrieve) return;
   chargesWereSet=atoms.chargesWereSet();
-  const vector<Vector> & p(atoms.positions);
-  const vector<double> & c(atoms.charges);
-  const vector<double> & m(atoms.masses);
+  const std::vector<Vector> & p(atoms.positions);
+  const std::vector<double> & c(atoms.charges);
+  const std::vector<double> & m(atoms.masses);
   for(unsigned j=0; j<indexes.size(); j++) positions[j]=p[indexes[j].index()];
   for(unsigned j=0; j<indexes.size(); j++) charges[j]=c[indexes[j].index()];
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
 }
 
-void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ) {
+void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned ind) {
   if(donotforce) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
     forces[i][0]=forcesToApply[ind]; ind++;
@@ -257,8 +254,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
 
 void ActionAtomistic::applyForces() {
   if(donotforce) return;
-  vector<Vector>   & f(atoms.forces);
-  Tensor           & v(atoms.virial);
+  std::vector<Vector>& f(atoms.forces);
+  Tensor& v(atoms.virial);
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
@@ -268,13 +265,13 @@ void ActionAtomistic::applyForces() {
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
-  for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
+  for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
   forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
 }
 
 
-void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
+void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
 

@@ -25,8 +25,6 @@
 #include "tools/Exception.h"
 #include "core/ExchangePatterns.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 
