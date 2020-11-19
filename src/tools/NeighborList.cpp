@@ -31,9 +31,8 @@
 #include <numeric>
 
 namespace PLMD {
-using namespace std;
 
-NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
+NeighborList::NeighborList(const std::vector<AtomNumber>& list0, const std::vector<AtomNumber>& list1,
                            const bool& serial, const bool& do_pair, const bool& do_pbc, const Pbc& pbc, Communicator& cm,
                            const double& distance, const unsigned& stride): reduced(false),
   serial_(serial), do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
@@ -56,7 +55,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   lastupdate_=0;
 }
 
-NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& serial, const bool& do_pbc,
+NeighborList::NeighborList(const std::vector<AtomNumber>& list0, const bool& serial, const bool& do_pbc,
                            const Pbc& pbc, Communicator& cm, const double& distance,
                            const unsigned& stride): reduced(false),
   serial_(serial), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
@@ -76,26 +75,26 @@ void NeighborList::initialize() {
   }
 }
 
-vector<AtomNumber>& NeighborList::getFullAtomList() {
+std::vector<AtomNumber>& NeighborList::getFullAtomList() {
   return fullatomlist_;
 }
 
-pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
-  pair<unsigned,unsigned> index;
+std::pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
+  std::pair<unsigned,unsigned> index;
   if(twolists_ && do_pair_) {
-    index=pair<unsigned,unsigned>(ipair,ipair+nlist0_);
+    index=std::pair<unsigned,unsigned>(ipair,ipair+nlist0_);
   } else if (twolists_ && !do_pair_) {
-    index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
+    index=std::pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
   } else if (!twolists_) {
     unsigned ii = nallpairs_-1-ipair;
-    unsigned  K = unsigned(floor((sqrt(double(8*ii+1))+1)/2));
+    unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
     unsigned jj = ii-K*(K-1)/2;
-    index=pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
+    index=std::pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
   }
   return index;
 }
 
-void NeighborList::update(const vector<Vector>& positions) {
+void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   const double d2=distance_*distance_;
   // check if positions array has the correct length
@@ -116,7 +115,7 @@ void NeighborList::update(const vector<Vector>& positions) {
     std::vector<unsigned> private_flat_nl;
     #pragma omp for nowait
     for(unsigned int i=rank; i<nallpairs_; i+=stride) {
-      pair<unsigned,unsigned> index=getIndexPair(i);
+      std::pair<unsigned,unsigned> index=getIndexPair(i);
       unsigned index0=index.first;
       unsigned index1=index.second;
       Vector distance;
@@ -136,7 +135,7 @@ void NeighborList::update(const vector<Vector>& positions) {
   }
 
   // find total dimension of neighborlist
-  vector <int> local_nl_size(stride, 0);
+  std::vector <int> local_nl_size(stride, 0);
   local_nl_size[rank] = local_flat_nl.size();
   if(!serial_) comm.Sum(&local_nl_size[0], stride);
   int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
@@ -144,7 +143,7 @@ void NeighborList::update(const vector<Vector>& positions) {
   // merge
   std::vector<unsigned> merge_nl(tot_size, 0);
   // calculate vector of displacement
-  vector<int> disp(stride);
+  std::vector<int> disp(stride);
   disp[0] = 0;
   int rank_size = 0;
   for(unsigned i=0; i<stride-1; ++i) {
@@ -174,7 +173,7 @@ void NeighborList::setRequestList() {
   reduced=false;
 }
 
-vector<AtomNumber>& NeighborList::getReducedAtomList() {
+std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
   if(!reduced)for(unsigned int i=0; i<size(); ++i) {
       unsigned newindex0=0,newindex1=0;
       AtomNumber index0=fullatomlist_[neighbors_[i].first];
@@ -182,7 +181,7 @@ vector<AtomNumber>& NeighborList::getReducedAtomList() {
 // I exploit the fact that requestlist_ is an ordered vector
       auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_dbg_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
       p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_dbg_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
-      neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
+      neighbors_[i]=std::pair<unsigned,unsigned>(newindex0,newindex1);
     }
   reduced=true;
   return requestlist_;
@@ -204,18 +203,18 @@ unsigned NeighborList::size() const {
   return neighbors_.size();
 }
 
-pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
+std::pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
   return neighbors_[i];
 }
 
-pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
-  pair<AtomNumber,AtomNumber> Aneigh;
-  Aneigh=pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
+std::pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
+  std::pair<AtomNumber,AtomNumber> Aneigh;
+  Aneigh=std::pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
   return Aneigh;
 }
 
-vector<unsigned> NeighborList::getNeighbors(unsigned index) {
-  vector<unsigned> neighbors;
+std::vector<unsigned> NeighborList::getNeighbors(unsigned index) {
+  std::vector<unsigned> neighbors;
   for(unsigned int i=0; i<size(); ++i) {
     if(neighbors_[i].first==index)  neighbors.push_back(neighbors_[i].second);
     if(neighbors_[i].second==index) neighbors.push_back(neighbors_[i].first);

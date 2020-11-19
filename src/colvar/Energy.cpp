@@ -24,9 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-#include <string>
-#include <cmath>
-
 namespace PLMD {
 namespace colvar {
 
@@ -73,9 +70,6 @@ public:
   unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
-
-
-using namespace std;
 
 
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")

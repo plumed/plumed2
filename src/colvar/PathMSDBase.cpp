@@ -27,9 +27,6 @@
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -130,7 +127,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     log.printf(" Extensive debug info regarding close structure turned on\n");
 
   rotationRefClose.resize(nframes);
-  savedIndices = vector<unsigned>(nframes);
+  savedIndices = std::vector<unsigned>(nframes);
 
   if(nopbc) log.printf("  without periodic boundary conditions\n");
   else      log.printf("  using periodic boundary conditions\n");
@@ -225,9 +222,9 @@ void PathMSDBase::calculate() {
           RMSD opt;
           opt.setType("OPTIMAL");
           opt.setReference(msdv[imgVec[i].index].getReference());
-          vector<Vector> ders;
+          std::vector<Vector> ders;
           double withoutclose = opt.calculate(getPositions(), ders, true);
-          float difference = fabs(withoutclose-withclose);
+          float difference = std::abs(withoutclose-withclose);
           log<<"PLUMED-CLOSE: difference original "<<withoutclose;
           log<<" - with close "<<withclose<<" = "<<difference<<", step "<<getStep()<<", i "<<i<<" imgVec[i].index "<<imgVec[i].index<<"\n";
         }
@@ -261,7 +258,7 @@ void PathMSDBase::calculate() {
 
 // END OF THE HEAVY PART
 
-  vector<Value*> val_s_path;
+  std::vector<Value*> val_s_path;
   if(labels.size()>0) {
     for(unsigned i=0; i<labels.size(); i++) { val_s_path.push_back(getPntrToComponent(labels[i].c_str()));}
   } else {
@@ -269,7 +266,7 @@ void PathMSDBase::calculate() {
   }
   Value* val_z_path=getPntrToComponent("zzz");
 
-  vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
+  std::vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
   double partition=0.;
   double tmp;
 
@@ -277,8 +274,7 @@ void PathMSDBase::calculate() {
   for(unsigned i=0; i< derivs_z.size(); i++) {derivs_z[i].zero();}
 
   for(auto & it : imgVec) {
-    it.similarity=exp(-lambda*(it.distance));
-    //log<<"DISTANCE "<<(*it).distance<<"\n";
+    it.similarity=std::exp(-lambda*(it.distance));
     for(unsigned i=0; i<s_path.size(); i++) {
       s_path[i]+=(it.property[i])*it.similarity;
     }

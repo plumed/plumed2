@@ -24,10 +24,6 @@
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
-#include <string>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -52,7 +48,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 
   parseFlag("SERIAL",serial);
 
-  vector<AtomNumber> ga_lista,gb_lista;
+  std::vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
 
@@ -133,7 +129,7 @@ void CoordinationBase::calculate()
 
   double ncoord=0.;
   Tensor virial;
-  vector<Vector> deriv(getNumberOfAtoms());
+  std::vector<Vector> deriv(getNumberOfAtoms());
 
   if(nl->getStride()>0 && invalidateList) {
     nl->update(getPositions());

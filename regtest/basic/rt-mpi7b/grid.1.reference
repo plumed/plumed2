@@ -1,4 +1,4 @@
-#! FIELDS d1 d2 @3.bias der_d1 der_d2
+#! FIELDS d1 d2 @2.bias der_d1 der_d2
 #! SET min_d1 0
 #! SET max_d1 2
 #! SET nbins_d1  5

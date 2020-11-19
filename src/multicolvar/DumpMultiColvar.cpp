@@ -34,8 +34,6 @@
 #include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/StoreDataVessel.h"
 
-using namespace std;
-
 namespace PLMD
 {
 namespace multicolvar {
@@ -113,7 +111,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   if( atom.size()>1 ) error("should only be one atom specified");
   if( atom.size()==1 ) log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
 
-  string file; parse("FILE",file);
+  std::string file; parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
   std::string type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
@@ -121,11 +119,11 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
 
   fmt_xyz="%f";
 
-  string precision; parse("PRECISION",precision);
+  std::string precision; parse("PRECISION",precision);
   if(precision.length()>0) {
     int p; Tools::convert(precision,p);
     log<<"  with precision "<<p<<"\n";
-    string a,b;
+    std::string a,b;
     Tools::convert(p+5,a);
     Tools::convert(p,b);
     fmt_xyz="%"+a+"."+b+"f";

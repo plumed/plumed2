@@ -22,8 +22,6 @@
 #include "Units.h"
 #include "Tools.h"
 
-using namespace std;
-
 namespace PLMD {
 
 Units::Units():

@@ -30,8 +30,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace multicolvar {
 
@@ -134,7 +132,7 @@ double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms
   Vector normal=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) );
   Vector dir=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
   PLMD::Angle a; Vector ddij, ddik; double angle=a.compute(normal,dir,ddij,ddik);
-  double sangle=sin(angle), cangle=cos(angle);
+  double sangle=std::sin(angle), cangle=std::cos(angle);
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 
   addAtomDerivatives( 1, 0, dd*cangle*ddik + sangle*invdd*dir, myatoms );

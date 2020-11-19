@@ -24,12 +24,6 @@
 #include "ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
-#include <string>
-#include <cmath>
-#include <memory>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -112,7 +106,7 @@ private:
   bool pbc, serial, docomp, dosum, docmdist;
   std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
-  vector<double> reference, weight;
+  std::vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);

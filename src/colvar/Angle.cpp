@@ -23,11 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Angle.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -104,7 +99,7 @@ Angle::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);

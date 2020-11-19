@@ -29,8 +29,6 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 
@@ -148,7 +146,7 @@ Group::Group(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);

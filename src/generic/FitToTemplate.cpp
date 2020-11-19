@@ -39,8 +39,6 @@
 #include <string>
 #include <memory>
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 
@@ -218,7 +216,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   ActionWithValue(ao),
   nopbc(false)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
   type.assign("SIMPLE");
   parse("TYPE",type);
@@ -257,7 +255,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
 
   // normalize weights for rmsd calculation
-  vector<double> weights_measure=pdb.getBeta();
+  std::vector<double> weights_measure=pdb.getBeta();
   n=0.0; for(unsigned i=0; i<weights_measure.size(); ++i) n+=weights_measure[i]; n=1.0/n;
   for(unsigned i=0; i<weights_measure.size(); ++i) weights_measure[i]*=n;
 

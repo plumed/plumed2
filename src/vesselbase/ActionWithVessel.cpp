@@ -31,7 +31,6 @@
 #include "tools/OpenMP.h"
 #include "tools/Stopwatch.h"
 
-using namespace std;
 namespace PLMD {
 namespace vesselbase {
 

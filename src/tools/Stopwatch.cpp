@@ -29,8 +29,6 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
-
 namespace PLMD {
 
 // this is needed for friend operators
