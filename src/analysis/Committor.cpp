@@ -179,7 +179,7 @@ void Committor::calculate() {
   // then check if the simulation should be stopped
   if(inonebasin&&(!doNotStop)) {
     std::string num; Tools::convert( basin, num );
-    std::string str = "COMMITED TO BASIN " + num;
+    std::string str = "COMMITTED TO BASIN " + num;
     ofile.addConstantField(str);
     ofile.printField();
     ofile.flush();

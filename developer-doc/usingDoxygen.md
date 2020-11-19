@@ -43,9 +43,9 @@ should be declared in the definition of the class as follows:
 static void registerKeywords(Keywords& keys);
 \endverbatim
 
-The static atribute allows one to use the registerKeywords routine when no instances of the class have been created.
+The static attribute allows one to use the registerKeywords routine when no instances of the class have been created.
 This is essential as keywordRegistration in plumed is done before the list of PLMD::Action is created.  This means
-that when the keywords are created plumed has no understanding of the hierachy of inherited Actions.  Hence, before
+that when the keywords are created plumed has no understanding of the hierarchy of inherited Actions.  Hence, before
 adding your own Keywords you must ensure that the keywords for the class from which your new class inherits have been
 added.  In pracise this is done by calling PLMD::Colvar::registerKeywords, PLMD::function::Function::registerKeywords or 
 PLMD::Bias::registerKeywords for a new PLMD::Colvar, PLMD::function::Function or PLMD::bias::Bias respectively.  To be clear these
@@ -55,7 +55,7 @@ you should also call PLMD::ActionWithValue::noAnalyticalDerivatives.  This routi
 derivatives routines are used to calculation your derivatives automatically and will ensure that a message is put in the plumed
 manual so that other users are aware that numerical derivatives are being used. 
 
-Once you have called the reigsterKeywords routine for the PLMD::Action above yours in the hierachy you can begin to add
+Once you have called the reigsterKeywords routine for the PLMD::Action above yours in the hierarchy you can begin to add
 the keywords for your new method.  These keywords will have one of 5 attributes:
 
 <table align=center frame=void width=95%% cellpadding=5%%>
@@ -114,7 +114,7 @@ d1: DISTANCE COMPONENTS
 
 which calculates quantities that can be referenced in the input as d1.x, d1.y and d1.z, you will have to provide
 documentation for the manual that describes what information is stored in the x, y and z components. As an example
-for the distances components this documenation takes the following form:
+for the distances components this documentation takes the following form:
 
 \verbatim
 keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
@@ -495,6 +495,39 @@ for the MOLINFO.   The above input would thus be included in the manual as shown
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+\endverbatim
+
+\subsection otherfiles Other actions requiring external files/folder
+
+Other actions in plumed may require reading input files, examples include reading gromacs .ndx files in \ref GROUP, reading chemical shifts in \ref CS2BACKBONE, etc.
+To make these example work correctly in the manual you can use the keywords AUXFILE and AUXFOLDER as in the following:
+
+\verbatim
+\plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# This allows us to select only non-hydrogen atoms
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+
+# We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
+solv: EEFSOLV ATOMS=protein-h
+
+# Here we actually add our calculated energy back to the potential
+bias: BIASVALUE ARG=solv
+
+PRINT ARG=solv FILE=SOLV
+
+#SETTINGS AUXFOLDER=regtest/isdb/rt-cs2backbone/data NREPLICAS=2
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
+encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
+RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
+
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 \ endplumedfile    /*** But with no space between the \ and the endplumedfile
 \endverbatim
 

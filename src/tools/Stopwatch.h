@@ -96,7 +96,7 @@ int main(){
 \endverbatim
 
 Notice that as of PLUMED 2.5 it is possible to use a slightly modified
-interface that allow for exception safety. In pratice,
+interface that allow for exception safety. In practice,
 one can replace a pair of calls to Stopwatch::start() and Stopwatch::stop()
 with a single call to Stopwatch::startStop(). This call will return an object
 that, when goes out of scope, will stop the timer.
@@ -200,7 +200,7 @@ public:
     Handler & operator=(const Handler & handler) = delete;
     /// Move constructor.
     Handler(Handler && handler) noexcept;
-    /// Move assignemnt.
+    /// Move assignment.
     Handler & operator=(Handler && handler) noexcept;
     /// Destructor either stops or pauses the watch
     ~Handler();

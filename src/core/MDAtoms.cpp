@@ -28,8 +28,6 @@
 #include <string>
 #include <map>
 
-using namespace std;
-
 namespace PLMD {
 
 /// Class containing the pointers to the MD data
@@ -69,7 +67,13 @@ public:
     extraCVForce[name]=static_cast<T*>(p);
   }
   double getExtraCV(const std::string &name) override {
-    return static_cast<double>(*extraCV[name]);
+
+    auto search=extraCV.find(name);
+    if(search != extraCV.end()) {
+      return static_cast<double>(*search->second);
+    } else {
+      plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
+    }
   }
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name]+=static_cast<T>(f);
@@ -85,16 +89,16 @@ public:
     return force/scalef;
   }
   void getBox(Tensor &) const override;
-  void getPositions(const vector<int>&index,vector<Vector>&positions) const override;
-  void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions) const override;
-  void getPositions(unsigned j,unsigned k,vector<Vector>&positions) const override;
+  void getPositions(const std::vector<int>&index,std::vector<Vector>&positions) const override;
+  void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
+  void getPositions(unsigned j,unsigned k,std::vector<Vector>&positions) const override;
   void getLocalPositions(std::vector<Vector>&p) const override;
-  void getMasses(const vector<int>&index,vector<double>&) const override;
-  void getCharges(const vector<int>&index,vector<double>&) const override;
+  void getMasses(const std::vector<int>&index,std::vector<double>&) const override;
+  void getCharges(const std::vector<int>&index,std::vector<double>&) const override;
   void updateVirial(const Tensor&) const override;
-  void updateForces(const vector<int>&index,const vector<Vector>&) override;
-  void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) override;
-  void rescaleForces(const vector<int>&index,double factor) override;
+  void updateForces(const std::vector<int>&index,const std::vector<Vector>&) override;
+  void updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) override;
+  void rescaleForces(const std::vector<int>&index,double factor) override;
   unsigned  getRealPrecision()const override;
 };
 
@@ -121,7 +125,7 @@ void MDAtomsTyped<T>::getBox(Tensor&box)const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getPositions(const std::vector<int>&index,std::vector<Vector>&positions)const {
 // cannot be parallelized with omp because access to positions is not ordered
   for(unsigned i=0; i<index.size(); ++i) {
     positions[index[i]][0]=px[stride*i]*scalep;
@@ -131,7 +135,7 @@ void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positi
 }
 
 template <class T>
-void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i, vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
   for(const auto & p : index) {
@@ -143,7 +147,7 @@ void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector
 }
 
 template <class T>
-void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,std::vector<Vector>&positions)const {
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
   for(unsigned i=j; i<k; ++i) {
     positions[i][0]=px[stride*i]*scalep;
@@ -154,7 +158,7 @@ void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&position
 
 
 template <class T>
-void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0; i<positions.size(); ++i) {
     positions[i][0]=px[stride*i]*scalep;
@@ -165,13 +169,13 @@ void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const {
 
 
 template <class T>
-void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const {
+void MDAtomsTyped<T>::getMasses(const std::vector<int>&index,std::vector<double>&masses)const {
   if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*m[i];
   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
 }
 
 template <class T>
-void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)const {
+void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double>&charges)const {
   if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*c[i];
   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
 }
@@ -182,7 +186,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) {
+void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
   unsigned k=0;
   for(const auto & p : index) {
     fx[stride*i[k]]+=scalef*T(forces[p.index()][0]);
@@ -193,7 +197,7 @@ void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const vector
 }
 
 template <class T>
-void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces) {
+void MDAtomsTyped<T>::updateForces(const std::vector<int>&index,const std::vector<Vector>&forces) {
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
     fx[stride*i]+=scalef*T(forces[index[i]][0]);
@@ -203,7 +207,7 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 }
 
 template <class T>
-void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor) {
+void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) {
   if(virial) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) virial[3*i+j]*=T(factor);
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
@@ -303,9 +307,9 @@ MDAtomsTyped<T>::MDAtomsTyped():
 
 std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
+    return Tools::make_unique<MDAtomsTyped<double>>();
   } else if (p==sizeof(float)) {
-    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
+    return Tools::make_unique<MDAtomsTyped<float>>();
   }
   std::string pp;
   Tools::convert(p,pp);

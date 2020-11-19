@@ -27,9 +27,6 @@
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -46,9 +43,6 @@ public:
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
-
-
-using namespace std;
 
 //+PLUMEDOC DCOLVAR RMSD
 /*
@@ -181,9 +175,9 @@ RMSD::RMSD(const ActionOptions&ao):
   squared(false),
   nopbc(false)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
-  string type;
+  std::string type;
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);

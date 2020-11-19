@@ -1,0 +1,24 @@
+# vim:ft=plumed
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+opes: OPES_METAD ...
+  ARG=psi,phi
+  PACE=2
+  TEMP=300.0
+  FILE=Kernels.data
+  BARRIER=20
+  SIGMA=0.15,0.15
+  FMT=%f
+  WALKERS_MPI
+  RESTART=YES
+  NLIST
+  NLIST_PARAMETERS=1.1,0.2
+  NLIST_PACE_RESET
+...
+
+PRINT FMT=%g STRIDE=5 FILE=Colvar.data ARG=phi,psi,opes.bias,opes.rct,opes.zed,opes.neff,opes.nker,opes.nlker,opes.nlsteps
+
+ENDPLUMED
+

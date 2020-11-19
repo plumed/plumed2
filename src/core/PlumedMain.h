@@ -259,6 +259,15 @@ public:
   void readInputLine(const std::string & str);
 
   /**
+    Read an input buffer.
+    \param str name of the string
+    Same as readInputFile, but first write str on a temporary file and then read
+    that files. At variance with readInputLine, it can take care of comments and
+    continuation lines.
+  */
+  void readInputLines(const std::string & str);
+
+  /**
     Initialize the object.
     Should be called once.
   */

@@ -158,7 +158,7 @@ BEGIN{
 
 # for each input file
 BEGINFILE{
-# these variables are used to track if a file containes at least one item of a specific kind
+# these variables are used to track if a file contains at least one item of a specific kind
 # as such they should be reset for every new input file
   found_namespace_plmd=0
   found_namespace_module=0
@@ -486,9 +486,15 @@ BEGINFILE{
 # DOC: A statement `using namespace` in header files is considered bad practice. Indeed, this would imply that
 # DOC: any other file including that header file would be using the same namespace.
 # DOC: This is true also for `std` namespace, and that's why you typically find full specifications
-# DOC: such as `std::string` in header files. In source files you are free to use `using namespace PLMD` and/or
-# DOC: `using namespace std` if you like, since these commands will only affect the source file where they are used.
+# DOC: such as `std::string` in header files.
     if(filetype=="header" && match($0,"using *namespace") && !in_plumed_doc && !in_doxygen) error("using_namespace_in_header","using namespace statement in header file")
+
+# check that "using namespace" statements are not used in source files
+# DOC: :using_namespace_std_in_source:
+# DOC: A statement `using namespace std` in a source files is considered bad practice. Indeed, it makes it difficult to
+# DOC: distinguish classes and functions that are taken from the standard library (such as `std::vector`) from similar
+# DOC: names declared locally. This is currently a style issue, but will become an error in the future.
+    if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen) style("using_namespace_std_in_source","using namespace std statement in source file")
   }
 
 # analyze HAS macros (bouth source and autoconf)
@@ -573,8 +579,8 @@ ENDFILE{
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
      while((getline < cppfile)>=0){
-       if(match($0,"^ *#include")){
-         sub("^ *#include","");
+       if(match($0,"^# *include")){
+         sub("^# *include","");
 # DOC: :non_included_h:
 # DOC: The source file corresponding to a header file (that is: with the same name) should include it as the first included file.
 # DOC: This is to make sure that all the header files that we install can be individually included and compiled.

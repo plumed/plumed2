@@ -87,6 +87,8 @@ private:
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
+/// A constructor that can be used to make Vectors of named values
+  Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv);
 /// Set the value of the function

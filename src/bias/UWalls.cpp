@@ -22,10 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-
-using namespace std;
-
-
 namespace PLMD {
 namespace bias {
 

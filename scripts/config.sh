@@ -113,7 +113,7 @@ case $action in
   exit $retval
 ;;
 (mpiexec)
-  mpi=$(cat "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  mpi=$(cat "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") { sub(" *mpiexec ","",$0);  print} }')
   if test -n "$mpi" ; then
     retval=0
     test "$quiet" = no && echo "$mpi"

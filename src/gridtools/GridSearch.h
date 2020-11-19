@@ -33,7 +33,7 @@ namespace gridtools {
 template <class FCLASS>
 class GridSearch {
 private:
-/// This is the pointer to the member funciton in the energy
+/// This is the pointer to the member function in the energy
 /// calculating class that calculates the energy
   typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
   FCLASS* myclass_func;
@@ -50,8 +50,8 @@ public:
     vesselbase::VesselOptions da("mygrid","",-1,vstring,NULL);
     Keywords keys; gridtools::GridVessel::registerKeywords( keys );
     vesselbase::VesselOptions dar( da, keys );
-    mygrid.reset( new GridVessel(dar) );
-    if( nfg[0]>0 ) myfgrid.reset( new GridVessel(dar) );
+    mygrid=Tools::make_unique<GridVessel>(dar);
+    if( nfg[0]>0 ) myfgrid=Tools::make_unique<GridVessel>(dar);
 
     // Now setup the min and max values for the grid
     std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() ); std::vector<double> dummy_spacing;

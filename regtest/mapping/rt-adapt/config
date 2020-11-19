@@ -1,2 +1,16 @@
 type=driver
 arg="--noatoms --plumed plumed.dat"
+
+# skip test on Catalina (10.15) and above
+function plumed_custom_skip() {
+  if [ "$(uname)" = Darwin ] ; then
+    fullversion=$(sw_vers -productVersion)
+    fullversion=${fullversion#*.}
+    fullversion=${fullversion%.*}
+    if (( fullversion>14 )) ; then
+      return 0
+    fi
+  fi
+  return 1
+}
+

@@ -27,8 +27,6 @@
 namespace PLMD {
 namespace generic {
 
-using namespace std;
-
 //+PLUMEDOC GENERIC FLUSH
 /*
 This command instructs plumed to flush all the open files with a user specified frequency.

@@ -69,6 +69,8 @@ public:
   std::unique_ptr<Action> create(const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
   bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
+/// Retrieve a keywords object for a particular action
+  bool getKeywords( const std::string& action, Keywords& keys );
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
@@ -98,7 +100,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
   static class  PLUMED_UNIQUENAME(classname##RegisterMe){ \
-    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return std::unique_ptr<classname>(new classname(ao));} \
+    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return Tools::make_unique<classname>(ao);} \
   public: \
     PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \

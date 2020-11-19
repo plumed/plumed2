@@ -123,7 +123,7 @@ double SMACMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv
   unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
   std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
   std::vector<std::unique_ptr<Value>> pos;
-  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( Tools::make_unique<Value>() ); pos[i]->setDomain( "-pi", "pi" ); }
 
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) {

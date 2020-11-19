@@ -2,7 +2,7 @@
 
 To implement a new method for calculating the distance between a pair of trajectory frames you will need to work with the
 PLMD::reference module.  This module is used in many parts of PLUMED (e.g. path collective variables, field-cvs and analysis methods).
-Consequently, if you implment your distance measure using the functionality in this class you will be able to use it in a 
+Consequently, if you implement your distance measure using the functionality in this class you will be able to use it in a 
 wide variety of difffernt contexts.  As always if you would like us to incorporate your measure in the release version of 
 PLUMED you will need to write at least one regression test for it.  Details on how to write regression tests are provided 
 here: \ref regtests  
@@ -47,7 +47,7 @@ to include the MetricRegister.h file and the following line:
 PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
 \endverbatim
 
-Once again dynamic polymorphism is exploited agin here.  With this example the command above ensures that PLMD::OptimalRMSD objects
+Once again dynamic polymorphism is exploited again here.  With this example the command above ensures that PLMD::OptimalRMSD objects
 are used whenever the command METRIC=OPTIMAL is found in the PLUMED input.
 
 Your new class must contain a constructor, a method to read in the configuration from a pdb file (read) and a method to calculate

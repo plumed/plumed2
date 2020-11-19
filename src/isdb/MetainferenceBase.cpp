@@ -21,11 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
 #include "tools/File.h"
-#include <cmath>
 #include <chrono>
 #include <numeric>
-
-using namespace std;
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -67,6 +64,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
+  keys.add("optional","SIGMA_MAX_STEPS", "Number of steps used to optimise SIGMA_MAX, before that the SIGMA_MAX value is used");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
@@ -124,6 +122,9 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   nsel_(1),
   iselect(0),
   optsigmamean_stride_(0),
+  N_optimized_step_(0),
+  optimized_step_(0),
+  sigmamax_opt_done_(false),
   decay_w_(1.)
 {
   parseFlag("DOSCORE", doscore_);
@@ -157,8 +158,8 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   parseFlag("REWEIGHT", do_reweight_);
   if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide one single bias as an argument");
   if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas");
-  if(!getRestart()) average_weights_.resize(nsel_, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
-  else average_weights_.resize(nsel_, vector<double> (nrep_, 0.));
+  if(!getRestart()) average_weights_.resize(nsel_, std::vector<double> (nrep_, 1./static_cast<double>(nrep_)));
+  else average_weights_.resize(nsel_, std::vector<double> (nrep_, 0.));
 
   unsigned averaging=0;
   parse("AVERAGING", averaging);
@@ -167,7 +168,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     optsigmamean_stride_ = averaging;
   }
 
-  string stringa_noise;
+  std::string stringa_noise;
   parse("NOISETYPE",stringa_noise);
   if(stringa_noise=="GAUSS")           noise_type_ = GAUSS;
   else if(stringa_noise=="MGAUSS")     noise_type_ = MGAUSS;
@@ -177,7 +178,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   else error("Unknown noise type!");
 
   if(noise_type_== GENERIC) {
-    string stringa_like;
+    std::string stringa_like;
     parse("LIKELIHOOD",stringa_like);
     if(stringa_like=="GAUSS") gen_likelihood_ = LIKE_GAUSS;
     else if(stringa_like=="LOGN") gen_likelihood_ = LIKE_LOGN;
@@ -191,14 +192,21 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(status_file_name_=="") status_file_name_ = "MISTATUS"+getLabel();
   else                      status_file_name_ = status_file_name_+getLabel();
 
-  string stringa_optsigma;
+  std::string stringa_optsigma;
   parse("OPTSIGMAMEAN", stringa_optsigma);
   if(stringa_optsigma=="NONE")      do_optsigmamean_=0;
   else if(stringa_optsigma=="SEM")  do_optsigmamean_=1;
+  else if(stringa_optsigma=="SEM_MAX")  do_optsigmamean_=2;
 
-  vector<double> read_sigma_mean_;
+  unsigned aver_max_steps=0;
+  parse("SIGMA_MAX_STEPS", aver_max_steps);
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
+  if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
+
+  std::vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
-  if(!do_optsigmamean_ && read_sigma_mean_.size()==0 && !getRestart() && doscore_)
+  if(do_optsigmamean_==0 && read_sigma_mean_.size()==0 && !getRestart() && doscore_)
     error("If you don't use OPTSIGMAMEAN and you are not RESTARTING then you MUST SET SIGMA_MEAN0");
 
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
@@ -220,7 +228,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
-    string stringa_noise;
+    std::string stringa_noise;
     parse("SCALE_PRIOR",stringa_noise);
     if(stringa_noise=="GAUSSIAN")  scale_prior_ = SC_GAUSS;
     else if(stringa_noise=="FLAT") scale_prior_ = SC_FLAT;
@@ -239,7 +247,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   parseFlag("ADDOFFSET", dooffset_);
   if(dooffset_) {
-    string stringa_noise;
+    std::string stringa_noise;
     parse("OFFSET_PRIOR",stringa_noise);
     if(stringa_noise=="GAUSSIAN")  offset_prior_ = SC_GAUSS;
     else if(stringa_noise=="FLAT") offset_prior_ = SC_FLAT;
@@ -267,7 +275,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     if(dooffset_) error("REGRES_ZERO and ADDOFFSET are mutually exclusive");
   }
 
-  vector<double> readsigma;
+  std::vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma.size()>1)
     error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
@@ -276,7 +284,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     sigma_=readsigma;
   } else sigma_.resize(1, readsigma[0]);
 
-  vector<double> readsigma_min;
+  std::vector<double> readsigma_min;
   parseVector("SIGMA_MIN",readsigma_min);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_min.size()>1)
     error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
@@ -285,7 +293,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     sigma_min_=readsigma_min;
   } else sigma_min_.resize(1, readsigma_min[0]);
 
-  vector<double> readsigma_max;
+  std::vector<double> readsigma_max;
   parseVector("SIGMA_MAX",readsigma_max);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
     error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
@@ -296,7 +304,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   if(sigma_max_.size()!=sigma_min_.size()) error("The number of values for SIGMA_MIN and SIGMA_MAX must be the same");
 
-  vector<double> read_dsigma;
+  std::vector<double> read_dsigma;
   parseVector("DSIGMA",read_dsigma);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
     error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
@@ -304,8 +312,8 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     Dsigma_.resize(read_dsigma.size());
     Dsigma_=read_dsigma;
   } else {
-    Dsigma_.resize(sigma_max_.size());
-    for(unsigned i=0; i<sigma_max_.size(); i++) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+    Dsigma_.resize(sigma_max_.size(), -1.);
+    /* in this case Dsigma is initialised after reading the restart file if present */
   }
 
   // monte carlo stuff
@@ -372,7 +380,7 @@ void MetainferenceBase::Initialise(const unsigned input)
     error(msg);
   }
 
-  // resize vector for sigma_mean history
+  // resize std::vector for sigma_mean history
   sigma_mean2_last_.resize(nsel_);
   for(unsigned i=0; i<nsel_; i++) sigma_mean2_last_[i].resize(narg);
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
@@ -417,6 +425,8 @@ void MetainferenceBase::Initialise(const unsigned input)
     }
   }
 
+  sigma_max_est_.resize(sigma_max_.size(), 0.);
+
   IFile restart_sfile;
   restart_sfile.link(*this);
   if(getRestart()&&restart_sfile.FileExist(status_file_name_)) {
@@ -427,14 +437,14 @@ void MetainferenceBase::Initialise(const unsigned input)
     double dummy;
     if(restart_sfile.scanField("time",dummy)) {
       // check for syncronisation
-      vector<double> dummy_time(nrep_,0);
+      std::vector<double> dummy_time(nrep_,0);
       if(master&&nrep_>1) {
         dummy_time[replica_] = dummy;
         multi_sim_comm.Sum(dummy_time);
       }
       comm.Sum(dummy_time);
       for(unsigned i=1; i<nrep_; i++) {
-        string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
+        std::string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
         if(dummy_time[i]!=dummy_time[0]) plumed_merror(msg);
       }
       // nsel
@@ -467,6 +477,12 @@ void MetainferenceBase::Initialise(const unsigned input)
         Tools::convert(i,msg);
         restart_sfile.scanField("sigma_"+msg,sigma_[i]);
       }
+      for(unsigned i=0; i<sigma_max_.size(); ++i) {
+        std::string msg;
+        Tools::convert(i,msg);
+        restart_sfile.scanField("sigma_max_"+msg,sigma_max_[i]);
+        sigmamax_opt_done_=true;
+      }
       if(noise_type_==GENERIC) {
         for(unsigned i=0; i<ftilde_.size(); ++i) {
           std::string msg;
@@ -493,6 +509,9 @@ void MetainferenceBase::Initialise(const unsigned input)
     restart_sfile.scanField();
     restart_sfile.close();
   }
+
+  /* If DSIGMA is not yet initialised do it now */
+  for(unsigned i=0; i<sigma_max_.size(); i++) if(Dsigma_[i]==-1) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
 
   addComponentWithDerivatives("score");
   componentIsNotPeriodic("score");
@@ -538,7 +557,7 @@ void MetainferenceBase::Initialise(const unsigned input)
       std::string num; Tools::convert(i,num);
       addComponent("sigmaMean-"+num); componentIsNotPeriodic("sigmaMean-"+num);
       valueSigmaMean.push_back(getPntrToComponent("sigmaMean-"+num));
-      getPntrToComponent("sigmaMean-"+num)->set(sqrt(sigma_mean2_[i]));
+      getPntrToComponent("sigmaMean-"+num)->set(std::sqrt(sigma_mean2_[i]));
       addComponent("sigma-"+num); componentIsNotPeriodic("sigma-"+num);
       valueSigma.push_back(getPntrToComponent("sigma-"+num));
       getPntrToComponent("sigma-"+num)->set(sigma_[i]);
@@ -550,7 +569,7 @@ void MetainferenceBase::Initialise(const unsigned input)
   } else {
     addComponent("sigmaMean"); componentIsNotPeriodic("sigmaMean");
     valueSigmaMean.push_back(getPntrToComponent("sigmaMean"));
-    getPntrToComponent("sigmaMean")->set(sqrt(sigma_mean2_[0]));
+    getPntrToComponent("sigmaMean")->set(std::sqrt(sigma_mean2_[0]));
     addComponent("sigma"); componentIsNotPeriodic("sigma");
     valueSigma.push_back(getPntrToComponent("sigma"));
     getPntrToComponent("sigma")->set(sigma_[0]);
@@ -579,14 +598,14 @@ void MetainferenceBase::Initialise(const unsigned input)
 
   if(doscale_) {
     // check that the scale value is the same for all replicas
-    vector<double> dummy_scale(nrep_,0);
+    std::vector<double> dummy_scale(nrep_,0);
     if(master&&nrep_>1) {
       dummy_scale[replica_] = scale_;
       multi_sim_comm.Sum(dummy_scale);
     }
     comm.Sum(dummy_scale);
     for(unsigned i=1; i<nrep_; i++) {
-      string msg = "The SCALE value must be the same for all replicas: check your input or restart file";
+      std::string msg = "The SCALE value must be the same for all replicas: check your input or restart file";
       if(dummy_scale[i]!=dummy_scale[0]) plumed_merror(msg);
     }
     log.printf("  sampling a common scaling factor with:\n");
@@ -602,14 +621,14 @@ void MetainferenceBase::Initialise(const unsigned input)
 
   if(dooffset_) {
     // check that the offset value is the same for all replicas
-    vector<double> dummy_offset(nrep_,0);
+    std::vector<double> dummy_offset(nrep_,0);
     if(master&&nrep_>1) {
       dummy_offset[replica_] = offset_;
       multi_sim_comm.Sum(dummy_offset);
     }
     comm.Sum(dummy_offset);
     for(unsigned i=1; i<nrep_; i++) {
-      string msg = "The OFFSET value must be the same for all replicas: check your input or restart file";
+      std::string msg = "The OFFSET value must be the same for all replicas: check your input or restart file";
       if(dummy_offset[i]!=dummy_offset[0]) plumed_merror(msg);
     }
     log.printf("  sampling a common offset with:\n");
@@ -643,7 +662,7 @@ void MetainferenceBase::Initialise(const unsigned input)
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  initial standard errors of the mean");
-  for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
+  for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", std::sqrt(sigma_mean2_[i]));
   log.printf("\n");
 
   //resize the number of metainference derivatives and the number of back-calculated data
@@ -664,7 +683,7 @@ void MetainferenceBase::Selector()
   if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 }
 
-double MetainferenceBase::getEnergySP(const vector<double> &mean, const vector<double> &sigma,
+double MetainferenceBase::getEnergySP(const std::vector<double> &mean, const std::vector<double> &sigma,
                                       const double scale, const double offset)
 {
   const double scale2 = scale*scale;
@@ -679,7 +698,7 @@ double MetainferenceBase::getEnergySP(const vector<double> &mean, const vector<d
     for(unsigned i=0; i<narg; ++i) {
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2 = 0.5*dev*dev + ss2;
-      ene += std::log(2.0*a2/(1.0-exp(-a2/sm2)));
+      ene += std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
@@ -689,7 +708,7 @@ double MetainferenceBase::getEnergySP(const vector<double> &mean, const vector<d
   return kbt_ * ene;
 }
 
-double MetainferenceBase::getEnergySPE(const vector<double> &mean, const vector<double> &sigma,
+double MetainferenceBase::getEnergySPE(const std::vector<double> &mean, const std::vector<double> &sigma,
                                        const double scale, const double offset)
 {
   const double scale2 = scale*scale;
@@ -703,7 +722,7 @@ double MetainferenceBase::getEnergySPE(const vector<double> &mean, const vector<
       const double sss = sigma[i]*sigma[i] + sm2;
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2  = 0.5*dev*dev + ss2;
-      ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-exp(-a2/sm2)));
+      ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
       if(doscale_ || doregres_zero_)  ene += 0.5*std::log(sss);
       if(dooffset_) ene += 0.5*std::log(sss);
     }
@@ -711,7 +730,7 @@ double MetainferenceBase::getEnergySPE(const vector<double> &mean, const vector<
   return kbt_ * ene;
 }
 
-double MetainferenceBase::getEnergyMIGEN(const vector<double> &mean, const vector<double> &ftilde, const vector<double> &sigma,
+double MetainferenceBase::getEnergyMIGEN(const std::vector<double> &mean, const std::vector<double> &ftilde, const std::vector<double> &sigma,
     const double scale, const double offset)
 {
   double ene = 0.0;
@@ -739,7 +758,7 @@ double MetainferenceBase::getEnergyMIGEN(const vector<double> &mean, const vecto
   return kbt_ * ene;
 }
 
-double MetainferenceBase::getEnergyGJ(const vector<double> &mean, const vector<double> &sigma,
+double MetainferenceBase::getEnergyGJ(const std::vector<double> &mean, const std::vector<double> &sigma,
                                       const double scale, const double offset)
 {
   const double scale2  = scale*scale;
@@ -765,7 +784,7 @@ double MetainferenceBase::getEnergyGJ(const vector<double> &mean, const vector<d
   return kbt_ * ene;
 }
 
-double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
+double MetainferenceBase::getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                                        const double scale, const double offset)
 {
   const double scale2 = scale*scale;
@@ -789,15 +808,15 @@ double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<
   return kbt_ * ene;
 }
 
-void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveTilde(const std::vector<double> &mean_, double old_energy)
 {
-  vector<double> new_ftilde(sigma_.size());
+  std::vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
 
   // change all tildes
   for(unsigned j=0; j<sigma_.size(); j++) {
     const double r3 = random[0].Gaussian();
-    const double ds3 = Dftilde_*sqrt(sigma_mean2_[j])*r3;
+    const double ds3 = Dftilde_*std::sqrt(sigma_mean2_[j])*r3;
     new_ftilde[j] = ftilde_[j] + ds3;
   }
   // calculate new energy
@@ -813,7 +832,7 @@ void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy
     // otherwise extract random number
   } else {
     const double s = random[0].RandU01();
-    if( s < exp(-delta) ) {
+    if( s < std::exp(-delta) ) {
       old_energy = new_energy;
       ftilde_ = new_ftilde;
       MCacceptFT_++;
@@ -821,7 +840,7 @@ void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy
   }
 }
 
-void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveScaleOffset(const std::vector<double> &mean_, double old_energy)
 {
   double new_scale = scale_;
 
@@ -835,7 +854,7 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
       if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
     } else {
       const double r1 = random[1].Gaussian();
-      const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*exp(1)/M_PI*r1;
+      const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*std::exp(1)/M_PI*r1;
       new_scale += ds1;
     }
   }
@@ -852,7 +871,7 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
       if(new_offset < offset_min_) {new_offset = 2.0 * offset_min_ - new_offset;}
     } else {
       const double r1 = random[1].Gaussian();
-      const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*exp(1)/M_PI*r1;
+      const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*std::exp(1)/M_PI*r1;
       new_offset += ds1;
     }
   }
@@ -879,7 +898,7 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
   }
 
   // for the scale/offset we need to consider the total energy
-  vector<double> totenergies(2);
+  std::vector<double> totenergies(2);
   if(master) {
     totenergies[0] = old_energy;
     totenergies[1] = new_energy;
@@ -901,7 +920,7 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
     // otherwise extract random number
   } else {
     double s = random[1].RandU01();
-    if( s < exp(-delta) ) {
+    if( s < std::exp(-delta) ) {
       old_energy = new_energy;
       scale_ = new_scale;
       offset_ = new_offset;
@@ -910,9 +929,9 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
   }
 }
 
-void MetainferenceBase::moveSigmas(const vector<double> &mean_, double old_energy, const unsigned i, const vector<unsigned> &indices, bool breaknow)
+void MetainferenceBase::moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow)
 {
-  vector<double> new_sigma(sigma_.size());
+  std::vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;
 
   // change MCchunksize_ sigmas
@@ -984,7 +1003,7 @@ void MetainferenceBase::moveSigmas(const vector<double> &mean_, double old_energ
     // otherwise extract random number
   } else {
     const double s = random[0].RandU01();
-    if( s < exp(-delta) ) {
+    if( s < std::exp(-delta) ) {
       old_energy = new_energy;
       sigma_ = new_sigma;
       MCaccept_++;
@@ -992,7 +1011,7 @@ void MetainferenceBase::moveSigmas(const vector<double> &mean_, double old_energ
   }
 }
 
-double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
+double MetainferenceBase::doMonteCarlo(const std::vector<double> &mean_)
 {
   // calculate old energy with the updated coordinates
   double old_energy=0.;
@@ -1018,8 +1037,8 @@ double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
   // do not run MC if this is a replica-exchange trial
   if(!getExchangeStep()) {
 
-    // Create vector of random sigma indices
-    vector<unsigned> indices;
+    // Create std::vector of random sigma indices
+    std::vector<unsigned> indices;
     if (MCchunksize_ > 0) {
       for (unsigned j=0; j<sigma_.size(); j++) {
         indices.push_back(j);
@@ -1078,13 +1097,13 @@ double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
    in the Monte-Carlo
 */
 
-void MetainferenceBase::getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x,
-    const vector<double> &dmean_b)
+void MetainferenceBase::getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x,
+    const std::vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   const double sm2    = sigma_mean2_[0];
   const double ss2    = sigma_[0]*sigma_[0] + scale2*sm2;
-  vector<double> f(narg,0);
+  std::vector<double> f(narg,0);
 
   if(master) {
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -1093,7 +1112,7 @@ void MetainferenceBase::getEnergyForceSP(const vector<double> &mean, const vecto
       for(unsigned i=0; i<narg; ++i) {
         const double dev = scale_*mean[i]-parameters[i]+offset_;
         const double a2 = 0.5*dev*dev + ss2;
-        const double t = exp(-a2/sm2);
+        const double t = std::exp(-a2/sm2);
         const double dt = 1./t;
         const double dit = 1./(1.-dt);
         f[i] = -scale_*dev*(dit/sm2 + 1./a2);
@@ -1117,11 +1136,11 @@ void MetainferenceBase::getEnergyForceSP(const vector<double> &mean, const vecto
   }
 }
 
-void MetainferenceBase::getEnergyForceSPE(const vector<double> &mean, const vector<double> &dmean_x,
-    const vector<double> &dmean_b)
+void MetainferenceBase::getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x,
+    const std::vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
-  vector<double> f(narg,0);
+  std::vector<double> f(narg,0);
 
   if(master) {
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -1132,7 +1151,7 @@ void MetainferenceBase::getEnergyForceSPE(const vector<double> &mean, const vect
         const double ss2 = sigma_[i]*sigma_[i] + scale2*sm2;
         const double dev = scale_*mean[i]-parameters[i]+offset_;
         const double a2  = 0.5*dev*dev + ss2;
-        const double t   = exp(-a2/sm2);
+        const double t   = std::exp(-a2/sm2);
         const double dt  = 1./t;
         const double dit = 1./(1.-dt);
         f[i] = -scale_*dev*(dit/sm2 + 1./a2);
@@ -1155,8 +1174,8 @@ void MetainferenceBase::getEnergyForceSPE(const vector<double> &mean, const vect
   }
 }
 
-void MetainferenceBase::getEnergyForceGJ(const vector<double> &mean, const vector<double> &dmean_x,
-    const vector<double> &dmean_b)
+void MetainferenceBase::getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x,
+    const std::vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
   double inv_s2=0.;
@@ -1185,11 +1204,11 @@ void MetainferenceBase::getEnergyForceGJ(const vector<double> &mean, const vecto
   }
 }
 
-void MetainferenceBase::getEnergyForceGJE(const vector<double> &mean, const vector<double> &dmean_x,
-    const vector<double> &dmean_b)
+void MetainferenceBase::getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x,
+    const std::vector<double> &dmean_b)
 {
   const double scale2 = scale_*scale_;
-  vector<double> inv_s2(sigma_.size(),0.);
+  std::vector<double> inv_s2(sigma_.size(),0.);
 
   if(master) {
     for(unsigned i=0; i<sigma_.size(); ++i) inv_s2[i] = 1./(sigma_[i]*sigma_[i] + scale2*sigma_mean2_[i]);
@@ -1215,11 +1234,11 @@ void MetainferenceBase::getEnergyForceGJE(const vector<double> &mean, const vect
   }
 }
 
-void MetainferenceBase::getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b)
+void MetainferenceBase::getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b)
 {
-  vector<double> inv_s2(sigma_.size(),0.);
-  vector<double> dev(sigma_.size(),0.);
-  vector<double> dev2(sigma_.size(),0.);
+  std::vector<double> inv_s2(sigma_.size(),0.);
+  std::vector<double> dev(sigma_.size(),0.);
+  std::vector<double> dev2(sigma_.size(),0.);
 
   for(unsigned i=0; i<sigma_.size(); ++i) {
     inv_s2[i]   = 1./sigma_mean2_[i];
@@ -1261,7 +1280,7 @@ void MetainferenceBase::get_weights(double &fact, double &var_fact)
 
   // calculate the weights either from BIAS
   if(do_reweight_) {
-    vector<double> bias(nrep_,0);
+    std::vector<double> bias(nrep_,0);
     if(master) {
       bias[replica_] = getArgument(0);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
@@ -1270,7 +1289,7 @@ void MetainferenceBase::get_weights(double &fact, double &var_fact)
 
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<nrep_; ++i) {
-      bias[i] = exp((bias[i]-maxbias)/kbt_);
+      bias[i] = std::exp((bias[i]-maxbias)/kbt_);
       norm   += bias[i];
     }
 
@@ -1301,21 +1320,21 @@ void MetainferenceBase::get_weights(double &fact, double &var_fact)
   }
 }
 
-void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact, const vector<double> &mean)
+void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean)
 {
   const double dnrep    = static_cast<double>(nrep_);
   const double ave_fact = 1.0/dnrep;
 
-  vector<double> sigma_mean2_tmp(sigma_mean2_.size());
+  std::vector<double> sigma_mean2_tmp(sigma_mean2_.size());
 
   if(do_optsigmamean_>0) {
-    // remove first entry of the history vector
+    // remove first entry of the history std::vector
     if(sigma_mean2_last_[iselect][0].size()==optsigmamean_stride_&&optsigmamean_stride_>0)
       for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[iselect][i].erase(sigma_mean2_last_[iselect][i].begin());
     /* this is the current estimate of sigma mean for each argument
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
-    vector<double> sigma_mean2_now(narg,0);
+    std::vector<double> sigma_mean2_now(narg,0);
     if(do_reweight_) {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
@@ -1348,42 +1367,59 @@ void MetainferenceBase::get_sigma_mean(const double fact, const double var_fact,
 
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
-        /* set to the maximum in history vector */
+        /* set to the maximum in history std::vector */
         sigma_mean2_tmp[i] = *max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end());
         /* the standard error of the mean */
-        valueSigmaMean[i]->set(sqrt(sigma_mean2_tmp[i]));
+        valueSigmaMean[i]->set(std::sqrt(sigma_mean2_tmp[i]));
         if(noise_type_==GENERIC) {
-          sigma_min_[i] = sqrt(sigma_mean2_tmp[i]);
+          sigma_min_[i] = std::sqrt(sigma_mean2_tmp[i]);
           if(sigma_[i] < sigma_min_[i]) sigma_[i] = sigma_min_[i];
         }
       }
     } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       // find maximum for each data point
-      vector <double> max_values;
+      std::vector <double> max_values;
       for(unsigned i=0; i<narg; ++i) max_values.push_back(*max_element(sigma_mean2_last_[iselect][i].begin(), sigma_mean2_last_[iselect][i].end()));
       // find maximum across data points
       const double max_now = *max_element(max_values.begin(), max_values.end());
       // set new value
       sigma_mean2_tmp[0] = max_now;
-      valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
+      valueSigmaMean[0]->set(std::sqrt(sigma_mean2_tmp[0]));
     }
-    // endif sigma optimization
+    // endif sigma mean optimization
+    // start sigma max optimization
+    if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
+      for(unsigned i=0; i<sigma_max_.size(); i++) {
+        sigma_max_est_[i] += std::sqrt(sigma_mean2_tmp[i]);
+        // ready to set once and for all the value of sigma_max
+        if(optimized_step_==N_optimized_step_) {
+          double isteps = 1./static_cast<double>(optimized_step_);
+          sigmamax_opt_done_=true;
+          for(unsigned i=0; i<sigma_max_.size(); i++) {
+            sigma_max_[i]=sigma_max_est_[i]*isteps*std::sqrt(dnrep);
+            Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+          }
+        }
+      }
+      optimized_step_++;
+    }
+    // end sigma max optimization
   } else {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
         sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i][0];
-        valueSigmaMean[i]->set(sqrt(sigma_mean2_tmp[i]));
+        valueSigmaMean[i]->set(std::sqrt(sigma_mean2_tmp[i]));
       }
     } else if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       sigma_mean2_tmp[0] = sigma_mean2_last_[iselect][0][0];
-      valueSigmaMean[0]->set(sqrt(sigma_mean2_tmp[0]));
+      valueSigmaMean[0]->set(std::sqrt(sigma_mean2_tmp[0]));
     }
   }
 
   sigma_mean2_ = sigma_mean2_tmp;
 }
 
-void MetainferenceBase::replica_averaging(const double fact, vector<double> &mean, vector<double> &dmean_b)
+void MetainferenceBase::replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b)
 {
   if(master) {
     for(unsigned i=0; i<narg; ++i) mean[i] = fact*calc_data_[i];
@@ -1397,7 +1433,7 @@ void MetainferenceBase::replica_averaging(const double fact, vector<double> &mea
   if(firstTime) {ftilde_ = mean; firstTime = false;}
 }
 
-void MetainferenceBase::do_regression_zero(const vector<double> &mean)
+void MetainferenceBase::do_regression_zero(const std::vector<double> &mean)
 {
 // parameters[i] = scale_ * mean[i]: find scale_ with linear regression
   double num = 0.0;
@@ -1422,11 +1458,11 @@ double MetainferenceBase::getScore()
   get_weights(fact, var_fact);
 
   /* 2) calculate average */
-  vector<double> mean(getNarg(),0);
+  std::vector<double> mean(getNarg(),0);
   // this is the derivative of the mean with respect to the argument
-  vector<double> dmean_x(getNarg(),fact);
+  std::vector<double> dmean_x(getNarg(),fact);
   // this is the derivative of the mean with respect to the bias
-  vector<double> dmean_b(getNarg(),0);
+  std::vector<double> dmean_b(getNarg(),0);
   // calculate it
   replica_averaging(fact, mean, dmean_b);
 
@@ -1470,13 +1506,13 @@ void MetainferenceBase::writeStatus()
   for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
     std::string msg_i,msg_j;
     Tools::convert(i,msg_i);
-    vector <double> max_values;
+    std::vector <double> max_values;
     //narg
     for(unsigned j=0; j<narg; ++j) {
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        sfile_.printField("sigmaMean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+        sfile_.printField("sigmaMean_"+msg,std::sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
       } else {
         // find maximum for each data point
         max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
@@ -1484,7 +1520,7 @@ void MetainferenceBase::writeStatus()
     }
     if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       // find maximum across data points
-      const double max_now = sqrt(*max_element(max_values.begin(), max_values.end()));
+      const double max_now = std::sqrt(*max_element(max_values.begin(), max_values.end()));
       Tools::convert(0,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       sfile_.printField("sigmaMean_"+msg, max_now);
@@ -1494,6 +1530,11 @@ void MetainferenceBase::writeStatus()
     std::string msg;
     Tools::convert(i,msg);
     sfile_.printField("sigma_"+msg,sigma_[i]);
+  }
+  for(unsigned i=0; i<sigma_max_.size(); ++i) {
+    std::string msg;
+    Tools::convert(i,msg);
+    sfile_.printField("sigma_max_"+msg,sigma_max_[i]);
   }
   if(noise_type_==GENERIC) {
     for(unsigned i=0; i<ftilde_.size(); ++i) {

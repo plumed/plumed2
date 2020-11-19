@@ -431,7 +431,7 @@ PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 \endverbatim
 (see \ref TORSION, \ref METAD, and \ref PRINT).
 
-Let's look at the HILLS file, in particular at the time serie of the CV psi and of the
+Let's look at the HILLS file, in particular at the time series of the CV psi and of the
 Gaussian height.
 
 \anchor belfast-6-phialone-fig

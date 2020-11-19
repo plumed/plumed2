@@ -40,8 +40,8 @@ class ERMSD {
   //std::map< std::pair <unsigned,unsigned> , double> targets;
   //unsigned natoms;
   std::vector<Vector4d> reference_mat;
-  unsigned natoms;
-  unsigned nresidues;
+  size_t natoms;
+  size_t nresidues;
   std::vector<std::pair <unsigned,unsigned> > pairs;
   double cutoff;
 

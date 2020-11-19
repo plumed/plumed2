@@ -1,3 +1,5 @@
 r1: READ VALUES=p2.X  FILE=input_colvar 
-r2: READ VALUES=p3.* FILE=input_colvar 
+r2: READ VALUES=p3.* FILE=input_colvar
 PRINT ARG=r1.*,r2.* STRIDE=1000 FILE=colvar FMT=%8.4f
+r3: READ VALUES=p2.X  FILE=input_colvar2 EVERY=2 IGNORE_TIME
+PRINT ARG=r3.X FILE=colvar2

@@ -45,7 +45,7 @@ SketchMapBase::SketchMapBase( const ActionOptions& ao ):
   std::string linput,hinput, errors;
   parse("HIGH_DIM_FUNCTION",hinput);
   if( hinput=="as in input action" ) {
-    if( !smapbase ) error("high dimensional switching funciton has not been set - use HIGH_DIM_FUNCTION");
+    if( !smapbase ) error("high dimensional switching function has not been set - use HIGH_DIM_FUNCTION");
     reuse_hd=true;
     log.printf("  reusing high dimensional filter function defined in previous sketch-map action\n");
   } else {
@@ -57,7 +57,7 @@ SketchMapBase::SketchMapBase( const ActionOptions& ao ):
 
   parse("LOW_DIM_FUNCTION",linput);
   if( linput=="as in input action" ) {
-    if( !smapbase ) error("low dimensional switching funciton has not been set - use LOW_DIM_FUNCTION");
+    if( !smapbase ) error("low dimensional switching function has not been set - use LOW_DIM_FUNCTION");
     reuse_ld=true;
     log.printf("  reusing low dimensional filter function defined in previous sketch-map action\n");
   } else {

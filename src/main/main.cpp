@@ -27,8 +27,6 @@
 #include <mpi.h>
 #endif
 
-using namespace std;
-
 /**
   This main uses only the interface published in
   Plumed.h. The object file generated from this .cpp
