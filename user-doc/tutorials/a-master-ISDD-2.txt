@@ -312,7 +312,7 @@ In addition, set hills height to zero and the pace to a large number.
 This will actually avoid adding new hills (and even if they are added they will have
 zero height). Finally, change the \ref PRINT statement so that you
 write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
-you also write `metad.bias`.
+you also write `metad.bias`. You can also change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
 __FILL__ # here goes the definitions of the CVs
@@ -331,17 +331,17 @@ metad: __FILL__ ARG=__FILL__ ...
   RESTART=YES # <- this is the new stuff!
 ...
 
-PRINT ARG=phi,psi,metad.bias FILE=COLVAR STRIDE=1  # <- also change this one!
+PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
 Then run the driver using this command
 \verbatim
-> plumed driver --ixtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339
+> plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
 \endverbatim
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was taken from the MD code.
 
-As a result, PLUMED will produce a new COLVAR file with an additional column. The beginning
+As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with an additional column. The beginning
 of the file should look like this:
 \verbatim
 #! FIELDS time phi psi metad.bias
@@ -357,17 +357,17 @@ of the file should look like this:
 
 The last column will give as, in energy units, the logarithm of the weight of each frame.
 You can easily obtain the weight of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
-(umbrella-sampling-like reweighting). You might want to read the `COLVAR` file in python and compute a weighted histogram.
+(umbrella-sampling-like reweighting). You might want to read the `COLVAR_REWEIGHT` file in python and compute a weighted histogram.
 
-If you want PLUMED to do the histograms for you, you can just add the following
+If you want PLUMED to do the histograms for you, you can add the following
 lines to the `plumed_reweight.dat` PLUMED input file:
 
 \plumedfile
 # use the metadynamics bias as argument
 as: REWEIGHT_BIAS ARG=__FILL__
 
-hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
-hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 
@@ -378,9 +378,16 @@ DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 and plot the result using gnuplot.
 
 \verbatim
-gnuplot> p "ffphi.dat"
-gnuplot> p "ffpsi.dat"
+gnuplot> p "ffphi.dat" u 1:2 w lp
+gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
+
+You can also compare the free energy as a function of \f$ \phi \f$ calculated directly from the metadynamics
+bias potential using \ref sum_hills and using the reweighting procedure introduced in this exercise (see Fig. \ref master-ISDD-2-fescomp-fig).
+
+\anchor master-ISDD-2-fescomp-fig
+\image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
+ 
 
 \subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free-energies using block-analysis
 
