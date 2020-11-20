@@ -426,7 +426,7 @@ metadynamics simulation:
 \endverbatim  
 
 At this point we can apply the block-analysis technique (for more info about the theory, 
-have a look at the \ref trieste-2 tutorial) to calculate the average free-energy across the blocks
+have a look at the \ref trieste-2) to calculate the average free-energy across the blocks
 and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
 script to read the `phi.weight` file and produce the desired output.
 We use a bash loop to test block sizes ranging from 1 to 1000:
