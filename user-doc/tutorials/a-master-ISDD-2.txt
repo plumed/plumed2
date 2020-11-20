@@ -221,6 +221,9 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
+\warning The fact that the Gaussian height is decreasing to zero should not be used as a measure of convergence
+of your metadynamics simulation!
+
 \subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy as a function of the metadynamics CVs 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
@@ -249,7 +252,7 @@ The result should look like this:
 \anchor master-ISDD-2-metad-phifes-fig
 \image html munster-metad-phifes.png "Estimate of the free energy as a function of the dihedral phi from a 10ns-long well-tempered metadynamics simulation."
 
-To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
+To give a preliminary assessment of the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
 The option \-\-stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
 the option \-\-mintozero can be used to align the profiles by setting the global minimum to zero.
@@ -269,12 +272,9 @@ These two qualitative observations:
 - the system is diffusing efficiently in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
 - the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
-suggest that the simulation most likely converged. 
+suggest that the simulation might be converged. 
 
-\warning The fact that the Gaussian height is decreasing to zero should not be used as a measure of convergence
-of your metadynamics simulation!
-
-\note The two observations above are necessary, but qualitative, not sufficient conditions for convergence.
+\warning The two observations above are necessary, but they are qualitative (not sufficient) conditions for convergence.
 For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4. 
 
 \subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
