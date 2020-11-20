@@ -115,7 +115,8 @@ We will play with a toy system, alanine dipeptide simulated in vacuo using the A
 force field (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
 This system is a nice example because it presents two metastable states separated by a high free-energy barrier.
-It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref master-ISDD-2-transition-fig.
+It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \phi \f$ 
+(phi) and \f$ \psi \f$ (psi) in Fig. \ref master-ISDD-2-transition-fig.
 
 \anchor master-ISDD-2-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
@@ -175,7 +176,7 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed, PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command
+Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
 \verbatim
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
@@ -284,7 +285,7 @@ the same variable directly from the metadynamics bias potential using the utilit
 However, in many cases you might decide which variable should be analyzed _after_
 having performed a metadynamics simulation. For example,
 you might want to calculate the free energy as a function of collective variables other than those
-biased during the metadynamics simulation.
+biased during the metadynamics simulation, such as the dihedral \f$ \psi \f$.
 At variance with standard MD simulations, you cannot simply calculate histograms of other variables from your metadynamics trajectory, 
 because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
 To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
@@ -456,8 +457,8 @@ What can we learn from this analysis about the convergence of the metadynamics s
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Setup and run a metadynamics calculation.
 - Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
-- Reweight a metadynamics simulation 
-- Calculate errors and assess convergence
+- Reweight a metadynamics simulation. 
+- Calculate errors and assess convergence.
 
 */
 
