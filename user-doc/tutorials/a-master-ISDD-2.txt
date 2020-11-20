@@ -274,9 +274,8 @@ suggest that the simulation most likely converged.
 \warning The fact that the Gaussian height is decreasing to zero should not be used as a measure of convergence
 of your metadynamics simulation!
 
-\note The two observations above are necessary, but qualitative conditions for convergence.
-For a quantitative analysis, please have a look at one of our tutorials about error analysis, such as 
-\ref trieste-4 , or wait for \ref master-ISDD-2-ex-4. 
+\note The two observations above are necessary, but qualitative, not sufficient conditions for convergence.
+For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4. 
 
 \subsection master-ISDD-2-ex-3 Exercise 3: reweighting
 
