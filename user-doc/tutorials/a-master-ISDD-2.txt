@@ -125,7 +125,7 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 
 \section master-ISDD-2-ex Exercises
 
-\subsection master-ISDD-2-ex-1 Exercise 1: my first metadynamics calculation
+\subsection master-ISDD-2-ex-1 Exercise 1: My first metadynamics calculation
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -221,7 +221,7 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-\subsection master-ISDD-2-ex-2 Exercise 2: estimating the free energy 
+\subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
@@ -277,7 +277,7 @@ of your metadynamics simulation!
 \note The two observations above are necessary, but qualitative, not sufficient conditions for convergence.
 For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-2-ex-3 Exercise 3: reweighting
+\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting
 
 In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
 the same variable. Many times you want to decide which variable you want to analyze _after_
@@ -374,7 +374,7 @@ gnuplot> p "ffphi.dat"
 gnuplot> p "ffpsi.dat"
 \endverbatim
 
-\subsection master-ISDD-2-ex-4 Exercise 4: estimating the error in free-energies using block-analysis
+\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free-energies using block-analysis
 
 In the previous exercise, we calculated the final bias on the entire metadynamics simulations and we used
 this quantity to reweight the (biased) simulation. The same quantity is useful to calculate the error in 
