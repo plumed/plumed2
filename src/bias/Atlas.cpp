@@ -260,16 +260,13 @@ ActionShortcut(ao)
     std::string num; Tools::convert( k+1, num );
     if( neigv[k]==0 ) {
       cvs_str += getShortcutLabel() + "_pdist-" + num + ",";
-      //readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_nwtfact" + " FUNC=exp(x)");
     } else {
       for(unsigned i=0;i<neigv[k];++i) {
         std::string eignum; Tools::convert( i+1, eignum );
         cvs_str +=  getShortcutLabel() + "_proj" + eignum + "-" + num + ",";
-        //
       }
       if( resid[k] ) {
         cvs_str +=  getShortcutLabel() + "_resid-" + num + ",";
-        //readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_nwtfact" + " FUNC=exp(x)");
       }
     }
   }
