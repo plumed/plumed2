@@ -163,18 +163,18 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
 
 The syntax for the command \ref METAD is simple.
-The directive is followed by a keyword ARG followed by the labels of the CVs
+The directive is followed by a keyword `ARG` followed by the labels of the CVs
 on which the metadynamics potential will act.
-The keyword PACE determines the stride of Gaussian deposition in number of time steps,
-while the keyword HEIGHT specifies the height of the Gaussian in kJ/mol. For each CVs, one has
-to specify the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
-to the file indicated by the keyword FILE.
+The keyword `PACE` determines the stride of Gaussian deposition in number of time steps,
+while the keyword `HEIGHT` specifies the height of the Gaussian in kJ/mol. For each CVs, one has
+to specify the width of the Gaussian by using the keyword `SIGMA`. Gaussian will be written
+to the file indicated by the keyword `FILE`.
 
-In this example, the bias potential will be stored on a grid, whose boundaries are specified by the keywords GRID_MIN and GRID_MAX.
-Notice that you can provide either the number of bins for every collective variable (GRID_BIN) or
-the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+In this example, the bias potential will be stored on a grid, whose boundaries are specified by the keywords `GRID_MIN` and `GRID_MAX`.
+Notice that you can provide either the number of bins for every collective variable (`GRID_BIN`) or
+the desired grid spacing (`GRID_SPACING`). In case you provide both PLUMED will use
 the most conservative choice (highest number of bins) for each dimension.
-In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+In case you do not provide any information about bin size (neither `GRID_BIN` nor `GRID_SPACING`)
 and if Gaussian width is fixed, PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
@@ -184,10 +184,10 @@ Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics s
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
 
-During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
-The COLVAR file contains all the information specified by the PRINT command, in this case
+During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
+The `COLVAR` file contains all the information specified by the \ref PRINT command, in this case
 the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics bias potential. 
-We can use `gnuplot` to visualize the behavior of the CV during the simulation, as reported in the COLVAR file:
+We can use `gnuplot` to visualize the behavior of the CV during the simulation, as reported in the `COLVAR` file:
 
 \verbatim
 gnuplot> p "COLVAR" u 1:2
@@ -212,9 +212,9 @@ If we give a look at the header of this file, we can find relevant information a
 #! SET max_phi pi
 \endverbatim 
 
-The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
+The line starting with `FIELDS` tells us what is displayed in the various columns of the `HILLS` file:
 the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width and height, and the bias factor. 
-We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
+We can use the `HILLS` file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
 \anchor master-ISDD-2-phihills-fig
@@ -232,7 +232,7 @@ of your metadynamics simulation!
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
-deposited during the simulation and stored in the HILLS file.  
+deposited during the simulation and stored in the `HILLS` file.  
 To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
 
 \verbatim
@@ -298,9 +298,9 @@ There are multiple ways to calculate the correct
 statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
 Two of these approaches are:
 
-- Weights are calculated by considering the time-dependence of the metadynamics bias
+1. Weights are calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
-- Weights are calculated using the metadynamics bias potential obtained at the end of the
+2. Weights are calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
 In this exercise we will use the second method, which resembles the umbrella-sampling-like reweighting approach.
@@ -336,7 +336,7 @@ metad: __FILL__ ARG=__FILL__ ...
 PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
-Then run the driver using this command
+Then run the \ref driver using this command
 
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 

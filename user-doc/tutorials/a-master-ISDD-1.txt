@@ -112,7 +112,7 @@ whose value is specified. Action names are highlighted in green and, clicking on
 corresponding page in the manual that contains a detailed description for each keyword.
 Actions that support the keyword `STRIDE` are those that determine how frequently things are to be done.
 Notice that the default value for `STRIDE` is always 1. In the example above, omitting `STRIDE` keywords
-the corresponding COLVAR files would have been written for every frame of the analyzed trajectory.
+the corresponding `COLVAR` files would have been written for every frame of the analyzed trajectory.
 All the other actions in the example above do not 
 support the `STRIDE` keyword and are only calculated when requested. That is, `d` will be computed
 every 10 frames, and `phi1` and `phi2` every 100 frames.
@@ -156,9 +156,9 @@ wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz
 \endverbatim
 
 The archive contains the following files:
-- GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
-- traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
-- traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
+- `GB1_native.pdb` : A PDB file with the native structure of the GB1 protein.
+- `traj-whole.xtc` : A trajectory in `xtc` format. To make the exercise easier, GB1 has been made whole already.
+- `traj-broken.xtc` : The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
 
 The archive can be unpacked using the following command:
 
@@ -174,12 +174,11 @@ This tutorial has been tested with PLUMED version 2.6.2.
 
 In this exercise, we will make practice with computing and printing collective variables.
 To analyze the trajectories provided here, you should:
-- Create a PLUMED input file with a text editor (let us call it `plumed.dat`) similar to the one above.
-- Run the command `plumed driver` command (see below)
+- Create a PLUMED input file with a text editor (let us call it `plumed.dat`) similar to the one above;
+- Run the command `plumed driver` (see below).
 
 Notice that you can also visualize trajectories with VMD directly. 
-For example, the trajectory `traj-whole.xtc` can be visualized with
-the command:
+For example, the trajectory `traj-whole.xtc` can be visualized with the command:
 
 \verbatim
 vmd GB1_native.pdb traj-whole.xtc
@@ -258,7 +257,7 @@ the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see Fig. \re
 \anchor master-ISDD-1-dih-fig
 \image html master-ISDD-1-dih-fig.png "Definition of backbone dihedral angles phi and psi."
 
-After consulting the manual and inspecting GB1_native.pdb, let's define the dihedral angle phi of residue 2 
+After consulting the manual and inspecting `GB1_native.pdb`, let's define the dihedral angle phi of residue 2 
 in two different ways: using the \ref MOLINFO shortcut and with an explicit list of 4 atoms.
 
 \plumedfile
@@ -304,16 +303,16 @@ PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR
 
 The file above instructs PLUMED to:
 
-1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 8;
-2. calculate the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 427 to 436;
-3. calculate the distance between the two Virtual Atoms 'first' and 'last' and saves it in 'd1';
-4. calculate the distance (ignoring periodic boundary conditions) between the two Virtual Atom 'first' and 'last' and saves it in 'd2';
-5. print the content of 'd1' and 'd2' in the file COLVAR for every frame of the trajectory
+1. calculate the position of the virtual atom `first` as the \ref CENTER of atoms from 1 to 8;
+2. calculate the position of the virtual atom `last` as the \ref CENTER of atoms from 427 to 436;
+3. calculate the distance between the two virtual atoms `first` and `last` and saves it in `d1`;
+4. calculate the distance (ignoring periodic boundary conditions) between the two virtual atom `first` and `last` and saves it in `d2`;
+5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory
 
 Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
 
-1. ATOMS=1,2,3,4,5,6,7,8 is the explicit list of the atoms we need
-2. ATOMS=427-436 is the range of atoms needed
+1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need
+2. `ATOMS=427-436` is the range of atoms needed
 
 Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
 by making use of the following command:
