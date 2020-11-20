@@ -284,14 +284,7 @@ d2: DISTANCE ATOMS=first,last NOPBC
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
-Make a PLUMED input containing the above input and execute it on the trajectory `traj-broken.xtc` by making use of the following command:
-
-\verbatim
-plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
-\endverbatim
-
-Before we turn to analyzing the output of this calculation, there are a few things to note about the input file.  Let's examine what this file
-instructs PLUMED to do. It tells PLUMED to:
+The file above instructs PLUMED to:
 
 1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 8;
 2. calculate the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 427 to 436;
@@ -308,6 +301,13 @@ Notice also that ranges of atoms can be defined with a stride which can also be 
 
 3. ATOMS=from,to:by (i.e.: 427-436:2)
 4. ATOMS=to,from:-by (i.e.: 436-427:-2)
+
+Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
+by making use of the following command:
+
+\verbatim
+plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
+\endverbatim
 
 Let's now analyze the output of the calculation by plotting the time series of the two CVs.
 Are they identical? What do you think is happening in those frames in which the two CVs are different?
