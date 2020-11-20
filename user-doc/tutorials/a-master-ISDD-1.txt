@@ -18,7 +18,7 @@ Once this tutorial is completed, students will be able to:
 
 \section master-ISDD-1-install Software overview
 
-In this tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
+In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use.
  
 Let's have a look at PLUMED. PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
