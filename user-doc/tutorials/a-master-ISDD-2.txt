@@ -274,8 +274,8 @@ These two qualitative observations:
 
 suggest that the simulation might be converged. 
 
-\warning The two observations above are necessary, but they are qualitative (not sufficient) conditions for convergence.
-For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4. 
+\warning The two conditions listed above are necessary, but only qualitative, not sufficient for convergence.
+For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
 
 \subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
 
