@@ -292,8 +292,8 @@ To remove the effect of this bias and thus be able to calculate properties of th
 you must reweight (or unbias) your simulation.
 
 There are multiple ways to calculate the correct
-statistical weight of each frame in your trajectory and thus reweight your metadynamics simulation. 
-In order to calculate these weights, we can use either of these two approaches:
+statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
+Two of these approaches are:
 
 1) Weights are calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
@@ -301,18 +301,18 @@ In order to calculate these weights, we can use either of these two approaches:
 2) Weights are calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the umbrella-sampling-like reweighting approach (Method 2).
+In this exercise we will use the second method, which resembles the umbrella-sampling-like reweighting approach.
 In order to compute the weights we will use the \ref driver tool.
 
-First of all, prepare a `plumed_reweight.dat` file that is identical to the one you used
+First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
 for running your simulation but add the keyword `RESTART=YES` to the \ref METAD command.
 This will make this action behave as if PLUMED was restarting. It will thus
-read the already accumulated hills and continue adding more.
-In addition, set hills height to zero and the pace to a large number.
-This will actually avoid adding new hills (and even if they are added they will have
+read the already accumulated Gaussians and continue adding more.
+In addition, set the Gaussian height to zero and the pace to a large number.
+This will actually avoid adding new Gaussians (and even if they are added they will have
 zero height). Finally, change the \ref PRINT statement so that you
 write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
-you also write `metad.bias`. You can also change the name of the output file to `COLVAR_REWEIGHT`.
+you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
 __FILL__ # here goes the definitions of the CVs
@@ -341,8 +341,9 @@ Then run the driver using this command
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was taken from the MD code.
 
-As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with an additional column. The beginning
-of the file should look like this:
+As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
+metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
+The beginning of the file should look like this:
 \verbatim
 #! FIELDS time phi psi metad.bias
 #! SET min_phi -pi
@@ -355,22 +356,26 @@ of the file should look like this:
  3.000000 -1.475975 1.279726 110.752327
 \endverbatim
 
-The last column will give as, in energy units, the logarithm of the weight of each frame.
-You can easily obtain the weight of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
-(umbrella-sampling-like reweighting). You might want to read the `COLVAR_REWEIGHT` file in python and compute a weighted histogram.
-
-If you want PLUMED to do the histograms for you, you can add the following
-lines to the `plumed_reweight.dat` PLUMED input file:
+You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
+(umbrella-sampling-like reweighting). Now, you can read the `COLVAR_REWEIGHT` file using a python script, for example, and compute a weighted histogram.
+Alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
+lines at the end of the `plumed_reweight.dat` file:
 
 \plumedfile
 # use the metadynamics bias as argument
 as: REWEIGHT_BIAS ARG=__FILL__
 
+# calculate histograms of phi and psi dihedrals every 50 steps
+# using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
+# look at the manual to understand the parameters of the HISTOGRAM action!
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
+
+# convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 
+# print free energies F(s) to file when all the trajectory is processed 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 \endplumedfile
@@ -382,8 +387,9 @@ gnuplot> p "ffphi.dat" u 1:2 w lp
 gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
 
-You can also compare the free energy as a function of \f$ \phi \f$ calculated directly from the metadynamics
-bias potential using \ref sum_hills and using the reweighting procedure introduced in this exercise (see Fig. \ref master-ISDD-2-fescomp-fig).
+You can also compare the free energy as a function of \f$ \phi \f$ calculated:
+- directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
+- using the reweighting procedure introduced in this exercise (see Fig. \ref master-ISDD-2-fescomp-fig).
 
 \anchor master-ISDD-2-fescomp-fig
 \image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
