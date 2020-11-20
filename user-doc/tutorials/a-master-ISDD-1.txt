@@ -39,7 +39,7 @@ plumed --help
 The output of this command is a list of tasks that PLUMED can perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
 tutorial we will mostly use PLUMED to analyze trajectories.  As such, most of the calculations we will perform will be 
-carried out using the driver tool.  Let's look at the options of PLUMED \ref driver by issuing the following command:  
+carried out using the \ref driver tool.  Let's look at the options of PLUMED \ref driver by issuing the following command:  
 
 \verbatim
 plumed driver --help
