@@ -279,13 +279,20 @@ For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4
 
 \subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
 
-In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
-the same variable. Many times you want to decide which variable you want to analyze _after_
-having performed a simulation. In order to do so you must reweight your simulation.
+In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
+the same variable directly from the metadynamics bias potential using the utility \ref sum_hills. 
+However, in many cases you might decide which variable should be analyzed _after_
+having performed a metadynamics simulation. For example,
+you might want to calculate the free energy as a function of collective variables other than those
+biased during the metadynamics simulation.
+At variance with standard MD simulations, you cannot simply calculate histograms of other variables from your metadynamics trajectory, 
+because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
+To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
+you must reweight (or unbias) your simulation.
 
-There are multiple ways to reweight a metadynamics simulations.
-In order to calculate these weights, we can use either of these
-two approaches:
+There are multiple ways to calculate the correct
+statistical weight of each frame in your trajectory and thus reweight your metadynamics simulation. 
+In order to calculate these weights, we can use either of these two approaches:
 
 1) Weights are calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
