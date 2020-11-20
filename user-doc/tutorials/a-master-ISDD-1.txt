@@ -4,47 +4,46 @@
 \section master-ISDD-1-aims Aims
 
 The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
-and print simple collective variables on a pre-calculated trajectory.
+and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
+(adapting a lot of material from other tutorials) for 
+the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
+at Universite' de Paris on November 25th, 2020.
 
 \section master-ISDD-1-lo Learning Outcomes
 
 Once this tutorial is completed, students will be able to:
 
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
-- Print collective variables such as distances.
-  (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
+- Print collective variables such as distances (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
-\section master-ISDD-1-install PLUMED installation and overview
+\section master-ISDD-1-install Software overview
 
-You can find detailed instructions about how to install PLUMED here:
+In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
+<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use.
 
-\verbatim
-https://github.com/plumed/conda
-\endverbatim
-
-Let's compile it together!
-
+\subsection master-ISDD-1-plumed PLUMED
+ 
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
-the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can, once PLUMED is compiled, run the PLUMED executable by issuing the command:
+Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
+the sampling in MD simulations. Additionally, PLUMED can be used as a standalone code for analyzing trajectories.
+If you are using the code in this way you can run the PLUMED executable by issuing the command:
 
 \verbatim
 plumed <instructions>
 \endverbatim
 
-Let's start by getting a feel for the range of calculations that we can use PLUMED to perform.  Issue the following command now:
+Let's start by getting a feel for the range of calculations that PLUMED can do. Issue the following command now:
 
 \verbatim
 plumed --help 
 \endverbatim
 
-What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
+The output of this command is a list of tasks that PLUMED can perform. There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
-tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
-using the driver tool.  Let's look at the options we can issue to PLUMED \ref driver by issuing the following command:  
+tutorial we will mostly use PLUMED to analyze trajectories.  As such, most of the calculations we will perform will be 
+carried out using the \ref driver tool.  Let's look at the options of PLUMED \ref driver by issuing the following command:  
 
 \verbatim
 plumed driver --help
@@ -54,12 +53,34 @@ As you can see we can do a number of things with PLUMED \ref driver. For all of 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
 
-\section master-ISDD-1-structure A first look to the PLUMED input file
+\subsection master-ISDD-1-gromacs GROMACS
 
-The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
-to analyze a conformational change or a chemical reaction. This can be done either on-the-fly during
-molecular dynamics or a posteriori, using PLUMED as a post-processing tool. 
-In both cases one, should create an input file with a specific PLUMED syntax. A sample input file is below:
+GROMACS is a molecular dynamics package mainly designed for simulations of proteins, lipids, and nucleic acids.
+More info can be found <a href="http://www.gromacs.org">here</a>.
+
+To be able to use GROMACS on your machine, you need to execute the following command line in your bash terminal:
+
+\verbatim
+source /opt/sdv/gromacs-2019.6/bin/GMXRC
+\endverbatim
+
+You need to execute the command above in every new terminal window (shell) you open. Alternatively, you can add the line 
+to the file `.bashrc` located in your home directory. After doing this, you can open a new shell and check that GROMACS is properly working by typing:
+
+\verbatim
+gmx mdrun -h
+\endverbatim
+
+If you inspect the long output generated by this command, you will notice a `-plumed` option, which indicates that GROMACS has
+properly been compiled with PLUMED functionalities. Great, now you are ready to go!
+
+\section master-ISDD-1-structure Your first PLUMED input file
+
+The main goal of PLUMED is to compute collective variables, which are complex descriptors 
+of the system, which can be used to analyze a conformational change or a chemical reaction.
+This can be done either on-the-fly during a molecular dynamics simulations or a posteriori on a 
+pre-calculated trajectory using PLUMED as a post-processing tool. 
+In both cases one, you should create an input file with a specific PLUMED syntax. A sample input file is below:
 
 \plumedfile
 # Compute distance between atoms 1 and 10.
@@ -67,19 +88,15 @@ In both cases one, should create an input file with a specific PLUMED syntax. A 
 # The distance is called "d" for future reference.
 d: DISTANCE ATOMS=1,10
 
-# Create a virtual atom in the center between atoms 20 and 30.
-# The virtual atom only exists within PLUMED and is called "center" for future reference.
-center: CENTER ATOMS=20,30
+# Compute the torsional angle between atoms 1, 10, 20, and 30.
+# The angle is called "phi1" for future reference.
+phi1: TORSION ATOMS=1,10,20,30
 
-# Compute the torsional angle between atoms 1, 10, 20, and center.
-# Notice that virtual atoms can be used as real atoms here.
-# The angle is called "phi" for future reference.
-phi1: TORSION ATOMS=1,10,20,center
-
-# the same CV defined before can be split into multiple line
+# The same CV defined before can be split into multiple line
+# The angle is called "phi2" for future reference.
 TORSION ...
 LABEL=phi2
-ATOMS=1,10,20,center
+ATOMS=1,10,20,30
 ...
 
 # Print d every 10 step on a file named "COLVAR1".
@@ -103,9 +120,8 @@ In short, you can think that for every snapshot in the trajectory that you are a
 is going to execute all the listed actions, though some of them are optimized out when `STRIDE` is different from 1.
 
 Variables should be given a name (in the example above, `d`, `phi1`, and `phi2`), which is
-then used to refer to these variables.
-Lists of atoms should be provided as
-comma separated numbers, with no space. Virtual atoms can be created and assigned a name for later use.
+then used to refer to these variables and to use them in subsequent actions.
+A lists of atoms should be provided as comma separated numbers, with no space.
 
 You can find more information on the PLUMED syntax
 at \ref Syntax page of the manual. The complete documentation for all the supported
@@ -119,13 +135,14 @@ By default the PLUMED inputs and outputs quantities in the following units:
 - Length - nanometers
 - Time - picoseconds
 
-If you want to change these units you can do this using the \ref UNITS keyword. 
+If you want to change these units, you can do this using the \ref UNITS keyword. 
 
 
 
 \section master-ISDD-1-resources Resources
 
 Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
+
 \verbatim
 mkdir handson_1 
 cd handson_1
@@ -144,11 +161,12 @@ The archive contains the following files:
 - traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
 
 The archive can be unpacked using the following command:
+
 \verbatim
 tar xvzf handson_1.tgz
 \endverbatim
 
-This tutorial has been tested on PLUMED version 2.5.1.
+This tutorial has been tested with PLUMED version 2.6.2.
 
 \section master-ISDD-1-ex Exercises
 
@@ -161,16 +179,20 @@ To analyze the trajectories provided here, you should:
 
 Notice that you can also visualize trajectories with VMD directly. 
 For example, the trajectory `traj-whole.xtc` can be visualized with
-the command `vmd GB1_native.pdb traj-whole.xtc`.
+the command:
 
-Let's prepare a PLUMED input file that calculates
-- The gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
-  to retrieve the list of indexes of the CA atoms.
-- The total number of contacts (\ref COORDINATION) between all protein CA atoms.
+\verbatim
+vmd GB1_native.pdb traj-whole.xtc
+\endverbatim
+
+Let's prepare a PLUMED input file to calculate: 
+- the gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
+  to retrieve the list of indexes of the CA atoms;
+- the total number of contacts (\ref COORDINATION) between all protein CA atoms.
   For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!!).
 
-Here you can find a sample `plumed.dat` file that you can use as a template.
-Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
+Below you can find a sample `plumed.dat` file that you can use as a template.
+Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you should replace.
 
 \plumedfile
 # Compute gyration radius on CA atoms:
@@ -183,16 +205,18 @@ co: COORDINATION GROUPA=__FILL__ R_0=__FILL__
 PRINT ARG=r,co FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can use it with the following command
+Once your `plumed.dat` file is complete, you can use it with the following command:
+
 \verbatim
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
-PLUMED gives a lot of feedback about the input that he is reading. There's the
-place where you can check if PLUMED understood correctly your input.
+PLUMED gives a lot of feedback about the input that it is reading and the actions that it will
+execute. Please take your time to inspect the log file and check if PLUMED correctly understood your input.
 
 The command above will create a `COLVAR` file like this one:
+
 \verbatim
 #! FIELDS time r co
  0.000000 2.458704 165.184127
@@ -202,11 +226,13 @@ The command above will create a `COLVAR` file like this one:
  4.000000 2.569342 147.110408
  5.000000 2.304027 163.608703
 \endverbatim
+
 Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot`
+This file can then be visualized using `gnuplot`:
+
 \verbatim
 gnuplot> p "COLVAR" u 1:2, "" u 1:3
 \endverbatim
@@ -223,20 +249,23 @@ Did you find the same results as with the previous trajectory? Why?
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
-pdb file.
+pdb file. This command is used to provide information on the molecules that are present in your system.
 
 Let's try to use this functionality to calculate the backbone dihedral angle phi of residue 2
 of GB1. This CV is defined by the action \ref TORSION and a set of 4 atoms. For residue `i`,
-the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i).
-After consulting the manual and inspecting GB1_native.pdb, let's define the dihedral angle
-in question in two different ways:  using the \ref MOLINFO shortcut to define psi of residue 2
-and with an explicit list of 4 atoms.
+the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see Fig. \ref master-ISDD-1-dih-fig).
+
+\anchor master-ISDD-1-dih-fig
+\image html master-ISDD-1-dih-fig.png "Definition of backbone dihedral angles phi and psi."
+
+After consulting the manual and inspecting GB1_native.pdb, let's define the dihedral angle phi of residue 2 
+in two different ways: using the \ref MOLINFO shortcut and with an explicit list of 4 atoms.
 
 \plumedfile
 # activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
 
-# define phi dihedral of residue 2 as a list of 4 atoms
+# define the dihedral phi of residue 2 as an explicit list of 4 atoms
 t1: TORSION ATOMS=__FILL__
 # define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
@@ -273,14 +302,7 @@ d2: DISTANCE ATOMS=first,last NOPBC
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
-Make a PLUMED input containing the above input and execute it on the trajectory `traj-broken.xtc` by making use of the following command:
-
-\verbatim
-plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
-\endverbatim
-
-Before we turn to analyzing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
-instructs PLUMED to do. It tells PLUMED to:
+The file above instructs PLUMED to:
 
 1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 8;
 2. calculate the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 427 to 436;
@@ -293,10 +315,12 @@ Notice that in the input above we have used two different ways of writing the at
 1. ATOMS=1,2,3,4,5,6,7,8 is the explicit list of the atoms we need
 2. ATOMS=427-436 is the range of atoms needed
 
-Notice also that ranges of atoms can be defined with a stride which can also be negative as shown by the commands below, which are both equivalent:
+Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
+by making use of the following command:
 
-3. ATOMS=from,to:by (i.e.: 427-436:2)
-4. ATOMS=to,from:-by (i.e.: 436-427:-2)
+\verbatim
+plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
+\endverbatim
 
 Let's now analyze the output of the calculation by plotting the time series of the two CVs.
 Are they identical? What do you think is happening in those frames in which the two CVs are different?
