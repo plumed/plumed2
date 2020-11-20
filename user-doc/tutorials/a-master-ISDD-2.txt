@@ -438,7 +438,7 @@ We use a bash loop to test block sizes ranging from 1 to 1000:
 # - CV range (min, max): (-3.141593, 3.018393)
 # - # points in output free energy: 51
 # - kBT (kJoule/mol): 2.494339
-# - Block size: 1<=i<=1000
+# - Block size: 1<=i<=1000 (every 10)
 # 
 for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.018393 51 2.494339 $i; done
 \endverbatim 
