@@ -4,6 +4,9 @@
 \section master-ISDD-2-aims Aims
 
 The aim of this tutorial is to train users to perform metadynamics simulations with PLUMED.
+This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
+the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
+at Universite' de Paris on November 25th, 2020.
 
 \section master-ISDD-2-objectives Learning Outcomes 
 
@@ -32,11 +35,11 @@ The archive can be unpacked using the following command:
 tar xvzf master-ISDD-2.tar.gz
 \endverbatim
 
-This tutorial has been tested on version 2.5.1.
+This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 
-We have seen that PLUMED can be used to compute collective variables. However, PLUMED
+In the previous tutorial, we have seen that PLUMED can be used to compute collective variables. However, PLUMED
 is most often use to add forces on the collective variables. To this aim,
 we have implemented a variety of possible biases acting on collective variables.
 The complete documentation for
@@ -137,6 +140,7 @@ MOLINFO STRUCTURE=diala.pdb
 # you might want to use MOLINFO shortcuts
 phi: TORSION ATOMS=__FILL__
 # Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
+# here also you might want to use MOLINFO shortcuts
 psi: TORSION ATOMS=__FILL__
 
 # Activate well-tempered metadynamics in phi
