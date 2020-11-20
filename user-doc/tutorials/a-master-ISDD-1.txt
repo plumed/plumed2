@@ -159,7 +159,7 @@ The archive can be unpacked using the following command:
 tar xvzf handson_1.tgz
 \endverbatim
 
-This tutorial has been tested on PLUMED version 2.5.1.
+This tutorial has been tested on PLUMED version 2.6.2.
 
 \section master-ISDD-1-ex Exercises
 
@@ -290,7 +290,7 @@ Make a PLUMED input containing the above input and execute it on the trajectory 
 plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
 \endverbatim
 
-Before we turn to analyzing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
+Before we turn to analyzing the output of this calculation, there are a few things to note about the input file.  Let's examine what this file
 instructs PLUMED to do. It tells PLUMED to:
 
 1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 8;
