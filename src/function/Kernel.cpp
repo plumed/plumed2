@@ -192,7 +192,7 @@ Kernel::Kernel(const ActionOptions&ao):
   if( norm ) {
     if( ktype=="gaussian" ) {
         std::string pstr; Tools::convert( sqrt(pow(2*pi,nvals)), pstr ); 
-        det_inp += "MATHEVAL ARG1=det_exp FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO";
+        det_inp += "MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO";
     } else if( ktype=="von-misses" ) {
         std::string wstr, min, max;
         ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_dist_2_diff" ); plumed_assert( av );
