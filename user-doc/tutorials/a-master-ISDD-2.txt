@@ -394,15 +394,15 @@ bias potential using \ref sum_hills and using the reweighting procedure introduc
 In the previous exercise, we calculated the final bias on the entire metadynamics simulations and we used
 this quantity to reweight the (biased) simulation. The same quantity is useful to calculate the error in 
 reconstructed free energies and assess whether our simulation is converged.
-Let's calculate the "un-biasing weights" using the umbrella-sampling-like approach and the COLVAR file obtained
+Let's calculate the "un-biasing weights" using the umbrella-sampling-like approach and the `COLVAR_REWEIGHT` file obtained
 at the end of \ref master-ISDD-2-ex-3:
 
 \verbatim
 # find maximum value of bias
-bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR`
+bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR_REWEIGHT`
 
 # print phi values and weights
-awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR > phi.weight
+awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR_REWEIGHT > phi.weight
 \endverbatim
 
 If you inspect the `phi.weight` file, you will see that each line contains the value of the
