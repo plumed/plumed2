@@ -159,7 +159,7 @@ The archive can be unpacked using the following command:
 tar xvzf handson_1.tgz
 \endverbatim
 
-This tutorial has been tested on PLUMED version 2.6.2.
+This tutorial has been tested with PLUMED version 2.6.2.
 
 \section master-ISDD-1-ex Exercises
 
@@ -296,11 +296,6 @@ Notice that in the input above we have used two different ways of writing the at
 
 1. ATOMS=1,2,3,4,5,6,7,8 is the explicit list of the atoms we need
 2. ATOMS=427-436 is the range of atoms needed
-
-Notice also that ranges of atoms can be defined with a stride which can also be negative as shown by the commands below, which are both equivalent:
-
-3. ATOMS=from,to:by (i.e.: 427-436:2)
-4. ATOMS=to,from:-by (i.e.: 436-427:-2)
 
 Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
 by making use of the following command:
