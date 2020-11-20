@@ -37,7 +37,7 @@ conventional biasing simulations__.
 Instead you should use orthogonal basis functions like Legendre or Chebyshev
 polynomials.
 
-Basis functions given by Gaussian distributions with shifted means defined on a
+Basis functions given by Gaussian distributions with shifted centers defined on a
 bounded interval.
 You need to provide the interval \f$[a,b]\f$ on which the bias is to be
 expanded.
@@ -87,10 +87,10 @@ bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
 //+ENDPLUMEDOC
 
 class BF_Gaussians : public BasisFunctions {
-  /// width of the Gaussians
-  double width_;
-  /// positions of the means
-  std::vector<double> means_;
+  /// one over width of the Gaussians
+  double inv_sigma_;
+  /// positions of the centers
+  std::vector<double> centers_;
   void setupLabels() override;
 public:
   static void registerKeywords( Keywords&);
@@ -110,30 +110,34 @@ void BF_Gaussians::registerKeywords(Keywords& keys) {
 }
 
 BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  width_((intervalMax()-intervalMin()) / getOrder()),
-  means_(getOrder()+4)
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
   setIntrinsicInterval(intervalMin(),intervalMax());
-  parse("WIDTH",width_);
-  if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
-  if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
+
+  double width = (intervalMax()-intervalMin()) / getOrder();
+  parse("WIDTH",width);
+  if(width <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
+  if(width != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width);}
+  inv_sigma_ = 1/(width);
 
   bool periodic = false;
-  parseFlag("PERIODIC", periodic);
+  parseFlag("PERIODIC",periodic);
+  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+
   // 1 constant, getOrder() on interval, 1 (left) + 2 (right) at boundaries if not periodic
   unsigned int num_BFs = periodic ? getOrder()+1U : getOrder()+4U;
   setNumberOfBasisFunctions(num_BFs);
 
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) { // ignore constant one
-    means_[i] = intervalMin()+(static_cast<int>(i) - 1 - static_cast<int>(!periodic))*(intervalMax()-intervalMin())/getOrder();
+  centers_.push_back(0.0); // constant one
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    centers_.push_back(intervalMin()+(static_cast<int>(i) - 1 - static_cast<int>(!periodic))*(intervalMax()-intervalMin())/getOrder());
   }
   periodic ? setPeriodic() : setNonPeriodic();
   setIntervalBounded();
   setType("gaussian_functions");
-  setDescription("Gaussian Functions with shifted means that are being optimized in their height");
+  setDescription("Gaussian functions with shifted centers that are being optimized in their height");
   setupBF();
-  log.printf("   width: %f\n",width_);
+  log.printf("   width: %f\n",width);
   checkRead();
 }
 
@@ -144,18 +148,14 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
   values[0]=1.0;
   derivs[0]=0.0;
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    values[i] = exp(-0.5*pow((argT-means_[i])/width_,2.0));
-    derivs[i] = -values[i] * (argT-means_[i])/pow(width_,2.0);
-  }
-  if(arePeriodic()) { // translate argument and add contributions from 1st periodic images
-    std::vector<double> periodic_arg = {argT - intervalRange(), argT + intervalRange()};
-    for (auto argP : periodic_arg) {
-      for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-        double tmp_value = exp(-0.5*pow((argP-means_[i])/width_,2.0));
-        values[i] += tmp_value;
-        derivs[i] += tmp_value * (argT-means_[i])/pow(width_,2.0);
-      }
+    double dist = argT - centers_[i];
+    if(arePeriodic()) { // wrap around similar to MetaD
+      dist *= intervalRange();
+      dist = Tools::pbc(dist);
+      dist /= intervalRange();
     }
+    values[i] = exp(-0.5*pow(dist*inv_sigma_,2.0));
+    derivs[i] = -values[i] * (dist)*pow(inv_sigma_,2.0);
   }
   if(!inside_range) {for (auto& d: derivs){d=0.0;}}
 }
@@ -165,7 +165,7 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
 void BF_Gaussians::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(means_[i],is);
+    std::string is; Tools::convert(centers_[i],is);
     setLabel(i,"m="+is);
   }
 }
