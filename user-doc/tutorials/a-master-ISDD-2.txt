@@ -20,6 +20,7 @@ Once this tutorial is completed students will be able to:
 \section master-ISDD-2-resources Resources
 
 Before starting the tutorial, please create a separate directory, named `handson_2`, and enter it:
+
 \verbatim
 mkdir handson_2 
 cd handson_2
@@ -31,6 +32,7 @@ The \tarball{master-ISDD-2} for this project contains the following files:
 - do_block_fes.py: a python script to perform error analysis
 
 The archive can be unpacked using the following command:
+
 \verbatim
 tar xvzf master-ISDD-2.tar.gz
 \endverbatim
@@ -177,6 +179,7 @@ and if Gaussian width is fixed, PLUMED will use 1/5 of the Gaussian width as gri
 This default choice should be reasonable for most applications.
 
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
+
 \verbatim
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
@@ -335,15 +338,18 @@ PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change thi
 \endplumedfile
 
 Then run the driver using this command
+
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
 \endverbatim
+
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was taken from the MD code.
 
 As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
 metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
 The beginning of the file should look like this:
+
 \verbatim
 #! FIELDS time phi psi metad.bias
 #! SET min_phi -pi
@@ -423,7 +429,7 @@ metadynamics simulation:
 1.218571 0.0344903
 1.090823 0.0700568
 1.130800 0.0622998
-\endverbatim  
+\endverbatim
 
 At this point we can apply the block-analysis technique (for more info about the theory, 
 have a look at the \ref trieste-2) to calculate the average free-energy across the blocks
