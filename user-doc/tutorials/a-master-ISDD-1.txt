@@ -14,8 +14,7 @@ at Universite' de Paris on November 25th, 2020.
 Once this tutorial is completed, students will be able to:
 
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
-- Print collective variables such as distances.
-  (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
+- Print collective variables such as distances (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
