@@ -277,7 +277,7 @@ of your metadynamics simulation!
 \note The two observations above are necessary, but qualitative, not sufficient conditions for convergence.
 For a quantitative analysis, please have a look below at \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting
+\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
 
 In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
 the same variable. Many times you want to decide which variable you want to analyze _after_
