@@ -22,7 +22,7 @@ In this and in the next tutorial, we will use two pieces of software: <a href="h
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use.
  
 Let's have a look at PLUMED. PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED to perform a variety of different analyzes on-the-fly and to bias 
+Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
 the sampling in MD simulations. Additionally, PLUMED can be used as a standalone code for analyzing trajectories.
 If you are using the code in this way you can run the PLUMED executable by issuing the command:
 
@@ -30,13 +30,13 @@ If you are using the code in this way you can run the PLUMED executable by issui
 plumed <instructions>
 \endverbatim
 
-Let's start by getting a feel for the range of calculations that PLUMED can do.  Issue the following command now:
+Let's start by getting a feel for the range of calculations that PLUMED can do. Issue the following command now:
 
 \verbatim
 plumed --help 
 \endverbatim
 
-The output of this command is a list of tasks that PLUMED can perform.  There are commands that allow you
+The output of this command is a list of tasks that PLUMED can perform. There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
 tutorial we will mostly use PLUMED to analyze trajectories.  As such, most of the calculations we will perform will be 
 carried out using the \ref driver tool.  Let's look at the options of PLUMED \ref driver by issuing the following command:  
@@ -70,7 +70,7 @@ properly been compiled with PLUMED functionalities. Great, now you are ready to 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
 to analyze a conformational change or a chemical reaction. This can be done either on-the-fly during
 molecular dynamics or a posteriori, using PLUMED as a post-processing tool. 
-In both cases one, should create an input file with a specific PLUMED syntax. A sample input file is below:
+In both cases one, you should create an input file with a specific PLUMED syntax. A sample input file is below:
 
 \plumedfile
 # Compute distance between atoms 1 and 10.
@@ -114,8 +114,8 @@ In short, you can think that for every snapshot in the trajectory that you are a
 is going to execute all the listed actions, though some of them are optimized out when `STRIDE` is different from 1.
 
 Variables should be given a name (in the example above, `d`, `phi1`, and `phi2`), which is
-then used to refer to these variables.
-Lists of atoms should be provided as
+then used to refer to these variables and to use them in subsequent actions.
+A lists of atoms should be provided as
 comma separated numbers, with no space. Virtual atoms can be created and assigned a name for later use.
 
 You can find more information on the PLUMED syntax
@@ -130,7 +130,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 - Length - nanometers
 - Time - picoseconds
 
-If you want to change these units you can do this using the \ref UNITS keyword. 
+If you want to change these units, you can do this using the \ref UNITS keyword. 
 
 
 
@@ -174,14 +174,14 @@ Notice that you can also visualize trajectories with VMD directly.
 For example, the trajectory `traj-whole.xtc` can be visualized with
 the command `vmd GB1_native.pdb traj-whole.xtc`.
 
-Let's prepare a PLUMED input file that calculates
+Let's prepare a PLUMED input file that calculates:
 - The gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
   to retrieve the list of indexes of the CA atoms.
 - The total number of contacts (\ref COORDINATION) between all protein CA atoms.
   For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!!).
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
-Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
+Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you should replace.
 
 \plumedfile
 # Compute gyration radius on CA atoms:
@@ -194,13 +194,13 @@ co: COORDINATION GROUPA=__FILL__ R_0=__FILL__
 PRINT ARG=r,co FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can use it with the following command
+Once your `plumed.dat` file is complete, you can use it with the following command:
 \verbatim
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
-PLUMED gives a lot of feedback about the input that he is reading. There's the
+PLUMED gives a lot of feedback about the input that it is reading. There's the
 place where you can check if PLUMED understood correctly your input.
 
 The command above will create a `COLVAR` file like this one:
@@ -217,7 +217,7 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot`
+This file can then be visualized using `gnuplot`:
 \verbatim
 gnuplot> p "COLVAR" u 1:2, "" u 1:3
 \endverbatim
@@ -238,16 +238,19 @@ pdb file.
 
 Let's try to use this functionality to calculate the backbone dihedral angle phi of residue 2
 of GB1. This CV is defined by the action \ref TORSION and a set of 4 atoms. For residue `i`,
-the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i).
-After consulting the manual and inspecting GB1_native.pdb, let's define the dihedral angle
-in question in two different ways:  using the \ref MOLINFO shortcut to define psi of residue 2
-and with an explicit list of 4 atoms.
+the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see Fig. \ref master-ISDD-1-dih-fig).
+
+\anchor master-ISDD-1-dih-fig
+\image html master-ISDD-1-dih-fig.png "Definition of backbone dihedral angles phi and psi."
+
+After consulting the manual and inspecting GB1_native.pdb, let's define the dihedral angle phi of residue 2 
+in two different ways: using the \ref MOLINFO shortcut and with an explicit list of 4 atoms.
 
 \plumedfile
 # activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
 
-# define phi dihedral of residue 2 as a list of 4 atoms
+# define phi dihedral of residue 2 as an explicit list of 4 atoms
 t1: TORSION ATOMS=__FILL__
 # define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
