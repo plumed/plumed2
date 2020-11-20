@@ -173,9 +173,9 @@ This tutorial has been tested with PLUMED version 2.6.2.
 \subsection master-ISDD-1-ex-1 Exercise 1: Computing and printing simple collective variables
 
 In this exercise, we will make practice with computing and printing collective variables.
-To analyze the trajectories provided here, you should:
-- Create a PLUMED input file with a text editor (let us call it `plumed.dat`) similar to the one above;
-- Run the command `plumed driver` (see below).
+To analyze the trajectories provided here, we will:
+- create a PLUMED input file with a text editor (typically called `plumed.dat`) similar to the one above;
+- run the PLUMED \ref driver utility.
 
 Notice that you can also visualize trajectories with VMD directly. 
 For example, the trajectory `traj-whole.xtc` can be visualized with the command:
@@ -191,7 +191,7 @@ Let's prepare a PLUMED input file to calculate:
   For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!!).
 
 Below you can find a sample `plumed.dat` file that you can use as a template.
-Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you should replace.
+Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
 
 \plumedfile
 # Compute gyration radius on CA atoms:
@@ -204,7 +204,7 @@ co: COORDINATION GROUPA=__FILL__ R_0=__FILL__
 PRINT ARG=r,co FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can use it with the following command:
+Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver as follows:
 
 \verbatim
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
