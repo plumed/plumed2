@@ -202,7 +202,7 @@ by the metadynamics bias potential to visit the other local minimum. As the simu
 the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
 entire phase space.
 
-The HILLS file contains a list of the Gaussian kernels deposited along the simulation.
+The `HILLS` file contains a list of the Gaussian kernels deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
