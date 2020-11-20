@@ -168,15 +168,19 @@ To analyze the trajectories provided here, you should:
 
 Notice that you can also visualize trajectories with VMD directly. 
 For example, the trajectory `traj-whole.xtc` can be visualized with
-the command `vmd GB1_native.pdb traj-whole.xtc`.
+the command:
 
-Let's prepare a PLUMED input file that calculates:
-- The gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
-  to retrieve the list of indexes of the CA atoms.
-- The total number of contacts (\ref COORDINATION) between all protein CA atoms.
+\verbatim
+vmd GB1_native.pdb traj-whole.xtc
+\endverbatim
+
+Let's prepare a PLUMED input file to calculate: 
+- the gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
+  to retrieve the list of indexes of the CA atoms;
+- the total number of contacts (\ref COORDINATION) between all protein CA atoms.
   For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!!).
 
-Here you can find a sample `plumed.dat` file that you can use as a template.
+Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you should replace.
 
 \plumedfile
@@ -196,8 +200,8 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
-PLUMED gives a lot of feedback about the input that it is reading. There's the
-place where you can check if PLUMED understood correctly your input.
+PLUMED gives a lot of feedback about the input that it is reading and the actions that it will
+execute. Please take your time to inspect the log file and check if PLUMED correctly understood your input.
 
 The command above will create a `COLVAR` file like this one:
 \verbatim
@@ -209,6 +213,7 @@ The command above will create a `COLVAR` file like this one:
  4.000000 2.569342 147.110408
  5.000000 2.304027 163.608703
 \endverbatim
+
 Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
@@ -230,7 +235,7 @@ Did you find the same results as with the previous trajectory? Why?
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
-pdb file.
+pdb file. This command is used to provide information on the molecules that are present in your system.
 
 Let's try to use this functionality to calculate the backbone dihedral angle phi of residue 2
 of GB1. This CV is defined by the action \ref TORSION and a set of 4 atoms. For residue `i`,
@@ -246,7 +251,7 @@ in two different ways: using the \ref MOLINFO shortcut and with an explicit list
 # activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
 
-# define phi dihedral of residue 2 as an explicit list of 4 atoms
+# define the dihedral phi of residue 2 as an explicit list of 4 atoms
 t1: TORSION ATOMS=__FILL__
 # define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
