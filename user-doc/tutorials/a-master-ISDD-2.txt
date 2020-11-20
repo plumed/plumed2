@@ -125,7 +125,7 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 
 \section master-ISDD-2-ex Exercises
 
-\subsection master-ISDD-2-ex-1 Exercise 1: My first metadynamics calculation
+\subsection master-ISDD-2-ex-1 Exercise 1: My first metadynamics simulation
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -221,7 +221,7 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-\subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy 
+\subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy as a function of the metadynamics CVs 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
