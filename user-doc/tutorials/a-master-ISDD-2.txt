@@ -311,7 +311,7 @@ In addition, set hills height to zero and the pace to a large number.
 This will actually avoid adding new hills (and even if they are added they will have
 zero height). Finally, change the \ref PRINT statement so that you
 write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
-you also write `metad.bias.
+you also write `metad.bias`.
 
 \plumedfile
 __FILL__ # here goes the definitions of the CVs
