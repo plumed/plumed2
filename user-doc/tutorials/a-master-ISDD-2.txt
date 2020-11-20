@@ -298,10 +298,9 @@ There are multiple ways to calculate the correct
 statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
 Two of these approaches are:
 
-1) Weights are calculated by considering the time-dependence of the metadynamics bias
+- Weights are calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
-
-2) Weights are calculated using the metadynamics bias potential obtained at the end of the
+- Weights are calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
 In this exercise we will use the second method, which resembles the umbrella-sampling-like reweighting approach.
