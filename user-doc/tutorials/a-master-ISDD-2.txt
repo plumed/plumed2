@@ -344,7 +344,7 @@ Then run the driver using this command
 \endverbatim
 
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
-this information was taken from the MD code.
+this information was communicated by the MD code.
 
 As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
 metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
