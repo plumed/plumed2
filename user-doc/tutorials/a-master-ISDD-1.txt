@@ -23,8 +23,10 @@ Once this tutorial is completed, students will be able to:
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use.
+
+\subsection master-ISDD-1-plumed PLUMED
  
-Let's have a look at PLUMED. PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
+PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
 the sampling in MD simulations. Additionally, PLUMED can be used as a standalone code for analyzing trajectories.
 If you are using the code in this way you can run the PLUMED executable by issuing the command:
@@ -52,7 +54,12 @@ As you can see we can do a number of things with PLUMED \ref driver. For all of 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
 
-As far as GROMACS is concerned, to be able to use it you need to execute the following command line in your bash terminal:
+\subsection master-ISDD-1-gromacs GROMACS
+
+GROMACS is a molecular dynamics package mainly designed for simulations of proteins, lipids, and nucleic acids.
+More info can be found <a href="http://www.gromacs.org">here</a>.
+
+To be able to use GROMACS on your machine, you need to execute the following command line in your bash terminal:
 
 \verbatim
 source /opt/sdv/gromacs-2019.6/bin/GMXRC
