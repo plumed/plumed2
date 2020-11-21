@@ -311,12 +311,12 @@ The file above instructs PLUMED to:
 2. calculate the position of the virtual atom `last` as the \ref CENTER of atoms from 427 to 436;
 3. calculate the distance between the two virtual atoms `first` and `last` and saves it in `d1`;
 4. calculate the distance (ignoring periodic boundary conditions) between the two virtual atom `first` and `last` and saves it in `d2`;
-5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory
+5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory.
 
 Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
 
-1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need
-2. `ATOMS=427-436` is the range of atoms needed
+1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need;
+2. `ATOMS=427-436` is the range of atoms needed.
 
 Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
 by making use of the following command:
