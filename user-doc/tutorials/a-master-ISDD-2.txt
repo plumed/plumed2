@@ -139,6 +139,7 @@ Whenever you see an highlighted \highlight{FILL} string, this is a string that y
 \plumedfile
 # activate MOLINFO functionalities
 MOLINFO STRUCTURE=diala.pdb
+
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
 # you might want to use MOLINFO shortcuts
 phi: TORSION ATOMS=__FILL__
