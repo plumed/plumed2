@@ -397,9 +397,10 @@ gnuplot> p "ffphi.dat" u 1:2 w lp
 gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
 
-You can also compare the free energy as a function of \f$ \phi \f$ calculated:
+You can also compare the free energies as a function of \f$ \phi \f$ calculated:
 - directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
-- using the reweighting procedure introduced in this exercise (see Fig. \ref master-ISDD-2-fescomp-fig).
+- using the reweighting procedure introduced in this exercise 
+The results should be identical (see Fig. \ref master-ISDD-2-fescomp-fig).
 
 \anchor master-ISDD-2-fescomp-fig
 \image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
