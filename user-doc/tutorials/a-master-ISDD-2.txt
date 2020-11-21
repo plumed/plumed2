@@ -408,7 +408,7 @@ The results should be identical (see Fig. \ref master-ISDD-2-fescomp-fig).
 \image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
  
 
-\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free-energies using block-analysis
+\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free energies using block-analysis
 
 In the previous exercise, we calculated the final bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
 this quantity to reweight the biased simulation. The same quantity is useful to calculate the error in 
