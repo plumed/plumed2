@@ -251,7 +251,7 @@ Did you find the same results as with the previous trajectory? Why?
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
-pdb file. This command is used to provide information on the molecules that are present in your system.
+PDB file. This command is used to provide information on the molecules that are present in your system.
 
 Let's try to use this functionality to calculate the backbone dihedral angle \f$ \phi \f$ (phi) of residue 2
 of GB1. This CV is defined by the action \ref TORSION and a set of 4 atoms. For residue `i`,
