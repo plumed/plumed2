@@ -27,9 +27,9 @@ cd handson_2
 \endverbatim
 
 The \tarball{master-ISDD-2} for this project contains the following files:
-- diala.pdb: a PDB file for alanine dipeptide in vacuo
-- topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- do_block_fes.py: a python script to perform error analysis
+- `diala.pdb`: a PDB file for alanine dipeptide in vacuo.
+- `topol.tpr`: a GROMACS run (binary) file to perform MD simulations of alanine dipeptide.
+- `do_block_fes.py`: a python script to perform error analysis of metadynamics simulations.
 
 The archive can be unpacked using the following command:
 
@@ -137,7 +137,7 @@ Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
 
 \plumedfile
-# vim:ft=plumed
+# activate MOLINFO functionalities
 MOLINFO STRUCTURE=diala.pdb
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
 # you might want to use MOLINFO shortcuts
@@ -241,7 +241,7 @@ plumed sum_hills --hills HILLS
 
 The command above generates a file called `fes.dat` in which the free-energy surface as function
 of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free energy file,
-as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills:
+as well as the boundaries and bin size of the grid, by using the following \ref sum_hills options:
 
 \verbatim
 --outfile - specify the outputfile for sumhills
@@ -303,7 +303,7 @@ Two of these approaches are:
 2. Weights are calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the second method, which resembles the umbrella-sampling-like reweighting approach.
+In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach.
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
@@ -317,11 +317,14 @@ write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
 you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
-__FILL__ # here goes the definitions of the CVs
+# activate MOLINFO functionalities
+MOLINFO STRUCTURE=diala.pdb
+
+__FILL__ # here goes the definitions of the phi and psi CVs
 
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
+# Deposit a Gaussian every 10000000 time steps (never!), with initial height equal to 0.0 kJ/mol
   PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
 # the bias factor should be wisely chosen
   BIASFACTOR=__FILL__
@@ -329,10 +332,11 @@ metad: __FILL__ ARG=__FILL__ ...
   SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
-# Say that METAD should be restarting
+# Say that METAD should be restarting (= reading an existing HILLS file)
   RESTART=YES # <- this is the new stuff!
 ...
 
+# be sure you print out the value of the metadynamics bias potential metad.bias
 PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
@@ -380,7 +384,7 @@ hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDT
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 
-# print free energies F(s) to file when all the trajectory is processed 
+# print out the free energies F(s) to file once the entire trajectory is processed 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 \endplumedfile
@@ -418,7 +422,7 @@ awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR_
 
 If you inspect the `phi.weight` file, you will see that each line contains
 the value of the dihedral \f$ \phi \f$ along with the corresponding (un-normalized) weight for each frame of the
-metadynamics simulation:
+metadynamics trajectory:
 
 \verbatim
 0.907347 0.0400579

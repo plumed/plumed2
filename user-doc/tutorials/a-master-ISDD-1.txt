@@ -156,9 +156,9 @@ wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz
 \endverbatim
 
 The archive contains the following files:
-- `GB1_native.pdb` : A PDB file with the native structure of the GB1 protein.
-- `traj-whole.xtc` : A trajectory in `xtc` format. To make the exercise easier, GB1 has been made whole already.
-- `traj-broken.xtc` : The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
+- `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
+- `traj-whole.xtc`: a trajectory in `xtc` format. To make the exercise easier, GB1 has been made whole already.
+- `traj-broken.xtc : the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
 
 The archive can be unpacked using the following command:
 
@@ -250,14 +250,14 @@ PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
 pdb file. This command is used to provide information on the molecules that are present in your system.
 
-Let's try to use this functionality to calculate the backbone dihedral angle phi of residue 2
+Let's try to use this functionality to calculate the backbone dihedral angle \f$ \phi \f$ (phi) of residue 2
 of GB1. This CV is defined by the action \ref TORSION and a set of 4 atoms. For residue `i`,
-the dihedral phi is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see Fig. \ref master-ISDD-1-dih-fig).
+the dihedral \f$ \phi \f$ is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see Fig. \ref master-ISDD-1-dih-fig).
 
 \anchor master-ISDD-1-dih-fig
-\image html master-ISDD-1-dih-fig.png "Definition of backbone dihedral angles phi and psi."
+\image html master-ISDD-1-dih-fig.png "Definition of backbone dihedral angles."
 
-After consulting the manual and inspecting `GB1_native.pdb`, let's define the dihedral angle phi of residue 2 
+After consulting the manual and inspecting `GB1_native.pdb`, let's define the dihedral angle \f$ \phi \f$ of residue 2 
 in two different ways: using the \ref MOLINFO shortcut and with an explicit list of 4 atoms.
 
 \plumedfile
