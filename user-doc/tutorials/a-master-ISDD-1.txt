@@ -155,6 +155,9 @@ can be downloaded from `GitHub` using the following command:
 wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
 \endverbatim
 
+The \htmlonly<span style=\"background-color:yellow\">\endhtmlonly<a href=\"https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz\" style=\"font-weight:bold\" style=\"color:green\" download=\"https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz\"> TARBALL </a>\htmlonly</span>\endhtmlonly 
+for this project contains the following files:
+
 The archive contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
 - `traj-whole.xtc`: a trajectory in `xtc` format. To make the exercise easier, GB1 has been made whole already.
