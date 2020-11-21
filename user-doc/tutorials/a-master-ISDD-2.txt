@@ -134,7 +134,7 @@ In this exercise we will setup and perform a well-tempered metadynamics run usin
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
-Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
+Whenever you see an highlighted \highlight{FILL} string, this is a string that you must replace.
 
 \plumedfile
 # activate MOLINFO functionalities
