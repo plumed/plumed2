@@ -3,7 +3,7 @@
 
 \section master-ISDD-2-aims Aims
 
-The aim of this tutorial is to train users to perform metadynamics simulations with PLUMED.
+The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
 at Universite' de Paris on November 25th, 2020.
@@ -275,12 +275,12 @@ The resulting plot should look like the following:
 \image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 These two qualitative observations:
-- the system is diffusing efficiently in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
+- the system is diffusing rapidly in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
 - the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
-suggest that the simulation might be converged. 
+suggest that the simulation _might_ be converged. 
 
-\warning The two conditions listed above are necessary, but only qualitative, not sufficient for convergence.
+\warning The two conditions listed above are necessary, but only not sufficient to declare convergence.
 For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
 
 \subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
@@ -342,7 +342,7 @@ metad: __FILL__ ARG=__FILL__ ...
 PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
-Then run the \ref driver using this command
+Then run the \ref driver tool using this command:
 
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
@@ -391,7 +391,7 @@ DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 \endplumedfile
 
-and plot the result using gnuplot.
+and plot the result using `gnuplot`:
 
 \verbatim
 gnuplot> p "ffphi.dat" u 1:2 w lp
