@@ -12,10 +12,10 @@ at Universite' de Paris on November 25th, 2020.
 
 Once this tutorial is completed students will be able to:
 - Write the PLUMED input file to perform metadynamics simulations.
-- Calculate the free energy from a metadynamics run.
-- Monitor the behavior of variables in a metadynamics run.
-- Estimating the error in reconstructing free energies using block analysis.
-- Assess the convergence of a metadynamics simulation.
+- Calculate the free energy as a function of the metadynamics collective variables.
+- Unbias metadynamics simulations.
+- Estimate the error in the reconstructed free energies using block analysis.
+- Assess the convergence of metadynamics simulations.
 
 \section master-ISDD-2-resources Resources
 
