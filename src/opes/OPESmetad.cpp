@@ -1007,9 +1007,13 @@ void OPESmetad::update()
     const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
     if(few_kernels) //really needed? Probably is almost always false
     {
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-        for(unsigned kk=0; kk<kernels_.size(); kk++)
-          sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+      #pragma omp parallel num_threads(NumOMP_)
+      {
+        #pragma omp for reduction(+:sum_uprob) nowait
+        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+          for(unsigned kk=0; kk<kernels_.size(); kk++)
+            sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+      }
       if(NumParallel_>1)
         comm.Sum(sum_uprob);
     }
@@ -1021,35 +1025,47 @@ void OPESmetad::update()
       double delta_sum_uprob=0;
       if(!nlist_)
       {
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+        #pragma omp parallel num_threads(NumOMP_)
         {
-          for(unsigned d=0; d<delta_kernels_.size(); d++)
+          #pragma omp for reduction(+:delta_sum_uprob) nowait
+          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
           {
-            const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-            delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+            for(unsigned d=0; d<delta_kernels_.size(); d++)
+            {
+              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+            }
           }
         }
       }
       else
       {
-        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+        #pragma omp parallel num_threads(NumOMP_)
         {
-          const unsigned k=nlist_index_[nk];
-          for(unsigned d=0; d<delta_kernels_.size(); d++)
+          #pragma omp for reduction(+:delta_sum_uprob) nowait
+          for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
           {
-            const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-            delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+            const unsigned k=nlist_index_[nk];
+            for(unsigned d=0; d<delta_kernels_.size(); d++)
+            {
+              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+            }
           }
         }
       }
       if(NumParallel_>1)
         comm.Sum(delta_sum_uprob);
-      for(unsigned d=0; d<delta_kernels_.size(); d++)
+      #pragma omp parallel num_threads(NumOMP_)
       {
-        for(unsigned dd=0; dd<delta_kernels_.size(); dd++)
-        { //now subtract the delta_uprob added before, but not needed
-          const double sign=delta_kernels_[d].height<0?-1:1;
-          delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
+        #pragma omp for reduction(+:delta_sum_uprob)
+        for(unsigned d=0; d<delta_kernels_.size(); d++)
+        {
+          for(unsigned dd=0; dd<delta_kernels_.size(); dd++)
+          { //now subtract the delta_uprob added before, but not needed
+            const double sign=delta_kernels_[d].height<0?-1:1;
+            delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
+          }
         }
       }
       sum_uprob=Zed_*old_KDEnorm_*old_nker+delta_sum_uprob;
@@ -1206,44 +1222,72 @@ unsigned OPESmetad::getMergeableKernel(const std::vector<double>& giver_center,c
   double min_norm2=threshold2_;
   if(!nlist_)
   {
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+    #pragma omp parallel num_threads(NumOMP_)
     {
-      if(k==giver_k) //a kernel should not be merged with itself
-        continue;
-      double norm2=0;
-      for(unsigned i=0; i<ncv_; i++)
+      unsigned min_k_omp = min_k;
+      double min_norm2_omp = threshold2_;
+      #pragma omp for nowait
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
       {
-        const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2+=dist_i*dist_i;
-        if(norm2>=min_norm2)
-          break;
+        if(k==giver_k) //a kernel should not be merged with itself
+          continue;
+        double norm2=0;
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+          norm2+=dist_i*dist_i;
+          if(norm2>=min_norm2_omp)
+            break;
+        }
+        if(norm2<min_norm2_omp)
+        {
+          min_norm2_omp=norm2;
+          min_k_omp=k;
+        }
       }
-      if(norm2<min_norm2)
+      #pragma omp critical
       {
-        min_norm2=norm2;
-        min_k=k;
+        if(min_norm2_omp < min_norm2)
+        {
+          min_norm2 = min_norm2_omp;
+          min_k = min_k_omp;
+        }
       }
     }
   }
   else
   {
-    for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+    #pragma omp parallel num_threads(NumOMP_)
     {
-      const unsigned k=nlist_index_[nk];
-      if(k==giver_k) //a kernel should not be merged with itself
-        continue;
-      double norm2=0;
-      for(unsigned i=0; i<ncv_; i++)
+      unsigned min_k_omp = min_k;
+      double min_norm2_omp = threshold2_;
+      #pragma omp for nowait
+      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
       {
-        const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
-        norm2+=dist_i*dist_i;
-        if(norm2>=min_norm2)
-          break;
+        const unsigned k=nlist_index_[nk];
+        if(k==giver_k) //a kernel should not be merged with itself
+          continue;
+        double norm2=0;
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
+          norm2+=dist_i*dist_i;
+          if(norm2>=min_norm2)
+            break;
+        }
+        if(norm2<min_norm2_omp)
+        {
+          min_norm2_omp=norm2;
+          min_k_omp=k;
+        }
       }
-      if(norm2<min_norm2)
+      #pragma omp critical
       {
-        min_norm2=norm2;
-        min_k=k;
+        if(min_norm2_omp < min_norm2)
+        {
+          min_norm2 = min_norm2_omp;
+          min_k = min_k_omp;
+        }
       }
     }
   }
