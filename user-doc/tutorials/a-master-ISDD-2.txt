@@ -338,7 +338,7 @@ metad: __FILL__ ARG=__FILL__ ...
   RESTART=YES # <- this is the new stuff!
 ...
 
-# be sure you print out the value of the metadynamics bias potential metad.bias
+# be sure to print out the value of the metadynamics bias potential metad.bias
 PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
@@ -456,7 +456,8 @@ for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.01
 \endverbatim 
 
 For each value of block size `N`, you will obtain a separate `fes.N.dat` file, containing the value
-of the \f$ \phi \f$ variable on a grid, the average free-energy across the blocks, and the associated error (in kJ/mol):
+of the \f$ \phi \f$ variable on a grid, the average free-energy across the blocks with its associated error (in kJ/mol)
+on each point of the grid:
 
 \verbatim
    -3.141593       23.184653     0.080659
