@@ -11,11 +11,11 @@ at Universite' de Paris on November 25th, 2020.
 \section master-ISDD-2-objectives Learning Outcomes 
 
 Once this tutorial is completed students will be able to:
-- Write the PLUMED input file to perform metadynamics simulations
-- Calculate the free energy from a metadynamics run
-- Monitor the behavior of variables in a metadynamics run
-- Estimating the error in reconstructing free energies using block analysis
-- Assess the convergence of a metadynamics simulation
+- Write the PLUMED input file to perform metadynamics simulations.
+- Calculate the free energy from a metadynamics run.
+- Monitor the behavior of variables in a metadynamics run.
+- Estimating the error in reconstructing free energies using block analysis.
+- Assess the convergence of a metadynamics simulation.
 
 \section master-ISDD-2-resources Resources
 
@@ -299,9 +299,9 @@ There are multiple ways to calculate the correct
 statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
 Two of these approaches are:
 
-1. Weights are calculated by considering the time-dependence of the metadynamics bias
+1. weights are calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
-2. Weights are calculated using the metadynamics bias potential obtained at the end of the
+2. weights are calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
 In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach.
