@@ -80,7 +80,8 @@ The main goal of PLUMED is to compute collective variables, which are complex de
 of the system, which can be used to analyze a conformational change or a chemical reaction.
 This can be done either on-the-fly during a molecular dynamics simulations or a posteriori on a 
 pre-calculated trajectory using PLUMED as a post-processing tool. 
-In both cases one, you should create an input file with a specific PLUMED syntax. A sample input file is below:
+In both cases one, you should create an input file with a specific PLUMED syntax. 
+Have a look at the sample input file below:
 
 \plumedfile
 # Compute distance between atoms 1 and 10.
