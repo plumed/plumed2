@@ -161,8 +161,8 @@ for this project contains the following files:
 
 The archive contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
-- `traj-whole.xtc`: a trajectory in `xtc` format. To make the exercise easier, GB1 has been made whole already.
-- `traj-broken.xtc : the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
+- `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
+- `traj-broken.xtc`: the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
 
 The archive can be unpacked using the following command:
 
@@ -181,7 +181,7 @@ To analyze the trajectories provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`) similar to the one above;
 - run the PLUMED \ref driver utility.
 
-Notice that you can also visualize trajectories with VMD directly. 
+Notice that you can also visualize trajectories with VMD (always a good idea!).
 For example, the trajectory `traj-whole.xtc` can be visualized with the command:
 
 \verbatim
@@ -192,7 +192,7 @@ Let's prepare a PLUMED input file to calculate:
 - the gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
   to retrieve the list of indexes of the CA atoms;
 - the total number of contacts (\ref COORDINATION) between all protein CA atoms.
-  For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!!).
+  For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!).
 
 Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
