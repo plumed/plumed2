@@ -120,7 +120,7 @@ In short, you can think that for every snapshot in the trajectory that you are a
 is going to execute all the listed actions, though some of them are optimized out when `STRIDE` is different from 1.
 
 Variables should be given a name (in the example above, `d`, `phi1`, and `phi2`), which is
-then used to refer to these variables and to use them in subsequent actions.
+then used to refer to these variables in subsequent actions.
 A lists of atoms should be provided as comma separated numbers, with no space.
 
 You can find more information on the PLUMED syntax

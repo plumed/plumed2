@@ -233,6 +233,7 @@ of your metadynamics simulation!
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
 deposited during the simulation and stored in the `HILLS` file.  
+
 To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
 
 \verbatim
