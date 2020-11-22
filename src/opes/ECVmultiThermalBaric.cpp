@@ -103,7 +103,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,"ECV_MULTITHERMAL_MULTIBARIC")
 
-void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
+void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
@@ -282,7 +283,8 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
 }
 
-void ECVmultiThermalBaric::calculateECVs(const double * ene_vol) {
+void ECVmultiThermalBaric::calculateECVs(const double * ene_vol)
+{
   unsigned i=0;
   for(unsigned k=0; k<beta_.size(); k++)
   {

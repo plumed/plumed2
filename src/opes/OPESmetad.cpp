@@ -153,7 +153,7 @@ private:
     std::vector<double> center;
     std::vector<double> sigma;
     kernel(double h, const std::vector<double>& c,const std::vector<double>& s):
-      height(h),center(c),sigma(s) {}
+      height(h),center(c),sigma(s){}
   };
   double cutoff2_;
   double val_at_cutoff_;
@@ -241,7 +241,8 @@ typedef OPESmetad<exploration> OPESmetad_e;
 PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
 
 template <class mode>
-void OPESmetad<mode>::registerKeywords(Keywords& keys) {
+void OPESmetad<mode>::registerKeywords(Keywords& keys)
+{
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
