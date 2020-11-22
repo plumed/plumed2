@@ -153,7 +153,7 @@ private:
     std::vector<double> center;
     std::vector<double> sigma;
     kernel(double h, const std::vector<double>& c,const std::vector<double>& s):
-      height(h),center(c),sigma(s){}
+      height(h),center(c),sigma(s) {}
   };
   double cutoff2_;
   double val_at_cutoff_;
