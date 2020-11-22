@@ -824,9 +824,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
-    log.printf("  using multiple threads per simulation: %d\n",NumParallel_);
+    log.printf("  using multiple MPI threads per simulation: %u\n",NumParallel_);
+  if(NumOMP_>1)
+    log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
   if(serial)
-    log.printf(" -- SERIAL: running without loop parallelization\n");
+    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI and %u OpenMP available threads\n",comm.Get_size(),OpenMP::getNumThreads());
   log.printf(" Bibliography ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");

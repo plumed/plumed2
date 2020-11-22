@@ -381,9 +381,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
-    log.printf("  using multiple threads per simulation: %u\n",NumParallel_);
+    log.printf("  using multiple MPI threads per simulation: %u\n",NumParallel_);
   if(serial)
-    log.printf(" -- SERIAL: running without loop parallelization\n");
+    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI threads available\n",comm.Get_size());//TODO add OpenMP parallelization
+//    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI and %u OpenMP threads available\n",comm.Get_size(),OpenMP::getNumThreads());
 //Bibliography
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, Phys. Rev. X 10, 041034 (2020)");
@@ -642,7 +643,7 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
 
 inline void OPESexpanded::update_deltaF(double bias)
 {
-  //plumed_massert(counter_>1,"something went wrong");
+  plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
   const double increment=kbt_*std::log1p(std::exp(static_cast<long double>((bias-rct_)/kbt_))/(counter_-1.));
   for(unsigned i=0; i<deltaF_.size(); i++)
