@@ -1,5 +1,5 @@
 /**
-\page master-ISDD-1 Master ISDD tutorial: Brief introduction to PLUMED
+\page master-ISDD-1 Master ISDD tutorial 2020: Brief introduction to PLUMED
 
 \section master-ISDD-1-aims Aims
 

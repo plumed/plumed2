@@ -1,5 +1,5 @@
 /**
-\page master-ISDD-2 Master ISDD tutorial: Metadynamics simulations with PLUMED
+\page master-ISDD-2 Master ISDD tutorial 2020: Metadynamics simulations with PLUMED
 
 \section master-ISDD-2-aims Aims
 
