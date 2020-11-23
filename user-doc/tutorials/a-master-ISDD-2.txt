@@ -281,7 +281,7 @@ These two qualitative observations:
 1. the system is diffusing rapidly in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
 2. the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
-suggest that the simulation _might_ be converged. 
+suggest that the simulation __might__ be converged. 
 
 \warning The two conditions listed above are necessary, but not sufficient to declare convergence.
 For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
