@@ -89,21 +89,31 @@ PLUMED_REGISTER_ACTION(BF_CubicBspline,"BF_CUBIC_B_SPLINES")
 void BF_CubicBspline::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","NORMALIZATION","the normalization factor that is used to normalize the basis functions by dividing the values. By default it is 2.");
+  keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
 BF_CubicBspline::BF_CubicBspline(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-  setNumberOfBasisFunctions((getOrder()+3)+1);
   setIntrinsicInterval(intervalMin(),intervalMax());
   spacing_=(intervalMax()-intervalMin())/static_cast<double>(getOrder());
   inv_spacing_ = 1.0/spacing_;
+
+  bool periodic = false;
+  parseFlag("PERIODIC",periodic);
+  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+
+  // 1 constant, getOrder() on interval, 1 (left) + 2 (right) at boundaries if not periodic
+  unsigned int num_BFs = periodic ? getOrder()+1U : getOrder()+4U;
+  setNumberOfBasisFunctions(num_BFs);
+
   double normfactor_=2.0;
   parse("NORMALIZATION",normfactor_);
   if(normfactor_!=2.0) {addKeywordToList("NORMALIZATION",normfactor_);}
   inv_normfactor_=1.0/normfactor_;
-  setNonPeriodic();
+
+  periodic ? setPeriodic() : setNonPeriodic();
   setIntervalBounded();
   setType("splines_2nd-order");
   setDescription("Cubic B-splines (2nd order splines)");
@@ -124,9 +134,14 @@ void BF_CubicBspline::getAllValues(const double arg, double& argT, bool& inside_
   derivs[0]=0.0;
   //
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double argx = ((argT-intervalMin())*inv_spacing_) - (static_cast<double>(i)-2.0);
-    values[i]  = spline(argx, derivs[i]);
-    derivs[i]*=inv_spacing_;
+    double argx = ((argT-intervalMin())*inv_spacing_) - (static_cast<double>(i) - 2.0);
+    if(arePeriodic()) { // periodic range of argx is [-intervalRange/spacing,+intervalRange/spacing]
+      argx *= intervalRange()*inv_spacing_;
+      argx = Tools::pbc(argx);
+      argx /= (intervalRange()*inv_spacing_);
+    }
+    values[i] = spline(argx, derivs[i]);
+    derivs[i] *= inv_spacing_;
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
