@@ -88,12 +88,12 @@ class RMSD
     return c;
   };
 // removes the center for the position provided
-  void removeCenter(std::vector<Vector> &p, Vector &c) {
+  void removeCenter(std::vector<Vector> &p, const Vector &c) {
     unsigned n; n=p.size();
     for(unsigned i=0; i<n; i++)p[i]-=c;
   };
 // add center
-  void addCenter(std::vector<Vector> &p, Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
+  void addCenter(std::vector<Vector> &p, const Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
 
 public:
 /// Constructor
@@ -248,11 +248,11 @@ public:
 ///calculate with close structure, i.e. approximate the RMSD without expensive computation of rotation matrix by reusing saved rotation matrices from previous iterations
   double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared=false   );
 /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
-  static  Tensor getMatrixFromDRot(Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
+  static  Tensor getMatrixFromDRot(const Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
     Tensor t;
-    t[0][0]=drotdpos[0][0][i][a]; t[0][1]=drotdpos[0][1][i][a]; t[0][2]=drotdpos[0][2][i][a];
-    t[1][0]=drotdpos[1][0][i][a]; t[1][1]=drotdpos[1][1][i][a]; t[1][2]=drotdpos[1][2][i][a];
-    t[2][0]=drotdpos[2][0][i][a]; t[2][1]=drotdpos[2][1][i][a]; t[2][2]=drotdpos[2][2][i][a];
+    t[0][0]=drotdpos(0,0)[i][a]; t[0][1]=drotdpos(0,1)[i][a]; t[0][2]=drotdpos(0,2)[i][a];
+    t[1][0]=drotdpos(1,0)[i][a]; t[1][1]=drotdpos(1,1)[i][a]; t[1][2]=drotdpos(1,2)[i][a];
+    t[2][0]=drotdpos(2,0)[i][a]; t[2][1]=drotdpos(2,1)[i][a]; t[2][2]=drotdpos(2,2)[i][a];
     return t;
   };
 };
