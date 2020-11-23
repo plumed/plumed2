@@ -61,12 +61,12 @@ public:
 MetricRegister& metricRegister();
 
 #define PLUMED_REGISTER_METRIC(classname,type) \
-  static class classname##RegisterMe{ \
+  namespace { class classname##RegisterMe{ \
     static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return PLMD::Tools::make_unique<classname>(ro);} \
   public: \
     classname##RegisterMe(){PLMD::metricRegister().add(type,create);}; \
     ~classname##RegisterMe(){PLMD::metricRegister().remove(create);}; \
-  } classname##RegisterMeObject;
+  } classname##RegisterMeObject; }
 
 template <class T>
 std::unique_ptr<T> MetricRegister::create( const std::string& type ) {
