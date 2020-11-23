@@ -44,12 +44,11 @@ tar xvzf master-ISDD-2.tar.gz
 
 \section master-ISDD-2-intro Introduction
 
-In the previous tutorial, we have seen that PLUMED can be used to compute collective variables. However, PLUMED
-is most often use to add forces on the collective variables. To this aim,
-we have implemented a variety of possible biases acting on collective variables.
-The complete documentation for
-all the biasing methods available in PLUMED can be found at the \ref Bias page.
-In the following we will see how to build an adaptive bias potential with metadynamics.
+In the previous tutorial, we have seen that PLUMED can be used to compute collective variables on a pre-calculated
+trajectory. However, PLUMED is most often use to add forces on the collective variables during a MD simulation, for example, 
+in order to accelerate sampling. To this aim, we have implemented a variety of possible biases acting on collective variables.
+The complete documentation for all the biasing methods available in PLUMED can be found at the \ref Bias page.
+In the following we will learn how to use PLUMED to perform and analyze a metadynamics simulation.
 Here you can find a brief recap of the metadynamics theory.
 
 \hidden{Summary of theory}
