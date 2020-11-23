@@ -10,7 +10,8 @@ at Universite' de Paris on November 25th, 2020.
 
 \section master-ISDD-2-objectives Learning Outcomes 
 
-Once this tutorial is completed students will be able to:
+Once this tutorial is completed users will be able to:
+
 - Write the PLUMED input file to perform metadynamics simulations.
 - Calculate the free energy as a function of the metadynamics collective variables.
 - Unbias metadynamics simulations.
@@ -36,6 +37,8 @@ The archive can be unpacked using the following command:
 \verbatim
 tar xvzf master-ISDD-2.tar.gz
 \endverbatim
+
+\note To keep things clean, it is recommended to run each exercise in a separate sub-directory.
 
 This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
 
@@ -137,7 +140,7 @@ Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you must replace.
 
 \plumedfile
-# activate MOLINFO functionalities
+# Activate MOLINFO functionalities
 MOLINFO STRUCTURE=diala.pdb
 
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
@@ -151,7 +154,7 @@ psi: TORSION ATOMS=__FILL__
 metad: __FILL__ ARG=__FILL__ ...
 # Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
   PACE=500 HEIGHT=1.2 
-# the bias factor should be wisely chosen
+# The bias factor should be wisely chosen
   BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
   SIGMA=__FILL__
@@ -159,15 +162,15 @@ metad: __FILL__ ARG=__FILL__ ...
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 ...
 
-# Print both collective variables and the value of the bias potential on COLVAR file
+# Print both collective variables on COLVAR file
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
 
 The syntax for the command \ref METAD is simple.
 The directive is followed by a keyword `ARG` followed by the labels of the CVs
-on which the metadynamics potential will act.
+on which the metadynamics bias potential will act.
 The keyword `PACE` determines the stride of Gaussian deposition in number of time steps,
-while the keyword `HEIGHT` specifies the height of the Gaussian in kJ/mol. For each CVs, one has
+while the keyword `HEIGHT` specifies the height of the Gaussian. For each CVs, one has
 to specify the width of the Gaussian by using the keyword `SIGMA`. Gaussian will be written
 to the file indicated by the keyword `FILE`.
 
@@ -275,8 +278,8 @@ The resulting plot should look like the following:
 \image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 These two qualitative observations:
-- the system is diffusing rapidly in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
-- the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
+1. the system is diffusing rapidly in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
+2. the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
 suggest that the simulation _might_ be converged. 
 
@@ -319,7 +322,7 @@ write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
 you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
-# activate MOLINFO functionalities
+# Activate MOLINFO functionalities
 MOLINFO STRUCTURE=diala.pdb
 
 __FILL__ # here goes the definitions of the phi and psi CVs
@@ -328,7 +331,7 @@ __FILL__ # here goes the definitions of the phi and psi CVs
 metad: __FILL__ ARG=__FILL__ ...
 # Deposit a Gaussian every 10000000 time steps (never!), with initial height equal to 0.0 kJ/mol
   PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
-# the bias factor should be wisely chosen
+# The bias factor should be wisely chosen
   BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
   SIGMA=__FILL__
@@ -338,7 +341,7 @@ metad: __FILL__ ARG=__FILL__ ...
   RESTART=YES # <- this is the new stuff!
 ...
 
-# be sure to print out the value of the metadynamics bias potential metad.bias
+# Be sure to print out the value of the metadynamics bias potential metad.bias
 PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
@@ -373,20 +376,20 @@ Alternatively, if you want PLUMED to do the weighted histograms for you, you can
 lines at the end of the `plumed_reweight.dat` file:
 
 \plumedfile
-# use the metadynamics bias as argument
+# Use the metadynamics bias as argument
 as: REWEIGHT_BIAS ARG=__FILL__
 
-# calculate histograms of phi and psi dihedrals every 50 steps
+# Calculate histograms of phi and psi dihedrals every 50 steps
 # using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
-# look at the manual to understand the parameters of the HISTOGRAM action!
+# Look at the manual to understand the parameters of the HISTOGRAM action!
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 
-# convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
+# Convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 
-# print out the free energies F(s) to file once the entire trajectory is processed 
+# Print out the free energies F(s) to file once the entire trajectory is processed 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 \endplumedfile
@@ -399,8 +402,8 @@ gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
 
 You can also compare the free energies as a function of \f$ \phi \f$ calculated:
-- directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
-- using the reweighting procedure introduced in this exercise. 
+1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
+2. using the reweighting procedure introduced in this exercise. 
 
 The results should be identical (see Fig. \ref master-ISDD-2-fescomp-fig).
 
@@ -417,10 +420,10 @@ Let's first calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_
 file obtained at the end of \ref master-ISDD-2-ex-3:
 
 \verbatim
-# find maximum value of bias to avoid numerical errors when calculating the un-biasing weights
+# Find maximum value of bias to avoid numerical errors when calculating the un-biasing weights
 bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR_REWEIGHT`
 
-# print phi values and un-normalized weights
+# Print phi values and un-biasing (un-normalized) weights
 awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR_REWEIGHT > phi.weight
 \endverbatim
 

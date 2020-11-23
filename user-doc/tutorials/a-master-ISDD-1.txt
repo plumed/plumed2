@@ -3,7 +3,7 @@
 
 \section master-ISDD-1-aims Aims
 
-The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
+The aim of this tutorial is to introduce users to the PLUMED syntax. We will go through the preparation of input files to calculate
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
 (adapting a lot of material from other tutorials) for 
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
@@ -11,7 +11,7 @@ at Universite' de Paris on November 25th, 2020.
 
 \section master-ISDD-1-lo Learning Outcomes
 
-Once this tutorial is completed, students will be able to:
+Once this tutorial is completed, users will be able to:
 
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Print collective variables such as distances (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
@@ -40,18 +40,19 @@ Let's start by getting a feel for the range of calculations that PLUMED can do. 
 plumed --help 
 \endverbatim
 
-The output of this command is a list of tasks that PLUMED can perform. There are commands that allow you
-to patch an MD code, run molecular dynamics and build the manual.  In this
-tutorial we will mostly use PLUMED to analyze trajectories.  As such, most of the calculations we will perform will be 
-carried out using the \ref driver tool.  Let's look at the options of PLUMED \ref driver by issuing the following command:  
+The output of this command is a list of tasks that PLUMED can perform. Among these, there are commands that allow you
+to patch an MD code, postprocess metadynamics simulations, and build the manual. In this
+tutorial we will mostly use PLUMED to analyze trajectories. In order to do so, we will
+learn how to use the \ref driver tool. 
+Let's look at the options of PLUMED \ref driver by issuing the following command:  
 
 \verbatim
 plumed driver --help
 \endverbatim
 
 As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
-a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
-so all the things that you will learn now will be useful later when you will run PLUMED coupled to GROMACS.
+a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations during
+a MD simulation, so all the things that you will learn now will be useful later when you will run PLUMED coupled to GROMACS.
 
 \subsection master-ISDD-1-gromacs GROMACS
 
@@ -77,8 +78,8 @@ properly been compiled with PLUMED. Great, now you are ready to go!
 \section master-ISDD-1-structure Your first PLUMED input file
 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors 
-of the system that can be used to describe a conformational change or a chemical reaction.
-This can be done either on-the-fly during a molecular dynamics simulations or a posteriori on a 
+of the system that can be used to describe the conformational change of a protein or a chemical reaction.
+This can be done either on-the-fly during a molecular dynamics simulations or _a posteriori_ on a 
 pre-calculated trajectory using PLUMED as a post-processing tool. 
 In both cases one, you should create an input file with a specific PLUMED syntax. 
 Have a look at the sample input file below:
@@ -93,35 +94,34 @@ d: DISTANCE ATOMS=1,10
 # The angle is called "phi1" for future reference.
 phi1: TORSION ATOMS=1,10,20,30
 
-# The same CV defined before can be split into multiple line
+# The same CV defined above can be split into multiple lines
 # The angle is called "phi2" for future reference.
 TORSION ...
 LABEL=phi2
 ATOMS=1,10,20,30
 ...
 
-# Print d every 10 step on a file named "COLVAR1".
+# Print "d" every 10 steps on a file named "COLVAR1".
 PRINT ARG=d STRIDE=10 FILE=COLVAR1
 
-# Print phi1 and phi2 on another file names "COLVAR2" every 100 steps.
+# Print "phi1" and "phi2" every 100 steps on another file named "COLVAR2".
 PRINT ARG=phi1,phi2 STRIDE=100 FILE=COLVAR2
 \endplumedfile
 
-In the input file above, each line defines a so-called action. An action could either compute a distance,
-or the center between two or more atoms, or print some value on a file. Each action supports a number of keywords,
-whose value is specified. Action names are highlighted in green and, clicking on them, you can go to the
-corresponding page in the manual that contains a detailed description for each keyword.
-Actions that support the keyword `STRIDE` are those that determine how frequently things are to be done.
+In the input file above, each line defines a so-called action. In this simple example, 
+actions are used to compute a distance, a dihedral angle, 
+or print some values on a file. Each action supports a number of keywords,
+whose value is specified. Action names are highlighted in green and, by clicking on them, you can go to the
+corresponding page in the manual that contains a detailed description of each keyword.
+Actions that support the keyword `STRIDE` are those that determine how frequently things are done.
 Notice that the default value for `STRIDE` is always 1. In the example above, omitting `STRIDE` keywords
 the corresponding `COLVAR` files would have been written for every frame of the analyzed trajectory.
-All the other actions in the example above do not 
+All the other actions in the example above, i.e. \ref DISTANCE and \ref TORSION, do not 
 support the `STRIDE` keyword and are only calculated when requested. That is, `d` will be computed
 every 10 frames, and `phi1` and `phi2` every 100 frames.
-In short, you can think that for every snapshot in the trajectory that you are analyzing PLUMED
-is going to execute all the listed actions, though some of them are optimized out when `STRIDE` is different from 1.
 
 Variables should be given a name (in the example above, `d`, `phi1`, and `phi2`), which is
-then used to refer to these variables in subsequent actions.
+then used to refer to these variables in subsequent actions, such as the \ref PRINT command.
 A lists of atoms should be provided as comma separated numbers, with no space.
 
 You can find more information on the PLUMED syntax
@@ -132,12 +132,13 @@ collective variables can be found at the \ref colvarintro page.
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
-- Energy - kJ/mol
-- Length - nanometers
-- Time - picoseconds
+- Length: nanometers
+- Energy: kJ/mol
+- Time: picoseconds
+- Mass: amu
+- Charge: e
 
 If you want to change these units, you can do this using the \ref UNITS keyword. 
-
 
 
 \section master-ISDD-1-resources Resources
@@ -161,13 +162,15 @@ The archive can be unpacked using the following command:
 tar xvzf handson_1.tgz
 \endverbatim
 
+\note To keep things clean, it is recommended to run each exercise in a separate sub-directory.
+
 This tutorial has been tested with PLUMED version 2.6.2.
 
 \section master-ISDD-1-ex Exercises
 
 \subsection master-ISDD-1-ex-1 Exercise 1: Computing and printing simple collective variables
 
-In this exercise, we will make practice with computing and printing collective variables.
+In this exercise, we will learn how to compute and print collective variables on a pre-calculated MD trajectory.
 To analyze the trajectories provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`);
 - run the PLUMED \ref driver utility.
@@ -225,7 +228,7 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot`:
+This file can then be visualized using `gnuplot` (for more info about this tool, look <a href="http://www.gnuplot.info">here</a>):
 
 \verbatim
 gnuplot> p "COLVAR" u 1:2, "" u 1:3
@@ -258,15 +261,15 @@ in two different ways:
 - using the \ref MOLINFO shortcut (`t2`);
 
 \plumedfile
-# activate MOLINFO functionalities
+# Activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
 
-# define the dihedral phi of residue 2 as an explicit list of 4 atoms
+# Define the dihedral phi of residue 2 as an explicit list of 4 atoms
 t1: TORSION ATOMS=__FILL__
-# define the same dihedral using MOLINFO shortcuts
+# Define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
 
-# print the value of t1 and t2 every 10 steps
+# Print the value of t1 and t2 every 10 steps
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
 
@@ -291,17 +294,17 @@ In this exercise, you will learn how to specify virtual atoms and later use them
 Let's start by having a look at the PLUMED input file below.
 
 \plumedfile
-# geometric center of first residue
+# Geometric center of first residue
 first: CENTER ATOMS=1,2,3,4,5,6,7,8
-# geometric center of last residue
+# Geometric center of last residue
 last: CENTER ATOMS=427-436
 
-# distance between centers of first and last residues, with PBCs
+# Distance between centers of first and last residues, with PBCs
 d1: DISTANCE ATOMS=first,last
-# distance between centers of first and last residues, without PBCs
+# Distance between centers of first and last residues, without PBCs
 d2: DISTANCE ATOMS=first,last NOPBC
 
-# print the two distances every step
+# Print the two distances every step
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
