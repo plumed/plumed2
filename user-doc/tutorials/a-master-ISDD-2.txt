@@ -40,7 +40,7 @@ tar xvzf master-ISDD-2.tar.gz
 
 \note To keep things clean, it is recommended to run each exercise in a separate sub-directory.
 
-This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
+\note This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 
