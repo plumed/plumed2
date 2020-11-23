@@ -341,7 +341,7 @@ metad: __FILL__ ARG=__FILL__ ...
 ...
 
 # Print out the values of phi, psi and the metadynamics bias potential
-# Be sure you print out the 3 variables in the specified order
+# Make sure you print out the 3 variables in the specified order
 PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
