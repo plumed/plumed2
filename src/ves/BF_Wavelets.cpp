@@ -324,7 +324,7 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     // scale and shift argument to match current wavelet
-    double x = shifts_[i] + arg*scale_;
+    double x = shifts_[i] + argT*scale_;
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
