@@ -293,7 +293,7 @@ However, in many cases you might decide which variable should be analyzed _after
 having performed a metadynamics simulation. For example,
 you might want to calculate the free energy as a function of collective variables other than those
 biased during the metadynamics simulation, such as the dihedral \f$ \psi \f$.
-At variance with standard MD simulations, you cannot simply calculate histograms of other variables from your metadynamics trajectory, 
+At variance with standard MD simulations, you cannot simply calculate histograms of other variables using your metadynamics trajectory, 
 because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
 To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
 you must reweight (or unbias) your simulation.
