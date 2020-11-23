@@ -285,7 +285,7 @@ suggest that the simulation __might__ be converged.
 \warning The two conditions listed above are necessary, but not sufficient to declare convergence.
 For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
+\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation
 
 In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
 the same variable directly from the metadynamics bias potential using the utility \ref sum_hills. 
