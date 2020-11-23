@@ -340,8 +340,9 @@ metad: __FILL__ ARG=__FILL__ ...
   RESTART=YES # <- this is the new stuff!
 ...
 
-# Be sure to print out the value of the metadynamics bias potential metad.bias
-PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
+# Print out the values of phi, psi and the metadynamics bias potential
+# Be sure you print out the 3 variables in the specified order
+PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
 \endplumedfile
 
 Then run the \ref driver tool using this command:
