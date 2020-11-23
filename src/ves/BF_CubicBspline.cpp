@@ -136,9 +136,9 @@ void BF_CubicBspline::getAllValues(const double arg, double& argT, bool& inside_
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double argx = ((argT-intervalMin())*inv_spacing_) - (static_cast<double>(i) - 2.0);
     if(arePeriodic()) { // periodic range of argx is [-intervalRange/spacing,+intervalRange/spacing]
-      argx *= intervalRange()*inv_spacing_;
+      argx /= intervalRange()*inv_spacing_;
       argx = Tools::pbc(argx);
-      argx /= (intervalRange()*inv_spacing_);
+      argx *= (intervalRange()*inv_spacing_);
     }
     values[i] = spline(argx, derivs[i]);
     derivs[i] *= inv_spacing_;
