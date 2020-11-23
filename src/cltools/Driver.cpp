@@ -220,6 +220,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
+  keys.addFlag("--restart",false,"makes driver behave as if restarting");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
   keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
@@ -285,6 +286,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
   bool parseOnly; parseFlag("--parse-only",parseOnly);
+  bool restart; parseFlag("--restart",restart);
 
   std::string fakein;
   bool debug_float=false;
@@ -506,6 +508,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int checknatoms=-1;
   long int step=0;
   parse("--initial-step",step);
+
+  if(restart) {
+    int irestart=1;
+    p.cmd("setRestart",&irestart);
+  }
 
   if(Communicator::initialized()) {
     if(multi) {
