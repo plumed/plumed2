@@ -198,8 +198,8 @@ r: GYRATION ATOMS=__FILL__
 # Compute number of contacts between CA atoms
 co: COORDINATION GROUPA=__FILL__ R_0=__FILL__
 
-# Print the collective variables on COLVAR file every step
-PRINT ARG=r,co FILE=COLVAR STRIDE=__FILL__
+# Print the two collective variables on COLVAR file every step
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
 Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver as follows:
@@ -269,8 +269,8 @@ t1: TORSION ATOMS=__FILL__
 # Define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
 
-# Print the value of t1 and t2 every 10 steps
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
+# Print the two collective variables on COLVAR file every 10 steps
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
 After completing the PLUMED input file above, let's use it to analyze the trajectory `traj-whole.xtc` using the \ref driver tool:
@@ -304,8 +304,8 @@ d1: DISTANCE ATOMS=first,last
 # Distance between centers of first and last residues, without PBCs
 d2: DISTANCE ATOMS=first,last NOPBC
 
-# Print the two distances every step
-PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
+# Print the two collective variables on COLVAR file every step
+PRINT ARG=__FILL__ STRIDE=__FILL__ FILE=COLVAR 
 \endplumedfile
 
 The file above instructs PLUMED to:
