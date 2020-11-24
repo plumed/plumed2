@@ -143,7 +143,7 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 
 \section master-ISDD-1-resources Resources
 
-The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz"> TARBALL </a>\htmlonly</span>\endhtmlonly 
+The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz">TARBALL</a>\htmlonly</span>\endhtmlonly 
 for this tutorial contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
 - `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
