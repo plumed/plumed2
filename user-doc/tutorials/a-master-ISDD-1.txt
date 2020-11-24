@@ -101,11 +101,11 @@ LABEL=phi2
 ATOMS=1,10,20,30
 ...
 
-# Print "d" every 10 steps on a file named "COLVAR1".
-PRINT ARG=d STRIDE=10 FILE=COLVAR1
+# Print "d" on a file named "COLVAR1" every 10 steps.
+PRINT ARG=d FILE=COLVAR1 STRIDE=10
 
-# Print "phi1" and "phi2" every 100 steps on another file named "COLVAR2".
-PRINT ARG=phi1,phi2 STRIDE=100 FILE=COLVAR2
+# Print "phi1" and "phi2" on another file named "COLVAR2" every 100 steps.
+PRINT ARG=phi1,phi2 FILE=COLVAR2 STRIDE=100
 \endplumedfile
 
 In the input file above, each line defines a so-called action. In this simple example, 
@@ -143,8 +143,7 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 
 \section master-ISDD-1-resources Resources
 
-The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz">TARBALL</a>\htmlonly</span>\endhtmlonly 
-for this tutorial contains the following files:
+The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz">TARBALL</a>\htmlonly</span>\endhtmlonly for this tutorial contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
 - `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
 - `traj-broken.xtc`: the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
@@ -299,7 +298,7 @@ d1: DISTANCE ATOMS=first,last
 d2: DISTANCE ATOMS=first,last NOPBC
 
 # Print the two distances on COLVAR file every step
-PRINT ARG=__FILL__ STRIDE=__FILL__ FILE=COLVAR 
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
 The file above instructs PLUMED to:

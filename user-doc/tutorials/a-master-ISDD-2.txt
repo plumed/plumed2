@@ -155,8 +155,8 @@ metad: __FILL__ ARG=__FILL__ ...
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 ...
 
-# Print both collective variables on COLVAR file
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
+# Print both collective variables on COLVAR file every 10 steps
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
 The syntax for the command \ref METAD is simple.
