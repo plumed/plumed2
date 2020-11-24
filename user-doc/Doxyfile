@@ -235,7 +235,7 @@ ALIASES                = \
                          "issue{1}=<a href=\"http://github.com/plumed/plumed2/issues/\1\">#\1</a>" \
                          "branch{1}=<a href=\"http://github.com/plumed/plumed2/commits/\1\">\1</a>" \
                          "highlight{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly\1\htmlonly</span>\endhtmlonly" \
-                         "tarball{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly<a href=\"tutorial-resources/\1.tar.gz\" style=\"font-weight:bold\" style=\"color:green\" download=\"\1.tar.gz\"> TARBALL </a>\htmlonly</span>\endhtmlonly" \
+                         "tarball{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly<a href=\"tutorial-resources/\1.tar.gz\" style=\"font-weight:bold\" style=\"color:green\" download=\"\1.tar.gz\">TARBALL</a>\htmlonly</span>\endhtmlonly" \
                          "plumedfile=\verbatim BEGIN_PLUMED_FILE" \
                          "endplumedfile=\endverbatim" \
                          "auxfile{1}=\verbatim" \
