@@ -192,7 +192,8 @@ namespace PLMD {
 /// backward compatibility. Notice that as of plumed 2.5 the plumed_kernel_register is found
 /// using dlsym, in order to allow the libplumedKernel library to be loadable also when
 /// the plumed_kernel_register symbol is not available.
-static class PlumedMainInitializer {
+namespace {
+class PlumedMainInitializer {
   const bool debug;
 public:
   PlumedMainInitializer():
@@ -243,6 +244,7 @@ public:
     if(debug) fprintf(stderr,"+++ Finalizing PLUMED with plumed_symbol_table at %p\n",(void*)&plumed_symbol_table);
   }
 } PlumedMainInitializerRegisterMe;
+}
 
 }
 

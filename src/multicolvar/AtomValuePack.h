@@ -92,7 +92,7 @@ public:
 ///
   void updateDynamicList();
 ///
-  void addComDerivatives( const int&, const Vector&, CatomPack& );
+  void addComDerivatives( const int&, const Vector&, const CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
 ///

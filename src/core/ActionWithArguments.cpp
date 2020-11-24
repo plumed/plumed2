@@ -206,7 +206,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   }
 }
 
-void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
+void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {
   std::vector<std::string> arg_names = pdb.getArgumentNames();
   if( arg_names.size()>0 ) {
     std::vector<Value*> arg_vals;

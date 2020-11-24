@@ -154,9 +154,9 @@ public:
   static void registerKeywords(Keywords& keys);
   void ReadLagrangians(IFile &ifile);
   void WriteLagrangians(std::vector<double> &lagmult,OFile &file);
-  double compute_error(std::string &err_type,double &l);
-  double convert_lambda(std::string &type,double lold);
-  void check_lambda_boundaries(std::string &err_type,double &l);
+  double compute_error(const std::string &err_type,double l);
+  double convert_lambda(const std::string &type,double lold);
+  void check_lambda_boundaries(const std::string &err_type,double &l);
 };
 PLUMED_REGISTER_ACTION(MaxEnt,"MAXENT")
 
@@ -357,7 +357,7 @@ void MaxEnt::WriteLagrangians(std::vector<double> &lagmult,OFile &file) {
     }
   }
 }
-double MaxEnt::compute_error(std::string &err_type,double &l) {
+double MaxEnt::compute_error(const std::string &err_type,double l) {
   double sigma2=std::pow(sigma,2.0);
   double l2=convert_lambda(type,l);
   double return_error=0;
@@ -370,7 +370,7 @@ double MaxEnt::compute_error(std::string &err_type,double &l) {
   }
   return return_error;
 }
-double MaxEnt::convert_lambda(std::string &type,double lold) {
+double MaxEnt::convert_lambda(const std::string &type,double lold) {
   double return_lambda=0;
   if(type=="EQUAL")
     return_lambda=lold;
@@ -392,7 +392,7 @@ double MaxEnt::convert_lambda(std::string &type,double lold) {
   }
   return return_lambda;
 }
-void MaxEnt::check_lambda_boundaries(std::string &err_type,double &l) {
+void MaxEnt::check_lambda_boundaries(const std::string &err_type,double &l) {
   if(err_type=="LAPLACE" && sigma !=0 ) {
     double l2=convert_lambda(err_type,l);
     if(l2 <-(std::sqrt(alpha+1)/sigma-0.01)) {
