@@ -304,7 +304,7 @@ d1: DISTANCE ATOMS=first,last
 # Distance between centers of first and last residues, without PBCs
 d2: DISTANCE ATOMS=first,last NOPBC
 
-# Print the two collective variables on COLVAR file every step
+# Print the two distances on COLVAR file every step
 PRINT ARG=__FILL__ STRIDE=__FILL__ FILE=COLVAR 
 \endplumedfile
 
