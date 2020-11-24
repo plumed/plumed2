@@ -109,7 +109,7 @@ conda create --name ISDD-tutorial
 conda activate ISDD-tutorial
 \endverbatim
 
-Finally, you can install the pre-compiled version of GROMACS 2018.8 patched with PLUMED:
+Finally, you can install the pre-compiled version of GROMACS 2018.8 patched with PLUMED 2.6.2:
 
 \verbatim
 conda install -c plumed/label/munster -c conda-forge gromacs
