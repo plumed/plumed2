@@ -20,25 +20,19 @@ Once this tutorial is completed users will be able to:
 
 \section master-ISDD-2-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `handson_2`, and enter it:
-
-\verbatim
-mkdir handson_2 
-cd handson_2
-\endverbatim
-
 The \tarball{master-ISDD-2} for this tutorial contains the following files:
 - `diala.pdb`: a PDB file for alanine dipeptide in vacuo.
 - `topol.tpr`: a GROMACS run (binary) file to perform MD simulations of alanine dipeptide.
 - `do_block_fes.py`: a python script to perform error analysis of metadynamics simulations.
 
-The archive can be unpacked using the following command:
+After dowloading the compressed archive to your local machine, you can be unpack it using the following command:
 
 \verbatim
 tar xvzf master-ISDD-2.tar.gz
 \endverbatim
 
-\note To keep things clean, it is recommended to run each exercise in a separate sub-directory.
+Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
+it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
 
 \note This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
 

@@ -143,26 +143,20 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 
 \section master-ISDD-1-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
-
-\verbatim
-mkdir handson_1 
-cd handson_1
-\endverbatim
-
-The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz" style="font-weight:bold" style="color:green" download="https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz"> TARBALL </a>\htmlonly</span>\endhtmlonly 
+The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz"> TARBALL </a>\htmlonly</span>\endhtmlonly 
 for this tutorial contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
 - `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
 - `traj-broken.xtc`: the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
 
-The archive can be unpacked using the following command:
+After dowloading the compressed archive to your local machine, you can be unpack it using the following command:
 
 \verbatim
-tar xvzf handson_1.tgz
+tar xvzf master-ISDD-1.tar.gz 
 \endverbatim
 
-\note To keep things clean, it is recommended to run each exercise in a separate sub-directory.
+Once unpacked, all the files can be found in the `master-ISDD-1` directory. To keep things clean, 
+it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-1`.
 
 \note This tutorial has been tested with PLUMED version 2.6.2.
 
