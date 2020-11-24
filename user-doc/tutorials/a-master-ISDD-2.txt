@@ -318,7 +318,7 @@ read from the `HILLS` file the Gaussians that have previously been accumulated.
 Second, you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
 This will actually avoid adding new Gaussians (and even if they are added they will have
 zero height). Finally, you need to modify the \ref PRINT statement so that you
-write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
+write every frame and that, in addition to `phi` and `psi`,
 you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
@@ -342,8 +342,8 @@ metad: __FILL__ ARG=__FILL__ ...
 ...
 
 # Print out the values of phi, psi and the metadynamics bias potential
-# Make sure you print out the 3 variables in the specified order
-PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
+# Make sure you print out the 3 variables in the specified order at every step
+PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this one!
 \endplumedfile
 
 Then run the \ref driver tool using this command:
