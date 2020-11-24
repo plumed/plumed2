@@ -21,7 +21,7 @@ Once this tutorial is completed, users will be able to:
 \section master-ISDD-1-install Software overview
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
-<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use.
+<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use. If you are attending the tutorial on Zoom, please have a look below at the section "Install GROMACS+PLUMED on your own machine with Conda". 
 
 \subsection master-ISDD-1-plumed PLUMED
  
