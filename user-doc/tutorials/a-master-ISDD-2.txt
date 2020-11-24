@@ -25,7 +25,7 @@ The \tarball{master-ISDD-2} for this tutorial contains the following files:
 - `topol.tpr`: a GROMACS run (binary) file to perform MD simulations of alanine dipeptide.
 - `do_block_fes.py`: a python script to perform error analysis of metadynamics simulations.
 
-After dowloading the compressed archive to your local machine, you can be unpack it using the following command:
+After dowloading the compressed archive to your local machine, you can unpack it using the following command:
 
 \verbatim
 tar xvzf master-ISDD-2.tar.gz

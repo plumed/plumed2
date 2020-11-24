@@ -149,7 +149,7 @@ for this tutorial contains the following files:
 - `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
 - `traj-broken.xtc`: the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
 
-After dowloading the compressed archive to your local machine, you can be unpack it using the following command:
+After dowloading the compressed archive to your local machine, you can unpack it using the following command:
 
 \verbatim
 tar xvzf master-ISDD-1.tar.gz 
