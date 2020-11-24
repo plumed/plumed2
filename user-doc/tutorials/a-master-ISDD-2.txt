@@ -262,7 +262,7 @@ The result should look like this:
 
 To give a preliminary assessment of the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The \ref sum_hills option `--stride` should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
+The \ref sum_hills option `--stride` should be used to give an estimate of the free energy every `N` Gaussian kernels deposited, and
 the option `--mintozero` can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
