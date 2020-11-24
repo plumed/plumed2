@@ -124,6 +124,8 @@ activate the `ISDD-tutorial` Conda environment using the following command:
 conda activate ISDD-tutorial
 \endverbatim
 
+\endhidden
+
 \section master-ISDD-1-structure Your first PLUMED input file
 
 The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
