@@ -77,7 +77,7 @@ properly been compiled with PLUMED. Great, now you are ready to go!
 
 \section master-ISDD-1-structure Your first PLUMED input file
 
-The main goal of PLUMED is to compute collective variables, which are complex descriptors 
+The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
 of the system that can be used to describe the conformational change of a protein or a chemical reaction.
 This can be done either on-the-fly during a molecular dynamics simulations or _a posteriori_ on a 
 pre-calculated trajectory using PLUMED as a post-processing tool. 
@@ -175,7 +175,7 @@ To analyze the trajectories provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`);
 - run the PLUMED \ref driver utility.
 
-Notice that you can also visualize trajectories with VMD (always a good idea!).
+Notice that you can also visualize trajectories with `VMD` (always a good idea!).
 For example, the trajectory `traj-whole.xtc` can be visualized with the command:
 
 \verbatim
@@ -186,7 +186,7 @@ Let's now prepare a PLUMED input file to calculate:
 - the gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
   to retrieve the list of indexes of the CA atoms;
 - the total number of contacts (\ref COORDINATION) between all protein CA atoms.
-  For \ref COORDINATION, set reference distance `R_0` to 8.0 A (be careful with units!).
+  For \ref COORDINATION, set reference distance `R_0` to 8.0 \f$ \AA \f$ (be careful with units!).
 
 Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
@@ -257,8 +257,8 @@ the dihedral \f$ \phi \f$ is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see
 
 After consulting the manual and inspecting `GB1_native.pdb`, let's define the dihedral angle \f$ \phi \f$ of residue 2 
 in two different ways:
-- specifying an explicit list of 4 atoms (`t1`).
-- using the \ref MOLINFO shortcut (`t2`);
+1. specifying an explicit list of 4 atoms (`t1`).
+2. using the \ref MOLINFO shortcut (`t2`);
 
 \plumedfile
 # Activate MOLINFO functionalities
