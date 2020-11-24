@@ -97,10 +97,11 @@ wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O
 bash ./miniconda.sh -b -f -p /path/to/conda
 # export PATH to find the Conda executable
 export PATH="/path/to/conda/bin:$PATH"
-conda activate base
+# initialize bash shell
+conda init bash
 \endverbatim
 
-Now you can create a separate environment for the ISDD tutorial using the following commands:
+Now you can open a new shell and create a separate environment for the ISDD tutorial using the following commands:
 
 \verbatim
 # create environment
@@ -116,12 +117,10 @@ conda install -c plumed/label/munster -c conda-forge gromacs
 \endverbatim 
 
 and you are ready to go! Keep in mind that 
-every time you open a new shell, in order to use PLUMED and GROMACS you need to:
+every time you open a new shell, in order to use PLUMED and GROMACS you need to 
+activate the `ISDD-tutorial` Conda environment using the following command:
 
 \verbatim
-# export PATH to Conda executable
-export PATH="/path/to/conda/bin:$PATH"
-# activate the ISDD-tutorial environment
 conda activate ISDD-tutorial
 \endverbatim
 
