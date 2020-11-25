@@ -1936,12 +1936,14 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #include <cassert> /* assert */
 #include <cstdlib> /* getenv malloc free abort exit */
 #include <climits> /* CHAR_BIT */
+#include <cstddef> /* size_t */
 #else
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stddef.h>
 #endif
 
 /**
@@ -2056,7 +2058,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   char* pathcopy;
   void* p;
   char* pc;
-  size_t strlenpath;
+  __PLUMED_WRAPPER_STD size_t strlenpath;
   FILE* fp;
   pathcopy=NULL;
   p=NULL;
