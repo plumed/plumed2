@@ -171,6 +171,8 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 
 //output components
   componentsAreNotOptional(keys);
