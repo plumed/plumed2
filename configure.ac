@@ -845,10 +845,14 @@ if test "$debug" == false ; then
   AC_DEFINE([NDEBUG])
 fi
 
+AC_SUBST(use_debug_glibcxx)
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
   AC_DEFINE([_GLIBCXX_DEBUG])
+  use_debug_glibcxx=yes
 fi
 
 # this is necessary in many MPI implementations

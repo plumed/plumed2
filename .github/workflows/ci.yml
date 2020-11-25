@@ -112,6 +112,8 @@ jobs:
         make -j 4
         make install
         ccache -s
+        # check for global symbols, see https://github.com/plumed/plumed2/issues/549
+        make nmcheck
     - name: Run tests
       run: |
          make --no-print-directory -C regtest
