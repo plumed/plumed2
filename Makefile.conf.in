@@ -41,4 +41,5 @@ mpiexec=@MPIEXEC@
 make_static_archive=@make_static_archive@
 use_absolute_soname=@use_absolute_soname@
 use_loader_path=@use_loader_path@
+use_debug_glibcxx=@use_debug_glibcxx@
 BASH_COMPLETION_DIR=@BASH_COMPLETION_DIR@

@@ -29,7 +29,7 @@
 namespace PLMD {
 
 
-FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d, std::vector<double> &smin, std::vector<double> &smax):
+FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d, std::vector<double> &smin, const std::vector<double> &smax):
   type(type),
   paction(paction),
   sigma(d),
@@ -68,7 +68,7 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
 
 /// Constructure for 1D FB for PBMETAD
 FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
-                         double const &d, std::vector<double> &smin, std::vector<double> &smax):
+                         double const &d, std::vector<double> &smin, const std::vector<double> &smax):
   type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax)
 {
   // initialize the averages and the variance matrices

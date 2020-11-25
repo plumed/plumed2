@@ -141,7 +141,7 @@ private:
   std::vector<std::string> deltaF_name_;
 
 public:
-  OPESexpanded(const ActionOptions&);
+  explicit OPESexpanded(const ActionOptions&);
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);

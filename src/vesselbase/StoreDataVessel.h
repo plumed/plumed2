@@ -25,6 +25,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <cstddef>
 #include "Vessel.h"
 
 namespace PLMD {
@@ -47,9 +48,9 @@ private:
 /// have to store when using lowmem option
   unsigned max_lowmem_stash;
 /// The size of the vector we are computing
-  size_t vecsize;
+  std::size_t vecsize;
 /// The amount of data per vector element
-  size_t nspace;
+  std::size_t nspace;
 /// The currently active values
 //  std::vector<unsigned> active_val;
 /// The active derivative elements

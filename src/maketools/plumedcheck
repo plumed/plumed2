@@ -489,12 +489,21 @@ BEGINFILE{
 # DOC: such as `std::string` in header files.
     if(filetype=="header" && match($0,"using *namespace") && !in_plumed_doc && !in_doxygen) error("using_namespace_in_header","using namespace statement in header file")
 
+    if(module_type[module]=="default-off") {
 # check that "using namespace" statements are not used in source files
 # DOC: :using_namespace_std_in_source:
 # DOC: A statement `using namespace std` in a source files is considered bad practice. Indeed, it makes it difficult to
 # DOC: distinguish classes and functions that are taken from the standard library (such as `std::vector`) from similar
 # DOC: names declared locally. This is currently a style issue, but will become an error in the future.
-    if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen) style("using_namespace_std_in_source","using namespace std statement in source file")
+      if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen ) style("using_namespace_std_in_source","using namespace std statement in source file")
+    } else {
+# check that "using namespace" statements are not used in source files
+# DOC: :using_namespace_std_in_default_source:
+# DOC: A statement `using namespace std` in a source files is considered bad practice. Indeed, it makes it difficult to
+# DOC: distinguish classes and functions that are taken from the standard library (such as `std::vector`) from similar
+# DOC: names declared locally. This is currently an error for default modules.
+      if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen) error("using_namespace_std_in_default_source","using namespace std statement in source file")
+    }
   }
 
 # analyze HAS macros (bouth source and autoconf)

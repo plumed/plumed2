@@ -1,52 +1,48 @@
 /**
-\page master-ISDD-2 Master ISDD tutorial: Metadynamics simulations with PLUMED
+\page master-ISDD-2 Master ISDD tutorial 2020: Metadynamics simulations with PLUMED
 
 \section master-ISDD-2-aims Aims
 
-The aim of this tutorial is to train users to perform metadynamics simulations with PLUMED.
+The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
 at Universite' de Paris on November 25th, 2020.
 
 \section master-ISDD-2-objectives Learning Outcomes 
 
-Once this tutorial is completed students will be able to:
-- Write the PLUMED input file to perform metadynamics simulations
-- Calculate the free energy from a metadynamics run
-- Monitor the behavior of variables in a metadynamics run
-- Estimating the error in reconstructing free energies using block analysis
-- Assess the convergence of a metadynamics simulation
+Once this tutorial is completed users will be able to:
+
+- Write the PLUMED input file to perform metadynamics simulations.
+- Calculate the free energy as a function of the metadynamics collective variables.
+- Unbias metadynamics simulations.
+- Estimate the error in the reconstructed free energies using block analysis.
+- Assess the convergence of metadynamics simulations.
 
 \section master-ISDD-2-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `handson_2`, and enter it:
+The \tarball{master-ISDD-2} for this tutorial contains the following files:
+- `diala.pdb`: a PDB file for alanine dipeptide in vacuo.
+- `topol.tpr`: a GROMACS run (binary) file to perform MD simulations of alanine dipeptide.
+- `do_block_fes.py`: a python script to perform error analysis of metadynamics simulations.
 
-\verbatim
-mkdir handson_2 
-cd handson_2
-\endverbatim
-
-The \tarball{master-ISDD-2} for this project contains the following files:
-- diala.pdb: a PDB file for alanine dipeptide in vacuo
-- topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- do_block_fes.py: a python script to perform error analysis
-
-The archive can be unpacked using the following command:
+After dowloading the compressed archive to your local machine, you can unpack it using the following command:
 
 \verbatim
 tar xvzf master-ISDD-2.tar.gz
 \endverbatim
 
-This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
+Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
+it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
+
+\note This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 
-In the previous tutorial, we have seen that PLUMED can be used to compute collective variables. However, PLUMED
-is most often use to add forces on the collective variables. To this aim,
-we have implemented a variety of possible biases acting on collective variables.
-The complete documentation for
-all the biasing methods available in PLUMED can be found at the \ref Bias page.
-In the following we will see how to build an adaptive bias potential with metadynamics.
+In the previous tutorial, we have seen that PLUMED can be used to compute collective variables (CVs) on a pre-calculated
+trajectory. However, PLUMED is most often use to add forces on the CVs during a MD simulation, for example, 
+in order to accelerate sampling. To this aim, we have implemented a variety of possible biases acting on CVs. 
+The complete documentation for all the biasing methods available in PLUMED can be found at the \ref Bias page.
+In the following we will learn how to use PLUMED to perform and analyze a metadynamics simulation.
 Here you can find a brief recap of the metadynamics theory.
 
 \hidden{Summary of theory}
@@ -134,11 +130,12 @@ In this exercise we will setup and perform a well-tempered metadynamics run usin
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
-Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
+Whenever you see an highlighted \highlight{FILL} string, this is a string that you must replace.
 
 \plumedfile
-# vim:ft=plumed
+# Activate MOLINFO functionalities
 MOLINFO STRUCTURE=diala.pdb
+
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
 # you might want to use MOLINFO shortcuts
 phi: TORSION ATOMS=__FILL__
@@ -150,7 +147,7 @@ psi: TORSION ATOMS=__FILL__
 metad: __FILL__ ARG=__FILL__ ...
 # Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
   PACE=500 HEIGHT=1.2 
-# the bias factor should be wisely chosen
+# The bias factor should be wisely chosen
   BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
   SIGMA=__FILL__
@@ -158,23 +155,23 @@ metad: __FILL__ ARG=__FILL__ ...
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 ...
 
-# Print both collective variables and the value of the bias potential on COLVAR file
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
+# Print both collective variables on COLVAR file every 10 steps
+PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
 The syntax for the command \ref METAD is simple.
-The directive is followed by a keyword ARG followed by the labels of the CVs
-on which the metadynamics potential will act.
-The keyword PACE determines the stride of Gaussian deposition in number of time steps,
-while the keyword HEIGHT specifies the height of the Gaussian in kJ/mol. For each CVs, one has
-to specify the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
-to the file indicated by the keyword FILE.
+The directive is followed by a keyword `ARG` followed by the labels of the CVs
+on which the metadynamics bias potential will act.
+The keyword `PACE` determines the stride of Gaussian deposition in number of time steps,
+while the keyword `HEIGHT` specifies the height of the Gaussian. For each CVs, one has
+to specify the width of the Gaussian by using the keyword `SIGMA`. Gaussian will be written
+to the file indicated by the keyword `FILE`.
 
-In this example, the bias potential will be stored on a grid, whose boundaries are specified by the keywords GRID_MIN and GRID_MAX.
-Notice that you can provide either the number of bins for every collective variable (GRID_BIN) or
-the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+In this example, the bias potential will be stored on a grid, whose boundaries are specified by the keywords `GRID_MIN` and `GRID_MAX`.
+Notice that you can provide either the number of bins for every CV (`GRID_BIN`) or
+the desired grid spacing (`GRID_SPACING`). In case you provide both PLUMED will use
 the most conservative choice (highest number of bins) for each dimension.
-In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+In case you do not provide any information about bin size (neither `GRID_BIN` nor `GRID_SPACING`)
 and if Gaussian width is fixed, PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
@@ -184,10 +181,10 @@ Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics s
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
 
-During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
-The COLVAR file contains all the information specified by the PRINT command, in this case
-the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics bias potential. 
-We can use `gnuplot` to visualize the behavior of the CV during the simulation, as reported in the COLVAR file:
+During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
+The `COLVAR` file contains all the information specified by the \ref PRINT command, in this case
+the value of the backbone dihedrals \f$ \phi \f$ and \f$ \psi \f$  every 10 steps of simulation.
+We can use `gnuplot` to visualize the behavior of the metadynamics CV \f$ \phi \f$ during the simulation:
 
 \verbatim
 gnuplot> p "COLVAR" u 1:2
@@ -202,7 +199,7 @@ by the metadynamics bias potential to visit the other local minimum. As the simu
 the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
 entire phase space.
 
-The HILLS file contains a list of the Gaussian kernels deposited along the simulation.
+The `HILLS` file contains a list of the Gaussian kernels deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
@@ -212,9 +209,9 @@ If we give a look at the header of this file, we can find relevant information a
 #! SET max_phi pi
 \endverbatim 
 
-The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
+The line starting with `FIELDS` tells us what is displayed in the various columns of the `HILLS` file:
 the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width and height, and the bias factor. 
-We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
+We can use the `HILLS` file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
 \anchor master-ISDD-2-phihills-fig
@@ -231,8 +228,9 @@ of your metadynamics simulation!
 \subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy as a function of the metadynamics CVs 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
-bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
-deposited during the simulation and stored in the HILLS file.  
+bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
+deposited during the simulation and stored in the `HILLS` file.  
+
 To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
 
 \verbatim
@@ -240,8 +238,8 @@ plumed sum_hills --hills HILLS
 \endverbatim
 
 The command above generates a file called `fes.dat` in which the free-energy surface as function
-of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free energy file,
-as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills:
+of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free-energy file,
+as well as the boundaries and bin size of the grid, by using the following \ref sum_hills options:
 
 \verbatim
 --outfile - specify the outputfile for sumhills
@@ -258,8 +256,8 @@ The result should look like this:
 
 To give a preliminary assessment of the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The option \-\-stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
-the option \-\-mintozero can be used to align the profiles by setting the global minimum to zero.
+The \ref sum_hills option `--stride` should be used to give an estimate of the free energy every `N` Gaussian kernels deposited, and
+the option `--mintozero` can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
 \verbatim
@@ -273,70 +271,76 @@ The resulting plot should look like the following:
 \image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 These two qualitative observations:
-- the system is diffusing efficiently in the collective variable space (Figure \ref master-ISDD-2-phi-fig) 
-- the estimated free energy does not change significantly as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
+1. the system is diffusing rapidly in the entire CV space (Figure \ref master-ISDD-2-phi-fig) 
+2. the estimated free energy does not significantly change as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
-suggest that the simulation might be converged. 
+suggest that the simulation __might__ be converged. 
 
-\warning The two conditions listed above are necessary, but only qualitative, not sufficient for convergence.
+\warning The two conditions listed above are necessary, but not sufficient to declare convergence.
 For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting or how to unbias a metadynamics simulation
+\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation
 
 In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
-the same variable directly from the metadynamics bias potential using the utility \ref sum_hills. 
+the same variable directly from the metadynamics bias potential using the \ref sum_hills utility. 
 However, in many cases you might decide which variable should be analyzed _after_
 having performed a metadynamics simulation. For example,
-you might want to calculate the free energy as a function of collective variables other than those
+you might want to calculate the free energy as a function of CVs other than those
 biased during the metadynamics simulation, such as the dihedral \f$ \psi \f$.
-At variance with standard MD simulations, you cannot simply calculate histograms of other variables from your metadynamics trajectory, 
+At variance with standard MD simulations, you cannot simply calculate histograms of other variables directly from your metadynamics trajectory, 
 because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
 To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
-you must reweight (or unbias) your simulation.
+you must reweight (unbias) your simulation.
 
 There are multiple ways to calculate the correct
 statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
-Two of these approaches are:
+For example:
 
-- Weights are calculated by considering the time-dependence of the metadynamics bias
+1. weights can be calculated by considering the time-dependence of the metadynamics bias
    potential \cite Tiwary_jp504920s;
-- Weights are calculated using the metadynamics bias potential obtained at the end of the
+2. weights can be calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the second method, which resembles the umbrella-sampling-like reweighting approach.
+In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach.
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
-for running your simulation but add the keyword `RESTART=YES` to the \ref METAD command.
-This will make this action behave as if PLUMED was restarting. It will thus
-read the already accumulated Gaussians and continue adding more.
-In addition, set the Gaussian height to zero and the pace to a large number.
+for running your metadynamics simulation except for a few modifications. First, you 
+need to add the keyword `RESTART=YES` to the \ref METAD command.
+This will make this action behave as if PLUMED was restarting, i.e. PLUMED will
+read from the `HILLS` file the Gaussians that have previously been accumulated.
+Second, you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
 This will actually avoid adding new Gaussians (and even if they are added they will have
-zero height). Finally, change the \ref PRINT statement so that you
-write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
+zero height). Finally, you need to modify the \ref PRINT statement so that you
+write every frame and that, in addition to `phi` and `psi`,
 you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
 
 \plumedfile
-__FILL__ # here goes the definitions of the CVs
+# Activate MOLINFO functionalities
+MOLINFO STRUCTURE=diala.pdb
+
+__FILL__ # here goes the definitions of the phi and psi CVs
 
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
+# Deposit a Gaussian every 10000000 time steps (never!), with initial height equal to 0.0 kJ/mol
   PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
-# the bias factor should be wisely chosen
+# The bias factor should be wisely chosen
   BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
   SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
-# Say that METAD should be restarting
+# Say that METAD should be restarting (= reading an existing HILLS file)
   RESTART=YES # <- this is the new stuff!
 ...
 
-PRINT ARG=phi,psi,metad.bias FILE=COLVAR_REWEIGHT STRIDE=1  # <- also change this one!
+# Print out the values of phi, psi and the metadynamics bias potential
+# Make sure you print out the 3 variables in the specified order at every step
+PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this one!
 \endplumedfile
 
-Then run the driver using this command
+Then run the \ref driver tool using this command:
 
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
@@ -362,63 +366,66 @@ The beginning of the file should look like this:
 \endverbatim
 
 You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
-(umbrella-sampling-like reweighting). Now, you can read the `COLVAR_REWEIGHT` file using a python script, for example, and compute a weighted histogram.
-Alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
+(umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using, for example, a python script 
+and compute a weighted histogram. Alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
 lines at the end of the `plumed_reweight.dat` file:
 
 \plumedfile
-# use the metadynamics bias as argument
+# Use the metadynamics bias as argument
 as: REWEIGHT_BIAS ARG=__FILL__
 
-# calculate histograms of phi and psi dihedrals every 50 steps
+# Calculate histograms of phi and psi dihedrals every 50 steps
 # using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
-# look at the manual to understand the parameters of the HISTOGRAM action!
+# Look at the manual to understand the parameters of the HISTOGRAM action!
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
 
-# convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
+# Convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 
-# print free energies F(s) to file when all the trajectory is processed 
+# Print out the free energies F(s) to file once the entire trajectory is processed 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 \endplumedfile
 
-and plot the result using gnuplot.
+and plot the result using `gnuplot`:
 
 \verbatim
 gnuplot> p "ffphi.dat" u 1:2 w lp
 gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
 
-You can also compare the free energy as a function of \f$ \phi \f$ calculated:
-- directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
-- using the reweighting procedure introduced in this exercise (see Fig. \ref master-ISDD-2-fescomp-fig).
+You can now compare the free energies as a function of \f$ \phi \f$ calculated:
+1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
+2. using the reweighting procedure introduced in this exercise. 
+
+The results should be identical (see Fig. \ref master-ISDD-2-fescomp-fig).
 
 \anchor master-ISDD-2-fescomp-fig
 \image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
  
 
-\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free-energies using block-analysis
+\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free energies using block-analysis
 
-In the previous exercise, we calculated the final bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
-this quantity to reweight the biased simulation. The same quantity is useful to calculate the error in 
-reconstructed free energies and assess whether our simulation is converged.
+In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
+this quantity to calculate the correct statistical weight of each frame that we need to reweight the biased simulation.
+In this exercise, we will see how this information can be used to calculate the error in 
+the reconstructed free energies and assess whether our simulation is converged or not.
 Let's first calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` 
 file obtained at the end of \ref master-ISDD-2-ex-3:
 
 \verbatim
-# find maximum value of bias to avoid numerical errors when calculating the un-biasing weights
+# Find maximum value of bias to avoid numerical errors when calculating the un-biasing weights
 bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR_REWEIGHT`
 
-# print phi values and un-normalized weights
+# Print phi values and un-biasing (un-normalized) weights
 awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR_REWEIGHT > phi.weight
 \endverbatim
 
 If you inspect the `phi.weight` file, you will see that each line contains
-the value of the dihedral \f$ \phi \f$ along with the corresponding (un-normalized) weight for each frame of the
-metadynamics simulation:
+the value of the dihedral \f$ \phi \f$ along with the corresponding (un-normalized) weight \f$ w \f$ for each frame of the
+metadynamics trajectory:
 
 \verbatim
 0.907347 0.0400579
@@ -431,7 +438,7 @@ metadynamics simulation:
 \endverbatim
 
 At this point we can apply the block-analysis technique (for more info about the theory, 
-have a look at the \ref trieste-2) to calculate the average free-energy across the blocks
+have a look at \ref trieste-2) to calculate the average free energy across the blocks
 and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
 script to read the `phi.weight` file and produce the desired output.
 We use a bash loop to test block sizes ranging from 1 to 1000:
@@ -449,7 +456,8 @@ for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.01
 \endverbatim 
 
 For each value of block size `N`, you will obtain a separate `fes.N.dat` file, containing the value
-of the \f$ \phi \f$ variable on a grid, the average free-energy across the blocks, and the associated error (in kJ/mol):
+of the \f$ \phi \f$ variable on a grid, the average free energy across the blocks with its associated error (in kJ/mol)
+on each point of the grid:
 
 \verbatim
    -3.141593       23.184653     0.080659
