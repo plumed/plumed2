@@ -22,9 +22,10 @@
 #ifndef __PLUMED_tools_MultiValue_h
 #define __PLUMED_tools_MultiValue_h
 
-#include <vector>
 #include "Exception.h"
 #include "DynamicList.h"
+#include <vector>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -48,8 +49,8 @@ private:
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
 public:
-  MultiValue( const size_t&, const size_t& );
-  void resize( const size_t&, const size_t& );
+  MultiValue( const std::size_t&, const std::size_t& );
+  void resize( const std::size_t&, const std::size_t& );
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
