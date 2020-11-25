@@ -278,6 +278,8 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 
 //output components
   keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
