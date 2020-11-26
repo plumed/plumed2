@@ -405,7 +405,8 @@ void OPESexpanded::calculate()
 
   long double sum=0;
   std::vector<long double> der_sum_cv(ncv_,0);
-  if(NumOMP_==1) {
+  if(NumOMP_==1)
+  {
     for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
     {
       long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
@@ -414,11 +415,13 @@ void OPESexpanded::calculate()
       for(unsigned j=0; j<ncv_; j++)
         der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
     }
-  } else {
+  }
+  else
+  {
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<long double> omp_der_sum_cv(ncv_,0);
-      #pragma omp for reduction(+ : sum) nowait
+      #pragma omp for reduction(+:sum) nowait
       for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
       {
         long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
@@ -447,8 +450,12 @@ void OPESexpanded::calculate()
   if(calc_work_)
   {
     long double old_sum=0;
-    for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
-      old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      #pragma omp for reduction(+:old_sum) nowait
+      for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+        old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
+    }
     if(NumParallel_>1)
       comm.Sum(old_sum);
     work_+=-kbt_*std::log(sum/old_sum);
