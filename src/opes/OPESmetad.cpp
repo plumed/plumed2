@@ -766,15 +766,15 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //printing some info
   log.printf("  temperature = %g\n",kbt_/Kb);
   log.printf("  beta = %g\n",1./kbt_);
-  log.printf("  depositing new kernels with PACE = %d\n",stride_);
+  log.printf("  depositing new kernels with PACE = %u\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
   if(std::isinf(biasfactor_))
     log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
   if(sigma0_.size()==0)
   {
-    log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %d\n",adaptive_sigma_stride_);
-    log.printf("    thus the first n=ADAPTIVE_SIGMA_STRIDE/PACE steps will have no bias, n = %d\n",adaptive_sigma_stride_/stride_);
+    log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %u\n",adaptive_sigma_stride_);
+    log.printf("    thus the first n=ADAPTIVE_SIGMA_STRIDE/PACE steps will have no bias, n = %u\n",adaptive_sigma_stride_/stride_);
   }
   else
   {
@@ -817,8 +817,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(NumWalkers_>1)
   {
     log.printf("  using multiple walkers\n");
-    log.printf("    number of walkers: %d\n",NumWalkers_);
-    log.printf("    walker rank: %d\n",walker_rank_);
+    log.printf("    number of walkers: %u\n",NumWalkers_);
+    log.printf("    walker rank: %u\n",walker_rank_);
   }
   int mw_warning=0;
   if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_)
@@ -827,12 +827,12 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
-    log.printf("  using multiple MPI threads per simulation: %u\n",NumParallel_);
+    log.printf("  using multiple MPI processes per simulation: %u\n",NumParallel_);
   if(NumOMP_>1)
-    log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
+    log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
   if(serial)
-    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI and %u OpenMP available threads\n",comm.Get_size(),OpenMP::getNumThreads());
-  log.printf(" Bibliography ");
+    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI processes and %u OpenMP threads available\n",comm.Get_size(),OpenMP::getNumThreads());
+  log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   log.printf("\n");
 }
