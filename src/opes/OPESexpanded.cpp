@@ -20,6 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/ActionSet.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/OpenMP.h"
 
 #include "ExpansionCVs.h"
 
@@ -106,6 +107,7 @@ private:
   bool isFirstStep_;
   bool afterCalculate_;
   unsigned NumParallel_;
+  unsigned NumOMP_;
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned long counter_;
@@ -223,12 +225,14 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
 
 //parallelization stuff
   NumParallel_=comm.Get_size();
+  NumOMP_=OpenMP::getNumThreads();
   rank_=comm.Get_rank();
   bool serial=false;
   parseFlag("SERIAL",serial);
   if(serial)
   {
     NumParallel_=1;
+    NumOMP_=1;
     rank_=0;
   }
 
@@ -381,7 +385,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
   if(NumParallel_>1)
-    log.printf("  using multiple threads per simulation: %u\n",NumParallel_);
+    log.printf("  using multiple MPI processes per simulation: %u\n",NumParallel_);
+  if(NumOMP_>1)
+    log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
   if(serial)
     log.printf(" -- SERIAL: running without loop parallelization\n");
 //Bibliography
@@ -397,13 +403,32 @@ void OPESexpanded::calculate()
 
   long double sum=0;
   std::vector<long double> der_sum_cv(ncv_,0);
-  for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
-  {
-    long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
-    sum+=add_i;
-    //set derivatives
-    for(unsigned j=0; j<ncv_; j++)
-      der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
+  if(NumOMP_==1) {
+    for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+    {
+      long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
+      sum+=add_i;
+      //set derivatives
+      for(unsigned j=0; j<ncv_; j++)
+        der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
+    }
+  } else {
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      std::vector<long double> omp_der_sum_cv(ncv_,0);
+      #pragma omp for reduction(+ : sum) nowait
+      for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+      {
+        long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
+        sum+=add_i;
+        //set derivatives
+        for(unsigned j=0; j<ncv_; j++)
+          omp_der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
+      }
+      #pragma omp critical
+      for(unsigned j=0; j<ncv_; j++)
+        der_sum_cv[j] += omp_der_sum_cv[j];
+    }
   }
   if(NumParallel_>1)
   {
