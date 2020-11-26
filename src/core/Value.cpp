@@ -39,6 +39,7 @@ Value::Value():
   norm(1.0),
   hasForce(false),
   hasDeriv(true),
+  ngrid_der(0),
   istimeseries(false),
   shape(std::vector<unsigned>()),
   alwaysstore(false),
@@ -66,6 +67,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
+  ngrid_der(0),
   istimeseries(false),
   alwaysstore(false),
   storedata(true),
@@ -92,6 +94,10 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
      data.resize(getSize()); unsigned fsize=1; 
      for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
      inputForces.resize(fsize); 
+     if( hasDeriv ) {
+         ngrid_der = shape.size();
+         if( action ) ngrid_der = action->getNumberOfDerivatives();
+     } 
   } else if( hasDeriv ) {
      data.resize( 1 +  action->getNumberOfDerivatives() ); inputForces.resize(1);
   } else if( shape.size()==0 ) { data.resize(1); inputForces.resize(1); }
@@ -284,7 +290,8 @@ ActionWithValue* Value::getPntrToAction() {
 
 unsigned Value::getSize() const {
   unsigned size=getNumberOfValues( name );
-  if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );
+  if( shape.size()>0 && hasDeriv && action ) return size*( 1 + action->getNumberOfDerivatives() ); 
+  else return size*( 1 + shape.size() );
   return size;
 }
 
@@ -298,7 +305,7 @@ unsigned Value::getNumberOfValues( const std::string& alab ) const {
 }
 
 double Value::get(const unsigned& ival) const {
-  if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
+  if( hasDeriv ) return data[ival*(1+ngrid_der)] / norm;
 #ifdef DNDEBUG 
   if( action ) plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
 #endif
@@ -307,13 +314,13 @@ double Value::get(const unsigned& ival) const {
 }
 
 double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
-  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
-  return data[n*(1+action->getNumberOfDerivatives()) + 1 + j] / norm;
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  return data[n*(1+ngrid_der) + 1 + j] / norm;
 }
 
 void Value::setGridDerivative(const unsigned& n, const unsigned& j, const double& val ) {
-  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
-  data[n*(1+action->getNumberOfDerivatives()) + 1 + j] = val;
+  plumed_dbg_assert( hasDeriv && n*(1+shape.size()) + 1 + j < data.size() );
+  data[n*(1+shape.size()) + 1 + j] = val;
 }
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {
@@ -360,7 +367,7 @@ void Value::set(const unsigned& n, const double& v ) {
   value_set=true;
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
   else if( !hasDeriv ) { data[n]=v; applyPeriodicity(n); }
-  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+  else { data[n*(1+ngrid_der)] = v; }
 }
 
 bool Value::usingAllVals( const std::string& alabel ) const {

@@ -72,6 +72,8 @@ private:
   std::string name;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// The number of derivatives for the grid
+  unsigned ngrid_der;
 /// Is this value a time series
   bool istimeseries;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)

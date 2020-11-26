@@ -37,6 +37,7 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  my_interpolator( getPntrToArgument(0), gridobject ),
   firststep(true),
   set_zero_outside_range(false)
 {
@@ -61,55 +62,19 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 }
 
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-  plumed_dbg_assert( gridobject.getGridType()=="flat" ); unsigned dimension = gridobject.getDimension();
+  plumed_dbg_assert( gridobject.getGridType()=="flat" ); 
   if( set_zero_outside_range && !gridobject.inbounds( x ) ) return 0.0;
-
-  double X,X2,X3,value=0; der.assign(der.size(),0.0);
-  std::vector<double> fd(dimension);
-  std::vector<double> C(dimension);
-  std::vector<double> D(dimension);
-  std::vector<double> dder(dimension);
-
-  std::vector<unsigned> nindices(dimension);
-  std::vector<unsigned> indices(dimension); gridobject.getIndices( x, indices );
-  std::vector<double> xfloor(dimension); gridobject.getGridPointCoordinates( gridobject.getIndex(x), nindices, xfloor );
+  double value;
 
   // loop over neighbors
   if( interpolation_type==spline ) {
-      std::vector<unsigned> neigh; gridobject.getSplineNeighbors( gridobject.getIndex(indices), neigh );
-      for(unsigned int ipoint=0; ipoint<neigh.size(); ++ipoint) {
-        double grid=getFunctionValue( neigh[ipoint] );
-        for(unsigned j=0; j<dimension; ++j) dder[j] = getPntrToArgument(0)->getGridDerivative( neigh[ipoint], j );
-
-        gridobject.getIndices( neigh[ipoint], nindices );
-        double ff=1.0;
-        for(unsigned j=0; j<dimension; ++j) {
-          int x0=1;
-          if(nindices[j]==indices[j]) x0=0;
-          double ddx=gridobject.getGridSpacing()[j];
-          X=fabs((x[j]-xfloor[j])/ddx-(double)x0);
-          X2=X*X;
-          X3=X2*X;
-          double yy;
-          if(fabs(grid)<0.0000001) yy=0.0;
-          else yy=-dder[j]/grid;
-          C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*ddx;
-          D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*ddx;
-          D[j]*=(x0?-1.0:1.0)/ddx;
-          ff*=C[j];
-        }
-        for(unsigned j=0; j<dimension; ++j) {
-          fd[j]=D[j];
-          for(unsigned i=0; i<dimension; ++i) if(i!=j) fd[j]*=C[i];
-        }
-        value+=grid*ff;
-        for(unsigned j=0; j<dimension; ++j) der[j]+=grid*fd[j];
-      }
+      value = my_interpolator.splineInterpolation( x, der );
   } else if ( interpolation_type==floor ) {
-      unsigned nn = gridobject.getIndex(indices); 
+      unsigned dimension = gridobject.getDimension(); std::vector<unsigned> indices(dimension); 
+      gridobject.getIndices( x, indices ); unsigned nn = gridobject.getIndex(indices); 
       if( getPntrToArgument(0)->isTimeSeries() && !gridobject.inbounds(x) ) nn = gridobject.getNbin(false)[0]-1;
       value = getFunctionValue( nn ); if( getPntrToArgument(0)->isTimeSeries() ) return value;
-      for(unsigned j=0; j<dimension; ++j) dder[j] = getPntrToArgument(0)->getGridDerivative( nn, j ); 
+      for(unsigned j=0; j<dimension; ++j) der[j] = getPntrToArgument(0)->getGridDerivative( nn, j ); 
   }
   return value;
 }
