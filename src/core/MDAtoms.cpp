@@ -99,7 +99,7 @@ public:
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name].template get<T>()+=static_cast<T>(f);
   }
-  void MD2double(const const TypesafePtr & m,double&d)const override {
+  void MD2double(const TypesafePtr & m,double&d)const override {
     d=double(*m.template get<const T>());
   }
   void double2MD(const double&d,const TypesafePtr & m)const override {
