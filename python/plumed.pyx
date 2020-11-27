@@ -115,14 +115,15 @@ cdef class Plumed:
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val)
          elif HAS_NUMPY and isinstance(val, np.ndarray) :
-            if( val.dtype=="float64" ):
+            # See https://numpy.org/doc/stable/user/basics.types.html
+            if( val.dtype==np.double):
                self.cmd_ndarray_double(ckey, val)
-            elif( val.dtype=="int32" ) :
+            elif( val.dtype==np.intc ) :
                self.cmd_ndarray_int(ckey, val)
-            elif( val.dtype=="int64" ) :
+            elif( val.dtype==np.int_ ) :
                self.cmd_ndarray_long(ckey, val)
             else :
-               raise ValueError("ndarrys should be float64 or int64")
+               raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
                ar = val
