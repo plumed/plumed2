@@ -264,7 +264,7 @@ void MDAtomsTyped<T>::updateForces(const std::vector<int>&index,const std::vecto
   T* ffz;
   getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
-  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
     ffx[stride*i]+=scalef*T(forces[index[i]][0]);
     ffy[stride*i]+=scalef*T(forces[index[i]][1]);
@@ -282,7 +282,7 @@ void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) 
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   auto v=virial.get<T>(9);
   if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
-  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
     ffx[stride*i]*=T(factor);
     ffy[stride*i]*=T(factor);
