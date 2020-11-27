@@ -23,6 +23,7 @@
 #define __PLUMED_core_ExchangePatterns_h
 
 #include "tools/ForwardDecl.h"
+#include "tools/TypesafePtr.h"
 
 namespace PLMD {
 class Random;
@@ -39,7 +40,7 @@ public:
   void setNofR(const int);
   void setSeed(const int);
   void setFlag(const int);
-  void getList(int *ind);
+  void getList(const TypesafePtr & ind);
   void getFlag(int&);
 };
 }

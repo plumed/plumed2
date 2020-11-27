@@ -136,7 +136,6 @@ PlumedMain::PlumedMain():
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
-  stopFlag(NULL),
   stopNow(false),
   novirial(false),
   detailedTimers(false)
@@ -286,11 +285,11 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(val.get<int>(),false);
+        atoms.setAtomsGatindex(val,false);
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(val.get<int>(),true);
+        atoms.setAtomsGatindex(val,true);
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
@@ -300,12 +299,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.createFullList(val.get<int>());
+        atoms.createFullList(val);
         break;
       case cmd_getFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.getFullList(val.get<const int*>());
+        atoms.getFullList(val);
         break;
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
@@ -314,14 +313,14 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", val.get<long>() );
-        else DataFetchingObject::get_rank( actionSet, words[1], words[2], val.get<long>() );
+        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", val);
+        else DataFetchingObject::get_rank( actionSet, words[1], words[2], val);
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", val.get<long>() );
-        else DataFetchingObject::get_shape( actionSet, words[1], words[2], val.get<long>() );
+        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", val );
+        else DataFetchingObject::get_shape( actionSet, words[1], words[2], val );
         break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
@@ -492,7 +491,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        stopFlag=val.get<int>();
+        stopFlag=val;
         break;
       case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
@@ -910,7 +909,7 @@ void PlumedMain::update() {
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow) {
-    if(stopFlag) (*stopFlag)=1;
+    if(stopFlag) (*stopFlag.get<int>())=1;
     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }
 

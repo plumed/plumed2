@@ -377,13 +377,14 @@ void Atoms::setAtomsNlocal(int n) {
   }
 }
 
-void Atoms::setAtomsGatindex(int*g,bool fortran) {
+void Atoms::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
+  auto gg=g.get<const int>(gatindex.size());
   ddStep=plumed.getStep();
   if(fortran) {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i]-1;
+    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=gg[i]-1;
   } else {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i];
+    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=gg[i];
   }
   for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
   if( gatindex.size()==natoms ) {
@@ -460,9 +461,9 @@ double Atoms::getKbT()const {
 }
 
 
-void Atoms::createFullList(int*n) {
+void Atoms::createFullList(const TypesafePtr & n) {
   if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
-    *n=natoms;
+    *n.template get<int>()=natoms;
     fullList.resize(natoms);
     for(unsigned i=0; i<natoms; i++) fullList[i]=i;
   } else {
@@ -482,13 +483,14 @@ void Atoms::createFullList(int*n) {
     fullList.resize(0);
     fullList.reserve(unique.size());
     for(const auto & p : unique) fullList.push_back(p.index());
-    *n=fullList.size();
+    *n.template get<int>()=fullList.size();
   }
 }
 
-void Atoms::getFullList(const int**x) {
-  if(!fullList.empty()) *x=&fullList[0];
-  else *x=NULL;
+void Atoms::getFullList(const TypesafePtr & x) {
+  auto xx=x.template get<const int*>(fullList.size());
+  if(!fullList.empty()) *xx=&fullList[0];
+  else *xx=NULL;
 }
 
 void Atoms::clearFullList() {

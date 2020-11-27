@@ -31,17 +31,17 @@
 namespace PLMD {
 
 template<typename T>
-static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
-  auto p_=p.get<T>();
+static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,unsigned maxel,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
+  auto p_=p.get<T>(3*maxel);
   if(p_) {
     ppx=p_;
     ppy=p_+1;
     ppz=p_+2;
     stride=3;
   } else if(px && py && pz) {
-    ppx=px.get<T>();
-    ppy=py.get<T>();
-    ppz=pz.get<T>();
+    ppx=px.get<T>(maxel);
+    ppy=py.get<T>(maxel);
+    ppz=pz.get<T>(maxel);
     stride=1;
   } else {
     ppx=nullptr;
@@ -110,7 +110,7 @@ public:
     const T* ffx;
     const T* ffy;
     const T* ffz;
-    getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+    getPointers(f,fx,fy,fz,index,ffx,ffy,ffz,stride);
     Vector force(ffx[stride*index],ffy[stride*index],ffz[stride*index]);
     return force/scalef;
   }
@@ -157,7 +157,7 @@ void MDAtomsTyped<T>::getPositions(const std::vector<int>&index,std::vector<Vect
   const T* ppx;
   const T* ppy;
   const T* ppz;
-  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  getPointers(p,px,py,pz,index.size(),ppx,ppy,ppz,stride);
   plumed_assert(index.size()==0 || (ppx && ppy && ppz));
 // cannot be parallelized with omp because access to positions is not ordered
   for(unsigned i=0; i<index.size(); ++i) {
@@ -173,7 +173,7 @@ void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::v
   const T* ppx;
   const T* ppy;
   const T* ppz;
-  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  getPointers(p,px,py,pz,0,ppx,ppy,ppz,stride); // cannot check boundaries on TypesafePtr. it's maxval(i)
   plumed_assert(index.size()==0 || (ppx && ppy && ppz));
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
@@ -191,7 +191,7 @@ void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,std::vector<Vector>&pos
   const T* ppx;
   const T* ppy;
   const T* ppz;
-  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  getPointers(p,px,py,pz,k,ppx,ppy,ppz,stride);
   plumed_assert(k==j || (ppx && ppy && ppz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
   for(unsigned i=j; i<k; ++i) {
@@ -208,7 +208,7 @@ void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
   const T* ppx;
   const T* ppy;
   const T* ppz;
-  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  getPointers(p,px,py,pz,positions.size(),ppx,ppy,ppz,stride);
   plumed_assert(positions.size()==0 || (ppx && ppy && ppz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0; i<positions.size(); ++i) {
@@ -221,21 +221,21 @@ void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const std::vector<int>&index,std::vector<double>&masses)const {
-  auto mm=m.get<const T>();
+  auto mm=m.get<const T>(index.size());
   if(mm) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*mm[i];
   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double>&charges)const {
-  auto cc=c.get<const T>();
+  auto cc=c.get<const T>(index.size());
   if(cc) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*cc[i];
   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
-  auto v=this->virial.template get<T>();
+  auto v=this->virial.template get<T>(9);
   if(v) for(int i=0; i<3; i++)for(int j=0; j<3; j++) v[3*i+j]+=T(virial(i,j)*scalev);
 }
 
@@ -245,7 +245,7 @@ void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::v
   T* ffx;
   T* ffy;
   T* ffz;
-  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  getPointers(f,fx,fy,fz,0,ffx,ffy,ffz,stride); // cannot check boundaries on TypesafePtr. it's maxval(i)
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   unsigned k=0;
   for(const auto & p : index) {
@@ -262,7 +262,7 @@ void MDAtomsTyped<T>::updateForces(const std::vector<int>&index,const std::vecto
   T* ffx;
   T* ffy;
   T* ffz;
-  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  getPointers(f,fx,fy,fz,index.size(),ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
@@ -278,7 +278,7 @@ void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) 
   T* ffx;
   T* ffy;
   T* ffz;
-  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  getPointers(f,fx,fy,fz,index.size(),ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   auto v=virial.get<T>(9);
   if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
@@ -346,7 +346,7 @@ void MDAtomsTyped<T>::setm(const TypesafePtr & m) {
 
 template <class T>
 void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
-  this->c=c.get<T>();
+  this->c=c;
 }
 
 template <class T>

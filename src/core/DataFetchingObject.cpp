@@ -70,7 +70,7 @@ ActionWithValue* DataFetchingObject::findAction( const ActionSet& a, const std::
   return a.selectWithLabel<ActionWithValue*>( aname );
 }
 
-void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
+void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & dims ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
@@ -81,7 +81,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims[0]=1;
+    dims.template get<long>()[0]=1;
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -91,7 +91,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   }
 }
 
-void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
+void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & dims ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
@@ -102,7 +102,7 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims[0]=1;
+    dims.template get<long>()[0]=1;
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {

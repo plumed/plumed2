@@ -102,11 +102,11 @@ int main(){
 
   try {
     double dnatoms=natoms;
-    plumed->cmd("setNatoms",&dnatoms);
+    plumed->cmd("setNatoms",&dnatoms,1);
     plumed_error() << "should have failed with a typecheck error";
   } catch(PLMD::Plumed::ExceptionTypeError & e) {
   }
-  plumed->cmd("setNatoms",&natoms);
+  plumed->cmd("setNatoms",&natoms,1);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
   plumed->cmd("readInputLine","UNITS LENGTH=A");
@@ -126,23 +126,23 @@ int main(){
 
   for(int step=0;step<10;step++){
     plumed->cmd("setStep",&step);
-    plumed->cmd("setPositions",&positions[0]);
-    plumed->cmd("setBox",&box[0]);
-    plumed->cmd("setForces",&forces[0]);
-    plumed->cmd("setVirial",&virial[0]);
-    plumed->cmd("setMasses",&masses[0]);
+    plumed->cmd("setPositions",&positions[0],3*positions.size());
+    plumed->cmd("setBox",&box[0],9);
+    plumed->cmd("setForces",&forces[0],3*forces.size());
+    plumed->cmd("setVirial",&virial[0],9);
+    plumed->cmd("setMasses",&masses[0],masses.size());
 // first compute using modified positions:
     positions[0]=0.05;
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;
     double bias=0;
-    plumed->cmd("getBias",&bias);
+    plumed->cmd("getBias",&bias,1);
     ofs<<bias<<"\n";
 // first compute using regular positions:
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
-    plumed->cmd("getBias",&bias);
+    plumed->cmd("getBias",&bias,1);
     ofs<<bias<<"\n";
 // hills should only be added at regular positions:
     plumed->cmd("update");

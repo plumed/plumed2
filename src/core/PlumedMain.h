@@ -65,6 +65,7 @@ class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
 class TypesafePtrPool;
+class TypesafePtr;
 
 /**
 Main plumed object.
@@ -198,8 +199,12 @@ private:
   bool doCheckPoint;
 
 
+private:
+/// Forward declaration.
+  ForwardDecl<TypesafePtr> stopFlag_fwd;
+public:
 /// Stuff to make plumed stop the MD code cleanly
-  int* stopFlag;
+  TypesafePtr& stopFlag=*stopFlag_fwd;
   bool stopNow;
 
 /// Stack for update flags.

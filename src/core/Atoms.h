@@ -179,7 +179,7 @@ public:
   void setCollectEnergy(bool b) { collectEnergy=b; }
 
   void setDomainDecomposition(Communicator&);
-  void setAtomsGatindex(int*,bool);
+  void setAtomsGatindex(const TypesafePtr &,bool);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 
@@ -199,8 +199,8 @@ public:
   void MD2double(const TypesafePtr & m,double&d)const;
   void double2MD(const double&d,const TypesafePtr & m)const;
 
-  void createFullList(int*);
-  void getFullList(const int**);
+  void createFullList(const TypesafePtr &);
+  void getFullList(const TypesafePtr &);
   void clearFullList();
 
   void add(ActionAtomistic*);
