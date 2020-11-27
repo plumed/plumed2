@@ -38,7 +38,7 @@ private:
 public:
   explicit DataFetchingObjectTyped(PlumedMain&plumed);
   ~DataFetchingObjectTyped() {}
-  void setData( const std::string& key, const std::string& type, TypesafePtr outval ) override;
+  void setData( const std::string& key, const std::string& type, const TypesafePtr & outval ) override;
   void finishDataGrab() override;
 };
 
@@ -119,7 +119,7 @@ DataFetchingObjectTyped<T>::DataFetchingObjectTyped(PlumedMain&p):
 }
 
 template <class T>
-void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, TypesafePtr outval ) {
+void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, const TypesafePtr & outval ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
   plumed_massert( !data.count(key + " " + type), "already collecting this data elsewhere");

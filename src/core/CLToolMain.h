@@ -93,7 +93,7 @@ public:
   /**
   Send messages to the CLToolMain.
   */
-  void cmd(const std::string& key,TypesafePtr val=nullptr) override;
+  void cmd(const std::string& key,const TypesafePtr & val=nullptr) override;
 };
 
 }

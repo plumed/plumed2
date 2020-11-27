@@ -31,7 +31,7 @@
 namespace PLMD {
 
 template<typename T>
-static void getPointers(TypesafePtr p,TypesafePtr px,TypesafePtr py,TypesafePtr pz,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
+static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
   auto p_=p.get<T>();
   if(p_) {
     ppx=p_;
@@ -73,19 +73,19 @@ class MDAtomsTyped:
   std::map<std::string,TypesafePtr> extraCVForce;
 public:
   MDAtomsTyped();
-  void setm(TypesafePtr m) override;
-  void setc(TypesafePtr m) override;
-  void setBox(TypesafePtr ) override;
-  void setp(TypesafePtr p) override;
-  void setVirial(TypesafePtr ) override;
-  void setf(TypesafePtr f) override;
-  void setp(TypesafePtr p,int i) override;
-  void setf(TypesafePtr f,int i) override;
+  void setm(const TypesafePtr & m) override;
+  void setc(const TypesafePtr & m) override;
+  void setBox(const TypesafePtr & ) override;
+  void setp(const TypesafePtr & p) override;
+  void setVirial(const TypesafePtr & ) override;
+  void setf(const TypesafePtr & f) override;
+  void setp(const TypesafePtr & p,int i) override;
+  void setf(const TypesafePtr & f,int i) override;
   void setUnits(const Units&,const Units&) override;
-  void setExtraCV(const std::string &name,TypesafePtr p) override {
+  void setExtraCV(const std::string &name,const TypesafePtr & p) override {
     extraCV[name]=p;
   }
-  void setExtraCVForce(const std::string &name,TypesafePtr p) override {
+  void setExtraCVForce(const std::string &name,const TypesafePtr & p) override {
     extraCVForce[name]=p;
   }
   double getExtraCV(const std::string &name) override {
@@ -99,10 +99,10 @@ public:
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name].template get<T>()+=static_cast<T>(f);
   }
-  void MD2double(const TypesafePtr m,double&d)const override {
+  void MD2double(const const TypesafePtr & m,double&d)const override {
     d=double(*m.template get<const T>());
   }
-  void double2MD(const double&d,TypesafePtr m)const override {
+  void double2MD(const double&d,const TypesafePtr & m)const override {
     *m.get<T>()=T(d);
   }
   Vector getMDforces(const unsigned index)const override {
@@ -296,7 +296,7 @@ unsigned MDAtomsTyped<T>::getRealPrecision()const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setp(TypesafePtr pp) {
+void MDAtomsTyped<T>::setp(const TypesafePtr & pp) {
   p=pp;
   px=TypesafePtr();
   py=TypesafePtr();
@@ -304,13 +304,13 @@ void MDAtomsTyped<T>::setp(TypesafePtr pp) {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setBox(TypesafePtr pp) {
+void MDAtomsTyped<T>::setBox(const TypesafePtr & pp) {
   box=pp;
 }
 
 
 template <class T>
-void MDAtomsTyped<T>::setf(TypesafePtr ff) {
+void MDAtomsTyped<T>::setf(const TypesafePtr & ff) {
   f=ff;
   fx=TypesafePtr();
   fy=TypesafePtr();
@@ -318,7 +318,7 @@ void MDAtomsTyped<T>::setf(TypesafePtr ff) {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setp(TypesafePtr pp,int i) {
+void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
   p=TypesafePtr();
   if(i==0)px=pp;
   if(i==1)py=pp;
@@ -326,13 +326,13 @@ void MDAtomsTyped<T>::setp(TypesafePtr pp,int i) {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setVirial(TypesafePtr pp) {
+void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
   virial=pp.get<T>(9);
 }
 
 
 template <class T>
-void MDAtomsTyped<T>::setf(TypesafePtr ff,int i) {
+void MDAtomsTyped<T>::setf(const TypesafePtr & ff,int i) {
   f=TypesafePtr();;
   if(i==0)fx=ff;
   if(i==1)fy=ff;
@@ -340,12 +340,12 @@ void MDAtomsTyped<T>::setf(TypesafePtr ff,int i) {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setm(TypesafePtr m) {
+void MDAtomsTyped<T>::setm(const TypesafePtr & m) {
   this->m=m;
 }
 
 template <class T>
-void MDAtomsTyped<T>::setc(TypesafePtr c) {
+void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
   this->c=c.get<T>();
 }
 

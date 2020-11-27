@@ -157,10 +157,10 @@ public:
   void setRealPrecision(int);
   int  getRealPrecision()const;
 
-  void setTimeStep(TypesafePtr);
+  void setTimeStep(const TypesafePtr &);
   double getTimeStep()const;
 
-  void setKbT(TypesafePtr);
+  void setKbT(const TypesafePtr &);
   double getKbT()const;
 
   void setNatoms(int);
@@ -184,20 +184,20 @@ public:
   void setAtomsNlocal(int);
 
   void startStep();
-  void setEnergy(TypesafePtr);
-  void setBox(TypesafePtr);
-  void setVirial(TypesafePtr);
-  void setPositions(TypesafePtr);
-  void setPositions(TypesafePtr,int);
-  void setForces(TypesafePtr);
-  void setForces(TypesafePtr,int);
-  void setMasses(TypesafePtr);
-  void setCharges(TypesafePtr);
+  void setEnergy(const TypesafePtr &);
+  void setBox(const TypesafePtr &);
+  void setVirial(const TypesafePtr &);
+  void setPositions(const TypesafePtr &);
+  void setPositions(const TypesafePtr &,int);
+  void setForces(const TypesafePtr &);
+  void setForces(const TypesafePtr &,int);
+  void setMasses(const TypesafePtr &);
+  void setCharges(const TypesafePtr &);
   bool chargesWereSet() const ;
   bool boxWasSet() const ;
 
-  void MD2double(const TypesafePtr m,double&d)const;
-  void double2MD(const double&d,TypesafePtr m)const;
+  void MD2double(const TypesafePtr & m,double&d)const;
+  void double2MD(const double&d,const TypesafePtr & m)const;
 
   void createFullList(int*);
   void getFullList(const int**);
@@ -234,8 +234,8 @@ public:
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
 
-  void setExtraCV(const std::string &name,TypesafePtr p);
-  void setExtraCVForce(const std::string &name,TypesafePtr p);
+  void setExtraCV(const std::string &name,const TypesafePtr & p);
+  void setExtraCVForce(const std::string &name,const TypesafePtr & p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
 };

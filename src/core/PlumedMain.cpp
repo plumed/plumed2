@@ -157,7 +157,7 @@ PlumedMain::~PlumedMain() {
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
 
-void PlumedMain::cmd(const std::string & word,TypesafePtr val) {
+void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {

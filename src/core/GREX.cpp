@@ -51,7 +51,7 @@ GREX::~GREX() {
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
-void GREX::cmd(const std::string&key,TypesafePtr val) {
+void GREX::cmd(const std::string&key,const TypesafePtr & val) {
 // Enumerate all possible commands:
   enum {
 #include "GREXEnum.inc"

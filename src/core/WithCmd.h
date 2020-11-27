@@ -32,7 +32,7 @@ namespace PLMD {
 /// cmd() method.
 class WithCmd {
 public:
-  virtual void cmd(const std::string& key,TypesafePtr val=nullptr)=0;
+  virtual void cmd(const std::string& key,const TypesafePtr & val=nullptr)=0;
   virtual ~WithCmd();
 };
 

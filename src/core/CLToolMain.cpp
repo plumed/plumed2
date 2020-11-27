@@ -50,7 +50,7 @@ CLToolMain::~CLToolMain() {
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
 
-void CLToolMain::cmd(const std::string& word,TypesafePtr val) {
+void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {

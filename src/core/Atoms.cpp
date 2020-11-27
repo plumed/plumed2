@@ -78,56 +78,56 @@ void Atoms::startStep() {
   forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
 }
 
-void Atoms::setBox(TypesafePtr p) {
+void Atoms::setBox(const TypesafePtr & p) {
   mdatoms->setBox(p);
   Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
 }
 
-void Atoms::setPositions(TypesafePtr p) {
+void Atoms::setPositions(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL position pointer with non-zero local atoms");
   mdatoms->setp(p); positionsHaveBeenSet=3;
 }
 
-void Atoms::setMasses(TypesafePtr p) {
+void Atoms::setMasses(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setMasses must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL mass pointer with non-zero local atoms");
   mdatoms->setm(p); massesHaveBeenSet=true;
 
 }
 
-void Atoms::setCharges(TypesafePtr p) {
+void Atoms::setCharges(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet, "setCharges must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL charges pointer with non-zero local atoms");
   mdatoms->setc(p); chargesHaveBeenSet=true;
 }
 
-void Atoms::setVirial(TypesafePtr p) {
+void Atoms::setVirial(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
   mdatoms->setVirial(p); virialHasBeenSet=true;
 }
 
-void Atoms::setEnergy(TypesafePtr p) {
+void Atoms::setEnergy(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setEnergy must be called after setStep in MD code interface");
   MD2double(p,md_energy);
   md_energy*=MDUnits.getEnergy()/units.getEnergy();
   energyHasBeenSet=true;
 }
 
-void Atoms::setForces(TypesafePtr p) {
+void Atoms::setForces(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   forcesHaveBeenSet=3;
   mdatoms->setf(p);
 }
 
-void Atoms::setPositions(TypesafePtr p,int i) {
+void Atoms::setPositions(const TypesafePtr & p,int i) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL positions pointer with non-zero local atoms");
   mdatoms->setp(p,i); positionsHaveBeenSet++;
 }
 
-void Atoms::setForces(TypesafePtr p,int i) {
+void Atoms::setForces(const TypesafePtr & p,int i) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   mdatoms->setf(p,i); forcesHaveBeenSet++;
@@ -427,10 +427,10 @@ int Atoms::getRealPrecision()const {
   return mdatoms->getRealPrecision();
 }
 
-void Atoms::MD2double(const TypesafePtr m,double&d)const {
+void Atoms::MD2double(const TypesafePtr & m,double&d)const {
   plumed_assert(mdatoms); mdatoms->MD2double(m,d);
 }
-void Atoms::double2MD(const double&d,TypesafePtr m)const {
+void Atoms::double2MD(const double&d,const TypesafePtr & m)const {
   plumed_assert(mdatoms); mdatoms->double2MD(d,m);
 }
 
@@ -438,7 +438,7 @@ void Atoms::updateUnits() {
   mdatoms->setUnits(units,MDUnits);
 }
 
-void Atoms::setTimeStep(TypesafePtr p) {
+void Atoms::setTimeStep(const TypesafePtr & p) {
   MD2double(p,timestep);
 // The following is to avoid extra digits in case the MD code uses floats
 // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
@@ -451,7 +451,7 @@ double Atoms::getTimeStep()const {
   return timestep/units.getTime()*MDUnits.getTime();
 }
 
-void Atoms::setKbT(TypesafePtr p) {
+void Atoms::setKbT(const TypesafePtr & p) {
   MD2double(p,kbT);
 }
 
@@ -584,11 +584,11 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
   }
 }
 
-void Atoms::setExtraCV(const std::string &name,TypesafePtr p) {
+void Atoms::setExtraCV(const std::string &name,const TypesafePtr & p) {
   mdatoms->setExtraCV(name,p);
 }
 
-void Atoms::setExtraCVForce(const std::string &name,TypesafePtr p) {
+void Atoms::setExtraCVForce(const std::string &name,const TypesafePtr & p) {
   mdatoms->setExtraCVForce(name,p);
 }
 

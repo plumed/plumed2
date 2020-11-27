@@ -1967,7 +1967,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
     if(nelem>0) safe.setNelem(nelem);
     if(PlumedGetenvTypesafeDebug()) {
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zd %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
     }
     NothrowHandler h;
     h.code=0;
