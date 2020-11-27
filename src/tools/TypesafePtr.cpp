@@ -28,27 +28,27 @@ namespace PLMD {
 void TypesafePtrPool::add(const void*ptr) {
 // lock:
 //    std::lock_guard<std::mutex> lock(mtx);
-    refcount[ptr]++;
-  }
-  void TypesafePtrPool::remove(const void*ptr) {
+  refcount[ptr]++;
+}
+void TypesafePtrPool::remove(const void*ptr) {
 // lock:
 //    std::lock_guard<std::mutex> lock(mtx);
-    auto f=refcount.find(ptr);
-    if(f!=refcount.end()) {
-      f->second--;
-      if(f->second<=0) refcount.erase(f);
-    }
+  auto f=refcount.find(ptr);
+  if(f!=refcount.end()) {
+    f->second--;
+    if(f->second<=0) refcount.erase(f);
   }
+}
 
-  void TypesafePtrPool::print(std::ostream & os) {
-    for(const auto & f : refcount) std::cout<<f.first<<" "<<f.second<<"\n";
-  }
+void TypesafePtrPool::print(std::ostream & os) {
+  for(const auto & f : refcount) std::cout<<f.first<<" "<<f.second<<"\n";
+}
 
 void TypesafePtrPool::forget(const void*ptr) {
-    auto f=refcount.find(ptr);
-    if(f!=refcount.end()) {
-      refcount.erase(f);
-    }
+  auto f=refcount.find(ptr);
+  if(f!=refcount.end()) {
+    refcount.erase(f);
+  }
 }
 
 }

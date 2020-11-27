@@ -1498,7 +1498,7 @@ private:
 public:
 
   /// Small class that wraps plumed_safeptr in order to make its initialization easier
-  class SafePtr{
+  class SafePtr {
   public:
     plumed_safeptr safe;
     /// Default constructor, nullptr
@@ -1570,28 +1570,28 @@ public:
 #define __PLUMED_WRAPPER_SAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,0)
 #define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type))
 
-  __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
-  __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
-  __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
 
-  /// Conversion operator
-  operator plumed_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
-    return safe;
-  }
+    /// Conversion operator
+    operator plumed_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      return safe;
+    }
 
-  /// Allow to change number of elements.
-  void setNelem(__PLUMED_WRAPPER_STD size_t nelem) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-    this->safe.nelem=nelem;
-  }
+    /// Allow to change number of elements.
+    void setNelem(__PLUMED_WRAPPER_STD size_t nelem) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      this->safe.nelem=nelem;
+    }
 
   };
 
@@ -1967,7 +1967,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
     if(nelem>0) safe.setNelem(nelem);
     if(PlumedGetenvTypesafeDebug()) {
-       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zd %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zd %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
     }
     NothrowHandler h;
     h.code=0;
@@ -2262,7 +2262,7 @@ typedef struct {
   */
   void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr);
 
-  /** 
+  /**
     Pointer to a cmd function guaranteed not to throw exceptions and that accepts typeinfos.
 
     Available with version>=3.

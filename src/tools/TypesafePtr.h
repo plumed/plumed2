@@ -135,7 +135,7 @@ public:
   }
 
   template<typename T>
-  T* get(std::size_t nelem=0) const{
+  T* get(std::size_t nelem=0) const {
     typedef typename std::remove_const<T>::type T_noconst;
     typedef typename std::remove_pointer<T>::type T_noptr;
     if(flags==0) return (T*) ptr; // no check

@@ -76,7 +76,7 @@ public:
 /// Set internal and MD units
   virtual void setUnits(const Units& units,const Units& MDUnits)=0;
 /// Convert a pointer to an MD-real to a double
-  virtual void MD2double(const TypesafePtr ,double&)const=0;
+  virtual void MD2double(const TypesafePtr,double&)const=0;
 /// Convert a double to a pointer to an MD-real
   virtual void double2MD(const double&,TypesafePtr )const=0;
 
