@@ -151,7 +151,6 @@ jobs:
     - name: Install requirements
       run: |
         ./.travis/install.cppcheck 1.90
-        ./.travis/install.gawk 5.0.1
     - name: Build astyle
       run: |
         make -j 4 -C astyle
