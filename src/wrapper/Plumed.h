@@ -499,13 +499,6 @@
 
 
 /*
-  Allow passing NULL to C++ cmd interface.
-*/
-#ifndef __PLUMED_WRAPPER_CXX_ENABLE_NULL
-#define __PLUMED_WRAPPER_CXX_ENABLE_NULL 1
-#endif
-
-/*
   Type of the NULL pointer, or a type that the NULL pointer can be converted to.
 */
 #ifndef __PLUMED_WRAPPER_CXX_NULL_TYPE
@@ -592,8 +585,10 @@
 
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstddef> /* size_t */
+#include <cstring> /* memcpy */
 #else
 #include <stddef.h>
+#include <string.h>
 #endif
 
 /**
@@ -1075,11 +1070,13 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <cstddef> /* nullptr_t */
 #include <cstring> /* strncat strlen */
 #include <cstdio> /* fprintf */
+#include <cassert> /* assert */
 #else
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #endif
 
 #include <exception> /* exception bad_exception */
@@ -1501,12 +1498,14 @@ public:
   class SafePtr {
   public:
     plumed_safeptr safe;
+    char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
       safe.ptr=NULL;
       safe.nelem=0;
       safe.flags=0x10000*2;
       safe.opt=NULL;
+      buffer[0]='\0';
     }
 #if __cplusplus > 199711L
     /// Construct from null
@@ -1515,60 +1514,64 @@ public:
       safe.nelem=0;
       safe.flags=0x10000*2;
       safe.opt=NULL;
-    }
-#endif
-
-#if __PLUMED_WRAPPER_CXX_ENABLE_NULL
-    /// Construct from NULL
-    SafePtr(__PLUMED_WRAPPER_CXX_NULL_TYPE null) {
-      if(null!=0) throw IncorrectNullptr("non zero integer passed to cmd");
-      safe.ptr=NULL;
-      safe.nelem=0;
-      safe.flags=0x10000*2;
-      safe.opt=NULL;
+      buffer[0]='\0';
     }
 #endif
 
 #define __PLUMED_WRAPPER_SAFEPTR(type,code,size) \
-  SafePtr(type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   } \
-  SafePtr(const type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(const type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*3); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   } \
-  SafePtr(type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*4); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   } \
-  SafePtr(type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*5); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   } \
-  SafePtr(const type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(const type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*6); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   } \
-  SafePtr(const type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(const type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=nelem; \
+    safe.nelem=0; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*7); \
     safe.opt=NULL; \
+    buffer[0]='\0'; \
   }
 
 #define __PLUMED_WRAPPER_SAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,0)
-#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type))
+#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
+  SafePtr(type val) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    assert(sizeof(type)<=32); \
+    safe.ptr=buffer; \
+    safe.nelem=1; \
+    safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    safe.opt=NULL; \
+    __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
+  }
 
     __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1);
     __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3);
@@ -1582,6 +1585,7 @@ public:
     __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
     __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
     __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
+
 
     /// Conversion operator
     operator plumed_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {

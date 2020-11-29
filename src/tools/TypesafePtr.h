@@ -113,6 +113,7 @@ public:
   }
 
   TypesafePtr & operator=(const TypesafePtr & other) {
+    plumed_assert(((other.flags>>25)&0x7)!=1);
     if(this==&other) return *this;
     if(pool && ptr) pool->remove(ptr);
     pool=other.pool;
@@ -135,7 +136,7 @@ public:
   }
 
   template<typename T>
-  T* get(std::size_t nelem=0) const {
+  T* get_priv(std::size_t nelem, bool byvalue) const {
     typedef typename std::remove_const<T>::type T_noconst;
     typedef typename std::remove_pointer<T>::type T_noptr;
     if(flags==0) return (T*) ptr; // no check
@@ -156,8 +157,11 @@ public:
 
     if(size>0 && typesafePtrSizeof<T_noptr>()!=size) throw ExceptionTypeError() << "Incorrect sizeof";
 
+    if(!byvalue) if(cons==1) throw ExceptionTypeError() << "Cannot take the address of an argument passed by value";
+
+    // cons==1 (by value) is here treated as cons==3 (const type*)
     if(!std::is_pointer<T>::value) {
-      if(cons!=2 && cons!=3) throw ExceptionTypeError() << "Cannot convert non-pointer to pointer";
+      if(cons!=1 && cons!=2 && cons!=3) throw ExceptionTypeError() << "Cannot convert non-pointer to pointer";
       if(!std::is_const<T>::value) {
         if(cons!=2) throw ExceptionTypeError() << "Cannot convert const T* to T*";
       }
@@ -178,6 +182,16 @@ public:
     }
     if(nelem>0 && this->nelem>0) if(!(nelem<=this->nelem)) throw ExceptionTypeError() << "Incorrect number of elements";
     return (T*) ptr;
+  }
+
+  template<typename T>
+  T* get(std::size_t nelem=0) const {
+    return get_priv<T>(nelem,false);
+  }
+
+  template<typename T>
+  T getVal() const {
+    return *get_priv<const T>(1,true);
   }
 
   operator bool() const noexcept {

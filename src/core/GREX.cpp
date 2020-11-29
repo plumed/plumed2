@@ -113,7 +113,7 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       break;
     case cmd_setPartner:
       CHECK_INIT(initialized,key);
-      partner=*val.get<const int>();
+      partner=val.getVal<int>();
       break;
     case cmd_savePositions:
       CHECK_INIT(initialized,key);

@@ -268,20 +268,20 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setStep:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=*val.get<const int>();
+        step=val.getVal<int>();
         atoms.startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=*val.get<const long int>();
+        step=val.getVal<long int>();
         atoms.startStep();
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(*val.get<const int>());
+        atoms.setAtomsNlocal(val.getVal<int>());
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
@@ -294,7 +294,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(*val.get<const int>());
+        atoms.setAtomsContiguous(val.getVal<int>());
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
@@ -366,8 +366,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(*val.get<const int>());
-        mydatafetcher=DataFetchingObject::create(*val.get<const int>(),*this);
+        atoms.setRealPrecision(val.getVal<int>());
+        mydatafetcher=DataFetchingObject::create(val.getVal<int>(),*this);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -432,7 +432,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setNatoms(*val.get<const int>());
+        atoms.setNatoms(val.getVal<int>());
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -449,20 +449,20 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(*val.get<const int>()!=0) restart=true;
+        if(val.getVal<int>()!=0) restart=true;
         break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         doCheckPoint = false;
-        if(*val.get<const int>()!=0) doCheckPoint = true;
+        if(val.getVal<int>()!=0) doCheckPoint = true;
         break;
       /* ADDED WITH API==6 */
       case cmd_setNumOMPthreads:
         CHECK_NOTNULL(val,word);
         {
-          auto nt=*val.get<const unsigned>();
+          auto nt=val.getVal<unsigned>();
           if(nt==0) nt=1;
           OpenMP::setNumThreads(nt);
         }
@@ -501,12 +501,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setSeed(*val.get<const int>());
+        exchangePatterns.setSeed(val.getVal<int>());
         break;
       case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setNofR(*val.get<const int>());
+        exchangePatterns.setNofR(val.getVal<int>());
         break;
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);

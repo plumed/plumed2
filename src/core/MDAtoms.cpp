@@ -91,7 +91,7 @@ public:
   double getExtraCV(const std::string &name) override {
     auto search=extraCV.find(name);
     if(search != extraCV.end()) {
-      return static_cast<double>(*(search->second.template get<const T>()));
+      return static_cast<double>(search->second.template getVal<T>());
     } else {
       plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
     }
@@ -100,7 +100,7 @@ public:
     *extraCVForce[name].template get<T>()+=static_cast<T>(f);
   }
   void MD2double(const TypesafePtr & m,double&d)const override {
-    d=double(*m.template get<const T>());
+    d=double(m.template getVal<T>());
   }
   void double2MD(const double&d,const TypesafePtr & m)const override {
     *m.get<T>()=T(d);

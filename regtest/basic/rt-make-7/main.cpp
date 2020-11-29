@@ -35,7 +35,7 @@ void test_convert() {
   Plumed plumed;
   int size=sizeof(T);
   T t=0.0;
-  plumed.cmd("setRealPrecision",&size);
+  plumed.cmd("setRealPrecision",size);
   plumed.cmd("convert cos(0.0)",&t);
   plumed_assert(t==1.0);
 }
@@ -102,11 +102,11 @@ int main(){
 
   try {
     double dnatoms=natoms;
-    plumed->cmd("setNatoms",&dnatoms,1);
+    plumed->cmd("setNatoms",dnatoms);
     plumed_error() << "should have failed with a typecheck error";
   } catch(PLMD::Plumed::ExceptionTypeError & e) {
   }
-  plumed->cmd("setNatoms",&natoms,1);
+  plumed->cmd("setNatoms",natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
   plumed->cmd("readInputLine","UNITS LENGTH=A");
@@ -147,6 +147,8 @@ int main(){
 // hills should only be added at regular positions:
     plumed->cmd("update");
   }
+
+  test_checkAction();
 
   delete plumed;
   return 0;

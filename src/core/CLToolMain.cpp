@@ -75,7 +75,7 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);
-      argc=*val.get<const int>();
+      argc=val.getVal<int>();
       break;
     case cmd_setArgv:
       CHECK_NULL(val,word);

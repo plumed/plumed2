@@ -63,7 +63,7 @@ cdef class Plumed:
             if not self.c_plumed.valid():
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
-         self.c_plumed.cmd( "setRealPrecision", <int*>&pres, 1 )
+         self.c_plumed.cmd_int( "setRealPrecision", pres)
      def finalize(self):
          """ Explicitly finalize a Plumed object.
 
@@ -96,9 +96,9 @@ cdef class Plumed:
          cdef long [:] abuffer = val.ravel()
          self.c_plumed.cmd( ckey, <long*>&abuffer[0], np.prod(val.shape))
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd( ckey, <double*>&val, 1)
+         self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd( ckey, <int*>&val, 1)
+         self.c_plumed.cmd_int( ckey, val)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
