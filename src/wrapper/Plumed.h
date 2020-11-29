@@ -647,13 +647,13 @@ typedef struct {
     0x1000000  * 1 for unsigned (ignored)
     0x2000000  * pointer/const type, up to 8
                0 not typechecked
-               1 T*
-               2 const T*
-               3 T**
-               4 const T**
+               1 T <- pass by value, not implemented yet
+               2 T*
+               3 const T*
+               4 T**
                5 T*const*
-               6 const T*const*
-               7 T <- pass by value, not implemented yet
+               6 const T**
+               7 const T*const*
     0x10000000 and higher bits are ignored
   */
   unsigned long int flags;
@@ -1533,22 +1533,16 @@ public:
   SafePtr(type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*1); \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
     safe.opt=NULL; \
   } \
   SafePtr(const type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
-    safe.opt=NULL; \
-  } \
-  SafePtr(type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=nelem; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*3); \
     safe.opt=NULL; \
   } \
-  SafePtr(const type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*4); \
@@ -1560,10 +1554,16 @@ public:
     safe.flags=size | (0x10000*(code)) | (0x2000000*5); \
     safe.opt=NULL; \
   } \
-  SafePtr(const type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(const type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*6); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(const type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*7); \
     safe.opt=NULL; \
   }
 

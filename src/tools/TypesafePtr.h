@@ -157,22 +157,22 @@ public:
     if(size>0 && typesafePtrSizeof<T_noptr>()!=size) throw ExceptionTypeError() << "Incorrect sizeof";
 
     if(!std::is_pointer<T>::value) {
-      if(cons!=1 && cons!=2) throw ExceptionTypeError() << "Cannot convert non-pointer to pointer";
+      if(cons!=2 && cons!=3) throw ExceptionTypeError() << "Cannot convert non-pointer to pointer";
       if(!std::is_const<T>::value) {
-        if(cons!=1) throw ExceptionTypeError() << "Cannot convert const T* to T*";
+        if(cons!=2) throw ExceptionTypeError() << "Cannot convert const T* to T*";
       }
     } else {
       if(!std::is_const<T>::value) {
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=3) throw ExceptionTypeError() << "Only T** can be passed to T**";
+          if(cons!=4) throw ExceptionTypeError() << "Only T** can be passed to T**";
         } else {
-          if(cons!=4) throw ExceptionTypeError() << "Only const T** can be passed to const T**";
+          if(cons!=6) throw ExceptionTypeError() << "Only const T** can be passed to const T**";
         }
       } else {
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=3 && cons!=5) throw ExceptionTypeError() << "Only T** and T*const* can be passed to T*const*";
+          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "Only T** and T*const* can be passed to T*const*";
         } else {
-          if(cons!=3 && cons!=4 && cons!=5 && cons!=6) throw ExceptionTypeError() << "Only pointer-to-pointer can be passed to const T*const*";
+          if(cons!=4 && cons!=5 && cons!=6 && cons!=7) throw ExceptionTypeError() << "Only pointer-to-pointer can be passed to const T*const*";
         }
       }
     }
