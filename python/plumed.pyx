@@ -63,7 +63,7 @@ cdef class Plumed:
             if not self.c_plumed.valid():
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
-         self.c_plumed.cmd( "setRealPrecision", <int*>&pres )
+         self.c_plumed.cmd( "setRealPrecision", <int*>&pres, 1 )
      def finalize(self):
          """ Explicitly finalize a Plumed object.
 
@@ -88,24 +88,24 @@ cdef class Plumed:
         self.finalize()
      def cmd_ndarray_double(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <double*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <double*>&abuffer[0], np.prod(val.shape))
      def cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <int*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <int*>&abuffer[0], np.prod(val.shape))
      def cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <long*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <long*>&abuffer[0], np.prod(val.shape))
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd( ckey, <double*>&val )
+         self.c_plumed.cmd( ckey, <double*>&val, 1)
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd( ckey, <int*>&val)
+         self.c_plumed.cmd( ckey, <int*>&val, 1)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
          cdef array.array ar
          if val is None :
-            self.c_plumed.cmd( ckey, NULL )
+            self.c_plumed.cmd( ckey)
          elif isinstance(val, (int,long) ):
             if key=="getDataRank" :
                raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
@@ -127,13 +127,13 @@ cdef class Plumed:
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
                ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_doubles)
+               self.c_plumed.cmd( ckey, ar.data.as_doubles, len(ar))
             elif( (val.typecode=="i" or val.typecode=="I") ) :
                ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_ints)
+               self.c_plumed.cmd( ckey, ar.data.as_ints, len(ar))
             elif( (val.typecode=="l" or val.typecode=="L") ) :
                ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_longs)
+               self.c_plumed.cmd( ckey, ar.data.as_longs, len(ar))
             else :
                raise ValueError("ndarrays should be double (size=8), int, or long")
          elif isinstance(val, str ) :

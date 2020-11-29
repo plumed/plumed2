@@ -30,6 +30,7 @@ from libcpp cimport bool
 cdef extern from "Plumed.h" namespace "PLMD":
      cdef cppclass Plumed:
          Plumed() except +
+         void cmd(const char*key, const void*val, size_t nelem) except +
          void cmd(const char*key, const void*val) except +
          void cmd(const char*key) except +
          bool valid() except +
