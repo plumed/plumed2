@@ -93,14 +93,9 @@ public:
     if(pool && ptr) pool->remove(ptr);
   }
 
-  TypesafePtr(const TypesafePtr&other):
-    pool(other.pool),
-    ptr(other.ptr),
-    nelem(other.nelem),
-    flags(other.flags)
-  {
-    if(pool && ptr) pool->add(ptr);
-  }
+  TypesafePtr(const TypesafePtr&other) = delete;
+
+  TypesafePtr & operator=(const TypesafePtr & other) = delete;
 
   TypesafePtr(TypesafePtr&&other):
     pool(other.pool),
@@ -112,16 +107,14 @@ public:
     other.ptr=nullptr;
   }
 
-  TypesafePtr & operator=(const TypesafePtr & other) {
-    plumed_assert(((other.flags>>25)&0x7)!=1) << "This command is trying to store for later usage an argument that was passed by value";
-    if(this==&other) return *this;
-    if(pool && ptr) pool->remove(ptr);
-    pool=other.pool;
-    ptr=other.ptr;
-    flags=other.flags;
-    nelem=other.nelem;
+  TypesafePtr copy() const {
+    TypesafePtr ret;
+    ret.pool=pool;
+    ret.ptr=ptr;
+    ret.flags=flags;
+    ret.nelem=nelem;
     if(pool && ptr) pool->add(ptr);
-    return *this;
+    return ret;
   }
 
   TypesafePtr & operator=(TypesafePtr && other) {

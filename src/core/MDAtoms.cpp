@@ -83,10 +83,10 @@ public:
   void setf(const TypesafePtr & f,int i) override;
   void setUnits(const Units&,const Units&) override;
   void setExtraCV(const std::string &name,const TypesafePtr & p) override {
-    extraCV[name]=p;
+    extraCV[name]=p.copy();
   }
   void setExtraCVForce(const std::string &name,const TypesafePtr & p) override {
-    extraCVForce[name]=p;
+    extraCVForce[name]=p.copy();
   }
   double getExtraCV(const std::string &name) override {
     auto search=extraCV.find(name);
@@ -297,7 +297,7 @@ unsigned MDAtomsTyped<T>::getRealPrecision()const {
 
 template <class T>
 void MDAtomsTyped<T>::setp(const TypesafePtr & pp) {
-  p=pp;
+  p=pp.copy();
   px=TypesafePtr();
   py=TypesafePtr();
   pz=TypesafePtr();
@@ -305,13 +305,13 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp) {
 
 template <class T>
 void MDAtomsTyped<T>::setBox(const TypesafePtr & pp) {
-  box=pp;
+  box=pp.copy();
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::setf(const TypesafePtr & ff) {
-  f=ff;
+  f=ff.copy();
   fx=TypesafePtr();
   fy=TypesafePtr();
   fz=TypesafePtr();
@@ -320,9 +320,9 @@ void MDAtomsTyped<T>::setf(const TypesafePtr & ff) {
 template <class T>
 void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
   p=TypesafePtr();
-  if(i==0)px=pp;
-  if(i==1)py=pp;
-  if(i==2)pz=pp;
+  if(i==0)px=pp.copy();
+  if(i==1)py=pp.copy();
+  if(i==2)pz=pp.copy();
 }
 
 template <class T>
@@ -334,19 +334,19 @@ void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
 template <class T>
 void MDAtomsTyped<T>::setf(const TypesafePtr & ff,int i) {
   f=TypesafePtr();;
-  if(i==0)fx=ff;
-  if(i==1)fy=ff;
-  if(i==2)fz=ff;
+  if(i==0)fx=ff.copy();
+  if(i==1)fy=ff.copy();
+  if(i==2)fz=ff.copy();
 }
 
 template <class T>
 void MDAtomsTyped<T>::setm(const TypesafePtr & m) {
-  this->m=m;
+  this->m=m.copy();
 }
 
 template <class T>
 void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
-  this->c=c;
+  this->c=c.copy();
 }
 
 template <class T>

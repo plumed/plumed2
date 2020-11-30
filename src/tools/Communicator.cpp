@@ -80,7 +80,7 @@ Communicator::~Communicator() {
 #endif
 }
 
-void Communicator::Set_comm(TypesafePtr val) {
+void Communicator::Set_comm(const TypesafePtr & val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) Set_comm(*(MPI_Comm*)val.get<void>());
@@ -90,7 +90,7 @@ void Communicator::Set_comm(TypesafePtr val) {
 #endif
 }
 
-void Communicator::Set_fcomm(TypesafePtr val) {
+void Communicator::Set_fcomm(const TypesafePtr & val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {

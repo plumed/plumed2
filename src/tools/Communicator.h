@@ -161,10 +161,10 @@ public:
   MPI_Comm & Get_comm();
 /// Set from a pointer to a real MPI communicator (C).
 /// \param comm Pointer to a C MPI communicator
-  void Set_comm(TypesafePtr comm);
+  void Set_comm(const TypesafePtr & comm);
 /// Set from a pointer to a real MPI communicator (FORTRAN).
 /// \param comm Pointer to a FORTRAN MPI communicator (INTEGER)
-  void Set_fcomm(TypesafePtr comm);
+  void Set_fcomm(const TypesafePtr & comm);
 /// Wrapper to MPI_Abort.
 /// \param code Error code
   void Abort(int code);
