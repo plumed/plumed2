@@ -467,14 +467,29 @@
 #endif
 
 /*
-  1: make PLMD::Plumed class polymorphic (default)
-  0: make PLMD::Plumed class non-polymorphic
+  1: Enable typesafe interface (default)
+  0: Disable typesafe interface
 
   Only used in declarations.
 */
 
 #ifndef __PLUMED_WRAPPER_CXX_TYPESAFE
 #define __PLUMED_WRAPPER_CXX_TYPESAFE 1
+#endif
+
+/*
+  1: Enable passing long long int
+  0: Disable passing long long int
+
+  Only used in declarations. Default is 0 in C++<11 and 1 in C++>=11
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_LONGLONG
+#if __cplusplus > 199711L
+#define __PLUMED_WRAPPER_CXX_LONGLONG 1
+#else
+#define __PLUMED_WRAPPER_CXX_LONGLONG 0
+#endif
 #endif
 
 /*
@@ -495,14 +510,6 @@
 */
 #ifndef __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER
 #define __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER 512
-#endif
-
-
-/*
-  Type of the NULL pointer, or a type that the NULL pointer can be converted to.
-*/
-#ifndef __PLUMED_WRAPPER_CXX_NULL_TYPE
-#define __PLUMED_WRAPPER_CXX_NULL_TYPE long int
 #endif
 
 /*
@@ -1399,21 +1406,6 @@ public:
   };
 
   /**
-    Thrown when a non-zero integer is passed to the cmd function as second argument.
-    The reason is that we only allow passing integers when they are zero to represent a NULL pointer.
-  */
-  class IncorrectNullptr :
-    public Exception {
-  public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT IncorrectNullptr(const char* msg): Exception(msg) {}
-#if ! (__cplusplus > 199711L)
-    /* Destructor should be declared in order to have the correct throw() before C++11 */
-    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
-    ~IncorrectNullptr() throw() {}
-#endif
-  };
-
-  /**
     Thrown when a wrong pointer is passed to the PLUMED interface.
   */
   class ExceptionTypeError:
@@ -1582,8 +1574,13 @@ public:
     __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3);
     __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3);
     __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3);
+#if __PLUMED_WRAPPER_CXX_LONGLONG
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long long,3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long long,0x100+3);
+#endif
     __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
     __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long double,4);
     __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
 
 
