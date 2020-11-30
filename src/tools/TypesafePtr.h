@@ -113,7 +113,7 @@ public:
   }
 
   TypesafePtr & operator=(const TypesafePtr & other) {
-    plumed_assert(((other.flags>>25)&0x7)!=1);
+    plumed_assert(((other.flags>>25)&0x7)!=1) << "This command is trying to store for later usage an argument that was passed by value";
     if(this==&other) return *this;
     if(pool && ptr) pool->remove(ptr);
     pool=other.pool;
@@ -135,6 +135,17 @@ public:
     return *this;
   }
 
+  std::string type_str() const {
+    auto type=(flags>>16)&0xff;
+    if(type==0) return "wildcard";
+    if(type==1) return "void";
+    if(type==2) return "integral";
+    if(type==3) return "integral";
+    if(type==4) return "floating point";
+    if(type==5) return "FILE";
+    return "unknown";
+  }
+
   template<typename T>
   T* get_priv(std::size_t nelem, bool byvalue) const {
     typedef typename std::remove_const<T>::type T_noconst;
@@ -147,40 +158,58 @@ public:
     auto cons=(flags>>25)&0x7;
 
     // type=0: ignore check
+    // type=1: void -> ignore check
     // type>5: undefined yet
-    if(type!=0 && type<=5) {
-      if(std::is_integral<T_noptr>::value && (type!=is_integral)) throw ExceptionTypeError() <<"Expecting integer type";
-      if(std::is_floating_point<T_noptr>::value && (type!=is_floating_point)) throw ExceptionTypeError() <<"Expecting floating point type";
-      if(std::is_same<std::remove_const<FILE>,T_noconst>::value && (type!=is_file)) throw ExceptionTypeError() <<"Expecting FILE type";
-      // if T is void*, then we do no check on type of TypesafePtr
+    if(type!=0 && type!=1 && type<=5) {
+      if(std::is_integral<T_noptr>::value && (type!=is_integral)) {
+        throw ExceptionTypeError() <<"This command expects an integer type. Received a " << type_str() << " instead";
+      }
+      if(std::is_floating_point<T_noptr>::value && (type!=is_floating_point)) {
+        throw ExceptionTypeError() <<"This command expects a floating point type. Received a " << type_str() << " instead";
+      }
+      if(std::is_same<std::remove_const<FILE>,T_noconst>::value && (type!=is_file)) {
+        throw ExceptionTypeError() <<"This command expects a FILE. Received a " << type_str() << " instead";
+      }
     }
 
-    if(size>0 && typesafePtrSizeof<T_noptr>()!=size) throw ExceptionTypeError() << "Incorrect sizeof";
+    if(size>0 && typesafePtrSizeof<T_noptr>()!=size) {
+      throw ExceptionTypeError() << "This command expects a " << type_str() << " type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead";
+    }
 
-    if(!byvalue) if(cons==1) throw ExceptionTypeError() << "Cannot take the address of an argument passed by value";
+    if(!byvalue) if(cons==1) {
+        throw ExceptionTypeError() << "This command is trying to take the address of an argument that was passed by value";
+      }
 
     // cons==1 (by value) is here treated as cons==3 (const type*)
     if(!std::is_pointer<T>::value) {
-      if(cons!=1 && cons!=2 && cons!=3) throw ExceptionTypeError() << "Cannot convert non-pointer to pointer";
+      if(cons!=1 && cons!=2 && cons!=3) {
+        throw ExceptionTypeError() << "This command expects a pointer or an value. It received a pointer-to-pointer instead";
+      }
       if(!std::is_const<T>::value) {
-        if(cons!=2) throw ExceptionTypeError() << "Cannot convert const T* to T*";
+        if(cons==3) {
+          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a non modifiable pointer instead (const T*)";
+        } else if(cons==1) {
+          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a value instead (T)";
+        }
       }
     } else {
       if(!std::is_const<T>::value) {
+        if(cons==1) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead";
+        if(cons==2 || cons==3) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead";
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=4) throw ExceptionTypeError() << "Only T** can be passed to T**";
+          if(cons!=4) throw ExceptionTypeError() << "This command expects a modifiable pointer-to-pointer (T**)";
         } else {
-          if(cons!=6) throw ExceptionTypeError() << "Only const T** can be passed to const T**";
+          if(cons!=6) throw ExceptionTypeError() << "This command expects a modifiable pointer to unmodifiable pointer (const T**)";
         }
       } else {
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "Only T** and T*const* can be passed to T*const*";
-        } else {
-          if(cons!=4 && cons!=5 && cons!=6 && cons!=7) throw ExceptionTypeError() << "Only pointer-to-pointer can be passed to const T*const*";
+          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "This command expects T*const* pointer, and can only receive T**  or T*const* pointers";
         }
       }
     }
-    if(nelem>0 && this->nelem>0) if(!(nelem<=this->nelem)) throw ExceptionTypeError() << "Incorrect number of elements";
+    if(nelem>0 && this->nelem>0) if(!(nelem<=this->nelem)) {
+        throw ExceptionTypeError() << "This command wants to access " << nelem << " from this pointer, but only " << this->nelem << " have been passed";
+      }
     return (T*) ptr;
   }
 
