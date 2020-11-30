@@ -107,12 +107,8 @@ cdef class Plumed:
          if val is None :
             self.c_plumed.cmd( ckey)
          elif isinstance(val, (int,long) ):
-            if key=="getDataRank" :
-               raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
             self.cmd_int(ckey, val)
          elif isinstance(val, float ) :
-            if key=="getBias" :
-               raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val)
          elif HAS_NUMPY and isinstance(val, np.ndarray) :
             # See https://numpy.org/doc/stable/user/basics.types.html
