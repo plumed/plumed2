@@ -873,7 +873,7 @@ void OPESmetad<mode>::calculate()
   current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
   setBias(current_bias_);
   for(unsigned i=0; i<ncv_; i++)
-    setOutputForce(i,der_prob[i]==0?0:-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
+    setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
 //calculate work
   if(calc_work_)
@@ -956,7 +956,7 @@ void OPESmetad<mode>::update()
   counter_+=NumWalkers_;
   sum_weights_+=sum_heights;
   sum_weights2_+=sum_heights2;
-  const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_);
+  const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
   getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
   getPntrToComponent("neff")->set(neff);
   if(mode::explore)
