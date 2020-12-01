@@ -88,7 +88,7 @@ jobs:
       if: contains( matrix.variant, '-coverage-' )
       run: |
         ./.travis/install.lcov v1.15
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
@@ -107,11 +107,11 @@ jobs:
         echo "MPIEXEC=mpirun --oversubscribe" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
-        ccache -s
+        ccache -s -M 100M
         ./configure CXX="ccache $CXX" --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
         make -j 4
         make install
-        ccache -s
+        ccache -s -M 100M
     - name: Run tests
       run: |
          make --no-print-directory -C regtest
@@ -151,7 +151,6 @@ jobs:
     - name: Install requirements
       run: |
         ./.travis/install.cppcheck 1.90
-        ./.travis/install.gawk 5.0.1
     - name: Build astyle
       run: |
         make -j 4 -C astyle
