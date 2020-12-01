@@ -252,13 +252,13 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
+  keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
   std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. ");
   if(mode::explore)
     info_biasfactor+="Cannot be 'inf'";
   else
     info_biasfactor+="Set to 'inf' for uniform flat target";
   keys.add("optional","BIASFACTOR",info_biasfactor);
-  keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
   keys.add("optional","NLIST_PARAMETERS","( default=3.,0.5 ) the two cutoff parameters for the kernels neighbor list");
