@@ -20,9 +20,37 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TypesafePtr.h"
+#include "core/PlumedMainInitializer.h"
+
 #include <iostream>
 
 namespace PLMD {
+
+TypesafePtr::TypesafePtr(TypesafePtrPool*pool,void* safe) :
+  pool(pool),
+  ptr(const_cast<void*>(((plumed_safeptr*)safe)->ptr)),
+  nelem(((plumed_safeptr*)safe)->nelem),
+  flags(((plumed_safeptr*)safe)->flags)
+{
+  if(ptr) {
+    if(((plumed_safeptr*)safe)->flags>>28 & 1) {
+      auto m=*(plumed_ptr_manager*)((plumed_safeptr*)safe)->opt;
+      manager=std::make_shared<Manager>(m.state,m.deleter);
+    }
+    if(pool) pool->add(ptr);
+  }
+}
+
+TypesafePtr TypesafePtr::copy() const {
+  TypesafePtr ret;
+  ret.pool=pool;
+  ret.ptr=ptr;
+  ret.flags=flags;
+  ret.nelem=nelem;
+  ret.manager=manager;
+  if(pool && ptr) pool->add(ptr);
+  return ret;
+}
 
 
 void TypesafePtrPool::add(const void*ptr) {

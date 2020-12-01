@@ -656,12 +656,18 @@ typedef struct {
                5 T*const*
                6 const T**
                7 const T*const*
-    0x10000000 and higher bits are ignored
+    0x10000000 * 1 for managed pointers (opt then contains a pointer)
+    0x20000000 and higher bits are ignored
   */
   unsigned long int flags;
   /** Optional information, not used yet  */
   void* opt;
 } plumed_safeptr;
+
+typedef struct {
+  void* state;
+  void (*deleter)(void*);
+} plumed_ptr_manager;
 
 /** \relates plumed
     \brief Constructor
@@ -1955,6 +1961,19 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     return *this;
   }
 
+  class ManagedPtr {
+  public:
+    plumed_ptr_manager manager;
+    ManagedPtr(void* state, void (*deleter) (void*)) {
+      manager.state=state;
+      manager.deleter=deleter;
+    }
+    ManagedPtr() {
+      manager.state=NULL;
+      manager.deleter=NULL;
+    }
+  };
+
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed
@@ -1965,8 +1984,12 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
 
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
-  void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
+  void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0, ManagedPtr manager=ManagedPtr()) {
     if(nelem>0) safe.setNelem(nelem);
+    if(manager.manager.deleter) {
+       safe.safe.flags |= 0x10000000;
+       safe.safe.opt=&manager.manager;
+    }
     if(PlumedGetenvTypesafeDebug()) {
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
     }
@@ -1985,6 +2008,12 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     }
     if(h.code!=0) rethrow(h);
   }
+
+  template<typename T>
+  void cmd(const char*key,T val,ManagedPtr manager) {
+    cmd(key,val,0,manager);
+  }
+
 #else
   void cmd(const char*key,const void* ptr=NULL,__PLUMED_WRAPPER_STD size_t nelem=0) {
     NothrowHandler h;

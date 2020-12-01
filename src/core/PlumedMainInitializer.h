@@ -51,6 +51,11 @@ typedef struct {
   void* opt;
 } plumed_safeptr;
 
+typedef struct {
+  void* state;
+  void (*deleter)(void*);
+} plumed_ptr_manager;
+
 /**
   Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
   The definition of this structure might change in the future. In particular, the structure might grow adding

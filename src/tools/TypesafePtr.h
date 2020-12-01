@@ -24,8 +24,7 @@
 
 #include "Exception.h"
 
-
-
+#include <memory>
 #include <iosfwd>
 #include <map>
 #include <utility>
@@ -80,18 +79,12 @@ public:
     ptr(const_cast<void*>(ptr))
   {}
 
-  TypesafePtr(TypesafePtrPool*pool,const void*ptr,std::size_t nelem=0,unsigned long flags=0) :
-    pool(pool),
-    ptr(const_cast<void*>(ptr)),
-    nelem(nelem),
-    flags(flags)
-  {
-    if(pool && ptr) pool->add(ptr);
-  }
+  TypesafePtr(TypesafePtrPool*pool,void* safe);
 
   ~TypesafePtr() {
     if(pool && ptr) pool->remove(ptr);
   }
+
 
   TypesafePtr(const TypesafePtr&other) = delete;
 
@@ -103,19 +96,12 @@ public:
     nelem(other.nelem),
     flags(other.flags)
   {
+    manager=std::move(other.manager);
     other.pool=nullptr;
     other.ptr=nullptr;
   }
 
-  TypesafePtr copy() const {
-    TypesafePtr ret;
-    ret.pool=pool;
-    ret.ptr=ptr;
-    ret.flags=flags;
-    ret.nelem=nelem;
-    if(pool && ptr) pool->add(ptr);
-    return ret;
-  }
+  TypesafePtr copy() const;
 
   TypesafePtr & operator=(TypesafePtr && other) {
     if(pool && ptr) pool->remove(ptr);
@@ -123,6 +109,7 @@ public:
     ptr=other.ptr;
     flags=other.flags;
     nelem=other.nelem;
+    manager=std::move(other.manager);
     other.pool=nullptr;
     other.ptr=nullptr;
     return *this;
@@ -165,8 +152,8 @@ public:
       }
     }
 
-    if(size>0 && typesafePtrSizeof<T_noptr>()!=size) {
-      throw ExceptionTypeError() << "This command expects a " << type_str() << " type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead";
+    if(size>0 && typesafePtrSizeof<T_noptr>() >0 && typesafePtrSizeof<T_noptr>()!=size) {
+      throw ExceptionTypeError() << "This command expects a type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead";
     }
 
     if(!byvalue) if(cons==1) {
@@ -221,10 +208,25 @@ public:
   }
 
 private:
+  class Manager {
+    void* state=nullptr;
+    void (*deleter)(void*)=nullptr;
+  public:
+    Manager() = default;
+    Manager(const void* state,void (*deleter)(void*)):
+      state(const_cast<void*>(state)),
+      deleter(deleter)
+    {}
+    ~Manager() {
+      if(deleter) deleter(state);
+    }
+  };
   TypesafePtrPool*pool=nullptr;
   void* ptr=nullptr;
   std::size_t nelem=0;
   unsigned long int flags=0;
+  std::shared_ptr<Manager> manager;
+
 };
 
 }

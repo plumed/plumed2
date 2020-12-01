@@ -70,7 +70,7 @@ extern "C" {
   static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr safe) {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     auto p=static_cast<PLMD::PlumedMain*>(plumed);
-    p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,safe.ptr,safe.nelem,safe.flags));
+    p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,&safe));
   }
 }
 
@@ -82,7 +82,7 @@ extern "C" {
     try {
       plumed_massert(plumed,"trying to use a plumed object which is not initialized");
       auto p=static_cast<PLMD::PlumedMain*>(plumed);
-      p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,safe.ptr,safe.nelem,safe.flags));;
+      p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,&safe));
     } catch(const PLMD::ExceptionTypeError & e) {
       nothrow.handler(nothrow.ptr,20300,e.what(),nullptr);
     } catch(const PLMD::ExceptionError & e) {
