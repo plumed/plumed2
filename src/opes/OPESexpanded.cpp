@@ -328,8 +328,8 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       ifile.reset(false);
       ifile.close();
     }
-    else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+    else //same behaviour as METAD
+      plumed_merror("RESTART requested, but file '"+deltaFsFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
       std::vector<unsigned> all_counter(NumWalkers_);

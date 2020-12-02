@@ -660,14 +660,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
       ifile.close();
       nlist_=tmp_nlist;
     }
-    else
-    { //same behaviour as METAD
-      std::string not_found_msg="RESTART requested, but file '"+restartFileName+"' was not found!";
-      if(stateRestart)
-        plumed_merror(not_found_msg);
-      else
-        log.printf(" +++ WARNING +++ %s\n",not_found_msg.c_str());
-    }
+    else //same behaviour as METAD
+      plumed_merror("RESTART requested, but file '"+restartFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
       const unsigned kernels_size=kernels_.size();
