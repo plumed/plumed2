@@ -267,9 +267,9 @@ class Metainference : public bias::Bias
   void getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  void get_weights(const unsigned iselect, double &fact, double &var_fact);
-  void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
-  void get_sigma_mean(const unsigned iselect, const double fact, const double var_fact, const std::vector<double> &mean);
+  void get_weights(const unsigned iselect, double &weight, double &norm, double &neff);
+  void replica_averaging(const double weight, const double norm, std::vector<double> &mean, std::vector<double> &dmean_b);
+  void get_sigma_mean(const unsigned iselect, const double weight, const double norm, const double neff, const std::vector<double> &mean);
   void writeStatus();
   void do_regression_zero(const std::vector<double> &mean);
 
@@ -325,6 +325,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
+  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
   keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
@@ -461,9 +462,10 @@ Metainference::Metainference(const ActionOptions&ao):
 
   unsigned aver_max_steps=0;
   parse("SIGMA_MAX_STEPS", aver_max_steps);
-  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*2000;
   if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
   if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
+  if(aver_max_steps>0&&aver_max_steps<averaging) error("SIGMA_MAX_STEPS must be greater than AVERAGING");
 
   // resize std::vector for sigma_mean history
   sigma_mean2_last_.resize(nsel);
@@ -813,6 +815,9 @@ Metainference::Metainference(const ActionOptions&ao):
     addComponent("weight");
     componentIsNotPeriodic("weight");
   }
+
+  addComponent("neff");
+  componentIsNotPeriodic("neff");
 
   if(doscale_ || doregres_zero_) {
     addComponent("scale");
@@ -1502,62 +1507,54 @@ void Metainference::getEnergyForceMIGEN(const std::vector<double> &mean, const s
   }
 }
 
-void Metainference::get_weights(const unsigned iselect, double &fact, double &var_fact)
+void Metainference::get_weights(const unsigned iselect, double &weight, double &norm, double &neff)
 {
-  const double dnrep    = static_cast<double>(nrep_);
-  const double ave_fact = 1.0/dnrep;
-
-  double norm = 0.0;
-
+  const double dnrep = static_cast<double>(nrep_);
   // calculate the weights either from BIAS
   if(do_reweight_) {
     std::vector<double> bias(nrep_,0);
     if(master) {
       bias[replica_] = getArgument(narg);
-      //bias[replica_] = ((1.0/plumed.getAtoms().getKbT())- (1.0/kbt_) )*getArgument(narg);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
     }
     comm.Sum(&bias[0], nrep_);
 
-    const double maxbias = *(std::max_element(bias.begin(), bias.end()));
-    for(unsigned i=0; i<nrep_; ++i) {
-      bias[i] = std::exp((bias[i]-maxbias)/kbt_);
-      //bias[i] = exp((bias[i]-maxbias));
-      norm   += bias[i];
-    }
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
     if(!firstTimeW[iselect]) {
       for(unsigned i=0; i<nrep_; ++i) {
-        const double delta=bias[i]/norm-average_weights_[iselect][i];
+        const double delta=bias[i]-average_weights_[iselect][i];
         average_weights_[iselect][i]+=decay*delta;
       }
     } else {
       firstTimeW[iselect] = false;
-      for(unsigned i=0; i<nrep_; ++i) {
-        average_weights_[iselect][i] = bias[i]/norm;
-      }
+      for(unsigned i=0; i<nrep_; ++i) average_weights_[iselect][i] = bias[i];
     }
 
     // set average back into bias and set norm to one
-    for(unsigned i=0; i<nrep_; ++i) bias[i] = average_weights_[iselect][i];
+    const double maxbias = *(std::max_element(average_weights_[iselect].begin(), average_weights_[iselect].end()));
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp((average_weights_[iselect][i]-maxbias)/kbt_);
     // set local weight, norm and weight variance
-    fact = bias[replica_];
-    norm = 1.0;
-    for(unsigned i=0; i<nrep_; ++i) var_fact += (bias[i]/norm-ave_fact)*(bias[i]/norm-ave_fact);
-    getPntrToComponent("weight")->set(fact);
+    weight = bias[replica_];
+    double w2=0.;
+    for(unsigned i=0; i<nrep_; ++i) {
+      w2 += bias[i]*bias[i];
+      norm += bias[i];
+    }
+    neff = norm*norm/w2;
+    getPntrToComponent("weight")->set(weight/norm);
   } else {
     // or arithmetic ones
+    neff = dnrep;
+    weight = 1.0;
     norm = dnrep;
-    fact = 1.0/norm;
   }
+  getPntrToComponent("neff")->set(neff);
 }
 
-void Metainference::get_sigma_mean(const unsigned iselect, const double fact, const double var_fact, const std::vector<double> &mean)
+void Metainference::get_sigma_mean(const unsigned iselect, const double weight, const double norm, const double neff, const std::vector<double> &mean)
 {
   const double dnrep    = static_cast<double>(nrep_);
-  const double ave_fact = 1.0/dnrep;
-
   std::vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
 
   if(do_optsigmamean_>0) {
@@ -1568,28 +1565,12 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
        there is one of this per argument in any case  because it is
        the maximum among these to be used in case of GAUSS/OUTLIER */
     std::vector<double> sigma_mean2_now(narg,0);
-    if(do_reweight_) {
-      if(master) {
-        for(unsigned i=0; i<narg; ++i) {
-          double tmp1 = (fact*getArgument(i)-ave_fact*mean[i])*(fact*getArgument(i)-ave_fact*mean[i]);
-          double tmp2 = -2.*mean[i]*(fact-ave_fact)*(fact*getArgument(i)-ave_fact*mean[i]);
-          sigma_mean2_now[i] = tmp1 + tmp2;
-        }
-        if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
-      }
-      comm.Sum(&sigma_mean2_now[0], narg);
-      for(unsigned i=0; i<narg; ++i) sigma_mean2_now[i] = dnrep/(dnrep-1.)*(sigma_mean2_now[i] + mean[i]*mean[i]*var_fact);
-    } else {
-      if(master) {
-        for(unsigned i=0; i<narg; ++i) {
-          double tmp  = getArgument(i)-mean[i];
-          sigma_mean2_now[i] = fact*tmp*tmp;
-        }
-        if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
-      }
-      comm.Sum(&sigma_mean2_now[0], narg);
-      for(unsigned i=0; i<narg; ++i) sigma_mean2_now[i] /= dnrep;
+    if(master) {
+      for(unsigned i=0; i<narg; ++i) sigma_mean2_now[i] = weight*(getArgument(i)-mean[i])*(getArgument(i)-mean[i]);
+      if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
     }
+    comm.Sum(&sigma_mean2_now[0], narg);
+    for(unsigned i=0; i<narg; ++i) sigma_mean2_now[i] *= 1.0/(neff-1.)/norm;
 
     // add sigma_mean2 to history
     if(optsigmamean_stride_>0) {
@@ -1623,14 +1604,14 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
     // start sigma max optimization
     if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
       for(unsigned i=0; i<sigma_max_.size(); i++) {
-        sigma_max_est_[i] += std::sqrt(sigma_mean2_tmp[i]);
+        if(sigma_max_est_[i]<sigma_mean2_tmp[i]&&optimized_step_>optsigmamean_stride_) sigma_max_est_[i]=sigma_mean2_tmp[i];
         // ready to set once and for all the value of sigma_max
         if(optimized_step_==N_optimized_step_) {
-          double isteps = 1./static_cast<double>(optimized_step_);
           sigmamax_opt_done_=true;
           for(unsigned i=0; i<sigma_max_.size(); i++) {
-            sigma_max_[i]=sigma_max_est_[i]*isteps*std::sqrt(dnrep);
+            sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
             Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+            if(sigma_[i]>sigma_max_[i]) sigma_[i]=sigma_max_[i];
           }
         }
       }
@@ -1652,15 +1633,15 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double fact, co
   sigma_mean2_ = sigma_mean2_tmp;
 }
 
-void Metainference::replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b)
+void Metainference::replica_averaging(const double weight, const double norm, std::vector<double> &mean, std::vector<double> &dmean_b)
 {
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
+    for(unsigned i=0; i<narg; ++i) mean[i] = weight/norm*getArgument(i);
     if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
   }
   comm.Sum(&mean[0], narg);
   // set the derivative of the mean with respect to the bias
-  for(unsigned i=0; i<narg; ++i) dmean_b[i] = fact/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
+  for(unsigned i=0; i<narg; ++i) dmean_b[i] = weight/norm/kbt_*(getArgument(i)-mean[i])/static_cast<double>(average_weights_stride_);
 
   // this is only for generic metainference
   if(firstTime) {ftilde_ = mean; firstTime = false;}
@@ -1691,25 +1672,28 @@ void Metainference::calculate()
   // set the value of selector for  REM-like stuff
   if(selector_.length()>0) iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
-  double       fact     = 0.0;
-  double       var_fact = 0.0;
-  // get weights for ensemble average
-  get_weights(iselect, fact, var_fact);
-  // calculate the mean
+  /* 1) collect weights */
+  double weight = 0.;
+  double neff = 0.;
+  double norm = 0.;
+  get_weights(iselect, weight, norm, neff);
+
+  /* 2) calculate average */
   std::vector<double> mean(narg,0);
   // this is the derivative of the mean with respect to the argument
-  std::vector<double> dmean_x(narg,fact);
+  std::vector<double> dmean_x(narg,weight/norm);
   // this is the derivative of the mean with respect to the bias
   std::vector<double> dmean_b(narg,0);
   // calculate it
-  replica_averaging(fact, mean, dmean_b);
-  // calculate sigma mean
-  get_sigma_mean(iselect, fact, var_fact, mean);
+  replica_averaging(weight, norm, mean, dmean_b);
+
+  /* 3) calculates parameters */
+  get_sigma_mean(iselect, weight, norm, neff, mean);
+
   // in case of regression with zero intercept, calculate scale
   if(doregres_zero_ && step%nregres_zero_==0) do_regression_zero(mean);
 
-
-  /* MONTE CARLO */
+  /* 4) run monte carlo */
   double ene = doMonteCarlo(mean);
 
   // calculate bias and forces
@@ -1731,7 +1715,6 @@ void Metainference::calculate()
     break;
   }
 
-  // set value of the bias
   setBias(ene);
 }
 
