@@ -679,10 +679,14 @@ inline void OPESexpanded::update_deltaF(double bias)
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
   const double increment=kbt_*std::log1p(std::exp(static_cast<long double>((bias-rct_)/kbt_))/(counter_-1.));
-  for(unsigned i=0; i<deltaF_.size(); i++)
+  #pragma omp parallel num_threads(NumOMP_)
   {
-    const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
-    deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+    #pragma omp for
+    for(unsigned i=0; i<deltaF_.size(); i++)
+    {
+      const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
+      deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+    }
   }
   rct_+=increment+kbt_*std::log1p(-1./counter_);
 }
