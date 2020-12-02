@@ -332,7 +332,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_merror("RESTART requested, but file '"+deltaFsFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
-      std::vector<unsigned> all_counter(NumWalkers_);
+      std::vector<unsigned long> all_counter(NumWalkers_);
       if(comm.Get_rank()==0)
         multi_sim_comm.Allgather(counter_,all_counter);
       comm.Bcast(all_counter,0);
