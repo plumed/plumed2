@@ -679,7 +679,7 @@ MetaD::MetaD(const ActionOptions& ao):
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
-  if(stride_<=0 ) error("frequency for hill addition is nonsensical");
+  if(stride_<=0) error("frequency for hill addition is nonsensical");
   current_stride_ = stride_;
   std::string hillsfname="HILLS";
   parse("FILE",hillsfname);
