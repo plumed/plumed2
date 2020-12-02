@@ -779,7 +779,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if(doInt_[0]) log<<plumed.cite(
                        "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(mw_n_>1||walkers_mpi_) log<<plumed.cite(
-                                  "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+                                   "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
                                           "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   log<<"\n";
