@@ -21,8 +21,6 @@ The \tarball{isdb-1} for this project contains the following files:
 - reference-impl-pbmetad: a folder to perform a pbmetad implicit solvent simulation
 - m_and_m: a folder to perform a metadynamics metainference simulation
 
-This tutorial has been tested on a pre-release version of version 2.4.
-
 \section isdb-1-intro Introduction
 
 Molecular dynamics simulations are the ideal tool to determine at atomistic resolution the behavior of complex molecules. This great resolution power comes at the cost
@@ -47,7 +45,7 @@ WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
 
 \endplumedfile
@@ -93,13 +91,10 @@ gyr: GYRATION TYPE=RADIUS ATOMS=protein-ca NOPBC
 PBMETAD ...
     LABEL=pb
     ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan
-    SIGMA=1000 
-    SIGMA_MIN=0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.001
-    SIGMA_MAX=0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.2
-    ADAPTIVE=DIFF
+    SIGMA=0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.01
     HEIGHT=0.5
-    PACE=200
-    BIASFACTOR=40
+    PACE=400
+    BIASFACTOR=20
     GRID_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,0
     GRID_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,5
     GRID_WSTRIDE=5000
@@ -218,7 +213,7 @@ METAINFERENCE ...
     PARARG=(nh\.exp_.*)
     REWEIGHT 
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=8.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
@@ -231,7 +226,7 @@ METAINFERENCE ...
     PARARG=(caha\.exp_.*)
     REWEIGHT
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=9.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
@@ -244,7 +239,7 @@ METAINFERENCE ...
     PARARG=(jhan\.exp_.*),(jhahn\.exp_.*),(jccg\.exp.*),(jncg\.exp.*)
     REWEIGHT
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=byj
@@ -256,7 +251,7 @@ METAINFERENCE ...
     PARARG=(cs\.expca.*),(cs\.expcb.*)
     REWEIGHT
     NOISETYPE=MOUTLIERS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=bycs
