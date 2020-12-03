@@ -87,7 +87,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
 
-void ECVlinear::registerKeywords(Keywords& keys) {
+void ECVlinear::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the Hamiltonian difference \\f$\\Delta U\\f$");
@@ -169,7 +170,8 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
 }
 
-void ECVlinear::calculateECVs(const double * DeltaU) {
+void ECVlinear::calculateECVs(const double * DeltaU)
+{
   for(unsigned k=0; k<lambda_.size(); k++)
   {
     const double diff_k=beta0_*(lambda_[k]-lambda0_);

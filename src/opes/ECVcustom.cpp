@@ -82,7 +82,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
 
-void ECVcustom::registerKeywords(Keywords& keys) {
+void ECVcustom::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the labels of the single ECVs, \\f$\\Delta U_i\\f$, in energy units");
@@ -136,7 +137,8 @@ ECVcustom::ECVcustom(const ActionOptions&ao)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
 
-void ECVcustom::calculateECVs(const double * cv) {
+void ECVcustom::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     ECVs_[j][j+P0_contribution_]=beta0_*cv[j];
   //derivative is constant
