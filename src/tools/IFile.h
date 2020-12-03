@@ -24,6 +24,7 @@
 
 #include "FileBase.h"
 #include <vector>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -48,7 +49,7 @@ class IFile:
   };
 /// Low-level read.
 /// Note: in parallel, all processes read
-  size_t llread(char*,size_t);
+  std::size_t llread(char*,std::size_t);
 /// All the defined fields
   std::vector<Field> fields;
 /// Flag set in the middle of a field reading

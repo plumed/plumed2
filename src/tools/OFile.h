@@ -26,6 +26,7 @@
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -165,7 +166,7 @@ class OFile:
     public FieldBase {
   };
 /// Low-level write
-  size_t llwrite(const char*,size_t);
+  std::size_t llwrite(const char*,std::size_t);
 /// True if fields has changed.
 /// This could be due to a change in the list of fields or a reset
 /// of a nominally constant field

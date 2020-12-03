@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <sstream>
 #include <memory>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -184,7 +185,7 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    static const size_t buffersize=4096;
+    static const std::size_t buffersize=4096;
     char cwd[buffersize]= {0};
   public:
     explicit DirectoryChanger(const char*path);
@@ -197,7 +198,7 @@ public:
   template<class T> struct _Unique_if<T[]> {
     typedef std::unique_ptr<T[]> _Unknown_bound;
   };
-  template<class T, size_t N> struct _Unique_if<T[N]> {
+  template<class T, std::size_t N> struct _Unique_if<T[N]> {
     typedef void _Known_bound;
   };
   template<class T, class... Args>
@@ -207,7 +208,7 @@ public:
   }
   template<class T>
   static typename _Unique_if<T>::_Unknown_bound
-  make_unique(size_t n) {
+  make_unique(std::size_t n) {
     typedef typename std::remove_extent<T>::type U;
     return std::unique_ptr<T>(new U[n]());
   }

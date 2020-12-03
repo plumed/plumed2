@@ -23,7 +23,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-void ExpansionCVs::registerKeywords(Keywords& keys) {
+void ExpansionCVs::registerKeywords(Keywords& keys)
+{
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
