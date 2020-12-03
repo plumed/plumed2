@@ -28,13 +28,13 @@ namespace PLMD {
 
 TypesafePtr::TypesafePtr(TypesafePtrPool*pool,void* safe) :
   pool(pool),
-  ptr(const_cast<void*>(((plumed_safeptr*)safe)->ptr)),
-  nelem(((plumed_safeptr*)safe)->nelem),
-  flags(((plumed_safeptr*)safe)->flags)
+  ptr(const_cast<void*>(((plumed_safeptr_x*)safe)->ptr)),
+  nelem(((plumed_safeptr_x*)safe)->nelem),
+  flags(((plumed_safeptr_x*)safe)->flags)
 {
   if(ptr) {
-    if(((plumed_safeptr*)safe)->flags>>28 & 1) {
-      auto m=*(plumed_ptr_manager*)((plumed_safeptr*)safe)->opt;
+    if(((plumed_safeptr_x*)safe)->flags>>28 & 1) {
+      auto m=*(plumed_ptr_manager_x*)((plumed_safeptr_x*)safe)->opt;
       manager=std::make_shared<Manager>(m.state,m.deleter);
     }
     if(pool) pool->add(ptr);

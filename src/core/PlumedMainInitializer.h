@@ -37,24 +37,24 @@ typedef struct {
   void*(*create)();
   void(*cmd)(void*,const char*,const void*);
   void(*finalize)(void*);
-} plumed_plumedmain_function_holder;
+} plumed_plumedmain_function_holder_x;
 
 typedef struct {
   void* ptr;
   void (*handler)(void*,int,const char*,const void*);
-} plumed_nothrow_handler;
+} plumed_nothrow_handler_x;
 
 typedef struct {
   const void* ptr;
   std::size_t nelem;
   unsigned long int flags;
   void* opt;
-} plumed_safeptr;
+} plumed_safeptr_x;
 
 typedef struct {
   void* state;
   void (*deleter)(void*);
-} plumed_ptr_manager;
+} plumed_ptr_manager_x;
 
 /**
   Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
@@ -63,18 +63,18 @@ typedef struct {
 */
 typedef struct {
   int version;
-  plumed_plumedmain_function_holder functions;
-  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow);
-  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr ptr);
-  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr,plumed_nothrow_handler);
+  plumed_plumedmain_function_holder_x functions;
+  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow);
+  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr_x ptr);
+  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr_x,plumed_nothrow_handler_x);
   void (*forget_ptr)(void* plumed,const void*);
-} plumed_symbol_table_type;
+} plumed_symbol_table_type_x;
 
 
 // additional definitions
-typedef void*(*plumed_create_pointer)(void);
-typedef void(*plumed_cmd_pointer)(void*,const char*,const void*);
-typedef void(*plumed_finalize_pointer)(void*);
+typedef void*(*plumed_create_pointer_x)(void);
+typedef void(*plumed_cmd_pointer_x)(void*,const char*,const void*);
+typedef void(*plumed_finalize_pointer_x)(void*);
 
 /* These functions should be accessible from C, since they might be statically
    used from Plumed.c (for static binding) */
@@ -103,7 +103,7 @@ extern "C" void plumed_plumedmain_finalize(void*plumed);
   However, when accessed directly it might be safer to first call \ref plumed_symbol_table_init.
 */
 
-extern "C" plumed_symbol_table_type plumed_symbol_table;
+extern "C" plumed_symbol_table_type_x plumed_symbol_table;
 
 /**
   Function that makes sure that \ref plumed_symbol_table is initialized.

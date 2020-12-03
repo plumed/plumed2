@@ -67,7 +67,7 @@ extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val)
 }
 
 extern "C" {
-  static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr safe) {
+  static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr_x safe) {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     auto p=static_cast<PLMD::PlumedMain*>(plumed);
     p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,&safe));
@@ -75,7 +75,7 @@ extern "C" {
 }
 
 extern "C" {
-  static void plumed_plumedmain_cmd_safe_nothrow(void*plumed,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
+  static void plumed_plumedmain_cmd_safe_nothrow(void*plumed,const char*key,plumed_safeptr_x safe,plumed_nothrow_handler_x nothrow) {
 // At library boundaries we translate exceptions to error codes.
 // This allows an exception to be catched also if the MD code
 // was linked against a different C++ library
@@ -172,8 +172,8 @@ extern "C" {
 }
 
 extern "C" {
-  static void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow) {
-    plumed_safeptr safe;
+  static void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow) {
+    plumed_safeptr_x safe;
     safe.ptr=val;
     safe.nelem=0;
     safe.flags=0;
@@ -197,7 +197,7 @@ extern "C" void plumed_plumedmain_finalize(void*plumed) {
 }
 
 // values here should be consistent with those in plumed_symbol_table_init !!!!
-plumed_symbol_table_type plumed_symbol_table= {
+plumed_symbol_table_type_x plumed_symbol_table= {
   3,
   {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize},
   plumed_plumedmain_cmd_nothrow,
@@ -245,8 +245,8 @@ public:
       if(debug) fprintf(stderr,"+++ Skipping registration +++\n");
       return;
     }
-    typedef plumed_plumedmain_function_holder* (*plumed_kernel_register_type)(const plumed_plumedmain_function_holder*);
-    plumed_kernel_register_type plumed_kernel_register=nullptr;
+    typedef plumed_plumedmain_function_holder_x* (*plumed_kernel_register_type_x)(const plumed_plumedmain_function_holder_x*);
+    plumed_kernel_register_type_x plumed_kernel_register=nullptr;
     void* handle=nullptr;
 #if defined(__PLUMED_HAS_RTLD_DEFAULT)
     if(debug) fprintf(stderr,"+++ Registering functions. Looking in RTLD_DEFAULT +++\n");
