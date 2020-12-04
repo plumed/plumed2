@@ -40,12 +40,12 @@ First of all we will run a simulation in implicit solvent using the EEF1-SB CHAR
 # this is optional and tell to VIM that this is a PLUMED file
 # vim: ft=plumed
 # see comments just below this input file
-#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/egaawaass.pdb
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
-#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/index.ndx
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
@@ -64,12 +64,12 @@ In order to have a converged sampling for this reference ensemble calculation it
 # this is optional and tell to VIM that this is a PLUMED file
 # vim: ft=plumed
 # see comments just below this input file
-#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/egaawaass.pdb
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
-#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/index.ndx
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
@@ -139,12 +139,12 @@ The following input file is meant to be appended to the former files.
 # vim: ft=plumed
 # see comments just below this input file
 #SETTINGS NREPLICAS=2
-#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/egaawaass.pdb
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
-#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/index.ndx
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
