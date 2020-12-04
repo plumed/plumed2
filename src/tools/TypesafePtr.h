@@ -94,9 +94,9 @@ public:
     pool(other.pool),
     ptr(other.ptr),
     nelem(other.nelem),
-    flags(other.flags)
+    flags(other.flags),
+    manager(std::move(other.manager))
   {
-    manager=std::move(other.manager);
     other.pool=nullptr;
     other.ptr=nullptr;
   }
