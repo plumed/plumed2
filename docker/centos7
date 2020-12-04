@@ -1,6 +1,7 @@
 # Start from latest ubuntu
 FROM centos:7
 
+# NOTE: numpy==1.19 is the last version compatible with python 3.6
 RUN yum -y update \
  && yum -y group install "Development Tools" \
  && yum -y install environment-modules gawk vim wget \
