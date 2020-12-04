@@ -1987,8 +1987,8 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0, ManagedPtr manager=ManagedPtr()) {
     if(nelem>0) safe.setNelem(nelem);
     if(manager.manager.deleter) {
-       safe.safe.flags |= 0x10000000;
-       safe.safe.opt=&manager.manager;
+      safe.safe.flags |= 0x10000000;
+      safe.safe.opt=&manager.manager;
     }
     if(PlumedGetenvTypesafeDebug()) {
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
