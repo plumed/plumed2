@@ -21,8 +21,6 @@ The \tarball{isdb-1} for this project contains the following files:
 - reference-impl-pbmetad: a folder to perform a pbmetad implicit solvent simulation
 - m_and_m: a folder to perform a metadynamics metainference simulation
 
-This tutorial has been tested on a pre-release version of version 2.4.
-
 \section isdb-1-intro Introduction
 
 Molecular dynamics simulations are the ideal tool to determine at atomistic resolution the behavior of complex molecules. This great resolution power comes at the cost
@@ -42,12 +40,14 @@ First of all we will run a simulation in implicit solvent using the EEF1-SB CHAR
 # this is optional and tell to VIM that this is a PLUMED file
 # vim: ft=plumed
 # see comments just below this input file
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
 
 \endplumedfile
@@ -58,9 +58,22 @@ This can be run using gromacs (unfortunately recent versions of gromacs do not s
 gmx_mpi mdrun -s run.tpr -table table.xvg -tablep table.xvg -plumed plumed-eef1.dat -v
 \endverbatim
 
-In order to have a converged sampling for this reference ensemble calculation it is useful to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamics Metainference later. The following input file is meant to be appended to the former.
+In order to have a converged sampling for this reference ensemble calculation it is useful to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamics Metainference later. 
 
 \plumedfile
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# EEF1SB Implicit solvation
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
+bias: BIASVALUE ARG=solv
+
 # CVs, Psi9, Phi1 are not defined
 psi1: TORSION ATOMS=@psi-1 NOPBC
 psi2: TORSION ATOMS=@psi-2 NOPBC
@@ -93,13 +106,10 @@ gyr: GYRATION TYPE=RADIUS ATOMS=protein-ca NOPBC
 PBMETAD ...
     LABEL=pb
     ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan
-    SIGMA=1000 
-    SIGMA_MIN=0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.001
-    SIGMA_MAX=0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.2
-    ADAPTIVE=DIFF
+    SIGMA=0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.01
     HEIGHT=0.5
-    PACE=200
-    BIASFACTOR=40
+    PACE=400
+    BIASFACTOR=20
     GRID_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,0
     GRID_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,5
     GRID_WSTRIDE=5000
@@ -125,6 +135,65 @@ Once the forward models are defined for the data sets, the calculated data toget
 The following input file is meant to be appended to the former files.
 
 \plumedfile
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+#SETTINGS NREPLICAS=2
+#SETTINGS MOLFILE=user-doc/tutorials/others/isdb-1/reference-impl/egaawaass.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# EEF1SB Implicit solvation
+#SETTINGS FILENAME=user-doc/tutorials/others/isdb-1/reference-impl/index.ndx
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=20 NL_BUFFER=0.1
+bias: BIASVALUE ARG=solv
+
+# CVs, Psi9, Phi1 are not defined
+psi1: TORSION ATOMS=@psi-1 NOPBC
+psi2: TORSION ATOMS=@psi-2 NOPBC
+psi3: TORSION ATOMS=@psi-3 NOPBC
+psi4: TORSION ATOMS=@psi-4 NOPBC
+psi5: TORSION ATOMS=@psi-5 NOPBC
+psi6: TORSION ATOMS=@psi-6 NOPBC
+psi7: TORSION ATOMS=@psi-7 NOPBC
+psi8: TORSION ATOMS=@psi-8 NOPBC
+
+phi2: TORSION ATOMS=@phi-2 NOPBC
+phi3: TORSION ATOMS=@phi-3 NOPBC
+phi4: TORSION ATOMS=@phi-4 NOPBC
+phi5: TORSION ATOMS=@phi-5 NOPBC
+phi6: TORSION ATOMS=@phi-6 NOPBC
+phi7: TORSION ATOMS=@phi-7 NOPBC
+phi8: TORSION ATOMS=@phi-8 NOPBC
+phi9: TORSION ATOMS=@phi-9 NOPBC
+
+ahc:  ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.12}
+
+# Bulky Trp residue dihedral
+dihtrp_cacb: TORSION ATOMS=67,47,49,52 NOPBC
+dihtrp_cbcg: TORSION ATOMS=47,49,52,53 NOPBC
+
+protein-ca: GROUP NDX_FILE=index.ndx NDX_GROUP=C-alpha
+gyr: GYRATION TYPE=RADIUS ATOMS=protein-ca NOPBC
+
+# PBMetaD
+PBMETAD ...
+    LABEL=pb
+    ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan
+    SIGMA=0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.01
+    HEIGHT=0.5
+    PACE=400
+    BIASFACTOR=20
+    GRID_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,0
+    GRID_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,5
+    GRID_WSTRIDE=5000
+    WALKERS_MPI
+... PBMETAD
+
+PRINT FILE=COLVAR ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan STRIDE=200
+PRINT FILE=ENERGY ARG=bias.bias,pb.bias STRIDE=200
+
 # EXPERIMENTAL DATA SECTION
 
 # RDCs (Grzesiek et al.)
@@ -218,7 +287,7 @@ METAINFERENCE ...
     PARARG=(nh\.exp_.*)
     REWEIGHT 
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=8.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
@@ -231,7 +300,7 @@ METAINFERENCE ...
     PARARG=(caha\.exp_.*)
     REWEIGHT
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SCALEDATA SCALE_PRIOR=GAUSSIAN SCALE0=9.0 DSCALE=0.5
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
@@ -244,7 +313,7 @@ METAINFERENCE ...
     PARARG=(jhan\.exp_.*),(jhahn\.exp_.*),(jccg\.exp.*),(jncg\.exp.*)
     REWEIGHT
     NOISETYPE=MGAUSS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=byj
@@ -256,7 +325,7 @@ METAINFERENCE ...
     PARARG=(cs\.expca.*),(cs\.expcb.*)
     REWEIGHT
     NOISETYPE=MOUTLIERS
-    OPTSIGMAMEAN=SEM AVERAGING=200
+    OPTSIGMAMEAN=SEM_MAX AVERAGING=400
     SIGMA0=5.0 SIGMA_MIN=0.0001 SIGMA_MAX=15.0 DSIGMA=0.1
     WRITE_STRIDE=10000
     LABEL=bycs

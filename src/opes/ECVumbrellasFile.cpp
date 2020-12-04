@@ -94,7 +94,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
 
-void ECVumbrellasFile::registerKeywords(Keywords& keys) {
+void ECVumbrellasFile::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
@@ -190,7 +191,8 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf(" -- READ_HEIGHT: the height of the umbrellas is used to estimate an initial guess for the DeltaFs\n");
 }
 
-void ECVumbrellasFile::calculateECVs(const double * cv) {
+void ECVumbrellasFile::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0

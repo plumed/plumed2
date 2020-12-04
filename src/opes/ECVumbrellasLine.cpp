@@ -88,7 +88,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasLine,"ECV_UMBRELLAS_LINE")
 
-void ECVumbrellasLine::registerKeywords(Keywords& keys) {
+void ECVumbrellasLine::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
@@ -155,7 +156,8 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
 
-void ECVumbrellasLine::calculateECVs(const double * cv) {
+void ECVumbrellasLine::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0

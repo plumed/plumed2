@@ -99,7 +99,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTITHERMAL")
 
-void ECVmultiCanonical::registerKeywords(Keywords& keys) {
+void ECVmultiCanonical::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the internal energy of the system. If volume is fixed it is calculated by the \\ref ENERGY colvar");
@@ -181,7 +182,8 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
 }
 
-void ECVmultiCanonical::calculateECVs(const double * ene) {
+void ECVmultiCanonical::calculateECVs(const double * ene)
+{
   for(unsigned k=0; k<beta_.size(); k++)
   {
     const double diff_k=(beta_[k]-beta0_);

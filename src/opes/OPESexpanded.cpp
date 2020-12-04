@@ -157,7 +157,8 @@ public:
 
 PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
 
-void OPESexpanded::registerKeywords(Keywords& keys) {
+void OPESexpanded::registerKeywords(Keywords& keys)
+{
   Bias::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
@@ -172,6 +173,8 @@ void OPESexpanded::registerKeywords(Keywords& keys) {
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 
 //output components
   componentsAreNotOptional(keys);
@@ -325,11 +328,11 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       ifile.reset(false);
       ifile.close();
     }
-    else
-      log.printf(" +++ WARNING +++ restart requested, but no '%s' file found!\n",deltaFsFileName.c_str());
+    else //same behaviour as METAD
+      plumed_merror("RESTART requested, but file '"+deltaFsFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
-      std::vector<unsigned> all_counter(NumWalkers_);
+      std::vector<unsigned long> all_counter(NumWalkers_);
       if(comm.Get_rank()==0)
         multi_sim_comm.Allgather(counter_,all_counter);
       comm.Bcast(all_counter,0);
@@ -389,8 +392,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(NumOMP_>1)
     log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
   if(serial)
-    log.printf(" -- SERIAL: running without loop parallelization\n");
-//Bibliography
+    log.printf(" -- SERIAL: no loop parallelization, despite %d MPI processes and %u OpenMP threads available\n",comm.Get_size(),OpenMP::getNumThreads());
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi, P.M. Piaggi, and M. Parrinello, Phys. Rev. X 10, 041034 (2020)");
   log.printf("\n");
@@ -403,7 +405,8 @@ void OPESexpanded::calculate()
 
   long double sum=0;
   std::vector<long double> der_sum_cv(ncv_,0);
-  if(NumOMP_==1) {
+  if(NumOMP_==1)
+  {
     for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
     {
       long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
@@ -412,11 +415,13 @@ void OPESexpanded::calculate()
       for(unsigned j=0; j<ncv_; j++)
         der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
     }
-  } else {
+  }
+  else
+  {
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<long double> omp_der_sum_cv(ncv_,0);
-      #pragma omp for reduction(+ : sum) nowait
+      #pragma omp for reduction(+:sum) nowait
       for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
       {
         long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
@@ -445,8 +450,12 @@ void OPESexpanded::calculate()
   if(calc_work_)
   {
     long double old_sum=0;
-    for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
-      old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      #pragma omp for reduction(+:old_sum) nowait
+      for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+        old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
+    }
     if(NumParallel_>1)
       comm.Sum(old_sum);
     work_+=-kbt_*std::log(sum/old_sum);
@@ -667,13 +676,17 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
 
 inline void OPESexpanded::update_deltaF(double bias)
 {
-  //plumed_massert(counter_>1,"something went wrong");
+  plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
   const double increment=kbt_*std::log1p(std::exp(static_cast<long double>((bias-rct_)/kbt_))/(counter_-1.));
-  for(unsigned i=0; i<deltaF_.size(); i++)
+  #pragma omp parallel num_threads(NumOMP_)
   {
-    const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
-    deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+    #pragma omp for
+    for(unsigned i=0; i<deltaF_.size(); i++)
+    {
+      const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
+      deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+    }
   }
   rct_+=increment+kbt_*std::log1p(-1./counter_);
 }
