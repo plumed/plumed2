@@ -212,7 +212,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
   {
-    if(comm.Get_rank()==0)//multi_sim_comm works on first rank only
+    if(comm.Get_rank()==0) //multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
       walker_rank=multi_sim_comm.Get_rank();
@@ -266,22 +266,22 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_massert(deltaF_name_[1]=="rct","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
       deltaF_name_.pop_back();
       deltaF_name_.erase(deltaF_name_.begin(),deltaF_name_.begin()+2);
-      std::size_t pos=5;//each name starts with "DeltaF"
+      std::size_t pos=5; //each name starts with "DeltaF"
       for(unsigned j=0; j<ncv_; j++)
-        pos = deltaF_name_[0].find("_", pos+1); //checking only first one, hopefully is enough
+        pos=deltaF_name_[0].find("_",pos+1); //checking only first one, hopefully is enough
       plumed_massert(pos<deltaF_name_[0].length(),"RESTART - fewer '_' than expected in DeltaF fields: did you remove any CV?");
-      pos = deltaF_name_[0].find("_", pos+1);
+      pos=deltaF_name_[0].find("_",pos+1);
       plumed_massert(pos>deltaF_name_[0].length(),"RESTART - more '_' than expected in DeltaF fields: did you add new CV?");
       //get lambdas, init ECVs and Link them
-      auto getLambdaName=[](const std::string& name, const unsigned start, const unsigned dim)
+      auto getLambdaName=[](const std::string& name,const unsigned start,const unsigned dim)
       {
-        std::size_t pos_start=5;//each name starts with "DeltaF"
+        std::size_t pos_start=5; //each name starts with "DeltaF"
         for(unsigned j=0; j<=start; j++)
           pos_start=name.find("_",pos_start+1);
         std::size_t pos_end=pos_start;
         for(unsigned j=0; j<dim; j++)
           pos_end=name.find("_",pos_end+1);
-        pos_start++;//do not include heading "_"
+        pos_start++; //do not include heading "_"
         return name.substr(pos_start,pos_end-pos_start);
       };
       unsigned index_j=ncv_;
@@ -432,7 +432,7 @@ void OPESexpanded::calculate()
       }
       #pragma omp critical
       for(unsigned j=0; j<ncv_; j++)
-        der_sum_cv[j] += omp_der_sum_cv[j];
+        der_sum_cv[j]+=omp_der_sum_cv[j];
     }
   }
   if(NumParallel_>1)
@@ -611,7 +611,7 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
     if(comm.Get_rank()==0)
       multi_sim_comm.Allgather(obs_cvs_,all_obs_cv);
     comm.Bcast(all_obs_cv,0);
-    obs_cvs_=all_obs_cv;//could this lead to memory issues?
+    obs_cvs_=all_obs_cv; //could this lead to memory issues?
     obs_steps_*=NumWalkers_;
   }
 
@@ -695,7 +695,7 @@ inline double OPESexpanded::getExpansion(unsigned i) const
 {
   double expansion=0;
   for(unsigned j=0; j<ncv_; j++)
-    expansion+=ECVs_[j][index_k_[i][j]];//the index_k could be trivially guessed for most ECVs, but unfourtunately not all
+    expansion+=ECVs_[j][index_k_[i][j]]; //the index_k could be trivially guessed for most ECVs, but unfourtunately not all
   return expansion;
 }
 

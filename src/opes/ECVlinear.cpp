@@ -220,10 +220,10 @@ void ECVlinear::initECVs()
 
 void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
-  if(todoAutomatic_)//estimate the steps in lambda from observations
+  if(todoAutomatic_) //estimate the steps in lambda from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_cv(all_obs_cvs.size()/ncv);//copy only useful observation (would be better not to copy...)
+    std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_lambda=estimateSteps(beta0_*(lambda_[0]-lambda0_),beta0_*(lambda_[1]-lambda0_),obs_cv,"LAMBDA");
