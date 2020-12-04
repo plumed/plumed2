@@ -106,8 +106,8 @@ class OPESexpanded : public bias::Bias {
 private:
   bool isFirstStep_;
   bool afterCalculate_;
-  unsigned NumParallel_;
   unsigned NumOMP_;
+  unsigned NumParallel_;
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned long counter_;
@@ -127,6 +127,7 @@ private:
 
   double kbt_;
   unsigned stride_;
+  unsigned deltaF_size_; //different from deltaF_.size() if NumParallel_>1
   std::vector<double> deltaF_;
   double rct_;
   double current_bias_;
@@ -187,6 +188,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   , afterCalculate_(false)
   , counter_(0)
   , ncv_(getNumberOfArguments())
+  , deltaF_size_(0)
   , rct_(0)
   , work_(0)
 {
@@ -227,15 +229,15 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   }
 
 //parallelization stuff
-  NumParallel_=comm.Get_size();
   NumOMP_=OpenMP::getNumThreads();
+  NumParallel_=comm.Get_size();
   rank_=comm.Get_rank();
   bool serial=false;
   parseFlag("SERIAL",serial);
   if(serial)
   {
-    NumParallel_=1;
     NumOMP_=1;
+    NumParallel_=1;
     rank_=0;
   }
 
@@ -273,6 +275,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       pos=deltaF_name_[0].find("_",pos+1);
       plumed_massert(pos>deltaF_name_[0].length(),"RESTART - more '_' than expected in DeltaF fields: did you add new CV?");
       //get lambdas, init ECVs and Link them
+      deltaF_size_=deltaF_name_.size();
       auto getLambdaName=[](const std::string& name,const unsigned start,const unsigned dim)
       {
         std::size_t pos_start=5; //each name starts with "DeltaF"
@@ -292,7 +295,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         index_j-=dim_l;
         std::vector<std::string> lambdas_l(1);
         lambdas_l[0]=getLambdaName(deltaF_name_[0],index_j,dim_l);
-        for(unsigned i=sizeSkip; i<deltaF_name_.size(); i+=sizeSkip)
+        for(unsigned i=sizeSkip; i<deltaF_size_; i+=sizeSkip)
         {
           std::string tmp_lambda=getLambdaName(deltaF_name_[i],index_j,dim_l);
           if(tmp_lambda==lambdas_l[0])
@@ -302,10 +305,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         pntrToECVsClass_[l]->initECVs_restart(lambdas_l);
         sizeSkip*=lambdas_l.size();
       }
-      plumed_massert(sizeSkip==deltaF_name_.size(),"RESTART - this should not happen");
-      deltaF_.resize(deltaF_name_.size());
+      plumed_massert(sizeSkip==deltaF_size_,"RESTART - this should not happen");
       init_linkECVs(); //link ECVs and initializes index_k_
-      log.printf(" ->%4lu DeltaFs in total\n",deltaF_.size());
+      log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
       //read steps from file
       unsigned restart_stride;
@@ -318,8 +320,18 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         if(calc_work_)
           old_deltaF_=deltaF_;
         ifile.scanField("rct",rct_);
-        for(unsigned i=0; i<deltaF_.size(); i++)
-          ifile.scanField(deltaF_name_[i],deltaF_[i]);
+        if(NumParallel_==1)
+        {
+          for(unsigned i=0; i<deltaF_size_; i++)
+            ifile.scanField(deltaF_name_[i],deltaF_[i]);
+        }
+        else
+        {
+          const unsigned start=rank_*deltaF_size_/NumParallel_+std::min(rank_,deltaF_size_%NumParallel_);
+          unsigned iter=0;
+          for(unsigned i=start; i<start+deltaF_.size(); i++)
+            ifile.scanField(deltaF_name_[i],deltaF_[iter++]);
+        }
         ifile.scanField();
         counter_++;
       }
@@ -400,14 +412,14 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
 
 void OPESexpanded::calculate()
 {
-  if(deltaF_.size()==0) //no bias before initialization
+  if(deltaF_size_==0) //no bias before initialization
     return;
 
   long double sum=0;
   std::vector<long double> der_sum_cv(ncv_,0);
   if(NumOMP_==1)
   {
-    for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+    for(unsigned i=0; i<deltaF_.size(); i++)
     {
       long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
       sum+=add_i;
@@ -422,7 +434,7 @@ void OPESexpanded::calculate()
     {
       std::vector<long double> omp_der_sum_cv(ncv_,0);
       #pragma omp for reduction(+:sum) nowait
-      for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+      for(unsigned i=0; i<deltaF_.size(); i++)
       {
         long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
         sum+=add_i;
@@ -436,12 +448,12 @@ void OPESexpanded::calculate()
     }
   }
   if(NumParallel_>1)
-  {
+  { //each MPI process has part of the full deltaF_ vector, so must Sum
     comm.Sum(sum);
     comm.Sum(der_sum_cv);
   }
 
-  current_bias_=-kbt_*std::log(sum/deltaF_.size());
+  current_bias_=-kbt_*std::log(sum/deltaF_size_);
   setBias(current_bias_);
   for(unsigned j=0; j<ncv_; j++)
     setOutputForce(j,kbt_*der_sum_cv[j]/sum);
@@ -453,7 +465,7 @@ void OPESexpanded::calculate()
     #pragma omp parallel num_threads(NumOMP_)
     {
       #pragma omp for reduction(+:old_sum) nowait
-      for(unsigned i=rank_; i<deltaF_.size(); i+=NumParallel_)
+      for(unsigned i=0; i<deltaF_.size(); i++)
         old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
     }
     if(NumParallel_>1)
@@ -535,8 +547,26 @@ void OPESexpanded::update()
   {
     deltaFsOfile_.printField("time",getTime());
     deltaFsOfile_.printField("rct",rct_);
-    for(unsigned i=0; i<deltaF_.size(); i++)
-      deltaFsOfile_.printField(deltaF_name_[i],deltaF_[i]);
+    if(NumParallel_==1)
+    {
+      for(unsigned i=0; i<deltaF_size_; i++)
+        deltaFsOfile_.printField(deltaF_name_[i],deltaF_[i]);
+    }
+    else //not great, but it is not done often
+    {
+      std::vector<int> all_size(NumParallel_,deltaF_size_/NumParallel_);
+      std::vector<int> disp(NumParallel_);
+      for(unsigned r=0; r<NumParallel_-1; r++)
+      {
+        if(r<deltaF_size_%NumParallel_)
+          all_size[r]++;
+        disp[r+1]=disp[r]+all_size[r];
+      }
+      std::vector<double> all_deltaF(deltaF_size_);
+      comm.Allgatherv(deltaF_,all_deltaF,&all_size[0],&disp[0]);
+      for(unsigned i=0; i<deltaF_size_; i++)
+        deltaFsOfile_.printField(deltaF_name_[i],all_deltaF[i]);
+    }
     deltaFsOfile_.printField();
   }
 }
@@ -578,24 +608,41 @@ void OPESexpanded::init_pntrToECVsClass()
 
 void OPESexpanded::init_linkECVs()
 {
-  plumed_massert(deltaF_.size()>0,"init_linkECVs must run after deltaF_ has been resized");
+  plumed_massert(deltaF_size_>0,"must set deltaF_size_ before calling init_linkECVs()");
+  if(NumParallel_==1)
+    deltaF_.resize(deltaF_size_);
+  else
+  {
+    const unsigned extra=(rank_<(deltaF_size_%NumParallel_)?1:0);
+    deltaF_.resize(deltaF_size_/NumParallel_+extra);
+  }
   ECVs_.resize(ncv_);
   derECVs_.resize(ncv_);
   index_k_.resize(deltaF_.size(),std::vector<unsigned>(ncv_));
   unsigned index_j=0;
-  unsigned sizeSkip=deltaF_.size();
+  unsigned sizeSkip=deltaF_size_;
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
   {
     std::vector< std::vector<unsigned> > l_index_k(pntrToECVsClass_[l]->getIndex_k());
-    plumed_massert(deltaF_.size()%l_index_k.size()==0,"buggy ECV: mismatch between getTotNumECVs() and getIndex_k().size()");
+    plumed_massert(deltaF_size_%l_index_k.size()==0,"buggy ECV: mismatch between getTotNumECVs() and getIndex_k().size()");
     plumed_massert(l_index_k[0].size()==pntrToECVsClass_[l]->getNumberOfArguments(),"buggy ECV: mismatch between number of ARG and underlying CVs");
     sizeSkip/=l_index_k.size();
     for(unsigned h=0; h<pntrToECVsClass_[l]->getNumberOfArguments(); h++)
     {
       ECVs_[index_j+h]=pntrToECVsClass_[l]->getPntrToECVs(h);
       derECVs_[index_j+h]=pntrToECVsClass_[l]->getPntrToDerECVs(h);
-      for(unsigned i=0; i<deltaF_.size(); i++)
-        index_k_[i][index_j+h]=l_index_k[(i/sizeSkip)%l_index_k.size()][h];
+      if(NumParallel_==1)
+      {
+        for(unsigned i=0; i<deltaF_size_; i++)
+          index_k_[i][index_j+h]=l_index_k[(i/sizeSkip)%l_index_k.size()][h];
+      }
+      else
+      {
+        const unsigned start=rank_*deltaF_size_/NumParallel_+std::min(rank_,deltaF_size_%NumParallel_);
+        unsigned iter=0;
+        for(unsigned i=start; i<start+deltaF_.size(); i++)
+          index_k_[iter++][index_j+h]=l_index_k[(i/sizeSkip)%l_index_k.size()][h];
+      }
     }
     index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
   }
@@ -617,16 +664,15 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
 
 //initialize ECVs from observations
   unsigned index_j=0;
-  unsigned totNumECVs=1;
+  deltaF_size_=1;
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
   {
     pntrToECVsClass_[l]->initECVs_observ(obs_cvs_,ncv_,index_j);
-    totNumECVs*=pntrToECVsClass_[l]->getTotNumECVs(); //ECVs from different exansions will be combined
+    deltaF_size_*=pntrToECVsClass_[l]->getTotNumECVs(); //ECVs from different exansions will be combined
     index_j+=pntrToECVsClass_[l]->getNumberOfArguments();
   }
   plumed_massert(index_j==getNumberOfArguments(),"mismatch between number of linked CVs and number of ARG");
 //link ECVs and initialize index_k_, mapping each deltaF to a single ECVs set
-  deltaF_.resize(totNumECVs);
   init_linkECVs();
 
 //initialize deltaF_ from obs
@@ -654,23 +700,41 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
     old_deltaF_=deltaF_;
 
 //set deltaF_name_
-  deltaF_name_.resize(deltaF_.size(),"DeltaF");
-  unsigned sizeSkip=deltaF_.size();
+  deltaF_name_.resize(deltaF_size_,"DeltaF");
+  unsigned sizeSkip=deltaF_size_;
   for(unsigned l=0; l<pntrToECVsClass_.size(); l++)
   {
     std::vector<std::string> lambdas_l=pntrToECVsClass_[l]->getLambdas();
     plumed_massert(lambdas_l.size()==pntrToECVsClass_[l]->getTotNumECVs(),"buggy ECV: mismatch between getTotNumECVs() and getLambdas().size()");
     sizeSkip/=lambdas_l.size();
-    for(unsigned i=0; i<deltaF_.size(); i++)
+    for(unsigned i=0; i<deltaF_size_; i++)
       deltaF_name_[i]+="_"+lambdas_l[(i/sizeSkip)%lambdas_l.size()];
   }
 
 //print initialization to file
-  log.printf(" ->%4lu DeltaFs in total\n",deltaF_.size());
+  log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
-  for(unsigned i=0; i<deltaF_.size(); i++)
-    deltaFsOfile_.printField(deltaF_name_[i],deltaF_[i]);
+  if(NumParallel_==1)
+  {
+    for(unsigned i=0; i<deltaF_.size(); i++)
+      deltaFsOfile_.printField(deltaF_name_[i],deltaF_[i]);
+  }
+  else
+  {
+    std::vector<int> all_size(NumParallel_,deltaF_size_/NumParallel_);
+    std::vector<int> disp(NumParallel_);
+    for(unsigned r=0; r<NumParallel_-1; r++)
+    {
+      if(r<deltaF_size_%NumParallel_)
+        all_size[r]++;
+      disp[r+1]=disp[r]+all_size[r];
+    }
+    std::vector<double> all_deltaF(deltaF_size_);
+    comm.Allgatherv(deltaF_,all_deltaF,&all_size[0],&disp[0]);
+    for(unsigned i=0; i<deltaF_size_; i++)
+      deltaFsOfile_.printField(deltaF_name_[i],all_deltaF[i]);
+  }
   deltaFsOfile_.printField();
 }
 
