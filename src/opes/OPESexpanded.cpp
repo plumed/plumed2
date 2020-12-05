@@ -129,6 +129,7 @@ private:
   unsigned stride_;
   unsigned deltaF_size_; //different from deltaF_.size() if NumParallel_>1
   std::vector<double> deltaF_;
+  std::vector<double> diff_;
   double rct_;
   double current_bias_;
 
@@ -415,13 +416,31 @@ void OPESexpanded::calculate()
   if(deltaF_size_==0) //no bias before initialization
     return;
 
-  long double sum=0;
-  std::vector<long double> der_sum_cv(ncv_,0);
+//get diffMax, to avoid over/under flow without long double
+//TODO think of a safe criteria for updating it, instead of every time
+  double diffMax=-std::numeric_limits<double>::max();
+  #pragma omp declare reduction(maxVal:double:omp_out=std::max(omp_out,omp_in))
+  #pragma omp parallel num_threads(NumOMP_)
+  {
+    #pragma omp for reduction(maxVal:diffMax) nowait
+    for(unsigned i=0; i<deltaF_.size(); i++)
+    {
+      diff_[i]=(-getExpansion(i)+deltaF_[i]/kbt_);
+      if(diff_[i]>diffMax)
+        diffMax=diff_[i];
+    }
+  }
+  if(NumParallel_>1)
+    comm.Max(diffMax);
+
+//calculate the bias and the forces
+  double sum=0;
+  std::vector<double> der_sum_cv(ncv_,0);
   if(NumOMP_==1)
   {
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
+      double add_i=std::exp(diff_[i]-diffMax);
       sum+=add_i;
       //set derivatives
       for(unsigned j=0; j<ncv_; j++)
@@ -432,11 +451,11 @@ void OPESexpanded::calculate()
   {
     #pragma omp parallel num_threads(NumOMP_)
     {
-      std::vector<long double> omp_der_sum_cv(ncv_,0);
+      std::vector<double> omp_der_sum_cv(ncv_,0);
       #pragma omp for reduction(+:sum) nowait
       for(unsigned i=0; i<deltaF_.size(); i++)
       {
-        long double add_i=std::exp(static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_));
+        double add_i=std::exp(diff_[i]-diffMax);
         sum+=add_i;
         //set derivatives
         for(unsigned j=0; j<ncv_; j++)
@@ -453,7 +472,8 @@ void OPESexpanded::calculate()
     comm.Sum(der_sum_cv);
   }
 
-  current_bias_=-kbt_*std::log(sum/deltaF_size_);
+//set bias and forces
+  current_bias_=-kbt_*(diffMax+std::log(sum/deltaF_size_));
   setBias(current_bias_);
   for(unsigned j=0; j<ncv_; j++)
     setOutputForce(j,kbt_*der_sum_cv[j]/sum);
@@ -461,12 +481,12 @@ void OPESexpanded::calculate()
 //calculate work
   if(calc_work_)
   {
-    long double old_sum=0;
+    double old_sum=0;
     #pragma omp parallel num_threads(NumOMP_)
     {
       #pragma omp for reduction(+:old_sum) nowait
       for(unsigned i=0; i<deltaF_.size(); i++)
-        old_sum+=std::exp(static_cast<long double>(-getExpansion(i)+old_deltaF_[i]/kbt_));
+        old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
     }
     if(NumParallel_>1)
       comm.Sum(old_sum);
@@ -562,7 +582,7 @@ void OPESexpanded::update()
           all_size[r]++;
         disp[r+1]=disp[r]+all_size[r];
       }
-      std::vector<double> all_deltaF(deltaF_size_);
+      std::vector<double> all_deltaF(deltaF_size_); //TODO can we avoid allocating this big vector?
       comm.Allgatherv(deltaF_,all_deltaF,&all_size[0],&disp[0]);
       for(unsigned i=0; i<deltaF_size_; i++)
         deltaFsOfile_.printField(deltaF_name_[i],all_deltaF[i]);
@@ -616,6 +636,7 @@ void OPESexpanded::init_linkECVs()
     const unsigned extra=(rank_<(deltaF_size_%NumParallel_)?1:0);
     deltaF_.resize(deltaF_size_/NumParallel_+extra);
   }
+  diff_.resize(deltaF_.size());
   ECVs_.resize(ncv_);
   derECVs_.resize(ncv_);
   index_k_.resize(deltaF_.size(),std::vector<unsigned>(ncv_));
@@ -691,7 +712,7 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
     }
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const long double diff_i=static_cast<long double>(-getExpansion(i)+deltaF_[i]/kbt_);
+      const double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_);
       deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i)/t)+std::log1p(-1./(1.+t)));
     }
   }
@@ -742,13 +763,13 @@ inline void OPESexpanded::update_deltaF(double bias)
 {
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
-  const double increment=kbt_*std::log1p(std::exp(static_cast<long double>((bias-rct_)/kbt_))/(counter_-1.));
+  const double increment=kbt_*std::log1p(std::exp((bias-rct_)/kbt_)/(counter_-1.));
   #pragma omp parallel num_threads(NumOMP_)
   {
     #pragma omp for
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const long double diff_i=static_cast<long double>(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
+      const double diff_i=(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
       deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
     }
   }
