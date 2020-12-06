@@ -844,15 +844,19 @@ inline void OPESexpanded_test::updateNeffStuff()
 {
   plumed_dbg_massert(neff_threshold_>0,"must be using neff");
   neff_skipped_=0;
-  for(unsigned i=0; i<deltaF_.size(); i++)
+  #pragma omp parallel num_threads(NumOMP_)
   {
-    if(!neff_ok_[i])
+    #pragma omp for reduction(+:neff_skipped_) nowait
+    for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const double neff_i=std::pow(sum_weights_[i],2)/sum_weights2_[i];
-      if(neff_i>=neff_threshold_)
-        neff_ok_[i]=true;
-      else
-        neff_skipped_++;
+      if(!neff_ok_[i])
+      {
+        const double neff_i=std::pow(sum_weights_[i],2)/sum_weights2_[i];
+        if(neff_i>=neff_threshold_)
+          neff_ok_[i]=true;
+        else
+          neff_skipped_++;
+      }
     }
   }
   if(NumParallel_>1)
