@@ -207,7 +207,7 @@ OPESexpanded_test::OPESexpanded_test(const ActionOptions&ao)
   parse("OBSERVATION_STEPS",obs_steps_);
   plumed_massert(obs_steps_!=0,"minimum is OBSERVATION_STEPS=1");
   obs_cvs_.resize(obs_steps_*ncv_);
-  
+
   neff_skipped_=0;
   neff_threshold_=0;
   parse("NEFF_THRESHOLD",neff_threshold_);
