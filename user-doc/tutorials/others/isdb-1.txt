@@ -129,10 +129,7 @@ mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad.d
 \section isdb-1-m_m Metadynamics Metainference 
 
 The former simulations should provide a converged (check for this) ensemble for the peptide. As shown in \cite Lohr:2017gc the agreement with the multiple available NMR experimental data is not perfect. In order to generate an ensemble compatible with most of the available experimental data it is possible to include them in the simulation using \ref METAINFERENCE . To do so the forward models for the data sets should be defined in the input file. In this case we have backbone chemical shifts, \ref CS2BACKBONE ; residual dipolar couplings for two bonds, \ref RDC ; and J-couplings for multiple atoms, \ref JCOUPLING.
-Once the forward models are defined for the data sets, the calculated data together with the corresponding experimental values can be used to calculate the metainference score. The metainference score is additive so it can be split into multiple \ref METAINFERENCE entries. In this case we are using two metainference entries for the two sets of RDCs because these are compared with the experimental data modulo a constant that should be unique each data set. Then we use one metainference for all the jcouplings and another one for the chemical shifts. In this latter case we use a different noise model, i.e. NOISE=MOUTLIERS because the forward model for chemical shifts can result in systematic errors for some of them.
-
-
-The following input file is meant to be appended to the former files.
+Once the forward models are defined for the data sets, the calculated data together with the corresponding experimental values can be used to calculate the metainference score. The metainference score is additive so it can be split into multiple \ref METAINFERENCE entries. In this case we are using two metainference entries for the two sets of RDCs because these are compared with the experimental data modulo a constant that should be unique each data set. Then we use one metainference for all the jcouplings and another one for the chemical shifts. 
 
 \plumedfile
 # this is optional and tell to VIM that this is a PLUMED file
