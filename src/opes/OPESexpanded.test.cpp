@@ -440,10 +440,9 @@ void OPESexpanded_test::calculate()
 //get diffMax, to avoid over/under flow without long double
 //TODO think of a safe criteria for updating it, instead of every time
   double diffMax=-std::numeric_limits<double>::max();
-  #pragma omp declare reduction(maxVal:double:omp_out=std::max(omp_out,omp_in))
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(maxVal:diffMax) nowait
+    #pragma omp for reduction(max:diffMax) nowait
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(neff_threshold_==0 || neff_ok_[i])
