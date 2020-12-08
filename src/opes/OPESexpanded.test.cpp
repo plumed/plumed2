@@ -842,7 +842,8 @@ inline void OPESexpanded_test::updateDeltaF(double bias)
 inline void OPESexpanded_test::updateNeffStuff()
 {
   plumed_dbg_massert(neff_threshold_>0,"must be using neff");
-  neff_skipped_=0;
+//  neff_skipped_=0;
+  double count_skip=0;
   #pragma omp parallel num_threads(NumOMP_)
   {
     #pragma omp for reduction(+:neff_skipped_) nowait
@@ -854,12 +855,13 @@ inline void OPESexpanded_test::updateNeffStuff()
         if(neff_i>=neff_threshold_)
           neff_ok_[i]=true;
         else
-          neff_skipped_++;
+          count_skip++;
       }
     }
   }
   if(NumParallel_>1)
-    comm.Sum(neff_skipped_);
+    comm.Sum(count_skip);
+  neff_skipped_=count_skip;
   if(neff_skipped_==0)
     neff_threshold_=0;
   getPntrToComponent("activeDeltaFs")->set(deltaF_size_-neff_skipped_);

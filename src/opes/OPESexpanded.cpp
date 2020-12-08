@@ -103,8 +103,8 @@ PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
 
 //custom OpenMP reduction
 #pragma omp declare reduction(vPlus:std::vector<double>:\
-  std::transform(omp_out.begin(),omp_out.end(),omp_in.begin(),omp_out.begin(),std::plus<double>()))\
-  initializer(omp_priv=omp_orig)
+std::transform(omp_out.begin(),omp_out.end(),omp_in.begin(),omp_out.begin(),std::plus<double>()))\
+initializer(omp_priv=omp_orig)
 
 class OPESexpanded : public bias::Bias {
 
@@ -190,13 +190,13 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
-  , isFirstStep_(true)
-  , afterCalculate_(false)
-  , counter_(0)
-  , ncv_(getNumberOfArguments())
-  , deltaF_size_(0)
-  , rct_(0)
-  , work_(0)
+    , isFirstStep_(true)
+    , afterCalculate_(false)
+    , counter_(0)
+    , ncv_(getNumberOfArguments())
+    , deltaF_size_(0)
+    , rct_(0)
+    , work_(0)
 {
 //set pace
   parse("PACE",stride_);
