@@ -442,7 +442,7 @@ void OPESexpanded_test::calculate()
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(max:diffMax) nowait
+    #pragma omp for reduction(max:diffMax)
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(neff_threshold_==0 || neff_ok_[i])
@@ -478,7 +478,7 @@ void OPESexpanded_test::calculate()
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<double> omp_der_sum_cv(ncv_,0);
-      #pragma omp for reduction(+:sum) nowait
+      #pragma omp for reduction(+:sum)
       for(unsigned i=0; i<deltaF_.size(); i++)
       {
         if(neff_threshold_==0 || neff_ok_[i])
@@ -513,7 +513,7 @@ void OPESexpanded_test::calculate()
     double old_sum=0;
     #pragma omp parallel num_threads(NumOMP_)
     {
-      #pragma omp for reduction(+:old_sum) nowait
+      #pragma omp for reduction(+:old_sum)
       for(unsigned i=0; i<deltaF_.size(); i++)
         if(neff_threshold_==0 || neff_ok_[i])
           old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
@@ -846,7 +846,7 @@ inline void OPESexpanded_test::updateNeffStuff()
   double count_skip=0;
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(+:neff_skipped_) nowait
+    #pragma omp for reduction(+:count_skip)
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(!neff_ok_[i])
