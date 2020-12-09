@@ -152,8 +152,8 @@ public:
 
   void init_pntrToECVsClass();
   void init_linkECVs();
-  void init_from_obs();
-  inline void update_deltaF(double);
+  void init_fromObs();
+  inline void updateDeltaF(double);
   inline double getExpansion(const unsigned) const;
 };
 
@@ -513,7 +513,7 @@ void OPESexpanded::update()
     if(counter_==obs_steps_)
     {
       log.printf("\nAction %s\n",getName().c_str());
-      init_from_obs();
+      init_fromObs();
       log.printf("Finished initialization\n\n");
       counter_=NumWalkers_; //all preliminary observations count 1
       obs_steps_=0; //no more observation
@@ -533,7 +533,7 @@ void OPESexpanded::update()
 
 //update averages. This assumes that calculate() always runs before update(), thus uses current_bias_
   if(NumWalkers_==1)
-    update_deltaF(current_bias_);
+    updateDeltaF(current_bias_);
   else
   {
     std::vector<double> cvs(ncv_);
@@ -557,7 +557,7 @@ void OPESexpanded::update()
         pntrToECVsClass_[k]->calculateECVs(&all_cvs[index_wj]);
         index_wj+=pntrToECVsClass_[k]->getNumberOfArguments();
       }
-      update_deltaF(all_bias[w]);
+      updateDeltaF(all_bias[w]);
     }
   }
 
@@ -669,7 +669,7 @@ void OPESexpanded::init_linkECVs()
   plumed_massert(sizeSkip==1,"this should not happen!");
 }
 
-void OPESexpanded::init_from_obs() //This could probably be faster and/or require less memory...
+void OPESexpanded::init_fromObs() //This could probably be faster and/or require less memory...
 {
 //in case of multiple walkers gather all the statistics
   if(NumWalkers_>1)
@@ -758,7 +758,7 @@ void OPESexpanded::init_from_obs() //This could probably be faster and/or requir
   deltaFsOfile_.printField();
 }
 
-inline void OPESexpanded::update_deltaF(double bias)
+inline void OPESexpanded::updateDeltaF(double bias)
 {
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
