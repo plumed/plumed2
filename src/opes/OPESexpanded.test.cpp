@@ -137,6 +137,7 @@ private:
   std::vector<double> obs_cvs_;
 
   double neff_threshold_;
+  double neff_rescaling_;
   std::vector<long double> sum_weights_;
   std::vector<long double> sum_weights2_;
   std::vector<bool> neff_ok_;
@@ -179,6 +180,7 @@ void OPESexpanded_test::registerKeywords(Keywords& keys)
   keys.add("optional","FMT","specify format for DELTAFS file");
 //miscellaneous
   keys.add("optional","NEFF_THRESHOLD","activate DeltaFs of the target only if the respective effective sample size is greater");
+  keys.add("optional","NEFF_THRESHOLD_RESCALING","reduce the threshold on the neff by this factor (<1) if no new DeltaF is added");
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -212,6 +214,12 @@ OPESexpanded_test::OPESexpanded_test(const ActionOptions&ao)
   neff_threshold_=0;
   parse("NEFF_THRESHOLD",neff_threshold_);
   plumed_massert(neff_threshold_>=0,"the effective sample size cannot be negative");
+  plumed_massert(neff_threshold_<=obs_steps_,"faster if you increase the OBSERVATION_STEPS");
+  neff_rescaling_=1;
+  parse("NEFF_THRESHOLD_RESCALING",neff_rescaling_);
+  plumed_massert(neff_rescaling_<=1 && neff_rescaling_>0,"the rescaling factor must be bigger than 0 and smaller than 1");
+  if(neff_rescaling_<1 && neff_threshold_==0)
+    neff_threshold_=obs_steps_/2.;
 
 //deltaFs file
   std::string deltaFsFileName;
@@ -406,7 +414,10 @@ OPESexpanded_test::OPESexpanded_test(const ActionOptions&ao)
   log.printf("  updating the bias with PACE = %u\n",stride_);
   log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
   if(neff_threshold_>0)
+  {
     log.printf("  using a NEFF_THRESHOLD = %g\n",neff_threshold_);
+    log.printf("    and a NEFF_THRESHOLD_RESCALING = %g\n",neff_rescaling_);
+  }
   if(walkers_mpi)
     log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
@@ -442,7 +453,7 @@ void OPESexpanded_test::calculate()
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(max:diffMax) nowait
+    #pragma omp for reduction(max:diffMax)
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(neff_threshold_==0 || neff_ok_[i])
@@ -513,7 +524,7 @@ void OPESexpanded_test::calculate()
     double old_sum=0;
     #pragma omp parallel num_threads(NumOMP_)
     {
-      #pragma omp for reduction(+:old_sum) nowait
+      #pragma omp for reduction(+:old_sum)
       for(unsigned i=0; i<deltaF_.size(); i++)
         if(neff_threshold_==0 || neff_ok_[i])
           old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
@@ -842,10 +853,10 @@ inline void OPESexpanded_test::updateDeltaF(double bias)
 inline void OPESexpanded_test::updateNeffStuff()
 {
   plumed_dbg_massert(neff_threshold_>0,"must be using neff");
-  neff_skipped_=0;
+  double count_skip=0;
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(+:neff_skipped_) nowait
+    #pragma omp for reduction(+:count_skip)
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(!neff_ok_[i])
@@ -854,14 +865,21 @@ inline void OPESexpanded_test::updateNeffStuff()
         if(neff_i>=neff_threshold_)
           neff_ok_[i]=true;
         else
-          neff_skipped_++;
+          count_skip++;
       }
     }
   }
   if(NumParallel_>1)
-    comm.Sum(neff_skipped_);
-  if(neff_skipped_==0)
+    comm.Sum(count_skip);
+  if(count_skip==neff_skipped_)
+    neff_threshold_*=neff_rescaling_;
+  else
+    neff_skipped_=count_skip;
+  if(neff_skipped_==0 || neff_threshold_==0)
+  {
     neff_threshold_=0;
+    neff_skipped_=0;
+  }
   getPntrToComponent("activeDeltaFs")->set(deltaF_size_-neff_skipped_);
 }
 
