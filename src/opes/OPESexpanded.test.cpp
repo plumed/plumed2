@@ -442,7 +442,7 @@ void OPESexpanded_test::calculate()
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(max:diffMax)
+    #pragma omp for reduction(max:diffMax) nowait
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(neff_threshold_==0 || neff_ok_[i])
@@ -478,7 +478,7 @@ void OPESexpanded_test::calculate()
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<double> omp_der_sum_cv(ncv_,0);
-      #pragma omp for reduction(+:sum)
+      #pragma omp for reduction(+:sum) nowait
       for(unsigned i=0; i<deltaF_.size(); i++)
       {
         if(neff_threshold_==0 || neff_ok_[i])
@@ -513,7 +513,7 @@ void OPESexpanded_test::calculate()
     double old_sum=0;
     #pragma omp parallel num_threads(NumOMP_)
     {
-      #pragma omp for reduction(+:old_sum)
+      #pragma omp for reduction(+:old_sum) nowait
       for(unsigned i=0; i<deltaF_.size(); i++)
         if(neff_threshold_==0 || neff_ok_[i])
           old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
@@ -842,11 +842,10 @@ inline void OPESexpanded_test::updateDeltaF(double bias)
 inline void OPESexpanded_test::updateNeffStuff()
 {
   plumed_dbg_massert(neff_threshold_>0,"must be using neff");
-//  neff_skipped_=0;
-  double count_skip=0;
+  neff_skipped_=0;
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(+:count_skip)
+    #pragma omp for reduction(+:neff_skipped_) nowait
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       if(!neff_ok_[i])
@@ -855,13 +854,12 @@ inline void OPESexpanded_test::updateNeffStuff()
         if(neff_i>=neff_threshold_)
           neff_ok_[i]=true;
         else
-          count_skip++;
+          neff_skipped_++;
       }
     }
   }
   if(NumParallel_>1)
-    comm.Sum(count_skip);
-  neff_skipped_=count_skip;
+    comm.Sum(neff_skipped_);
   if(neff_skipped_==0)
     neff_threshold_=0;
   getPntrToComponent("activeDeltaFs")->set(deltaF_size_-neff_skipped_);

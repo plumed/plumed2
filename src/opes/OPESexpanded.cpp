@@ -101,11 +101,6 @@ PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
 */
 //+ENDPLUMEDOC
 
-//custom OpenMP reduction
-#pragma omp declare reduction(vPlus:std::vector<double>:\
-std::transform(omp_out.begin(),omp_out.end(),omp_in.begin(),omp_out.begin(),std::plus<double>()))\
-initializer(omp_priv=omp_orig)
-
 class OPESexpanded : public bias::Bias {
 
 private:
@@ -190,13 +185,13 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
-    , isFirstStep_(true)
-    , afterCalculate_(false)
-    , counter_(0)
-    , ncv_(getNumberOfArguments())
-    , deltaF_size_(0)
-    , rct_(0)
-    , work_(0)
+  , isFirstStep_(true)
+  , afterCalculate_(false)
+  , counter_(0)
+  , ncv_(getNumberOfArguments())
+  , deltaF_size_(0)
+  , rct_(0)
+  , work_(0)
 {
 //set pace
   parse("PACE",stride_);
@@ -426,7 +421,7 @@ void OPESexpanded::calculate()
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
-    #pragma omp for reduction(max:diffMax)
+    #pragma omp for reduction(max:diffMax) nowait
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       diff_[i]=(-getExpansion(i)+deltaF_[i]/kbt_);
@@ -440,16 +435,34 @@ void OPESexpanded::calculate()
 //calculate the bias and the forces
   double sum=0;
   std::vector<double> der_sum_cv(ncv_,0);
-  #pragma omp parallel num_threads(NumOMP_)
+  if(NumOMP_==1)
   {
-    #pragma omp for reduction(+:sum) reduction(vPlus:der_sum_cv)
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       double add_i=std::exp(diff_[i]-diffMax);
       sum+=add_i;
       //set derivatives
       for(unsigned j=0; j<ncv_; j++)
-        der_sum_cv[j]+=(-derECVs_[j][index_k_[i][j]]*add_i);
+        der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
+    }
+  }
+  else
+  {
+    #pragma omp parallel num_threads(NumOMP_)
+    {
+      std::vector<double> omp_der_sum_cv(ncv_,0);
+      #pragma omp for reduction(+:sum) nowait
+      for(unsigned i=0; i<deltaF_.size(); i++)
+      {
+        double add_i=std::exp(diff_[i]-diffMax);
+        sum+=add_i;
+        //set derivatives
+        for(unsigned j=0; j<ncv_; j++)
+          omp_der_sum_cv[j]-=derECVs_[j][index_k_[i][j]]*add_i;
+      }
+      #pragma omp critical
+      for(unsigned j=0; j<ncv_; j++)
+        der_sum_cv[j]+=omp_der_sum_cv[j];
     }
   }
   if(NumParallel_>1)
@@ -470,7 +483,7 @@ void OPESexpanded::calculate()
     double old_sum=0;
     #pragma omp parallel num_threads(NumOMP_)
     {
-      #pragma omp for reduction(+:old_sum)
+      #pragma omp for reduction(+:old_sum) nowait
       for(unsigned i=0; i<deltaF_.size(); i++)
         old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
     }
