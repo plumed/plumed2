@@ -276,6 +276,7 @@ OPESexpanded_test::OPESexpanded_test(const ActionOptions&ao)
 //restart if needed
   if(getRestart())
   {
+    plumed_massert(neff_threshold_==0,"not implemented yet");
     IFile ifile;
     ifile.link(*this);
     if(ifile.FileExist(deltaFsFileName))
