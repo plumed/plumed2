@@ -351,7 +351,7 @@ OPESexpanded_test::OPESexpanded_test(const ActionOptions&ao)
         }
         else
         {
-          const unsigned start=rank_*deltaF_size_/NumParallel_+std::min(rank_,deltaF_size_%NumParallel_);
+          const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
           unsigned iter=0;
           for(unsigned i=start; i<start+deltaF_.size(); i++)
             ifile.scanField(deltaF_name_[i],deltaF_[iter++]);
@@ -701,7 +701,7 @@ void OPESexpanded_test::init_linkECVs()
       }
       else
       {
-        const unsigned start=rank_*deltaF_size_/NumParallel_+std::min(rank_,deltaF_size_%NumParallel_);
+        const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
         unsigned iter=0;
         for(unsigned i=start; i<start+deltaF_.size(); i++)
           index_k_[iter++][index_j+h]=l_index_k[(i/sizeSkip)%l_index_k.size()][h];
