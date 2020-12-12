@@ -1,8 +1,9 @@
 # vim:ft=plumed
 
 #ene: ENERGY #cannot calc energy in driver
-ene: READ FILE=ene.data VALUES=ene IGNORE_TIME IGNORE_FORCES
-vol: VOLUME
+#vol: VOLUME
+ene: READ FILE=EneVol.data VALUES=ene IGNORE_TIME IGNORE_FORCES
+vol: READ FILE=EneVol.data VALUES=vol IGNORE_TIME IGNORE_FORCES
 
 ecv: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
