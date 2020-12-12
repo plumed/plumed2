@@ -133,6 +133,10 @@ private:
   double rct_;
   double current_bias_;
 
+  std::vector<double> all_deltaF_;
+  std::vector<int> all_size_;
+  std::vector<int> disp_;
+
   unsigned obs_steps_;
   std::vector<double> obs_cvs_;
 
@@ -153,6 +157,7 @@ public:
   void init_pntrToECVsClass();
   void init_linkECVs();
   void init_fromObs();
+  inline void printDeltaF();
   inline void updateDeltaF(double);
   inline double getExpansion(const unsigned) const;
 };
@@ -416,8 +421,7 @@ void OPESexpanded::calculate()
   if(deltaF_size_==0) //no bias before initialization
     return;
 
-//get diffMax, to avoid over/under flow without long double
-//TODO think of a safe criteria for updating it, instead of every time
+//get diffMax, to avoid over/underflow without long double
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
@@ -563,31 +567,7 @@ void OPESexpanded::update()
 
 //write to file
   if((counter_/NumWalkers_-1)%print_stride_==0)
-  {
-    deltaFsOfile_.printField("time",getTime());
-    deltaFsOfile_.printField("rct",rct_);
-    if(NumParallel_==1)
-    {
-      for(unsigned i=0; i<deltaF_size_; i++)
-        deltaFsOfile_.printField(deltaF_name_[i],deltaF_[i]);
-    }
-    else //not great, but it is not done often
-    {
-      std::vector<int> all_size(NumParallel_,deltaF_size_/NumParallel_);
-      std::vector<int> disp(NumParallel_);
-      for(unsigned r=0; r<NumParallel_-1; r++)
-      {
-        if(r<deltaF_size_%NumParallel_)
-          all_size[r]++;
-        disp[r+1]=disp[r]+all_size[r];
-      }
-      std::vector<double> all_deltaF(deltaF_size_); //TODO can we avoid allocating this big vector?
-      comm.Allgatherv(deltaF_,all_deltaF,&all_size[0],&disp[0]);
-      for(unsigned i=0; i<deltaF_size_; i++)
-        deltaFsOfile_.printField(deltaF_name_[i],all_deltaF[i]);
-    }
-    deltaFsOfile_.printField();
-  }
+    printDeltaF();
 }
 
 void OPESexpanded::init_pntrToECVsClass()
@@ -634,6 +614,16 @@ void OPESexpanded::init_linkECVs()
   {
     const unsigned extra=(rank_<(deltaF_size_%NumParallel_)?1:0);
     deltaF_.resize(deltaF_size_/NumParallel_+extra);
+    //these are used when printing deltaF_ to file
+    all_deltaF_.resize(deltaF_size_);
+    all_size_.resize(NumParallel_,deltaF_size_/NumParallel_);
+    disp_.resize(NumParallel_);
+    for(unsigned r=0; r<NumParallel_-1; r++)
+    {
+      if(r<deltaF_size_%NumParallel_)
+        all_size_[r]++;
+      disp_[r+1]=disp_[r]+all_size_[r];
+    }
   }
   diff_.resize(deltaF_.size());
   ECVs_.resize(ncv_);
@@ -733,6 +723,11 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
 
 //print initialization to file
   log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
+  printDeltaF();
+}
+
+inline void OPESexpanded::printDeltaF()
+{
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
   if(NumParallel_==1)
@@ -742,18 +737,9 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
   }
   else
   {
-    std::vector<int> all_size(NumParallel_,deltaF_size_/NumParallel_);
-    std::vector<int> disp(NumParallel_);
-    for(unsigned r=0; r<NumParallel_-1; r++)
-    {
-      if(r<deltaF_size_%NumParallel_)
-        all_size[r]++;
-      disp[r+1]=disp[r]+all_size[r];
-    }
-    std::vector<double> all_deltaF(deltaF_size_);
-    comm.Allgatherv(deltaF_,all_deltaF,&all_size[0],&disp[0]);
+    comm.Allgatherv(deltaF_,all_deltaF_,&all_size_[0],&disp_[0]); //can we avoid using this big vector?
     for(unsigned i=0; i<deltaF_size_; i++)
-      deltaFsOfile_.printField(deltaF_name_[i],all_deltaF[i]);
+      deltaFsOfile_.printField(deltaF_name_[i],all_deltaF_[i]);
   }
   deltaFsOfile_.printField();
 }
