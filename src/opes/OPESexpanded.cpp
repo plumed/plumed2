@@ -148,18 +148,18 @@ private:
   OFile deltaFsOfile_;
   std::vector<std::string> deltaF_name_;
 
+  void init_pntrToECVsClass();
+  void init_linkECVs();
+  void init_fromObs();
+  void printDeltaF();
+  void updateDeltaF(double);
+  double getExpansion(const unsigned) const;
+
 public:
   explicit OPESexpanded(const ActionOptions&);
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
-
-  void init_pntrToECVsClass();
-  void init_linkECVs();
-  void init_fromObs();
-  inline void printDeltaF();
-  inline void updateDeltaF(double);
-  inline double getExpansion(const unsigned) const;
 };
 
 PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
@@ -366,7 +366,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(comm.Get_rank()==0 && walkers_mpi)
     multi_sim_comm.Barrier();
 
-//setup deltaFs file, without opening it
+//setup deltaFs file
   deltaFsOfile_.link(*this);
   if(NumWalkers_>1)
   {
@@ -726,7 +726,7 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
   printDeltaF();
 }
 
-inline void OPESexpanded::printDeltaF()
+void OPESexpanded::printDeltaF()
 {
   deltaFsOfile_.printField("time",getTime());
   deltaFsOfile_.printField("rct",rct_);
@@ -761,7 +761,7 @@ inline void OPESexpanded::updateDeltaF(double bias)
   rct_+=increment+kbt_*std::log1p(-1./counter_);
 }
 
-inline double OPESexpanded::getExpansion(unsigned i) const
+double OPESexpanded::getExpansion(unsigned i) const
 {
   double expansion=0;
   for(unsigned j=0; j<ncv_; j++)
