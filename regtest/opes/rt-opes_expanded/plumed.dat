@@ -16,6 +16,8 @@ opes: OPES_EXPANDED ...
   FILE=DeltaFs.data
   FMT={% f}
   SERIAL
+  STATE_WFILE=State.data
+  STATE_WSTRIDE=5
 ...
 
 PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*

@@ -47,6 +47,9 @@ The DELTAFS file also contains an estimate of \f$c(t)=\frac{1}{\beta} \log \lang
 Similarly to \ref OPES_METAD, it is printed only for reference, since \f$c(t)\f$ reaches a fixed value as the bias converges, and should NOT be used for reweighting.
 Its value is also needed for restarting a simulation.
 
+You can store the instantaneous \f$\Delta F_n(\lambda)\f$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
+Restarting form STATE_RFILE or from the DELTAFS file should be perfectly equivalent.
+
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
 \par Examples
@@ -110,6 +113,7 @@ private:
   unsigned NumParallel_;
   unsigned rank_;
   unsigned NumWalkers_;
+  unsigned walker_rank_;
   unsigned long counter_;
   std::size_t ncv_;
 
@@ -148,10 +152,16 @@ private:
   OFile deltaFsOfile_;
   std::vector<std::string> deltaF_name_;
 
+  OFile stateOfile_;
+  int wStateStride_;
+  bool storeOldStates_;
+
   void init_pntrToECVsClass();
   void init_linkECVs();
   void init_fromObs();
+
   void printDeltaF();
+  void dumpStateToFile();
   void updateDeltaF(double);
   double getExpansion(const unsigned) const;
 
@@ -171,10 +181,14 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.add("compulsory","ARG","the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
-//deltaFs file
+//DeltaFs and state files
   keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target and of the global \\f$c(t)\\f$");
   keys.add("compulsory","PRINT_STRIDE","100","stride for printing to DELTAFS file, in units of PACE");
   keys.add("optional","FMT","specify format for DELTAFS file");
+  keys.add("optional","STATE_RFILE","read from this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_WFILE","write to this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_WSTRIDE","stride for printing to STATE_WFILE, in units of PACE. Default: only on CPT events (but not all MD codes set them)");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
@@ -210,12 +224,24 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parse("PRINT_STRIDE",print_stride_);
   std::string fmt;
   parse("FMT",fmt);
+//output checkpoint of current state
+  std::string restartFileName;
+  parse("STATE_RFILE",restartFileName);
+  std::string stateFileName;
+  parse("STATE_WFILE",stateFileName);
+  wStateStride_=0;
+  parse("STATE_WSTRIDE",wStateStride_);
+  storeOldStates_=false;
+  parseFlag("STORE_STATES",storeOldStates_);
+  if(wStateStride_!=0 || storeOldStates_)
+    plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
+  if(stateFileName.length()>0 && wStateStride_==0)
+    wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
 //work flag
   parseFlag("CALC_WORK",calc_work_);
 
 //multiple walkers //external MW for cp2k not supported, but anyway cp2k cannot put bias on energy!
-  unsigned walker_rank;
   bool walkers_mpi=false;
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
@@ -223,15 +249,15 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     if(comm.Get_rank()==0) //multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
-      walker_rank=multi_sim_comm.Get_rank();
+      walker_rank_=multi_sim_comm.Get_rank();
     }
     comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
-    comm.Bcast(walker_rank,0);
+    comm.Bcast(walker_rank_,0);
   }
   else
   {
     NumWalkers_=1;
-    walker_rank=0;
+    walker_rank_=0;
   }
 
 //parallelization stuff
@@ -259,27 +285,63 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
 //restart if needed
   if(getRestart())
   {
+    bool stateRestart=true;
+    if(restartFileName.length()==0)
+    {
+      stateRestart=false;
+      restartFileName=deltaFsFileName;
+    }
     IFile ifile;
     ifile.link(*this);
-    if(ifile.FileExist(deltaFsFileName))
+    if(ifile.FileExist(restartFileName))
     {
-      log.printf("  RESTART from: %s\n",deltaFsFileName.c_str());
-      log.printf(" +++ make sure all simulation options are consistent! +++\n");
-      ifile.open(deltaFsFileName);
-      //get deltaFs names
-      ifile.scanFieldList(deltaF_name_);
-      plumed_massert(deltaF_name_.size()>=4,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
-      plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-      plumed_massert(deltaF_name_[0]=="time","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-      plumed_massert(deltaF_name_[1]=="rct","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
-      deltaF_name_.pop_back();
-      deltaF_name_.erase(deltaF_name_.begin(),deltaF_name_.begin()+2);
-      std::size_t pos=5; //each name starts with "DeltaF"
-      for(unsigned j=0; j<ncv_; j++)
-        pos=deltaF_name_[0].find("_",pos+1); //checking only first one, hopefully is enough
-      plumed_massert(pos<deltaF_name_[0].length(),"RESTART - fewer '_' than expected in DeltaF fields: did you remove any CV?");
-      pos=deltaF_name_[0].find("_",pos+1);
-      plumed_massert(pos>deltaF_name_[0].length(),"RESTART - more '_' than expected in DeltaF fields: did you add new CV?");
+      log.printf("  RESTART - make sure all used options are compatible\n");
+      log.printf("    restarting from: %s\n",restartFileName.c_str());
+      ifile.open(restartFileName);
+      if(stateRestart) //get all info
+      {
+        log.printf("    it should be a STATE file (not a DELTAFS file)\n");
+        double time; //not used
+        ifile.scanField("time",time);
+        ifile.scanField("counter",counter_);
+        ifile.scanField("rct",rct_);
+        std::string tmp_lambda;
+        while(ifile.scanField(getPntrToArgument(0)->getName(),tmp_lambda))
+        {
+          std::string subs="DeltaF_"+tmp_lambda;
+          for(unsigned jj=1; jj<ncv_; jj++)
+          {
+            tmp_lambda.clear();
+            ifile.scanField(getPntrToArgument(jj)->getName(),tmp_lambda);
+            subs+="_"+tmp_lambda;
+          }
+          deltaF_name_.push_back(subs);
+          double tmp_deltaF;
+          ifile.scanField("DeltaF",tmp_deltaF);
+          deltaF_.push_back(tmp_deltaF);
+          ifile.scanField();
+          tmp_lambda.clear();
+        }
+        log.printf("  successfully read %u lines\n",4+deltaF_name_.size());
+        if(NumParallel_>1)
+          all_deltaF_=deltaF_;
+      }
+      else //get just deltaFs names
+      {
+        ifile.scanFieldList(deltaF_name_);
+        plumed_massert(deltaF_name_.size()>=4,"RESTART - fewer than expected FIELDS found in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[deltaF_name_.size()-1]=="print_stride","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[0]=="time","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
+        plumed_massert(deltaF_name_[1]=="rct","RESTART - coult not find expected FIELDS in '"+deltaFsFileName+"' file");
+        deltaF_name_.pop_back();
+        deltaF_name_.erase(deltaF_name_.begin(),deltaF_name_.begin()+2);
+        std::size_t pos=5; //each name starts with "DeltaF"
+        for(unsigned j=0; j<ncv_; j++)
+          pos=deltaF_name_[0].find("_",pos+1); //checking only first one, hopefully is enough
+        plumed_massert(pos<deltaF_name_[0].length(),"RESTART - fewer '_' than expected in DeltaF fields: did you remove any CV?");
+        pos=deltaF_name_[0].find("_",pos+1);
+        plumed_massert(pos>deltaF_name_[0].length(),"RESTART - more '_' than expected in DeltaF fields: did you add new CV?");
+      }
       //get lambdas, init ECVs and Link them
       deltaF_size_=deltaF_name_.size();
       auto getLambdaName=[](const std::string& name,const unsigned start,const unsigned dim)
@@ -315,39 +377,53 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
-      //read steps from file
-      unsigned restart_stride;
-      ifile.scanField("print_stride",restart_stride);
-      plumed_massert(restart_stride==print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
-      ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
-      double time;
-      while(ifile.scanField("time",time)) //room for improvements: only number of lines and last line is important
+      if(stateRestart)
       {
-        if(calc_work_)
-          old_deltaF_=deltaF_;
-        ifile.scanField("rct",rct_);
-        if(NumParallel_==1)
-        {
-          for(unsigned i=0; i<deltaF_size_; i++)
-            ifile.scanField(deltaF_name_[i],deltaF_[i]);
-        }
-        else
+        if(NumParallel_>1)
         {
           const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
           unsigned iter=0;
           for(unsigned i=start; i<start+deltaF_.size(); i++)
-            ifile.scanField(deltaF_name_[i],deltaF_[iter++]);
+            deltaF_[iter++]=all_deltaF_[i];
         }
-        ifile.scanField();
-        counter_++;
+        if(calc_work_)
+          old_deltaF_=deltaF_;
       }
-      log.printf("  successfully read %lu lines, up to t=%g\n",counter_,time);
-      counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
+      else //read each step
+      {
+        unsigned restart_stride;
+        ifile.scanField("print_stride",restart_stride);
+        plumed_massert(restart_stride==print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
+        ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
+        double time;
+        while(ifile.scanField("time",time)) //room for improvements: only number of lines and last line is important
+        {
+          if(calc_work_)
+            old_deltaF_=deltaF_;
+          ifile.scanField("rct",rct_);
+          if(NumParallel_==1)
+          {
+            for(unsigned i=0; i<deltaF_size_; i++)
+              ifile.scanField(deltaF_name_[i],deltaF_[i]);
+          }
+          else
+          {
+            const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
+            unsigned iter=0;
+            for(unsigned i=start; i<start+deltaF_.size(); i++)
+              ifile.scanField(deltaF_name_[i],deltaF_[iter++]);
+          }
+          ifile.scanField();
+          counter_++;
+        }
+        log.printf("  successfully read %lu lines, up to t=%g\n",counter_,time);
+        counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
+      }
       ifile.reset(false);
       ifile.close();
     }
     else //same behaviour as METAD
-      plumed_merror("RESTART requested, but file '"+deltaFsFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
+      plumed_merror("RESTART requested, but file '"+restartFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
       std::vector<unsigned long> all_counter(NumWalkers_);
@@ -361,16 +437,19 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_massert(same_number_of_steps,"RESTART - not all walkers are reading the same file!");
     }
   }
+  else if(restartFileName.length()>0)
+    log.printf(" +++ WARNING +++ the provided STATE_RFILE will be ignored, since RESTART was not requested\n");
+
 //sync all walkers to avoid opening files before reding is over (see also METAD)
   comm.Barrier();
   if(comm.Get_rank()==0 && walkers_mpi)
     multi_sim_comm.Barrier();
 
-//setup deltaFs file
+//setup DeltaFs file
   deltaFsOfile_.link(*this);
   if(NumWalkers_>1)
   {
-    if(walker_rank>0)
+    if(walker_rank_>0)
       deltaFsFileName="/dev/null"; //only first walker writes on file
     deltaFsOfile_.enforceSuffix("");
   }
@@ -380,6 +459,21 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   deltaFsOfile_.setHeavyFlush(); //do I need it?
   deltaFsOfile_.addConstantField("print_stride");
   deltaFsOfile_.printField("print_stride",print_stride_);
+
+//open file for storing state
+  if(wStateStride_!=0)
+  {
+    stateOfile_.link(*this);
+    if(NumWalkers_>1)
+    {
+      if(walker_rank_>0)
+        stateFileName="/dev/null"; //only first walker writes on file
+      stateOfile_.enforceSuffix("");
+    }
+    stateOfile_.open(stateFileName);
+    if(fmt.length()>0)
+      stateOfile_.fmtField(" "+fmt);
+  }
 
 //add output components
   if(calc_work_)
@@ -391,13 +485,17 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
 //printing some info
   log.printf("  updating the bias with PACE = %u\n",stride_);
   log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
+  if(wStateStride_>0)
+    log.printf("  state checkpoints are written on file '%s' every %d PACE\n",stateFileName.c_str(),wStateStride_);
+  if(wStateStride_==-1)
+    log.printf("  state checkpoints are written on file '%s' only on CPT events (or never if MD code does define them!)\n",stateFileName.c_str());
   if(walkers_mpi)
     log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
   {
     log.printf("  using multiple walkers\n");
     log.printf("    number of walkers: %u\n",NumWalkers_);
-    log.printf("    walker rank: %u\n",walker_rank);
+    log.printf("    walker rank: %u\n",walker_rank_);
   }
   int mw_warning=0;
   if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_)
@@ -568,6 +666,9 @@ void OPESexpanded::update()
 //write to file
   if((counter_/NumWalkers_-1)%print_stride_==0)
     printDeltaF();
+//dump state
+  if( (wStateStride_>0 && (counter_/NumWalkers_-1)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+    dumpStateToFile();
 }
 
 void OPESexpanded::init_pntrToECVsClass()
@@ -744,7 +845,45 @@ void OPESexpanded::printDeltaF()
   deltaFsOfile_.printField();
 }
 
-inline void OPESexpanded::updateDeltaF(double bias)
+void OPESexpanded::dumpStateToFile()
+{
+//rewrite header or rewind file
+  if(storeOldStates_)
+    stateOfile_.clearFields();
+  else if(walker_rank_==0)
+    stateOfile_.rewind();
+//define fields
+  stateOfile_.addConstantField("time");
+  stateOfile_.addConstantField("counter");
+  stateOfile_.addConstantField("rct");
+//print
+  stateOfile_.printField("time",getTime());
+  stateOfile_.printField("counter",counter_);
+  stateOfile_.printField("rct",rct_);
+  if(NumParallel_>1)
+    comm.Allgatherv(deltaF_,all_deltaF_,&all_size_[0],&disp_[0]); //can we avoid using this big vector?
+  for(unsigned i=0; i<deltaF_size_; i++)
+  {
+    std::size_t pos_start=7; //skip "DeltaF_"
+    for(unsigned j=0; j<ncv_; j++)
+    {
+      plumed_dbg_massert(pos_start>6,"not enought _ in deltaF_name_"+std::to_string(i-1)+" string?");
+      const std::size_t pos_end=deltaF_name_[i].find("_",pos_start);
+      stateOfile_.printField(getPntrToArgument(j)->getName(),"  "+deltaF_name_[i].substr(pos_start,pos_end-pos_start));
+      pos_start=pos_end+1;
+    }
+    if(NumParallel_==1)
+      stateOfile_.printField("DeltaF",deltaF_[i]);
+    else
+      stateOfile_.printField("DeltaF",all_deltaF_[i]);
+    stateOfile_.printField();
+  }
+//make sure file is written even if small
+  if(!storeOldStates_)
+    stateOfile_.flush();
+}
+
+void OPESexpanded::updateDeltaF(double bias)
 {
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
