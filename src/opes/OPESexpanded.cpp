@@ -322,7 +322,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           ifile.scanField();
           tmp_lambda.clear();
         }
-        log.printf("  successfully read %u lines\n",4+deltaF_name_.size());
+        log.printf("  successfully read %u DeltaF lines\n",deltaF_name_.size());
         if(NumParallel_>1)
           all_deltaF_=deltaF_;
       }
@@ -391,13 +391,14 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       }
       else //read each step
       {
-        unsigned restart_stride;
-        ifile.scanField("print_stride",restart_stride);
-        plumed_massert(restart_stride==print_stride_,"you can change PACE, but not PRINT_STRIDE. It would cause problems with multiple restarts");
+        counter_=NumWalkers_;
+        unsigned count_lines=0;
         ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
         double time;
-        while(ifile.scanField("time",time)) //room for improvements: only number of lines and last line is important
+        while(ifile.scanField("time",time)) //only number of lines and last line is important
         {
+          unsigned restart_stride;
+          ifile.scanField("print_stride",restart_stride);
           if(calc_work_)
             old_deltaF_=deltaF_;
           ifile.scanField("rct",rct_);
@@ -414,10 +415,11 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
               ifile.scanField(deltaF_name_[i],deltaF_[iter++]);
           }
           ifile.scanField();
-          counter_++;
+          if(count_lines>0)
+            counter_+=NumWalkers_*restart_stride;
+          count_lines++;
         }
-        log.printf("  successfully read %lu lines, up to t=%g\n",counter_,time);
-        counter_=(1+(counter_-1)*print_stride_)*NumWalkers_; //adjust counter
+        log.printf("  successfully read %lu lines, up to t=%g\n",count_lines,time);
       }
       ifile.reset(false);
       ifile.close();
