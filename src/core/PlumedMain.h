@@ -64,7 +64,6 @@ class Citations;
 class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
-class TypesafePtrPool;
 class TypesafePtr;
 
 /**
@@ -94,12 +93,6 @@ private:
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
-
-private:
-/// Forward declaration.
-  ForwardDecl<TypesafePtrPool> typesafePtrPool_fwd;
-public:
-  TypesafePtrPool&typesafePtrPool=*typesafePtrPool_fwd;
 
 private:
 /// Error handler.

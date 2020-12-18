@@ -26,57 +26,17 @@
 
 namespace PLMD {
 
-TypesafePtr::TypesafePtr(TypesafePtrPool*pool,void* safe) :
-  pool(pool),
-  ptr(const_cast<void*>(((plumed_safeptr_x*)safe)->ptr)),
-  nelem(((plumed_safeptr_x*)safe)->nelem),
-  flags(((plumed_safeptr_x*)safe)->flags)
-{
-  if(ptr) {
-    if(((plumed_safeptr_x*)safe)->flags>>28 & 1) {
-      auto m=*(plumed_ptr_manager_x*)((plumed_safeptr_x*)safe)->opt;
-      manager=std::make_shared<Manager>(m.state,m.deleter);
-    }
-    if(pool) pool->add(ptr);
-  }
+TypesafePtr TypesafePtr::fromSafePtr(void* safe) {
+  auto s=(plumed_safeptr_x*)safe;
+  return TypesafePtr(const_cast<void*>(s->ptr), s->nelem, s->flags);
 }
 
 TypesafePtr TypesafePtr::copy() const {
   TypesafePtr ret;
-  ret.pool=pool;
   ret.ptr=ptr;
   ret.flags=flags;
   ret.nelem=nelem;
-  ret.manager=manager;
-  if(pool && ptr) pool->add(ptr);
   return ret;
-}
-
-
-void TypesafePtrPool::add(const void*ptr) {
-// lock:
-//    std::lock_guard<std::mutex> lock(mtx);
-  refcount[ptr]++;
-}
-void TypesafePtrPool::remove(const void*ptr) {
-// lock:
-//    std::lock_guard<std::mutex> lock(mtx);
-  auto f=refcount.find(ptr);
-  if(f!=refcount.end()) {
-    f->second--;
-    if(f->second<=0) refcount.erase(f);
-  }
-}
-
-void TypesafePtrPool::print(std::ostream & os) {
-  for(const auto & f : refcount) std::cout<<f.first<<" "<<f.second<<"\n";
-}
-
-void TypesafePtrPool::forget(const void*ptr) {
-  auto f=refcount.find(ptr);
-  if(f!=refcount.end()) {
-    refcount.erase(f);
-  }
 }
 
 }

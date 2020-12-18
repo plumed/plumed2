@@ -70,7 +70,7 @@ extern "C" {
   static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr_x safe) {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     auto p=static_cast<PLMD::PlumedMain*>(plumed);
-    p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,&safe));
+    p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
   }
 }
 
@@ -82,7 +82,7 @@ extern "C" {
     try {
       plumed_massert(plumed,"trying to use a plumed object which is not initialized");
       auto p=static_cast<PLMD::PlumedMain*>(plumed);
-      p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,&safe));
+      p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
     } catch(const PLMD::ExceptionTypeError & e) {
       nothrow.handler(nothrow.ptr,20300,e.what(),nullptr);
     } catch(const PLMD::ExceptionError & e) {
@@ -182,13 +182,6 @@ extern "C" {
   }
 }
 
-extern "C" {
-  static void plumed_forget_ptr(void*plumed,const void*ptr) {
-    auto p=static_cast<PLMD::PlumedMain*>(plumed);
-    p->typesafePtrPool.forget(ptr);
-  }
-}
-
 extern "C" void plumed_plumedmain_finalize(void*plumed) {
   plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
 // I think it is not possible to replace this delete with a smart pointer
@@ -202,8 +195,7 @@ plumed_symbol_table_type_x plumed_symbol_table= {
   {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize},
   plumed_plumedmain_cmd_nothrow,
   plumed_plumedmain_cmd_safe,
-  plumed_plumedmain_cmd_safe_nothrow,
-  plumed_forget_ptr
+  plumed_plumedmain_cmd_safe_nothrow
 };
 
 // values here should be consistent with those above !!!!
@@ -215,7 +207,6 @@ extern "C" void plumed_symbol_table_init() {
   plumed_symbol_table.cmd_nothrow=plumed_plumedmain_cmd_nothrow;
   plumed_symbol_table.cmd_safe=plumed_plumedmain_cmd_safe;
   plumed_symbol_table.cmd_safe_nothrow=plumed_plumedmain_cmd_safe_nothrow;
-  plumed_symbol_table.forget_ptr=plumed_forget_ptr;
 }
 
 namespace PLMD {

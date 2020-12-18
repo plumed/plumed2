@@ -44,31 +44,21 @@ std::size_t typesafePtrSizeof<void>() {
   return 0;
 }
 
-class TypesafePtrPool {
-  std::mutex mtx;
-  std::map<const void*,int> refcount;
-public:
-  void add(const void*ptr);
-  void remove(const void*ptr);
-  bool check(const void*ptr) {
-    return refcount.find(ptr)!=refcount.end();
-  }
-  int useCount(const void*ptr) {
-    auto f=refcount.find(ptr);
-    if(f!=refcount.end()) return f->second;
-    else return 0;
-  }
-  void forget(const void*ptr);
-  void print(std::ostream & os);
-};
-
 /**
 \ingroup TOOLBOX
 Class to deal with propoagation of typesafe pointers.
 
 */
 class TypesafePtr {
+  TypesafePtr(void* ptr, std::size_t nelem, unsigned long int flags):
+    ptr(ptr),
+    nelem(nelem),
+    flags(flags)
+  {}
+
 public:
+
+  static TypesafePtr fromSafePtr(void* safe);
   static constexpr unsigned short is_integral=3;
   static constexpr unsigned short is_floating_point=4;
   static constexpr unsigned short is_file=5;
@@ -79,10 +69,7 @@ public:
     ptr(const_cast<void*>(ptr))
   {}
 
-  TypesafePtr(TypesafePtrPool*pool,void* safe);
-
   ~TypesafePtr() {
-    if(pool && ptr) pool->remove(ptr);
   }
 
 
@@ -91,26 +78,19 @@ public:
   TypesafePtr & operator=(const TypesafePtr & other) = delete;
 
   TypesafePtr(TypesafePtr&&other):
-    pool(other.pool),
     ptr(other.ptr),
     nelem(other.nelem),
-    flags(other.flags),
-    manager(std::move(other.manager))
+    flags(other.flags)
   {
-    other.pool=nullptr;
     other.ptr=nullptr;
   }
 
   TypesafePtr copy() const;
 
   TypesafePtr & operator=(TypesafePtr && other) {
-    if(pool && ptr) pool->remove(ptr);
-    pool=other.pool;
     ptr=other.ptr;
     flags=other.flags;
     nelem=other.nelem;
-    manager=std::move(other.manager);
-    other.pool=nullptr;
     other.ptr=nullptr;
     return *this;
   }
@@ -131,7 +111,6 @@ public:
     typedef typename std::remove_const<T>::type T_noconst;
     typedef typename std::remove_pointer<T>::type T_noptr;
     if(flags==0) return (T*) ptr; // no check
-    if(pool && ptr) if(!pool->check(ptr)) throw ExceptionTypeError();
     auto size=flags&0xffff;
     auto type=(flags>>16)&0xff;
     // auto unsi=(flags>>24)&0x1; // ignored
@@ -208,24 +187,9 @@ public:
   }
 
 private:
-  class Manager {
-    void* state=nullptr;
-    void (*deleter)(void*)=nullptr;
-  public:
-    Manager() = default;
-    Manager(const void* state,void (*deleter)(void*)):
-      state(const_cast<void*>(state)),
-      deleter(deleter)
-    {}
-    ~Manager() {
-      if(deleter) deleter(state);
-    }
-  };
-  TypesafePtrPool*pool=nullptr;
   void* ptr=nullptr;
   std::size_t nelem=0;
   unsigned long int flags=0;
-  std::shared_ptr<Manager> manager;
 
 };
 
