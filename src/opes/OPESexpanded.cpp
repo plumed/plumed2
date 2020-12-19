@@ -48,7 +48,7 @@ Similarly to \ref OPES_METAD, it is printed only for reference, since \f$c(t)\f$
 Its value is also needed for restarting a simulation.
 
 You can store the instantaneous \f$\Delta F_n(\lambda)\f$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
-Restarting form STATE_RFILE or from the DELTAFS file should be perfectly equivalent.
+Restart can be done either from a DELTAFS file or from a STATE_RFILE, it should be statistically equivalent.
 
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
@@ -322,7 +322,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           ifile.scanField();
           tmp_lambda.clear();
         }
-        log.printf("  successfully read %u DeltaF lines\n",deltaF_name_.size());
+        log.printf("  successfully read %u DeltaF values\n",deltaF_name_.size());
         if(NumParallel_>1)
           all_deltaF_=deltaF_;
       }
@@ -379,6 +379,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       obs_steps_=0; //avoid initializing again
       if(stateRestart)
       {
+        isFirstStep_=false;
         if(NumParallel_>1)
         {
           const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
@@ -627,6 +628,10 @@ void OPESexpanded::update()
   plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
   afterCalculate_=false;
 
+//dump state must be done before updating the bias, to ensure an exact restart
+  if( (wStateStride_>0 && (counter_/NumWalkers_-1)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+    dumpStateToFile();
+
 //work done by the bias in one iteration
   if(calc_work_)
   {
@@ -668,9 +673,6 @@ void OPESexpanded::update()
 //write to file
   if((counter_/NumWalkers_-1)%print_stride_==0)
     printDeltaF();
-//dump state
-  if( (wStateStride_>0 && (counter_/NumWalkers_-1)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
-    dumpStateToFile();
 }
 
 void OPESexpanded::init_pntrToECVsClass()
@@ -859,7 +861,7 @@ void OPESexpanded::dumpStateToFile()
   stateOfile_.addConstantField("counter");
   stateOfile_.addConstantField("rct");
 //print
-  stateOfile_.printField("time",getTime());
+  stateOfile_.printField("time",getTime()-getTimeStep());
   stateOfile_.printField("counter",counter_);
   stateOfile_.printField("rct",rct_);
   if(NumParallel_>1)
