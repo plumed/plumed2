@@ -17,7 +17,7 @@ opes: OPES_EXPANDED ...
   FMT={% f}
   SERIAL
   STATE_WFILE=State.data
-  STATE_WSTRIDE=5
+  STATE_WSTRIDE=2*5
 ...
 
 PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
