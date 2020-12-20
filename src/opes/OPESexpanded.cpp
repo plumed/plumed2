@@ -108,6 +108,7 @@ class OPESexpanded : public bias::Bias {
 
 private:
   bool isFirstStep_;
+  bool afterRestart_;
   bool afterCalculate_;
   unsigned NumOMP_;
   unsigned NumParallel_;
@@ -205,6 +206,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
+  , afterRestart_(false)
   , afterCalculate_(false)
   , counter_(0)
   , ncv_(getNumberOfArguments())
@@ -378,6 +380,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
       isFirstStep_=false;
+      afterRestart_=true;
       if(stateRestart)
       {
         if(NumParallel_>1)
@@ -628,10 +631,15 @@ void OPESexpanded::update()
 
 //write DeltaF to file
 //doing it before the update allows for an exact restart
-  if((counter_/NumWalkers_)%print_stride_==0)
-    printDeltaF();
-  if( (wStateStride_>0 && (counter_/NumWalkers_)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
-    dumpStateToFile();
+  if(afterRestart_)
+    afterRestart_=false;
+  else
+  {
+    if((counter_/NumWalkers_)%print_stride_==0)
+      printDeltaF();
+    if( (wStateStride_>0 && (counter_/NumWalkers_)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+      dumpStateToFile();
+  }
 
 //work done by the bias in one iteration
   if(calc_work_)
