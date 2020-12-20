@@ -1,7 +1,7 @@
 #! FIELDS ecv.ene ecv.vol DeltaF
-#! SET time   50.000000
-#! SET counter  16
-#! SET rct   132.717655
+#! SET time   49.000000
+#! SET counter  15
+#! SET rct   132.878636
   200  0  118.225868
   200  1  225.267962
   200  2  238.176357

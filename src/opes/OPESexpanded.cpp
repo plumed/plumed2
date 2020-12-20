@@ -48,7 +48,7 @@ Similarly to \ref OPES_METAD, it is printed only for reference, since \f$c(t)\f$
 Its value is also needed for restarting a simulation.
 
 You can store the instantaneous \f$\Delta F_n(\lambda)\f$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
-Restart can be done either from a DELTAFS file or from a STATE_RFILE, it should be statistically equivalent.
+Restart can be done either from a DELTAFS file or from a STATE_RFILE, it is equivalent.
 
 Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
 
@@ -377,9 +377,9 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
+      isFirstStep_=false;
       if(stateRestart)
       {
-        isFirstStep_=false;
         if(NumParallel_>1)
         {
           const unsigned start=(deltaF_size_/NumParallel_)*rank_+std::min(rank_,deltaF_size_%NumParallel_);
@@ -392,7 +392,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       }
       else //read each step
       {
-        counter_=NumWalkers_;
+        counter_=0;
         unsigned count_lines=0;
         ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
         double time;
@@ -420,7 +420,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
             counter_+=NumWalkers_*restart_stride;
           count_lines++;
         }
-        log.printf("  successfully read %lu lines, up to t=%g\n",count_lines,time);
+        log.printf("  successfully read %u lines, up to t=%g\n",count_lines,time);
       }
       ifile.reset(false);
       ifile.close();
@@ -625,11 +625,12 @@ void OPESexpanded::update()
     }
     return;
   }
-  plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
-  afterCalculate_=false;
 
-//dump state must be done before updating the bias, to ensure an exact restart
-  if( (wStateStride_>0 && (counter_/NumWalkers_-1)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+//write DeltaF to file
+//doing it before the update allows for an exact restart
+  if((counter_/NumWalkers_)%print_stride_==0)
+    printDeltaF();
+  if( (wStateStride_>0 && (counter_/NumWalkers_)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
     dumpStateToFile();
 
 //work done by the bias in one iteration
@@ -640,7 +641,10 @@ void OPESexpanded::update()
     old_deltaF_=deltaF_;
   }
 
-//update averages. This assumes that calculate() always runs before update(), thus uses current_bias_
+//update averages
+//since current_bias_ is used, calculate() must always run before update()
+  plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
+  afterCalculate_=false;
   if(NumWalkers_==1)
     updateDeltaF(current_bias_);
   else
@@ -669,10 +673,6 @@ void OPESexpanded::update()
       updateDeltaF(all_bias[w]);
     }
   }
-
-//write to file
-  if((counter_/NumWalkers_-1)%print_stride_==0)
-    printDeltaF();
 }
 
 void OPESexpanded::init_pntrToECVsClass()
@@ -861,7 +861,7 @@ void OPESexpanded::dumpStateToFile()
   stateOfile_.addConstantField("counter");
   stateOfile_.addConstantField("rct");
 //print
-  stateOfile_.printField("time",getTime()-getTimeStep());
+  stateOfile_.printField("time",getTime());
   stateOfile_.printField("counter",counter_);
   stateOfile_.printField("rct",rct_);
   if(NumParallel_>1)
