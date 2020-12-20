@@ -403,6 +403,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   parseFlag("STORE_STATES",storeOldStates_);
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
+  if(wStateStride_>0)
+    plumed_massert(wStateStride_>stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -865,7 +867,7 @@ void OPESmetad::update()
     plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
     afterCalculate_=false; //if needed implementation can be changed to avoid this
 
-  //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
+    //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
     if(calc_work_)
     {
       const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
@@ -877,10 +879,10 @@ void OPESmetad::update()
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
 
-  //get new kernel height
+    //get new kernel height
     double height=std::exp(current_bias_/kbt_); //this assumes that calculate() always runs before update()
 
-  //update sum_weights_ and neff
+    //update sum_weights_ and neff
     double sum_heights=height;
     double sum_heights2=height*height;
     if(NumWalkers_>1)
@@ -901,7 +903,7 @@ void OPESmetad::update()
     getPntrToComponent("neff")->set(neff);
     KDEnorm_=sum_weights_;
 
-  //if needed, rescale sigma and height
+    //if needed, rescale sigma and height
     std::vector<double> sigma=sigma0_;
     if(sigma0_.size()==0)
     {
@@ -938,12 +940,12 @@ void OPESmetad::update()
       }
     }
 
-  //get new kernel center
+    //get new kernel center
     std::vector<double> center(ncv_);
     for(unsigned i=0; i<ncv_; i++)
       center[i]=getArgument(i);
 
-  //add new kernel(s)
+    //add new kernel(s)
     if(NumWalkers_==1)
       addKernel(height,center,sigma,true);
     else
