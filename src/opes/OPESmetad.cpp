@@ -160,9 +160,9 @@ private:
   };
   double cutoff2_;
   double val_at_cutoff_;
-  inline void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
-  inline double evaluateKernel(const kernel&,const std::vector<double>&) const;
-  inline double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
+  void mergeKernels(kernel&,const kernel&); //merge the second one into the first one
+  double evaluateKernel(const kernel&,const std::vector<double>&) const;
+  double evaluateKernel(const kernel&,const std::vector<double>&,std::vector<double>&,std::vector<double>&);
   std::vector<kernel> kernels_; //all compressed kernels
   OFile kernelsOfile_;
 //neighbour list stuff
@@ -185,18 +185,18 @@ private:
   int wStateStride_;
   bool storeOldStates_;
 
-public:
-  explicit OPESmetad(const ActionOptions&);
-  void calculate() override;
-  void update() override;
-  static void registerKeywords(Keywords& keys);
-
   double getProbAndDerivatives(const std::vector<double>&,std::vector<double>&);
   void addKernel(const kernel&,const bool);
   void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const bool);
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
+
+public:
+  explicit OPESmetad(const ActionOptions&);
+  void calculate() override;
+  void update() override;
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(OPESmetad,"OPES_METAD")
@@ -1503,7 +1503,7 @@ void OPESmetad::dumpStateToFile()
     stateOfile_.flush();
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x) const
+double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x) const
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -1516,7 +1516,7 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
-inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
+double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
 { //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
   for(unsigned i=0; i<ncv_; i++)
@@ -1532,7 +1532,7 @@ inline double OPESmetad::evaluateKernel(const kernel& G,const std::vector<double
   return val;
 }
 
-inline void OPESmetad::mergeKernels(kernel& k1,const kernel& k2)
+void OPESmetad::mergeKernels(kernel& k1,const kernel& k2)
 {
   const double h=k1.height+k2.height;
   for(unsigned i=0; i<k1.center.size(); i++)
