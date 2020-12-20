@@ -754,8 +754,10 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     log.printf(" -- NLIST_PACE_RESET: forcing the neighbor list to update every PACE\n");
   if(no_Zed_)
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
-  if(wStateStride_!=0 && walker_rank_==0)
-    log.printf("  state checkpoints are written on file %s with stride %d\n",stateFileName.c_str(),wStateStride_);
+  if(wStateStride_>0)
+    log.printf("  state checkpoints are written on file %s every %d MD steps\n",stateFileName.c_str(),wStateStride_);
+  if(wStateStride_==-1)
+    log.printf("  state checkpoints are written on file %s only on CPT events (or never if MD code does define them!)\n",stateFileName.c_str());
   if(walkers_mpi)
     log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
   if(NumWalkers_>1)
@@ -839,10 +841,6 @@ void OPESmetad::update()
     return;
   }
 
-//dump state if requested
-  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
-    dumpStateToFile();
-
 //update variance if adaptive sigma
   if(sigma0_.size()==0)
   {
@@ -862,221 +860,226 @@ void OPESmetad::update()
   }
 
 //do update
-  if(getStep()%stride_!=0)
-    return;
-  plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
-  afterCalculate_=false; //if needed implementation can be changed to avoid this
-
-//work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
-  if(calc_work_)
+  if(getStep()%stride_==0)
   {
-    const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
-    getPntrToComponent("work")->set(work_-stride_*min_shift);
-    work_=0;
-  }
-  old_Zed_=Zed_;
-  old_KDEnorm_=KDEnorm_;
-  delta_kernels_.clear();
-  unsigned old_nker=kernels_.size();
+    plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
+    afterCalculate_=false; //if needed implementation can be changed to avoid this
 
-//get new kernel height
-  double height=std::exp(current_bias_/kbt_); //this assumes that calculate() always runs before update()
-
-//update sum_weights_ and neff
-  double sum_heights=height;
-  double sum_heights2=height*height;
-  if(NumWalkers_>1)
-  {
-    if(comm.Get_rank()==0)
+  //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
+    if(calc_work_)
     {
-      multi_sim_comm.Sum(sum_heights);
-      multi_sim_comm.Sum(sum_heights2);
+      const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
+      getPntrToComponent("work")->set(work_-stride_*min_shift);
+      work_=0;
     }
-    comm.Bcast(sum_heights,0);
-    comm.Bcast(sum_heights2,0);
-  }
-  counter_+=NumWalkers_;
-  sum_weights_+=sum_heights;
-  sum_weights2_+=sum_heights2;
-  const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
-  getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
-  getPntrToComponent("neff")->set(neff);
-  KDEnorm_=sum_weights_;
+    old_Zed_=Zed_;
+    old_KDEnorm_=KDEnorm_;
+    delta_kernels_.clear();
+    unsigned old_nker=kernels_.size();
 
-//if needed, rescale sigma and height
-  std::vector<double> sigma=sigma0_;
-  if(sigma0_.size()==0)
-  {
-    sigma.resize(ncv_);
-    if(counter_==1+NumWalkers_)
-    { //very first estimate is from unbiased, thus must be adjusted
-      for(unsigned i=0; i<ncv_; i++)
-        av_M2_[i]/=(1-bias_prefactor_);
-    }
-    for(unsigned i=0; i<ncv_; i++)
-      sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
-  }
-  if(!fixed_sigma_)
-  {
-    const double size=neff; //for EXPLORE neff is not relevant
-    const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
-    if(sigma_min_.size()==0)
-    {
-      for(unsigned i=0; i<ncv_; i++)
-        sigma[i]*=s_rescaling;
-      //the height should be divided by sqrt(2*pi)*sigma,
-      //but this overall factor would be canceled when dividing by Zed
-      //thus we skip it altogether, but keep the s_rescaling
-      height/=std::pow(s_rescaling,ncv_);
-    }
-    else
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        const double s_rescaling_i=std::max(s_rescaling,sigma_min_[i]/sigma[i]);
-        sigma[i]*=s_rescaling_i;
-        height/=s_rescaling_i;
-      }
-    }
-  }
+  //get new kernel height
+    double height=std::exp(current_bias_/kbt_); //this assumes that calculate() always runs before update()
 
-//get new kernel center
-  std::vector<double> center(ncv_);
-  for(unsigned i=0; i<ncv_; i++)
-    center[i]=getArgument(i);
-
-//add new kernel(s)
-  if(NumWalkers_==1)
-    addKernel(height,center,sigma,true);
-  else
-  {
-    std::vector<double> all_height(NumWalkers_,0.0);
-    std::vector<double> all_center(NumWalkers_*ncv_,0.0);
-    std::vector<double> all_sigma(NumWalkers_*ncv_,0.0);
-    if(comm.Get_rank()==0)
+  //update sum_weights_ and neff
+    double sum_heights=height;
+    double sum_heights2=height*height;
+    if(NumWalkers_>1)
     {
-      multi_sim_comm.Allgather(height,all_height); //heights were communicated also before...
-      multi_sim_comm.Allgather(center,all_center);
-      multi_sim_comm.Allgather(sigma,all_sigma);
-    }
-    comm.Bcast(all_height,0);
-    comm.Bcast(all_center,0);
-    comm.Bcast(all_sigma,0);
-    if(nlist_)
-    { //gather all the nlist_index_, so merging can be done using it
-      std::vector<int> all_nlist_size(NumWalkers_);
       if(comm.Get_rank()==0)
       {
-        all_nlist_size[walker_rank_]=nlist_index_.size();
-        multi_sim_comm.Sum(all_nlist_size);
+        multi_sim_comm.Sum(sum_heights);
+        multi_sim_comm.Sum(sum_heights2);
       }
-      comm.Bcast(all_nlist_size,0);
-      unsigned tot_size=0;
-      for(unsigned w=0; w<NumWalkers_; w++)
-        tot_size+=all_nlist_size[w];
-      if(tot_size>0)
-      {
-        std::vector<int> disp(NumWalkers_);
-        for(unsigned w=0; w<NumWalkers_-1; w++)
-          disp[w+1]=disp[w]+all_nlist_size[w];
-        std::vector<unsigned> all_nlist_index(tot_size);
-        if(comm.Get_rank()==0)
-          multi_sim_comm.Allgatherv(nlist_index_,all_nlist_index,&all_nlist_size[0],&disp[0]);
-        comm.Bcast(all_nlist_index,0);
-        std::set<unsigned> nlist_index_set(all_nlist_index.begin(),all_nlist_index.end()); //remove duplicates and sort
-        nlist_index_.assign(nlist_index_set.begin(),nlist_index_set.end());
-      }
+      comm.Bcast(sum_heights,0);
+      comm.Bcast(sum_heights2,0);
     }
-    for(unsigned w=0; w<NumWalkers_; w++)
-    {
-      std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
-      std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
-      addKernel(all_height[w],center_w,sigma_w,true);
-    }
-  }
-  getPntrToComponent("nker")->set(kernels_.size());
-  if(nlist_)
-  {
-    getPntrToComponent("nlker")->set(nlist_index_.size());
-    if(nlist_pace_reset_)
-      nlist_update_=true;
-  }
+    counter_+=NumWalkers_;
+    sum_weights_+=sum_heights;
+    sum_weights2_+=sum_heights2;
+    const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
+    getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
+    getPntrToComponent("neff")->set(neff);
+    KDEnorm_=sum_weights_;
 
-  //update Zed_
-  if(!no_Zed_)
-  {
-    double sum_uprob=0;
-    const unsigned ks=kernels_.size();
-    const unsigned ds=delta_kernels_.size();
-    const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
-    if(few_kernels) //really needed? Probably is almost always false
+  //if needed, rescale sigma and height
+    std::vector<double> sigma=sigma0_;
+    if(sigma0_.size()==0)
     {
-      #pragma omp parallel num_threads(NumOMP_)
-      {
-        #pragma omp for reduction(+:sum_uprob) nowait
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          for(unsigned kk=0; kk<kernels_.size(); kk++)
-            sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+      sigma.resize(ncv_);
+      if(counter_==1+NumWalkers_)
+      { //very first estimate is from unbiased, thus must be adjusted
+        for(unsigned i=0; i<ncv_; i++)
+          av_M2_[i]/=(1-bias_prefactor_);
       }
-      if(NumParallel_>1)
-        comm.Sum(sum_uprob);
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
     }
-    else
+    if(!fixed_sigma_)
     {
-      // Here instead of redoing the full summation, we add only the changes, knowing that
-      // uprob = old_uprob + delta_uprob
-      // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
-      double delta_sum_uprob=0;
-      if(!nlist_)
+      const double size=neff; //for EXPLORE neff is not relevant
+      const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
+      if(sigma_min_.size()==0)
       {
-        #pragma omp parallel num_threads(NumOMP_)
-        {
-          #pragma omp for reduction(+:delta_sum_uprob) nowait
-          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-          {
-            for(unsigned d=0; d<delta_kernels_.size(); d++)
-            {
-              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
-            }
-          }
-        }
+        for(unsigned i=0; i<ncv_; i++)
+          sigma[i]*=s_rescaling;
+        //the height should be divided by sqrt(2*pi)*sigma,
+        //but this overall factor would be canceled when dividing by Zed
+        //thus we skip it altogether, but keep the s_rescaling
+        height/=std::pow(s_rescaling,ncv_);
       }
       else
       {
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          const double s_rescaling_i=std::max(s_rescaling,sigma_min_[i]/sigma[i]);
+          sigma[i]*=s_rescaling_i;
+          height/=s_rescaling_i;
+        }
+      }
+    }
+
+  //get new kernel center
+    std::vector<double> center(ncv_);
+    for(unsigned i=0; i<ncv_; i++)
+      center[i]=getArgument(i);
+
+  //add new kernel(s)
+    if(NumWalkers_==1)
+      addKernel(height,center,sigma,true);
+    else
+    {
+      std::vector<double> all_height(NumWalkers_,0.0);
+      std::vector<double> all_center(NumWalkers_*ncv_,0.0);
+      std::vector<double> all_sigma(NumWalkers_*ncv_,0.0);
+      if(comm.Get_rank()==0)
+      {
+        multi_sim_comm.Allgather(height,all_height); //heights were communicated also before...
+        multi_sim_comm.Allgather(center,all_center);
+        multi_sim_comm.Allgather(sigma,all_sigma);
+      }
+      comm.Bcast(all_height,0);
+      comm.Bcast(all_center,0);
+      comm.Bcast(all_sigma,0);
+      if(nlist_)
+      { //gather all the nlist_index_, so merging can be done using it
+        std::vector<int> all_nlist_size(NumWalkers_);
+        if(comm.Get_rank()==0)
+        {
+          all_nlist_size[walker_rank_]=nlist_index_.size();
+          multi_sim_comm.Sum(all_nlist_size);
+        }
+        comm.Bcast(all_nlist_size,0);
+        unsigned tot_size=0;
+        for(unsigned w=0; w<NumWalkers_; w++)
+          tot_size+=all_nlist_size[w];
+        if(tot_size>0)
+        {
+          std::vector<int> disp(NumWalkers_);
+          for(unsigned w=0; w<NumWalkers_-1; w++)
+            disp[w+1]=disp[w]+all_nlist_size[w];
+          std::vector<unsigned> all_nlist_index(tot_size);
+          if(comm.Get_rank()==0)
+            multi_sim_comm.Allgatherv(nlist_index_,all_nlist_index,&all_nlist_size[0],&disp[0]);
+          comm.Bcast(all_nlist_index,0);
+          std::set<unsigned> nlist_index_set(all_nlist_index.begin(),all_nlist_index.end()); //remove duplicates and sort
+          nlist_index_.assign(nlist_index_set.begin(),nlist_index_set.end());
+        }
+      }
+      for(unsigned w=0; w<NumWalkers_; w++)
+      {
+        std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
+        std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
+        addKernel(all_height[w],center_w,sigma_w,true);
+      }
+    }
+    getPntrToComponent("nker")->set(kernels_.size());
+    if(nlist_)
+    {
+      getPntrToComponent("nlker")->set(nlist_index_.size());
+      if(nlist_pace_reset_)
+        nlist_update_=true;
+    }
+
+    //update Zed_
+    if(!no_Zed_)
+    {
+      double sum_uprob=0;
+      const unsigned ks=kernels_.size();
+      const unsigned ds=delta_kernels_.size();
+      const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
+      if(few_kernels) //really needed? Probably is almost always false
+      {
         #pragma omp parallel num_threads(NumOMP_)
         {
-          #pragma omp for reduction(+:delta_sum_uprob) nowait
-          for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+          #pragma omp for reduction(+:sum_uprob) nowait
+          for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+            for(unsigned kk=0; kk<kernels_.size(); kk++)
+              sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+        }
+        if(NumParallel_>1)
+          comm.Sum(sum_uprob);
+      }
+      else
+      {
+        // Here instead of redoing the full summation, we add only the changes, knowing that
+        // uprob = old_uprob + delta_uprob
+        // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
+        double delta_sum_uprob=0;
+        if(!nlist_)
+        {
+          #pragma omp parallel num_threads(NumOMP_)
           {
-            const unsigned k=nlist_index_[nk];
-            for(unsigned d=0; d<delta_kernels_.size(); d++)
+            #pragma omp for reduction(+:delta_sum_uprob) nowait
+            for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
             {
-              const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
-              delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+              for(unsigned d=0; d<delta_kernels_.size(); d++)
+              {
+                const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+                delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+              }
             }
           }
         }
-      }
-      if(NumParallel_>1)
-        comm.Sum(delta_sum_uprob);
-      #pragma omp parallel num_threads(NumOMP_)
-      {
-        #pragma omp for reduction(+:delta_sum_uprob)
-        for(unsigned d=0; d<delta_kernels_.size(); d++)
+        else
         {
-          for(unsigned dd=0; dd<delta_kernels_.size(); dd++)
-          { //now subtract the delta_uprob added before, but not needed
-            const double sign=delta_kernels_[d].height<0?-1:1;
-            delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
+          #pragma omp parallel num_threads(NumOMP_)
+          {
+            #pragma omp for reduction(+:delta_sum_uprob) nowait
+            for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+            {
+              const unsigned k=nlist_index_[nk];
+              for(unsigned d=0; d<delta_kernels_.size(); d++)
+              {
+                const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
+                delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
+              }
+            }
           }
         }
+        if(NumParallel_>1)
+          comm.Sum(delta_sum_uprob);
+        #pragma omp parallel num_threads(NumOMP_)
+        {
+          #pragma omp for reduction(+:delta_sum_uprob)
+          for(unsigned d=0; d<delta_kernels_.size(); d++)
+          {
+            for(unsigned dd=0; dd<delta_kernels_.size(); dd++)
+            { //now subtract the delta_uprob added before, but not needed
+              const double sign=delta_kernels_[d].height<0?-1:1;
+              delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
+            }
+          }
+        }
+        sum_uprob=Zed_*old_KDEnorm_*old_nker+delta_sum_uprob;
       }
-      sum_uprob=Zed_*old_KDEnorm_*old_nker+delta_sum_uprob;
+      Zed_=sum_uprob/KDEnorm_/kernels_.size();
+      getPntrToComponent("zed")->set(Zed_);
     }
-    Zed_=sum_uprob/KDEnorm_/kernels_.size();
-    getPntrToComponent("zed")->set(Zed_);
   }
+
+//dump state if requested
+  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+    dumpStateToFile();
 }
 
 double OPESmetad::getProbAndDerivatives(const std::vector<double>& cv,std::vector<double>& der_prob)

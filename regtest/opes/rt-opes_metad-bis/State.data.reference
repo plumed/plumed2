@@ -4,20 +4,20 @@
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
 #! SET compression_threshold  1.000000
-#! SET zed  0.284652
-#! SET sum_weights  34.061475
-#! SET sum_weights2  54.611392
-#! SET counter  40
-#! SET adaptive_counter  98
-#! SET av_cv_psi  1.014955
-#! SET av_M2_psi  331.338949
-#! SET av_cv_phi  -0.921550
-#! SET av_M2_phi  294.564921
+#! SET zed  0.286371
+#! SET sum_weights  36.737401
+#! SET sum_weights2  61.771972
+#! SET counter  41
+#! SET adaptive_counter  99
+#! SET av_cv_psi  1.017679
+#! SET av_M2_psi  331.341769
+#! SET av_cv_phi  -0.960021
+#! SET av_M2_phi  295.127354
 #! SET min_psi -pi
 #! SET max_psi pi
 #! SET min_phi -pi
 #! SET max_phi pi
- 50.000000 0.680586 -1.472185 0.695814 0.676588 25.875344
+ 50.000000 0.720117 -1.494429 0.696667 0.672461 28.803571
  50.000000 2.884134 -2.589928 0.614935 0.611039 1.537621
  50.000000 -0.607227 1.184928 0.714725 0.664250 1.760877
  50.000000 1.658397 -1.823195 0.645981 0.623736 13.052168
