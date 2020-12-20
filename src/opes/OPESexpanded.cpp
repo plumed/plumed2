@@ -108,7 +108,6 @@ class OPESexpanded : public bias::Bias {
 
 private:
   bool isFirstStep_;
-  bool afterRestart_;
   bool afterCalculate_;
   unsigned NumOMP_;
   unsigned NumParallel_;
@@ -188,7 +187,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.add("optional","FMT","specify format for DELTAFS file");
   keys.add("optional","STATE_RFILE","read from this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
-  keys.add("optional","STATE_WSTRIDE","stride for printing to STATE_WFILE, in units of PACE. Default: only on CPT events (but not all MD codes set them)");
+  keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
@@ -206,7 +205,6 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
-  , afterRestart_(false)
   , afterCalculate_(false)
   , counter_(0)
   , ncv_(getNumberOfArguments())
@@ -237,6 +235,8 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parseFlag("STORE_STATES",storeOldStates_);
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
+  if(wStateStride_>0)
+    plumed_massert(wStateStride_>stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -379,8 +379,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       init_linkECVs(); //link ECVs and initializes index_k_
       log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
-      isFirstStep_=false;
-      afterRestart_=true;
       if(stateRestart)
       {
         if(NumParallel_>1)
@@ -395,7 +393,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       }
       else //read each step
       {
-        counter_=0;
+        counter_=NumWalkers_;
         unsigned count_lines=0;
         ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
         double time;
@@ -492,7 +490,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   log.printf("  updating the bias with PACE = %u\n",stride_);
   log.printf("  initial unbiased OBSERVATION_STEPS = %u (in units of PACE)\n",obs_steps_);
   if(wStateStride_>0)
-    log.printf("  state checkpoints are written on file '%s' every %d PACE\n",stateFileName.c_str(),wStateStride_);
+    log.printf("  state checkpoints are written on file %s every %d MD steps\n",stateFileName.c_str(),wStateStride_);
   if(wStateStride_==-1)
     log.printf("  state checkpoints are written on file '%s' only on CPT events (or never if MD code does define them!)\n",stateFileName.c_str());
   if(walkers_mpi)
@@ -605,82 +603,78 @@ void OPESexpanded::calculate()
 
 void OPESexpanded::update()
 {
-  if(getStep()%stride_!=0)
-    return;
   if(isFirstStep_) //skip very first step, as in METAD
   {
     isFirstStep_=false;
     if(obs_steps_!=1) //if obs_steps_==1 go on with initialization
       return;
   }
-  if(obs_steps_>0)
+  if(getStep()%stride_==0)
   {
-    for(unsigned j=0; j<ncv_; j++)
-      obs_cvs_[counter_*ncv_+j]=getArgument(j);
-    counter_++;
-    if(counter_==obs_steps_)
+    if(obs_steps_>0)
     {
-      log.printf("\nAction %s\n",getName().c_str());
-      init_fromObs();
-      log.printf("Finished initialization\n\n");
-      counter_=NumWalkers_; //all preliminary observations count 1
-      obs_steps_=0; //no more observation
-    }
-    return;
-  }
-
-//write DeltaF to file
-//doing it before the update allows for an exact restart
-  if(afterRestart_)
-    afterRestart_=false;
-  else
-  {
-    if((counter_/NumWalkers_)%print_stride_==0)
-      printDeltaF();
-    if( (wStateStride_>0 && (counter_/NumWalkers_)%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
-      dumpStateToFile();
-  }
-
-//work done by the bias in one iteration
-  if(calc_work_)
-  {
-    getPntrToComponent("work")->set(work_);
-    work_=0;
-    old_deltaF_=deltaF_;
-  }
-
-//update averages
-//since current_bias_ is used, calculate() must always run before update()
-  plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
-  afterCalculate_=false;
-  if(NumWalkers_==1)
-    updateDeltaF(current_bias_);
-  else
-  {
-    std::vector<double> cvs(ncv_);
-    for(unsigned j=0; j<ncv_; j++)
-      cvs[j]=getArgument(j);
-    std::vector<double> all_bias(NumWalkers_);
-    std::vector<double> all_cvs(NumWalkers_*ncv_);
-    if(comm.Get_rank()==0)
-    {
-      multi_sim_comm.Allgather(current_bias_,all_bias);
-      multi_sim_comm.Allgather(cvs,all_cvs);
-    }
-    comm.Bcast(all_bias,0);
-    comm.Bcast(all_cvs,0);
-    for(unsigned w=0; w<NumWalkers_; w++)
-    {
-      //calculate ECVs
-      unsigned index_wj=w*ncv_;
-      for(unsigned k=0; k<pntrToECVsClass_.size(); k++)
+      for(unsigned j=0; j<ncv_; j++)
+        obs_cvs_[counter_*ncv_+j]=getArgument(j);
+      counter_++;
+      if(counter_==obs_steps_)
       {
-        pntrToECVsClass_[k]->calculateECVs(&all_cvs[index_wj]);
-        index_wj+=pntrToECVsClass_[k]->getNumberOfArguments();
+        log.printf("\nAction %s\n",getName().c_str());
+        init_fromObs();
+        log.printf("Finished initialization\n\n");
+        counter_=NumWalkers_; //all preliminary observations count 1
+        obs_steps_=0; //no more observation
       }
-      updateDeltaF(all_bias[w]);
+      return;
     }
+
+    //work done by the bias in one iteration
+    if(calc_work_)
+    {
+      getPntrToComponent("work")->set(work_);
+      work_=0;
+      old_deltaF_=deltaF_;
+    }
+
+    //update averages
+    //since current_bias_ is used, calculate() must always run before update()
+    plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
+    afterCalculate_=false;
+    if(NumWalkers_==1)
+      updateDeltaF(current_bias_);
+    else
+    {
+      std::vector<double> cvs(ncv_);
+      for(unsigned j=0; j<ncv_; j++)
+        cvs[j]=getArgument(j);
+      std::vector<double> all_bias(NumWalkers_);
+      std::vector<double> all_cvs(NumWalkers_*ncv_);
+      if(comm.Get_rank()==0)
+      {
+        multi_sim_comm.Allgather(current_bias_,all_bias);
+        multi_sim_comm.Allgather(cvs,all_cvs);
+      }
+      comm.Bcast(all_bias,0);
+      comm.Bcast(all_cvs,0);
+      for(unsigned w=0; w<NumWalkers_; w++)
+      {
+        //calculate ECVs
+        unsigned index_wj=w*ncv_;
+        for(unsigned k=0; k<pntrToECVsClass_.size(); k++)
+        {
+          pntrToECVsClass_[k]->calculateECVs(&all_cvs[index_wj]);
+          index_wj+=pntrToECVsClass_[k]->getNumberOfArguments();
+        }
+        updateDeltaF(all_bias[w]);
+      }
+    }
+    //write DeltaFs to file
+    if((counter_/NumWalkers_-1)%print_stride_==0)
+      printDeltaF();
   }
+
+//dump state if requested
+  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+    dumpStateToFile();
 }
 
 void OPESexpanded::init_pntrToECVsClass()
