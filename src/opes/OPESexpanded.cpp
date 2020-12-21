@@ -297,7 +297,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     ifile.link(*this);
     if(ifile.FileExist(restartFileName))
     {
-      log.printf("  RESTART - make sure all used options are compatible\n");
+      log.printf("  RESTART - make sure all ECVs used are the same as before\n");
       log.printf("    restarting from: %s\n",restartFileName.c_str());
       ifile.open(restartFileName);
       if(stateRestart) //get all info
