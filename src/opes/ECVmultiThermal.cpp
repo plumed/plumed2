@@ -165,7 +165,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
     beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp);//ordered temp, inverted beta
+    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
     beta_[1]=1./(Kb*max_temp);
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
@@ -233,10 +233,10 @@ void ECVmultiCanonical::initECVs()
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
-  if(todoAutomatic_)//estimate the steps in beta from observations
+  if(todoAutomatic_) //estimate the steps in beta from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observation (would be better not to copy...)
+    std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");

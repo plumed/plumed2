@@ -137,14 +137,14 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf("  reading from FILE '%s'\n",umbrellasFileName.c_str());
     ifile.open(umbrellasFileName);
     ifile.allowIgnoredFields();
-    double time;//first field is ignored
+    double time; //first field is ignored
     while(ifile.scanField("time",time))
     {
       for(unsigned j=0; j<ncv; j++)
       {
         double centers_j;
         ifile.scanField(getPntrToArgument(j)->getName(),centers_j);
-        centers_[j].push_back(centers_j);//this might be slow
+        centers_[j].push_back(centers_j); //this might be slow
       }
       for(unsigned j=0; j<ncv; j++)
       {
@@ -261,7 +261,7 @@ void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,co
   }
   else
   {
-    calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
+    calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
     for(unsigned j=0; j<getNumberOfArguments(); j++)
       for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
         ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
@@ -272,9 +272,9 @@ void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos=lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

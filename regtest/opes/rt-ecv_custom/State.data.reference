@@ -1,0 +1,21 @@
+#! FIELDS mc.t1 mc.t2 DeltaF
+#! SET time   30.000000
+#! SET counter  6
+#! SET rct   1.928597
+  P0  P0  0.000000
+  t1  NaN -42.269161
+  NaN  t2 -83.594911
+#! FIELDS mc.t1 mc.t2 DeltaF
+#! SET time   40.000000
+#! SET counter  11
+#! SET rct   2.330483
+  P0  P0  0.000000
+  t1  NaN -40.355370
+  NaN  t2 -81.681118
+#! FIELDS mc.t1 mc.t2 DeltaF
+#! SET time   50.000000
+#! SET counter  16
+#! SET rct   2.465874
+  P0  P0  0.000000
+  t1  NaN -39.285429
+  NaN  t2 -80.611114
