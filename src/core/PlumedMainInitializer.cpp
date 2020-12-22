@@ -176,6 +176,7 @@ extern "C" {
     plumed_safeptr_x safe;
     safe.ptr=val;
     safe.nelem=0;
+    safe.shape=NULL;
     safe.flags=0;
     safe.opt=NULL;
     plumed_plumedmain_cmd_safe_nothrow(plumed,key,safe,nothrow);

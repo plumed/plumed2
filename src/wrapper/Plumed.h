@@ -635,6 +635,8 @@ typedef struct {
   const void* ptr;
   /** Number of elements (in case pointing to an array) */
   __PLUMED_WRAPPER_STD size_t nelem;
+  /** Shape (scanned up to a zero value is found) */
+  __PLUMED_WRAPPER_STD size_t* shape;
   /**
     sum of:
     sizeof(pointed data), up to 0x10000 (65536). 0 means size not checked
@@ -1491,6 +1493,7 @@ public:
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
       safe.ptr=NULL;
       safe.nelem=0;
+      safe.shape=NULL;
       safe.flags=0x10000*2;
       safe.opt=NULL;
       buffer[0]='\0';
@@ -1500,6 +1503,7 @@ public:
     SafePtr(std::nullptr_t) noexcept {
       safe.ptr=NULL;
       safe.nelem=0;
+      safe.shape=NULL;
       safe.flags=0x10000*2;
       safe.opt=NULL;
       buffer[0]='\0';
@@ -1510,6 +1514,7 @@ public:
   SafePtr(type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1517,6 +1522,7 @@ public:
   SafePtr(const type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*3); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1524,6 +1530,7 @@ public:
   SafePtr(type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*4); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1531,6 +1538,7 @@ public:
   SafePtr(type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*5); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1538,6 +1546,7 @@ public:
   SafePtr(const type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*6); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1545,6 +1554,7 @@ public:
   SafePtr(const type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=0; \
+    safe.shape=NULL; \
     safe.flags=size | (0x10000*(code)) | (0x2000000*7); \
     safe.opt=NULL; \
     buffer[0]='\0'; \
@@ -1556,6 +1566,7 @@ public:
     assert(sizeof(type)<=32); \
     safe.ptr=buffer; \
     safe.nelem=1; \
+    safe.shape=NULL; \
     safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
     safe.opt=NULL; \
     __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
@@ -1588,6 +1599,11 @@ public:
     /// Allow to change number of elements.
     void setNelem(__PLUMED_WRAPPER_STD size_t nelem) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe.nelem=nelem;
+    }
+
+    void setShape(const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      // safe.shape is not const since it is stored in a C struct
+      this->safe.shape=const_cast<size_t*>(shape);
     }
 
   };
@@ -1961,10 +1977,23 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
 
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
-  void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
+  void cmd(const char*key,
+           SafePtr safe,
+           __PLUMED_WRAPPER_STD size_t nelem,
+           const __PLUMED_WRAPPER_STD size_t* shape) {
     if(nelem>0) safe.setNelem(nelem);
+    if(shape) safe.setShape(shape);
     if(PlumedGetenvTypesafeDebug()) {
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe.safe.ptr,safe.safe.nelem);
+      if(shape) {
+        __PLUMED_WRAPPER_STD fprintf(stderr," (");
+        while(*shape!=0) {
+          __PLUMED_WRAPPER_STD fprintf(stderr," %zu",*shape);
+          shape++;
+        }
+        __PLUMED_WRAPPER_STD fprintf(stderr," )");
+      }
+      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",safe.safe.flags,safe.safe.opt);
     }
     NothrowHandler h;
     h.code=0;
@@ -1982,13 +2011,26 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     if(h.code!=0) rethrow(h);
   }
 
-  template<typename T>
-  void cmd(const char*key,T val) {
-    cmd(key,val,0);
+  void cmd(const char*key) {
+    cmd(key,NULL,0,NULL);
   }
 
+  template<typename T>
+  void cmd(const char*key,T val) {
+    cmd(key,val,0,NULL);
+  }
+
+  template<typename T>
+  void cmd(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+    cmd(key,val,nelem,NULL);
+  }
+
+  template<typename T>
+  void cmd(const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape) {
+    cmd(key,val,0,shape);
+  }
 #else
-  void cmd(const char*key,const void* ptr=NULL,__PLUMED_WRAPPER_STD size_t nelem=0) {
+  void cmd(const char*key,const void* ptr=NULL,__PLUMED_WRAPPER_STD size_t nelem=0,const __PLUMED_WRAPPER_STD size_t* shape=NULL) {
     NothrowHandler h;
     (void) nelem;
     h.code=0;
@@ -2817,6 +2859,7 @@ void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_ha
   safe.ptr=val;
   safe.flags=0;
   safe.nelem=0;
+  safe.shape=NULL;
   safe.opt=NULL;
   plumed_cmd_safe_nothrow(p,key,safe,nothrow);
 }

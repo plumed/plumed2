@@ -33,6 +33,7 @@ cdef extern from "exceptions_handler.h":
 cdef extern from "Plumed.h" namespace "PLMD":
      cdef cppclass Plumed:
          Plumed() except +exceptions_handler
+         void cmd_shaped "cmd" (const char*key, const void*val, const size_t* shape) except +exceptions_handler
          void cmd(const char*key, const void*val, size_t nelem) except +exceptions_handler
          void cmd(const char*key, const void*val) except +exceptions_handler
 # see https://stackoverflow.com/questions/42610108/is-overloading-broken-in-cppclass-cython-c-definitions

@@ -28,7 +28,7 @@ namespace PLMD {
 
 TypesafePtr TypesafePtr::fromSafePtr(void* safe) {
   auto s=(plumed_safeptr_x*)safe;
-  return TypesafePtr(const_cast<void*>(s->ptr), s->nelem, s->flags);
+  return TypesafePtr(const_cast<void*>(s->ptr), s->nelem, s->shape, s->flags);
 }
 
 TypesafePtr TypesafePtr::copy() const {
@@ -36,6 +36,7 @@ TypesafePtr TypesafePtr::copy() const {
   ret.ptr=ptr;
   ret.flags=flags;
   ret.nelem=nelem;
+  ret.shape=shape;
   return ret;
 }
 

@@ -47,6 +47,7 @@ typedef struct {
 typedef struct {
   const void* ptr;
   std::size_t nelem;
+  const std::size_t* shape;
   unsigned long int flags;
   void* opt;
 } plumed_safeptr_x;

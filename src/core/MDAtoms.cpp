@@ -32,7 +32,7 @@ namespace PLMD {
 
 template<typename T>
 static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,unsigned maxel,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
-  auto p_=p.get<T>(3*maxel);
+  auto p_=p.get<T>({maxel,3});
   if(p_) {
     ppx=p_;
     ppy=p_+1;
@@ -146,7 +146,7 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits) {
 
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const {
-  auto b=this->box.template get<const T>(9);
+  auto b=this->box.template get<const T>({3,3});
   if(b) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=b[3*i+j]*scaleb;
   else box.zero();
 }
@@ -235,7 +235,7 @@ void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
-  auto v=this->virial.template get<T>(9);
+  auto v=this->virial.template get<T>({3,3});
   if(v) for(int i=0; i<3; i++)for(int j=0; j<3; j++) v[3*i+j]+=T(virial(i,j)*scalev);
 }
 
@@ -280,7 +280,7 @@ void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) 
   T* ffz;
   getPointers(f,fx,fy,fz,index.size(),ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
-  auto v=virial.get<T>(9);
+  auto v=virial.get<T>({3,3});
   if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
@@ -327,7 +327,7 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
 
 template <class T>
 void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
-  virial=pp.get<T>(9);
+  virial=pp.get<T>({3,3});
 }
 
 
