@@ -173,7 +173,13 @@ void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::v
   const T* ppx;
   const T* ppy;
   const T* ppz;
-  getPointers(p,px,py,pz,0,ppx,ppy,ppz,stride); // cannot check boundaries on TypesafePtr. it's maxval(i)
+#ifndef NDEBUG
+// bounds are only checked in debug mode since they require this extra step that is potentially expensive
+  const unsigned maxel=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
+#else
+  const unsigned maxel=0;
+#endif
+  getPointers(p,px,py,pz,maxel,ppx,ppy,ppz,stride);
   plumed_assert(index.size()==0 || (ppx && ppy && ppz));
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
@@ -245,7 +251,13 @@ void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::v
   T* ffx;
   T* ffy;
   T* ffz;
-  getPointers(f,fx,fy,fz,0,ffx,ffy,ffz,stride); // cannot check boundaries on TypesafePtr. it's maxval(i)
+#ifndef NDEBUG
+// bounds are only checked in debug mode since they require this extra step that is potentially expensive
+  const unsigned maxel=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
+#else
+  const unsigned maxel=0;
+#endif
+  getPointers(f,fx,fy,fz,maxel,ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   unsigned k=0;
   for(const auto & p : index) {
