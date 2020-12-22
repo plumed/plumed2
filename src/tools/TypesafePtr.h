@@ -138,9 +138,8 @@ public:
     auto cons=(flags>>25)&0x7;
 
     // type=0: ignore check
-    // type=1: void -> ignore check
     // type>5: undefined yet
-    if(type!=0 && type!=1 && type<=5) {
+    if(type!=0 && type<=5) {
       if(std::is_integral<T_noptr>::value && (type!=is_integral)) {
         throw ExceptionTypeError() <<"This command expects an integer type. Received a " << type_str() << " instead";
       }
