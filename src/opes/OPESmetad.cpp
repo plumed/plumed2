@@ -302,13 +302,13 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   if(sigma_str.size()==1 && !Tools::convert(sigma_str[0],dummy))
   {
     plumed_massert(sigma_str[0]=="ADAPTIVE" || sigma_str[0]=="adaptive",error_in_input1+"SIGMA"+error_in_input2);
-    plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with adaptive SIGMA");
+    plumed_massert(!std::isinf(biasfactor_),"cannot use BIASFACTOR=inf with adaptive SIGMA");
     adaptive_counter_=0;
     if(adaptive_sigma_stride_==0)
       adaptive_sigma_stride_=10*stride_; //NB: this is arbitrary, chosen from few tests
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
-    plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE >= PACE");
+    plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE > PACE");
   }
   else
   {
@@ -720,7 +720,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   if(sigma0_.size()==0)
   {
     log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %u\n",adaptive_sigma_stride_);
-    log.printf("    thus the first n=ADAPTIVE_SIGMA_STRIDE/PACE steps will have no bias, n = %u\n",adaptive_sigma_stride_/stride_);
+    unsigned x=std::ceil(adaptive_sigma_stride_/stride_);
+    log.printf("    thus the first x kernel depositions will be skipped, x = ADAPTIVE_SIGMA_STRIDE/PACE = %u\n",x);
   }
   else
   {
@@ -911,10 +912,10 @@ void OPESmetad::update()
       if(counter_==1+NumWalkers_)
       { //very first estimate is from unbiased, thus must be adjusted
         for(unsigned i=0; i<ncv_; i++)
-          av_M2_[i]/=(1-bias_prefactor_);
+          av_M2_[i]*=biasfactor_;
       }
       for(unsigned i=0; i<ncv_; i++)
-        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
     }
     if(!fixed_sigma_)
     {
