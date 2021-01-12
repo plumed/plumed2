@@ -1,7 +1,7 @@
 /**
-\page masterclass-21-I PLUMED Masterclass 21.I: PLUMED syntax and analysis
+\page masterclass-21-1 PLUMED Masterclass 21.I: PLUMED syntax and analysis
 
-\section masterclass-21-I-aims Aims
+\section masterclass-21-1-aims Aims
 
 The aim of this tutorial is to introduce users to the PLUMED syntax. We will go through the preparation of input files to calculate
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
@@ -9,7 +9,7 @@ and print simple collective variables on a pre-calculated trajectory. This tutor
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
 at Universite' de Paris on November 25th, 2020.
 
-\section masterclass-21-I-lo Learning Outcomes
+\section masterclass-21-1-lo Learning Outcomes
 
 Once this tutorial is completed, users will be able to:
 
@@ -18,12 +18,12 @@ Once this tutorial is completed, users will be able to:
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
-\section masterclass-21-I-install Software overview
+\section masterclass-21-1-install Software overview
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use. If you are attending the tutorial on Zoom, please have a look below at the section "Install GROMACS+PLUMED on your own machine with Conda". 
 
-\subsection masterclass-21-I-plumed PLUMED
+\subsection masterclass-21-1-plumed PLUMED
  
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
@@ -54,7 +54,7 @@ As you can see we can do a number of things with PLUMED \ref driver. For all of 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations during
 a MD simulation, so all the things that you will learn now will be useful later when you will run PLUMED coupled to GROMACS.
 
-\subsection masterclass-21-I-gromacs GROMACS
+\subsection masterclass-21-1-gromacs GROMACS
 
 GROMACS is a molecular dynamics package mainly designed for simulations of proteins, lipids, and nucleic acids.
 More info can be found <a href="http://www.gromacs.org">here</a>.
@@ -134,7 +134,7 @@ conda activate ISDD-tutorial
 
 \endhidden
 
-\section masterclass-21-I-structure Your first PLUMED input file
+\section masterclass-21-1-structure Your first PLUMED input file
 
 The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
 of the system that can be used to describe the conformational change of a protein or a chemical reaction.
@@ -187,7 +187,7 @@ You can find more information on the PLUMED syntax
 at \ref Syntax page of the manual. The complete documentation for all the supported
 collective variables can be found at the \ref colvarintro page.
 
-\subsection masterclass-21-I-units The PLUMED internal units
+\subsection masterclass-21-1-units The PLUMED internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
@@ -200,7 +200,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 If you want to change these units, you can do this using the \ref UNITS keyword. 
 
 
-\section masterclass-21-I-resources Resources
+\section masterclass-21-1-resources Resources
 
 The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz">TARBALL</a>\htmlonly</span>\endhtmlonly for this tutorial contains the following files:
 - `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
@@ -210,17 +210,17 @@ The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://
 After dowloading the compressed archive to your local machine, you can unpack it using the following command:
 
 \verbatim
-tar xvzf masterclass-21-I.tar.gz 
+tar xvzf masterclass-21-1.tar.gz 
 \endverbatim
 
-Once unpacked, all the files can be found in the `masterclass-21-I` directory. To keep things clean, 
-it is recommended to run each exercise in a separate sub-directory that you can create inside `masterclass-21-I`.
+Once unpacked, all the files can be found in the `masterclass-21-1` directory. To keep things clean, 
+it is recommended to run each exercise in a separate sub-directory that you can create inside `masterclass-21-1`.
 
 \note This tutorial has been tested with PLUMED version 2.6.2.
 
-\section masterclass-21-I-ex Exercises
+\section masterclass-21-1-ex Exercises
 
-\subsection masterclass-21-I-ex-1 Exercise 1: Computing and printing simple collective variables
+\subsection masterclass-21-1-ex-1 Exercise 1: Computing and printing simple collective variables
 
 In this exercise, we will learn how to compute and print collective variables on a pre-calculated MD trajectory.
 To analyze the trajectories provided here, we will:
@@ -294,7 +294,7 @@ of your input file.
 Finally, let's try to use the same input file with `traj-whole.xtc` and examine the results.
 Did you find the same results as with the previous trajectory? Why?
 
-\subsection masterclass-21-I-ex-2 Exercise 2:  MOLINFO shortcuts
+\subsection masterclass-21-1-ex-2 Exercise 2:  MOLINFO shortcuts
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
@@ -335,7 +335,7 @@ You can use `gnuplot` to visualize the trajectory of the two CVs calculated with
 and written in the `COLVAR` file.
 If you executed this exercise correctly, these two trajectories should be identical.
 
-\subsection masterclass-21-I-ex-3 Exercise 3: Virtual atoms
+\subsection masterclass-21-1-ex-3 Exercise 3: Virtual atoms
 
 Sometimes, when calculating a CV, you may not want to use the positions of a number of atoms directly. 
 Instead you may want to define a virtual atom whose position is generated based on the positions 
@@ -386,7 +386,7 @@ Are they identical? What do you think is happening in those frames in which the 
 You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
 Are the results identical?  
 
-\section masterclass-21-I-conclusions Conclusions
+\section masterclass-21-1-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Analyze previously calculated trajectories using the \ref driver utility.
@@ -394,6 +394,6 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 
 */
 
-link: @subpage masterclass-21-I 
+link: @subpage masterclass-21-1 
 
 description: This tutorial explains the syntax of the PLUMED input file and how to use PLUMED to analyze CVs
