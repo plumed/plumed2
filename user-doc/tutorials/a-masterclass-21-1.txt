@@ -154,27 +154,31 @@ To analyze the trajectories provided here, we will:
 - run the PLUMED \ref driver utility.
 
 Notice that you can also visualize trajectories with `VMD` (always a good idea!).
-For example, the trajectory `traj-whole.xtc` can be visualized with the command:
+For example, the trajectory `5-HT1B.xtc` can be visualized with the command:
 
 \verbatim
-vmd GB1_native.pdb traj-whole.xtc
+vmd 5-HT1B.pdb 5-HT1B.xtc 
 \endverbatim
 
+If if you try this, you will notice that this trajectory is discontinuous due to PBCs. We need to keep this
+in mind in our analysis. 
+
 Let's now prepare a PLUMED input file to calculate: 
-- the gyration radius of all CA protein atoms (\ref GYRATION). Look in the `GB1_native.pdb` file
-  to retrieve the list of indexes of the CA atoms;
-- the total number of contacts (\ref COORDINATION) between all protein CA atoms.
-  For \ref COORDINATION, set reference distance `R_0` to 8.0 Angstrom (be careful with units!).
+- the gyration radius of the CA protein atoms (\ref GYRATION) of the first 40 N-terminal residues. Look at `5-HT1B.pdb`
+  to retrieve the list of indexes of these CA atoms;
+- the distance (\ref DISTANCE) between CA atoms of residues 1 and 40. 
+The first 40 residues of the 5-HT1B receptor correspond to an extracellular flexible loop of which we want to characterize the
+dynamics during our MD simulation.
 
 Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
 
 \plumedfile
-# Compute gyration radius on CA atoms:
+# Compute gyration radius on CA atoms of the first 40 N-terminal residues:
 r: GYRATION ATOMS=__FILL__
 
-# Compute number of contacts between CA atoms
-co: COORDINATION GROUPA=__FILL__ R_0=__FILL__
+# Compute distance between CA atoms of residues 1 and 40 
+d: DISTANCE ATOMS=__FILL__
 
 # Print the two collective variables on COLVAR file every step
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
@@ -183,7 +187,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver as follows:
 
 \verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
+> plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
@@ -193,32 +197,35 @@ execute. Please take your time to inspect the log file and check if PLUMED is ac
 The command above will create a `COLVAR` file like this one:
 
 \verbatim
-#! FIELDS time r co
- 0.000000 2.458704 165.184127
- 1.000000 2.341932 164.546604
- 2.000000 2.404708 162.606975
- 3.000000 2.454297 143.850122
- 4.000000 2.569342 147.110408
- 5.000000 2.304027 163.608703
+#! FIELDS time r d
+ 0.000000 1.271069 2.782998
+ 1.000000 1.263125 2.388697
+ 2.000000 1.348965 2.606062
+ 3.000000 1.291011 2.204363
+ 4.000000 1.280714 2.411836
+ 5.000000 1.257692 2.334839
 \endverbatim
 
 Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot` (for more info about this tool, look <a href="http://www.gnuplot.info">here</a>):
+This file can then be visualized using `gnuplot` (for more info about this tool, look <a href="http://www.gnuplot.info">here</a>).
 
 \verbatim
-gnuplot> p "COLVAR" u 1:2, "" u 1:3
+gnuplot> p "COLVAR" u 1:2 w lp, "" u 1:3 w lp 
+\endverbatim
+
+What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or they are quite correlated? To answer to the latter question, try to visualize the value of one CV against the other:
+
+\verbatim
+gnuplot> p "COLVAR" u 2:3 w p
 \endverbatim
 
 Now, look at what happens if you run the exercise twice. The second time, PLUMED
 will *back up* the previously produced file so as not to overwrite it.
 You can also *concatenate* your files by using the action \ref RESTART at the beginning
 of your input file.
-
-Finally, let's try to use the same input file with `traj-whole.xtc` and examine the results.
-Did you find the same results as with the previous trajectory? Why?
 
 \subsection masterclass-21-1-ex-2 Exercise 2:  MOLINFO shortcuts
 
