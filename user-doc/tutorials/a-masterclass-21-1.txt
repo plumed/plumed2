@@ -161,7 +161,7 @@ For example, the trajectory `5-HT1B.xtc` can be visualized with the command:
 vmd 5-HT1B.pdb 5-HT1B.xtc 
 \endverbatim
 
-If if you try this, you will notice that this trajectory is discontinuous due to PBCs. We need to keep this
+When you try this, you will notice that this trajectory is discontinuous due to PBCs. We need to keep this
 in mind in our analysis. 
 
 Let's now prepare a PLUMED input file to calculate: 
