@@ -341,6 +341,14 @@ Are they identical? What do you think is happening in those frames in which the 
 You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
 Are the results identical?  
 
+\subsection masterclass-21-1-ex-4 Exercise 4: Fixing issues with PBCs discontinuities
+
+\subsection masterclass-21-1-ex-5 Exercise 5: RMSD metrics 
+
+\subsection masterclass-21-1-ex-6 Exercise 6: Alignment to a template
+
+\subsection masterclass-21-1-ex-7 Exercise 7: Use your imagination
+
 \section masterclass-21-1-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
