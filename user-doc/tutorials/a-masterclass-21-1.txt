@@ -3,15 +3,15 @@
 
 \section masterclass-21-1-aims Aims
 
-The aim of this PLUMED Masterclass is to introduce users to the PLUMED syntax and to 
+The aim of this Masterclass is to introduce users to the PLUMED syntax and to 
 illustrate how PLUMED can be used to analyze pre-existing molecular dynamics trajectories.
 
 \section masterclass-21-1-lo Learning Outcomes
 
 Once this Masterclass is completed, users will be able to:
 
-- Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
-- Use \ref MOLINFO shortcuts.
+- Write a simple PLUMED input file and use it with the \ref driver utility to analyze a trajectory.
+- Use \ref MOLINFO shortcuts to select atoms.
 - Define and use virtual atoms, such as \ref CENTER.
 - Deal with discontinuties in the trajectory due to periodic boundary conditions.
 - Use \ref RMSD and similar metrics.
@@ -22,7 +22,7 @@ Once this Masterclass is completed, users will be able to:
 \subsection masterclass-21-1-conda Installation
 
 In this Masterclass, we will use <a href="https://www.plumed.org">PLUMED</a> version 2.7.0.
-You can easily install PLUMED using <a href="https://docs.conda.io/en/latest/">conda</a> and the following command:
+You can easily install PLUMED on your Linux/Mac machine using <a href="https://docs.conda.io/en/latest/">conda</a> and the following command:
 
 \verbatim
 conda install -c conda-forge plumed
@@ -47,7 +47,7 @@ plumed --help
 
 The output of this command is a list of tasks that PLUMED can perform. Among these, there are commands that allow you
 to patch an MD code, postprocess metadynamics simulations, and build the manual. In this
-tutorial we will mostly use PLUMED to analyze trajectories. In order to do so, we will
+class we will mostly use PLUMED to analyze trajectories. In order to do so, we will
 learn how to use the \ref driver tool. 
 Let's look at the options of PLUMED \ref driver by issuing the following command:  
 
@@ -125,19 +125,19 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 
 \section masterclass-21-1-resources Resources
 
-The \htmlonly<span style="background-color:yellow">\endhtmlonly<a href="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz" style="font-weight:bold" style="color:green" download="https://github.com/maxbonomi/plumed-nest-data/raw/master/projects-2020/master-ISDD-1.tar.gz">TARBALL</a>\htmlonly</span>\endhtmlonly for this tutorial contains the following files:
-- `GB1_native.pdb`: a PDB file with the native structure of the GB1 protein.
-- `traj-whole.xtc`: a trajectory in `xtc` format. GB1 has already been made whole by fixing discontinuities due to periodic boundary conditions.
-- `traj-broken.xtc`: the same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions.
-
-After dowloading the compressed archive to your local machine, you can unpack it using the following command:
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-1).
+You can clone this repository locally on your machine using the following command:
 
 \verbatim
-tar xvzf masterclass-21-1.tar.gz 
+git clone https://github.com/plumed/masterclass-21-1.git
 \endverbatim
 
-Once unpacked, all the files can be found in the `masterclass-21-1` directory. To keep things clean, 
-it is recommended to run each exercise in a separate sub-directory that you can create inside `masterclass-21-1`.
+The data you need can be found in the folder called `data`:
+- `GB1_native.pdb`: 
+- `traj-whole.xtc`: 
+- `traj-broken.xtc`: 
+
+To keep things clean, it is recommended to run each exercise in a separate sub-directory that you can create inside the root directory `masterclass-21-1`.
 
 \note All the exercises have been tested with PLUMED version 2.7.0.
 
