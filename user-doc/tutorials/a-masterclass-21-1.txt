@@ -31,9 +31,9 @@ conda install -c conda-forge plumed
 \subsection masterclass-21-1-plumed Overview 
  
 PLUMED is a library that can be incorporated into many molecular dynamics (MD) codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
+Once it is incorporated you can use PLUMED to perform on-the-fly a variety of different analyses and to bias 
 the sampling in MD simulations. Additionally, PLUMED can be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can run the PLUMED executable by issuing the command:
+If you want to use the code in this way, you can run the PLUMED executable by issuing the command:
 
 \verbatim
 plumed <instructions>
@@ -56,8 +56,7 @@ plumed driver --help
 \endverbatim
 
 As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
-a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations during
-a MD simulation, so all the things that you will learn now will be useful later when you will run PLUMED coupled to GROMACS.
+a PLUMED input file. 
 
 \section masterclass-21-1-structure Your first PLUMED input file
 
