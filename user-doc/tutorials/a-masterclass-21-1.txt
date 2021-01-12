@@ -58,6 +58,24 @@ plumed driver --help
 As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
 a PLUMED input file. 
 
+\section masterclass-21-1-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-1).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/plumed/masterclass-21-1.git
+\endverbatim
+
+The data you need can be found in the folder called `data`:
+- `GB1_native.pdb`: 
+- `traj-whole.xtc`: 
+- `traj-broken.xtc`: 
+
+To keep things clean, it is recommended to run each exercise in a separate sub-directory that you can create inside the root directory `masterclass-21-1`.
+
+\note All the exercises have been tested with PLUMED version 2.7.0.
+
 \section masterclass-21-1-structure Your first PLUMED input file
 
 The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
@@ -122,24 +140,6 @@ By default the PLUMED inputs and outputs quantities in the following units:
 - Charge: e
 
 If you want to change these units, you can do this using the \ref UNITS keyword. 
-
-\section masterclass-21-1-resources Resources
-
-The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-1).
-You can clone this repository locally on your machine using the following command:
-
-\verbatim
-git clone https://github.com/plumed/masterclass-21-1.git
-\endverbatim
-
-The data you need can be found in the folder called `data`:
-- `GB1_native.pdb`: 
-- `traj-whole.xtc`: 
-- `traj-broken.xtc`: 
-
-To keep things clean, it is recommended to run each exercise in a separate sub-directory that you can create inside the root directory `masterclass-21-1`.
-
-\note All the exercises have been tested with PLUMED version 2.7.0.
 
 \section masterclass-21-1-ex Exercises
 
