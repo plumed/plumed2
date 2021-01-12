@@ -14,14 +14,14 @@ Once this Masterclass is completed, users will be able to:
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 - Deal with discontinuties in the trajectory due to periodic boundary conditions.
-- Familiarize with \ref RMSD and similar metrics.
-- Create your own collective variable with \ref COMBINE.
+- Use \ref RMSD and similar metrics.
+- Create their own collective variable with \ref COMBINE.
  
 \section masterclass-21-1-install Setting up PLUMED
 
 \subsection masterclass-21-1-conda Installation
 
-In this masterclass, we will use <a href="https://www.plumed.org">PLUMED</a> version 2.7.0.
+In this Masterclass, we will use <a href="https://www.plumed.org">PLUMED</a> version 2.7.0.
 You can easily install PLUMED using <a href="https://docs.conda.io/en/latest/">conda</a> and the following command:
 
 \verbatim
@@ -65,7 +65,7 @@ The main goal of PLUMED is to compute collective variables (or CVs), which are c
 of the system that can be used to describe the conformational change of a protein or a chemical reaction.
 This can be done either on-the-fly during a molecular dynamics simulations or _a posteriori_ on a 
 pre-calculated trajectory using PLUMED as a post-processing tool. 
-In both cases one, you should create an input file with a specific PLUMED syntax. 
+In both cases, you should create an input file with a specific PLUMED syntax. 
 Have a look at the sample input file below:
 
 \plumedfile
@@ -140,7 +140,7 @@ tar xvzf masterclass-21-1.tar.gz
 Once unpacked, all the files can be found in the `masterclass-21-1` directory. To keep things clean, 
 it is recommended to run each exercise in a separate sub-directory that you can create inside `masterclass-21-1`.
 
-\note This tutorial has been tested with PLUMED version 2.6.2.
+\note All the exercises have been tested with PLUMED version 2.7.0.
 
 \section masterclass-21-1-ex Exercises
 
