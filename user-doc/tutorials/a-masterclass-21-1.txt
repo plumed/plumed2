@@ -1,5 +1,5 @@
 /**
-\page masterclass-21-1 PLUMED Masterclass 21.I: PLUMED syntax and analysis
+\page masterclass-21-1 PLUMED Masterclass 21.1: PLUMED syntax and analysis
 
 \section masterclass-21-1-aims Aims
 
@@ -72,6 +72,7 @@ The data you need can be found in the folder called `data`:
 - `traj-whole.xtc`: 
 - `traj-broken.xtc`: 
 
+Please note that no PLUMED input file is provided in the GitHub repository. The students must prepare these input files by themselves following the templates provided below.
 To keep things clean, it is recommended to run each exercise in a separate sub-directory that you can create inside the root directory `masterclass-21-1`.
 
 \note All the exercises have been tested with PLUMED version 2.7.0.
