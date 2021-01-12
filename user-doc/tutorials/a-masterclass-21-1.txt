@@ -167,9 +167,9 @@ Let's now prepare a PLUMED input file to calculate:
 - the gyration radius of the CA protein atoms (\ref GYRATION) of the first 40 N-terminal residues. Look at `5-HT1B.pdb`
   to retrieve the list of indexes of these CA atoms;
 - the distance (\ref DISTANCE) between CA atoms of residues 1 and 40. 
+
 The first 40 residues of the 5-HT1B receptor correspond to an extracellular flexible loop of which we want to characterize the
 dynamics during our MD simulation.
-
 Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
 
