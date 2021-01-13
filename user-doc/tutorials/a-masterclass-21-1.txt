@@ -430,7 +430,6 @@ DUMPATOMS FILE=5-HT1B_transformed.gro ATOMS=__FILL__
 \endplumedfile
 
 and visually inspect with `VMD`.
-
 Second, if you inspect the time series of your CV, this should be a continous trajectory that spans the range from 8 nm to 20 nm.
 
 \subsection masterclass-21-1-ex-7 Exercise 7: You are on your own 
