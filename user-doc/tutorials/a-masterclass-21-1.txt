@@ -80,7 +80,7 @@ To keep things clean, it is recommended to run each exercise in a separate sub-d
 
 \note All the exercises have been tested with PLUMED version 2.7.0.
 
-\section masterclass-21-1-structure Your first PLUMED input file
+\section masterclass-21-1-structure A sample PLUMED input file
 
 The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
 of the system that can be used to describe the conformational change of a protein or a chemical reaction.
