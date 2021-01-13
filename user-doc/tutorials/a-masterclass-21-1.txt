@@ -84,7 +84,7 @@ To keep things clean, it is recommended to run each exercise in a separate sub-d
 
 The main goal of PLUMED is to compute collective variables (or CVs), which are complex descriptors 
 of the system that can be used to describe the conformational change of a protein or a chemical reaction.
-This can be done either on-the-fly during a molecular dynamics simulations or _a posteriori_ on a 
+This can be done either _on-the-fly_ during a molecular dynamics simulations or _a posteriori_ on a 
 pre-calculated trajectory using PLUMED as a post-processing tool. 
 In both cases, you should create an input file with a specific PLUMED syntax. 
 Have a look at the sample input file below:
