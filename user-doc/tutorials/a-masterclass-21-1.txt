@@ -346,9 +346,9 @@ of the CV. In this exercise, you will learn how to use this action.
 We have seen that the first 40 N-terminal residues of the 5-HT1B receptor are quite flexibile. In this exercise, we want to estimate
 the secondary structure content (alpha-helix and beta-sheet) of this fragment during the course of the MD simulations. In order to 
 do so, we can use the following 3 CVs:
-- \ref ALPHARMSD measures the alpha-helical content of a protein structure. 
-- \ref PARABETARMSD measures the parallel beta-sheet content. 
-- \ref ANTIBETARMSD measures the antiparallel beta-sheet content. 
+- \ref ALPHARMSD to measure the alpha-helical content of a protein structure. 
+- \ref PARABETARMSD to measure the parallel beta-sheet content. 
+- \ref ANTIBETARMSD to measure the antiparallel beta-sheet content. 
 
 Let's first try to complete the following PLUMED input file:
 
