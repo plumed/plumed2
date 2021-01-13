@@ -298,48 +298,43 @@ of a collection of other atoms. For example you might want to use the center of 
 the geometric center (\ref CENTER) of a group of atoms.
 
 In this exercise, you will learn how to specify virtual atoms and later use them to define a CV.
-Let's start by having a look at the PLUMED input file below.
+The objective is to calculate the distances between the geometric center of the serotonin ligand (indicated
+as residue `LIG` in `5-HT1B.pdb`) and the geometric centers of the two glycans located at position N24 and N32. 
+Glycans are carbohydrate-based polymers that are sometimes linked to certain protein aminoacids. If you examine
+`5-HT1B.pdb`, you will find the two glycans defined after the end of the protein, i.e. after residue SER-390.
+These two glycans have different length:
+- the glycan attached at position N24 ranges from residue BGLC-1 to AFUC-9
+- the glycan attached at position N32 ranges from residue BGLC-1 to AFUC-10 
+
+Let's complete the PLUMED input file below. You can use the advanced selection tools learnt in \ref masterclass-21-1-ex-2 
+to specify the atoms belonging to the ligand and to the two glycans:
 
 \plumedfile
-# Geometric center of first residue
-first: CENTER ATOMS=1,2,3,4,5,6,7,8
-# Geometric center of last residue
-last: CENTER ATOMS=427-436
+# Geometric center of the ligand
+lig: CENTER ATOMS=__FILLS__
+# Geometric center of the first glycan 
+g1: CENTER ATOMS=__FILLS__
+# Geometric center of the second glycan
+g2: CENTER ATOMS=__FILLS__
 
-# Distance between centers of first and last residues, with PBCs
-d1: DISTANCE ATOMS=first,last
-# Distance between centers of first and last residues, without PBCs
-d2: DISTANCE ATOMS=first,last NOPBC
+# Distance between ligand and first glycan
+d1: DISTANCE ATOMS=__FILL__
+# Distance between ligand and second glycan 
+d2: DISTANCE ATOMS=__FILL__
 
 # Print the two distances on COLVAR file every step
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-The file above instructs PLUMED to:
-
-1. calculate the position of the virtual atom `first` as the \ref CENTER of atoms from 1 to 8;
-2. calculate the position of the virtual atom `last` as the \ref CENTER of atoms from 427 to 436;
-3. calculate the distance between the two virtual atoms `first` and `last` and saves it in `d1`;
-4. calculate the distance (ignoring periodic boundary conditions) between the two virtual atom `first` and `last` and saves it in `d2`;
-5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory.
-
-Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
-
-1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need;
-2. `ATOMS=427-436` is the range of atoms needed.
-
-Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
+Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `5-HT1B.xtc`
 by making use of the following command:
 
 \verbatim
-plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
+plumed driver --mf_xtc 5-HT1B.xtc --plumed plumed.dat
 \endverbatim
 
 Let's now analyze the output of the calculation by plotting the time series of the two CVs.
-Are they identical? What do you think is happening in those frames in which the two CVs are different?
-
-You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
-Are the results identical?  
+Can you say if the ligand is overall staying closer to the first or second glycan?
 
 \subsection masterclass-21-1-ex-4 Exercise 4: Fixing issues with PBCs discontinuities
 
