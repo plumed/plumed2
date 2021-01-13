@@ -391,6 +391,7 @@ Keep in mind that these two sets of atoms might be different! In fact, the objec
 To create the two PDB files needed to define the two \ref RMSD CVs, you can start from the provided PDB file
 `5-HT1B.pdb`. Please consult the manual at the \ref RMSD page, in order to:
 - create the PLUMED input file to calculate the two CVs defined above (use `TYPE=OPTIMAL`);
+- learn how to mark atoms for alignment and displacement in the PDB files;
 - check whether PBCs are automatically taken care of or you need to use the \ref WHOLEMOLECULES action.
 
 After analyzing `5-HT1B.xtc` with the \ref driver tool, can you say which part of the receptor is more flexible and deviates more from the
