@@ -382,9 +382,9 @@ a PDB file in which you mark the atoms that you want to use to:
 - calculate the displacement from the reference conformation after optimal alignment.
 
 Keep in mind that these two sets of atoms might be different! In fact, the objective of this exercise is to calculate:
-- the \RMSD of the backbone atoms of the first 40 N-terminal residues after aligning the system on the backbone atoms of 
+- the \ref RMSD of the backbone atoms of the first 40 N-terminal residues after aligning the system on the backbone atoms of 
   residues 41 to 390;
-- the \RMSD of the backbone atoms of residues 41 to 390 after aligning the system on the same set of atoms.
+- the \ref RMSD of the backbone atoms of residues 41 to 390 after aligning the system on the same set of atoms.
 
 To create the two PDB files needed to define the two \ref RMSD CVs, you can start from the provided PDB file
 `5-HT1B.pdb`. Please consult the manual at the \ref RMSD page, in order to:
