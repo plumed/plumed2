@@ -357,7 +357,7 @@ Let's first try to complete the following PLUMED input file:
 MOLINFO STRUCTURE=__FILL__
 
 # make the first 40 N-terminal residues whole
-WHOLEMOLECULES ENTITY0=__FILL__
+WHOLEMOLECULES __FILL__
 
 # alpha-helix content of residues 1-40
 h: ALPHARMSD RESIDUES=__FILL__ TYPE=OPTIMAL
