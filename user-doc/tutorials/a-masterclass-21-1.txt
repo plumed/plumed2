@@ -15,7 +15,7 @@ Once this Masterclass is completed, users will be able to:
 - Define and use virtual atoms, such as \ref CENTER.
 - Deal with discontinuties in the trajectory due to periodic boundary conditions.
 - Use \ref RMSD and similar metrics.
-- Create their own collective variable with \ref COMBINE.
+- Align the system to a template with \ref FIT_TO_TEMPLATE. 
  
 \section masterclass-21-1-install Setting up PLUMED
 
