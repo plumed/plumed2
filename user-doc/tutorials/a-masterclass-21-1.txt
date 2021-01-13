@@ -380,22 +380,23 @@ alpha-helical or beta-sheet conformations?
 
 As previously mentioned, the first 40 N-terminal residues of the 5-HT1B receptor are quite flexible, while the rest of the 
 protein remains quite stable during the course of the simulation. In this exercise, you will learn how to use \ref RMSD to
-measure protein conformational changes. To use this CV, you need to keep in mind that you must specify in the PLUMED input
+measure deviations from a reference structure. To use this CV, you need to keep in mind that you must specify in the PLUMED input
 a PDB file in which you mark the atoms that you want to use to:
-- optimally align a conformation to a reference;
+- optimally align a conformation to the reference;
 - calculate the displacement from the reference conformation after optimal alignment.
 
-These two set of atoms might be different! In fact, the objective of this exercise is to calculate:
+Keep in mind that these two sets of atoms might be different! In fact, the objective of this exercise is to calculate:
 - the \RMSD of the backbone atoms of the first 40 N-terminal residues after aligning the system on the backbone atoms of 
   residues 41 to 390;
 - the \RMSD of the backbone atoms of residues 41 to 390 after aligning the system on the same set of atoms.
 
-To create the two PDB files needed to define the two \ref RMSD CVs defined above, you can start from the provided PDB file
+To create the two PDB files needed to define the two \ref RMSD CVs, you can start from the provided PDB file
 `5-HT1B.pdb`. Please consult the manual at the \ref RMSD page, in order to:
 - create the PLUMED input file to calculate the two CVs defined above (use `TYPE=OPTIMAL`);
 - check whether PBCs are automatically taken care of or you need to use the \ref WHOLEMOLECULES action.
 
-After analyzing `5-HT1B.xtc` with the \ref driver tool, can you say which part of the receptor is more flexible?
+After analyzing `5-HT1B.xtc` with the \ref driver tool, can you say which part of the receptor is more flexible and deviates more from the
+starting conformation during the course of the simulation?
 
 \subsection masterclass-21-1-ex-6 Exercise 6: Alignment to a template
 
