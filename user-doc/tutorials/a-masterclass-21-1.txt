@@ -411,7 +411,7 @@ can be used to make sure the system is not broken by PBCs, to re-align it to a r
 To complete this exercise, the users will need to make heavy use of the PLUMED manual to prepare the input file on their own. In the following, some suggestions
 will be given:
 - first, make sure the entire protein is not broken by PBCs using \ref WHOLEMOLECULES;
-- then, make sure the ligand is not broken by PBCs and in the same cell as the protein, using the \ref WRAPAROUND action;
+- then, make sure the ligand is not broken by PBCs and in the same cell as the protein, using the \ref WRAPAROUND action and the `GROUPBY` option;
 - to align the _stable_ protein residues (as defined in \ref masterclass-21-1-ex-5, i.e. residues 41 to 390) to the template `5-HT1B.pdb`, you can use \ref FIT_TO_TEMPLATE;
 - at this point, you can safely define the position of the geometric center of the ligand using the \ref POSITION CV with the option `NOPBC`;
 - the requested CV is the `z` component of the \ref POSITION CV. 
