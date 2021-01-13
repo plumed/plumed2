@@ -357,7 +357,6 @@ Let's first try to complete the following PLUMED input file:
 MOLINFO __FILL__
 # make the first 40 N-terminal residues whole
 WHOLEMOLECULES __FILL__
-
 # alpha-helix content of residues 1-40
 h: ALPHARMSD __FILL__ TYPE=OPTIMAL
 # parallel beta-sheet content of residues 1-40
@@ -366,7 +365,6 @@ pb: PARABETARMSD __FILL__ TYPE=OPTIMAL
 ab: ANTIBETARMSD __FILL__ TYPE=OPTIMAL
 # now we create a new CV that sums parallel and antiparallel beta-sheet contents
 b: COMBINE __FILL__ PERIODIC=NO
-
 # Print the alpha-helical content and the *total* beta-sheet content on COLVAR file every step
 PRINT __FILL__
 \endplumedfile
