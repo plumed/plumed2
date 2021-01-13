@@ -21,8 +21,8 @@ Once this Masterclass is completed, users will be able to:
 
 \subsection masterclass-21-1-conda Installation
 
-In this Masterclass, we will use <a href="https://www.plumed.org">PLUMED</a> version 2.7.0.
-You can easily install PLUMED on your Linux/Mac machine using <a href="https://docs.conda.io/en/latest/">conda</a> and the following command:
+In this Masterclass, we will use [PLUMED](https://www.plumed.org) version 2.7.0.
+You can easily install PLUMED on your Linux/MacOs machine using [conda](https://docs.conda.io/en/latest/) and the following command:
 
 \verbatim
 conda install -c conda-forge plumed
@@ -211,7 +211,7 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot` (for more info about this tool, look <a href="http://www.gnuplot.info">here</a>).
+This file can then be visualized using `gnuplot` (for more info about this tool, look [here](http://www.gnuplot.info)).
 
 \verbatim
 gnuplot> p "COLVAR" u 1:2 w lp, "" u 1:3 w lp 
@@ -398,7 +398,7 @@ starting conformation during the course of the simulation?
 \subsection masterclass-21-1-ex-6 Exercise 6: Alignment to a template
 
 In this exercise, we will learn how to align a MD trajectory to a reference conformation, after fixing possible discontinuities due to PBCs.
-The goal is to compute the vertical position of the serotonin receptor with respect to the lipid bilayer. In the simulations of membrane proteins,
+The goal is to compute the vertical position of the serotonin ligand with respect to the lipid bilayer. In the simulations of membrane proteins,
 typically the initial conformation is oriented so that the lipid bilayer is parallel to the xy plane (look for example at `5-HT1B.pdb`). 
 Therefore, initially one could use for example
 the coordinate `z` of the center of mass of the ligand to measure how far it is from the membrane bilayer. However, during the simulation:
@@ -434,6 +434,17 @@ and visually inspect with `VMD`.
 Second, if you inspect the time series of your CV, this should be a continous trajectory that spans the range from 8 nm to 20 nm.
 
 \subsection masterclass-21-1-ex-7 Exercise 7: You are on your own 
+
+In this last exercise, we want to determine the propensity of the serotonin ligand to bind the first 40 N-terminal flexible residues
+of the 5-HT1B receptor and if there are hot-spots where binding is more favorite. In order to answer to these questions, the user will:
+- compute the fraction of bound conformations over the total number of frames in the MD trajectory;
+- for each individual residue and glycan, compute the fraction of bound conformation per residue/glycan.
+
+To solve this exercise, no template PLUMED input file nor any indication of the procedure to follow will be given. The users should only keep in mind that:
+- we arbitrarily define as *bound* a conformation in which at least one pair of atoms of the ligand and of the protein/residue/glycan is closer than 0.4 nm;
+- any pre-exisiting CV defined in the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/colvarintro.html) can be used;
+- any CV defined directly by the user in the PLUMED input file via the \ref CUSTOM action can be used.
+
 
 */
 
