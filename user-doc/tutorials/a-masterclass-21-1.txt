@@ -354,23 +354,21 @@ Let's first try to complete the following PLUMED input file:
 
 \plumedfile
 # Activate MOLINFO functionalities 
-MOLINFO STRUCTURE=__FILL__
-
+MOLINFO __FILL__
 # make the first 40 N-terminal residues whole
 WHOLEMOLECULES __FILL__
 
 # alpha-helix content of residues 1-40
-h: ALPHARMSD RESIDUES=__FILL__ TYPE=OPTIMAL
+h: ALPHARMSD __FILL__ TYPE=OPTIMAL
 # parallel beta-sheet content of residues 1-40
-pb: PARABETARMSD RESIDUES=__FILL__ TYPE=OPTIMAL
+pb: PARABETARMSD __FILL__ TYPE=OPTIMAL
 # antiparallel beta sheet-content of residues 1-40
-ab: ANTIBETARMSD RESIDUES=__FILL__ TYPE=OPTIMAL
-
+ab: ANTIBETARMSD __FILL__ TYPE=OPTIMAL
 # now we create a new CV that sums parallel and antiparallel beta-sheet contents
-b: COMBINE ARG=__FILL__ PERIODIC=NO
+b: COMBINE __FILL__ PERIODIC=NO
 
 # Print the alpha-helical content and the *total* beta-sheet content on COLVAR file every step
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
+PRINT __FILL__
 \endplumedfile
 
 and use it to analyze the trajectory `5-HT1B.xtc`. Can you say if the first 40 N-terminal residues tend to populate more
