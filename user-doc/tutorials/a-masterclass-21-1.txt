@@ -311,11 +311,11 @@ to specify the atoms belonging to the ligand and to the two glycans:
 
 \plumedfile
 # Geometric center of the ligand
-lig: CENTER ATOMS=__FILLS__
+lig: CENTER ATOMS=__FILL__
 # Geometric center of the first glycan 
-g1: CENTER ATOMS=__FILLS__
+g1: CENTER ATOMS=__FILL__
 # Geometric center of the second glycan
-g2: CENTER ATOMS=__FILLS__
+g2: CENTER ATOMS=__FILL__
 
 # Distance between ligand and first glycan
 d1: DISTANCE ATOMS=__FILL__
