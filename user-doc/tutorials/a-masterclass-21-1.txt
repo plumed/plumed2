@@ -240,7 +240,7 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using the Jupyter Notebook `plumed-pandas.ipynb` provided in the folder `notebooks`:
+This file can then be visualized using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`:
 
 \verbatim
 jupyter notebook plumed-pandas.ipynb
