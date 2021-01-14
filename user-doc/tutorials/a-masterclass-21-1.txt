@@ -45,14 +45,7 @@ conda activate plumed-masterclass
 Now, we can proceed with the installation of the required software:
 
 \verbatim
-conda install -c conda-forge plumed
-conda install -c conda-forge py-plumed
-conda install -c conda-forge numpy
-conda install -c conda-forge pandas
-conda install -c conda-forge matplotlib
-conda install -c conda-forge notebook
-conda install -c conda-forge mdtraj
-conda install -c conda-forge mdanalysis
+conda install -c conda-forge plumed py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis
 \endverbatim
 
 \subsection masterclass-21-1-plumed PLUMED overview 
