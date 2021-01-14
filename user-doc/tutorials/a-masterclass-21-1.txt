@@ -300,8 +300,8 @@ the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9
 Let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. You need to complete this template PLUMED input file:
 
 \plumedfile
-# Activate MOLINFO functionalities and specify python binary
-MOLINFO STRUCTURE=__FILL__ PYTHON_BIN=python
+# Activate MOLINFO functionalities
+MOLINFO STRUCTURE=__FILL__ 
 
 # To use MDAnalysis selection tools:
 r1: GYRATION ATOMS={@mda:{resid __FILL__ and name __FILL__}}
