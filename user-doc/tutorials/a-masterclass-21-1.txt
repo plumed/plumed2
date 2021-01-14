@@ -17,18 +17,44 @@ Once this Masterclass is completed, users will be able to:
 - Use \ref RMSD to measure protein conformational changes.
 - Align the system to a template with \ref FIT_TO_TEMPLATE. 
  
-\section masterclass-21-1-install Setting up PLUMED
+\section masterclass-21-1-install Setting up the software 
 
 \subsection masterclass-21-1-conda Installation
 
-In this Masterclass, we will use [PLUMED](https://www.plumed.org) version 2.7.0.
-You can easily install PLUMED on your Linux/MacOs machine using [conda](https://docs.conda.io/en/latest/) and the following command:
+We will use [conda](https://docs.conda.io/en/latest/) to install all the software needed in this Masterclass:
+- [PLUMED](https://www.plumed.org) version 2.7.0
+- [NumPy](https://numpy.org)
+- [pandas](https://pandas.pydata.org)
+- [matplotlib](https://matplotlib.org)
+- [jupyter](https://jupyter.org/index.html)
+- [MDTraj](https://mdtraj.org/1.9.4/index.html)
+- [MDAnalysis](https://www.mdanalysis.org)
+
+First, let's create a conda environment for this Masterclass:
+
+\verbatim
+conda create --name masterclass-21.1
+\endverbatim
+
+and activate it with:
+
+\verbatim
+conda activate masterclass-21.1
+\endverbatim
+
+Now, we can proceed with the installation of the required software:
 
 \verbatim
 conda install -c conda-forge plumed
+conda install -c conda-forge numpy
+conda install -c conda-forge pandas
+conda install -c conda-forge matplotlib
+conda install -c conda-forge notebook
+conda install -c conda-forge mdtraj
+conda install -c conda-forge mdanalysis
 \endverbatim
 
-\subsection masterclass-21-1-plumed Overview 
+\subsection masterclass-21-1-plumed PLUMED overview 
  
 PLUMED is a library that can be incorporated into many molecular dynamics (MD) codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform on-the-fly a variety of different analyses and to bias 
@@ -165,14 +191,14 @@ When you try this, you will notice that this trajectory is discontinuous due to 
 in mind in our analysis. 
 
 Let's now prepare a PLUMED input file to calculate: 
-- the gyration radius of the CA protein atoms (\ref GYRATION) of the first 40 N-terminal residues. Look at `5-HT1B.pdb`
-  to retrieve the list of indexes of these CA atoms;
+- the gyration radius of the CA protein atoms (\ref GYRATION) of the first 40 N-terminal residues; 
 - the distance (\ref DISTANCE) between CA atoms of residues 1 and 40.
 
 The first 40 residues of the 5-HT1B receptor correspond to an extracellular flexible loop of which we want to characterize the
-dynamics during our MD simulation.
-Below you can find a sample `plumed.dat` file that you can use as a template.
+dynamics during our MD simulation. Below you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, be careful because this is a string that you must replace.
+To retrieve the atom indexes that you need to include in the input file, you can have a look at `5-HT1B.pdb`.
+The atoms indexes are contained in the second column. Keep in mind that numbering scheme in PLUMED starts from 1.
 
 \plumedfile
 # Compute gyration radius on CA atoms of the first 40 N-terminal residues:
@@ -195,7 +221,7 @@ Scroll in your terminal to read the PLUMED log. As you can see,
 PLUMED gives a lot of feedback about the input that it is reading and the actions that it will
 execute. Please take your time to inspect the log file and check if PLUMED is actually doing what you intend to do.
 
-The command above will create a `COLVAR` file like this one:
+The command above will create a `COLVAR` file. The first lines should be identical to these ones:
 
 \verbatim
 #! FIELDS time r d
@@ -270,21 +296,22 @@ and written in the `COLVAR` file.
 If you executed this exercise correctly, these two trajectories should be identical.
 
 As a second example of \ref MOLINFO capabilities, we will use advanced atom selection in combination with
-the [MDAnalysis](https://www.mdanalysis.org) or [MDTraj](https://mdtraj.org/1.9.4/index.html) python libraries. First, have a look at the \ref MOLINFO page to make sure that one of these two libraries is installed. Then, let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. You need to complete this template PLUMED input file, after choosing either MDAnalysis or MDTraj:
+the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9.4/index.html) python libraries.
+Let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. You need to complete this template PLUMED input file:
 
 \plumedfile
 # Activate MOLINFO functionalities and specify python binary
 MOLINFO STRUCTURE=__FILL__ PYTHON_BIN=python
 
-# If you want to use MDAnalysis, you can uncomment and complete these lines:
-#r: GYRATION ATOMS={@mda:{resid __FILL__ and name __FILL__}}
-#d: DISTANCE ATOMS={@mda:{resid __FILL__ and name __FILL__}}
+# To use MDAnalysis selection tools:
+r1: GYRATION ATOMS={@mda:{resid __FILL__ and name __FILL__}}
+d1: DISTANCE ATOMS={@mda:{resid __FILL__ and name __FILL__}}
 
-# Alternatively, if you want to use MDTraj, you can uncomment and complete these lines:
-#r: GYRATION ATOMS={@mdt:{resid __FILL__ and name __FILL__}}
-#d: DISTANCE ATOMS={@mdt:{resid __FILL__ and name __FILL__}}
+# To use MDTraj selection tools:
+r2: GYRATION ATOMS={@mdt:{resid __FILL__ and name __FILL__}}
+d2: DISTANCE ATOMS={@mdt:{resid __FILL__ and name __FILL__}}
 
-# Print the two collective variables on COLVAR file every step
+# Print all the collective variables on COLVAR file every step
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
