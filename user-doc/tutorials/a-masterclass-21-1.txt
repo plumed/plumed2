@@ -30,16 +30,16 @@ We will use [conda](https://docs.conda.io/en/latest/) to install all the softwar
 - [MDTraj](https://mdtraj.org/1.9.4/index.html)
 - [MDAnalysis](https://www.mdanalysis.org)
 
-First, let's create a conda environment for this Masterclass:
+First, let's create a conda environment for the PLUMED Masterclass:
 
 \verbatim
-conda create --name masterclass-21.1
+conda create --name plumed-masterclass 
 \endverbatim
 
 and activate it with:
 
 \verbatim
-conda activate masterclass-21.1
+conda activate plumed-masterclass
 \endverbatim
 
 Now, we can proceed with the installation of the required software:
