@@ -285,7 +285,7 @@ After completing the PLUMED input file above, let's use it to analyze the trajec
 > plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
 \endverbatim
 
-You can modify and use the Jupyter notebook used in \ref masterclass-21-1-ex-1 to visualize the trajectory of the two CVs calculated with the PLUMED input file above
+You can modify the Jupyter notebook used in \ref masterclass-21-1-ex-1 to visualize the trajectory of the two CVs calculated with the PLUMED input file above
 and written in the `COLVAR` file.
 If you executed this exercise correctly, these two trajectories should be identical.
 
