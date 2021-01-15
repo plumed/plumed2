@@ -233,13 +233,43 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`:
+This `COLVAR `file can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
+You can use the following command to open the notebook:
 
 \verbatim
 jupyter notebook plumed-pandas.ipynb
 \endverbatim
 
-What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, try to visualize the value of one CV against the other.
+This notebook allows you to import the `COLVAR` file produced by PLUMED and to generate the desired figures using the 
+`matplotlib` library:
+
+\verbatim
+# import python modules
+import plumed
+import matplotlib.pyplot as plt
+
+# import COLVAR file as pandas dataset
+# set the right path to the COLVAR file
+data=plumed.read_as_pandas("../Exercise-1/COLVAR")
+# print pandas dataset
+data
+
+# plot time serie of gyration radius (r) and distance (d)
+plt.plot(data.time,data.r, label="gyration radius")
+plt.plot(data.time,data.d, label="distance")
+# x-y axis labels
+plt.xlabel("MD frame")
+plt.ylabel("r/d [nm]")
+plt.legend()
+
+# plot gyration radius vs distance
+plt.plot(data.r,data.d, 'o')
+# x-y axis labels
+plt.xlabel("gyration radius [nm]")
+plt.ylabel("distance [nm]")
+\endverbatim
+
+What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
 \subsection masterclass-21-1-ex-2 Exercise 2:  MOLINFO shortcuts
 
