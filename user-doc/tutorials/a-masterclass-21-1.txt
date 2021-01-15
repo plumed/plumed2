@@ -265,6 +265,7 @@ This notebook allows you to import the `COLVAR` file produced by PLUMED and to g
 `matplotlib` library:
 
 \code{.py}
+
 # import python modules
 import plumed
 import matplotlib.pyplot as plt
@@ -288,6 +289,7 @@ plt.plot(data.r,data.d, 'o')
 # x-y axis labels
 plt.xlabel("gyration radius [nm]")
 plt.ylabel("distance [nm]")
+
 \endcode
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
