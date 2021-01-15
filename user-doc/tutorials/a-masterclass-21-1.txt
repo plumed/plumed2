@@ -462,7 +462,7 @@ To create the two PDB files needed to define the two \ref RMSD CVs, you can star
 After analyzing `5-HT1B.xtc` with the \ref driver tool, can you say which part of the receptor is more flexible and deviates more from the
 starting conformation during the course of the simulation?
 
-\subsection masterclass-21-1-ex-6 Exercise 6: Alignment to a template
+\subsection masterclass-21-1-ex-6 Exercise 6: Aligning conformations to a template
 
 In this exercise, we will learn how to align a MD trajectory to a reference conformation, after fixing possible discontinuities due to PBCs.
 The goal is to compute the vertical position of the serotonin ligand with respect to the lipid bilayer. In the simulations of membrane proteins,
