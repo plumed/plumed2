@@ -37,7 +37,7 @@ conda
 \endverbatim
 
 If the command is not found, please refer to these [instructions](https://docs.conda.io/en/latest/miniconda.html) to install it on your machine.
-On MacOs with [Homebrew](https://brew.sh) installed, you can install conda with:
+On MacOs with [Homebrew](https://brew.sh) installed, you can install conda also with:
 
 \verbatim
 brew install --cask anaconda
