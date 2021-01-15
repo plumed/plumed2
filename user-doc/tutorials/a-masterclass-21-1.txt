@@ -41,6 +41,8 @@ If you are using MacOs with the [Homebrew](https://brew.sh) package manager, you
 
 \verbatim
 brew install --cask anaconda
+# add this line to your .bashrc
+export PATH="/usr/local/anaconda3/bin:$PATH"
 \endverbatim
 
 Then, let's create a conda environment for the PLUMED Masterclass:
@@ -233,7 +235,7 @@ execute. Please take your time to inspect the log file and check if PLUMED is ac
 
 The command above will create a `COLVAR` file. The first lines should be identical to these ones:
 
-\verbatim
+\plumedfile
 #! FIELDS time r d
  0.000000 1.271069 2.782998
  1.000000 1.263125 2.388697
@@ -241,7 +243,7 @@ The command above will create a `COLVAR` file. The first lines should be identic
  3.000000 1.291011 2.204363
  4.000000 1.280714 2.411836
  5.000000 1.257692 2.334839
-\endverbatim
+\endplumedfile
 
 Notice that the first line informs you about the content of each column.
 
@@ -257,7 +259,7 @@ jupyter notebook plumed-pandas.ipynb
 This notebook allows you to import the `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library:
 
-```python
+\verbatim
 # import python modules
 import plumed
 import matplotlib.pyplot as plt
@@ -281,7 +283,7 @@ plt.plot(data.r,data.d, 'o')
 # x-y axis labels
 plt.xlabel("gyration radius [nm]")
 plt.ylabel("distance [nm]")
-```
+\endverbatim
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
