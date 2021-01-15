@@ -14,7 +14,7 @@ illustrate how PLUMED can be used to analyze pre-existing molecular dynamics tra
 Once this Masterclass is completed, users will be able to:
 
 - Write a simple PLUMED input file and use it with the \ref driver utility to analyze a trajectory.
-- Use \ref MOLINFO shortcuts to select atoms.
+- Use advanced selection tools with \ref MOLINFO.
 - Define and use virtual atoms, such as \ref CENTER.
 - Deal with discontinuities in the trajectory due to periodic boundary conditions.
 - Use \ref RMSD to measure protein conformational changes.
@@ -294,7 +294,7 @@ This notebook allows you to import the `COLVAR` file produced by PLUMED and to g
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
-\subsection masterclass-21-1-ex-2 Exercise 2:  MOLINFO shortcuts
+\subsection masterclass-21-1-ex-2 Exercise 2: Advanced selection tools
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
