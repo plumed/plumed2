@@ -63,6 +63,8 @@ Finally, we can proceed with the installation of the required software:
 conda install -c conda-forge plumed py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis
 \endverbatim
 
+\note Do not forget to activate the `plumed-masterclass` environment every time you open a new terminal/shell.
+
 \subsection masterclass-21-1-plumed PLUMED overview 
  
 PLUMED is a library that can be incorporated into many molecular dynamics (MD) codes by adding a relatively simple and well documented interface.
