@@ -235,7 +235,7 @@ execute. Please take your time to inspect the log file and check if PLUMED is ac
 
 The command above will create a `COLVAR` file. The first lines should be identical to these ones:
 
-\plumedfile
+\verbatim
 #! FIELDS time r d
  0.000000 1.271069 2.782998
  1.000000 1.263125 2.388697
@@ -243,7 +243,7 @@ The command above will create a `COLVAR` file. The first lines should be identic
  3.000000 1.291011 2.204363
  4.000000 1.280714 2.411836
  5.000000 1.257692 2.334839
-\endplumedfile
+\endverbatim
 
 Notice that the first line informs you about the content of each column.
 
