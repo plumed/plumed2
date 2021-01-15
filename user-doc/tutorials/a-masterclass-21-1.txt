@@ -176,7 +176,7 @@ To analyze the trajectories provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`);
 - run the PLUMED \ref driver utility.
 
-Notice that you can also visualize trajectories with `VMD` (always a good idea!).
+Notice that you can also visualize trajectories with [VMD](https://www.ks.uiuc.edu/Research/vmd/) (always a good idea!).
 For example, the trajectory `5-HT1B.xtc` can be visualized with the command:
 
 \verbatim
@@ -312,8 +312,8 @@ You can modify the Jupyter notebook used in \ref masterclass-21-1-ex-1 to visual
 and written in the `COLVAR` file.
 If you executed this exercise correctly, these two trajectories should be identical.
 
-As a second example of \ref MOLINFO capabilities, we will use advanced atom selection in combination with
-the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9.4/index.html) python libraries.
+As a second example of \ref MOLINFO capabilities, we will use the advanced atom selection tools provided by
+the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9.4/index.html) libraries.
 Let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. You need to complete this template PLUMED input file:
 
 \plumedfile
@@ -350,7 +350,7 @@ These two glycans have different length:
 - the glycan attached at position N24 ranges from residue BGLC-1 to AFUC-9
 - the glycan attached at position N32 ranges from residue BGLC-1 to AFUC-10 
 
-Let's complete the PLUMED input file below. You can use the advanced selection tools learnt in \ref masterclass-21-1-ex-2 
+Let's complete the PLUMED input file below. You can use the advanced selection tools learned in \ref masterclass-21-1-ex-2 
 to specify the atoms belonging to the ligand and to the two glycans:
 
 \plumedfile
@@ -445,14 +445,14 @@ In this exercise, we will learn how to align a MD trajectory to a reference conf
 The goal is to compute the vertical position of the serotonin ligand with respect to the lipid bilayer. In the simulations of membrane proteins,
 typically the initial conformation is oriented so that the lipid bilayer is parallel to the xy plane (look for example at `5-HT1B.pdb`). 
 Therefore, initially one could use for example
-the coordinate `z` of the center of mass of the ligand to measure how far it is from the membrane bilayer. However, during the simulation:
+the coordinate `z` of the geometric center of the ligand to measure how far it is from the membrane bilayer. However, during the simulation:
 - the system can translate from its original position;
 - the system can be broken by PBCs;
 
 therefore one could not use an absolute position to keep track of the location of the ligand. To solve this problem, there are several PLUMED actions that
 can be used to make sure the system is not broken by PBCs, to re-align it to a reference conformation, and thus to use absolute positions safely.
 
-To complete this exercise, the users will need to make heavy use of the PLUMED manual to prepare the input file on their own. In the following, some suggestions
+To complete this exercise, the users will need to make heavy use of the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/colvarintro.html) to prepare the input file on their own. In the following, some suggestions
 will be given:
 - first, make sure the entire protein is not broken by PBCs using \ref WHOLEMOLECULES;
 - then, make sure the ligand is not broken by PBCs and in the same cell as the protein, using the \ref WRAPAROUND action and the `GROUPBY` option;
@@ -460,7 +460,7 @@ will be given:
 - at this point, you can safely define the position of the geometric center of the ligand using the \ref POSITION CV with the option `NOPBC`;
 - the requested CV is the `z` component of the \ref POSITION CV. 
 
-You can check that your PLUMED input file is correct in two ways. First, you can print out the conformation of the system after the transformations done
+You can check that your PLUMED input file is correct in two ways. First, you can print out the conformations of the system after the transformations done
 by \ref WHOLEMOLECULES, \ref WRAPAROUND, and \ref FIT_TO_TEMPLATE by modifying your input file as follows:
 
 \plumedfile
@@ -473,7 +473,7 @@ MOLINFO STRUCTURE=5-HT1B.pdb
 DUMPATOMS FILE=5-HT1B_transformed.gro ATOMS=__FILL__
 \endplumedfile
 
-and visually inspect with `VMD`.
+Now, you can visualize the `5-HT1B_transformed.gro` file using [VMD](https://www.ks.uiuc.edu/Research/vmd/).
 Second, if you inspect the time series of your CV, this should be a continous trajectory that spans the range from 8 nm to 20 nm.
 
 \subsection masterclass-21-1-ex-7 Exercise 7: You are on your own 
