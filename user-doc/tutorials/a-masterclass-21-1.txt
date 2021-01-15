@@ -187,7 +187,7 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 \subsection masterclass-21-1-ex-1 Exercise 1: Computing and printing simple collective variables
 
 In this exercise, we will learn how to compute and print collective variables on a pre-calculated MD trajectory.
-To analyze the trajectories provided here, we will:
+To analyze the trajectory provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`);
 - run the PLUMED \ref driver utility;
 - visualize the output with the aid of a Jupyter notebook.
