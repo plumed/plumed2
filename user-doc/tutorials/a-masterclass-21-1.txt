@@ -266,29 +266,29 @@ This notebook allows you to import the `COLVAR` file produced by PLUMED and to g
 
 \code{.py}
 
-# import python modules
-import plumed
-import matplotlib.pyplot as plt
+ # import python modules
+ import plumed
+ import matplotlib.pyplot as plt
 
-# import COLVAR file as pandas dataset
-# set the right path to the COLVAR file
-data=plumed.read_as_pandas("../Exercise-1/COLVAR")
-# print pandas dataset
-data
+ # import COLVAR file as pandas dataset
+ # set the right path to the COLVAR file
+ data=plumed.read_as_pandas("../Exercise-1/COLVAR")
+ # print pandas dataset
+ data
 
-# plot time serie of gyration radius (r) and distance (d)
-plt.plot(data.time,data.r, label="gyration radius")
-plt.plot(data.time,data.d, label="distance")
-# x-y axis labels
-plt.xlabel("MD frame")
-plt.ylabel("r/d [nm]")
-plt.legend()
+ # plot time serie of gyration radius (r) and distance (d)
+ plt.plot(data.time,data.r, label="gyration radius")
+ plt.plot(data.time,data.d, label="distance")
+ # x-y axis labels
+ plt.xlabel("MD frame")
+ plt.ylabel("r/d [nm]")
+ plt.legend()
 
-# plot gyration radius vs distance
-plt.plot(data.r,data.d, 'o')
-# x-y axis labels
-plt.xlabel("gyration radius [nm]")
-plt.ylabel("distance [nm]")
+ # plot gyration radius vs distance
+ plt.plot(data.r,data.d, 'o')
+ # x-y axis labels
+ plt.xlabel("gyration radius [nm]")
+ plt.ylabel("distance [nm]")
 
 \endcode
 
