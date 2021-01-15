@@ -1,6 +1,9 @@
 /**
 \page masterclass-21-1 PLUMED Masterclass 21.1: PLUMED syntax and analysis
 
+\authors Max Bonomi
+\date January 18, 2021
+
 \section masterclass-21-1-aims Aims
 
 The aim of this Masterclass is to introduce users to the PLUMED syntax and to 
@@ -228,7 +231,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver as follows:
 
 \verbatim
-> plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
+plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
@@ -261,7 +264,7 @@ jupyter notebook plumed-pandas.ipynb
 This notebook allows you to import the `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library:
 
-~~~~~~~~~~~~~{.py}
+\code{.py}
 # import python modules
 import plumed
 import matplotlib.pyplot as plt
@@ -285,7 +288,7 @@ plt.plot(data.r,data.d, 'o')
 # x-y axis labels
 plt.xlabel("gyration radius [nm]")
 plt.ylabel("distance [nm]")
-~~~~~~~~~~~~~
+\endcode
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
@@ -323,7 +326,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 After completing the PLUMED input file above, let's use it to analyze the trajectory `5-HT1B.xtc` using the \ref driver tool:
 
 \verbatim
-> plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
+plumed driver --plumed plumed.dat --mf_xtc 5-HT1B.xtc
 \endverbatim
 
 You can modify the Jupyter notebook used in \ref masterclass-21-1-ex-1 to visualize the trajectory of the two CVs calculated with the PLUMED input file above
