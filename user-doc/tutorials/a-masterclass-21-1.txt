@@ -261,7 +261,7 @@ jupyter notebook plumed-pandas.ipynb
 This notebook allows you to import the `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library:
 
-\verbatim
+~~~~~~~~~~~~~{.py}
 # import python modules
 import plumed
 import matplotlib.pyplot as plt
@@ -285,7 +285,7 @@ plt.plot(data.r,data.d, 'o')
 # x-y axis labels
 plt.xlabel("gyration radius [nm]")
 plt.ylabel("distance [nm]")
-\endverbatim
+~~~~~~~~~~~~~
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
