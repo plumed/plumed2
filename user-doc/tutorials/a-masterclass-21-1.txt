@@ -504,7 +504,9 @@ Second, if you inspect the time series of your CV, this should be a continuous t
 In this last exercise, we want to determine the propensity of the serotonin ligand to bind the first 40 N-terminal flexible residues
 of the 5-HT1B receptor and if there are hot-spots where binding is more favorite. In order to answer to these questions, the user will:
 - compute the fraction of bound conformations over the total number of frames in the MD trajectory;
-- for each individual residue and glycan, compute the fraction of bound conformation per residue/glycan.
+- for each individual residue and glycan, compute the fraction of bound conformation per residue/glycan;
+- dump all bound conformations to a `gro` file, after fixing PBCs as in \ref masterclass-21-1-ex-6;
+- for each individual residue and glycan, dump all bound conformations to a separate `gro` file, after fixing PBCs.
 
 To solve this exercise, no template PLUMED input file nor any indication of the procedure to follow will be given. The users should only keep in mind that:
 - we arbitrarily define as *bound* a conformation in which at least one pair of atoms of the ligand and of the protein/residue/glycan is closer than 0.4 nm;
