@@ -45,7 +45,7 @@ brew install --cask anaconda
 export PATH="/usr/local/anaconda3/bin:$PATH"
 \endverbatim
 
-Then, let's create a conda environment for the PLUMED Masterclass:
+Now we can create a conda environment for the PLUMED Masterclass:
 
 \verbatim
 conda create --name plumed-masterclass 
@@ -57,7 +57,7 @@ and activate it with:
 conda activate plumed-masterclass
 \endverbatim
 
-Now, we can proceed with the installation of the required software:
+Finally, we can proceed with the installation of the required software:
 
 \verbatim
 conda install -c conda-forge plumed py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis
