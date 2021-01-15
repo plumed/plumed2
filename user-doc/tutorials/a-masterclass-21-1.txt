@@ -36,8 +36,8 @@ First, make sure conda is installed on your system by typing:
 conda
 \endverbatim
 
-If the command is not found, please refer to these [instructions](https://docs.conda.io/en/latest/miniconda.html) to install it on your machine.
-On MacOs with [Homebrew](https://brew.sh) installed, you can install conda also with:
+If the command is not found, please refer to these [instructions](https://docs.conda.io/en/latest/miniconda.html) to install conda on your machine.
+If you are using MacOs with the [Homebrew](https://brew.sh) package manager, you can install conda also with:
 
 \verbatim
 brew install --cask anaconda
