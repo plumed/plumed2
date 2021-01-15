@@ -84,7 +84,7 @@ plumed --help
 
 The output of this command is a list of tasks that PLUMED can perform. Among these, there are commands that allow you
 to patch an MD code, postprocess metadynamics simulations, and build the manual. In this
-class we will mostly use PLUMED to analyze trajectories. In order to do so, we will
+class we will use PLUMED to analyze trajectories. In order to do so, we will
 learn how to use the \ref driver tool. 
 Let's look at the options of PLUMED \ref driver by issuing the following command:  
 
