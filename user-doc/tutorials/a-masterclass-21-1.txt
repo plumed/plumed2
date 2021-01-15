@@ -294,7 +294,7 @@ This notebook allows you to import the `COLVAR` file produced by PLUMED and to g
 
 What can you deduce about the dynamics of this region of the 5-HT1B receptors? Are the two CVs both providing useful information or are they quite correlated? To answer to the latter question, you can inspect the plot of one CV against the other.
 
-\subsection masterclass-21-1-ex-2 Exercise 2: Advanced selection tools
+\subsection masterclass-21-1-ex-2 Exercise 2: Mastering advanced selection tools
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
@@ -357,7 +357,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 
 Now, you can compare the `COLVAR` file obtained with the one of \ref masterclass-21-1-ex-1: they should be identical!
 
-\subsection masterclass-21-1-ex-3 Exercise 3: Virtual atoms
+\subsection masterclass-21-1-ex-3 Exercise 3: Using virtual atoms
 
 Sometimes, when calculating a CV, you may not want to use the positions of a number of atoms directly. 
 Instead you may want to define a virtual atom whose position is generated based on the positions 
@@ -439,7 +439,7 @@ PRINT __FILL__
 and use it to analyze the trajectory `5-HT1B.xtc`. Can you say if the first 40 N-terminal residues tend to populate more
 alpha-helical or beta-sheet conformations? 
 
-\subsection masterclass-21-1-ex-5 Exercise 5: Use RMSD to measure conformational changes
+\subsection masterclass-21-1-ex-5 Exercise 5: Using RMSD to measure conformational changes
 
 As previously mentioned, the first 40 N-terminal residues of the 5-HT1B receptor are quite flexible, while the rest of the 
 protein remains more stable during the course of the simulation. In this exercise, you will learn how to use \ref RMSD to
