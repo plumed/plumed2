@@ -233,7 +233,7 @@ Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This `COLVAR `file can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
+This `COLVAR` file can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
 You can use the following command to open the notebook:
 
 \verbatim
