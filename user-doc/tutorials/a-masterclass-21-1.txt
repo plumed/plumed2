@@ -174,7 +174,8 @@ If you want to change these units, you can do this using the \ref UNITS keyword.
 In this exercise, we will learn how to compute and print collective variables on a pre-calculated MD trajectory.
 To analyze the trajectories provided here, we will:
 - create a PLUMED input file with a text editor (typically called `plumed.dat`);
-- run the PLUMED \ref driver utility.
+- run the PLUMED \ref driver utility;
+- visualize the output with the aid of a Jupyter notebook.
 
 Notice that you can also visualize trajectories with [VMD](https://www.ks.uiuc.edu/Research/vmd/) (always a good idea!).
 For example, the trajectory `5-HT1B.xtc` can be visualized with the command:
