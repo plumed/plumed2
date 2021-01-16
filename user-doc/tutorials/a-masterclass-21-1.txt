@@ -32,6 +32,7 @@ We will use [conda](https://docs.conda.io/en/latest/) to install all the softwar
 - [jupyter](https://jupyter.org/index.html)
 - [MDTraj](https://mdtraj.org/1.9.4/index.html)
 - [MDAnalysis](https://www.mdanalysis.org)
+- [git](https://git-scm.com)
 
 First, make sure conda is installed by typing:
 
@@ -63,7 +64,7 @@ conda activate plumed-masterclass
 Finally, we can proceed with the installation of the required software:
 
 \verbatim
-conda install -c conda-forge plumed py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis
+conda install -c conda-forge plumed py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis git
 \endverbatim
 
 \note Do not forget to activate the `plumed-masterclass` environment every time you open a new terminal/shell.
