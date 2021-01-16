@@ -40,7 +40,7 @@ conda
 \endverbatim
 
 If the command is not found, please refer to these [instructions](https://docs.conda.io/en/latest/miniconda.html) to install conda on your machine.
-If you are using the [Homebrew](https://brew.sh) package manager, you can install conda also with:
+Alternatively, if you use the [Homebrew](https://brew.sh) package manager, you can install conda with:
 
 \verbatim
 brew install --cask anaconda
