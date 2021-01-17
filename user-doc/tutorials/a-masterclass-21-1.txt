@@ -311,7 +311,7 @@ the dihedral \f$ \phi \f$ is defined by these atoms: C(i-1),N(i),CA(i),C(i) (see
 After consulting the manual and inspecting `5-HT1B.pdb`, let's define the dihedral angle \f$ \phi \f$ of residue 2 
 in two different ways:
 1. specifying an explicit list of 4 atoms (`t1`).
-2. using the \ref MOLINFO shortcut (`t2`);
+2. using the \ref MOLINFO shortcut to select quadruplets for dihedral angles (`t2`);
 
 \plumedfile
 # Activate MOLINFO functionalities
@@ -322,7 +322,7 @@ t1: TORSION ATOMS=__FILL__
 # Define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
 
-# Print the two collective variables on COLVAR file every 10 steps
+# Print the two collective variables on COLVAR file every step
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
@@ -489,7 +489,7 @@ by \ref WHOLEMOLECULES, \ref WRAPAROUND, and \ref FIT_TO_TEMPLATE by modifying y
 
 \plumedfile
 # Activate MOLINFO functionalities
-MOLINFO STRUCTURE=5-HT1B.pdb
+MOLINFO STRUCTURE=__FILL__
 # Here put your PLUMED input file
 #
 #
@@ -498,7 +498,7 @@ DUMPATOMS FILE=5-HT1B_transformed.gro ATOMS=__FILL__
 \endplumedfile
 
 Now, you can visualize the `5-HT1B_transformed.gro` file using [VMD](https://www.ks.uiuc.edu/Research/vmd/).
-Second, if you inspect the time series of your CV, this should be a continuous trajectory that spans the range from 8 nm to 20 nm.
+Second, if you inspect the time series of your CV, this should be a continuous trajectory that spans the range from 9 nm to 18 nm.
 
 \subsection masterclass-21-1-ex-7 Exercise 7: Estimating binding propensity 
 
