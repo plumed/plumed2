@@ -338,7 +338,10 @@ If you executed this exercise correctly, these two trajectories should be identi
 
 As a second example of \ref MOLINFO capabilities, we will use the advanced atom selection tools provided by
 the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9.4/index.html) libraries.
-Let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. You need to complete this template PLUMED input file:
+Let's redo \ref masterclass-21-1-ex-1, this time using \ref MOLINFO shortcuts to select CA atoms. 
+You need to complete the following template PLUMED input file using the appropriate selection syntax for the corresponding
+library used. Please consult the [MDAnalysis](https://www.mdanalysis.org) and [MDTraj](https://mdtraj.org/1.9.4/index.html) 
+documentations if you are not familiar with these libraries and their syntax.
 
 \plumedfile
 # Activate MOLINFO functionalities
