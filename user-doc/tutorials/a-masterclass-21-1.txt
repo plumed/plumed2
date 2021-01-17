@@ -32,7 +32,7 @@ We will use [conda](https://docs.conda.io/en/latest/) to install all the softwar
 - [jupyter](https://jupyter.org/index.html)
 - [MDTraj](https://mdtraj.org/1.9.4/index.html)
 - [MDAnalysis](https://www.mdanalysis.org)
-- [git](https://git-scm.com)
+- [Git](https://git-scm.com)
 
 First, make sure conda is installed by typing:
 
