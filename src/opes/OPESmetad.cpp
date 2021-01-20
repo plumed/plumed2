@@ -201,7 +201,8 @@ public:
 
 PLUMED_REGISTER_ACTION(OPESmetad,"OPES_METAD")
 
-void OPESmetad::registerKeywords(Keywords& keys) {
+void OPESmetad::registerKeywords(Keywords& keys)
+{
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
@@ -919,7 +920,7 @@ void OPESmetad::update()
     }
     if(!fixed_sigma_)
     {
-      const double size=neff; //for EXPLORE neff is not relevant
+      const double size=neff;
       const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
       if(sigma_min_.size()==0)
       {
