@@ -911,8 +911,10 @@ void OPESmetad::update()
       for(unsigned i=0; i<ncv_; i++)
         av_M2_[i]/=(1-bias_prefactor_);
     }
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_*(1-bias_prefactor_));
+      if(sigma[i]<1e-6) sigma[i]=1e-6;
+    }
   }
   if(!fixed_sigma_)
   {
