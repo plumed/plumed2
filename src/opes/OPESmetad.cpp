@@ -914,9 +914,30 @@ void OPESmetad::update()
       { //very first estimate is from unbiased, thus must be adjusted
         for(unsigned i=0; i<ncv_; i++)
           av_M2_[i]*=biasfactor_;
+        if(sigma_min_.size()==0)
+        {
+          for(unsigned i=0; i<ncv_; i++)
+          {
+            const double estimated_sigma_i=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
+            plumed_massert(estimated_sigma_i<1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
+          }
+        }
       }
       for(unsigned i=0; i<ncv_; i++)
         sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
+      if(sigma_min_.size()==0)
+      {
+        for(unsigned i=0; i<ncv_; i++)
+        {
+          if(sigma[i]<1e-6)
+          {
+            log.printf("+++ WARNING +++ the ADAPTIVE SIGMA is suspiciously small, you should set a safe SIGMA_MIN. 1e-6 will be used here\n");
+            sigma_min_.resize(ncv_,1e-6);
+            if(fixed_sigma_)
+              log.printf("+++ WARNING +++ with FIXED_SIGMA, SIGMA_MIN has no effect. You should not use SIGMA=ADAPTIVE\n");
+          }
+        }
+      }
     }
     if(!fixed_sigma_)
     {
