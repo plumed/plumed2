@@ -919,7 +919,7 @@ void OPESmetad::update()
           for(unsigned i=0; i<ncv_; i++)
           {
             const double estimated_sigma_i=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
-            plumed_massert(estimated_sigma_i<1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
+            plumed_massert(estimated_sigma_i>1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
           }
         }
       }
