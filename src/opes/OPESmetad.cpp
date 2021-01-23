@@ -138,6 +138,7 @@ private:
   std::vector<double> av_cv_;
   std::vector<double> av_M2_;
   bool fixed_sigma_;
+  bool adaptive_sigma_;
   double epsilon_;
   double sum_weights_;
   double sum_weights2_;
@@ -295,10 +296,12 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     bias_prefactor_=1-1./biasfactor_;
   }
 
+  adaptive_sigma_=false;
   adaptive_sigma_stride_=0;
   parse("ADAPTIVE_SIGMA_STRIDE",adaptive_sigma_stride_);
   std::vector<std::string> sigma_str;
   parseVector("SIGMA",sigma_str);
+  sigma0_.resize(ncv_);
   double dummy;
   if(sigma_str.size()==1 && !Tools::convert(sigma_str[0],dummy))
   {
@@ -310,12 +313,12 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
     plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE > PACE");
+    adaptive_sigma_=true;
   }
   else
   {
     plumed_massert(sigma_str.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
     plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is not ADAPTIVE you cannot set an ADAPTIVE_SIGMA_STRIDE");
-    sigma0_.resize(ncv_);
     for(unsigned i=0; i<ncv_; i++)
     {
       plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
@@ -323,6 +326,11 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   }
   parseVector("SIGMA_MIN",sigma_min_);
   plumed_massert(sigma_min_.size()==0 || sigma_min_.size()==ncv_,"number of SIGMA_MIN does not match number of arguments");
+  if(sigma_min_.size()>0 && !adaptive_sigma_)
+  {
+    for(unsigned i=0; i<ncv_; i++)
+      plumed_massert(sigma_min_[i]<=sigma0_[i],"SIGMA_MIN should be smaller than SIGMA");
+  }
 
   epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
   parse("EPSILON",epsilon_);
@@ -508,13 +516,14 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
         ifile.scanField("sum_weights",sum_weights_);
         ifile.scanField("sum_weights2",sum_weights2_);
         ifile.scanField("counter",counter_);
-        if(sigma0_.size()==0)
+        if(adaptive_sigma_)
         {
           ifile.scanField("adaptive_counter",adaptive_counter_);
           if(NumWalkers_==1)
           {
             for(unsigned i=0; i<ncv_; i++)
             {
+              ifile.scanField("sigma0_"+getPntrToArgument(i)->getName(),sigma0_[i]);
               ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
               ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
             }
@@ -524,12 +533,14 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
             for(unsigned w=0; w<NumWalkers_; w++)
               for(unsigned i=0; i<ncv_; i++)
               {
-                double tmp1,tmp2;
+                double tmp0,tmp1,tmp2;
                 const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+                ifile.scanField("sigma0_"+arg_iw,tmp0);
                 ifile.scanField("av_cv_"+arg_iw,tmp1);
                 ifile.scanField("av_M2_"+arg_iw,tmp2);
                 if(w==walker_rank_)
                 {
+                  sigma0_[i]=tmp0;
                   av_cv_[i]=tmp1;
                   av_M2_[i]=tmp2;
                 }
@@ -582,6 +593,8 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
             ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
           for(unsigned i=0; i<ncv_; i++)
             ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          if(counter_==(1+walker_rank_) && adaptive_sigma_)
+            sigma0_=sigma;
           ifile.scanField("height",height);
           ifile.scanField("logweight",logweight);
           ifile.scanField();
@@ -718,7 +731,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
   if(std::isinf(biasfactor_))
     log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
-  if(sigma0_.size()==0)
+  if(adaptive_sigma_)
   {
     log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %u\n",adaptive_sigma_stride_);
     unsigned x=std::ceil(adaptive_sigma_stride_/stride_);
@@ -846,7 +859,7 @@ void OPESmetad::update()
   }
 
 //update variance if adaptive sigma
-  if(sigma0_.size()==0)
+  if(adaptive_sigma_)
   {
     adaptive_counter_++;
     unsigned tau=adaptive_sigma_stride_;
@@ -907,24 +920,28 @@ void OPESmetad::update()
 
     //if needed, rescale sigma and height
     std::vector<double> sigma=sigma0_;
-    if(sigma0_.size()==0)
+    if(adaptive_sigma_)
     {
-      sigma.resize(ncv_);
-      if(counter_==1+NumWalkers_)
-      { //very first estimate is from unbiased, thus must be adjusted
+      const double factor=biasfactor_;
+      if(counter_==1+NumWalkers_) //first time only
+      {
         for(unsigned i=0; i<ncv_; i++)
-          av_M2_[i]*=biasfactor_;
+          av_M2_[i]*=biasfactor_; //from unbiased, thus must be adjusted
+        for(unsigned i=0; i<ncv_; i++)
+          sigma0_[i]=std::sqrt(av_M2_[i]/adaptive_counter_/factor);
         if(sigma_min_.size()==0)
         {
           for(unsigned i=0; i<ncv_; i++)
-          {
-            const double estimated_sigma_i=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
-            plumed_massert(estimated_sigma_i>1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
-          }
+            plumed_massert(sigma0_[i]>1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
+        }
+        else
+        {
+          for(unsigned i=0; i<ncv_; i++)
+            sigma0_[i]=std::max(sigma0_[i],sigma_min_[i]);
         }
       }
       for(unsigned i=0; i<ncv_; i++)
-        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_/biasfactor_);
+        sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_/factor);
       if(sigma_min_.size()==0)
       {
         for(unsigned i=0; i<ncv_; i++)
@@ -932,36 +949,34 @@ void OPESmetad::update()
           if(sigma[i]<1e-6)
           {
             log.printf("+++ WARNING +++ the ADAPTIVE SIGMA is suspiciously small, you should set a safe SIGMA_MIN. 1e-6 will be used here\n");
+            sigma[i]=1e-6;
             sigma_min_.resize(ncv_,1e-6);
-            if(fixed_sigma_)
-              log.printf("+++ WARNING +++ with FIXED_SIGMA, SIGMA_MIN has no effect. You should not use SIGMA=ADAPTIVE\n");
           }
         }
+      }
+      else
+      {
+        for(unsigned i=0; i<ncv_; i++)
+          sigma[i]=std::max(sigma[i],sigma_min_[i]);
       }
     }
     if(!fixed_sigma_)
     {
       const double size=neff;
       const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
-      if(sigma_min_.size()==0)
+      for(unsigned i=0; i<ncv_; i++)
+        sigma[i]*=s_rescaling;
+      if(sigma_min_.size()>0)
       {
         for(unsigned i=0; i<ncv_; i++)
-          sigma[i]*=s_rescaling;
-        //the height should be divided by sqrt(2*pi)*sigma,
-        //but this overall factor would be canceled when dividing by Zed
-        //thus we skip it altogether, but keep the s_rescaling
-        height/=std::pow(s_rescaling,ncv_);
-      }
-      else
-      {
-        for(unsigned i=0; i<ncv_; i++)
-        {
-          const double s_rescaling_i=std::max(s_rescaling,sigma_min_[i]/sigma[i]);
-          sigma[i]*=s_rescaling_i;
-          height/=s_rescaling_i;
-        }
+          sigma[i]=std::max(sigma[i],sigma_min_[i]);
       }
     }
+    //the height should be divided by sqrt(2*pi)*sigma0_,
+    //but this overall factor would be canceled when dividing by Zed
+    //thus we skip it altogether, but keep any other sigma rescaling
+    for(unsigned i=0; i<ncv_; i++)
+      height*=(sigma0_[i]/sigma[i]);
 
     //get new kernel center
     std::vector<double> center(ncv_);
@@ -1429,17 +1444,21 @@ void OPESmetad::dumpStateToFile()
 {
 //gather adaptive sigma info if needed
 //doing this while writing to file can lead to misterious slowdowns
+  std::vector<double> all_sigma0;
   std::vector<double> all_av_cv;
   std::vector<double> all_av_M2;
-  if(sigma0_.size()==0 && NumWalkers_>1)
+  if(adaptive_sigma_ && NumWalkers_>1)
   {
+    all_sigma0.resize(NumWalkers_*ncv_);
     all_av_cv.resize(NumWalkers_*ncv_);
     all_av_M2.resize(NumWalkers_*ncv_);
     if(comm.Get_rank()==0)
     {
+      multi_sim_comm.Allgather(sigma0_,all_sigma0);
       multi_sim_comm.Allgather(av_cv_,all_av_cv);
       multi_sim_comm.Allgather(av_M2_,all_av_M2);
     }
+    comm.Bcast(all_sigma0,0);
     comm.Bcast(all_av_cv,0);
     comm.Bcast(all_av_M2,0);
   }
@@ -1459,13 +1478,14 @@ void OPESmetad::dumpStateToFile()
   stateOfile_.addConstantField("sum_weights");
   stateOfile_.addConstantField("sum_weights2");
   stateOfile_.addConstantField("counter");
-  if(sigma0_.size()==0)
+  if(adaptive_sigma_)
   {
     stateOfile_.addConstantField("adaptive_counter");
     if(NumWalkers_==1)
     {
       for(unsigned i=0; i<ncv_; i++)
       {
+        stateOfile_.addConstantField("sigma0_"+getPntrToArgument(i)->getName());
         stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
         stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
       }
@@ -1476,6 +1496,7 @@ void OPESmetad::dumpStateToFile()
         for(unsigned i=0; i<ncv_; i++)
         {
           const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+          stateOfile_.addConstantField("sigma0_"+arg_iw);
           stateOfile_.addConstantField("av_cv_"+arg_iw);
           stateOfile_.addConstantField("av_M2_"+arg_iw);
         }
@@ -1493,13 +1514,14 @@ void OPESmetad::dumpStateToFile()
   stateOfile_.printField("sum_weights",sum_weights_);
   stateOfile_.printField("sum_weights2",sum_weights2_);
   stateOfile_.printField("counter",counter_);
-  if(sigma0_.size()==0)
+  if(adaptive_sigma_)
   {
     stateOfile_.printField("adaptive_counter",adaptive_counter_);
     if(NumWalkers_==1)
     {
       for(unsigned i=0; i<ncv_; i++)
       {
+        stateOfile_.printField("sigma0_"+getPntrToArgument(i)->getName(),sigma0_[i]);
         stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
         stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
       }
@@ -1510,6 +1532,7 @@ void OPESmetad::dumpStateToFile()
         for(unsigned i=0; i<ncv_; i++)
         {
           const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
+          stateOfile_.printField("sigma0_"+arg_iw,all_sigma0[w*ncv_+i]);
           stateOfile_.printField("av_cv_"+arg_iw,all_av_cv[w*ncv_+i]);
           stateOfile_.printField("av_M2_"+arg_iw,all_av_M2[w*ncv_+i]);
         }
