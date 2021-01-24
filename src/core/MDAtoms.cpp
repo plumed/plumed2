@@ -32,8 +32,8 @@ namespace PLMD {
 
 template<typename T>
 static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,unsigned maxel,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
-  auto p_=p.get<T>({maxel,3});
-  if(p_) {
+  if(p) {
+    auto p_=p.get<T>({maxel,3});
     ppx=p_;
     ppy=p_+1;
     ppz=p_+2;
