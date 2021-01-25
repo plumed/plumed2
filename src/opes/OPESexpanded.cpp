@@ -324,7 +324,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           ifile.scanField();
           tmp_lambda.clear();
         }
-        log.printf("  successfully read %u DeltaF values\n",deltaF_name_.size());
+        log.printf("  successfully read %lu DeltaF values\n",deltaF_name_.size());
         if(NumParallel_>1)
           all_deltaF_=deltaF_;
       }
@@ -377,7 +377,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       }
       plumed_massert(sizeSkip==deltaF_size_,"RESTART - this should not happen");
       init_linkECVs(); //link ECVs and initializes index_k_
-      log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
+      log.printf(" ->%4u DeltaFs in total\n",deltaF_size_);
       obs_steps_=0; //avoid initializing again
       if(stateRestart)
       {
@@ -393,7 +393,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       }
       else //read each step
       {
-        counter_=NumWalkers_;
+        counter_=1;
         unsigned count_lines=0;
         ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
         double time;
@@ -418,9 +418,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           }
           ifile.scanField();
           if(count_lines>0)
-            counter_+=NumWalkers_*restart_stride;
+            counter_+=restart_stride;
           count_lines++;
         }
+        counter_*=NumWalkers_;
         log.printf("  successfully read %u lines, up to t=%g\n",count_lines,time);
       }
       ifile.reset(false);
@@ -829,7 +830,7 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
   }
 
 //print initialization to file
-  log.printf(" ->%4lu DeltaFs in total\n",deltaF_size_);
+  log.printf(" ->%4u DeltaFs in total\n",deltaF_size_);
   printDeltaF();
 }
 
