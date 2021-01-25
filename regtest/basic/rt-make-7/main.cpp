@@ -80,6 +80,44 @@ void test_cl() {
   }
 }
 
+void test_xyz() {
+  Plumed p;
+  auto natoms=4;
+  std::vector<double> posx(natoms),posy(natoms),posz(natoms);
+  std::vector<double> forx(natoms,0.0),fory(natoms,0.0),forz(natoms,0.0);
+  std::vector<double> masses(natoms);
+  for(auto i=0; i<posx.size(); i++) masses[i]=i+1;
+  for(auto i=0; i<posx.size(); i++) posx[i]=10*i+0;
+  for(auto i=0; i<posy.size(); i++) posy[i]=10*i+1;
+  for(auto i=0; i<posz.size(); i++) posz[i]=10*i+2;
+  double cell[9];
+  double virial[9];
+  for(auto i=0; i<9; i++) cell[i]=0.0;
+  for(auto i=0; i<9; i++) virial[i]=0.0;
+  cell[0]=100.0;
+  cell[4]=100.0;
+  cell[8]=100.0;
+  p.cmd("setNatoms",natoms);
+  p.cmd("init");
+  p.cmd("readInputLine","DUMPATOMS ATOMS=@mdatoms FILE=test_xyz.xyz");
+  p.cmd("readInputLine","c: COM ATOMS=@mdatoms");
+  p.cmd("readInputLine","p: POSITION ATOM=c");
+  p.cmd("readInputLine","RESTRAINT ARG=p.x,p.y,p.z AT=0.0,0.0,0.0 KAPPA=0.0,0.0,0.0 SLOPE=1.0,2.0,3.0");
+  p.cmd("setBox",cell);
+  p.cmd("setStep",0);
+  p.cmd("setVirial",virial);
+  p.cmd("setMasses",masses.data());
+  p.cmd("setPositionsX",posx.data());
+  p.cmd("setPositionsY",posy.data());
+  p.cmd("setPositionsZ",posz.data());
+  p.cmd("setForcesX",forx.data());
+  p.cmd("setForcesY",fory.data());
+  p.cmd("setForcesZ",forz.data());
+  p.cmd("calc");
+  std::ofstream ofs("test_xyz.forces");
+  for(auto i=0; i<natoms; i++) ofs<<forx[i]<<" "<<fory[i]<<" "<<forz[i]<<"\n";
+}
+
 int main(){
 
   small_test_mpi();
@@ -151,5 +189,8 @@ int main(){
   test_checkAction();
 
   delete plumed;
+
+  test_xyz();
+
   return 0;
 }
