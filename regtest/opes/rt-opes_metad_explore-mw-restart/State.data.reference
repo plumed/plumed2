@@ -1,52 +1,58 @@
-#! FIELDS time psi phi sigma_psi sigma_phi height
+#! FIELDS time phi psi sigma_phi sigma_psi height
 #! SET action OPES_METAD_EXPLORE_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.319024
 #! SET kernel_cutoff  4.004537
 #! SET compression_threshold  1.500000
-#! SET zed  0.810490
-#! SET sum_weights  138.464288
-#! SET sum_weights2  5468.243662
-#! SET counter  19
-#! SET adaptive_counter  58
-#! SET av_cv_psi_0  1.400780
-#! SET av_M2_psi_0  89.057351
-#! SET av_cv_phi_0  -1.672161
-#! SET av_M2_phi_0  74.993268
-#! SET av_cv_psi_1  1.400780
-#! SET av_M2_psi_1  89.057351
-#! SET av_cv_phi_1  -1.672161
-#! SET av_M2_phi_1  74.993268
-#! SET min_psi -pi
-#! SET max_psi pi
+#! SET zed  2.830189
+#! SET sum_weights  512.083907
+#! SET sum_weights2  28306.135140
+#! SET counter  23
+#! SET adaptive_counter  60
+#! SET sigma0_phi_0  3.042811
+#! SET av_cv_phi_0  -1.764106
+#! SET av_M2_phi_0  156.689542
+#! SET sigma0_psi_0  3.198346
+#! SET av_cv_psi_0  1.353056
+#! SET av_M2_psi_0  178.789629
+#! SET sigma0_phi_1  3.042811
+#! SET av_cv_phi_1  -1.764106
+#! SET av_M2_phi_1  156.689542
+#! SET sigma0_psi_1  3.198346
+#! SET av_cv_psi_1  1.353056
+#! SET av_M2_psi_1  178.789629
 #! SET min_phi -pi
 #! SET max_phi pi
- 20.000000 1.934269 -2.498986 1.110795 0.828952 25.542104
- 20.000000 1.245974 -1.196206 0.855883 0.717317 8.862837
- 20.000000 -1.341386 1.478705 0.874304 0.815865 4.447960
-#! FIELDS time psi phi sigma_psi sigma_phi height
+#! SET min_psi -pi
+#! SET max_psi pi
+ 20.000000 -2.126123 1.541598 1.416821 1.520100 117.044682
+ 20.000000 1.478705 -1.341386 1.371230 1.451341 9.780264
+#! FIELDS time phi psi sigma_phi sigma_psi height
 #! SET action OPES_METAD_EXPLORE_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.319024
 #! SET kernel_cutoff  4.004537
 #! SET compression_threshold  1.500000
-#! SET zed  0.891547
-#! SET sum_weights  185.088982
-#! SET sum_weights2  6068.713159
-#! SET counter  27
-#! SET adaptive_counter  78
-#! SET av_cv_psi_0  0.886013
-#! SET av_M2_psi_0  137.292042
-#! SET av_cv_phi_0  -0.855948
-#! SET av_M2_phi_0  117.725644
-#! SET av_cv_psi_1  0.886013
-#! SET av_M2_psi_1  137.292042
-#! SET av_cv_phi_1  -0.855948
-#! SET av_M2_phi_1  117.725644
-#! SET min_psi -pi
-#! SET max_psi pi
+#! SET zed  3.485609
+#! SET sum_weights  723.397750
+#! SET sum_weights2  35947.030278
+#! SET counter  31
+#! SET adaptive_counter  80
+#! SET sigma0_phi_0  3.042811
+#! SET av_cv_phi_0  -0.881329
+#! SET av_M2_phi_0  198.797349
+#! SET sigma0_psi_0  3.198346
+#! SET av_cv_psi_0  0.891687
+#! SET av_M2_psi_0  226.818461
+#! SET sigma0_phi_1  3.042811
+#! SET av_cv_phi_1  -0.881329
+#! SET av_M2_phi_1  198.797349
+#! SET sigma0_psi_1  3.198346
+#! SET av_cv_psi_1  0.891687
+#! SET av_M2_psi_1  226.818461
 #! SET min_phi -pi
 #! SET max_phi pi
- 40.000000 1.753503 -2.510065 1.123989 0.805157 31.059952
- 40.000000 1.252786 -1.194598 0.834356 0.700282 20.550571
- 40.000000 -1.341386 1.478705 0.816613 0.760437 10.295995
+#! SET min_psi -pi
+#! SET max_psi pi
+ 40.000000 -1.776332 1.401201 1.339306 1.372712 183.667488
+ 40.000000 1.478705 -1.341386 1.094522 1.162177 30.603122

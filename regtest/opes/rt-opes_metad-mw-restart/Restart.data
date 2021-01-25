@@ -1,27 +1,31 @@
-#! FIELDS time psi phi sigma_psi sigma_phi height
+#! FIELDS time phi psi sigma_phi sigma_psi height
 #! SET action OPES_METAD_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
 #! SET compression_threshold  1.500000
-#! SET zed  0.395665
-#! SET sum_weights  1.958048
-#! SET sum_weights2  0.819868
-#! SET counter  13
-#! SET adaptive_counter  39
-#! SET av_cv_psi_0  0.885959
-#! SET av_M2_psi_0  158.254523
-#! SET av_cv_phi_0  -0.857195
-#! SET av_M2_phi_0  139.913281
-#! SET av_cv_psi_1  0.885959
-#! SET av_M2_psi_1  158.254523
-#! SET av_cv_phi_1  -0.857195
-#! SET av_M2_phi_1  139.913281
-#! SET min_psi -pi
-#! SET max_psi pi
+#! SET zed  1.010342
+#! SET sum_weights  5.933614
+#! SET sum_weights2  8.077492
+#! SET counter  15
+#! SET adaptive_counter  40
+#! SET sigma0_phi_0  1.074577
+#! SET av_cv_phi_0  -0.882084
+#! SET av_M2_phi_0  139.969030
+#! SET sigma0_psi_0  1.129505
+#! SET av_cv_psi_0  0.891556
+#! SET av_M2_psi_0  158.257343
+#! SET sigma0_phi_1  1.074577
+#! SET av_cv_phi_1  -0.882084
+#! SET av_M2_phi_1  139.969030
+#! SET sigma0_psi_1  1.129505
+#! SET av_cv_psi_1  0.891556
+#! SET av_M2_psi_1  158.257343
 #! SET min_phi -pi
 #! SET max_phi pi
- 40.000000 2.861867 -2.924568 0.799013 0.755067 1.605526
- 40.000000 0.916740 -2.561349 0.685734 0.645902 0.197508
- 40.000000 1.028258 -1.247581 0.625185 0.541686 1.104921
- 40.000000 -1.341386 1.478705 0.621196 0.586908 0.020753
+#! SET min_psi -pi
+#! SET max_psi pi
+ 40.000000 -2.924667 2.861987 0.754968 0.798891 2.299198
+ 40.000000 -2.561349 0.916740 0.645916 0.685749 0.369793
+ 40.000000 -1.131077 0.951968 0.509320 0.546015 20.718487
+ 40.000000 1.478705 -1.341386 0.586658 0.620932 0.042527
