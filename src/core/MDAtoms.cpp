@@ -110,7 +110,8 @@ public:
     const T* ffx;
     const T* ffy;
     const T* ffz;
-    getPointers(f,fx,fy,fz,index,ffx,ffy,ffz,stride);
+    // node: index+1 because we are supposed to pass here the size of the array, which should be at least the element we are asking for + 1
+    getPointers(f,fx,fy,fz,index+1,ffx,ffy,ffz,stride);
     Vector force(ffx[stride*index],ffy[stride*index],ffz[stride*index]);
     return force/scalef;
   }
