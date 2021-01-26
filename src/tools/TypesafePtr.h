@@ -34,6 +34,11 @@
 
 namespace PLMD {
 
+static inline bool typesafePtrSkipCheck() {
+  static const bool ret=std::getenv("PLUMED_TYPESAFE_IGNORE");
+  return ret;
+}
+
 template<class T>
 std::size_t typesafePtrSizeof() {
   return sizeof(T);
@@ -129,6 +134,8 @@ public:
 
   template<typename T>
   T* get_priv(std::size_t nelem, const std::size_t* shape, bool byvalue) const {
+
+    if(typesafePtrSkipCheck()) return (T*) ptr;
     typedef typename std::remove_const<T>::type T_noconst;
     typedef typename std::remove_pointer<T>::type T_noptr;
     if(flags==0) return (T*) ptr; // no check
