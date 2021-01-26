@@ -28,8 +28,8 @@
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
-from cpython cimport array
 import array
+import ctypes
 import re
 import gzip
 import math
@@ -113,6 +113,33 @@ cdef class Plumed:
             ashape[i]=shape[i]
          ashape[len(shape)]=0
          self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
+     def cmd_array_double(self, ckey, val):
+         cdef double [:] abuffer = val
+         cdef size_t ashape[5]
+         shape=abuffer.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <double*>&abuffer[0], <size_t*> & ashape[0])
+     def cmd_array_int(self, ckey, val):
+         cdef int [:] abuffer = val
+         cdef size_t ashape[5]
+         shape=abuffer.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <int*>&abuffer[0], <size_t*> & ashape[0])
+     def cmd_array_long(self, ckey, val):
+         cdef long [:] abuffer = val
+         cdef size_t ashape[5]
+         shape=abuffer.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
      cdef cmd_float(self, ckey, double val ):
          self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
@@ -121,7 +148,6 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
-         cdef array.array ar
          if val is None :
             self.c_plumed.cmd( ckey)
          elif isinstance(val, (int,long) ):
@@ -140,14 +166,11 @@ cdef class Plumed:
                raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
-               ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_doubles, len(ar))
+               self.cmd_array_double(ckey, val)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
-               ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_ints, len(ar))
+               self.cmd_array_int(ckey, val)
             elif( (val.typecode=="l" or val.typecode=="L") ) :
-               ar = val
-               self.c_plumed.cmd( ckey, ar.data.as_longs, len(ar))
+               self.cmd_array_long(ckey, val)
             else :
                raise ValueError("ndarrays should be double (size=8), int, or long")
          elif isinstance(val, str ) :
