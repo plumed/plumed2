@@ -115,31 +115,13 @@ cdef class Plumed:
          self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
      def cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
-         cdef size_t ashape[5]
-         shape=abuffer.shape
-         assert len(shape)<5
-         for i in range(len(shape)):
-            ashape[i]=shape[i]
-         ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <double*>&abuffer[0], <size_t*> & ashape[0])
+         self.c_plumed.cmd( ckey, <double*>&abuffer[0], len(abuffer))
      def cmd_array_int(self, ckey, val):
          cdef int [:] abuffer = val
-         cdef size_t ashape[5]
-         shape=abuffer.shape
-         assert len(shape)<5
-         for i in range(len(shape)):
-            ashape[i]=shape[i]
-         ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <int*>&abuffer[0], <size_t*> & ashape[0])
+         self.c_plumed.cmd( ckey, <int*>&abuffer[0], len(abuffer))
      def cmd_array_long(self, ckey, val):
          cdef long [:] abuffer = val
-         cdef size_t ashape[5]
-         shape=abuffer.shape
-         assert len(shape)<5
-         for i in range(len(shape)):
-            ashape[i]=shape[i]
-         ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
+         self.c_plumed.cmd( ckey, <long*>&abuffer[0], len(abuffer))
      cdef cmd_float(self, ckey, double val ):
          self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
