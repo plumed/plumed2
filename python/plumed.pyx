@@ -86,7 +86,7 @@ cdef class Plumed:
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
-     def cmd_ndarray_double(self, ckey, val):
+     cdef cmd_ndarray_double(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
          cdef size_t ashape[5]
          shape=val.shape
@@ -95,7 +95,7 @@ cdef class Plumed:
             ashape[i]=shape[i]
          ashape[len(shape)]=0
          self.c_plumed.cmd_shaped( ckey, <double*>&abuffer[0], <size_t*> & ashape[0])
-     def cmd_ndarray_int(self, ckey, val):
+     cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
          shape=val.shape
@@ -104,7 +104,7 @@ cdef class Plumed:
             ashape[i]=shape[i]
          ashape[len(shape)]=0
          self.c_plumed.cmd_shaped( ckey, <int*>&abuffer[0], <size_t*> & ashape[0])
-     def cmd_ndarray_long(self, ckey, val):
+     cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
          shape=val.shape
@@ -113,13 +113,13 @@ cdef class Plumed:
             ashape[i]=shape[i]
          ashape[len(shape)]=0
          self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
-     def cmd_array_double(self, ckey, val):
+     cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
          self.c_plumed.cmd( ckey, <double*>&abuffer[0], len(abuffer))
-     def cmd_array_int(self, ckey, val):
+     cdef cmd_array_int(self, ckey, val):
          cdef int [:] abuffer = val
          self.c_plumed.cmd( ckey, <int*>&abuffer[0], len(abuffer))
-     def cmd_array_long(self, ckey, val):
+     cdef cmd_array_long(self, ckey, val):
          cdef long [:] abuffer = val
          self.c_plumed.cmd( ckey, <long*>&abuffer[0], len(abuffer))
      cdef cmd_float(self, ckey, double val ):
