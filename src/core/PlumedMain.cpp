@@ -331,7 +331,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
-        if(val) error_handler=*static_cast<plumed_error_handler*>(val.get<void>());
+        if(val) error_handler=*static_cast<const plumed_error_handler*>(val.get<const void>());
         else error_handler.handler=NULL;
       }
       break;

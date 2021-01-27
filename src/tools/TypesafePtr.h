@@ -50,6 +50,12 @@ std::size_t typesafePtrSizeof<void>() {
   return 0;
 }
 
+template<>
+inline
+std::size_t typesafePtrSizeof<const void>() {
+  return 0;
+}
+
 /**
 \ingroup TOOLBOX
 Class to deal with propoagation of typesafe pointers.
@@ -168,8 +174,14 @@ public:
 
     // cons==1 (by value) is here treated as cons==3 (const type*)
     if(!std::is_pointer<T>::value) {
-      if(cons!=1 && cons!=2 && cons!=3) {
-        throw ExceptionTypeError() << "This command expects a pointer or an value. It received a pointer-to-pointer instead";
+      if(std::is_void<T>::value) {
+        if(cons==1) {
+          throw ExceptionTypeError() << "This command expects a void pointer. It received a value instead";
+        }
+      } else {
+        if(cons!=1 && cons!=2 && cons!=3) {
+          throw ExceptionTypeError() << "This command expects a pointer or a value. It received a pointer-to-pointer instead";
+        }
       }
       if(!std::is_const<T>::value) {
         if(cons==3) {
