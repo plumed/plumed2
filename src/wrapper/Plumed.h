@@ -46,6 +46,9 @@
   The interface is almost perfectly backward compatible, although it implements
   a few additional functions. See more details below.
 
+  A further improvement has been made in PLUMED 2.7, where the C++ interface has
+  been modified to allow dynamic type checking. See more details below.
+
   Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
   needs to be linked with the host MD code immediately (whereas the rest of plumed
   could be linked a posteriori). Imagine the MD code is written in FORTRAN: when we
@@ -83,7 +86,9 @@
   applications with conventional MD codes) it is possible to take advantage
   of a global interface, which is implicitly referring to a unique global instance.
   The global object should still be initialized and finalized properly.
-  This global object is obviously not usable in a multithread context.
+  This global object is obviously not usable in a multithread context. In addition,
+  it is difficult to use it in an exception-safe manner, so its usage in C++ is
+  allowed but discouraged.
 
   As of PLUMED 2.5, the interface contains a reference counter that allows
   for a better control of plumed initializations and deallocations.
@@ -297,6 +302,27 @@
   Notice that this implies some loss of information, since the original exception might have been of a different type.
   However, it also implies that the virtual table of the original exception won't be needed anymore. This allows to
   completely decouple the MD code from the PLUMED library.
+
+\section ReferencePlumedH-typesafe Typesafe interface
+
+  Starting with PLUMED 2.7, the `cmd` function of the C++ interface, and the similar function `gcmd`, can be called
+  with several interfaces and can perform a typechecking on the passer argument. In particular, the following
+  forms are now possible:
+\verbatim
+  cmd("string",value);        // by value
+  cmd("string",&value);       // by pointer
+  cmd("string",&value,nelem); // by pointer, specifying the number of elements of the passed array
+  cmd("string",&value,shape); // by pointer, specifying the shape of the passed array
+\endverbati
+  The `nelem` and `shape` arguments are used by PLUMED to check that the user
+  provided enough elements. If nelem is provided, the check is done on the flatten array, whereas if shape
+  is passed a more thorough check is performed controlling each of the dimensions of the array.
+  In addition to this, the type of the pointer (or of the value) is checked at runtime.
+
+  All these checks are only implemented if the PLUMED library is recent (>=2.8). In addition,
+  they can be disabled in two ways:
+  - By compiling `Plumed.h` with `-D__PLUMED_WRAPPER_CXX_TYPESAFE=0`
+  - By setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
 
 \section ReferencePlumedH-2-5 New in PLUMED 2.5
 
@@ -647,18 +673,18 @@ typedef struct {
                3 integral
                4 floating point
                5 FILE (size will not be computed as it might be incomplete)
-               >5 not typechecked
+               >5 not typechecked, reserved for future extensions
     0x1000000  * 1 for unsigned (ignored)
     0x2000000  * pointer/const type, up to 8
                0 not typechecked
-               1 T <- pass by value, not implemented yet
-               2 T*
-               3 const T*
-               4 T**
-               5 T*const*
-               6 const T**
-               7 const T*const*
-    0x10000000 and higher bits are ignored
+               1 T
+               2 T       *
+               3 T const *
+               4 T       *       *
+               5 T       * const *
+               6 T const *       *
+               7 T const * const *
+    0x10000000 and higher bits are ignored, reserved for future extensions
   */
   unsigned long int flags;
   /** Optional information, not used yet  */
@@ -1482,12 +1508,16 @@ private:
   __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_exception)
   __PLUMED_WRAPPER_NOSTRING_EXCEPTION(exception)
 
-public:
-
   /// Small class that wraps plumed_safeptr in order to make its initialization easier
   class SafePtr {
+    /// non copyable (copy would require managing buffer, could be added in the future if needed)
+    SafePtr(const SafePtr&);
+    /// non assignable (assignment would require managing buffer, could be added in the future if needed)
+    SafePtr& operator=(SafePtr const&);
   public:
     plumed_safeptr safe;
+    /// This buffer holds a copy of the data when they are passed by value.
+    /// The size is sufficient to hold any primitive type.
     char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
@@ -1498,71 +1528,49 @@ public:
       safe.opt=NULL;
       buffer[0]='\0';
     }
+
 #if __cplusplus > 199711L
     /// Construct from null
     SafePtr(std::nullptr_t) noexcept {
-      safe.ptr=NULL;
+      safe.ptr=nullptr;
       safe.nelem=0;
-      safe.shape=NULL;
+      safe.shape=nullptr;
       safe.flags=0x10000*2;
-      safe.opt=NULL;
+      safe.opt=nullptr;
       buffer[0]='\0';
     }
 #endif
 
-#define __PLUMED_WRAPPER_SAFEPTR(type,code,size) \
-  SafePtr(type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+/// Macro that generate a constructor with given type and flags
+#define __PLUMED_WRAPPER_SAFEPTR_INNER(type_,flags_) \
+  SafePtr(type_*ptr, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
-    safe.opt=NULL; \
-    buffer[0]='\0'; \
-  } \
-  SafePtr(const type*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*3); \
-    safe.opt=NULL; \
-    buffer[0]='\0'; \
-  } \
-  SafePtr(type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*4); \
-    safe.opt=NULL; \
-    buffer[0]='\0'; \
-  } \
-  SafePtr(type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*5); \
-    safe.opt=NULL; \
-    buffer[0]='\0'; \
-  } \
-  SafePtr(const type**ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*6); \
-    safe.opt=NULL; \
-    buffer[0]='\0'; \
-  } \
-  SafePtr(const type*const*ptr) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-    safe.ptr=ptr; \
-    safe.nelem=0; \
-    safe.shape=NULL; \
-    safe.flags=size | (0x10000*(code)) | (0x2000000*7); \
+    safe.nelem=nelem; \
+    safe.shape=const_cast<size_t*>(shape); \
+    safe.flags=flags_; \
     safe.opt=NULL; \
     buffer[0]='\0'; \
   }
 
+/// Macro that uses __PLUMED_WRAPPER_SAFEPTR_INNER to generate constructors with
+/// all possible pointer-const combinations
+#define __PLUMED_WRAPPER_SAFEPTR(type,code,size) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type,             size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const,       size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type*,            size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type*const,       size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const*,      size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const*const, size | (0x10000*(code)) | (0x2000000*7))
+
+/// Macro that generates the constructors from empy types (those of which sizeof cannot be computed)
 #define __PLUMED_WRAPPER_SAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,0)
-#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
-  SafePtr(type val) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+
+/// Macro that generates the constructors from sized types (those of which sizeof can be computed).
+/// In addition to generating constructors with all pointer types, it generates a constructor to
+/// allow pass-by-value
+#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) \
+  __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
+  SafePtr(type val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     assert(sizeof(type)<=32); \
     safe.ptr=buffer; \
     safe.nelem=1; \
@@ -1572,41 +1580,38 @@ public:
     __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
   }
 
-    __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3);
+/// Here we create all the required instances
+/// 1: void
+/// 3: integral
+/// 4: floating
+/// 5: FILE
+/// 0x100: unsigned
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3)
 #if __PLUMED_WRAPPER_CXX_LONGLONG
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(long long,3);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long long,0x100+3);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long long,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long long,0x100+3)
 #endif
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(long double,4);
-    __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long double,4)
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5)
 
-
-    /// Conversion operator
-    operator plumed_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    /// Return the contained plumed_safeptr
+    plumed_safeptr get_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
       return safe;
     }
 
-    /// Allow to change number of elements.
-    void setNelem(__PLUMED_WRAPPER_STD size_t nelem) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      this->safe.nelem=nelem;
-    }
-
-    void setShape(const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      // safe.shape is not const since it is stored in a C struct
-      this->safe.shape=const_cast<size_t*>(shape);
-    }
-
   };
+
+public:
 
   /**
      Check if plumed is installed (for runtime binding)
@@ -1672,6 +1677,9 @@ public:
   }
   /**
      Initialize global-plumed.
+     \warning Using the global objects in C++ is not recommended since they are difficult to use in
+              an exception safe manner. In particular, one should explicitly catch exceptions to
+              properly call gfinalize()
      \note Equivalent to plumed_gcreate()
   */
   static void gcreate() __PLUMED_WRAPPER_CXX_NOEXCEPT {
@@ -1680,19 +1688,56 @@ public:
   /**
      Send a command to global-plumed
       \param key The name of the command to be executed
-      \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
-                 but for some choice of key it can change the content
      \note Equivalent to plumed_gcmd()
   */
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
-  static void gcmd(const char* key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
-    global().cmd(key,safe,nelem);
+  static void gcmd(const char*key) {
+    global().cmd(key);
   }
-#else
-  static void gcmd(const char* key,const void* ptr,__PLUMED_WRAPPER_STD size_t nelem=0) {
-    global().cmd(key,ptr,nelem);
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T val) {
+    global().cmd(key,val);
   }
-#endif
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param nelem Number of elements in the passed array, for typechecking.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val,__PLUMED_WRAPPER_STD size_t nelem) {
+    global().cmd(key,val,nelem);
+  }
+
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param shape The shape of the argument.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
+    global().cmd(key,val,shape);
+  }
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param nelem Number of elements in the passed array, for typechecking.
+      \param shape The shape of the argument.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) {
+    global().cmd(key,val,nelem,shape);
+  }
 
   /**
      Finalize global-plumed
@@ -1967,39 +2012,35 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     return *this;
   }
 
-  /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
-                 but for some choice of key it can change the content
-      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
-            rethrow any exception raised within PLUMED.
-  */
+private:
 
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
-  void cmd(const char*key,
-           SafePtr safe,
-           __PLUMED_WRAPPER_STD size_t nelem,
-           const __PLUMED_WRAPPER_STD size_t* shape) {
-    if(nelem>0) safe.setNelem(nelem);
-    if(shape) safe.setShape(shape);
-    if(PlumedGetenvTypesafeDebug()) {
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe.safe.ptr,safe.safe.nelem);
+  /**
+    Private version of cmd. It is used here to avoid duplication of code between typesafe and not-typesafe versions
+  */
+  void cmd_priv(const char*key, SafePtr*safe=NULL, const void* unsafe=NULL) {
+    if(safe && PlumedGetenvTypesafeDebug()) {
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe->safe.ptr,safe->safe.nelem);
+      const __PLUMED_WRAPPER_STD size_t* shape=safe->safe.shape;
       if(shape) {
         __PLUMED_WRAPPER_STD fprintf(stderr," (");
+        const __PLUMED_WRAPPER_STD size_t* shape=safe->safe.shape;
         while(*shape!=0) {
           __PLUMED_WRAPPER_STD fprintf(stderr," %zu",*shape);
           shape++;
         }
         __PLUMED_WRAPPER_STD fprintf(stderr," )");
       }
-      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",safe.safe.flags,safe.safe.opt);
+      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",safe->safe.flags,safe->safe.opt);
     }
     NothrowHandler h;
     h.code=0;
     plumed_nothrow_handler nothrow= {&h,nothrow_handler};
     try {
-      plumed_cmd_safe_nothrow(main,key,safe,nothrow);
+      if(safe) {
+        plumed_cmd_safe_nothrow(main,key,safe->get_safeptr(),nothrow);
+      } else {
+        plumed_cmd_nothrow(main,key,unsafe,nothrow);
+      }
     } catch (...) {
       /*
         When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
@@ -2011,43 +2052,104 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     if(h.code!=0) rethrow(h);
   }
 
+public:
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+  */
   void cmd(const char*key) {
-    cmd(key,NULL,0,NULL);
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s;
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key);
+#endif
   }
 
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by value.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked.
+  */
   template<typename T>
   void cmd(const char*key,T val) {
-    cmd(key,val,0,NULL);
-  }
-
-  template<typename T>
-  void cmd(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
-    cmd(key,val,nelem,NULL);
-  }
-
-  template<typename T>
-  void cmd(const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape) {
-    cmd(key,val,0,shape);
-  }
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,NULL);
+    cmd_priv(key,&s);
 #else
-  void cmd(const char*key,const void* ptr=NULL,__PLUMED_WRAPPER_STD size_t nelem=0,const __PLUMED_WRAPPER_STD size_t* shape=NULL) {
-    NothrowHandler h;
-    (void) nelem;
-    h.code=0;
-    plumed_nothrow_handler nothrow= {&h,nothrow_handler};
-    try {
-      plumed_cmd_nothrow(main,key,ptr,nothrow);
-    } catch (...) {
-      /*
-        When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
-        If the exception is transmitted through the C interface and arrives here,
-        we translate it so as to free the virtual tables of the loaded kernel.
-      */
-      rethrow();
-    }
-    if(h.code!=0) rethrow(h);
-  }
+    cmd_priv(key,NULL,&val);
 #endif
+  }
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,NULL);
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key,NULL,val);
+#endif
+  }
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param shape A zero-terminated array containing the shape of the data.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked. If shape is passed, it is also
+             checked that PLUMED access only compatible indexes.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,shape);
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key,NULL,val);
+#endif
+  }
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param nelem The number of elements passed.
+      \param shape A zero-terminated array containing the shape of the data.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked. If shape is passed, it is also
+             checked that PLUMED access only compatible indexes. nelem is used to check
+             the maximum index interpreting the array as flattened.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape=NULL) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,nelem,shape);
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key,NULL,val);
+#endif
+  }
 
   /**
      Destructor
