@@ -18,7 +18,7 @@ Once you have completed this Masterclass you will be able to:
  
 \section masterclass-21-2-install Setting up PLUMED
 
-If you have not yet set up PLUMED, you can find information about installing it in \ref masterclass-21-2-install.  Please ensure that you have setup PLUMED on your machine before starting the exercises.
+If you have not yet set up PLUMED, you can find information about installing it in the section \ref masterclass-21-1-install of \ref masterclass-21-1. Please ensure that you have setup PLUMED on your machine before starting the exercises.
 
 \section masterclass-21-2-resources Resources
 
@@ -35,7 +35,7 @@ The data you need is in the folder called `data`.  You will find the following f
 - `correlated_data`: you will analyze this data set in exercise 7
 - `weighted_data`: you will analyze this data in exercise 8
 
-In exercise 8, you will pull everything together by generating a metadynamics trajectory.  This exercise draws together all the ideas from exercises 1-7 by getting you to run a metadynamics simulation and extract the free energy surface.  In the `data` folder, you will thus also find the following files, which 
+In exercise 9, you will pull everything together by generating a metadynamics trajectory.  This exercise draws together all the ideas from exercises 1-8 by getting you to run a metadynamics simulation and extract the free energy surface.  In the `data` folder, you will thus also find the following files, which 
 are the input for the metadynamics simulation:
 
 - in: The input file for simplemd that contains the parameters for the MD simulation.
@@ -133,7 +133,7 @@ If we estimate \f$P(s')\f$ using likelihood maximisation we can thus get an esti
 for the data in `uncorrelated_data` using PLUMED in this way we can use the input file:
 
 \plumedfile
-# We use natural units here because we are analysing statistical distributions
+# We use natural units here so that kBT is set to 1
 UNITS NATURAL
 data: READ FILE=__FILL__ VALUES=__FILL__ 
 hhh: HISTOGRAM ARG=__FILL__ STRIDE=1 __FILL__=-4 __FILL__=4 __FILL__=100 __FILL__=DISCRETE
@@ -146,6 +146,8 @@ DUMPGRID GRID=__FILL__ FILE=fes.dat
 \verbatim
 > plumed driver --noatoms
 \endverbatim
+
+The `--noatoms` flag here is needed since `plumed driver` is commonly used to analize a trajectory of atomic coordinates, but here we are using it to directly analyze a collective variable.
 
 You should see that the free energy curve for this data set looks like this:
 
@@ -201,7 +203,7 @@ av: AVERAGE ARG=__FILL__ STRIDE=1
 # Calculate the average of the squares of the read in data
 av2: AVERAGE ARG=__FILL__ STRIDE=1
 # Evaluate the variance using the expression above
-var: MATHEVAL ARG=__FILL__ FUNC=y-x*x PERIODIC=NO
+var: CUSTOM ARG=__FILL__ FUNC=y-x*x PERIODIC=NO
 # Print the variance
 PRINT ARG=__FILL__ FILE=colvar
 \endplumedfile
@@ -216,7 +218,7 @@ Once you have run this calculation, you should be able to draw a graph showing h
 see from the graph below, \f$\sigma\f$ quantity behaves similarly to the mean that we studied in \ref  masterclass-21-2-ex-1 
 
 \anchor masterclass-21-2-fig3
-\image html masterclass-21-2-var.png "Estimate of the standard deviation for the CV as a function of the number of variables it is computed from"
+\image html masterclass-21-2-var.png "Estimate of the standard deviation for the CV as a function of the number of samples it is computed from"
 
 <em>Truncation the Taylor series of the free energy at second order as we have done in this section is equivalent to assuming that a Harmonic Oscillator can be used to describe the fluctuations along our CV. 
 The [partition function](https://www.notion.so/Generalised-partition-function-10ed8ca2b3c943aa82dff2116ae955e5), ensemble average and distribution for such systems can be calculated exactly, and there is no need for simulation. 
@@ -497,7 +499,7 @@ Notice, finally, that the tools of statistics gives us expressions for the expec
 These expressions hold if all the \f$X_i\f$ from which the weighted average is computed are independent and identically distributed random variables. Notice, furthermore, how the expression above for the 
 the variance of the weighted average <b>is not</b> a function of the variance for the variable as was the case for the unweighted averages in \ref masterclass-21-2-ex-4.
 
-In what follows we are thus going to try to extract the average and the flucuations for the CV in the unbiased (in this case uniform) distribution as well as the 
+In what follows we are thus going to try to extract the average and the fluctuations for the CV in the unbiased (in this case uniform) distribution as well as the 
 unbiased free energy.  We will calculate these quantities by computing weighted averages and weighted histograms from our simulation data.  For the histogram we 
 are also going to extract error bars by reweighting.  To calculate these quantities using PLUMED we will use an input like this:
 
