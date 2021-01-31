@@ -77,7 +77,7 @@ However, we hope that the information we have provided through these links will 
 
 \subsection masterclass-21-2-ex-1 Exercise 1: Calculating the average value of a CV 
 
-We will start our study of averaging by estimating the ensemble average of the CV.  The ensemble average for \f$s(x)\f$ is given by:
+We will start our study of averaging by estimating the [ensemble](https://www.notion.so/Ensembles-7b8b836f8ce44f9b8830ebb0fd00fea8) average of the CV.  The ensemble average for \f$s(x)\f$ is given by:
 
 \f[
 \langle s \rangle = \frac{ \int \textrm{d}x \textrm{d}p s(x) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
@@ -119,10 +119,10 @@ The fluctuations in the average get smaller as this quantity is computed from la
 
 \subsection masterclass-21-2-ex-2 Exercise 2: Calculating the free energy
 
-We can estimate the distribution for our CV, \f$P(s')\f$ (see \ref masterclass-21-2-structure), by calculating a histogram.  The histogram we obtain is a 
+We can estimate the distribution for our CV, \f$P(s')\f$ (see \ref masterclass-21-2-structure), by calculating [a histogram](https://www.notion.so/Histogram-2d2527795f0140008b318d3bc958ee4c).  The histogram we obtain is a 
 sample from [a multinomial distribution](https://www.notion.so/Multinomial-distribution-f378b34a38564f6999e184cd2df53f5c) so we can estimate parameters for the multinomial by using 
 [likelihood maximisation](https://www.notion.so/Maximum-likelihood-e74a16b691284896bb2bbd5cff502f6d).  Once we have the marginal 
-distribution, \f$P(s')\f$ we can then calculate the free energy, \f$F(s')\f$ as a function of \f$s(x)\f$ as \f$F(s')\f$ is related to \f$P(s')\f$ 
+distribution, \f$P(s')\f$ we can then calculate the [free energy](https://www.notion.so/Thermodynamic-potentials-dd0dcbab15cd437b91e803ac7fbd1bf8), \f$F(s')\f$ as a function of \f$s(x)\f$ as \f$F(s')\f$ is related to \f$P(s')\f$ 
 (see \ref masterclass-21-2-structure) by:
 
 \f[
@@ -220,9 +220,11 @@ see from the graph below, \f$\sigma\f$ quantity behaves similarly to the mean th
 \anchor masterclass-21-2-fig3
 \image html masterclass-21-2-var.png "Estimate of the standard deviation for the CV as a function of the number of samples it is computed from"
 
-<em>Truncation the Taylor series of the free energy at second order as we have done in this section is equivalent to assuming that a Harmonic Oscillator can be used to describe the fluctuations along our CV. 
+<em>Truncation the Taylor series of the free energy at second order as we have done in this section is equivalent to assuming that a [Harmonic Oscillator](https://www.notion.so/Harmonic-Oscillator-92855b39d13945dabb73cb831dc1234e) 
+can be used to describe the fluctuations along our CV. 
 The [partition function](https://www.notion.so/Generalised-partition-function-10ed8ca2b3c943aa82dff2116ae955e5), ensemble average and distribution for such systems can be calculated exactly, and there is no need for simulation. 
-Even when the system is not harmonic, calculating the quantity we have called \f$\sigma^2\f$ in this section is still useful as this quantity is an estimator for the variance of the distribution.  For anharmonic systems, there is not a simple 
+Even when the system is not harmonic, calculating the quantity we have called \f$\sigma^2\f$ in this section is still useful as this quantity is an estimator for the [variance](https://www.notion.so/Variance-3688f3132bd64d3fbc2f022d7ee17e88) 
+of the distribution.  For anharmonic systems, there is not a simple 
 closed-form expression between the variance (\f$\sigma^2\f$) and the second derivative of the free energy at \f$\mu\f$ though.</em> 
 
 \subsection masterclass-21-2-ex-4 Exercise 4: Calculating block averages
@@ -341,7 +343,7 @@ The error on the free energy, which is illustrated using the shaded region in th
 \sigma_{F_i} = \frac{k_B T}{\frac{1}{N} \sum_{j=1}^N H_i^{(j)}} \sqrt{\frac{1}{N-1} \left[ \frac{1}{N}\sum_{j=1}^N (H_i^{(j)})^2 - \left( \frac{1}{N}\sum_{j=1}^N H_i^{(j)} \right)^2 \right] } 
 \f] 
 
-The term in the square root here is the error on the average value of the histogram in bin \f$i\f$.  The error on this average can be 
+The term in the square root here is the error on the average value of the histogram in bin \f$i\f$.  The error on this [average](https://www.notion.so/Sample-mean-583d58d7001343c68a7956a1b9f19f4b) can be 
 calculated using the formulas in \ref masterclass-21-2-ex-4.  To get the error on the free energy, we then have to propagate the errors through the
 expression:
 
@@ -362,10 +364,8 @@ where the sum runs over the \f$M\f$ bins in the histogram.
 \subsection masterclass-21-2-ex-6 Exercise 6: Calculating bootstrap averages
 
 \ref masterclass-21-2-ex-4 demonstrated one way of sampling the mean's distribution (see \ref masterclass-21-2-ex-1).  We assumed that the \f$M\f$ estimates of the mean were all normal random variables in the 
-previous section but we did not need to do that.  We could instead have used a non-parametric method and calculated [percentiles](https://www.notion.so/The-cumulative-probability-distribution-function-dc346bc8b4f1440b8d075f8c8d2b0f53) 
-using the \f$M\f$ samples of the random variable we had obtained.  This method is 
-expensive as if we want \f$M\f$ samples of a mean computed from \f$N\f$ random variables we need to generate \f$MN\f$ instances of the variable.  Bootstrapping offers a way to do something similar but more cheaply. 
-In this method, we only generate \f$N\f$ samples.  The \f$M\f$ means are then calculated by taking multiple sets of \f$N\f$ variables with replacement.  
+previous section but we did not need to do that.  We could instead have used a non-parametric method.  When using such methods we have to generate more data, which we can either do by running longer simulations, 
+which is expensive, or by bootstrapping, which is cheaper.  
 
 We can demonstrate how bootstrapping works in practice by using the following script, which works with the first 500 points in `uncorrelated_data`.  As you can see, we first calculate the average from all the data points.  We then take new means by repeatedly sampling sets of 500 points with replacement from the data and calculating new means.  
 
@@ -462,7 +462,7 @@ To get information on the unbiased distribution:
 P(s') = \frac{ \int \textrm{d}x \textrm{d}p \delta( s(x) - s') e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
 \f]
 
-from such simulations we thus have to calculate weighted averages using:
+from such simulations we thus have to calculate [weighted averages](https://www.notion.so/Weighted-averages-81a28555cc3149f78047f80bb9dbba91) using:
 
 \f[
 \overline{X}_w = \frac{\sum_{i=1}^N w_i X_i }{\sum_{i=1}^N w_i}
@@ -490,7 +490,7 @@ should be an estimator for the expectation of a uniform random variable between 
 
 gives an estimate for the variance of <b>the distribution</b> after reweighting (i.e. the variance of the uniform random variable).
 
-Notice, finally, that the tools of statistics gives us expressions for the expectation and variance of the <b>weighted average</b>:
+Notice, finally, that the tools of statistics gives us expressions for the [expectation and variance of the <b>weighted average</b>](https://www.notion.so/Weighted-averages-81a28555cc3149f78047f80bb9dbba91):
 
 \f[
 \mathbb{E}(\overline{X}_w) = \overline{X} \qquad \textrm{and} \qquad \textrm{var}(\overline{X}_w) = \frac{\sum_{i=1}^N w_i^2 (X_i - \overline{X}_w)^2 }{(\sum_{i=1}^N w_i)^2} 
@@ -500,7 +500,7 @@ These expressions hold if all the \f$X_i\f$ from which the weighted average is c
 the variance of the weighted average <b>is not</b> a function of the variance for the variable as was the case for the unweighted averages in \ref masterclass-21-2-ex-4.
 
 In what follows we are thus going to try to extract the average and the fluctuations for the CV in the unbiased (in this case uniform) distribution as well as the 
-unbiased free energy.  We will calculate these quantities by computing weighted averages and weighted histograms from our simulation data.  For the histogram we 
+unbiased free energy.  We will calculate these quantities by computing weighted averages and [weighted histograms](https://www.notion.so/Weighted-histograms-546d0b3837ce43a3b9de0dcf7a741353) from our simulation data.  For the histogram we 
 are also going to extract error bars by reweighting.  To calculate these quantities using PLUMED we will use an input like this:
 
 \plumedfile
@@ -649,7 +649,7 @@ METAD ARG=__FILL__ HEIGHT=__FILL__ PACE=__FILL__ SIGMA=__FILL__ GRID_MIN=-1.5,-1
 plumed simplemd < in
 \endverbatim
 
-Once you have run the metadynamics calculations, you can post-process the output trajectory using <b> driver </b> to extract the free energy by reweighting.  Notice that to do block averaging, you will need to extract multiple estimates for the histogram.  You should thus use the following input file to extract estimates of the histogram:
+Once you have run the metadynamics calculations, you can post-process the output trajectory using <b> driver </b> to extract the free energy by [reweighting](https://www.notion.so/Weighted-histograms-546d0b3837ce43a3b9de0dcf7a741353).  Notice that to do block averaging, you will need to extract multiple estimates for the (weighted) histogram.  You should thus use the following input file to extract estimates of the histogram:
 
 \plumedfile
 # this optional command tells VIM that this is a PLUMED file and to colour the text accordingly
@@ -701,7 +701,11 @@ Finally, if you are struggling to plot the 2D free energy surface, you can gener
 \section masterclass-21-2-fr Further reading
 
 If you want to know more about good practise using PLUMED you can read https://arxiv.org/abs/1812.08213.  We would also recommend learning about kernel density estimation, which will often give you smoother
-histograms.  You can start learning about kernel density estimation by reading https://en.wikipedia.org/wiki/Kernel_density_estimation.
+histograms.  You can start learning about kernel density estimation by reading https://en.wikipedia.org/wiki/Kernel_density_estimation.  My full sets of notes are available here:
+
+- [Probability theory notes](https://www.notion.so/940bd09c5be343888244beb21ed4a166?v=6bb0bd98d8fc47a081164069121ee396) 
+- [Thermodynamics notes](https://www.notion.so/365db6742a81483ba82d27a3c9133eba?v=7859a0ae344042eab8ff6dab16533224)
+- [Statistical Mechanics notes](https://www.notion.so/4bc79cd418674ffcb90b6730dbf94b22?v=c6499c1314624bb38869504d0111a024)
 
 */
 
