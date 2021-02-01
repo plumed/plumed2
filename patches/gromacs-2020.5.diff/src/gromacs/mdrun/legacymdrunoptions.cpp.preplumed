@@ -91,7 +91,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
     }
 
     // Handle the options that permits the user to either declare
-    // which compatible GPUs are available for use, or to select a GPU
+    // which compatible GPUs are availble for use, or to select a GPU
     // task assignment. Either could be in an environment variable (so
     // that there is a way to customize it, when using MPI in
     // heterogeneous contexts).
@@ -99,7 +99,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         // TODO Argument parsing can't handle std::string. We should
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
-        // command-line options have been separated.
+        // command-line options have been seperated.
         hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
