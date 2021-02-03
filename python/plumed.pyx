@@ -28,7 +28,6 @@
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
-from cpython cimport array
 import array
 import re
 import gzip
@@ -92,6 +91,12 @@ cdef class Plumed:
      def cmd_ndarray_int(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          self.c_plumed.cmd( ckey, <void*>&abuffer[0])
+     def cmd_array_real(self, ckey, val):
+         cdef double [:] abuffer = val
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
+     def cmd_array_int(self, ckey, val):
+         cdef long [:] abuffer = val
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
          self.c_plumed.cmd( ckey, <void*>&val )
      cdef cmd_int(self, ckey, int val):
@@ -100,7 +105,6 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
-         cdef array.array ar
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
@@ -120,11 +124,9 @@ cdef class Plumed:
                raise ValueError("ndarrys should be float64 or int64")
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
-               ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.cmd_array_real(ckey, val)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
-               ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.cmd_array_int(ckey, val)
             else :
                raise ValueError("ndarrays should be double (size=8) or int")
          elif isinstance(val, str ) :
