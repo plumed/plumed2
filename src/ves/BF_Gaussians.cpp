@@ -150,9 +150,9 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double dist = argT - centers_[i];
     if(arePeriodic()) { // wrap around similar to MetaD
-      dist *= intervalRange();
-      dist = Tools::pbc(dist);
       dist /= intervalRange();
+      dist = Tools::pbc(dist);
+      dist *= intervalRange();
     }
     values[i] = exp(-0.5*pow(dist*inv_sigma_,2.0));
     derivs[i] = -values[i] * (dist)*pow(inv_sigma_,2.0);
