@@ -216,7 +216,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","MIN_GRID_SIZE","The minimal number of grid bins of the Wavelet function. The true number depends also on the used wavelet type and will probably be larger. Defaults to 1000.");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   keys.add("optional","WAVELET_FILE_FMT","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
-  // why is this removed?
+  keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
@@ -253,6 +253,10 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
 
+  bool periodic = false;
+  parseFlag("PERIODIC",periodic);
+  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+
   // now set up properties of basis set
   unsigned intrinsic_length = 2*getOrder() - 1; // length of unscaled wavelet
   double bias_length = intervalMax() - intervalMin(); // intervalRange() is not yet set
@@ -261,11 +265,12 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   double threshold = 0.0;
   std::vector<double> cutoffpoints (2);
   parse("TAILS_THRESHOLD",threshold);
-  if(threshold >= 1) {plumed_merror("TAILS_THRESHOLD should be significantly smaller than 1.");}
+  plumed_massert(threshold < 1, "TAILS_THRESHOLD should be significantly smaller than 1.");
   if(threshold == 0.0) {
     cutoffpoints = {0.0, static_cast<double>(intrinsic_length)};
   }
   else {
+    plumed_massert(!periodic, "TAILS_THRESHOLD can't be used with the periodic wavelet variant");
     addKeywordToList("TAILS_THRESHOLD",threshold);
     cutoffpoints = getCutoffPoints(threshold);
   };
@@ -273,17 +278,27 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   double function_length = bias_length;
   parse("FUNCTION_LENGTH",function_length);
   if(function_length != bias_length) {
+    if (periodic) {  // shifted functions need to fit into interval exactly -> reduce size if not
+      unsigned num_shifts = ceil(bias_length * intrinsic_length / function_length);
+      function_length = bias_length * intrinsic_length / num_shifts;
+    }
     addKeywordToList("FUNCTION_LENGTH",function_length);
   }
 
   // determine number of BFs and needed scaling
-  int num_BFs = 0;
+  unsigned num_BFs = 0;
   parse("NUM_BF",num_BFs);
   if(num_BFs == 0) { // get from function length
     scale_ = intrinsic_length / function_length;
-    num_BFs = 1; // constant one
-    // left shifts (w/o left cutoff) + right shifts - right cutoff - 1
-    num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1] + (bias_length)*scale_ - cutoffpoints[0]) - 1);
+    if (periodic) {
+      // this is the same value as num_shifts above
+      num_BFs = static_cast<unsigned>(bias_length * scale_);
+    }
+    else {
+      num_BFs = 1; // constant one
+      // left shifts (w/o left cutoff) + right shifts - right cutoff - 1
+      num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1] + (bias_length)*scale_ - cutoffpoints[0]) - 1);
+    }
   }
   else {
     plumed_massert(num_BFs > 0, "The number of basis functions has to be positive (NUM_BF > 0)");
@@ -291,9 +306,14 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     plumed_massert(function_length==bias_length,"The keywords \"NUM_BF\" and \"FUNCTION_LENGTH\" cannot be used at the same time");
     addKeywordToList("NUM_BF",num_BFs);
 
-    double cutoff_length = cutoffpoints[1] - cutoffpoints [0];
-    double intrinsic_bias_length = num_BFs - cutoff_length + 1; // length of bias in intrinsic scale of wavelets
-    scale_ = intrinsic_bias_length / bias_length;
+    if (periodic) {  // inverted num_BFs calculation from where FUNCTION_LENGTH is specified
+      scale_ = num_BFs / bias_length;
+    }
+    else {
+      double cutoff_length = cutoffpoints[1] - cutoffpoints [0];
+      double intrinsic_bias_length = num_BFs - cutoff_length + 1; // length of bias in intrinsic scale of wavelets
+      scale_ = intrinsic_bias_length / bias_length;
+    }
   }
 
   setNumberOfBasisFunctions(num_BFs);
@@ -306,7 +326,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   // set some properties
   setIntrinsicInterval(0.0,intrinsic_length);
-  setNonPeriodic();
+  periodic ? setPeriodic() : setNonPeriodic();
   setIntervalBounded();
   setType(wavelet_type_str);
   setDescription("Wavelets as localized basis functions");
