@@ -321,18 +321,18 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
      /wd6386  #buffer overrun
      /wd6387  #could be '0'
      /wd28199 #uninitialized memory
-     # For compile time constant (e.g. templates) the following warnings have false postives
+     # For compile time constant (e.g. templates) the following warnings have flase postives
      /wd6239  #(<non-zero> && <expr>)
      /wd6240  #(<expr> && <non-zero>)
      /wd6294  #Ill-defined for-loop
      /wd6326  #comparison of constant with other constant
-     /wd28020 #expression involving parameter is not true
+     /wd28020 #expression involving paramter is not true
      # Misc
      /wd6330  #incorrect type to function (warns for char (instead of unsigned) for isspace/isalpha/isdigit/..))
      /wd6993  #OpenMP ignored
      #TODO
      /wd6031  #return value ignored (important - mostly warnigns about sscanf)
-     /wd6244  #hides declaration (known issue - we ignore similar warnings for other compilers)
+     /wd6244  #hides declaration (known issue - we ingore similar warnings for other compilers)
      /wd6246  #hides declaration
      >
    )

@@ -70,17 +70,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
-
-/* PLUMED HREX */
-int plumed_hrex;
-/* END PLUMED HREX */
-
 //! Helps cut off probability values.
 constexpr int c_probabilityCutoff = 100;
 
@@ -181,16 +170,14 @@ static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, 
     qall[re->repl] = q;
     gmx_sum_sim(ms->nsim, qall, ms);
 
-    /* PLUMED */
-    //bDiff = FALSE;
-    //for (s = 1; s < ms->nsim; s++)
-    //{
-    //    if (qall[s] != qall[0])
-    //    {
-              bDiff = TRUE;
-    //    }
-    //}
-    /* END PLUMED */
+    bDiff = FALSE;
+    for (s = 1; s < ms->nsim; s++)
+    {
+        if (qall[s] != qall[0])
+        {
+            bDiff = TRUE;
+        }
+    }
 
     if (bDiff)
     {
@@ -359,10 +346,6 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
         re->ind[i] = i;
     }
 
-    /* PLUMED */
-    // plumed2: check if we want alternative patterns (i.e. for bias-exchange metaD)
-    // in those cases replicas can share the same temperature.
-    /*
     if (re->type < ereENDSINGLE)
     {
 
@@ -371,12 +354,11 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             for (j = i + 1; j < re->nrepl; j++)
             {
                 if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
-                {*/
+                {
                     /* Unordered replicas are supposed to work, but there
                      * is still an issues somewhere.
                      * Note that at this point still re->ind[i]=i.
                      */
-                 /*
                     gmx_fatal(FARGS,
                               "Replicas with indices %d < %d have %ss %g > %g, please order your "
                               "replicas on increasing %s",
@@ -390,8 +372,6 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             }
         }
     }
-    */
-    /* END PLUMED */
 
     /* keep track of all the swaps, starting with the initial placement. */
     snew(re->allswaps, re->nrepl);
@@ -609,9 +589,7 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
     }
 }
 
-/* PLUMED HREX */
-void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
-/* END PLUMED HREX */
+static void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
@@ -635,9 +613,7 @@ void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
     exchange_rvecs(ms, b, state->v.rvec_array(), state->natoms);
 }
 
-/* PLUMED HREX */
-void copy_state_serial(const t_state* src, t_state* dest)
-/* END PLUMED HREX */
+static void copy_state_serial(const t_state* src, t_state* dest)
 {
     if (dest != src)
     {
@@ -862,14 +838,9 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
     {
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
-/* PLUMED HREX */
-/* this is necessary because with plumed HREX the energy contribution is
-   already taken into account */
-    if(plumed_hrex) delta=0.0;
-/* END PLUMED HREX */
     if (re->bNPT)
     {
-        /* revisit the calculation for 5.0.  Might be some improvements. */
+        /* revist the calculation for 5.0.  Might be some improvements. */
         dpV = (beta[ap] * re->pres[ap] - beta[bp] * re->pres[bp]) * (Vol[b] - Vol[a]) / PRESFAC;
         if (bPrint)
         {
@@ -979,11 +950,6 @@ static void test_for_replica_exchange(FILE*                 fplog,
 
     rng.restart(step, 0);
 
-    /* PLUMED */
-    int plumed_test_exchange_pattern=0;
-    if(plumed_test_exchange_pattern && plumed_hrex) gmx_fatal(FARGS,"hrex not compatible with ad hoc exchange patterns");
-    /* END PLUMED */
-
     if (bMultiEx)
     {
         /* multiple random switch exchange */
@@ -1064,31 +1030,6 @@ static void test_for_replica_exchange(FILE*                 fplog,
         /* standard nearest neighbor replica exchange */
 
         m = (step / re->nst) % 2;
-        /* PLUMED */
-        if(plumedswitch){
-          int partner=re->repl;
-          plumed_cmd(plumedmain,"getExchangesFlag",&plumed_test_exchange_pattern);
-          if(plumed_test_exchange_pattern>0){
-            int *list;
-            snew(list,re->nrepl);
-            plumed_cmd(plumedmain,"setNumberOfReplicas",&(re->nrepl));
-            plumed_cmd(plumedmain,"getExchangesList",list);
-            for(i=0; i<re->nrepl; i++) re->ind[i]=list[i];
-            sfree(list);
-          }
-
-          for(i=1; i<re->nrepl; i++) {
-            if (i % 2 != m) continue;
-            a = re->ind[i-1];
-            b = re->ind[i];
-            if(re->repl==a) partner=b;
-            if(re->repl==b) partner=a;
-          }
-          plumed_cmd(plumedmain,"GREX setPartner",&partner);
-          plumed_cmd(plumedmain,"GREX calculate",NULL);
-          plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
-        }
-        /* END PLUMED */
         for (i = 1; i < re->nrepl; i++)
         {
             a = re->ind[i - 1];
@@ -1098,18 +1039,6 @@ static void test_for_replica_exchange(FILE*                 fplog,
             if (i % 2 == m)
             {
                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
-                /* PLUMED */
-                if(plumedswitch){
-                  real adb,bdb,dplumed;
-                  char buf[300];
-                  sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
-                  sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
-                  dplumed=adb*re->beta[a]+bdb*re->beta[b];
-                  delta+=dplumed;
-                  if (bPrint)
-                    fprintf(fplog,"dplumed = %10.3e  dE_Term = %10.3e (kT)\n",dplumed,delta);
-                }
-                /* END PLUMED */
                 if (delta <= 0)
                 {
                     /* accepted */
@@ -1136,22 +1065,11 @@ static void test_for_replica_exchange(FILE*                 fplog,
 
                 if (bEx[i])
                 {
-                  /* PLUMED */
-                  if(!plumed_test_exchange_pattern) {
-                    /* standard neighbour swapping */
                     /* swap these two */
                     tmp         = pind[i - 1];
                     pind[i - 1] = pind[i];
                     pind[i]     = tmp;
                     re->nexchange[i]++; /* statistics for back compatibility */
-                  } else {
-                    /* alternative swapping patterns */
-                    tmp       = pind[a];
-                    pind[a]   = pind[b];
-                    pind[b]   = tmp;
-                    re->nexchange[i]++;  /* statistics for back compatibility */
-                  }
-                  /* END PLUMED */
                 }
             }
             else
@@ -1166,15 +1084,6 @@ static void test_for_replica_exchange(FILE*                 fplog,
         fprintf(fplog, "\n");
         re->nattempt[m]++;
     }
-
-    /* PLUMED */
-    if(plumed_test_exchange_pattern>0) {
-      for (i = 0; i < re->nrepl; i++)
-      {
-          re->ind[i] = i;
-      }
-    }
-    /* END PLUMED */
 
     /* record which moves were made and accepted */
     for (i = 0; i < re->nrepl; i++)
@@ -1358,10 +1267,6 @@ gmx_bool replica_exchange(FILE*                 fplog,
     /* The order in which multiple exchanges will occur. */
     gmx_bool bThisReplicaExchanged = FALSE;
 
-    /* PLUMED */
-    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
-    /* END PLUMED */
-
     if (MASTER(cr))
     {
         replica_id = re->repl;
@@ -1483,13 +1388,4 @@ void print_replica_exchange_statistics(FILE* fplog, struct gmx_repl_ex* re)
     print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }
 
-/* PLUMED HREX */
-int replica_exchange_get_repl(const gmx_repl_ex_t re){
-  return re->repl;
-};
-
-int replica_exchange_get_nrepl(const gmx_repl_ex_t re){
-  return re->nrepl;
-};
-/* END PLUMED HREX */
 //! \endcond

@@ -2,8 +2,8 @@
 
 source ../sourceme.sh
 
-if plumed --no-mpi config mpiexec ; then
-   mpirun=$(plumed --no-mpi config mpiexec)
+if ../src/lib/plumed --no-mpi config mpiexec ; then
+   mpirun=$(../src/lib/plumed --no-mpi config mpiexec)
 else
    mpirun=mpirun
 fi
@@ -65,7 +65,7 @@ mkdir build
 cd build
 for file in ../../html/*.html
 do
-echo final processing of html for file: $file
+echo final processing of html for file: $file using $mpirun
 gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
@@ -112,7 +112,7 @@ if [ $? -ne 0 ]; then
    exit
 fi
 mv $file.tmp $file
-rm -f *
+rm -rf *
 done
 cd ../../
 rm -rf build_examples
