@@ -291,8 +291,8 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   if(num_BFs == 0) { // get from function length
     scale_ = intrinsic_length / function_length;
     if (periodic) {
-      // this is the same value as num_shifts above
-      num_BFs = static_cast<unsigned>(bias_length * scale_);
+      // this is the same value as num_shifts above + constant
+      num_BFs = static_cast<unsigned>(bias_length * scale_) + 1;
     }
     else {
       num_BFs = 1; // constant one
@@ -388,6 +388,9 @@ void BF_Wavelets::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double pos = -shifts_[i]/scale_;
+    if (arePeriodic()) {
+      pos = pos - floor((pos-intervalMin())/intervalRange())*intervalRange();
+    }
     std::string is; Tools::convert(pos, is);
     setLabel(i,"i="+is);
   }
