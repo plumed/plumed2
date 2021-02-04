@@ -136,7 +136,7 @@ for the data in `uncorrelated_data` using PLUMED in this way we can use the inpu
 # We use natural units here so that kBT is set to 1
 UNITS NATURAL
 data: READ FILE=__FILL__ VALUES=__FILL__ 
-hhh: HISTOGRAM ARG=__FILL__ STRIDE=1 __FILL__=-4 __FILL__=4 __FILL__=100 __FILL__=DISCRETE
+hhh: HISTOGRAM ARG=__FILL__ STRIDE=1 __FILL__=-4.5 __FILL__=4.5 __FILL__=100 __FILL__=DISCRETE
 fes: CONVERT_TO_FES GRID=__FILL__ TEMP=1  # This sets k_B T = 1 
 DUMPGRID GRID=__FILL__ FILE=fes.dat
 \endplumedfile
@@ -276,7 +276,7 @@ from the data in `uncorrelated_data` with 100 bins starting at -4 and finishing 
 
 \plumedfile
 data: READ FILE=__FILL__ VALUES=__FILL__
-hhh: HISTOGRAM ARG=__FILL__STRIDE=1 __FILL__=-4 __FILL__=4 __FILL__=100 CLEAR=__FILL__ _FILL__=DISCRETE
+hhh: HISTOGRAM ARG=__FILL__STRIDE=1 __FILL__=-4.5 __FILL__=4.5 __FILL__=100 CLEAR=__FILL__ _FILL__=DISCRETE
 DUMPGRID GRID=__FILL__ FILE=hist.dat STRIDE=1000
 \endplumedfile
 
@@ -384,7 +384,7 @@ for i in range(200) :
 f = open("bootstraps", "w")
 f.write("#! FIELDS time boot \n")
 for i in range(0,200):
-    f.write(str(i) + " "  + str(bootstraps[i) "\n" )
+    f.write(str(i) + " "  + str(bootstraps[i) + "\n" )
 f.close()
 \endcode
 
