@@ -307,7 +307,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     addKeywordToList("NUM_BF",num_BFs);
 
     if (periodic) {  // inverted num_BFs calculation from where FUNCTION_LENGTH is specified
-      scale_ = num_BFs / bias_length;
+      scale_ = (num_BFs  - 1) / bias_length ;
     }
     else {
       double cutoff_length = cutoffpoints[1] - cutoffpoints [0];
