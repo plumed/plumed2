@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include <cstring>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -91,7 +92,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
     }
 
     // Handle the options that permits the user to either declare
-    // which compatible GPUs are available for use, or to select a GPU
+    // which compatible GPUs are availble for use, or to select a GPU
     // task assignment. Either could be in an environment variable (so
     // that there is a way to customize it, when using MPI in
     // heterogeneous contexts).
@@ -99,7 +100,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         // TODO Argument parsing can't handle std::string. We should
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
-        // command-line options have been separated.
+        // command-line options have been seperated.
         hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
@@ -155,39 +156,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
     domdecOptions.numCells[XX] = roundToInt(realddxyz[XX]);
     domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
     domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
-
-    /* PLUMED */
-    plumedswitch=0;
-    if (opt2bSet("-plumed", static_cast<int>(filenames.size()), filenames.data())) plumedswitch=1;
-    if(plumedswitch){
-      int real_precision=sizeof(real);
-      real energyUnits=1.0;
-      real lengthUnits=1.0;
-      real timeUnits=1.0;
-  
-      if(!plumed_installed()){
-        gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
-      }
-      plumedmain=plumed_create();
-      plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
-      // this is not necessary for gromacs units:
-      plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
-      plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
-      plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
-      //
-      plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,static_cast<int>(filenames.size()), filenames.data()));
-      plumedswitch=1;
-    }
-    /* PLUMED HREX*/
-    if(getenv("PLUMED_HREX")) plumed_hrex=1;
-    if(plumed_hrex){
-      if(!plumedswitch) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) requires -plumed");
-      if(replExParams.exchangeInterval==0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) replica exchange");
-      if(replExParams.numExchanges!=0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) not compatible with -nex");
-    }
-    /* END PLUMED HREX */
-
-    /* END PLUMED */
 
     return 1;
 }
