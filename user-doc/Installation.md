@@ -1,7 +1,18 @@
 \page Installation Installation
 
-This page describes the various ways that you can install PLUMED. Start by selecting the codes that you would like to use PLUMED with and the method that you would like 
-to employ in building PLUMED from the drop-down menu below.
+The instructions that follow explain how to compile a single version of plumed on a local machine.  For most users the instructions 
+below will work fine.  A small fraction of users will want to do something more complicated at install time.  Such users can 
+use the "How would you like to build PLUMED" button below to get instructions on what to do in these more exotic cases.
+
+You will find a "show defaults" button by the boxes that shows a configure command below.  If you click this button the default flags that are used when that command is executed are shown.
+Information on what is controlled by each flag is provided through tooltips, which you are shown if you hover over the flag.  
+
+Some flags are shown in bold in the short versions of the configure commands below.  Clicking on these commands will open a pop-up window that contains further information 
+about the flag.
+
+PLUMED can be used in tandem with the MD codes shown in the table on the right below.  To see instructions on what you must do in order have versions
+of these codes that work with PLUMED click the checkbox associated with the code you require.  Instructions on patching the code you select with PLUMED 
+will appear at the bottom of the web page.
 
 @htmlonly
 <script>
@@ -16,7 +27,7 @@ function getMDCodes() {
  return mdcodedata;
 }
 
-var current_instructions="unset";
+var current_instructions="local";
 
 function updateCheck( name ) {
  var mybox = document.getElementById( name + "_cbox");
@@ -101,6 +112,9 @@ function swapConfigure(name) {
 function openModal( name ) {
  var mymodal = document.getElementById( name );
  mymodal.style.display = "block";  
+}
+window.onload = function(event) {
+ showInstructions("local");
 }
 // When the user clicks anywhere outside of the modal, close it
 window.onclick = function(event) {
@@ -686,7 +700,7 @@ in the directory <code>$prefix/plumed/plumed-</code>. The reason these files are
 </div>
 <div style="display:none;" id="compiling">
 <h2>Compiling PLUMED</h2>
-<p>PLUMED can be compiled using the following command Once the <code>configure</code> script has finished running:</p>
+<p>PLUMED can be compiled using the following command once the <code>configure</code> script has finished running:</p>
 <pre class="fragment">
 &gt; make -j 4
 </pre>
