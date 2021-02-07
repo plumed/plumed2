@@ -192,6 +192,12 @@ Manual built on Travis CI for branch $TRAVIS_BRANCH.
 EOF
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+cat >> automatic/VERSION.list << EOF
+Manual built on GitHub Actions on ref $GITHUB_REF.
+EOF
+fi
+
 if test -d regtests ; then
 cat >> automatic/VERSION.list << EOF
 
@@ -279,11 +285,16 @@ for file in ./tutorials/others/*.txt ; do
     temp=$(echo $arrIN | tr "-" "\n"); 
     modtut=$(echo $temp | awk '{print toupper($1)}')
 
-    link=`grep link: $file | sed -e 's/link://'`
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
 
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname 
+   ./test_examples automatic/$fname
 done
 
 

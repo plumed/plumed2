@@ -1,0 +1,12 @@
+MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
+
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+solva: EEFSOLV ATOMS=protein-h NL_STRIDE=1
+
+DUMPDERIVATIVES ARG=solva FILE=DERIV_A FMT=%6.1f
+
+BIASVALUE ARG=solva
+
+PRINT ARG=solva FILE=SOLV FMT=%.2f
+
+ENDPLUMED

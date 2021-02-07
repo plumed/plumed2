@@ -636,6 +636,7 @@ dot
 doxygen
 make_doc
 readelf
+use_debug_glibcxx
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -9450,12 +9451,16 @@ $as_echo "$as_me: Release mode, adding -DNDEBUG" >&6;}
 
 fi
 
+
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
 $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
 
+  use_debug_glibcxx=yes
 fi
 
 # this is necessary in many MPI implementations

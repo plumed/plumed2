@@ -23,11 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Pbc.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -106,7 +101,7 @@ Position::Position(const ActionOptions&ao):
   scaled_components(false),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOM",atoms);
   if(atoms.size()!=1)
     error("Number of specified atoms should be 1");

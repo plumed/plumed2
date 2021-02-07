@@ -85,8 +85,8 @@ PRINT ARG=q4.mean FILE=colvar
 
 If you simply want to examine the values of the Q4 parameters for each of the atoms in your system you can do so by exploiting the
 command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format
-called q$.xyz for each frame of the analysed MD trajectory.  The first column in this file will contain a dummy name for each of the
-atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q4 paramter, columns
+called q$.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
+atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q4 parameter, columns
 6-15 will contain the real parts of the director of the \f$q_{6m}\f$ vector while columns 15-24 will contain the imaginary parts of this director.
 
 \plumedfile

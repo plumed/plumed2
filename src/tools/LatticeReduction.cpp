@@ -25,8 +25,6 @@
 
 namespace PLMD {
 
-using namespace std;
-
 const double epsilon=1e-14;
 
 void LatticeReduction::sort(Vector v[3]) {

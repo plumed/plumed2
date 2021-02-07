@@ -2,6 +2,12 @@
 
 source ../sourceme.sh
 
+if ../src/lib/plumed --no-mpi config mpiexec ; then
+   mpirun=$(../src/lib/plumed --no-mpi config mpiexec)
+else
+   mpirun=mpirun
+fi
+
 LISTMORE=`ls *PP.md | grep -wvFf basic.list`
 
 LIST="
@@ -11,18 +17,18 @@ LIST="
  InstallationPP.md
  GettingStartedPP.md
  CollectiveVariablesPP.md
-   GroupPP.md
-   FunctionsPP.md
+ GroupPP.md
+ FunctionsPP.md
  AnalysisPP.md
  BiasPP.md
  AdditionalModulesPP.md
  $LISTMORE
  CommandLineToolsPP.md
  MiscelaneousPP.md
-   RegexPP.md
-   FilesPP.md
-   ModulesPP.md
-   TutorialsPP.md
+ RegexPP.md
+ FilesPP.md
+ ModulesPP.md
+ TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
  automatic"
@@ -45,6 +51,12 @@ if test "$TRAVIS" == true ; then
   version="${TRAVIS_BRANCH}"
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    version="${GITHUB_REF#refs/heads/}"
+  fi
+fi
+
 # THIS IS FOR DOXYGEN <= 1.8.10
 # I leave it here for the moment
 mkdir build_examples
@@ -53,8 +65,8 @@ mkdir build
 cd build
 for file in ../../html/*.html
 do
-echo final processing of html for file: $file
-awk -v version="$version" '{
+echo final processing of html for file: $file using $mpirun
+gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
     sub("Page","("version")",$0);
@@ -94,13 +106,13 @@ awk -v version="$version" '{
     print "</script>"
   } else print
 }' $file |
-awk -f ../../plumed-syntax.awk > $file.tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
 fi
 mv $file.tmp $file
-rm -f *
+rm -rf *
 done
 cd ../../
 rm -rf build_examples

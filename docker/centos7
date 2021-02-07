@@ -1,0 +1,39 @@
+# Start from latest ubuntu
+FROM centos:7
+
+# NOTE: numpy==1.19 is the last version compatible with python 3.6
+RUN yum -y update \
+ && yum -y group install "Development Tools" \
+ && yum -y install environment-modules gawk vim wget \
+                   lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel \
+                   python3 python3-devel python3-pip \
+ && pip3 install numpy==1.19 \
+ && pip3 install cython numpy pandas mdtraj MDAnalysis
+
+RUN useradd -ms /bin/bash plumed
+USER plumed
+WORKDIR /home/plumed
+
+# import plumed code.
+# assumes a file plumed2.tgz is present in the Dockerfile directory
+COPY plumed2.tgz /home/plumed
+
+# build and test plumed (no install)
+RUN . /etc/bashrc \
+ && module load mpi \
+ && export OMPI_MCA_btl_base_warn_component_unused=0 \
+ && export PATH=$HOME/opt/bin:$PATH \
+ && export CPATH=$HOME/opt/include:$CPATH \
+ && export INCLUDE=$HOME/opt/include:$INCLUDE \
+ && export LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH \
+ && export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH \
+ && tar xzf plumed2.tgz \
+ && cd plumed2 \
+ && export PYTHONPATH=$PWD/python:$PYTHONPATH \
+ && export PYTHON_BIN=python3 \
+ && .travis/install.boost release \
+ && .travis/install.xdrfile \
+ && ./configure --enable-modules=all --enable-boost_serialization \
+ && make -j 4 \
+ && make check
+

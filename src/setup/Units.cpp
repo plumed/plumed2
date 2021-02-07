@@ -25,8 +25,6 @@
 #include "core/Atoms.h"
 #include "tools/Exception.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace setup {
 
@@ -195,6 +193,8 @@ Units::Units(const ActionOptions&ao):
     log.printf("  using physical units\n");
   }
   log.printf("  inside PLUMED, Boltzmann constant is %g\n",plumed.getAtoms().getKBoltzmann());
+
+  plumed.getAtoms().updateUnits();
 }
 
 }

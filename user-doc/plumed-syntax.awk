@@ -2,12 +2,14 @@ BEGIN{inside=0}{
   if(inside && match($0,"</pre>")) {
     inside=0; close("example"number".dat");
     if( nreplicas==1 ) { system("plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status "> /dev/null"); }
-    else { system("mpirun -np " nreplicas " plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status " --multi " nreplicas " > /dev/null");}
+    else { system(mpirun " -np " nreplicas " plumed gen_example --plumed example"number".dat --out example"number".html --name eg"number" --status " status " --multi " nreplicas " > /dev/null");}
     system("cat example"number".html");
+    fflush();
     system("rm example"number".dat example"number".html");
     sub("</pre>","");
     if(!match($0,"BEGIN_PLUMED_FILE")) { 
        print;
+       fflush();
        next;
     }
   }
@@ -35,11 +37,13 @@ BEGIN{inside=0}{
        else if( match($i,"<pre") ) { tstr=$i; sub("<pre","",tstr); print tstr; }
        if( match($i,"DATADIR=") ) { datadir=$i; sub("DATADIR=","",datadir); }
     }
-    if( datadir!="" ) { system("cp ../../"datadir"/* ."); }
+    if( datadir!="" ) { system("cp -r ../../"datadir"/* ."); }
     next;
   }
   if(!inside){
     print;
+    system("");
+    fflush();
     next;
   }
 

@@ -1,5 +1,10 @@
 #! /bin/bash
 
+if test -z "$GIT_TOKEN" ; then
+  echo "No GIT_TOKEN, cannot push"
+  exit 0
+fi
+
 WHAT=$1
 
 case "$WHAT" in
@@ -12,22 +17,45 @@ esac
 set -e
 set -x
 
-GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
-GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+BRANCH=""
+PULL_REQUEST=false
 
-if [ "$TRAVIS_PULL_REQUEST" != false ] ; then
+if test "$TRAVIS" == true ; then
+  BRANCH="$TRAVIS_BRANCH"
+  GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+  PULL_REQUEST="$TRAVIS_PULL_REQUEST"
+fi
+
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    BRANCH="${GITHUB_REF#refs/heads/}"
+  fi
+  GIT_OWNER=$(  echo $GITHUB_REPOSITORY | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $GITHUB_REPOSITORY | sed "s/^.*\///" )
+  if test -n "$GITHUB_BASE_REF" ; then
+    PULL_REQUEST=true
+  fi
+fi
+
+if test -z "$BRANCH" ; then
+  echo "Not building from a branch, nothing to push"
+  exit 0
+fi
+
+if [ "$PULL_REQUEST" != false ] ; then
   echo "Building from a pull request, nothing to push"
   exit 0
 fi
 
 if [ "$GIT_OWNER" = plumed ] ; then
-  if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
-    if test -f CHANGES/"$TRAVIS_BRANCH".md && grep -q plumednotmaintained CHANGES/"$TRAVIS_BRANCH".md ; then
+  if [[ "$BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
+    if test -f CHANGES/"$BRANCH".md && grep -q plumednotmaintained CHANGES/"$BRANCH".md ; then
       branchtype=unsupported
     else
       branchtype=official
     fi
-  elif [ "$TRAVIS_BRANCH" = master ] ; then
+  elif [ "$BRANCH" = master ] ; then
     branchtype=master
   else
     branchtype=unofficial
@@ -114,24 +142,24 @@ git config user.name "${GIT_BOT}"
 git checkout -b gh-pages
 # this is not to show the GIT_TOKEN on Travis log
 set +x
-git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}-${TRAVIS_BRANCH}.git
+git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}-${BRANCH}.git
 set -x
 
 case "$WHAT" in
 (doc)
 cat > README.md << EOF
-Precompiled manual for PLUMED ${TRAVIS_BRANCH}
+Precompiled manual for PLUMED ${BRANCH}
 -----------------------------
 
-This repository hosts a precompiled manual for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
+This repository hosts a precompiled manual for [PLUMED](http://www.plumed.org) ${BRANCH},
 git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
 
-To browse the manual you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${TRAVIS_BRANCH}).
+To browse the manual you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${BRANCH}).
 
 You can also download a full copy of the manual for offline access
-at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${BRANCH}/archive/gh-pages.zip).
 
-This manual has been compiled on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
+This manual has been compiled on [GiHub actions](http://github.com/${GIT_OWNER}/${GIT_REPO}/actions) on $(date).
 
 EOF
 
@@ -145,23 +173,23 @@ esac
 
 (coverage)
 cat > README.md << EOF
-Coverage scan for PLUMED ${TRAVIS_BRANCH}
+Coverage scan for PLUMED ${BRANCH}
 -----------------------------
 
-This repository hosts the coverage scan for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
+This repository hosts the coverage scan for [PLUMED](http://www.plumed.org) ${BRANCH},
 git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
 
-Coverage scan done on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
+Coverage scan done on [GiHub actions](http://github.com/${GIT_OWNER}/${GIT_REPO}/actions) on $(date).
 
-To browse the scan you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${TRAVIS_BRANCH}).
+To browse the scan you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${BRANCH}).
 
 You can also download a full copy of the scan for offline access
-at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${BRANCH}/archive/gh-pages.zip).
 EOF
 esac
 
 case "$branchtype" in
-(unsupported|unofficial)
+(unsupported|unofficial|master)
 # this is to avoid a huge log file:
 set +x
   for file in $(find . -name "*.html") ; do
@@ -184,4 +212,12 @@ git add --all .
 # >/dev/null to avoid excessive noise on travis log
 git commit -m "Update to ${GIT_OWNER}/${GIT_REPO}@$hash" >/dev/null
 # -q and 2> is not to show the GIT_TOKEN on Travis log
-git push -q -f doc gh-pages 2> /dev/null 
+git push -q -f doc gh-pages 2> /dev/null || {
+  echo "++++ WARNING ++++"
+  echo "Pushing on repository https://${GIT_BOT}@github.com/$GIT_OWNER/doc-${BRANCH}.git failed"
+  echo "Please check if the repository exists"
+  if [[ "$branchtype" != unofficial ]] ; then
+     echo "This is an error on official, unsupported, and master branches"
+     exit 1
+  fi
+}

@@ -1,0 +1,4 @@
+plumed_modules=opes
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --mf_xtc chignolin.xtc --dump-forces forces --dump-forces-fmt=%8.4f"

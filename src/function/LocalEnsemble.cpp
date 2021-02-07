@@ -23,8 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/OpenMP.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
@@ -104,10 +102,10 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   parse("NUM",ens_dim);
   if(ens_dim==0) error("NUM should be greater or equal to 1");
 
-  vector<Value*> arg;
+  std::vector<Value*> arg;
   int oldsize=-1;
   for(unsigned i=1; i<=ens_dim; ++i ) {
-    vector<Value*> larg;
+    std::vector<Value*> larg;
     if(!parseArgumentList("ARG",i,larg)) break;
     for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
     if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");

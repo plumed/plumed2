@@ -31,7 +31,6 @@
 #include "tools/OpenMP.h"
 #include "tools/Stopwatch.h"
 
-using namespace std;
 namespace PLMD {
 namespace vesselbase {
 
@@ -128,7 +127,7 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
   VesselOptions da("","",0,"",this);
-  std::unique_ptr<BridgeVessel> bv(new BridgeVessel(da));
+  auto bv=Tools::make_unique<BridgeVessel>(da);
   bv->setOutputAction( tome );
   tome->actionIsBridged=true; dertime_can_be_off=false;
 // store this pointer in order to return it later.
@@ -147,7 +146,7 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
   }
 
   VesselOptions da("","",0,"",this);
-  std::unique_ptr<StoreDataVessel> mm( new StoreDataVessel(da) );
+  auto mm=Tools::make_unique<StoreDataVessel>(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   addVessel(std::move(mm));
 

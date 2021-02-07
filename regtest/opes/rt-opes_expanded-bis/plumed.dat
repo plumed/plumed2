@@ -1,0 +1,35 @@
+# vim:ft=plumed
+RESTART
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#ene: ENERGY #cannot get the energy in driver!
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+#vol: VOLUME #volume is constant, so using something else
+vol: CUSTOM PERIODIC=NO ARG=psi FUNC=50*x+100 #random stuff instead of volume
+
+mtp: ECV_MULTITHERMAL_MULTIBARIC ...
+  ARG=ene,vol
+  TEMP=300
+  MIN_TEMP=120
+  STEPS_TEMP=7
+  PRESSURE=1
+  MIN_PRESSURE=0.05
+  STEPS_PRESSURE=10
+  CUT_CORNER=150,0.1,300,1
+...
+umb: ECV_UMBRELLAS_FILE ARG=phi,psi TEMP=300 FILE=Kernels.data BARRIER=100
+opes: OPES_EXPANDED ...
+  ARG=umb.*,mtp.*
+  PACE=2
+  OBSERVATION_STEPS=10
+  FILE=DeltaFs.data
+  PRINT_STRIDE=10
+  FMT={% f}
+  RESTART=NO
+...
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
+

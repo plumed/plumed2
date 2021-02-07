@@ -188,7 +188,8 @@ private:
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
   int updatePIV;
-  unsigned Nprec,Natm,Nlist,NLsize;
+  size_t Nprec;
+  unsigned Natm,Nlist,NLsize;
   double Fvol,Vol0,m_PIVdistance;
   std::string ref_file;
   NeighborList *nlall;
@@ -512,19 +513,19 @@ PIV::PIV(const ActionOptions&ao):
     }
     log << "Creating Neighbor Lists \n";
     // WARNING: is nl_cut meaningful here?
-    nlall= new NeighborList(listall,pbc,getPbc(),nl_cut[0],nl_st[0]);
+    nlall= new NeighborList(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
     if(com) {
       //Build lists of Atoms for every COM
       for (unsigned i=0; i<compos.size(); i++) {
         // WARNING: is nl_cut meaningful here?
-        nlcom[i]= new NeighborList(comatm[i],pbc,getPbc(),nl_cut[0],nl_st[0]);
+        nlcom[i]= new NeighborList(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
       }
     }
     unsigned ncnt=0;
     // Direct blocks AA, BB, CC, ...
     if(direct) {
       for (unsigned j=0; j<Natm; j++) {
-        nl[ncnt]= new NeighborList(Plist[j],pbc,getPbc(),nl_cut[j],nl_st[j]);
+        nl[ncnt]= new NeighborList(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
         ncnt+=1;
       }
     }
@@ -532,16 +533,16 @@ PIV::PIV(const ActionOptions&ao):
     if(cross) {
       for (unsigned j=0; j<Natm; j++) {
         for (unsigned i=j+1; i<Natm; i++) {
-          nl[ncnt]= new NeighborList(Plist[i],Plist[j],false,pbc,getPbc(),nl_cut[ncnt],nl_st[ncnt]);
+          nl[ncnt]= new NeighborList(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
           ncnt+=1;
         }
       }
     }
   } else {
     log << "WARNING: Neighbor List not activated this has not been tested!!  \n";
-    nlall= new NeighborList(listall,pbc,getPbc());
+    nlall= new NeighborList(listall,true,pbc,getPbc(),comm);
     for (unsigned j=0; j<Nlist; j++) {
-      nl[j]= new NeighborList(Plist[j],Plist[j],true,pbc,getPbc());
+      nl[j]= new NeighborList(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
     }
   }
   // Output Nlist
@@ -731,7 +732,7 @@ void PIV::calculate()
   static std:: vector<std:: vector<int> > Atom1(Nlist);
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
-  unsigned stride=1;
+  size_t stride=1;
   unsigned rank=0;
 
   if(!serial) {

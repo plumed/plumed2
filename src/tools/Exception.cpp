@@ -29,7 +29,6 @@
 #include <cstring>
 #include <cstdlib>
 
-using namespace std;
 namespace PLMD {
 
 Exception::Exception():

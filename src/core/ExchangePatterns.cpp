@@ -22,8 +22,6 @@
 #include "ExchangePatterns.h"
 #include "tools/Random.h"
 
-using namespace std;
-
 namespace PLMD {
 
 ExchangePatterns::ExchangePatterns():
@@ -31,8 +29,7 @@ ExchangePatterns::ExchangePatterns():
   NumberOfReplicas(1)
 {}
 
-ExchangePatterns::~ExchangePatterns() {
-}
+ExchangePatterns::~ExchangePatterns() {}
 
 void ExchangePatterns::setNofR(const int nrepl) {
   NumberOfReplicas=nrepl;

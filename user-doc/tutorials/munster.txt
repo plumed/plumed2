@@ -11,7 +11,7 @@ workshop here:
 
 https://www.uni-muenster.de/FEW2020/index.html
 
-The workshop was cancelled due to the COVID-19 pandemic.
+The workshop was canceled due to the COVID-19 pandemic.
 
 \section new-munster-aims Aims
 
@@ -27,7 +27,7 @@ how to calculate collective variables using PLUMED.
 Once this tutorial is completed, students will be able to:
 
 - Write a PLUMED input file to perform metadynamics simulations
-- Monitor the behaviour of variables in a metadynamics run
+- Monitor the behavior of variables in a metadynamics run
 - Run various diagnostic tests on your metadynamics simulation
 - Calculate an estimate of the free energy surface together with suitable errors 
 
@@ -45,7 +45,7 @@ This tutorial has been tested on version 2.6.
 
 \section new-munster-intro Introduction
 
-In \ref lugano-1 we saw how PLUMED could be used to compute collective variables. Computing collective variables is a useful way to analyse our simulations, but PLUMED is most often use to add forces on the collective variables. With this in mind,
+In \ref lugano-1 we saw how PLUMED could be used to compute collective variables. Computing collective variables is a useful way to analyze our simulations, but PLUMED is most often use to add forces on the collective variables. With this in mind,
 we have implemented a variety of possible biases that can act on collective variables.  The complete documentation for
 all the biasing methods available in PLUMED can be found at the \ref Bias page.
 In the following, we will see how to build an adaptive bias potential using metadynamics.
@@ -117,7 +117,7 @@ Additional information on this method can be found in review papers on metadynam
 
 In this tutorial, we will run simulations for a toy system, alanine dipeptide which we will simulate in vacuo using the AMBER99SB-ILDN 
 force field (see Fig. \ref new-munster-ala-fig).
-This rather simple molecule is a useful molecule to study in a tutorial because we can generate simulation data on it that we can then analyse quickly.
+This rather simple molecule is a useful molecule to study in a tutorial because we can generate simulation data on it that we can then analyze quickly.
 It is, however, not a good system on which to test a new free energy method as the free energy for this system can already be easily calculated using a broad range of techniques.
 There is no value in demonstrating yet another way of attacking this solved problem.
 
@@ -134,7 +134,7 @@ It is normal to use to characterize the two states in terms of Ramachandran dihe
 \subsection new-munster-ex-1 Exercise 1: a first metadynamics calculation
 
 In this exercise, we will set up and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
-as a collective variable. During the calculation, we will also monitor the behaviour of the other backbone dihedral \f$ \psi \f$.
+as a collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
 
 A sample `plumed.dat` file that you can use as a template is given below.
 Whenever you see a highlighted \highlight{FILL} string, this is a string that you should replace.
@@ -178,16 +178,16 @@ The HILLS file contains a list of the Gaussian kernels that were deposited durin
 
 There is not much more to be said about the process of running a metadynamics simulation.  You will need to spend quite a while thinking
 about what collective variables are appropriate for the particular system that you are studying.  Once you have done that though the process
-of running your simulation will be very similar to the method that you have just carried out for alanine dipeptide.  Given the ease of performing these simulations, the rest of this tutorial focusses on how the output from the simulation should be analysed.  We will first discuss some quick checks that you can perform
+of running your simulation will be very similar to the method that you have just carried out for alanine dipeptide.  Given the ease of performing these simulations, the rest of this tutorial focuses on how the output from the simulation should be analyzed.  We will first discuss some quick checks that you can perform
 to test whether or not your simulations have worked.  Once we have completed this initial discussion, we will turn to how you should generate
 publication-quality figures illustrating your results.
 
 \subsection new-munster-qual-tests Qualitative tests
 
-\subsubsection new-munster-cv-vis Visualizing the behaviour of the biased CV
+\subsubsection new-munster-cv-vis Visualizing the behavior of the biased CV
 
 Once your metadynamics simulation has completed, you should plot how the values of the biased CV changed during the simulation.
-We can use a python notebook to visualize the behaviour of the CV during the simulation, as reported in the COLVAR file:
+We can use a python notebook to visualize the behavior of the CV during the simulation, as reported in the COLVAR file:
 
 \code{.py}
 import matplotlib.pyplot as plt
@@ -208,7 +208,7 @@ By inspecting Figure \ref new-munster-phi-fig, we can see that the system is ini
 alanine dipeptide. After a while (t=0.25 ns), the system is pushed
 by the metadynamics bias potential to visit the other local minimum. As the simulation continues,
 the bias potential fills the underlying free-energy landscape, and the system can diffuse around all of the
-phase space.  This behaviour is the ideal that we are looking for -- {\bf the full range of possible CV values should have been explored.}
+phase space.  This behavior is the ideal that we are looking for -- {\bf the full range of possible CV values should have been explored.}
 
 \subsubsection new-munster-cv-vis Visualizing the hill heights
 
@@ -292,7 +292,7 @@ Once your metadynamics simulation has completed, you should thus perform the fol
 - Plot the heights of the hills.  Check that this quantity has decayed to close to zero by the end of the simulation.
 - Generate multiple estimates of the free energy surface using sum\_hills and check that at the end of the simulation the shape of the free energy surface is not changing substantially 
 
-If you pass these three tests, this suggests that the simulation is most likely converged.  You can thus analyse the data correctly and produce the figures that might appear in a publication
+If you pass these three tests, this suggests that the simulation is most likely converged.  You can thus analyze the data correctly and produce the figures that might appear in a publication
 about your result as discussed in the next but one section. 
 
 \note IMPORTANT:  The observations above are necessary, but qualitative conditions for convergence.
@@ -300,8 +300,8 @@ A quantitative assessment of convergence can only be obtained by performing erro
 
 \subsection new-munster-block Exercise 3: Performing block averaging 
 
-To understand the analysis that we will perform in the next section we need a brief digression on the block averaing technique that we will use to get the error bars for our esimtate of the 
-free energy surface.  The relevant pieces of probability theory are explained in the videos below, which you are emcouraged to watch at some stage: 
+To understand the analysis that we will perform in the next section we need a brief digression on the block averaging technique that we will use to get the error bars for our estimate of the 
+free energy surface.  The relevant pieces of probability theory are explained in the videos below, which you are encouraged to watch at some stage: 
 
 @htmlonly
 <table>
@@ -443,10 +443,10 @@ that looks something like the figures shown below.
 
 \section new-munster-conclusions Conclusions
 
-In this tutorial, we have discussed how metadynamics simulations should be run and how the resulting trajectories should be analysed.
+In this tutorial, we have discussed how metadynamics simulations should be run and how the resulting trajectories should be analyzed.
 We have paid particular attention to the procedure for computing error bars on the estimates of the free energy that are obtained from the simulations.  Quoting these errors is essential as if no errors are provided, the results are not reproducible.
 
-More information on the underlying probability theory that we have used in performing these analyses can be found in https://arxiv.org/abs/1812.08213. 
+More information on the underlying probability theory that we have used in performing these analyzes can be found in https://arxiv.org/abs/1812.08213. 
 
 Now that you understand how metadynamics simulations are performed see if you can work through the exercises in \ref lugano-6b
 

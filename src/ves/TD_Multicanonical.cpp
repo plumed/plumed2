@@ -49,7 +49,7 @@ The second CV, the order parameter, must be used when one aims at studying a fir
 
 The algorithm will explore the free energy at each temperature up to a predefined free
  energy threshold \f$\epsilon\f$ specified through the keyword THRESHOLD (in kT units).
-If only the energy is biased, i.e. no phase transition is considered, then THRESHOLD can be set to 1.
+If only the energy is biased, i.e. no phase transition is considered, then THRESHOLD can be set to around 5.
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
 
@@ -58,12 +58,9 @@ The advantage with respect to Wang-Landau is that instead of sampling the potent
 
 The algorithm works as follows.
 The target distribution for the potential energy is chosen to be:
-\f[
-p(E)= \begin{cases}
-         \frac{1}{E_2-E_1} & \mathrm{if} \quad E_1<E<E_2 \\
-         0 & \mathrm{otherwise}
-      \end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
+
 where the energy limits \f$E_1\f$ and \f$E_2\f$ are yet to be determined.
 Clearly the interval \f$E_1–E_2\f$ chosen is related to the interval of temperatures \f$T_1-T_2\f$.
 To link these two intervals we make use of the following relation:
@@ -104,10 +101,8 @@ bf1: BF_LEGENDRE ORDER=20 MINIMUM=-25000 MAXIMUM=-23500
 # Target distributions
 TD_MULTICANONICAL ...
  LABEL=td_multi
- SIGMA=50.0
  MIN_TEMP=400
  MAX_TEMP=600
- THRESHOLD=1
 ... TD_MULTICANONICAL
 
 # Expansion
@@ -145,6 +140,8 @@ private:
   double threshold_, min_temp_, max_temp_;
   std::vector<double> sigma_;
   unsigned steps_temp_;
+  double epsilon_;
+  bool smoothening_;
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Multicanonical(const ActionOptions& ao);
@@ -160,7 +157,8 @@ PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 
 void TD_Multicanonical::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","THRESHOLD","1","Maximum exploration free energy in kT.");
+  keys.add("compulsory","THRESHOLD","5","Maximum exploration free energy in kT.");
+  keys.add("compulsory","EPSILON","10","The zeros of the target distribution are changed to e^-EPSILON.");
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
   keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
@@ -170,11 +168,13 @@ void TD_Multicanonical::registerKeywords(Keywords& keys) {
 
 TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  threshold_(1.0),
+  threshold_(5.0),
   min_temp_(0.0),
   max_temp_(1000.0),
   sigma_(0.0),
-  steps_temp_(20)
+  steps_temp_(20),
+  epsilon_(10.0),
+  smoothening_(true)
 {
   log.printf("  Multicanonical target distribution");
   log.printf("\n");
@@ -185,15 +185,31 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   log.printf("\n");
   parse("THRESHOLD",threshold_);
   if(threshold_<=0.0) {
-    plumed_merror("TD_MULTICANONICAL target distribution: the value of the threshold should be positive.");
+    plumed_merror(getName()+": the value of the threshold should be positive.");
   }
+  log.printf("  exploring free energy up to %f kT for each temperature \n",threshold_);
 
   parse("MIN_TEMP",min_temp_);
   parse("MAX_TEMP",max_temp_);
+  log.printf("  temperatures between %f and %f will be explored \n",min_temp_,max_temp_);
   parseVector("SIGMA",sigma_);
-  if(sigma_.size()<1 || sigma_.size()>2) plumed_merror(getName()+": SIGMA takes 1 or 2 values as input.");
+  if(sigma_.size()==0) smoothening_=false;
+  if(smoothening_ && (sigma_.size()<1 || sigma_.size()>2) ) plumed_merror(getName()+": SIGMA takes 1 or 2 values as input.");
+  if (smoothening_) {
+    log.printf("  the target distribution will be smoothed using sigma values");
+    for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_[i]);
+    log.printf("\n");
+  }
+
   parse("STEPS_TEMP",steps_temp_); // Only used in the 2D version
   steps_temp_ += 1;
+  log.printf("  %d steps in temperatures will be employed (if TD is two-dimensional) \n",steps_temp_);
+
+  parse("EPSILON",epsilon_);
+  if(epsilon_<=1.0) {
+    plumed_merror(getName()+": the value of epsilon should be greater than 1.");
+  }
+  log.printf("  the non relevant regions of the target distribution are set to e^-%f \n",epsilon_);
 
   setDynamic();
   setFesGridNeeded();
@@ -210,7 +226,7 @@ double TD_Multicanonical::getValue(const std::vector<double>& argument) const {
 void TD_Multicanonical::updateGrid() {
   if (getStep() == 0) {
     if(targetDistGrid().getDimension()>2 && targetDistGrid().getDimension()<1) plumed_merror(getName()+" works only with 1 or 2 arguments, i.e. energy, or energy and CV");
-    if(sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
     double norm = 0.0;
@@ -220,10 +236,8 @@ void TD_Multicanonical::updateGrid() {
       targetDistGrid().setValue(l,value);
     }
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
   } else {
     // Two variants: 1D and 2D
-    // This could be done with one variant but the 1D variant is useful for pedagogical purposes.
     if(targetDistGrid().getDimension()==1) {
       // 1D variant: Multicanonical without order parameter
       // In this variant we find the minimum and maximum relevant potential energies.
@@ -314,10 +328,8 @@ void TD_Multicanonical::updateGrid() {
           break;
         }
       }
-      double minimum = minimum_low;
-      if (minimum_high<minimum_low) minimum=minimum_high;
-      double maximum = maximum_low;
-      if (maximum_high>maximum_low) maximum=maximum_high;
+      double minimum = std::min(minimum_low,minimum_high);
+      double maximum = std::max(maximum_low,maximum_high);
       // Construct uniform TD in the interval between minimum and maximum
       std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
       double norm = 0.0;
@@ -326,10 +338,12 @@ void TD_Multicanonical::updateGrid() {
         double value = 1.0;
         double tmp;
         if(argument < minimum) {
-          tmp = GaussianSwitchingFunc(argument,minimum,sigma_[0]);
+          if (smoothening_) tmp = GaussianSwitchingFunc(argument,minimum,sigma_[0]);
+          else tmp = exp(-1.0*epsilon_);
         }
         else if(argument > maximum) {
-          tmp = GaussianSwitchingFunc(argument,maximum,sigma_[0]);
+          if (smoothening_) tmp = GaussianSwitchingFunc(argument,maximum,sigma_[0]);
+          else tmp = exp(-1.0*epsilon_);
         }
         else {
           tmp = 1.0;
@@ -339,7 +353,6 @@ void TD_Multicanonical::updateGrid() {
         targetDistGrid().setValue(l,value);
       }
       targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-      logTargetDistGrid().setMinToZero();
     } else if(targetDistGrid().getDimension()==2) {
       // 2D variant: Multicanonical with order parameter
       // In this variant we find for each temperature the relevant region of potential energy and order parameter.
@@ -347,10 +360,10 @@ void TD_Multicanonical::updateGrid() {
       double beta = getBeta();
       double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
       double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);
-      plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_MulticanonicalWithCV!");
+      plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_Multicanonical!");
       // Set all to zero
       for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-        double value = 0.0;
+        double value = exp(-1.0*epsilon_);
         targetDistGrid().setValue(l,value);
       }
       // Loop over temperatures
@@ -377,49 +390,51 @@ void TD_Multicanonical::updateGrid() {
           }
         }
       }
-      std::vector<unsigned> nbin=targetDistGrid().getNbin();
-      std::vector<double> dx=targetDistGrid().getDx();
-      // Smoothening
-      for(unsigned i=0; i<nbin[0]; i++) {
-        for(unsigned j=0; j<nbin[1]; j++) {
-          std::vector<unsigned> indices(2);
-          indices[0]=i;
-          indices[1]=j;
-          Grid::index_t index = targetDistGrid().getIndex(indices);
-          double energy = targetDistGrid().getPoint(index)[0];
-          double volume = targetDistGrid().getPoint(index)[1];
-          double value = targetDistGrid().getValue(index);
-          if (value>(1-1.e-5)) { // Apply only if this grid point was 1.
-            // Apply gaussians around
-            std::vector<int> minBin(2), maxBin(2), deltaBin(2); // These cannot be unsigned
-            // Only consider contributions less than n*sigma bins apart from the actual distance
-            deltaBin[0]=std::floor(5*sigma_[0]/dx[0]);;
-            deltaBin[1]=std::floor(5*sigma_[1]/dx[1]);;
-            // For energy
-            minBin[0]=i - deltaBin[0];
-            if (minBin[0] < 0) minBin[0]=0;
-            if (minBin[0] > (nbin[0]-1)) minBin[0]=nbin[0]-1;
-            maxBin[0]=i +  deltaBin[0];
-            if (maxBin[0] > (nbin[0]-1)) maxBin[0]=nbin[0]-1;
-            // For volume
-            minBin[1]=j - deltaBin[1];
-            if (minBin[1] < 0) minBin[1]=0;
-            if (minBin[1] > (nbin[1]-1)) minBin[1]=nbin[1]-1;
-            maxBin[1]=j +  deltaBin[1];
-            if (maxBin[1] > (nbin[1]-1)) maxBin[1]=nbin[1]-1;
-            for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-              for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
-                std::vector<unsigned> indices_prime(2);
-                indices_prime[0]=l;
-                indices_prime[1]=m;
-                Grid::index_t index_prime = targetDistGrid().getIndex(indices_prime);
-                double energy_prime = targetDistGrid().getPoint(index_prime)[0];
-                double volume_prime = targetDistGrid().getPoint(index_prime)[1];
-                double value_prime = targetDistGrid().getValue(index_prime);
-                // Apply gaussian
-                double gaussian_value = GaussianSwitchingFunc(energy_prime,energy,sigma_[0])*GaussianSwitchingFunc(volume_prime,volume,sigma_[1]);
-                if (value_prime<gaussian_value) {
-                  targetDistGrid().setValue(index_prime,gaussian_value);
+      if (smoothening_) {
+        std::vector<unsigned> nbin=targetDistGrid().getNbin();
+        std::vector<double> dx=targetDistGrid().getDx();
+        // Smoothening
+        for(unsigned i=0; i<nbin[0]; i++) {
+          for(unsigned j=0; j<nbin[1]; j++) {
+            std::vector<unsigned> indices(2);
+            indices[0]=i;
+            indices[1]=j;
+            Grid::index_t index = targetDistGrid().getIndex(indices);
+            double energy = targetDistGrid().getPoint(index)[0];
+            double volume = targetDistGrid().getPoint(index)[1];
+            double value = targetDistGrid().getValue(index);
+            if (value>(1-1.e-5)) { // Apply only if this grid point was 1.
+              // Apply gaussians around
+              std::vector<int> minBin(2), maxBin(2), deltaBin(2); // These cannot be unsigned
+              // Only consider contributions less than n*sigma bins apart from the actual distance
+              deltaBin[0]=std::floor(6*sigma_[0]/dx[0]);;
+              deltaBin[1]=std::floor(6*sigma_[1]/dx[1]);;
+              // For energy
+              minBin[0]=i - deltaBin[0];
+              if (minBin[0] < 0) minBin[0]=0;
+              if (minBin[0] > (nbin[0]-1)) minBin[0]=nbin[0]-1;
+              maxBin[0]=i +  deltaBin[0];
+              if (maxBin[0] > (nbin[0]-1)) maxBin[0]=nbin[0]-1;
+              // For volume
+              minBin[1]=j - deltaBin[1];
+              if (minBin[1] < 0) minBin[1]=0;
+              if (minBin[1] > (nbin[1]-1)) minBin[1]=nbin[1]-1;
+              maxBin[1]=j +  deltaBin[1];
+              if (maxBin[1] > (nbin[1]-1)) maxBin[1]=nbin[1]-1;
+              for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
+                for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
+                  std::vector<unsigned> indices_prime(2);
+                  indices_prime[0]=l;
+                  indices_prime[1]=m;
+                  Grid::index_t index_prime = targetDistGrid().getIndex(indices_prime);
+                  double energy_prime = targetDistGrid().getPoint(index_prime)[0];
+                  double volume_prime = targetDistGrid().getPoint(index_prime)[1];
+                  double value_prime = targetDistGrid().getValue(index_prime);
+                  // Apply gaussian
+                  double gaussian_value = GaussianSwitchingFunc(energy_prime,energy,sigma_[0])*GaussianSwitchingFunc(volume_prime,volume,sigma_[1]);
+                  if (value_prime<gaussian_value) {
+                    targetDistGrid().setValue(index_prime,gaussian_value);
+                  }
                 }
               }
             }
@@ -434,9 +449,9 @@ void TD_Multicanonical::updateGrid() {
         norm += integration_weights[l]*value;
       }
       targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-      logTargetDistGrid().setMinToZero();
     } else plumed_merror(getName()+": Number of arguments for this target distribution must be 1 or 2");
   }
+  updateLogTargetDistGrid();
 }
 
 inline

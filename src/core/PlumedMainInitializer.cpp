@@ -42,8 +42,6 @@
 #endif
 
 
-using namespace std;
-
 // create should never throw
 // in case of a problem, it logs the error and return a null pointer
 // when loaded by an interface >=2.5, this will result in a non valid plumed object.
@@ -83,23 +81,23 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
   } catch(const PLMD::lepton::Exception & e) {
     nothrow.handler(nothrow.ptr,19900,e.what(),nullptr);
     // 11000 to 12000 are "bad exceptions". message will be copied without new allocations
-  } catch(const bad_exception & e) {
+  } catch(const std::bad_exception & e) {
     nothrow.handler(nothrow.ptr,11500,e.what(),nullptr);
 #ifdef __PLUMED_LIBCXX11
-  } catch(const bad_array_new_length & e) {
+  } catch(const std::bad_array_new_length & e) {
     nothrow.handler(nothrow.ptr,11410,e.what(),nullptr);
 #endif
-  } catch(const bad_alloc & e) {
+  } catch(const std::bad_alloc & e) {
     nothrow.handler(nothrow.ptr,11400,e.what(),nullptr);
 #ifdef __PLUMED_LIBCXX11
-  } catch(const bad_function_call & e) {
+  } catch(const std::bad_function_call & e) {
     nothrow.handler(nothrow.ptr,11300,e.what(),nullptr);
-  } catch(const bad_weak_ptr & e) {
+  } catch(const std::bad_weak_ptr & e) {
     nothrow.handler(nothrow.ptr,11200,e.what(),nullptr);
 #endif
-  } catch(const bad_cast & e) {
+  } catch(const std::bad_cast & e) {
     nothrow.handler(nothrow.ptr,11100,e.what(),nullptr);
-  } catch(const bad_typeid & e) {
+  } catch(const std::bad_typeid & e) {
     nothrow.handler(nothrow.ptr,11000,e.what(),nullptr);
     // not implemented yet: std::regex_error
     // we do not allow regex yet due to portability problems with gcc 4.8
@@ -108,10 +106,10 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
 #ifdef __PLUMED_LIBCXX11
     int value=e.code().value();
     const void* opt[3]= {"c",&value,nullptr}; // "c" passes the error code. nullptr terminates the optional part.
-    if(e.code().category()==generic_category()) nothrow.handler(nothrow.ptr,10230,e.what(),opt);
-    else if(e.code().category()==system_category()) nothrow.handler(nothrow.ptr,10231,e.what(),opt);
-    else if(e.code().category()==iostream_category()) nothrow.handler(nothrow.ptr,10232,e.what(),opt);
-    else if(e.code().category()==future_category()) nothrow.handler(nothrow.ptr,10233,e.what(),opt);
+    if(e.code().category()==std::generic_category()) nothrow.handler(nothrow.ptr,10230,e.what(),opt);
+    else if(e.code().category()==std::system_category()) nothrow.handler(nothrow.ptr,10231,e.what(),opt);
+    else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10232,e.what(),opt);
+    else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10233,e.what(),opt);
     else
 #endif
       // 10239 represents std::ios_base::failure with default constructur
@@ -120,10 +118,10 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
   } catch(const std::system_error & e) {
     int value=e.code().value();
     const void* opt[3]= {"c",&value,nullptr}; // "c" passes the error code. nullptr terminates the optional part.
-    if(e.code().category()==generic_category()) nothrow.handler(nothrow.ptr,10220,e.what(),opt);
-    else if(e.code().category()==system_category()) nothrow.handler(nothrow.ptr,10221,e.what(),opt);
-    else if(e.code().category()==iostream_category()) nothrow.handler(nothrow.ptr,10222,e.what(),opt);
-    else if(e.code().category()==future_category()) nothrow.handler(nothrow.ptr,10223,e.what(),opt);
+    if(e.code().category()==std::generic_category()) nothrow.handler(nothrow.ptr,10220,e.what(),opt);
+    else if(e.code().category()==std::system_category()) nothrow.handler(nothrow.ptr,10221,e.what(),opt);
+    else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10222,e.what(),opt);
+    else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10223,e.what(),opt);
     // fallback to generic runtime_error
     else nothrow.handler(nothrow.ptr,10200,e.what(),nullptr);
 #endif
@@ -194,7 +192,8 @@ namespace PLMD {
 /// backward compatibility. Notice that as of plumed 2.5 the plumed_kernel_register is found
 /// using dlsym, in order to allow the libplumedKernel library to be loadable also when
 /// the plumed_kernel_register symbol is not available.
-static class PlumedMainInitializer {
+namespace {
+class PlumedMainInitializer {
   const bool debug;
 public:
   PlumedMainInitializer():
@@ -245,6 +244,7 @@ public:
     if(debug) fprintf(stderr,"+++ Finalizing PLUMED with plumed_symbol_table at %p\n",(void*)&plumed_symbol_table);
   }
 } PlumedMainInitializerRegisterMe;
+}
 
 }
 

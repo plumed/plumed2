@@ -1,0 +1,4 @@
+type=plumed
+plumed_needs=boost_serialization
+plumed_modules=drr
+arg="drr_tool --merge ../dir1/eabf_win1.drrstate,../dir2/eabf_win2.drrstate --merge_output merged"

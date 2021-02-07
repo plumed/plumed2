@@ -139,7 +139,7 @@ public:
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
-  unsigned int dim;
+  size_t dim;
   std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
@@ -217,7 +217,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   PLMD::PlumedMain* plumed=NULL;
   PLMD::PlumedMain* plumed_bf=NULL;
 
-  unsigned int replicas;
+  size_t replicas;
   unsigned int coresPerReplica;
   parse("replicas",replicas);
   if(replicas==1) {
@@ -481,7 +481,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_coeffsout.close();
 
   if(pc.Get_rank() == 0) {
-    fprintf(out,"Replicas                              %u\n",replicas);
+    fprintf(out,"Replicas                              %zu\n",replicas);
     fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
     fprintf(out,"Number of steps                       %u\n",nsteps);
     fprintf(out,"Timestep                              %f\n",tstep);
@@ -494,7 +494,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     fprintf(out,"Random seed                           %d",seeds_vec[0]);
     for(unsigned int i=1; i<seeds_vec.size(); i++) {fprintf(out,",%d",seeds_vec[i]);}
     fprintf(out,"\n");
-    fprintf(out,"Dimensions                            %u\n",dim);
+    fprintf(out,"Dimensions                            %zu\n",dim);
     for(unsigned int i=0; i<dim; i++) {
       fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
     }
@@ -564,7 +564,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   for(unsigned int k=0; k<dim; k++) {
     positions[0][k] = initPos[inter.Get_rank()][k];
     if(periodic[k]) {
-      positions[0][k] = positions[0][k] - floor(positions[0][k]/interval_range[k]+0.5)*interval_range[k];
+      positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
     }
     else {
       if(positions[0][k]>interval_max[k]) {positions[0][k]=interval_max[k];}
@@ -614,7 +614,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       positions[0][k] = positions[0][k] + tstep*velocities[0][k];
 
       if(periodic[k]) {
-        positions[0][k] = positions[0][k] - floor(positions[0][k]/interval_range[k]+0.5)*interval_range[k];
+        positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
       }
       else {
         if(positions[0][k]>interval_max[k]) {
@@ -669,7 +669,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   if(plumed) {delete plumed;}
   if(plumed_bf) {delete plumed_bf;}
   if(potential_expansion_pntr) {delete potential_expansion_pntr;}
-  if(coeffs_pntr) {delete coeffs_pntr;}
+  delete coeffs_pntr;
   for(unsigned int i=0; i<args.size(); i++) {delete args[i];}
   args.clear();
   //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );

@@ -85,8 +85,8 @@ PRINT ARG=q6.mean FILE=colvar
 
 If you simply want to examine the values of the Q6 parameters for each of the atoms in your system you can do so by exploiting the
 command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format
-called q6.xyz for each frame of the analysed MD trajectory.  The first column in this file will contain a dummy name for each of the
-atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q6 paramter, columns
+called q6.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
+atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q6 parameter, columns
 6-19 will contain the real parts of the director of the \f$q_{6m}\f$ vector while columns 20-33 will contain the imaginary parts of this director.
 
 \plumedfile
