@@ -648,6 +648,15 @@ Bottom line: manual will always be updated after a commit that can pass the test
 Twenty minutes or so after your push the manual should be up to date, remember to double check on the web
 and to revert the commit if there are errors!
 
+If you are working on a branch called your-branch you can view the documentation that is constructed by
+GitHub by using the folllowing command:
+
+\verbatim
+git push -f origin your-branch:testdoc
+\endverbatim
+
+The documentation that is constructed by this command will be pushed to https://github.com/plumed/doc-testdoc
+
 It is possible to generate PLUMED manuals for your own personal forks 
 using a similar procedure as described above. 
 For this to work you need to enable Travis CI for your forked repository 
