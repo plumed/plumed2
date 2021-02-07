@@ -10,7 +10,7 @@ You will find a "show defaults" button by the boxes that shows a configure comma
 Information on what is controlled by each flag is provided through tooltips, which you are shown if you hover over the flag.  
 
 Some flags are shown in bold in the short versions of the configure commands below.  Clicking on these commands will open a pop-up window that contains further information 
-about the flag.
+about the flag.  You will most likely not need to worry about the information in these pop ups but it may be worth considering.
 
 PLUMED can be used in tandem with the MD codes shown in the table on the right below.  To see instructions on what you must do in order have versions
 of these codes that work with PLUMED click the checkbox associated with the code you require.  Instructions on patching the code you select with PLUMED 
@@ -488,9 +488,10 @@ or switch to static compilation of PLUMED by unsetting the SOEXT variable in the
 </div>
 <div class="modal-body">
 <p>The <code>--enable-molfile-plugins</code> flag ensures that PLUMED is linked with VMD plugins. If PLUMED is configured with this flag you will thus be able to 
-read many more trajectory formats for analysis with plumed driver. The PLUMED source code only contains VMD plugins for a small number of trajectory formats (dcd, gromacs files, pdb and amber files) 
-If you use the the <code>--enable-molfile-plugins</code> flag, however, you can read all the types of trajectory file that VMD can read.  
-You may, therefore, wish to use your own version of the mofile plugins so as to be able to deal with more types of trajectory file.  If you wish to do so you can get the molfile plugins by 
+read all the trajectory formats that VMD can read with plumed driver. 
+
+To be clear the PLUMED source code contains VMD plugins for a small number of trajectory formats (dcd, gromacs files, pdb and amber files) so you will most likely not need this flag.
+You will only need it you would like to be able to read in some a particularly exotic trajectory file type.  If you do need to work with these other types of file can get the molfile plugins by 
 downloading the SOURCE of VMD. This sourcecode contains
 a plugins directory. You will need to adapt the build.sh script within this directory and then compile the code within the directory. Once this process is completed
 you should get the molfile plugins compiled as a static library called <code>libmolfile_plugin.a</code>. The location of this library, the <code>libmolfile_plugin.h</code> and 
