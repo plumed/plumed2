@@ -10,7 +10,8 @@ You will find a "show defaults" button by the boxes that shows a configure comma
 Information on what is controlled by each flag is provided through tooltips, which you are shown if you hover over the flag.  
 
 Some flags are shown in bold in the short versions of the configure commands below.  Clicking on these commands will open a pop-up window that contains further information 
-about the flag.  You will most likely not need to worry about the information in these pop ups but it may be worth considering.
+about the flag.  You will most likely not need to worry about the information in these pop ups but it may be worth considering as these options can affect the performance of the
+compiled code.
 
 PLUMED can be used in tandem with the MD codes shown in the table on the right below.  To see instructions on what you must do in order have versions
 of these codes that work with PLUMED click the checkbox associated with the code you require.  Instructions on patching the code you select with PLUMED 
