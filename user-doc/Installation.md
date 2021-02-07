@@ -1,8 +1,10 @@
 \page Installation Installation
 
-The instructions that follow explain how to compile a single version of plumed on a local machine.  For most users the instructions 
+The instructions that follow explain how to configure, compile and install a single version of plumed on a local machine.  For most users the instructions 
 below will work fine.  A small fraction of users will want to do something more complicated at install time.  Such users can 
-use the "How would you like to build PLUMED" button below to get instructions on what to do in these more exotic cases.
+use the "How would you like to build PLUMED" button below to get instructions on what to do in these more exotic cases.  
+
+It is perhaps easiest to install PLUMED using the macports or conda package manager.  For instructions on how to install PLUMED in this way "How would you like to build PLUMED" button. 
 
 You will find a "show defaults" button by the boxes that shows a configure command below.  If you click this button the default flags that are used when that command is executed are shown.
 Information on what is controlled by each flag is provided through tooltips, which you are shown if you hover over the flag.  
@@ -486,9 +488,10 @@ or switch to static compilation of PLUMED by unsetting the SOEXT variable in the
 </div>
 <div class="modal-body">
 <p>The <code>--enable-molfile-plugins</code> flag ensures that PLUMED is linked with VMD plugins. If PLUMED is configured with this flag you will thus be able to 
-read many more trajectory formats for analysis with plumed driver. This option is thus enabled by deafult so including the <code>--enable-molfile-plugins</code> flag  
-is not strictly necessary. Furthermore, PLUMED includes the molfile sourcecode and you thus do not need to link to an external library. If, however, you wish to 
-use your own version of the mofile plugins you can get them by downloading the SOURCE of VMD. This sourcecode contains
+read many more trajectory formats for analysis with plumed driver. The PLUMED source code only contains VMD plugins for a small number of trajectory formats (dcd, gromacs files, pdb and amber files) 
+If you use the the <code>--enable-molfile-plugins</code> flag, however, you can read all the types of trajectory file that VMD can read.  
+You may, therefore, wish to use your own version of the mofile plugins so as to be able to deal with more types of trajectory file.  If you wish to do so you can get the molfile plugins by 
+downloading the SOURCE of VMD. This sourcecode contains
 a plugins directory. You will need to adapt the build.sh script within this directory and then compile the code within the directory. Once this process is completed
 you should get the molfile plugins compiled as a static library called <code>libmolfile_plugin.a</code>. The location of this library, the <code>libmolfile_plugin.h</code> and 
 the <code>molfile_plugin.h</code> include files will then need to be passed to configure using a command similar to:</p>
@@ -500,7 +503,7 @@ the <code>molfile_plugin.h</code> include files will then need to be passed to c
 &gt; ./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
          CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 </pre>
-<p>To be clear, however, the molfile plugin sourcecode is included in PLUMED and you can thus use these features even if you do not download VMD on your machine.</p>
+<p>To be clear, however, some of the molfile plugin sourcecode is included in PLUMED and you can thus use some of the most common types of trajectory file even if you do not download VMD on your machine.</p>
 </div>
 </div>
 </div>
