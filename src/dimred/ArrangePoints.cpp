@@ -25,6 +25,7 @@
 #include "tools/ConjugateGradient.h"
 #include "tools/SwitchingFunction.h"
 #include "gridtools/GridSearch.h"
+#include "SMACOF.h"
 
 namespace PLMD {
 namespace dimred {
@@ -39,14 +40,17 @@ class ArrangePoints :
 public ActionWithValue,
 public ActionWithArguments {
 private: 
-  unsigned ncycles, current_index;
+  unsigned maxiter, ncycles, current_index;
   double cgtol, gbuf;
   std::vector<unsigned> npoints, nfgrid;
   std::vector<double> mypos;
+  double smacof_tol, smacof_reg; 
+  int dist_target;
   bool updateWasRun;
-  enum {conjgrad,pointwise} mintype;
+  enum {conjgrad,pointwise,smacof} mintype;
   std::vector<SwitchingFunction> switchingFunction;
   void checkInputMatrix( const std::string& key, const unsigned& nvals, const std::vector<Value*>& mat ) const ;
+  double recalculateSmacofWeights( const std::vector<double>& p, SMACOF& mysmacof ) const ;
 protected:
   double calculateStress( const std::vector<double>& p, std::vector<double>& d );
   double calculateFullStress( const std::vector<double>& p, std::vector<double>& d );
@@ -70,11 +74,14 @@ void ArrangePoints::registerKeywords( Keywords& keys ) {
   keys.add("numbered","FUNC","a function that is applied on the distances between the points in the low dimensional space");
   keys.add("numbered","WEIGHTS","the matrix with the weights of the target quantities");
   keys.add("compulsory","MINTYPE","conjgrad","the method to use for the minimisation");
+  keys.add("compulsory","MAXITER","1000","maximum number of optimization cycles for optimisation algorithms");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
   keys.add("compulsory","NCYCLES","5","the number of cycles of global optimization to attempt");
   keys.add("compulsory","BUFFER","1.1","grid extent for search is (max projection - minimum projection) multiplied by this value");
   keys.add("compulsory","CGRID_SIZE","10","number of points to use in each grid direction");
   keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");
+  keys.add("compulsory","SMACTOL","1E-4","the tolerance for the smacof algorithm");
+  keys.add("compulsory","SMACREG","0.001","this is used to ensure that we don't divide by zero when updating weights for SMACOF algorithm"); 
   keys.addOutputComponent("coord","default","the coordinates of the points in the low dimensional space");
 }
 
@@ -84,6 +91,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   ActionWithValue(ao),
   ActionWithArguments(ao),
   current_index(0),
+  dist_target(-1),
   updateWasRun(false)
 {
   std::vector<unsigned> shape(1); shape[0]=0; 
@@ -95,7 +103,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
       if( getPntrToArgument(arg_ends[i])->isTimeSeries() ) getPntrToOutput(i)->makeTimeSeries();
   }
-  std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors;
+  std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors; 
   // Read in target "distances" and target weights
   for(unsigned i=1;;++i) {
       target.resize(0); if( !parseArgumentList("TARGET",i,target) ) break; 
@@ -105,7 +113,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       args.push_back( target[0] ); args.push_back( weights[0] );
       bool has_sf = parseNumbered("FUNC",i,sfd); switchingFunction.push_back( SwitchingFunction() );
       if( !has_sf ) {  
-         switchingFunction[i-1].set( "CUSTOM FUNC=1-sqrt(x2) R_0=1.0", errors );
+         switchingFunction[i-1].set( "CUSTOM FUNC=1-sqrt(x2) R_0=1.0", errors ); dist_target=i-1;
       } else {
          switchingFunction[i-1].set( sfd, errors );
          if( errors.length()!=0 ) error("problem reading switching function description " + errors); 
@@ -133,8 +141,17 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
         for(unsigned j=1; j<nfgrid.size(); ++j) log.printf(" by %u",nfgrid[j]);
         log.printf("\n");
       }
+  } else if( mtype=="smacof" ) {
+      mintype=smacof; if( dist_target<0 ) error("one of targets must be distances in order to use smacof");
+      log.printf("  minimising stress fucntion using smacof\n");
+      parse("SMACTOL",smacof_tol); parse("SMACREG",smacof_reg);
+      log.printf("  tolerance for smacof algorithms equals %f \n", smacof_tol);
+      log.printf("  using %f as regularisation parameter for weights in smacof algorithm\n", smacof_reg);
   } else error("invalid MINTYPE");   
-  parse("CGTOL",cgtol); log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
+  if( mintype!=smacof) {
+      parse("CGTOL",cgtol); log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
+  }
+  parse("MAXITER",maxiter); log.printf("  maximum number of iterations for minimimization algorithms equals %d \n", maxiter );
   requestArguments( args, false ); checkRead();
 }
 
@@ -204,6 +221,37 @@ double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::ve
   return stress;
 }
 
+double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SMACOF& mysmacof ) const {
+  unsigned nlow = arg_ends.size()-1; double stress=0, totalWeight=0; 
+  unsigned nmatrices = ( getNumberOfArguments() - arg_ends[arg_ends.size()-1] ) / 2;
+  std::vector<unsigned> shape( getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape() ); 
+  for(unsigned i=1; i<shape[0]; ++i) {
+    for(unsigned j=0; j<i; ++j) {
+      // Calculate distance in low dimensional space
+      double dd2=0; for(unsigned k=0; k<nlow; ++k) { double dtmp=p[nlow*i+k] - p[nlow*j+k]; dd2+=dtmp*dtmp; }
+      // Calculate difference between target difference and true difference
+      double wval=0, dd1 = sqrt(dd2); double diff = mysmacof.getDistance(i,j) - dd1;
+
+      for(unsigned k=0; k<nmatrices; ++k ) {
+          // Don't need to do anything for distances we are matching 
+          if( k==dist_target ) continue;
+          // Now do transformations and calculate differences
+          double df, fd = 1. - switchingFunction[k].calculateSqr( dd2, df );
+          // Get the weight for this connection 
+          double weight = getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k + 1 )->get( shape[0]*i+j );
+          // Get the difference for the connection
+          double fdiff = getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k )->get( shape[0]*i+j ) - fd;
+          // Now set the weight if difference in distance is larger than regularisation parameter
+          if( fabs(diff)>smacof_reg  ) wval -= weight*fdiff*df*dd1 / diff;
+          // And the total stress and weights
+          stress += weight*fdiff*fdiff; totalWeight += weight;
+      } 
+      mysmacof.setWeight( j, i, wval ); mysmacof.setWeight( i, j, wval );
+    }
+  }
+  return stress / totalWeight;
+}
+
 void ArrangePoints::optimize( std::vector<double>& pos ) {
   ConjugateGradient<ArrangePoints> mycgminimise( this );
   if( mintype==conjgrad ) {
@@ -244,6 +292,19 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
         }
         for(unsigned i=0;i<mypos.size();++i) pos[i] = mypos[i];
     }
+  } else if( mintype==smacof ) {
+        SMACOF mysmacof( getPntrToArgument(arg_ends[arg_ends.size()-1] + 2*dist_target) ); double stress = recalculateSmacofWeights( pos, mysmacof ); 
+
+        for(unsigned i=0; i<maxiter; ++i) {
+            // Optimise using smacof and current weights
+            mysmacof.optimize( smacof_tol, maxiter, pos );
+            // Recalculate weights matrix and sigma
+            double newsig = recalculateSmacofWeights( pos, mysmacof );
+            // Test whether or not the algorithm has converged
+            if( fabs( newsig - stress )<smacof_tol ) break;
+            // Make initial sigma into new sigma so that the value of new sigma is used every time so that the error can be reduced
+            stress=newsig;
+        }
   }
 }
 
