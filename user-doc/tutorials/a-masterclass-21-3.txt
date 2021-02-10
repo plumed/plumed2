@@ -1,0 +1,261 @@
+/**
+\page masterclass-21-3 PLUMED Masterclass 21.3: Umbrella sampling
+
+\authors Giovanni Bussi
+\date February 15, 2021
+
+\section masterclass-21-3-aims Aims
+
+In this Masterclass, we will discuss how to perform and analyze umbrella sampling simulations. We will learn how to introduce a bias potential with PLUMED, how to compute free energy landscapes, and how to reweight the resulting ensembles. We will also understand how to compute statistical errors on the computed quantities.
+
+\section masterclass-21-3-lo Objectives
+
+Once you have completed this Masterclass you will be able to:
+
+- Use PLUMED to run simulations using static bias potentials with different functional forms.
+- Use WHAM to combine multiple simulations performed with different bias potentials.
+- Reweight the resulting ensembles so as to obtain the free-energy profile as a function of a different variable.
+- Calculate error bars on free energies and populations.
+ 
+\section masterclass-21-3-install Setting up PLUMED
+
+If you have not yet set up PLUMED, you can find information about installing it in the section \ref masterclass-21-1-install of \ref masterclass-21-1.
+
+Once you have installed PLUMED, you will need to install GROMACS as well. In particular, you will need a special version of GROMACS that has been patched with PLUMED. You can obtain it using conda with the following command
+
+\verbatim
+conda install --strict-channel-priority -c plumed/label/masterclass -c conda-forge gromacs
+\endverbatim
+
+The `--strict-channel-priority` might be necessary in case your conda install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **NOT** patched with PLUMED.
+
+On Linux, the command above should install the following packages:
+
+\verbatim
+  gromacs            plumed/label/masterclass/linux-64::gromacs-2019.6-h3fd9d12_0
+  libclang           conda-forge/linux-64::libclang-11.0.1-default_ha53f305_1
+  libevent           conda-forge/linux-64::libevent-2.1.10-hcdb4288_3
+  libhwloc           conda-forge/linux-64::libhwloc-1.11.13-h3c4fd83_0
+  libllvm11          conda-forge/linux-64::libllvm11-11.0.1-hf817b99_0
+  libpq              conda-forge/linux-64::libpq-12.3-h255efa7_3
+  [ etc ... ]
+\endverbatim
+
+The exact versions might be different. Notice however that GROMACS comes from the plumed/label/masterclass channel, whereas the required libraries come from conda-forge. To be sure the installed GROMACS is patched with PLUMED, try the following shell command:
+
+\verbatim
+gmx mdrun -h 2> /dev/null | grep -q plumed && echo ok
+\endverbatim
+
+It should print ok.
+
+Please ensure that you have setup PLUMED and GROMACS on your machine before starting the exercises. Also notice that in order to obtain good performances it is better to compile GROMACS from source on the machine you are running your simulations. You can find out in the PLUMED documention how to patch GROMACS with PLUMED so as to be able to install it from source. For this tutorial, the conda precompiled binaries will be sufficient.
+
+\section masterclass-21-3-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-3).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/plumed/masterclass-21-3.git
+\endverbatim
+
+The data you need is in the folder called `data`.  You will find the following files in that folder:
+
+- `topolA.tpr`: an input file that can be used to run a GROMACS simulation of alanine dipeptide starting from one 
+  of the two main free-energy minima
+- `topolB.tpr`: same as `topolA.tpr`, but starting from the other minimum.
+- `wham.py`: a python script that can be used to perform binless WHAM analysis
+
+Notice that PLUMED input files have not been provided in the GitHub repository.  You must prepare these input files yourself using the templates below.
+
+We would recommend that you run each exercise in separate sub-directories inside the root directory `masterclass-21-3`.
+
+\note All the exercises were tested with PLUMED version 2.7.0 and GROMACS 2019.6
+
+\section masterclass-21-3-ex Exercises
+
+Throughout this tutorial we will run simulations of alanine dipeptide in vacuum using GROMACS and PLUMED.
+Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
+it is complex enough to be used in learning them. Some of the command below are specific for GROMACS, but
+all the PLUMED input files are compatible with other MD engines as well.
+
+\subsection masterclass-21-3-ex-1 Exercise 1: Running an unbiased simulation with PLUMED
+
+In \ref masterclass-21-1 we learned how to analyze trajectories a posteriori. One of the nice features of PLUMED is that
+the very same analysis can be done on the fly. In other words, you might compute your collective variables while GROMACS is running
+instead of waiting for the simulation to end. This can have some advantage in cases where you want to run a large number of
+simulations, you already know what to compute, and you do not want to waste too much disk space.
+
+To run a simulation with GROMACS you have to type this command in the shell:
+
+\verbatim
+gmx mdrun -plumed plumed.dat -s topolA.tpr -nsteps 200000 -x traj_unbiased.xtc
+\endverbatim
+
+Notice that the file `topolA.tpr` contains all the relevant information (simulation parameters, initial conditions, etc.).
+In this tutorial we will just need to play with the number of steps (200000 in the example above)
+and we will tune the name of the trajectory saved by GROMACS (traj_unbiased.xtc in the example above).
+
+The command above will only succeed if a file named `plumed.dat` exists in the current directory.
+We know how to create such file from \ref masterclass-21-1. In \ref masterclass-21-2 we also learned
+how to compute histograms. You can complete the template below:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=reference.pdb
+phi: TORSION ATOMS=__FILL__
+psi: TORSION ATOMS=__FILL__
+
+# use the command below to compute the histogram of phi
+# we use a smooth kernel to produce a nicer graph here
+hhphi: HISTOGRAM ARG=__FILL__ STRIDE=100 GRID_MIN=-pi GRID_MAX=__FILL__ GRID_BIN=600 BANDWIDTH=0.05
+ffphi: CONVERT_TO_FES GRID=hhphi # no need to set TEMP here, PLUMED will obtain it from GROMACS
+DUMPGRID GRID=__FILL__ FILE=fes_phi.dat STRIDE=200000 # stride is needed here since PLUMED does not know when the simulation is over
+
+# now add three more lines to compute and dump the free energy as a function of **psi** on a file names fes_psi.dat
+__FILL__
+
+PRINT __FILL__ # use this command to write phi and psi on a file named colvar.dat, every 100 steps
+\endplumedfile
+
+You can then monitor what happened during the simulation using these commands
+\code{.py}
+
+import plumed
+import matplotlib.pyplot as plt
+import numpy as np
+
+colvar=plumed.read_as_pandas("colvar.dat")
+plt.plot(colvar.time,colvar.phi,"x",label="phi")
+plt.plot(colvar.time,colvar.psi,"x",label="psi")
+plt.xlabel("time")
+plt.ylabel("$\phi$")
+plt.legend()
+plt.show()
+
+plt.plot(colvar.phi,colvar.psi,"x")
+plt.xlabel("$\phi$")
+plt.ylabel("$\psi$")
+plt.xlim((-np.pi,np.pi))
+plt.ylim((-np.pi,np.pi))
+plt.show()
+
+fes_phi=plumed.read_as_pandas("fes_phi").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phi.phi,fes_phi.ffphi)
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\phi$")
+plt.ylabel("$F(\phi)$")
+plt.show()
+
+fes_psi=plumed.read_as_pandas("fes_psi").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psi.psi,fes_psi.ffpsi)
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\psi$")
+plt.ylabel("$F(\psi)$")
+plt.show()
+
+\endcode
+
+\subsection masterclass-21-3-ex-2 Exercise 2: Running biased simulations with PLUMED
+
+We are now ready to use PLUMED to perform the task it was originally designed for: biasing a simulation on the fly.
+We will first try to add simple bias potentials. Not particularly useful here, but we will be able to test the same type
+of analysis we did in \ref masterclass-21-2. In the previous exercise you should have seen a free energy displaying two
+minima at phi approximately equal to -2.5 and -1.5, separated by a barrier located at phi approximately equal to -2.
+We can predict that adding a bias potential in the form `A*sin(x+2)`, with A positive and large enough, should favor the minimum at -2.5.
+We can try with A=5 using an input file like the following one:
+\plumedfile
+# vim:ft=plumed
+__FILL__ # compute phi and psi here
+
+# fill in with the required function
+f: CUSTOM ARG=phi FUNC=__FILL__ PERIODIC=NO 
+
+# this command allows to add a bias potential equal to f
+BIASVALUE ARG=f
+
+# here you can paste the same HISTOGRAM/CONVERT_TO_FES/DUMPGRID commands that you used in
+# the previous exercise. let's just write on a different file
+hhphi: __FILL__
+ffphi: __FILL__
+DUMPGRID FILE=fes_phi_biased1.dat __FILL__
+hhpsi: __FILL__
+ffpsi: __FILL__
+DUMPGRID FILE=fes_psi_biased1.dat __FILL__
+
+lw: REWEIGHT_BIAS
+
+# and here we do the same again, but this time using LOGWEIGHTS.
+# these free energies will be printed on files fes_phi_biased1r.dat and 
+# fes_psi_biased1r.dat and will be reweighted so as to be unbiased
+hhphir: __FILL__ LOGWEIGHTS=lw
+ffphir: __FILL__
+DUMPGRID FILE=fes_phi_biased1r.dat __FILL__
+
+hhpsir: __FILL__ LOGWEIGHTS=lw
+ffpsir: __FILL__
+DUMPGRID FILE=fes_psi_biased1r.dat __FILL__
+
+PRINT __FILL__ # monitor what's happening, as before
+\endplumedfile
+
+You can then monitor what happened during the simulation using these commands
+\code{.py}
+colvar=plumed.read_as_pandas("colvar_biased1.dat")
+plt.plot(colvar.time,colvar.phi,"x",label="phi")
+plt.plot(colvar.time,colvar.psi,"x",label="psi")
+plt.xlabel("time")
+plt.ylabel("$\phi$")
+plt.legend()
+plt.show()
+
+plt.plot(colvar.phi,colvar.psi,"x")
+plt.xlabel("$\phi$")
+plt.ylabel("$\psi$")
+plt.xlim((-np.pi,np.pi))
+plt.ylim((-np.pi,np.pi))
+plt.show()
+
+fes_phi=plumed.read_as_pandas("fes_phi.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phi.phi,fes_phi.ffphi,label="original")
+fes_phib=plumed.read_as_pandas("fes_phi_biased1.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phib.phi,fes_phib.ffphi,label="biased")
+fes_phir=plumed.read_as_pandas("fes_phi_biased1r.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phir.phi,fes_phir.ffphir,label="reweighted")
+plt.legend()
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\phi$")
+plt.ylabel("$F(\phi)$")
+plt.show()
+
+fes_psi=plumed.read_as_pandas("fes_psi.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psi.psi,fes_psi.ffpsi,label="original")
+fes_psib=plumed.read_as_pandas("fes_psi_biased1.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psib.psi,fes_psib.ffpsi,label="biased")
+fes_psir=plumed.read_as_pandas("fes_psi_biased1r.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psir.psi,fes_psir.ffpsir,label="reweighted")
+plt.legend()
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\psi$")
+plt.ylabel("$F(\psi)$")
+plt.show()
+\endcode
+
+\subsection masterclass-21-3-ex-3 Exercise 3: Combining statistics from biased and unbiased simulations
+
+\subsection masterclass-21-3-ex-4 Exercise 4: Enhanced conformational transitions with umbrella sampling
+
+\subsection masterclass-21-3-ex-5 Exercise 5: Enhanced conformational transitions with multiple-windows umbrella sampling
+
+\subsection masterclass-21-3-ex-5 Exercise 6: Analyzing other collective variables
+
+\section masterclass-21-3-fr Further reading
+
+If you want to know more about good practise using PLUMED you can read https://arxiv.org/abs/1812.08213.  We would also recommend learning about kernel density estimation, which will often give you smoother
+histograms.  You can start learning about kernel density estimation by reading https://en.wikipedia.org/wiki/Kernel_density_estimation.
+
+*/
+
+link: @subpage masterclass-21-3 
+
+description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
