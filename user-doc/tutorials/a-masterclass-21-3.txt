@@ -77,7 +77,7 @@ We would recommend that you run each exercise in separate sub-directories inside
 
 Throughout this tutorial we will run simulations of alanine dipeptide in vacuum using GROMACS and PLUMED.
 Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
-it is complex enough to be used in learning them. Some of the command below are specific for GROMACS, but
+it is complex enough to be used in learning them. Some of the commands below are specific for GROMACS, but
 all the PLUMED input files are compatible with other MD engines as well.
 
 \subsection masterclass-21-3-ex-1 Exercise 1: Running an unbiased simulation with PLUMED
@@ -99,7 +99,8 @@ and we will tune the name of the trajectory saved by GROMACS (traj_unbiased.xtc 
 
 The command above will only succeed if a file named `plumed.dat` exists in the current directory.
 We know how to create such file from \ref masterclass-21-1. In \ref masterclass-21-2 we also learned
-how to compute histograms. You can complete the template below:
+how to compute histograms. You should be thus able to complete the template below and put it in a
+file named `plumed.dat`.
 \plumedfile
 # vim:ft=plumed
 MOLINFO STRUCTURE=reference.pdb
@@ -156,14 +157,21 @@ plt.show()
 
 \endcode
 
+In this manner you will be able to see (a) the time series of phi and psi, (b) which portion of the
+phi,psi space has been explored (c) the free energy as a function of phi and (d) the free energy as a function of psi.
+In particular, you should be able to identify two minima separated by a moderate barrier, and several transisions
+in the simulated time scale.
+
 \subsection masterclass-21-3-ex-2 Exercise 2: Running biased simulations with PLUMED
 
 We are now ready to use PLUMED to perform the task it was originally designed for: biasing a simulation on the fly.
-We will first try to add simple bias potentials. Not particularly useful here, but we will be able to test the same type
-of analysis we did in \ref masterclass-21-2. In the previous exercise you should have seen a free energy displaying two
-minima at phi approximately equal to -2.5 and -1.5, separated by a barrier located at phi approximately equal to -2.
-We can predict that adding a bias potential in the form `A*sin(x+2)`, with A positive and large enough, should favor the minimum at -2.5.
-We can try with A=5 using an input file like the following one:
+We will first try to add simple bias potentials that change the balance between the two minima we have obtained in the previous exercise.
+Not particularly useful here since both minima were sampled anyways. However, it is instructive since we will be able to test the same type
+of analysis we did in \ref masterclass-21-2. The two minima observed in the previous exercise are located
+at phi approximately equal to -2.5 and -1.5, separated by a barrier located at phi approximately equal to -2.
+We can predict that adding a bias potential in the form `-A*sin(x+2)`, with A positive and large enough, should favor the minimum at -1.5
+at the expense of the other.
+We can try with A=10 using an input file like the following one:
 \plumedfile
 # vim:ft=plumed
 __FILL__ # compute phi and psi here
@@ -196,8 +204,14 @@ hhpsir: __FILL__ LOGWEIGHTS=lw
 ffpsir: __FILL__
 DUMPGRID FILE=fes_psi_biased1r.dat __FILL__
 
-PRINT __FILL__ # monitor what's happening, as before
+PRINT __FILL__ # monitor what's happening, as before, writing on file plumed_colvar1.dat
 \endplumedfile
+
+Call this file `plumed_biased1.dat` and run the simulation using this command:
+\verbatim
+gmx mdrun -plumed plumed_biased1.dat -s topolA.tpr -nsteps 200000 -x traj_comp_biased1.xtc
+\endverbatim
+Notice that we are storing the trajectory on a separate file. We will need it later.
 
 You can then monitor what happened during the simulation using these commands
 \code{.py}
@@ -241,13 +255,150 @@ plt.ylabel("$F(\psi)$")
 plt.show()
 \endcode
 
+The free-energy plots here will include three lines: (a) the original one (as obtained from the previous exercise),
+(b) the one sampled in this second simulation, where the minimum at higher phi appears more stable, and
+(c) the reweighted free-energy from the second simulation, that should look closer to the original one.
+Notice that the relationship between plots (b) and (c) is straightforward when the analyzed variable is
+phi: the third line could have been obtained by just adding -10/(kBT) sin(x+2) to the second line.
+However, when analyzing psi the effect is less obvious.
+
 \subsection masterclass-21-3-ex-3 Exercise 3: Combining statistics from biased and unbiased simulations
 
-\subsection masterclass-21-3-ex-4 Exercise 4: Enhanced conformational transitions with umbrella sampling
+We will now run a new simulation that is even more biased, and precisely choosing the prefactor A=20.
+This will favor even more the minimum at higher values of phi.
+Please prepare a plumed_biased2.dat input file nad run this simulation with the following command:
+\verbatim
+gmx mdrun -plumed plumed_biased2.dat -s topolA.tpr -nsteps 200000 -x traj_comp_biased2.xtc
+\endverbatim
+We will now use WHAM to combine the three simulations we have done so far, namely:
+(a) unbiased (`traj_comp_unbiased.xtc`),
+(b) biased (`traj_comp_biased1.xtc`), and
+(c) more biased (`traj_comp_biased2.xtc`).
 
-\subsection masterclass-21-3-ex-5 Exercise 5: Enhanced conformational transitions with multiple-windows umbrella sampling
+The first thing we have to do is to concatenate the three files:
+\verbatim
+gmx trjcat -cat -f traj_comp_unbiased.xtc traj_comp_biased1.xtc traj_comp_biased2.xtc -o traj_comp_cat.xtc
+\endverbatim
+Notice that this new trajectory contains all the simulated frames, and we not explicitly tracking
+from which of the simulation each frame originated from.
+We then have to compute the bias that would have been felt in each of the three runs above by each of the
+frames in the concatenated trajectory. We could do this reusing the three plumed input files we used above,
+but it is perhaps clearer to do it with a single input file in this case. You can use an input like this one:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=reference.pdb
+phi: TORSION ATOMS=@phi-2 
+psi: TORSION ATOMS=@psi-2
 
-\subsection masterclass-21-3-ex-5 Exercise 6: Analyzing other collective variables
+# here we list the bias potentials that we used in the three simulations we want to combine
+b0: CUSTOM ARG=phi FUNC=0.0 PERIODIC=NO
+b1: CUSTOM ARG=phi FUNC=__FILL__ PERIODIC=NO # fill here with the bias you used in the first biased simulation
+b2: CUSTOM ARG=phi FUNC=__FILL__ PERIODIC=NO # fill here with the bias you used in the second biased simulation
+PRINT ARG=phi,psi,b0,b1,b2 FILE=biases.dat
+\endplumedfile
+If you call it `plumed_wham.dat` you can then use the following command
+\plumedfile
+plumed driver --plumed plumed_wham.dat --ixtc traj_comp_cat.xtc
+\endplumedfile
+
+We are now ready to use binless WHAM to compute the weights associated to the concatenated trajectory.
+This can be done with the following script
+\code{.py}
+import wham
+print(wham.__file__) # this is to check that you actually imported the module located in this directory
+bias=plumed.read_as_pandas("biases.dat")
+kBT=300*8.314462618*0.001
+w=wham.wham(np.stack((bias.b0,bias.b1,bias.b2)).T,T=kBT)
+print(w)
+
+# you can then add a new column to the bias dataframe:
+print(bias)
+bias["logweights"]=w["logW"]
+print(bias)
+
+# and write it on disk
+plumed.write_pandas(bias,"bias_wham.dat")
+\endcode
+
+With the procedure above we computed the weights that can be associated to the concatenated trajectory
+so as to recover an unbiased distribution. We can then read them and use them in an analysis similar
+to the one we have done above
+\plumedfile
+# vim:ft=plumed
+phi: READ FILE=bias_wham.dat VALUES=phi
+psi: READ FILE=bias_wham.dat VALUES=psi
+lw:  READ FILE=bias_wham.dat VALUES=logweights
+
+hhphi: HISTOGRAM ARG=phi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+ffphi: CONVERT_TO_FES GRID=hhphi
+DUMPGRID GRID=ffphi FILE=fes_phi_cat.dat
+
+hhpsi: HISTOGRAM ARG=psi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffpsi FILE=fes_psi_cat.dat
+
+# we use a smooth kernel to produce a nicer graph here
+hhphir: HISTOGRAM ARG=phi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=lw
+ffphir: CONVERT_TO_FES GRID=hhphir
+DUMPGRID GRID=ffphir FILE=fes_phi_catr.dat
+
+hhpsir: HISTOGRAM ARG=psi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=lw
+ffpsir: CONVERT_TO_FES GRID=hhpsir
+DUMPGRID GRID=ffpsir FILE=fes_psi_catr.dat
+\endplumedfile
+Place this input in `plumed_wham.dat` and run the following command.
+
+\verbatim
+plumed driver --noatoms --plumed plumed_wham.dat --kt 2.4943387854
+\endverbatim
+
+You can now show the result with the following script
+\code{.py}
+colvar=plumed.read_as_pandas("bias_wham.dat")
+plt.plot(colvar.time,colvar.phi,"x",label="phi")
+plt.plot(colvar.time,colvar.psi,"x",label="psi")
+plt.xlabel("time")
+plt.ylabel("$\phi$")
+plt.legend()
+plt.show()
+
+plt.plot(colvar.phi,colvar.psi,"x")
+plt.xlabel("$\phi$")
+plt.ylabel("$\psi$")
+plt.xlim((-np.pi,np.pi))
+plt.ylim((-np.pi,np.pi))
+plt.show()
+
+fes_phi=plumed.read_as_pandas("fes_phi.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phi.phi,fes_phi.ffphi,label="original")
+fes_phib=plumed.read_as_pandas("fes_phi_cat.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phib.phi,fes_phib.ffphi,label="biased")
+fes_phir=plumed.read_as_pandas("fes_phi_catr.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_phir.phi,fes_phir.ffphir,label="reweighted")
+plt.legend()
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\phi$")
+plt.ylabel("$F(\phi)$")
+plt.show()
+
+fes_psi=plumed.read_as_pandas("fes_psi.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psi.psi,fes_psi.ffpsi,label="original")
+fes_psib=plumed.read_as_pandas("fes_psi_cat.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psib.psi,fes_psib.ffpsi,label="biased")
+fes_psir=plumed.read_as_pandas("fes_psi_catr.dat").replace([np.inf, -np.inf], np.nan).dropna()
+plt.plot(fes_psir.psi,fes_psir.ffpsir,label="reweighted")
+plt.legend()
+plt.xlim((-np.pi,np.pi))
+plt.xlabel("$\psi$")
+plt.ylabel("$F(\psi)$")
+plt.show()
+\endcode
+
+\subsection masterclass-21-3-ex-4 Exercise 4: Enhancing conformational transitions with umbrella sampling
+
+\subsection masterclass-21-3-ex-5 Exercise 5: Enhancing conformational transitions with multiple-windows umbrella sampling
+
+\subsection masterclass-21-3-ex-6 Exercise 6: Computing errors
 
 \section masterclass-21-3-fr Further reading
 
