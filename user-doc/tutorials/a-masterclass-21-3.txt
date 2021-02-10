@@ -325,9 +325,8 @@ so as to recover an unbiased distribution. We can then read them and use them in
 to the one we have done above
 \plumedfile
 # vim:ft=plumed
-phi: READ FILE=bias_wham.dat VALUES=phi
-psi: READ FILE=bias_wham.dat VALUES=psi
-lw:  READ FILE=bias_wham.dat VALUES=logweights
+# add three lines here that read the columns phi, psi, and logweights from file bias_wham.dat
+__FILL__
 
 hhphi: HISTOGRAM ARG=phi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
 ffphi: CONVERT_TO_FES GRID=hhphi
@@ -346,7 +345,7 @@ hhpsir: HISTOGRAM ARG=psi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 L
 ffpsir: CONVERT_TO_FES GRID=hhpsir
 DUMPGRID GRID=ffpsir FILE=fes_psi_catr.dat
 \endplumedfile
-Place this input in `plumed_wham.dat` and run the following command.
+Place the input in `plumed_wham.dat` and run the following command.
 
 \verbatim
 plumed driver --noatoms --plumed plumed_wham.dat --kt 2.4943387854
@@ -394,11 +393,106 @@ plt.ylabel("$F(\psi)$")
 plt.show()
 \endcode
 
-\subsection masterclass-21-3-ex-4 Exercise 4: Enhancing conformational transitions with umbrella sampling
+\subsection masterclass-21-3-ex-4 Exercise 4: Enhancing conformational transitions with multiple-windows umbrella sampling
 
-\subsection masterclass-21-3-ex-5 Exercise 5: Enhancing conformational transitions with multiple-windows umbrella sampling
+So far we only considered the fast transition between the two minima at negative values of phi. However,
+alanine dipeptide has another metastable state at positive phi, that is separated by the minima we have
+seen by a large barrier.
+In line of principle, one could use the trick above to discount the effect of any arbitrary biasing potential.
+For instance, if one had an estimate of a relevant free-energy barrier, a bias potential approximately equal to the
+negative of the barrier would make the residual free energy basically barrierless. However, this procedure requires knowing
+the free energy profile in advance. As we will see in the next Masterclass, metadynamics provides exactly a self-healing method
+that adjusts the bias until dynamics becomes diffusive.
+
+In the context of the static potentials that we are using here, this is a very difficult approach.
+In the tutorial \ref lugano-2 you can find an attempt to derive a potential cancelling the large barrier and leading
+to transition between the important metastable states. In this class we will take a more pragmatic approach and
+directly introduce the method that is commonly used in these situations, namely "multiple windows umbrella sampling".
+
+To do so we will have to run a number of separate simulations, each of them with a bias potential designed to maintain the
+phi variable in a narrow range. If the consecutive windows are sufficiently overlapping, and if the windows span the relevant
+region in the phi variable, we will be able to reconstruct the full free-energy profile.
+
+We will use 32 simulations, with `RESTRAINT` potentials centered at uniformly spaced values of phi in the range between -pi and pi.
+In order to avoid the repetition of the first potential, recalling the phi is periodic, we can generate the list with the command
+\code{.py}
+import numpy as np
+at=np.linspace(-np.pi,np.pi,33)[:-1]
+print(at)
+\endcode
+
+Now you should write a python script that generate 32 plumed input files (you can call them `plumed_0.dat`, `plumed_1.dat`, etc)
+that look like this one
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=reference.pdb
+phi: TORSION ATOMS=__FILL__
+psi: TORSION ATOMS=__FILL__
+bb: RESTRAINT ARG=phi KAPPA=200.0 AT=__FILL__
+PRINT ARG=phi,psi,bb.bias FILE=__FILE__ STRIDE=100
+# make sure that each simulation writes on a different file
+# e.g. colvar_multi_0.dat, colvar_multi_1.dat, ...
+\endplumedfile
+
+Now run the 32 simulations with commands like these ones
+\verbatim
+gmx mdrun -plumed plumed_0.dat -s topolA.tpr -nsteps 200000 -x traj_comp_0.xtc
+gmx mdrun -plumed plumed_1.dat -s topolA.tpr -nsteps 200000 -x traj_comp_1.xtc
+# etc.
+\endverbatim
+
+As we did before, you should now concatenate the resulting trajectories
+\verbatim
+gmx trjcat -cat -f traj_comp_[0-9].xtc traj_comp_[0-9][0-9].xtc -o traj_multi_cat.xtc
+\endverbatim
+
+and analyze them with plumed driver:
+\verbatim
+plumed driver --plumed plumed_0.dat --ixtc traj_multi_cat.xtc --trajectory-stride 100
+plumed driver --plumed plumed_1.dat --ixtc traj_multi_cat.xtc --trajectory-stride 100
+# etc.
+\endverbatim
+Notice the `--trajectory-stride` option: we are telling the driver that the trajectory was saved every 100 frames.
+In this manner, we will be able to recycle the same plumed input file that we used while running the simulations.
+This approach is more robust than the one we used above, where a single plumed file was used to reproduce
+all the biases, and is thus recommended in production cases.
+Also notice that it is common practice to ignore the initial part of each simulation, since it typically
+contains a transient that would make the final result less robust. For simplicitly, we are not doing it here.
+
+We can now read the produced files and process them with our WHAM script
+\code{.py}
+col=[]
+for i in range(32):
+    col.append(plumed.read_as_pandas("colvar_multi_" + str(i)+".dat"))
+# notice that this is the concatenation of 32 trajectories ith 2001 frames each
+    plt.plot(col[i].phi[2001*i:2001*(i+1)],col[i].psi[2001*i:2001*(i+1)],"x")
+plt.xlabel("$\phi$")
+plt.ylabel("$\psi$")
+plt.show()
+
+bias=np.zeros((len(col[0]["bb.bias"]),32))
+for i in range(32):
+    bias[:,i]=col[i]["bb.bias"][-len(bias):]
+w=wham.wham(bias,T=kBT)
+plt.plot(w["logW"])
+plt.show()
+colvar=col[0]
+colvar["logweights"]=w["logW"]
+plumed.write_pandas(colvar,"bias_multi.dat")
+\endcode
+
+Now you can do something similar to what we did before, namely:
+- write a file to be read by PLUMED.
+- process it with plumed driver so as to compute the free energy with respect to phi and psi
+- plot the free energy as a function of phi and psi
+
+How does the resulting free energy compares with the one we obtained before?
+
+TODO: compute difference in free energy between the two minima
 
 \subsection masterclass-21-3-ex-6 Exercise 6: Computing errors
+
+TODO: compute the error in the differece in free energy between the two minima
 
 \section masterclass-21-3-fr Further reading
 
