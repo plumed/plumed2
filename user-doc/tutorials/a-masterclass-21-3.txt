@@ -97,6 +97,11 @@ Notice that the file `topolA.tpr` contains all the relevant information (simulat
 In this tutorial we will just need to play with the number of steps (200000 in the example above)
 and we will tune the name of the trajectory saved by GROMACS (traj_unbiased.xtc in the example above).
 
+Also consider that GROMACS and PLUMED are not going to delete your files but are taking backups
+when you try to overwrite them. GROMCAS backup files start with `#`, whereas PLUMED backup files
+start with `bck.`. There is a maximum number of backup files that is taken, and it is
+thus recommended to regularly clean your directory with a command such as `rm -f \#* bck.*`
+
 The command above will only succeed if a file named `plumed.dat` exists in the current directory.
 We know how to create such file from \ref masterclass-21-1. In \ref masterclass-21-2 we also learned
 how to compute histograms. You should be thus able to complete the template below and put it in a
@@ -464,7 +469,7 @@ We can now read the produced files and process them with our WHAM script
 col=[]
 for i in range(32):
     col.append(plumed.read_as_pandas("colvar_multi_" + str(i)+".dat"))
-# notice that this is the concatenation of 32 trajectories ith 2001 frames each
+# notice that this is the concatenation of 32 trajectories with 2001 frames each
     plt.plot(col[i].phi[2001*i:2001*(i+1)],col[i].psi[2001*i:2001*(i+1)],"x")
 plt.xlabel("$\phi$")
 plt.ylabel("$\psi$")
@@ -488,11 +493,37 @@ Now you can do something similar to what we did before, namely:
 
 How does the resulting free energy compares with the one we obtained before?
 
-TODO: compute difference in free energy between the two minima
+\subsection masterclass-21-3-ex-6 Exercise 6: Computing populations and errors
 
-\subsection masterclass-21-3-ex-6 Exercise 6: Computing errors
+Now that you have a simulation that sampled all the relevant metastable states, you can analyze it in many different manners.
+In particular, you can compute the average of any quantity just using the weights that we obtained.
+This can be done directly with PLUMED, as we have seen in \ref masterclass-21-2, using the \ref AVERAGE command.
+However, we will here use Python to compute averages, since this will make it easier to compute their statistical
+errors with bootstrap.
 
-TODO: compute the error in the differece in free energy between the two minima
+To complete this exercise you should compute the average value and the statistical error of the following quantities:
+- Population of the metastable state B defined as 0<phi<2. Notice that the exact definition is not very important if the
+  minimum is clearly delimited by high free-energy barriers (i.e., low probability regions).
+- Free-energy difference between the state B defined as 0<phi<2 and the state A defined as -pi<phi<0.
+  Notice that the free-energy difference is defined as -kBT log PB/PA, where PB is the population of state B and
+  PA the population of state A.
+- Average value of phi in state A and in state B. Warning: how to compute the average of an angle?
+
+For each of these quantities, you should also compute the standard error. It is here recommended to compute the
+error using boostrap. You can do so by adjusting the following script
+
+TODO
+
+\subsection masterclass-21-3-ex-7 Exercise 7: Initial conditions
+
+Repeat exercise \ref masterclass-21-3-ex-5 using as an input file  `topolB.tpr`. This will make the simulations start from the minimum in B.
+Plot the free energy as a function of phi and as a function of psi. How does it differ from the one obtained in solving \ref masterclass-21-3-ex-5?
+
+\subsection masterclass-21-3-ex-8 Exercise 8: Changing variables
+
+Repeat exercise \ref masterclass-21-3-ex-5 using as biased variable psi instead of phi. Then repeat it again starting your simulations from minimum B.
+Plot the free energy as a function of phi and as a function of psi. Compare the results with what you obtained in \ref masterclass-21-3-ex-5
+and \ref masterclass-21-3-ex-8
 
 \section masterclass-21-3-fr Further reading
 
