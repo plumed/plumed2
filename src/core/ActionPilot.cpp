@@ -21,11 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionPilot.h"
 
-using namespace std;
 namespace PLMD {
 
-void ActionPilot::registerKeywords(Keywords& keys) {
-}
+void ActionPilot::registerKeywords(Keywords& keys) {}
 
 ActionPilot::ActionPilot(const ActionOptions&ao):
   Action(ao),
@@ -48,7 +46,7 @@ int ActionPilot::getStride()const {
   return stride;
 }
 
-void ActionPilot::setStride( const int& n ) {
+void ActionPilot::setStride(const int& n) {
   stride=n;
 }
 

@@ -31,7 +31,6 @@
 #include "tools/OpenMP.h"
 #include "tools/Stopwatch.h"
 
-using namespace std;
 namespace PLMD {
 namespace vesselbase {
 
@@ -122,13 +121,13 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
   else if( mm ) mydata=mm;
   else dertime_can_be_off=false;
 
-// Ownership is transfered to functions
+// Ownership is transferred to functions
   functions.emplace_back(std::move(vv_ptr));
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
   VesselOptions da("","",0,"",this);
-  std::unique_ptr<BridgeVessel> bv(new BridgeVessel(da));
+  auto bv=Tools::make_unique<BridgeVessel>(da);
   bv->setOutputAction( tome );
   tome->actionIsBridged=true; dertime_can_be_off=false;
 // store this pointer in order to return it later.
@@ -147,7 +146,7 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
   }
 
   VesselOptions da("","",0,"",this);
-  std::unique_ptr<StoreDataVessel> mm( new StoreDataVessel(da) );
+  auto mm=Tools::make_unique<StoreDataVessel>(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   addVessel(std::move(mm));
 
@@ -231,7 +230,7 @@ void ActionWithVessel::lockContributors() {
     BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i].get() );
     if( bb ) bb->copyTaskFlags();
   }
-  // Resize mydata to accomodate all active tasks
+  // Resize mydata to accommodate all active tasks
   if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
 }
@@ -307,7 +306,7 @@ void ActionWithVessel::runAllTasks() {
 
       // Now calculate all the functions
       // If the contribution of this quantity is very small at neighbour list time ignore it
-      // untill next neighbour list time
+      // until next neighbour list time
       if( nt>1 ) {
         calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list );
       } else {

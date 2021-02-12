@@ -35,7 +35,7 @@ most of the plumed-related files. Similarly, from C++ you can use \ref config::g
 the same path.
 
 When a plumed command line tool implemented as script is invoked by the plumed executable,
-thus transfering the control from C++ to
+thus transferring the control from C++ to
 an external script, the environment should be consistently set. This is done in method \ref config::getEnvCommand()
 which builds a string in the form `env PLUMED_ROOT=/path env PLUMED_INCLUDEDIR=/path ` etc.
 In this ways, the scripts are run in an environment with the correct settings.

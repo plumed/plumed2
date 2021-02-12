@@ -112,10 +112,11 @@ std::string getVersionGit() {
 }
 
 std::string getMakefile() {
-  static const char conf [] = {
+  static const unsigned char confu [] = {
 #include "Makefile.conf.xxd"
     , 0x00
   };
+  auto conf=(char*)confu;
   return std::string(conf,conf+std::strlen(conf));
 }
 

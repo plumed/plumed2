@@ -4,7 +4,7 @@ As you are no doubt aware within plumed 2 you can calculate multiple
 instances of a collective coorinate from a single line in the input file.
 One can then calculate functions such as the minimum, number less than,...
 from the resulting distribution of collective variables.  To create these kinds
-of collective variables we use the functionality implmented in PLMD::multicolvar::MultiColvar.
+of collective variables we use the functionality implemented in PLMD::multicolvar::MultiColvar.
 In fact in writing a single PLMD::multicolvar::MultiColvar you actually write many CVs at once
 as the minimum of a distribution, the number less than and so on come with no 
 additional effort on your part.
@@ -141,9 +141,9 @@ PLMD::multicolvar::Distances
 \verbatim
 keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
 keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-                            "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+                            "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
 keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-                            "in GROUPB. This must be used in conjuction with GROUPA.");
+                            "in GROUPB. This must be used in conjunction with GROUPA.");
 \endverbatim
 
 To be clear, if these keywords are registered the actual readin of the atoms is looked after by the method
@@ -156,10 +156,10 @@ register keywords in PLMD::multicolvar::Angles:
 \verbatim
 keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
 keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
-keys.add("atoms-2","GROUPB","When used in conjuction with GROUPA this keyword instructs plumed "
+keys.add("atoms-2","GROUPB","When used in conjunction with GROUPA this keyword instructs plumed "
                             "to calculate all distinct angles involving one atom from GROUPA "
                             "and two atoms from GROUPB. The atom from GROUPA is the central atom.");
-keys.add("atoms-3","GROUPC","This must be used in conjuction with GROUPA and GROUPB.  All angles "
+keys.add("atoms-3","GROUPC","This must be used in conjunction with GROUPA and GROUPB.  All angles "
                             "involving one atom from GROUPA, one atom from GROUPB and one atom from "
                             "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
                             "atoms");
@@ -178,7 +178,7 @@ sets of routines may be useful:
 <td width=10%> PLMD::multicolvar::MultiColvar::readTwoGroups </td> <td> This is used to read in the GROUPA and GROUPB keywords.  When you use this funciton you can change GROUPA and GROUPB to whatever you desire </td>
 </tr> <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readThreeGroups </td> <td> This is used to read in the GROUPA, GROUPB and GROUPC keywords. 
-                                                                          When you use this funciton you can change GROUPA, GROUPB and GROUPC to whatever you desire.  
+                                                                          When you use this function you can change GROUPA, GROUPB and GROUPC to whatever you desire.
                                                                           For an example see PLMD::multicolvar::Bridge </td>
 </tr> <tr>
 <td width=10%> PLMD::multicolvar::MultiColvar::readSpeciesKeyword </td> <td> This is used to read in SPECIESA and SPECIESB keywords.  Once again you can use this funciton and use different keywords. </td>
@@ -222,7 +222,7 @@ This code does three things:
 - It reads in all the keywords that are specific to your new CV.  In this case it is a switching function that is read by parse("SWITCH",sw).
 - It reads in the atoms involved in the CV.  In this case this is all looked after by the base class method PLMD::multicolvar::MultiColvar::readAtoms
 - It sets the cutoff for link cells by exploiting the method PLMD::multicolvar::MultiColvarBase::setLinkCellCutoff.  This is really important - your code will run much faster if you exploit link cells. 
-- It checks that readin was succesful.  This is the final call to checkRead
+- It checks that readin was successful.  This is the final call to checkRead
 
 Within the constructor of a multicolvar there must be a call to PLMD::multicolvar::MultiColvar::readAtoms even if you choose to read in the atoms using
 one of the methods described in the table above.  

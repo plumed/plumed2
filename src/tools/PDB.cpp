@@ -25,10 +25,8 @@
 #include "h36.h"
 #include <cstdio>
 #include <iostream>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "Tensor.h"
-
-using namespace std;
 
 //+PLUMEDOC INTERNAL pdbreader
 /*
@@ -94,6 +92,11 @@ ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 However notice that many extra atoms with zero weight might slow down the calculation, so
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
+Starting with PLUMED 2.7, if all the weights are set to zero they will be normalized to be equal to the
+inverse of the number of involved atoms. This means that it will be possible to use files with
+the weight columns set to zero obtaining a meaningful result. In previous PLUMED versions,
+setting all weights to zero was resulting in an error instead.
+
 
 \par Systems with more than 100k atoms
 
@@ -282,35 +285,35 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   //cerr<<file<<endl;
   bool file_is_alive=false;
   if(naturalUnits) scale=1.0;
-  string line;
+  std::string line;
   fpos_t pos; bool between_ters=true;
   while(Tools::getline(fp,line)) {
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) line.push_back(' ');
-    string record=line.substr(0,6);
-    string serial=line.substr(6,5);
-    string atomname=line.substr(12,4);
-    string residuename=line.substr(17,3);
-    string chainID=line.substr(21,1);
-    string resnum=line.substr(22,4);
-    string x=line.substr(30,8);
-    string y=line.substr(38,8);
-    string z=line.substr(46,8);
-    string occ=line.substr(54,6);
-    string bet=line.substr(60,6);
-    string BoxX=line.substr(6,9);
-    string BoxY=line.substr(15,9);
-    string BoxZ=line.substr(24,9);
-    string BoxA=line.substr(33,7);
-    string BoxB=line.substr(40,7);
-    string BoxG=line.substr(47,7);
+    std::string record=line.substr(0,6);
+    std::string serial=line.substr(6,5);
+    std::string atomname=line.substr(12,4);
+    std::string residuename=line.substr(17,3);
+    std::string chainID=line.substr(21,1);
+    std::string resnum=line.substr(22,4);
+    std::string x=line.substr(30,8);
+    std::string y=line.substr(38,8);
+    std::string z=line.substr(46,8);
+    std::string occ=line.substr(54,6);
+    std::string bet=line.substr(60,6);
+    std::string BoxX=line.substr(6,9);
+    std::string BoxY=line.substr(15,9);
+    std::string BoxZ=line.substr(24,9);
+    std::string BoxA=line.substr(33,7);
+    std::string BoxB=line.substr(40,7);
+    std::string BoxG=line.substr(47,7);
     Tools::trim(record);
     if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END") { file_is_alive=true;  break;}
     if(record=="ENDMDL") { file_is_alive=true;  break;}
     if(record=="REMARK") {
-      vector<string> v1;  v1=Tools::getWords(line.substr(6));
+      std::vector<std::string> v1;  v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
     }
     if(record=="CRYST1") {
@@ -331,7 +334,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Box[1][1]=BoxXYZ[1]*sinG;
       Box[2][0]=BoxXYZ[2]*cosB;
       Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
-      Box[2][2]=sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
+      Box[2][2]=std::sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
@@ -342,6 +345,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
+        while(trimmed.length()<5) trimmed = std::string(" ") + trimmed;
         const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
@@ -506,6 +510,11 @@ bool PDB::checkForAtom( const std::string& name ) const {
   return false;
 }
 
+bool PDB::checkForAtom( AtomNumber a ) const {
+  const auto p=number2index.find(a);
+  return (p!=number2index.end());
+}
+
 Log& operator<<(Log& ostr, const PDB&  pdb) {
   char buffer[1000];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
@@ -529,7 +538,7 @@ std::string PDB::getMtype() const {
   return mtype;
 }
 
-void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
+void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
   if( argnames.size()>0 ) {
     ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
     for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );

@@ -28,13 +28,11 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 
 #include <vector>
 #include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -105,9 +103,9 @@ class WholeMolecules:
   public ActionPilot,
   public ActionAtomistic
 {
-  vector<vector<AtomNumber> > groups;
+  std::vector<std::vector<AtomNumber> > groups;
   bool doref;
-  vector<Vector> refs;
+  std::vector<Vector> refs;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -139,9 +137,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   ActionAtomistic(ao),
   doref(false)
 {
-  vector<AtomNumber> merge;
+  std::vector<AtomNumber> merge;
   for(int i=0;; i++) {
-    vector<AtomNumber> group;
+    std::vector<AtomNumber> group;
     parseAtomList("ENTITY",i,group);
     if( group.empty() ) break;
     log.printf("  atoms in entity %d : ",i);
@@ -154,7 +152,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   parseFlag("ADDREFERENCE", doref);
   if(doref) {
     for(int i=0; i<groups.size(); ++i) {
-      vector<double> ref;
+      std::vector<double> ref;
       parseNumberedVector("REF",i,ref);
       refs.push_back(Vector(ref[0],ref[1],ref[2]));
       log.printf("  reference position in entity %d : %lf %lf %lf\n",i,ref[0],ref[1],ref[2]);
@@ -162,17 +160,17 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   }
 
   // Read residues to align from MOLINFO
-  vector<string> resstrings; parseVector("RESIDUES",resstrings);
+  std::vector<std::string> resstrings; parseVector("RESIDUES",resstrings);
   if( resstrings.size()>0 ) {
     if( resstrings.size()==1 ) {
       if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
     }
-    string moltype; parse("MOLTYPE",moltype);
+    std::string moltype; parse("MOLTYPE",moltype);
     if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
-    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-    if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if( !moldat ) error("Unable to find MOLINFO in input");
     std::vector< std::vector<AtomNumber> > backatoms;
-    moldat[0]->getBackbone( resstrings, moltype, backatoms );
+    moldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
       log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
       for(unsigned j=0; j<backatoms[i].size(); ++j) log.printf("%d ",backatoms[i][j].serial() );

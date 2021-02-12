@@ -51,7 +51,7 @@ The archive can be opened with the following command:
 tar xvzf handson_1.tgz
 \endverbatim
 
-This tutorial has been tested on PLUMED version 2.5.1.
+This tutorial has been tested on PLUMED version 2.6.0
 
 \section lugano-1-instructions Instructions
 
@@ -197,20 +197,30 @@ place where you can check if PLUMED understood correctly your input.
 The command above will create a `COLVAR` file like this one:
 \verbatim
 #! FIELDS time r co
- 0.000000 2.458704 165.184127
- 1.000000 2.341932 164.546604
+ 0.000000 2.458704 165.184131
+ 1.000000 2.341932 164.546603
  2.000000 2.404708 162.606975
- 3.000000 2.454297 143.850122
- 4.000000 2.569342 147.110408
- 5.000000 2.304027 163.608703
+ 3.000000 2.454297 143.850117
+ 4.000000 2.569342 147.110410
+ 5.000000 2.304027 163.608695
+ 6.000000 2.116676 177.549792
+ 7.000000 2.068599 183.177952
+ 8.000000 2.021605 181.929958
+... more lines ...
 \endverbatim
 Notice that the first line informs you about the content of each column.
 
 __In case you obtain different numbers, check your input, you might have made some mistake!__
 
-This file can then be visualized using `gnuplot`
+This file can then be visualized using the following python script:
 \verbatim
-gnuplot> p "COLVAR" u 1:2, "" u 1:3
+import matplotlib.pyplot as plt
+import plumed
+colvar=plumed.read_as_pandas("COLVAR")
+plt.plot(colvar.time,colvar.r)
+plt.show()
+plt.plot(colvar.time,colvar.co)
+plt.show()
 \endverbatim
 
 Now, look at what happens if you run the exercise twice. The second time, PLUMED
@@ -249,6 +259,11 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 
 After completing the PLUMED input file above, let's use it to analyze the trajectory `traj-whole.xtc` that you downloaded at the start of this exercise. Now, let's plot the trajectory of the two CVs above.
 If you executed this exercise correctly, these two trajectories should be identical.
+
+\note
+In the manual you can also learn how to use selections done with MDtraj or MDAnalysis.
+For instance, the CA atoms that you needed in \ref lugano-1-ex-1 could have been picked with `{{@mda:name CA}}`.
+
 
 \subsection lugano-1-ex-3 Exercise 3: Virtual atoms
 
@@ -457,7 +472,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
-and then check that the custom CVs are indeed what they are expected by plotting the `COLVAR` file with `gnuplot`.
+and then check that the custom CVs are indeed what they are expected by plotting the `COLVAR` file with `matplotlib`.
 
 
 */

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -125,7 +125,7 @@ ENVIRONMENTSIMILARITY ...
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
 \endplumedfile
 
-The next example is simlar to the one above but in this case 4 reference environments are specified.
+The next example is similar to the one above but in this case 4 reference environments are specified.
  Each reference environment is given in a separate pdb file.
 
 \plumedfile

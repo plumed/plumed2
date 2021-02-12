@@ -43,7 +43,7 @@ Write out the connectivity of the nodes in the graph in dot format.
 class DumpGraph : public ActionPilot {
 private:
 ///
-  unsigned maxconnections;
+  size_t maxconnections;
 /// The vessel that contains the graph
   AdjacencyMatrixVessel* mymatrix;
 /// The name of the file on which we are outputting the graph

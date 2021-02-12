@@ -63,7 +63,7 @@ ReselectLandmarks::ReselectLandmarks( const ActionOptions& ao ):
   if( !mylandmarks ) error("input to LANDMARKS is not a landmark selection action");
   nlandmarks = mylandmarks->nlandmarks;
 
-  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between ammount of landmark class and base class");
+  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between amount of landmark class and base class");
 }
 
 void ReselectLandmarks::selectLandmarks() {

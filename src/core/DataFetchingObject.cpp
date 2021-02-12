@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "ActionWithValue.h"
 #include "Value.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 
@@ -42,9 +43,9 @@ public:
 
 std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, PlumedMain& p) {
   if(n==sizeof(double)) {
-    return std::unique_ptr<DataFetchingObjectTyped<double>>(new DataFetchingObjectTyped<double>(p));
+    return Tools::make_unique<DataFetchingObjectTyped<double>>(p);
   } else  if(n==sizeof(float)) {
-    return std::unique_ptr<DataFetchingObjectTyped<float>>(new DataFetchingObjectTyped<float>(p));
+    return Tools::make_unique<DataFetchingObjectTyped<float>>(p);
   }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);

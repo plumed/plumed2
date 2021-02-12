@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <sstream>
 #include <memory>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -59,19 +60,22 @@ class Tools {
 /// T should be either float, double, or long double
   template<class T>
   static bool convertToReal(const std::string & str,T &t);
+/// class to convert a string to a int type T
+  template<class T>
+  static bool convertToInt(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{");
+  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
-  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
+  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line, const bool trimcomments=true);
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it
@@ -86,6 +90,8 @@ public:
   static bool convert(const std::string & str,long int & t);
 /// Convert a string to an unsigned int, reading it
   static bool convert(const std::string & str,unsigned & t);
+/// Convert a string to a long unsigned int, reading it
+  static bool convert(const std::string & str,long unsigned & t);
 /// Convert a string to a atom number, reading it
   static bool convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
@@ -179,12 +185,36 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    static const size_t buffersize=4096;
+    static const std::size_t buffersize=4096;
     char cwd[buffersize]= {0};
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
   };
+/// Mimic C++14 std::make_unique
+  template<class T> struct _Unique_if {
+    typedef std::unique_ptr<T> _Single_object;
+  };
+  template<class T> struct _Unique_if<T[]> {
+    typedef std::unique_ptr<T[]> _Unknown_bound;
+  };
+  template<class T, std::size_t N> struct _Unique_if<T[N]> {
+    typedef void _Known_bound;
+  };
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Single_object
+  make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  }
+  template<class T>
+  static typename _Unique_if<T>::_Unknown_bound
+  make_unique(std::size_t n) {
+    typedef typename std::remove_extent<T>::type U;
+    return std::unique_ptr<T>(new U[n]());
+  }
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Known_bound
+  make_unique(Args&&...) = delete;
 };
 
 template <class T>

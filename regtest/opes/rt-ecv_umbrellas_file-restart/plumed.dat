@@ -1,0 +1,19 @@
+# vim:ft=plumed
+RESTART
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+ecv: ECV_UMBRELLAS_FILE ...
+  ARG=phi,psi
+  TEMP=300
+  FILE=Kernels.data
+  READ_HEIGHT
+  ADD_P0
+...
+opes: OPES_EXPANDED FMT={% f} ARG=ecv.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
+

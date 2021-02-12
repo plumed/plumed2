@@ -1,0 +1,16 @@
+testCompute2Vectors90Degrees
+1.5708
+testCompute2Vectors45Degrees
+0.785398
+testCompute4Vectors45Degrees
+0.785398
+-0.5 0.5 -0
+-0 -1 -0
+testCompute4VectorsParallel
+0
+0 0 0
+0 0 0
+testCompute4VectorsAntiParallel
+3.14159
+0 0 0
+0 0 0

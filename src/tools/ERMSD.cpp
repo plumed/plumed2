@@ -35,9 +35,7 @@
 #include <iostream>
 
 
-using namespace std;
 namespace PLMD {
-
 
 void ERMSD::clear() {
   reference_mat.clear();
@@ -45,16 +43,12 @@ void ERMSD::clear() {
 
 //void ERMSD::calcLcs(const vector<Vector> & positions, vector<Vector> &)
 
-void ERMSD::setReference(const vector<Vector> & reference, const std::vector<unsigned> & pairs_vec, double mycutoff) {
-
+void ERMSD::setReference(const std::vector<Vector> & reference, const std::vector<unsigned> & pairs_vec, double mycutoff) {
 
   natoms = reference.size();
   nresidues = natoms/3;
   unsigned npairs = pairs_vec.size()/2;
   pairs.resize(npairs);
-  //for(unsigned i=0;i<2*npairs;++i) {
-  //     std::cout << "CCC " << pairs_vec[i] << " ";
-  //}
   for(unsigned i=0; i<npairs; ++i) {
 
     pairs[i].first = pairs_vec[2*i];
@@ -67,31 +61,19 @@ void ERMSD::setReference(const vector<Vector> & reference, const std::vector<uns
   reference_mat.resize(nresidues*nresidues);
   Pbc fake_pbc;
 
-
   calcMat(reference,fake_pbc,reference_mat,deri);
 
 }
 
-
 bool ERMSD::inPair(unsigned i, unsigned j) {
 
-  //return true;
   if(pairs.size()==0) return true;
   for(unsigned idx=0; idx<pairs.size(); idx++) {
-    //std::cout << "AAA " << pairs[idx][0] << " " << pairs[idx][1] << "\n";
     if(pairs[idx].first == i && pairs[idx].second == j) return true;
     if(pairs[idx].second == i && pairs[idx].first == j) return true;
   }
   return false;
 }
-//double ERMSD::calculate(const std::vector<Vector> & positions,
-//                        std::vector<Vector> &derivatives, Tensor& virial) const {
-
-// Pbc fake_pbc;
-// return ERMSD::calculate(positions,fake_pbc,derivatives,virial,false);
-// }
-
-
 
 void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::vector<Vector4d> &mat, std::vector<TensorGeneric<4,3> > &Gderi) {
 
@@ -200,8 +182,6 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
         // Calculate normal distance first
         Vector diff = delta(centers[i],centers[j]);
         double d1 = diff.modulo();
-        //std::cout << inPair(i,j) << " " << i << " " << j << " "<< d1 <<"\n";
-        //std::cout << inPair(i,j) << " " << i << " " << j << " "<< d1 <<"\n";
         if(d1<maxdist) {
 
           // calculate r_tilde_ij
@@ -218,7 +198,6 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
           // ellipsoidal cutoff
           if(rtilde_norm < cutoff) {
             idx = i*nresidues + j;
-            //std::cout << i << " " << j << " " << rtilde_norm << " " << idx <<"\n";
 
 
             // fill 4d matrix
@@ -241,9 +220,6 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
                 drtilde_dx[at+3].setRow(l,rvec);
               }
             }
-
-            //std::vector<TensorGeneric<4,3> > dG_dx;
-            //dG_dx.resize(6);
 
             double dummy1 = (cos(gamma*rtilde_norm) - dummy);
 
@@ -302,7 +278,6 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
 
       Vector4d dd = delta(reference_mat[ii],mat[ii]);
       double val = dd.modulo2();
-      //std::cout << "AAA " << i << " " << j << " " << ii << " "<< val << "\n";
 
       if(val>0.0 && i!=j) {
 
@@ -317,9 +292,6 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
     }
   }
 
-  //std::cout << ermsd << " ";
-  //if(pairs.size()!=0) nresidues=pairs.size();
-  //std::cout << ermsd << " " << nresidues;
   ermsd = sqrt(ermsd/nresidues);
   double iermsd = 1.0/(ermsd*nresidues);
   for(unsigned i=0; i<natoms; ++i) {derivatives[i] *= iermsd;}

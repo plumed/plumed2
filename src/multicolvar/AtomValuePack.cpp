@@ -78,7 +78,7 @@ void AtomValuePack::updateUsingIndices() {
   myvals.completeUpdate();
 }
 
-void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, CatomPack& catom_der ) {
+void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, const CatomPack& catom_der ) {
   if( ind<0 ) {
     for(unsigned ider=0; ider<catom_der.getNumberOfAtomsWithDerivatives(); ++ider) {
       unsigned jder=3*catom_der.getIndex(ider);

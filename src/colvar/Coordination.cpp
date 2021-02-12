@@ -23,10 +23,6 @@
 #include "tools/SwitchingFunction.h"
 #include "ActionRegister.h"
 
-#include <string>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -124,7 +120,7 @@ Coordination::Coordination(const ActionOptions&ao):
   CoordinationBase(ao)
 {
 
-  string sw,errors;
+  std::string sw,errors;
   parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);

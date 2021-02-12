@@ -24,8 +24,6 @@
 #include "ActionRegister.h"
 #include <ctime>
 
-using namespace std;
-
 namespace PLMD {
 namespace bias {
 
@@ -87,7 +85,7 @@ class ABMD : public Bias {
   std::vector<double> kappa;
   std::vector<double> temp;
   std::vector<int> seed;
-  vector<Random> random;
+  std::vector<Random> random;
 public:
   explicit ABMD(const ActionOptions&);
   void calculate() override;
@@ -116,7 +114,7 @@ ABMD::ABMD(const ActionOptions&ao):
   min(getNumberOfArguments(),-1.0),
   kappa(getNumberOfArguments(),0.0),
   temp(getNumberOfArguments(),0.0),
-  seed(getNumberOfArguments(),time(0)),
+  seed(getNumberOfArguments(),std::time(0)),
   random(getNumberOfArguments())
 {
   // Note : parseVector will check that number of arguments is correct

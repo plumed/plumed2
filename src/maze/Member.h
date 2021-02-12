@@ -41,7 +41,7 @@ namespace maze {
  * The Member class is required by some optimizers. Ligand conformations are
  * encoded by a Cartesian translation relative to a ligand conformation from
  * the MD simulation. Each translation has a loss (score) which tells how
- * prefered is the encoding w.r.t. a chosen loss function.
+ * preferred is the encoding w.r.t. a chosen loss function.
  */
 struct Member {
 public:

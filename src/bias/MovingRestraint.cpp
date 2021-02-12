@@ -22,10 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-
-using namespace std;
-
-
 namespace PLMD {
 namespace bias {
 
@@ -109,7 +105,7 @@ class MovingRestraint : public Bias {
   std::vector<double> oldk;
   std::vector<double> olddpotdk;
   std::vector<double> oldf;
-  std::vector<string> verse;
+  std::vector<std::string> verse;
   std::vector<double> work;
   double tot_work;
 public:
@@ -156,7 +152,7 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   verse(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
-  vector<long int> ss(1); ss[0]=-1;
+  std::vector<long int> ss(1); ss[0]=-1;
   std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   for(int i=0;; i++) {
     // Read in step
