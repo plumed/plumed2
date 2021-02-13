@@ -180,7 +180,6 @@ private:
   double   dbfact_;
   double   bfactmin_;
   double   bfactmax_;
-  bool     readbf_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -284,7 +283,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
-  keys.addFlag("READ_BFACT",false,"read Bfactor from status file at restart");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","SCALE_MIN","minimum scale");
@@ -315,7 +313,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(4.0), readbf_(false),
+  dbfact_(0.0), bfactmax_(4.0),
   statusstride_(0), first_status_(true),
   scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
   MCSaccept_(0.), MCStrials_(0.),
@@ -347,7 +345,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
-  parseFlag("READ_BFACT", readbf_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
@@ -623,7 +620,6 @@ double EMMIVOX::get_median(vector<double> &v)
 void EMMIVOX::read_status()
 {
   double MDtime;
-  double bf;
 // open file
   IFile *ifile = new IFile();
   ifile->link(*this);
@@ -643,12 +639,13 @@ void EMMIVOX::read_status()
       ifile->scanField("scale", scale_);
       ifile->scanField("offset", offset_);
       // read bfactors
-      for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
-        // convert i to string
-        std::string num; Tools::convert(i,num);
-        // read entries
-        if(readbf_) ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
-        else        ifile->scanField("bfact"+num, bf);
+      if(dbfact_>0){
+        for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
+          // convert i to string
+          std::string num; Tools::convert(i,num);
+          // read entries
+          ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+        }
       }
       // new line
       ifile->scanField();
@@ -685,12 +682,14 @@ void EMMIVOX::print_status(long int step)
   // always write scale and offset
   statusfile_.printField("scale", scale_);
   statusfile_.printField("offset", offset_);
-  // always write bfactors
-  for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
-    // convert i to string
-    std::string num; Tools::convert(i,num);
-    // print entry
-    statusfile_.printField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+  // write bfactors only if doing fitting
+  if(dbfact_>0){
+    for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
+      // convert i to string
+      std::string num; Tools::convert(i,num);
+      // print entry
+      statusfile_.printField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+    }
   }
   statusfile_.printField();
 }
