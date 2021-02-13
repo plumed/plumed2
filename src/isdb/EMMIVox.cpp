@@ -166,6 +166,7 @@ private:
   vector<unsigned> nl_;
   vector<unsigned> ns_;
   vector<Vector> refpos_;
+  vector<Vector> pos_;
 // averaging
   bool no_aver_;
 // Monte Carlo stuff
@@ -484,6 +485,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // calculate model GMM constant parameters
   vector<double> GMM_m_w = get_GMM_m(atoms);
+
+  // prepare lists
+  pos_.resize(GMM_m_w.size());
+  refpos_.resize(GMM_m_w.size());
 
   // read data file
   get_exp_data(datafile);
@@ -1015,7 +1020,7 @@ void EMMIVOX::doMonteCarloBfact()
         // prefactors
         Vector5d cfact = cfact_[atype];
         // and position
-        Vector pos = getPosition(im);
+        Vector pos = pos_[im];
 
         // cycle on all the components affected
         for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
@@ -1036,7 +1041,7 @@ void EMMIVOX::doMonteCarloBfact()
             // check if same residue
             if(ires==iresn) continue;
             // distance
-            double dist = delta(pos,getPosition(in)).modulo();
+            double dist = delta(pos,pos_[in]).modulo();
             // if closer than 0.5 nm, add residue to lists
             if(dist>0 && dist<0.5) ngbs_l.insert(iresn);
           }
@@ -1194,21 +1199,24 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
 {
   // initialize stuff
   double ov_tot = 0.0;
-  // clear derivatives
-  ov_der = Vector(0,0,0);
+  // derivative accumulator 
+  double ov_der_p = 0.0;
   // calculate vector difference with/without pbc
   Vector md = delta(m_m, d_m);
+  // norm squared 
+  double md2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2]; 
   // cycle on 5 Gaussians
   for(unsigned j=0; j<5; ++j) {
     // calculate exponent
-    double ov = (md[0]*md[0]+md[1]*md[1]+md[2]*md[2])*invs2[j];
-    // final calculation
-    ov = pref[j] * exp(-0.5*ov);
-    // derivatives
-    ov_der += ov * Vector(md[0]*invs2[j],md[1]*invs2[j],md[2]*invs2[j]);
+    double ov = pref[j] * exp(-0.5 * md2 * invs2[j]);
+    // update derivative prefix
+    ov_der_p += ov * invs2[j];
     // increase total overlap
     ov_tot += ov;
   }
+  // set derivative
+  ov_der = ov_der_p * md;
+  // return total overlap
   return ov_tot;
 }
 
@@ -1218,6 +1226,8 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
 {
   // calculate vector difference with/without pbc
   Vector md = delta(m_m, d_m);
+  // norm squared
+  double md2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
   // cycle on 5 Gaussians
   double ov_tot = 0.0;
   for(unsigned j=0; j<5; ++j) {
@@ -1226,7 +1236,7 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
     // calculate invs2
     double invs2 = 1.0/(d_s+inv_pi2_*m_b);
     // calculate exponent
-    double ov = (md[0]*md[0]+md[1]*md[1]+md[2]*md[2])*invs2;
+    double ov = md2*invs2;
     // final calculation
     ov_tot += cfact[j] * pow(invs2, 1.5) * exp(-0.5*ov);
   }
@@ -1238,14 +1248,12 @@ void EMMIVOX::update_neighbor_sphere()
   // dimension of atom vectors
   unsigned GMM_m_size = GMM_m_type_.size();
 
-  // clear global list and reference positions
-  ns_.clear(); refpos_.clear();
-  // allocate reference positions
-  refpos_.resize(GMM_m_size);
+  // clear global list
+  ns_.clear();
 
   // store reference positions
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = getPosition(im);
+  for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = pos_[im];
 
   // cycle on GMM components - in parallel
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -1278,7 +1286,7 @@ bool EMMIVOX::do_neighbor_sphere()
 
 // calculate displacement
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(getPosition(im),refpos_[im]).modulo();
+  for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(pos_[im],refpos_[im]).modulo();
 
 // check if update or not
   double maxdist = *max_element(dist.begin(), dist.end());
@@ -1308,7 +1316,7 @@ void EMMIVOX::update_neighbor_list()
       id = ns_[i] / GMM_m_size;
       im = ns_[i] % GMM_m_size;
       // calculate distance
-      double dist = delta(GMM_d_m_[id], getPosition(im)).modulo();
+      double dist = delta(GMM_d_m_[id], pos_[im]).modulo();
       // add to local neighbour list
       if(dist<=nl_cutoff_) nl_l.push_back(ns_[i]);
     }
@@ -1359,7 +1367,7 @@ void EMMIVOX::calculate_overlap_cpu() {
       id = nl_[i] / GMM_m_size;
       im = nl_[i] % GMM_m_size;
       // add overlap with im component of model GMM
-      v_[id] += get_overlap_der(GMM_d_m_[id],getPosition(im),pref_[im],invs2_[im],ovmd_der_[i]);
+      v_[id] += get_overlap_der(GMM_d_m_[id],pos_[im],pref_[im],invs2_[im],ovmd_der_[i]);
     }
     #pragma omp critical
     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] += v_[i];
@@ -1369,6 +1377,10 @@ void EMMIVOX::calculate_overlap_cpu() {
 
 void EMMIVOX::calculate()
 {
+
+  // store current positions
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned im=0; im<pos_.size(); ++im) pos_[im] = getPosition(im);
 
   // neighbor list update
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
@@ -1484,7 +1496,7 @@ void EMMIVOX::calculate()
       // increment atom derivatives
       atom_der[im] += tot_der;
       // and virial
-      virial += Tensor(getPosition(im), -tot_der);
+      virial += Tensor(pos_[im], -tot_der);
     }
     #pragma omp critical
     for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
