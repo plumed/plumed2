@@ -1343,18 +1343,6 @@ void EMMIVOX::prepare()
 // overlap calculator
 void EMMIVOX::calculate_overlap() {
 
-  if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
-    // check if time to update neighbor sphere
-    bool update = false;
-    if(first_time_ || getExchangeStep()) update = true;
-    else update = do_neighbor_sphere();
-    // update neighbor sphere
-    if(update) update_neighbor_sphere();
-    // update neighbor list
-    update_neighbor_list();
-    first_time_=false;
-  }
-
   // clear overlap vector
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
 
@@ -1382,7 +1370,20 @@ void EMMIVOX::calculate_overlap() {
 void EMMIVOX::calculate()
 {
 
-// calculate CV
+  // neighbor list update
+  if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
+    // check if time to update neighbor sphere
+    bool update = false;
+    if(first_time_ || getExchangeStep()) update = true;
+    else update = do_neighbor_sphere();
+    // update neighbor sphere
+    if(update) update_neighbor_sphere();
+    // update neighbor list
+    update_neighbor_list();
+    first_time_=false;
+  }
+
+  // calculate CV
   calculate_overlap();
 
   // rescale factor for ensemble average
