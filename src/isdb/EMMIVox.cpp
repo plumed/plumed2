@@ -27,7 +27,7 @@
 #include "core/ActionSet.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
-
+#include "simd_math_prims.h"
 #include <string>
 #include <cmath>
 #include <map>
@@ -1208,7 +1208,7 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
   // cycle on 5 Gaussians
   for(unsigned j=0; j<5; ++j) {
     // calculate exponent
-    double ov = pref[j] * exp(-0.5 * md2 * invs2[j]);
+    double ov = pref[j] * expapprox(-0.5 * md2 * invs2[j]);
     // update derivative prefix
     ov_der_p += ov * invs2[j];
     // increase total overlap
