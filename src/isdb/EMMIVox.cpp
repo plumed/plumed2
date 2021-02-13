@@ -1580,24 +1580,24 @@ double EMMIVOX::calculate_Outliers(vector<double> &eneg, vector<double> &sigma,
 double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &GMMid_der)
 {
   double ene = 0.0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-  {
-    // cycle on all the GMM groups
-    #pragma omp for reduction( + : ene)
-    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-      // cycle on all the members of the group
-      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-        // id of the GMM component
-        int id = GMM_d_grps_[i][j];
-        // calculate deviation
-        double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
-        // calculate errf
-        double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
-        // add to  energy
-        ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
-        // store derivative for later
-        GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
-      }
+  // cycle on all the GMM groups
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+    {
+     // cycle on all the members of the group
+     #pragma omp for reduction( + : ene)
+     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+       // id of the GMM component
+       int id = GMM_d_grps_[i][j];
+       // calculate deviation
+       double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
+       // calculate errf
+       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+       // add to  energy
+       ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+       // store derivative for later
+       GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+     }
     }
   }
   // return total energy
