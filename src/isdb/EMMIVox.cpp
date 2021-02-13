@@ -240,7 +240,7 @@ private:
   void update_neighbor_sphere();
   bool do_neighbor_sphere();
 // calculate overlap
-  void calculate_overlap();
+  void calculate_overlap_cpu();
 // Gaussian noise
   double calculate_Gauss_group(unsigned igroup, double sigma,
                                double scale, double offset, vector<double> &GMMid_der);
@@ -1341,7 +1341,7 @@ void EMMIVOX::prepare()
 }
 
 // overlap calculator
-void EMMIVOX::calculate_overlap() {
+void EMMIVOX::calculate_overlap_cpu() {
 
   // clear overlap vector
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
@@ -1384,7 +1384,7 @@ void EMMIVOX::calculate()
   }
 
   // calculate CV
-  calculate_overlap();
+  calculate_overlap_cpu();
 
   // rescale factor for ensemble average
   double escale = 1.0 / static_cast<double>(nrep_);
