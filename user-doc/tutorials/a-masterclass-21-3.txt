@@ -319,9 +319,9 @@ b2: CUSTOM ARG=phi FUNC=__FILL__ PERIODIC=NO # fill here with the bias you used 
 PRINT ARG=phi,psi,b0,b1,b2 FILE=biases.dat
 \endplumedfile
 If you call it `plumed_wham.dat` you can then use the following command
-\plumedfile
+\verbatim
 plumed driver --plumed plumed_wham.dat --ixtc traj_comp_cat.xtc
-\endplumedfile
+\endverbatim
 
 We are now ready to use binless WHAM to compute the weights associated to the concatenated trajectory.
 This can be done with the following script
