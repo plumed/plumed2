@@ -248,14 +248,19 @@ void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1,
   unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) myvals.updateIndex( w_ind, base+j );
 }
 
+unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
+  unsigned natoms=nlist[current]; indices[0]=current;
+  unsigned lstart = getFullNumberOfTasks() + current*(1+ablocks.size()); plumed_dbg_assert( nlist[lstart]==current );
+  for(unsigned i=1;i<nlist[current];++i){ indices[i] = nlist[ lstart + i ]; }
+  return natoms;
+}
+
 void AdjacencyMatrixBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
   // Now retrieve bookeeping arrays
   if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ) indices.resize( 1+ablocks.size()+threeblocks.size() );
 
   // Now get the positions
-  unsigned natoms=nlist[current]; indices[0]=current; 
-  unsigned lstart = getFullNumberOfTasks() + current*(1+ablocks.size()); plumed_dbg_assert( nlist[lstart]==current );
-  for(unsigned i=1;i<nlist[current];++i){ indices[i] = nlist[ lstart + i ]; }
+  unsigned natoms=retrieveNeighbours( current, indices ); 
   unsigned ntwo_atoms=natoms; myvals.setSplitIndex( ntwo_atoms );
 
   // Now retrieve everything for the third atoms

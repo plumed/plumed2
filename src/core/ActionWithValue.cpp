@@ -436,7 +436,11 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
               if( p.first==actionLabelsInChain[j] ){ inchain=true; break; } 
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
-          if( !inchain ) usedOutsideOfChain=true; 
+          if( !inchain ) {
+              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p.first );
+              if( user ) user->getTasksForParent( getLabel(), actionsThatSelectTasks, tflags ); 
+              usedOutsideOfChain=true; 
+          }
           // Check if it is used by a data gatherer
           if( p.first=="python" ) usedByPython=true;
       }
@@ -468,6 +472,25 @@ void ActionWithValue::prepareForTaskLoop( const unsigned& nactive, const std::ve
   if( action_to_do_after ) action_to_do_after->prepareForTaskLoop( nactive, pTaskList );
 }
 
+unsigned ActionWithValue::setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList ) {
+  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false;
+  tflags.assign(tflags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
+  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) tflags.assign(tflags.size(),1);
+  // Now actually build the list of active tasks
+  unsigned n_active = 0;
+  for(unsigned i=0; i<fullTaskList.size(); ++i) {
+    if( tflags[i]>0 ) n_active++;
+  }
+  // Now create the partial task list
+  unsigned n=0; pTaskList.resize( n_active ); pIndexList.resize( n_active );
+  for(unsigned i=0; i<fullTaskList.size(); ++i) {
+    // Deactivate sets inactive tasks to number not equal to zero
+    if( tflags[i]>0 ) { pTaskList[n] = fullTaskList[i]; pIndexList[n]=i; n++; } 
+  }
+  return n_active;
+}
+
 void ActionWithValue::runAllTasks() {
 // Skip this if this is done elsewhere
   if( action_to_do_before ) return;
@@ -476,30 +499,13 @@ void ActionWithValue::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
-  // Determine if some tasks can be switched off
-  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
-  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false; 
-  taskFlags.assign(taskFlags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, taskFlags ); 
-  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) taskFlags.assign(taskFlags.size(),1);
-  // Now actually build the list of active tasks
-  nactive_tasks = 0;
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    if( taskFlags[i]>0 ) nactive_tasks++;
-  }
-
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
   if( nt==0 || no_openmp ) nt=1;
 
-  // Now create the partial task list
-  unsigned n=0; partialTaskList.resize( nactive_tasks ); indexOfTaskInFullList.resize( nactive_tasks );
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    // Deactivate sets inactive tasks to number not equal to zero
-    if( taskFlags[i]>0 ) {
-      partialTaskList[n] = fullTaskList[i]; indexOfTaskInFullList[n]=i; n++;
-    }
-  }
+  // Determine if some tasks can be switched off
+  nactive_tasks = setTaskFlags( taskFlags, partialTaskList, indexOfTaskInFullList );
   // Now do all preparations required to run all the tasks
   prepareForTaskLoop( nactive_tasks, partialTaskList );
 
@@ -871,6 +877,24 @@ void ActionWithValue::clearAllForcesInChain() {
   clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain();
 }
 
+std::string ActionWithValue::getCleanGraphLabel( const std::string& gilab ) {
+  std::string glab = gilab; 
+  if( glab.find("@")!=std::string::npos ){ std::size_t at=glab.find_first_of("@"); glab=glab.substr(at+1); }
+  for(unsigned j=0;;++j) {
+      std::size_t pos = glab.find_first_of("-"); if( pos==std::string::npos ) break;
+      glab = glab.substr(0,pos) + "h" + glab.substr(pos+1);
+  }
+  for(unsigned j=0;;++j) {
+     std::size_t pos = glab.find_first_of("["); if( pos==std::string::npos ) break;
+     glab = glab.substr(0,pos) + glab.substr(pos+1);
+  }
+  for(unsigned j=0;;++j) {
+     std::size_t pos = glab.find_first_of("]"); if( pos==std::string::npos ) break;
+     glab = glab.substr(0,pos) + glab.substr(pos+1);
+  }
+  return glab;
+}
+
 void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const {
   if( action_to_do_before ) return ;
   const ActionWithVirtualAtom* ava=dynamic_cast<const ActionWithVirtualAtom*>(this);
@@ -892,7 +916,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       unsigned gstart = graph_actions.size(); 
       for(unsigned i=0;i<chain.size();++i){
           ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string exline, num; 
-          std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }
+          std::string label=getCleanGraphLabel( av->getLabel() );
           if( av->writeInGraph(exline) ) {
               ofile.printf("     %s [label=\"%d \\n %s: \\n %s \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str(), exline.c_str() );
           } else {
@@ -907,7 +931,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
                   }
                   if( inchain ) {
                       ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( p.first ); plumed_assert( av2 );
-                      std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
+                      std::string label2=getCleanGraphLabel( av2->getLabel() ); 
                       std::string color="orange";
                       if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
                       else if( (av->values[j])->getRank()==2 ) color="red";
@@ -921,7 +945,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       }
       ofile.printf("   }\n");
   } else {
-      std::string label=getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      std::string label=getCleanGraphLabel( getLabel() ); 
       const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); std::string exline; graph_actions.push_back( getLabel() );
       if( av ) {  
           if( av->writeInGraph(exline) ) {
@@ -933,8 +957,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
   }
   // Now create the links to the nodes outside of this chain
   for(unsigned i=0;i<chain.size();++i) {
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] );
-      std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string label=getCleanGraphLabel( av->getLabel() ); 
       for(unsigned j=0;j<av->values.size();++j) {
           for(const auto & p : (av->values[j])->userdata) {
               // Check if the action is only being used within the chain
@@ -951,13 +974,12 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
                           if( av2->getLabel()==graph_actions[i] ){ found=true; break; }
                       } 
                       if( !found ) {
-                          std::string label=av2->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }  
+                          std::string label=getCleanGraphLabel( av2->getLabel() ); 
                           ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), av2->getLabel().c_str(), av2->getName().c_str() );
                           graph_actions.push_back( av2->getLabel() );
                       }
                   }
-                  std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
-                  std::string color="orange";
+                  std::string label2=getCleanGraphLabel( av2->getLabel() ); std::string color="orange";
                   if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
                   else if( (av->values[j])->getRank()==2 ) color="red";
                   else if( (av->values[j])->getRank()==1 ) color="blue";

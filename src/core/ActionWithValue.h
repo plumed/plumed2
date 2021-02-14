@@ -155,6 +155,8 @@ protected:
 
 ///
   unsigned getTaskCode( const unsigned& ii ) const ;
+///
+  unsigned setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList );
 /// Run all the tasks in the list
   void runAllTasks();
 /// Run all calculations in serial
@@ -297,6 +299,7 @@ public:
   virtual bool writeInGraph( std::string& exline ) const { return false; }
 ///
   void generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const ;
+  static std::string getCleanGraphLabel( const std::string& glab );
 };
 
 inline

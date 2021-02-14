@@ -118,6 +118,8 @@ public:
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+///
+  virtual void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {}
 /// Retrieve the argument values
   void retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const ;
 /// This tells us which arguments must be treated as distinct in functions
