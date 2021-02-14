@@ -538,7 +538,7 @@ Now you can do something similar to what we did before, namely:
 
 How do the resulting free-energy profiles compares with the one we obtained before?
 
-\subsection masterclass-21-3-ex-6 Exercise 6: Computing populations and errors
+\subsection masterclass-21-3-ex-5 Exercise 5: Computing populations and errors
 
 Now that you have a simulation that sampled all the relevant metastable states, you can analyze it in many different manners.
 In particular, you can compute the average of any quantity just using the weights that we obtained.
@@ -581,10 +581,10 @@ for i in range(200):
     pop.append(np.average(is_in_B,weights=np.exp(w["logW"])))
 \endcode
 
-\subsection masterclass-21-3-ex-7 Exercise 7: Initial conditions
+\subsection masterclass-21-3-ex-6 Exercise 6: Effect of initial conditions
 
-Repeat exercise \ref masterclass-21-3-ex-5 using as an input file  `topolB.tpr`. This will make the simulations start from the minimum in B.
-Plot the free energy as a function of \f$ \phi \f$ and as a function of psi. How does it differ from the one obtained in solving \ref masterclass-21-3-ex-5?
+Repeat exercise \ref masterclass-21-3-ex-4 using as an input file  `topolB.tpr`. This will make the simulations start from the minimum in B.
+Plot the free energy as a function of \f$ \phi \f$ and as a function of psi. How does it differ from the one obtained in solving \ref masterclass-21-3-ex-4?
 
 */
 
