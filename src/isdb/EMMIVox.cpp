@@ -1597,6 +1597,8 @@ double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
     {
+     // usefull stuff
+     double ismin = 1.0 / sigma_min_[i];
      // cycle on all the members of the group
      #pragma omp for reduction( + : ene)
      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
@@ -1605,11 +1607,11 @@ double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &
        // calculate deviation
        double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
        // calculate errf
-       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+       double errf = erf ( dev * inv_sqrt2_ * ismin );
        // add to  energy
-       ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+       ene += -kbt_ * std::log( 0.5 / dev * errf );
        // store derivative for later
-       GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+       GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev*ismin*ismin)*ismin+kbt_/dev;
      }
     }
   }
