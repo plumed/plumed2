@@ -116,6 +116,10 @@ jobs:
         ccache -s -M 100M
     - name: Run tests
       run: |
+         (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
+              df -h
+              sleep 15
+              done) &
          make --no-print-directory -C regtest
          # these can fail for numerical reasons
          make -C regtest checkfail
