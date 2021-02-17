@@ -120,7 +120,7 @@ jobs:
               df -h
               sleep 15
               done) &
-         make --no-print-directory -C regtest
+         make --no-print-directory -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
