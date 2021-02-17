@@ -29,8 +29,8 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ~/.ccache
-        key: ccache-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-linux${{ matrix.variant }}hash-
+        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
