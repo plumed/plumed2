@@ -146,11 +146,11 @@ void MatrixTimesVector::getTasksForParent( const std::string& parent, std::vecto
   unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );
   // Check if anything has been deactivated downstream
   if( n_active==tflags.size() ) return;
-  // If tasks are deactivated in this child we can deactivate things in parent
-  actionsThatSelectTasks.push_back( parent ); 
   // And retrieve the non zero elements for the input matrix
   adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
   if( ab ) {
+      // If tasks are deactivated in this child we can deactivate things in parent
+      actionsThatSelectTasks.push_back( parent );
       // Get the atoms so that we can setup the neightbor lists
       ab->retrieveAtoms(); 
       // Now prepare the input matrix for the task loop

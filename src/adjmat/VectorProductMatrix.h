@@ -46,6 +46,7 @@ public:
   unsigned getNumberOfDerivatives() const ;
   bool canBeAfterInChain( ActionWithValue* av ) const ;
   bool mustBeTreatedAsDistinctArguments() const ;
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );

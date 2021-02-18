@@ -143,6 +143,34 @@ bool VectorProductMatrix::canBeAfterInChain( ActionWithValue* av ) const {
   return true;
 }
 
+void VectorProductMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  // Get the flags for this chain
+  std::vector<unsigned> lflags( tflags.size(), 0 ); std::vector<unsigned> pTaskList, pIndexList;
+  unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );
+  // Check if anything has been deactivated downstream
+  if( n_active==tflags.size() ) return;
+  // And retrieve non zero elements of contact matrix we are multiplying this by
+  AdjacencyMatrixBase* ab = dynamic_cast<AdjacencyMatrixBase*>( getActionThatCalculates() );
+  if( ab ) {
+      // If tasks are deactivated in this child we can deactivate things in parent
+      actionsThatSelectTasks.push_back( parent );
+      // Get the atoms so that we can setup the neightbor lists
+      ab->retrieveAtoms();
+      // Now prepare the input matrix for the task loop
+      ab->prepareForTasks( n_active, pTaskList );
+      // Get the neighbours of each of the active atoms
+      std::vector<unsigned> indices( getFullNumberOfTasks() );
+      for(unsigned i=0;i<n_active;++i) {
+          unsigned nneigh = ab->retrieveNeighbours( pTaskList[i], indices );
+          for(unsigned j=0;j<nneigh;++j) tflags[indices[j]] = 1;
+      }
+      unsigned nacc = 0;
+      for(unsigned i=0; i<tflags.size(); ++i) {
+        if( tflags[i]>0 ) nacc++;
+      }
+  }
+}
+
 void VectorProductMatrix::lockRequests() {
   ActionWithArguments::lockRequests();
   ActionAtomistic::lockRequests();
