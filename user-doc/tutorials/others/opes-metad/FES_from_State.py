@@ -20,7 +20,7 @@ parser.add_argument('--outfile','-o',dest='outfile',type=str,default='fes.dat',h
 # compulsory
 kbt_group = parser.add_mutually_exclusive_group(required=True)
 kbt_group.add_argument('--kt',dest='kbt',type=float,help='the temperature in energy units')
-kbt_group.add_argument('--temp',dest='temp',type=float,help='the temperature. Energy units is Kj/mol')
+kbt_group.add_argument('--temp',dest='temp',type=float,help='the temperature in Kelvin. Energy units is Kj/mol')
 # grid related
 parser.add_argument('--min',dest='grid_min',type=str,required=False,help='lower bounds for the grid')
 parser.add_argument('--max',dest='grid_max',type=str,required=False,help='upper bounds for the grid')
@@ -286,11 +286,11 @@ for n in range(len(fields_pos)-1):
 # NB: summing is as accurate as trapz, and logaddexp avoids overflows
   if calc_deltaF:
     if not dim2:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x>ts])
     else:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[x>ts])
     deltaF=fesB-fesA
 
 ### Print to file ###

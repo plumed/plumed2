@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd #much faster reading from file
 do_bck=False #backup files in plumed style
 if do_bck:
-  bck_script='bck.meup.sh' #place the script in your ~/bin
+  bck_script='bck.meup.sh' #e.g. place the script in your ~/bin
   import subprocess
 
 print('')
@@ -24,7 +24,7 @@ parser.add_argument('--outfile','-o',dest='outfile',type=str,default='fes-rew.da
 parser.add_argument('--sigma','-s',dest='sigma',type=str,required=True,help='the bandwidth for the kernel density estimation. Use e.g. the last value of sigma from an OPES_METAD simulation')
 kbt_group=parser.add_mutually_exclusive_group(required=True)
 kbt_group.add_argument('--kt',dest='kbt',type=float,help='the temperature in energy units')
-kbt_group.add_argument('--temp',dest='temp',type=float,help='the temperature. Energy units is Kj/mol')
+kbt_group.add_argument('--temp',dest='temp',type=float,help='the temperature in Kelvin. Energy units is Kj/mol')
 # input columns
 parser.add_argument('--cv',dest='cv',type=str,default='2',help='the CVs to be used. Either by name or by column number, starting from 1')
 parser.add_argument('--bias',dest='bias',type=str,default='.bias',help='the bias to be used. Either by name or by column number, starting from 1. Set to NO for nonweighted KDE')
@@ -92,7 +92,6 @@ except ValueError:
       col_x=i-2
   if col_x==-1:
     sys.exit(error%('cv "%s" not found'%name_cv_x))
-  pass
 if dim2:
   try:
     col_y=int(args_cv.split(',')[1])-1
@@ -105,7 +104,6 @@ if dim2:
         col_y=i-2
     if col_y==-1:
       sys.exit(error%('cv "%s" not found'%name_cv_y))
-    pass
 # get bias
 if args_bias=='NO' or args_bias=='no':
   col_bias=[]
@@ -125,7 +123,6 @@ else:
             col_bias.append(i-2)
       if len(col_bias)!=len(args_bias.split(',')):
         sys.exit(error%('found %d matching biases, but %d were requested. Use columns number to avoid ambiguity'%(len(col_bias),len(args_bias.split(',')))))
-    pass
 print(' using cv "%s" found at column %d'%(name_cv_x,col_x+1))
 if dim2:
   print(' using cv "%s" found at column %d'%(name_cv_y,col_y+1))
@@ -306,11 +303,11 @@ def printFES(outfilename):
 # NB: summing is as accurate as trapz, and logaddexp avoids overflows
   if calc_deltaF:
     if not dim2:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x>ts])
     else:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[x>ts])
     deltaF=fesB-fesA
 #actual printing
   f=open(outfilename,'w')
@@ -455,11 +452,11 @@ if block_av:
 # NB: summing is as accurate as trapz, and logaddexp avoids overflows
   if calc_deltaF:
     if not dim2:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[grid_cv_x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[grid_cv_x>ts])
     else:
-      fesA=-kbt*np.logaddexp.reduce(-kbt*fes[x<ts])
-      fesB=-kbt*np.logaddexp.reduce(-kbt*fes[x>ts])
+      fesA=-kbt*np.logaddexp.reduce(-1/kbt*fes[x<ts])
+      fesB=-kbt*np.logaddexp.reduce(-1/kbt*fes[x>ts])
     deltaF=fesB-fesA
 # actual printing
   f=open(outfile,'w')
