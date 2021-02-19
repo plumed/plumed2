@@ -152,7 +152,7 @@ For \ref OPES_METAD the resulting FES estimate will be very similar to the one o
 
 In this tutorial a single simulation is presented for opes and metadynamics, but you can check Fig. S2 and S3 in the supporting information of Ref. \cite Invernizzi2020rethinking to see the results obtained by averaging 100 independent realizations.
 
-/section opes-metad-misc Some other considerations
+\section opes-metad-misc Some other considerations
 
 The \ref OPES_METAD has a few quantities one can print to monitor the simulation:
 - `rct`, contrary to the one of \ref METAD, converges to a constant and can be useful to quickly check the status of the simulation, especially when running with many CVs. It should not be used for reweighting.
@@ -160,7 +160,7 @@ The \ref OPES_METAD has a few quantities one can print to monitor the simulation
 - `neff` is an estimate of the effective sample size and should always grow.
 - `nker` is the number of compressed kernels. If it is equal to the number of deposited kernels, it means that the simulation never comes back to where it has already been (too many CVs? too small `SIGMA`? too small `COMPRESSION_THRESHOLD`?).
 
-Finally there are some options that might be useful:
+Finally, here are some optional keywords that might be useful:
 - `NLIST` activates a neighbor list over the kernels. It can considerably speed up the simulation, especially when using two or more CVs.
 - `SIGMA_MIN` can be useful to reduce the total number of compressed kernels (`nker`) and thus speed up the simulation. It can help especially with long simulations, and can also be added after a restart (see also `FIXED_SIGMA`).
 
