@@ -91,14 +91,14 @@ This is because the bias is changing quickly and can efficiently push the system
 Unfortunately, these out-of-equilibrium transitions cannot be efficiently reweighted and might lead to systematic errors.
 
 \anchor opes-metad-fesMETAD
-\image html opes-metad-fesMETAD.png "Fig. 5: Free energy estimate obtained by reweighting the metadynamics simulation"
+\image html opes-metad-fesMETAD.png "Fig. 5: Free energy estimate obtained by (naively) reweighting the metadynamics simulation"
 
-To avoid this, one should remove the part of the metadynamics simulation where the bias is not quasi-static.
+To avoid these systematic errors, one must remove the part of the metadynamics simulation where the bias is not quasi-static.
 You can do so using the option `--skiprows` in the `FES_from_Reweighting.py` script.
 Removing an initial transient might be useful also for opes simulations, in particular when the chosen `BARRIER` is much higher than the real one.
 
-Finally, it is important to mention that several different reweighting schemes have been proposed for metadynamics.
-The one we report here is among the most commonly used, but it is not guaranteed to be the most efficient.
+\note
+Several different reweighting schemes have been proposed for metadynamics. The one we report here is among the most commonly used, but it is not guaranteed to be the most efficient.
 
 
 \section opes-metad-fesbias Free energy estimate from the bias
