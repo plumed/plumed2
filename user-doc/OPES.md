@@ -18,9 +18,17 @@ Currently, the OPES module is composed only by a bias action: \ref OPES_METAD
 
 ## Module Contents
 - \subpage OPES_bias
+- \subpage OPES_tutorial
 
 \page OPES_bias Biases
 
 The following list contains the biases available in the OPES module.
 
 @OPES_BIAS@
+
+\page OPES_tutorial Tutorials
+
+The following list contains the tutorials available in the OPES module.
+
+@OPES_TUTORIALS@
+
