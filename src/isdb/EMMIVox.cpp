@@ -1133,13 +1133,9 @@ void EMMIVOX::doMonteCarloScale()
 
   // in case of acceptance
   if(do_update) {
-    scale_ = new_scale;
+    scale_  = new_scale;
     offset_ = new_off;
-    ene_ = new_ene;
     MCSaccept_ += 1.0;
-    GMMid_der_ = new_GMMid_der;
-    // in case sum derivatives across replicas
-    if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
   }
 }
 
@@ -1502,20 +1498,15 @@ void EMMIVOX::calculate_gpu()
   at_der(d_k_sum, af::span) = d_sum(af::span, af::span);
  
   // FINAL STUFF
+  //
   // 1) communicate total energy
   float enef;
   ene.host(&enef);
   ene_ = static_cast<double>(enef);
   // with marginal, simply multiply by number of replicas!
   if(!no_aver_ && nrep_>1) ene_ *= static_cast<double>(nrep_);
-  // 2) communicate overlaps
-  ovmd_gpu.host(&ovmd_gpu_.front());
-  // convert overlaps to double
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<ovmd_.size(); ++i){
-      ovmd_[i] = static_cast<double>(ovmd_gpu_[i]);
-  }
-  // 3) communicate derivatives
+  //
+  // 2) communicate derivatives
   // der into der_gpu_
   at_der.host(&der_gpu_.front());
   // convert to double vectors
@@ -1523,7 +1514,8 @@ void EMMIVOX::calculate_gpu()
   for(unsigned i=0; i<GMM_m_size; ++i){
       atom_der_[i] = Vector(static_cast<double>(der_gpu_[i]),static_cast<double>(der_gpu_[GMM_m_size+i]),static_cast<double>(der_gpu_[2*GMM_m_size+i]));
   }
-  // 4) calculate virial
+  //
+  // 3) calculate virial
   virial_ = Tensor();
   // declare omp reduction for Tensors
   #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
@@ -1531,6 +1523,23 @@ void EMMIVOX::calculate_gpu()
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction (sumTensor : virial_)
   for(unsigned i=0; i<GMM_m_size; ++i){
      virial_ += Tensor(pos_[i], -atom_der_[i]);
+  }
+  //
+  // 4) communicate overlaps
+  // these are needed only in certain situations
+  long int step = getStep();
+  bool do_comm = false;
+  if(ovstride_>0 && step%ovstride_==0)  do_comm = true;
+  if(dscale_>0   && step%MCSstride_==0) do_comm = true; 
+  if(dbfact_>0   && step%MCBstride_==0) do_comm = true;
+  if(do_comm){
+    // communicate
+    ovmd_gpu.host(&ovmd_gpu_.front());
+    // convert overlaps to double
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<ovmd_.size(); ++i){
+       ovmd_[i] = static_cast<double>(ovmd_gpu_[i]);
+    }
   }
 #endif
 }
