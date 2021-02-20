@@ -221,7 +221,6 @@ private:
   af::array pref_gpu_nl;
   af::array invs2_gpu_nl;
   af::array GMM_d_m_gpu_nl;
-  af::array pos_gpu_nl;
   af::array id_gpu;
   af::array im_gpu;
   af::array ov_k_sort, ov_k_keys;
