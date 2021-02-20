@@ -271,6 +271,7 @@ private:
   void calculate_gpu();
 // Marginal noise
   double calculate_Marginal(double scale, double offset, vector<double> &GMMid_der);
+  double calculate_Marginal(double scale, double offset);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -1108,14 +1109,11 @@ void EMMIVOX::doMonteCarloScale()
     multi_sim_comm.Sum(&new_off, 1);
   }
 
-  // store derivatives (not used)
-  vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
-
   // get new energy
-  double new_ene = calculate_Marginal(new_scale, new_off, new_GMMid_der);
+  double new_ene = calculate_Marginal(new_scale, new_off);
 
-  // in case sum new energy across replicas
-  if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&new_ene, 1);
+  // with marginal, simply multiply by number of replicas!
+  if(!no_aver_ && nrep_>1) new_ene *= static_cast<double>(nrep_);
 
   // accept or reject
   bool accept = doAccept(ene_, new_ene, kbt_);
@@ -1136,6 +1134,7 @@ void EMMIVOX::doMonteCarloScale()
     scale_  = new_scale;
     offset_ = new_off;
     MCSaccept_ += 1.0;
+    ene_ = new_ene;
   }
 }
 
@@ -1622,6 +1621,25 @@ double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &
        ene += -kbt_ * std::log( 0.5 / dev * errf );
        // store derivative for later
        GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev*ismin*ismin)*ismin+kbt_/dev;
+  }
+  // return total energy
+  return ene;
+}
+
+double EMMIVOX::calculate_Marginal(double scale, double offset)
+{
+  double ene = 0.0;
+  // cycle on all the overlaps
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : ene)
+  for(unsigned id=0; id<ovdd_.size(); ++id){
+       // get ismin
+       double ismin = ismin_[id];
+       // calculate deviation
+       double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
+       // calculate errf
+       double errf = erf ( dev * inv_sqrt2_ * ismin );
+       // add to  energy
+       ene += -kbt_ * std::log( 0.5 / dev * errf );
   }
   // return total energy
   return ene;
