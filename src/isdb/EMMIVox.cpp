@@ -27,13 +27,18 @@
 #include "core/ActionSet.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
-#include "simd_math_prims.h"
+#include <iostream> 
 #include <string>
 #include <cmath>
 #include <map>
 #include <numeric>
 #include <ctime>
 #include "tools/Random.h"
+#include "simd_math_prims.h"
+#ifdef __PLUMED_HAS_ARRAYFIRE
+#include <arrayfire.h>
+#include <af/util.h>
+#endif
 
 using namespace std;
 
@@ -154,38 +159,23 @@ private:
 // metainference
   unsigned nrep_;
   unsigned replica_;
-  vector<double> sigma_;
   vector<double> sigma_min_;
-  vector<double> sigma_max_;
-  vector<double> dsigma_;
+  vector<double> ismin_;
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
   double   ns_cutoff_;
   bool first_time_;
   vector<unsigned> nl_;
+  vector<unsigned> nl_id_;
+  vector<unsigned> nl_im_;
   vector<unsigned> ns_;
   vector<Vector> refpos_;
   vector<Vector> pos_;
 // averaging
   bool no_aver_;
 // Monte Carlo stuff
-  int      MCstride_;
-  double   MCaccept_;
-  double   MCtrials_;
   Random   random_;
-// Bfact Monte Carlo
-  int      MCBstride_;
-  double   MCBaccept_;
-  double   MCBtrials_;
-  double   dbfact_;
-  double   bfactmin_;
-  double   bfactmax_;
-  // status stuff
-  unsigned int statusstride_;
-  string       statusfilename_;
-  OFile        statusfile_;
-  bool         first_status_;
   // Scale Monte Carlo
   double scale_;
   double scale_min_;
@@ -193,18 +183,53 @@ private:
   double dscale_;
   double offset_;
   double doffset_;
+  int    MCSstride_;
   double MCSaccept_;
   double MCStrials_;
-  // prior exponent
-  double prior_;
-  // noise type
-  unsigned noise_;
-  // total energy
+// Bfact Monte Carlo
+  double   dbfact_;
+  double   bfactmin_;
+  double   bfactmax_;
+  int      MCBstride_;
+  double   MCBaccept_;
+  double   MCBtrials_;
+  // status stuff
+  unsigned int statusstride_;
+  string       statusfilename_;
+  OFile        statusfile_;
+  bool         first_status_;
+  // total energy and virial
   double ene_;
+  Tensor virial_;
   // model overlap file
   unsigned int ovstride_;
   string       ovfilename_;
-
+  // gpu stuff
+  bool gpu_;
+  int  deviceid_; 
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  // gpu stuff
+  vector<float> pos_gpu_;
+  vector<float> der_gpu_;
+  vector<float> ovmd_gpu_;
+  af::array pref_gpu;
+  af::array invs2_gpu;
+  af::array GMM_d_m_gpu;
+  af::array ismin_gpu;
+  af::array ovdd_gpu;
+  // gpu nl stuff
+  af::array pref_gpu_nl;
+  af::array invs2_gpu_nl;
+  af::array GMM_d_m_gpu_nl;
+  af::array pos_gpu_nl;
+  af::array id_gpu;
+  af::array im_gpu;
+  af::array ov_k_sort, ov_k_keys;
+  af::array d_k_sort, d_k_keys;
+  // some constants
+  float kbt, inv_sqrt2, sqrt2_pi;
+#endif
+//
 // write file with model overlap
   void write_model_overlap(long int step);
 // get median of vector
@@ -214,8 +239,6 @@ private:
   void print_status(long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
-// do MonteCarlo
-  void doMonteCarlo(vector<double> &eneg);
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
 // do MonteCarlo for scale
@@ -227,8 +250,10 @@ private:
 // read data file
   void get_exp_data(string datafile);
 // auxiliary methods
+  void prepare_gpu();
   void calculate_useful_stuff(double reso);
   void get_auxiliary_vectors();
+  void push_auxiliary_gpu();
 // calculate overlap between two Gaussians
   double get_overlap_der(const Vector &d_m, const Vector &m_m,
                          const Vector5d &pref, const Vector5d &invs2,
@@ -237,21 +262,14 @@ private:
                      const Vector5d &cfact, const Vector5d &m_s, double bfact);
 // update the neighbor list
   void update_neighbor_list();
+// update the gpu
+  void update_gpu();
 // update the neighbor sphere
   void update_neighbor_sphere();
   bool do_neighbor_sphere();
-// calculate overlap
-  void calculate_overlap_cpu();
-// Gaussian noise
-  double calculate_Gauss_group(unsigned igroup, double sigma,
-                               double scale, double offset, vector<double> &GMMid_der);
-  double calculate_Gauss(vector<double> &eneg, vector<double> &sigma,
-                         double scale, double offset, vector<double> &GMMid_der);
-// Outliers noise
-  double calculate_Outliers_group(unsigned igroup, double sigma,
-                                  double scale, double offset, vector<double> &GMMid_der);
-  double calculate_Outliers(vector<double> &eneg, vector<double> &sigma,
-                            double scale, double offset, vector<double> &GMMid_der);
+// calculate on cpu/gpu 
+  void calculate_cpu();
+  void calculate_gpu();
 // Marginal noise
   double calculate_Marginal(double scale, double offset, vector<double> &GMMid_der);
 
@@ -275,12 +293,9 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
   keys.add("compulsory","VOXEL","Side of voxel grid");
-  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS, OUTLIERS, MARGINAL)");
   keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
-  keys.add("optional","SIGMA0","initial value of the uncertainty");
-  keys.add("optional","DSIGMA","MC step for uncertainties");
-  keys.add("optional","MC_STRIDE", "Monte Carlo stride");
+  keys.add("optional","DEVICEID","Identifier of the GPU to be used");
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
@@ -292,18 +307,18 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","SCALE","scale factor");
   keys.add("optional","OFFSET","offset");
   keys.add("optional","DOFFSET","maximum offset MC move");
+  keys.add("optional","MCSCALE_STRIDE", "scale factor Monte Carlo stride");
   keys.add("optional","TEMP","temperature");
-  keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
+  keys.addFlag("GPU",false,"calculate EMMIVOX using ARRAYFIRE on an accelerator device");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
-  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
   keys.addOutputComponent("scale", "default","scale factor");
   keys.addOutputComponent("offset","default","offset");
-  keys.addOutputComponent("accscale", "default","MC acceptance for scale");
+  keys.addOutputComponent("accS",  "default","MC acceptance for scale");
+  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):
@@ -312,13 +327,12 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   sqrt2_pi_(0.797884560802865),
   inv_pi2_(0.050660591821169),
   first_time_(true), no_aver_(false),
-  MCstride_(1), MCaccept_(0.), MCtrials_(0.),
-  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(4.0),
-  statusstride_(0), first_status_(true),
   scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
-  MCSaccept_(0.), MCStrials_(0.),
-  prior_(1.), ovstride_(0)
+  MCSstride_(1), MCSaccept_(0.), MCStrials_(0.),
+  dbfact_(0.0), bfactmax_(4.0),
+  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
+  statusstride_(0), first_status_(true),
+  ovstride_(0), gpu_(false), deviceid_(0)
 {
 
   // list of atoms
@@ -329,39 +343,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   string datafile;
   parse("DATA_FILE", datafile);
 
-  // type of data noise
-  string noise;
-  parse("NOISETYPE",noise);
-  if      (noise=="GAUSS")   noise_ = 0;
-  else if(noise=="OUTLIERS") noise_ = 1;
-  else if(noise=="MARGINAL") noise_ = 2;
-  else error("Unknown noise type!");
-
   // minimum value for error
   double sigma_min;
   parse("SIGMA_MIN", sigma_min);
   if(sigma_min<0) error("SIGMA_MIN should be greater or equal to zero");
-
-  // Monte Carlo in B-factors
-  parse("DBFACT", dbfact_);
-  parse("BFACT_MAX", bfactmax_);
-  parse("MCBFACT_STRIDE", MCBstride_);
-  if(dbfact_<0) error("DBFACT should be greater or equal to zero");
-  if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
-  if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
-
-  // the following parameters must be specified with noise type 0 and 1
-  double sigma_ini, dsigma;
-  if(noise_!=2) {
-    // initial value of the uncertainty
-    parse("SIGMA0", sigma_ini);
-    if(sigma_ini<=0) error("you must specify a positive SIGMA0");
-    // MC parameters
-    parse("DSIGMA", dsigma);
-    if(dsigma<0) error("you must specify a positive DSIGMA");
-    parse("MC_STRIDE", MCstride_);
-    if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
-  }
 
   // status file parameters
   parse("WRITE_STRIDE", statusstride_);
@@ -385,22 +370,29 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
-  // exponent of uncertainty prior
-  parse("PRIOR",prior_);
-
   // scale MC
   parse("SCALE", scale_);
   parse("DSCALE",dscale_);
   parse("OFFSET",offset_);
   parse("DOFFSET",doffset_);
+  parse("MCSCALE_STRIDE",MCSstride_);
   // other parameters
   if(dscale_>0.) {
     parse("SCALE_MIN",scale_min_);
     parse("SCALE_MAX",scale_max_);
     // checks
+    if(MCSstride_<=0) error("you must specify a positive MCSCALE_STRIDE");
     if(scale_min_<=0.0) error("SCALE_MIN must be strictly positive");
     if(scale_max_<=scale_min_) error("SCALE_MAX must be greater than SCALE_MIN");
   }
+
+  // Monte Carlo in B-factors
+  parse("DBFACT",dbfact_);
+  parse("BFACT_MAX",bfactmax_);
+  parse("MCBFACT_STRIDE",MCBstride_);
+  if(dbfact_<0) error("DBFACT should be greater or equal to zero");
+  if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
+  if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
 
   // read map resolution
   double reso;
@@ -428,6 +420,17 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("WRITE_OV", ovfilename_);
   if(ovstride_>0 && ovfilename_=="") error("With WRITE_OV_STRIDE you must specify WRITE_OV");
 
+  parseFlag("GPU",gpu_);
+#ifndef  __PLUMED_HAS_ARRAYFIRE
+  if(gpu_) error("To use the GPU mode PLUMED must be compiled with ARRAYFIRE");
+#endif
+
+  parse("DEVICEID",deviceid_);
+#ifdef  __PLUMED_HAS_ARRAYFIRE
+  af::setDevice(deviceid_);
+  af::info();
+#endif
+
   checkRead();
 
   // set parallel stuff
@@ -449,7 +452,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("\n");
   log.printf("  experimental data file : %s\n", datafile.c_str());
   if(no_aver_) log.printf("  without ensemble averaging\n");
-  log.printf("  type of data noise : %s\n", noise.c_str());
+  if(gpu_) log.printf("  running on GPU on device: %d\n", deviceid_);
   log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  neighbor sphere cutoff : %lf\n", ns_cutoff_);
@@ -463,11 +466,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  maximum scale : %lf\n", scale_max_);
     log.printf("  maximum scale MC move : %lf\n", dscale_);
     log.printf("  maximum offset MC move : %lf\n", doffset_);
-  }
-  if(noise_!=2) {
-    log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
-    log.printf("  max MC move in uncertainty : %f\n",dsigma);
-    log.printf("  MC stride : %u\n", MCstride_);
+    log.printf("  scale factor MC stride : %u\n", MCSstride_);
   }
   if(dbfact_>0) {
     log.printf("  max MC move in bfactor : %f\n",dbfact_);
@@ -475,7 +474,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   }
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
-  log.printf("  prior exponent : %f\n",prior_);
   log.printf("  number of replicas for averaging: %u\n",nrep_);
   log.printf("  id of the replica : %u\n",replica_);
   if(ovstride_>0) {
@@ -536,16 +534,17 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("     median error : %lf\n", err_m);
     // add minimum value of sigma for this group of GMMs
     sigma_min_.push_back(sqrt(err_m*err_m+sigma_min*ovdd_m*sigma_min*ovdd_m));
-    // these are only needed with Gaussian and Outliers noise models
-    if(noise_!=2) {
-      // set dsigma
-      dsigma_.push_back(dsigma * ovdd_m);
-      // set sigma max
-      sigma_max_.push_back(10.0*ovdd_m + sigma_min_[Gid] + dsigma_[Gid]);
-      // initialize sigma
-      sigma_.push_back(std::max(sigma_min_[Gid],std::min(sigma_ini*ovdd_m,sigma_max_[Gid])));
-    }
   }
+  // populate ismin: cycle on all ovdd
+  for(unsigned id=0; id<GMM_d_beta_.size(); ++id){
+     // id of the group
+     unsigned ig = GMM_d_beta_[id];
+     // and to ismin_
+     ismin_.push_back(1.0 / sigma_min_[ig]);
+  }
+ 
+  // prepare gpu stuff
+  if(gpu_) prepare_gpu();
 
   // calculate constant and auxiliary stuff
   calculate_useful_stuff(reso);
@@ -565,9 +564,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
   addComponent("scale");                 componentIsNotPeriodic("scale");
   addComponent("offset");                componentIsNotPeriodic("offset");
-  if(dbfact_>0) {addComponent("accB");   componentIsNotPeriodic("accB");}
-  if(noise_!=2) {if(dsigma_[0]>0) {addComponent("acc");    componentIsNotPeriodic("acc");}}
-  if(dscale_>0.0) {addComponent("accscale");  componentIsNotPeriodic("accscale");}
+  if(dbfact_>0)   {addComponent("accB"); componentIsNotPeriodic("accB");}
+  if(dscale_>0.0) {addComponent("accS"); componentIsNotPeriodic("accS");}
 
   // initialize random seed
   unsigned iseed = time(NULL)+replica_;
@@ -584,6 +582,45 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log<<"\n";
 }
 
+void EMMIVOX::prepare_gpu()
+{
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  // 1) convert constants to float
+  kbt       = static_cast<float>(kbt_);
+  inv_sqrt2 = static_cast<float>(inv_sqrt2_);
+  sqrt2_pi  = static_cast<float>(sqrt2_pi_);
+  // 2) create float version of ismin_
+  vector<float> ismin_f;
+  for(unsigned i=0; i<ismin_.size(); ++i){
+     ismin_f.push_back(static_cast<float>(ismin_[i]));
+  }
+  // create arrayfire [GMM_d_size, 1]
+  ismin_gpu = af::array(ismin_f.size(), &ismin_f.front());
+  // 3) create float version of ovdd_
+  vector<float> ovdd_f;
+  for(unsigned i=0; i<ovdd_.size(); ++i){
+     ovdd_f.push_back(static_cast<float>(ovdd_[i]));
+  }
+  // create arrayfire [GMM_d_size, 1]
+  ovdd_gpu = af::array(ovdd_f.size(), &ovdd_f.front());
+  // 4) store GMM_d_m_ as flattened vector of floats
+  const unsigned GMM_d_size = GMM_d_m_.size();
+  vector<float> GMM_d_m_gpu_(3*GMM_d_size);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0; i<GMM_d_size; ++i){
+     GMM_d_m_gpu_[i]              = static_cast<float>(GMM_d_m_[i][0]); 
+     GMM_d_m_gpu_[GMM_d_size+i]   = static_cast<float>(GMM_d_m_[i][1]);
+     GMM_d_m_gpu_[2*GMM_d_size+i] = static_cast<float>(GMM_d_m_[i][2]);
+  }
+  // create array [GMM_d_size, 3]
+  GMM_d_m_gpu = af::array(GMM_d_size, 3, &GMM_d_m_gpu_.front());
+  // 5) dimensionate other vectors
+  pos_gpu_.resize(3*GMM_m_type_.size());
+  der_gpu_.resize(3*GMM_m_type_.size());
+  ovmd_gpu_.resize(GMM_d_size);
+#endif
+}
+
 void EMMIVOX::write_model_overlap(long int step)
 {
   OFile ovfile;
@@ -594,7 +631,7 @@ void EMMIVOX::write_model_overlap(long int step)
   ovfile.setHeavyFlush();
   ovfile.fmtField("%10.7e ");
 // write overlaps
-  for(int i=0; i<ovmd_.size(); ++i) {
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
     ovfile.printField("Model", ovmd_[i]);
     ovfile.printField("ModelScaled", scale_ * ovmd_[i] + offset_);
     ovfile.printField("Data", ovdd_[i]);
@@ -631,15 +668,6 @@ void EMMIVOX::read_status()
   if(ifile->FileExist(statusfilename_)) {
     ifile->open(statusfilename_);
     while(ifile->scanField("MD_time", MDtime)) {
-      // read sigma only if not marginal noise
-      if(noise_!=2) {
-        for(unsigned i=0; i<sigma_.size(); ++i) {
-          // convert i to string
-          std::string num; Tools::convert(i,num);
-          // read entries
-          ifile->scanField("s"+num, sigma_[i]);
-        }
-      }
       // read scale and offset
       ifile->scanField("scale", scale_);
       ifile->scanField("offset", offset_);
@@ -675,16 +703,7 @@ void EMMIVOX::print_status(long int step)
 // write fields
   double MDtime = static_cast<double>(step)*getTimeStep();
   statusfile_.printField("MD_time", MDtime);
-  // write sigma only if not marginal noise
-  if(noise_!=2) {
-    for(unsigned i=0; i<sigma_.size(); ++i) {
-      // convert i to string
-      std::string num; Tools::convert(i,num);
-      // print entry
-      statusfile_.printField("s"+num, sigma_[i]);
-    }
-  }
-  // always write scale and offset
+  // write scale and offset
   statusfile_.printField("scale", scale_);
   statusfile_.printField("offset", offset_);
   // write bfactors only if doing fitting
@@ -730,7 +749,7 @@ vector<double> EMMIVOX::read_exp_errors(string errfile)
       // total experimental error
       double err_tot = 0.0;
       // cycle on number of experimental overlaps
-      for(unsigned i=0; i<nexp; ++i) {
+      for(int i=0; i<nexp; ++i) {
         string ss; Tools::convert(i,ss);
         ifile->scanField("Err"+ss, err);
         // add to total error
@@ -861,7 +880,7 @@ void EMMIVOX::get_exp_data(string datafile)
   GMM_d_grps_.resize(bu.size());
   // and fill it in
   for(unsigned i=0; i<GMM_d_beta_.size(); ++i) {
-    if(GMM_d_beta_[i]>=GMM_d_grps_.size()) error("Check Beta values");
+    if(GMM_d_beta_[i]>=static_cast<int>(GMM_d_grps_.size())) error("Check Beta values");
     GMM_d_grps_[GMM_d_beta_[i]].push_back(i);
   }
 }
@@ -925,56 +944,27 @@ void EMMIVOX::get_auxiliary_vectors()
       invs2_[im]= invs2;
     }
   }
+  if(gpu_) push_auxiliary_gpu(); 
 }
 
-
-void EMMIVOX::doMonteCarlo(vector<double> &eneg)
+void EMMIVOX::push_auxiliary_gpu()
 {
-  // local acceptance
-  double MCaccept = 0.0;
-  // new derivatives per GMM component
-  vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
-
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(MCaccept)
-  {
-    #pragma omp for reduction( + : MCaccept)
-    // cycle over all the groups in parallel
-    for(unsigned i=0; i<sigma_.size(); ++i) {
-
-      // generate random move
-      double new_s = sigma_[i] + dsigma_[i] * ( 2.0 * random_.RandU01() - 1.0 );
-      // check boundaries
-      if(new_s > sigma_max_[i]) {new_s = 2.0 * sigma_max_[i] - new_s;}
-      if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
-
-      // calculate new group energy
-      double new_ene = 0.0;
-
-      // in case of Gaussian noise
-      if(noise_==0) new_ene = calculate_Gauss_group(i, new_s, scale_, offset_, new_GMMid_der);
-
-      // in case of Outliers noise
-      if(noise_==1) new_ene = calculate_Outliers_group(i, new_s, scale_, offset_, new_GMMid_der);
-
-      // accept or reject
-      bool accept = doAccept(eneg[i], new_ene, kbt_);
-
-      // in case of acceptance
-      if(accept) {
-        sigma_[i] = new_s;
-        eneg[i]   = new_ene;
-        MCaccept += 1.0;
-        // derivatives of the GMM components in group i
-        for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) GMMid_der_[GMM_d_grps_[i][j]] = new_GMMid_der[GMM_d_grps_[i][j]];
-      }
-    } // end of cycle over sigmas
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  // 1) create float version of pref_ and invs2_
+  const unsigned GMM_m_size = GMM_m_res_.size();
+  vector<float> pref(5*GMM_m_size);
+  vector<float> invs2(5*GMM_m_size);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
+  for(unsigned i=0; i<GMM_m_size; ++i){
+    for(unsigned j=0; j<5; ++j){
+       pref[GMM_m_size*j+i]  = static_cast<float>(pref_[i][j]);
+       invs2[GMM_m_size*j+i] = static_cast<float>(invs2_[i][j]);
+    }
   }
-  // recalculate total energy from updated energy groups
-  ene_ = accumulate(eneg.begin(), eneg.end(), 0.0);
-  // update trials
-  MCtrials_ += static_cast<double>(sigma_.size());
-  // increase acceptance
-  MCaccept_ += MCaccept;
+  // 2) initialize gpu arrays [GMM_m_size, 5]
+  pref_gpu  = af::array(GMM_m_size, 5, &pref.front());
+  invs2_gpu = af::array(GMM_m_size, 5, &invs2.front());
+#endif
 }
 
 void EMMIVOX::doMonteCarloBfact()
@@ -1058,44 +1048,16 @@ void EMMIVOX::doMonteCarloBfact()
     double old_ene = 0.0;
     double new_ene = 0.0;
 
-    if(noise_==0) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        old_ene += 0.5 * kbt_ * devold * devold;
-        new_ene += 0.5 * kbt_ * devnew * devnew;
-      }
-    }
-    if(noise_==1) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
-        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
-      }
-    }
-    if(noise_==2) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = scale_*ovmd_[id]+offset_-ovdd_[id];
-        double devnew = scale_*ovmdnew+offset_  -ovdd_[id];
-        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-      }
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = scale_*ovmd_[id]+offset_-ovdd_[id];
+      double devnew = scale_*ovmdnew+offset_  -ovdd_[id];
+      old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+      new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
     }
 
     // add restraint to keep Bfactor of close atoms close
@@ -1147,21 +1109,11 @@ void EMMIVOX::doMonteCarloScale()
     multi_sim_comm.Sum(&new_off, 1);
   }
 
-  // new total energy
-  double new_ene;
-  // prepare new energy per group - not used anymore
-  vector<double> new_eneg(GMM_d_grps_.size(), 0.0);
-  // and derivatives
+  // store derivatives (not used)
   vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
 
-  // in case of Gaussian noise
-  if(noise_==0) new_ene = calculate_Gauss(new_eneg, sigma_, new_scale, new_off, new_GMMid_der);
-
-  // in case of Outliers noise
-  if(noise_==1) new_ene = calculate_Outliers(new_eneg, sigma_, new_scale, new_off, new_GMMid_der);
-
-  // in case of Marginal noise
-  if(noise_==2) new_ene = calculate_Marginal(new_scale, new_off, new_GMMid_der);
+  // get new energy
+  double new_ene = calculate_Marginal(new_scale, new_off, new_GMMid_der);
 
   // in case sum new energy across replicas
   if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&new_ene, 1);
@@ -1238,7 +1190,7 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
     // calculate exponent
     double ov = md2*invs2;
     // final calculation
-    ov_tot += cfact[j] * pow(invs2, 1.5) * exp(-0.5*ov);
+    ov_tot += cfact[j] * pow(invs2, 1.5) * expapprox(-0.5*ov);
   }
   return ov_tot;
 }
@@ -1299,9 +1251,9 @@ bool EMMIVOX::do_neighbor_sphere()
 void EMMIVOX::update_neighbor_list()
 {
   // dimension of atom vectors
-  unsigned GMM_m_size = GMM_m_type_.size();
+  const unsigned GMM_m_size = GMM_m_type_.size();
 
-  // clear global list
+  // clear old neighbor list 
   nl_.clear();
 
   // cycle on neighbour sphere - in parallel
@@ -1324,23 +1276,65 @@ void EMMIVOX::update_neighbor_list()
     #pragma omp critical
     nl_.insert(nl_.end(), nl_l.begin(), nl_l.end());
   }
-  // get size
-  unsigned tot_size = nl_.size();
+  // new dimension of neighbor list
+  const unsigned nl_size = nl_.size();
   // now resize derivatives
-  ovmd_der_.resize(tot_size);
+  ovmd_der_.resize(nl_size);
+  // built data and model neighbor lists
+  nl_id_.resize(nl_size); nl_im_.resize(nl_size);
+  // built in parallel
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<nl_size; ++i){
+     // get data (id) and atom (im) indexes
+     const unsigned id = nl_[i] / GMM_m_size;
+     const unsigned im = nl_[i] % GMM_m_size;
+     // put into nl_id_ and nl_im_ 
+     nl_id_[i] = id;
+     nl_im_[i] = im;
+  }
   // in case of B-factors sampling
   if(dbfact_>0) {
     // now cycle over the neighbor list to creat a list of voxels per atom
     GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
     GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
     unsigned id, im;
-    for(unsigned i=0; i<tot_size; ++i) {
-      id = nl_[i] / GMM_m_size;
-      im = nl_[i] % GMM_m_size;
+    for(unsigned i=0; i<nl_size; ++i) {
+      id = nl_id_[i];
+      im = nl_im_[i];
       GMM_m_nb_[im].push_back(id);
       GMM_d_nb_[id].push_back(im);
     }
   }
+  // in case, transfer data to gpu
+  if(gpu_) update_gpu();
+}
+
+void EMMIVOX::update_gpu()
+{
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  // constants
+  int GMM_m_size = GMM_m_type_.size();
+  int nl_size = nl_.size();
+  // communicate nl_ to GPU
+  af::array nl_gpu = af::array(nl_size, &nl_.front());
+  // build nl_id and nl_im arrays on the GPU
+  id_gpu = nl_gpu / GMM_m_size;
+  im_gpu = nl_gpu % GMM_m_size;
+  // now we need to create pref_gpu_nl [nl_size, 5] 
+  pref_gpu_nl = pref_gpu(im_gpu, af::span);
+  // and invs2_gpu_nl [nl_size, 5]
+  invs2_gpu_nl = invs2_gpu(im_gpu, af::span);
+  // and GMM_d_m_gpu_nl [nl_size, 3]
+  GMM_d_m_gpu_nl = GMM_d_m_gpu(id_gpu, af::span);
+  // finding sorting arrays
+  af::array d_sort;
+  af::seq s(nl_size);
+  af::array s_arr = s; 
+  // this will be used for overlap derivatives
+  af::sort(ov_k_keys, ov_k_sort, id_gpu, s_arr);
+  // this will be used for final derivatives
+  af::sort(d_k_keys, d_k_sort, im_gpu, s_arr);
+#endif
 }
 
 void EMMIVOX::prepare()
@@ -1348,14 +1342,13 @@ void EMMIVOX::prepare()
   if(getExchangeStep()) first_time_=true;
 }
 
-// overlap calculator
-void EMMIVOX::calculate_overlap_cpu() {
+// calculate fm+score on cpu
+void EMMIVOX::calculate_cpu() {
 
   // clear overlap vector
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
 
   // we have to cycle over all model and data GMM components in the neighbor list
-  unsigned GMM_m_size = GMM_m_type_.size();
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
@@ -1364,8 +1357,8 @@ void EMMIVOX::calculate_overlap_cpu() {
     #pragma omp for
     for(unsigned i=0; i<nl_.size(); ++i) {
       // get data (id) and atom (im) indexes
-      id = nl_[i] / GMM_m_size;
-      im = nl_[i] % GMM_m_size;
+      id = nl_id_[i];
+      im = nl_im_[i];
       // add overlap with im component of model GMM
       v_[id] += get_overlap_der(GMM_d_m_[id],pos_[im],pref_[im],invs2_[im],ovmd_der_[i]);
     }
@@ -1373,14 +1366,180 @@ void EMMIVOX::calculate_overlap_cpu() {
     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] += v_[i];
   }
 
+  // average overlap across replicas
+  if(!no_aver_ && nrep_>1) {
+     double escale = 1.0 / static_cast<double>(nrep_);
+     multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+  }
+
+  // calculate total energy and get derivatives
+  ene_ = calculate_Marginal(scale_, offset_, GMMid_der_);
+
+  // with marginal, simply multiply by number of replicas!
+  if(!no_aver_ && nrep_>1) ene_ *= static_cast<double>(nrep_);
+
+  // clear atom derivatives
+  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
+
+  // calculate atom derivatives and virial
+  virial_ = Tensor();
+  // declare omp reduction for Tensors
+  #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
+
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    // private stuff
+    vector<Vector> atom_der(atom_der_.size(), Vector(0,0,0));
+    unsigned id, im;
+    Vector tot_der;
+    #pragma omp for reduction (sumTensor : virial_)
+    for(unsigned i=0; i<nl_.size(); ++i) {
+      // get indexes of data and model component
+      id = nl_[i] / GMM_m_type_.size();
+      im = nl_[i] % GMM_m_type_.size();
+      // chain rule + replica normalization
+      tot_der = GMMid_der_[id] * ovmd_der_[i] * scale_;
+      // increment atom derivatives
+      atom_der[im] += tot_der;
+      // and virial
+      virial_ += Tensor(pos_[im], -tot_der);
+    }
+    #pragma omp critical
+    for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
+  }
+}
+
+// calculate fm+score on gpu
+void EMMIVOX::calculate_gpu()
+{
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  // number of atoms
+  const unsigned GMM_m_size = GMM_m_type_.size();
+  // number of data points
+  const unsigned GMM_d_size = GMM_d_m_.size();
+  // score
+  const float scale  = static_cast<float>(scale_);
+  const float offset = static_cast<float>(offset_);
+
+  // fill positions in in parallel
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned i=0; i<GMM_m_size; ++i) {
+      // fill vectors
+      pos_gpu_[i]              = static_cast<float>(pos_[i][0]);
+      pos_gpu_[GMM_m_size+i]   = static_cast<float>(pos_[i][1]);
+      pos_gpu_[2*GMM_m_size+i] = static_cast<float>(pos_[i][2]);
+  }
+  // load positions into pos_gpu [GMM_m_size, 3]
+  af::array pos_gpu = af::array(GMM_m_size, 3, &pos_gpu_.front());
+  // create pos_gpu_nl [nl_size, 3] 
+  af::array pos_gpu_nl = pos_gpu(im_gpu, af::span);
+  // calculate vector difference [nl_size, 3]
+  af::array md = GMM_d_m_gpu_nl-pos_gpu_nl;
+  // calculate norm squared by column [nl_size, 1]
+  af::array md2 = sum(md*md,1);
+  // tile to have 5 identical columns [nl_size, 5]
+  af::array md2_5 = af::tile(md2, 1, 5);
+  // calculate overlaps [nl_size, 5]
+  af::array ov = pref_gpu_nl * af::exp(-0.5 * md2_5 * invs2_gpu_nl);
+  // and derivatives [nl_size, 5]
+  af::array ov_der_nl = invs2_gpu_nl * ov;
+  // summation of overlaps over 5 columns [nl_size, 1]
+  ov = sum(ov,1);
+  // summation of derivatives over 5 rows [nl_size, 1]
+  ov_der_nl = sum(ov_der_nl,1);
+  // final derivative calculation [nl_size, 3]
+  ov_der_nl = af::tile(ov_der_nl, 1, 3) * md;
+  // now we have to sum up contributions from the same atom
+  // sort by data id 
+  af::array ov_sort = ov(ov_k_sort);
+  // sum equal keys (it works only if adjacent, that's why we sort before)
+  af::array ov_k_sum, ov_sum;
+  af::sumByKey(ov_k_sum, ov_sum, ov_k_keys, ov_sort);
+  // there might be missing data points (i.e. data with no overlaps with atoms!)
+  af::array ovmd_gpu = af::constant(0.0, GMM_d_size);
+  // assign indexed [GMM_d_size, 1]
+  ovmd_gpu(ov_k_sum) = ov_sum(af::span);
+
+  // in case of metainference: average them across replicas
+  if(!no_aver_ && nrep_>1) {
+    // communicated ovmd_gpu [GMM_d_size, 1] to host
+    ovmd_gpu.host(&ovmd_gpu_.front());
+    const float escale = 1.0 / static_cast<float>(nrep_);
+    multi_sim_comm.Sum(&ovmd_gpu_[0], ovmd_gpu_.size());
+    for(unsigned i=0; i<ovmd_gpu_.size(); ++i) ovmd_gpu_[i] *= escale;
+    // recommunicate back to device
+    ovmd_gpu = af::array(ovmd_gpu_.size(), &ovmd_gpu_.front());
+  }
+
+  // calculate score
+  // calculate deviation model/data [GMM_d_size, 1] 
+  af::array dev   = scale * ovmd_gpu + offset - ovdd_gpu;
+  // check zero deviation and replace
+  af::replace(dev,!(af::iszero(dev)),0.0000001);
+  // error function [GMM_d_size, 1]
+  af::array errf  = af::erf( dev * inv_sqrt2 * ismin_gpu );
+  // energy [GMM_d_size, 1]
+  af::array ene   = -kbt * af::log( 0.5 / dev * errf);
+  // and derivatives [GMM_d_size, 1]
+  af::array d_der = -kbt / errf * sqrt2_pi * af::exp( -0.5 * dev * dev * ismin_gpu * ismin_gpu ) * ismin_gpu + kbt / dev;
+  // calculate total energy
+  ene = sum(ene);
+  // prepare array for derivatives wrt atoms [nl_size, 1]
+  af::array der_gpu = d_der(id_gpu);
+  // tile [nl_size, 3]
+  der_gpu = af::tile(der_gpu, 1, 3);
+  // multiple by ov_der_nl and scale [nl_size, 3]
+  der_gpu = ov_der_nl * scale * der_gpu;
+  // now we have to sum contributions for each atom
+  // first, reshuffle der_gpu to sort by atom id [nl_size, 3]
+  af::array der_gpu_s = der_gpu(d_k_sort, af::span);
+  //  then sum contributions for atom id 
+  af::array d_k_sum, d_sum;
+  af::sumByKey(d_k_sum, d_sum, d_k_keys, der_gpu_s, 0);
+  // prepare final derivative vector [GMM_m_size, 3]
+  af::array at_der = af::constant(0.0, GMM_m_size, 3);
+  // and assign at the right places
+  at_der(d_k_sum, af::span) = d_sum(af::span, af::span);
+ 
+  // FINAL STUFF
+  // 1) communicate total energy
+  float enef;
+  ene.host(&enef);
+  ene_ = static_cast<double>(enef);
+  // with marginal, simply multiply by number of replicas!
+  if(!no_aver_ && nrep_>1) ene_ *= static_cast<double>(nrep_);
+  // 2) communicate overlaps
+  ovmd_gpu.host(&ovmd_gpu_.front());
+  // convert overlaps to double
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<ovmd_.size(); ++i){
+      ovmd_[i] = static_cast<double>(ovmd_gpu_[i]);
+  }
+  // 3) communicate derivatives
+  // der into der_gpu_
+  at_der.host(&der_gpu_.front());
+  // convert to double vectors
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<GMM_m_size; ++i){
+      atom_der_[i] = Vector(static_cast<double>(der_gpu_[i]),static_cast<double>(der_gpu_[GMM_m_size+i]),static_cast<double>(der_gpu_[2*GMM_m_size+i]));
+  }
+  // 4) calculate virial
+  virial_ = Tensor();
+  // declare omp reduction for Tensors
+  #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
+
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction (sumTensor : virial_)
+  for(unsigned i=0; i<GMM_m_size; ++i){
+     virial_ += Tensor(pos_[i], -atom_der_[i]);
+  }
+#endif
 }
 
 void EMMIVOX::calculate()
 {
-
   // store current positions
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned im=0; im<pos_.size(); ++im) pos_[im] = getPosition(im);
+  pos_ = getPositions();
 
   // neighbor list update
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
@@ -1396,21 +1555,38 @@ void EMMIVOX::calculate()
   }
 
   // calculate CV
-  calculate_overlap_cpu();
+  if(gpu_) calculate_gpu();
+  else     calculate_cpu();
 
-  // rescale factor for ensemble average
-  double escale = 1.0 / static_cast<double>(nrep_);
-
-  // in case of ensemble averaging, calculate average overlap
-  if(!no_aver_ && nrep_>1) {
-    multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-  }
-
+  // this part is common for GPUs and CPUs
+  // set score, virial, and derivatives
+  Value* score = getPntrToComponent("scoreb");
+  score->set(ene_);
+  setBoxDerivatives(score, virial_);
+  #pragma omp parallel for
+  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(score, i, atom_der_[i]);
+  // set scale and offset value
+  getPntrToComponent("scale")->set(scale_);
+  getPntrToComponent("offset")->set(offset_);
+  // PRINT STUFF to other files
   // get time step
   long int step = getStep();
+  // print status
+  if(step%statusstride_==0) print_status(step);
+  // write model overlap to file
+  if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
 
-  // Monte Carlo on b factors - this will change the overlaps
+  // SAMPLE OTHER PARAMETERS
+  // Monte Carlo on scale
+  if(dscale_>0) {
+    // do Monte Carlo
+    if(step%MCSstride_==0 && !getExchangeStep()) doMonteCarloScale();
+    // calculate acceptance ratio
+    double acc = MCSaccept_ / MCStrials_;
+    // set acceptance value
+    getPntrToComponent("accS")->set(acc);
+  }
+  // Monte Carlo on bfactors
   if(dbfact_>0) {
     // do Monte Carlo
     if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
@@ -1420,190 +1596,16 @@ void EMMIVOX::calculate()
     getPntrToComponent("accB")->set(acc);
   }
 
-  // write model overlap to file
-  if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
-
-  // prepare energy per group
-  vector<double> eneg(GMM_d_grps_.size(), 0.0);
-
-  // calculate total energy and energies per group
-  // Gaussian noise
-  if(noise_==0) ene_ = calculate_Gauss(eneg, sigma_, scale_, offset_, GMMid_der_);
-
-  // Outliers noise
-  if(noise_==1) ene_ = calculate_Outliers(eneg, sigma_, scale_, offset_, GMMid_der_);
-
-  // Marginal noise
-  if(noise_==2) ene_ = calculate_Marginal(scale_, offset_, GMMid_der_);
-
-  // Move SIGMAs
-  // This part is needed only for Gaussian and Outliers noise models
-  if(noise_!=2) {
-    // do Monte Carlo
-    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo(eneg);
-    if(dsigma_[0]>0) {
-      // calculate acceptance ratio
-      double acc = MCaccept_ / MCtrials_;
-      // set value
-      getPntrToComponent("acc")->set(acc);
-    }
-  }
-
-  // up to now, energy, energy per group and derivatives are per replica
-  // in case of ensemble averaging: sum across replicas
-  if(!no_aver_ && nrep_>1) {
-    multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
-    multi_sim_comm.Sum(&ene_, 1);
-  }
-
-  // Monte Carlo on scale
-  if(dscale_>0) {
-    // do Monte Carlo
-    if(step%MCstride_==0 && !getExchangeStep()) doMonteCarloScale();
-    // calculate acceptance ratio
-    double acc = MCSaccept_ / MCStrials_;
-    // set acceptance value
-    getPntrToComponent("accscale")->set(acc);
-  }
-  // set scale and offset value
-  getPntrToComponent("scale")->set(scale_);
-  getPntrToComponent("offset")->set(offset_);
-
-  // print status
-  if(step%statusstride_==0) print_status(step);
-
-  // clear atom derivatives
-  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
-
-  // calculate atom derivatives and virial
-  Tensor virial;
-  // declare omp reduction for Tensors
-  #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
-
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  {
-    // private stuff
-    vector<Vector> atom_der(atom_der_.size(), Vector(0,0,0));
-    unsigned id, im;
-    Vector tot_der;
-    #pragma omp for reduction (sumTensor : virial)
-    for(unsigned i=0; i<nl_.size(); ++i) {
-      // get indexes of data and model component
-      id = nl_[i] / GMM_m_type_.size();
-      im = nl_[i] % GMM_m_type_.size();
-      // chain rule + replica normalization
-      tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_;
-      // increment atom derivatives
-      atom_der[im] += tot_der;
-      // and virial
-      virial += Tensor(pos_[im], -tot_der);
-    }
-    #pragma omp critical
-    for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
-  }
-
-  #pragma omp parallel for
-  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
-
-  // set score and virial
-  getPntrToComponent("scoreb")->set(ene_);
-  setBoxDerivatives(getPntrToComponent("scoreb"), virial);
-}
-
-double EMMIVOX::calculate_Gauss_group(unsigned igroup, double sigma,
-                                      double scale, double offset, vector<double> &GMMid_der)
-{
-  double eneg = 0.0;
-  // cycle on all the members of the group
-  for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
-    // id of the GMM component
-    int id = GMM_d_grps_[igroup][j];
-    // calculate deviation
-    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] ) / sigma;
-    // add to group energy
-    eneg += dev * dev;
-    // store derivative for later
-    GMMid_der[id] = kbt_ * dev / sigma;
-  }
-  // add normalizations and prior
-  eneg = kbt_ * ( 0.5 * eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
-  // return energy per group
-  return eneg;
-}
-
-double EMMIVOX::calculate_Gauss(vector<double> &eneg, vector<double> &sigma,
-                                double scale, double offset, vector<double> &GMMid_der)
-{
-  double ene = 0.0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-  {
-    // cycle on all the GMM groups in parallel
-    #pragma omp for reduction( + : ene)
-    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-      // get group contribution
-      eneg[i] = calculate_Gauss_group(i, sigma[i], scale, offset, GMMid_der);
-      // add to total energy
-      ene += eneg[i];
-    }
-  }
-  // return total energy
-  return ene;
-}
-
-double EMMIVOX::calculate_Outliers_group(unsigned igroup,
-    double sigma, double scale, double offset, vector<double> &GMMid_der)
-{
-  double eneg = 0.0;
-  // cycle on all the members of the group
-  for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
-    // id of the GMM component
-    int id = GMM_d_grps_[igroup][j];
-    // calculate deviation
-    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] ) / sigma;
-    // add to group energy
-    eneg += std::log( 1.0 + 0.5 * dev * dev );
-    // store derivative for later
-    GMMid_der[id] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
-  }
-  // add normalizations and prior
-  eneg = kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
-  // return energy per group
-  return eneg;
-}
-
-double EMMIVOX::calculate_Outliers(vector<double> &eneg, vector<double> &sigma,
-                                   double scale, double offset, vector<double> &GMMid_der)
-{
-  double ene = 0.0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-  {
-    // cycle on all the GMM groups in parallel
-    #pragma omp for reduction( + : ene)
-    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-      // get group contribution
-      eneg[i] = calculate_Outliers_group(i, sigma[i], scale, offset, GMMid_der);
-      // add to total energy
-      ene += eneg[i];
-    }
-  }
-  // return total energy
-  return ene;
 }
 
 double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &GMMid_der)
 {
   double ene = 0.0;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-    {
-     // usefull stuff
-     double ismin = 1.0 / sigma_min_[i];
-     // cycle on all the members of the group
-     #pragma omp for reduction( + : ene)
-     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-       // id of the GMM component
-       int id = GMM_d_grps_[i][j];
+  // cycle on all the overlaps
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : ene)
+  for(unsigned id=0; id<ovdd_.size(); ++id){
+       // get ismin
+       double ismin = ismin_[id];
        // calculate deviation
        double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
        // calculate errf
@@ -1612,8 +1614,6 @@ double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &
        ene += -kbt_ * std::log( 0.5 / dev * errf );
        // store derivative for later
        GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev*ismin*ismin)*ismin+kbt_/dev;
-     }
-    }
   }
   // return total energy
   return ene;
