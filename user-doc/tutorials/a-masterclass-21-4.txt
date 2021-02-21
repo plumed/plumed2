@@ -222,7 +222,7 @@ Once your `plumed.dat` file is complete, you can run a 20 ns long metadynamics s
 provided conformations, for example `topolA.tpr`. All you need to do is execute the following command:
 
 \verbatim
-> gmx mdrun -s topolA.tpr -nsteps 10000000 -plumed plumed.dat 
+gmx mdrun -s topolA.tpr -nsteps 10000000 -plumed plumed.dat 
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
@@ -327,7 +327,8 @@ metad: __FILL__ ARG=__FILL__ ...
   PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
 # The bias factor and Gaussian width are the same as before
   BIASFACTOR=__FILL__ SIGMA=__FILL__
-# Gaussians will be written to file and also stored on grid
+# Gaussians will be read from file and stored on grid
+# Make sure you specify the path the HILLS file produced in Exercise 2!
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 # Say that METAD should be restarting (= reading an existing HILLS file)
   RESTART=YES # <- this is the new stuff!
@@ -341,9 +342,10 @@ PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this o
 Now you can run the \ref driver tool using this command:
 
 \verbatim
-> plumed driver --mf_xtc name_traj_file.xtc --plumed plumed_reweight.dat --kt 2.494339 
+plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
 \endverbatim
 
+where `traj_comp.xtc` is the metadynamics trajectory produced in \ref masterclass-21-4-ex-2. 
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was communicated by the MD code.
 
@@ -377,7 +379,7 @@ You can now compare the free energies as a function of \f$ \phi \f$ calculated:
 1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref masterclass-21-4-ex-2; 
 2. using the reweighting procedure introduced in this exercise. 
 
-The users should verify that the results are identical.
+The users should verify that the results are identical. Are they?
 
 
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
