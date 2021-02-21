@@ -107,19 +107,21 @@ You can clone this repository locally on your machine using the following comman
 git clone https://github.com/plumed/masterclass-21-4.git
 \endverbatim
 
-This repositoy contains 3 folder:
+This repositoy contains 3 folders:
 - `data`: GROMACS topology files for the two systems that we are going to simulate and python script for error analysis;
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
 To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-4`.
 
-In many exercises, we will play with a toy system, alanine dipeptide simulated in vacuo using the AMBER99SB-ILDN 
-force field (see Fig. \ref master-ISDD-2-ala-fig).
+In many exercises, we will play with a toy system, alanine dipeptide simulated in vacuo (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
 This system is a nice example because it presents two metastable states separated by a high free-energy barrier.
 It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \phi \f$ 
 (phi) and \f$ \psi \f$ (psi) in Fig. \ref master-ISDD-2-transition-fig.
+In the `data/diala` directory of the `GitHub` repository for this Masterclass, you will find two GROMACS `.tpr` 
+files (`topolA.tpr` and `topolB.tpr`), which contain all the necessary information
+to perform a simulation starting from either one of the two metastable states of alanine dipeptide. 
 
 \anchor master-ISDD-2-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
@@ -133,20 +135,20 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 
 \subsection masterclass-21-4-ex-1 Exercise 1: Familiarizing with alanine dipeptide
 
-In this brief exercise, we will perform two 10-ns long standard MD simulations of alanine dipeptide 
+In this brief exercise, we will perform two 20 ns long standard MD simulations of alanine dipeptide 
 starting from the two main metastable states of this system.
 To keep things clean, the users are invited to run these two simulations in two separate sub-folders. 
 To run these simulations with GROMACS, please use the following commands:
 
 \verbatim
 # run this command in one directory
-gmx mdrun -s topol_A.tpr -nsteps 5000000 -plumed plumed.dat
+gmx mdrun -s topolA.tpr -nsteps 10000000
 # and this in another one
-gmx mdrun -s topol_B.tpr -nsteps 5000000 -plumed plumed.dat
+gmx mdrun -s topolB.tpr -nsteps 10000000
 \endverbatim
 
 After the simulations are completed, we can use PLUMED to monitor the behavior of the system.
-As learnt in \ref masterclass-21-1, PLUMED can compute and print collective variables on a pre-calculated MD trajectory.
+As learnt in \ref masterclass-21-1, PLUMED can compute and print collective variables (CVs) on a pre-calculated MD trajectory.
 Here, we will: 
 - create a PLUMED input file with a text editor;
 - run the PLUMED \ref driver utility;
@@ -174,17 +176,17 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver on the two MD trajectories as follows:
 
 \verbatim
-plumed driver --plumed plumed.dat --mf_xtc name_traj_file.xtc
+plumed driver --plumed plumed.dat --mf_xtc traj_comp.xtc
 \endverbatim
 
-where `name_traj_file.xtc` is the name of your trajectory file.
 The two `COLVAR` files can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
 This notebook allows you to import a `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library. The users are invited to:
 - inspect the dynamics of the two backbone dihedrals in the two separate simulations;
 - calculate the fluctuations (standard deviation) of the two CVs in the different basins visited.
 
-Are both simulations long enough to visit all the relevant conformations? Probably not, that is why we need metadynamics! 
+Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of
+the phi/psi space? 
 
 \subsection masterclass-21-4-ex-2 Exercise 2: My first metadynamics simulation 
 
@@ -216,11 +218,11 @@ metad: __FILL__ ARG=__FILL__ ...
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations starting from either of the two
-provided conformations. All you need to do is execute the following command:
+Once your `plumed.dat` file is complete, you can run a 20 ns long metadynamics simulations starting from either of the two
+provided conformations, for example `topolA.tpr`. All you need to do is execute the following command:
 
 \verbatim
-> gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
+> gmx mdrun -s topolA.tpr -nsteps 10000000 -plumed plumed.dat 
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
@@ -228,8 +230,8 @@ The `COLVAR` file contains all the information specified by the \ref PRINT comma
 the value of the backbone dihedrals \f$ \phi \f$ and \f$ \psi \f$  every 10 steps of simulation.
 The `HILLS` file contains a list of the Gaussian kernels deposited along the simulation.
 
-Let's visualize the time series of the two collective variables. What are the main difference with respect to
-the trajectory of \ref masterclass-21-4-ex-1? 
+Let's visualize the time series of the two collective variables. Take your time to inspect the behavior of the two CVs.
+What are the main differences with respect to the trajectory produced in \ref masterclass-21-4-ex-1? 
 
 At this point, we can estimate the free energy as a function of the metadynamics CV directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
@@ -259,15 +261,17 @@ the option `--mintozero` can be used to align the profiles by setting the global
 If we use the following command line:
 
 \verbatim
-plumed sum_hills --hills HILLS --stride 100 --mintozero
+plumed sum_hills --hills HILLS --stride 200 --mintozero
 \endverbatim
 
-one free energy is calculated every 100 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
-These two qualitative observations:
+one free energy is calculated every 200 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
+Now, you can visualize the free-energy estimate as a function of simulation time and assess how it changed during the course
+of the simulation. In the last part of this 20 ns long metadynamics simulation, the free-energy estimate should not change
+significantly. These two observations:
 1. the system is diffusing rapidly in the entire CV space
 2. the estimated free energy does not significantly change as a function of time
 
-suggest that the simulation __might__ be converged. 
+are two indications that the simulation __might__ have converged. 
 
 \warning The two conditions listed above are necessary, but not sufficient to declare convergence. We will learn below how to
 perform a quantitative analysis of the convergence of a metadynamics simulation.
