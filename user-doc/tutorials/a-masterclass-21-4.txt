@@ -379,6 +379,43 @@ The results should be identical.
 
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
 
+In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
+this quantity to calculate the correct statistical weight of each frame that we need to reweight the biased simulation.
+In this exercise, we will see how this information can be used to calculate the error in 
+the reconstructed free energies and assess whether our simulation is converged or not.
+
+Let's first:
+- calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` file obtained at the end of \ref masterclass-21-4-ex-4 
+- print them in a file (called for example `phi.weight`) containing the value of the dihedral \f$ \phi \f$ and the corresponding (un-normalized) weight \f$ w \f$ for each frame of the metadynamics trajectory 
+
+At this point we can apply the block-analysis technique (for more info about the theory, 
+have a look at \ref masterclass-21-2) to calculate the average free energy across the blocks
+and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
+script to read the `phi.weight` file and produce the desired output, after properly choosing the input parameters:
+
+\verbatim
+# Arguments of do_block_fes.py
+# - FILE: input file with 2 colums containing the CV value and weight for each frame of the trajectory
+# - NCV: number of CVs
+# - MIN/MAX: CV range
+# - NBIN: # points in output free energy
+# - kBT: temperature in energy units (kJoule/mol)
+# - N: Block size
+# 
+python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
+\endverbatim 
+
+Thi script will produce an output file called fes.N.dat, which contains:
+- the value of the \f$ \phi \f$ variable on a grid;
+- the average free energy across the blocks for each point of the grid;
+- its associated error.
+ 
+The users now needs to calculate the average error across the free-energy profile as a function of the block size and
+visualize it. If executed correctly, the error should increase with the block size until it reaches a plateau in correspondence of a dimension
+of the block that exceeds the correlation between data points.
+
+What can we learn from this analysis about the convergence of the metadynamics simulation?
+
 \subsection masterclass-21-4-ex-5 Exercise 5: Playing with metadynamics parameters 
 
 \subsection masterclass-21-4-ex-6 Exercise 6: Recognizing good from bad CVs
