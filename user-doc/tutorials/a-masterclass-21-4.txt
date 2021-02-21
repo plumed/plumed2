@@ -426,11 +426,9 @@ is not converged yet and should be run longer.
 
 What can we learn from this analysis about the convergence of the metadynamics simulation?
 
-\subsection masterclass-21-4-ex-5 Exercise 5: Playing with metadynamics parameters 
+\subsection masterclass-21-4-ex-5 Exercise 5: Recognizing good from bad CVs
 
-\subsection masterclass-21-4-ex-6 Exercise 6: Recognizing good from bad CVs
-
-\subsection masterclass-21-4-ex-7 Exercise 7: A 'real-life' scenario
+\subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' scenario
 
 */
 
