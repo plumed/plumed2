@@ -29,8 +29,8 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ~/.ccache
-        key: ccache-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-linux${{ matrix.variant }}hash-
+        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -116,7 +116,11 @@ jobs:
         ccache -s -M 100M
     - name: Run tests
       run: |
-         make --no-print-directory -C regtest
+         (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
+              df -h
+              sleep 15
+              done) &
+         make --no-print-directory -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests

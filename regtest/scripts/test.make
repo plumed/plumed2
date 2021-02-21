@@ -11,3 +11,7 @@ clean:
 valgrind:
 	../../scripts/run --valgrind
 
+testclean:
+	$(MAKE) test
+	rm -fr tmp/
+
