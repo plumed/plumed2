@@ -108,7 +108,7 @@ git clone https://github.com/plumed/masterclass-21-4.git
 \endverbatim
 
 This repositoy contains 3 folder:
-- `data`: GROMACS topology files for the two systems that we are going to simulate in this class and python script for error analysis;
+- `data`: GROMACS topology files for the two systems that we are going to simulate and python script for error analysis;
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
@@ -298,15 +298,18 @@ In this exercise we will use the second method, which resembles the umbrella-sam
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
-for running your metadynamics simulation except for a few modifications. First, you 
-need to add the keyword `RESTART=YES` to the \ref METAD command.
+for running your metadynamics simulation except for a few modifications:
+- you need to add the keyword `RESTART=YES` to the \ref METAD command.
 This will make this action behave as if PLUMED was restarting, i.e. PLUMED will
-read from the `HILLS` file the Gaussians that have previously been accumulated.
-Second, you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
+read from the `HILLS` file the Gaussians that have previously been accumulated;
+- you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
 This will actually avoid adding new Gaussians (and even if they are added they will have
-zero height). Finally, you need to modify the \ref PRINT statement so that you
-write every frame and that, in addition to `phi` and `psi`,
-you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
+zero height);
+- you need to modify the \ref PRINT statement so that you write every frame and that, in addition to `phi` and `psi`,
+you also write `metad.bias`;
+- you might also want to change the name of the output file to `COLVAR_REWEIGHT`.
+
+Here how the `plumed_reweight.dat` should look like:
 
 \plumedfile
 # Activate MOLINFO functionalities
@@ -331,7 +334,7 @@ metad: __FILL__ ARG=__FILL__ ...
 PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this one!
 \endplumedfile
 
-Then run the \ref driver tool using this command:
+Now you can run the \ref driver tool using this command:
 
 \verbatim
 > plumed driver --mf_xtc name_traj_file.xtc --plumed plumed_reweight.dat --kt 2.494339 
@@ -342,11 +345,10 @@ this information was communicated by the MD code.
 
 As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
 metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
-
 You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
-(umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using, for example, a python script 
-and compute a weighted histogram. Alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
-lines at the end of the `plumed_reweight.dat` file:
+(umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using a python notebook and compute a weighted histogram
+or, alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
+lines at the end of the `plumed_reweight.dat` file and re-rerun PLUMED \driver:
 
 \plumedfile
 # Use the metadynamics bias as argument
@@ -371,24 +373,25 @@ You can now compare the free energies as a function of \f$ \phi \f$ calculated:
 1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref masterclass-21-4-ex-2; 
 2. using the reweighting procedure introduced in this exercise. 
 
-The results should be identical.
+The users should verify that the results are identical.
 
 
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
 
 In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
 this quantity to calculate the correct statistical weight of each frame that we need to reweight the biased simulation.
-In this exercise, we will see how this information can be used to calculate the error in 
-the reconstructed free energies and assess whether our simulation is converged or not.
+In this exercise, the user will learn how this information can be used to calculate the error in 
+the reconstructed free energies and assess whether the simulation is converged or not.
 
 Let's first:
-- calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` file obtained at the end of \ref masterclass-21-4-ex-4 
-- print them in a file (called for example `phi.weight`) containing the value of the dihedral \f$ \phi \f$ and the corresponding (un-normalized) weight \f$ w \f$ for each frame of the metadynamics trajectory 
+- calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` file obtained at the end of \ref masterclass-21-4-ex-3; 
+- print them in a file (called for example `phi.weight`) containing the value of the dihedral \f$ \phi \f$ and the corresponding (un-normalized) weight \f$ w \f$ for each frame of the metadynamics trajectory. 
 
 At this point we can apply the block-analysis technique (for more info about the theory, 
 have a look at \ref masterclass-21-2) to calculate the average free energy across the blocks
 and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
-script to read the `phi.weight` file and produce the desired output, after properly choosing the input parameters:
+script provided in the `data` directory on `GitHub` `to read the `phi.weight` file and produce the desired output,
+after properly choosing the input parameters:
 
 \verbatim
 # Arguments of do_block_fes.py
@@ -402,14 +405,18 @@ script to read the `phi.weight` file and produce the desired output, after prope
 python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
 \endverbatim 
 
-Thi script will produce an output file called fes.N.dat, which contains:
+Thi script will produce an output file, which contains:
 - the value of the \f$ \phi \f$ variable on a grid;
 - the average free energy across the blocks for each point of the grid;
-- its associated error.
+- the error associated to the average free energy for each point of the grid.
  
-The users now needs to calculate the average error across the free-energy profile as a function of the block size and
-visualize it. If executed correctly, the error should increase with the block size until it reaches a plateau in correspondence of a dimension
-of the block that exceeds the correlation between data points.
+The users now needs to:
+- calculate the average error on the free-energy profile for each value of the block size;
+- visualize it as a function of the block size.
+
+The users should verify that the error increases with the block size (why?) until it reaches a plateau in correspondence of a dimension
+of the block that exceeds the correlation between data points. If the plateau is not observed, it means that our simulation
+is not converged yet and should be run longer.
 
 What can we learn from this analysis about the convergence of the metadynamics simulation?
 
