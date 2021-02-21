@@ -24,7 +24,7 @@ Once this Masterclass is completed, users will be able to:
 \subsection masterclass-21-4-conda Installation
 
 The users can refer to the procedure introduce in \ref and \ref to install the required software.
-In this class, we will perform the simulations ourselves, so be sure the [GROMACS](https://www.gromacs.org) MD code is properly installed.
+In this class, we will perform the simulations ourselves, so make sure that the [GROMACS](https://www.gromacs.org) code is properly installed.
 
 
 \subsection masterclass-21-4-theory Overview of the theory 
@@ -111,7 +111,7 @@ git clone https://github.com/plumed/masterclass-21-4.git
 \endverbatim
 
 This repositoy contains 3 folder:
-- `data`: GROMACS topology files for the two systems that we are going to simulate in this class;
+- `data`: GROMACS topology files for the two systems that we are going to simulate in this class and python script for error analysis;
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
@@ -139,14 +139,19 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 In this brief exercise, we will perform two 10-ns long standard MD simulations of alanine dipeptide 
 starting from the two main metastable states of this system.
 To keep things clean, the users are invited to run these two simulations in two separate sub-folders. 
+To run these simulations with GROMACS, please use the following commands:
 
-
-
+\verbatim
+# run this command in one directory
+gmx mdrun -s topol_A.tpr -nsteps 5000000 -plumed plumed.dat
+# and this in another one
+gmx mdrun -s topol_B.tpr -nsteps 5000000 -plumed plumed.dat
+\endverbatim
 
 After the simulations are completed, we can use PLUMED to monitor the behavior of the system.
-As learnt in ref \masterclass-21-1, PLUMED can be used to compute and print collective variables on a pre-calculated MD trajectory.
+As learnt in \ref masterclass-21-1, PLUMED can compute and print collective variables on a pre-calculated MD trajectory.
 Here, we will: 
-- create a PLUMED input file with a text editor (typically called `plumed.dat`);
+- create a PLUMED input file with a text editor;
 - run the PLUMED \ref driver utility;
 - visualize the output with the aid of a Jupyter notebook.
 
@@ -157,14 +162,13 @@ Let's now prepare a PLUMED input file to calculate:
 by completing the template below (whenever you see an highlighted \highlight{FILL} string, this is a string that you must replace!):
 
 \plumedfile
-# Compute gyration radius on CA atoms of the first 40 N-terminal residues:
 # Activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
-# you might want to use MOLINFO shortcuts
+# you should use MOLINFO shortcuts
 phi: TORSION ATOMS=__FILL__
 # Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
-# here also you might want to use MOLINFO shortcuts
+# here also you should to use MOLINFO shortcuts
 psi: TORSION ATOMS=__FILL__
 # Print the two collective variables on COLVAR file every step
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
@@ -176,11 +180,12 @@ Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver on t
 plumed driver --plumed plumed.dat --mf_xtc name_traj_file.xtc
 \endverbatim
 
-This `COLVAR` file can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
-This notebook allows you to import the `COLVAR` file produced by PLUMED and to generate the desired figures using the 
+where `name_traj_file.xtc` is the name of your trajectory file.
+The two `COLVAR` files can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
+This notebook allows you to import a `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library. The users are invited to:
 - inspect the dynamics of the two backbone dihedrals in the two separate simulations;
-- calculate the fluctuations of the CVs in the different basins visited.
+- calculate the fluctuations (standard deviation) of the two CVs in the different basins visited.
 
 Are both simulations long enough to visit all the relevant conformations? Probably not, that is why we need metadynamics! 
 
@@ -188,25 +193,24 @@ Are both simulations long enough to visit all the relevant conformations? Probab
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
-
 Here you can find a sample `plumed.dat` file that you can use as a template.
 
 \plumedfile
 # Activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
-
 # Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
-# Try to use MOLINFO shortcuts
+# you should use MOLINFO shortcuts 
 phi: TORSION ATOMS=__FILL__
 # Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
-# Try to use MOLINFO shortcuts 
+# here also you should to use MOLINFO shortcuts 
 psi: TORSION ATOMS=__FILL__
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
-# and bias factor equal to 8
+# Deposit a Gaussian every 500 time steps, with initial height 
+# equal to 1.2 kJ/mol and bias factor equal to 8
   PACE=500 HEIGHT=1.2 BIASFACTOR=8
-# Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
+# Gaussian width (sigma) should be chosen based on the CV fluctuations in unbiased run
+# try 1/2 or 1/3 of the estimated fluctuations
   SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
   FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
@@ -215,7 +219,8 @@ metad: __FILL__ ARG=__FILL__ ...
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
+Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations starting from either of the two
+provided conformations. All you need to do is execute the following command:
 
 \verbatim
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
@@ -229,7 +234,7 @@ The `HILLS` file contains a list of the Gaussian kernels deposited along the sim
 Let's visualize the time series of the two collective variables. What are the main difference with respect to
 the trajectory of \ref masterclass-21-4-ex-1? 
 
-Now, we can estimate the free energy as a function of the metadynamics CV directly from the metadynamics
+At this point, we can estimate the free energy as a function of the metadynamics CV directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
 deposited during the simulation and stored in the `HILLS` file.  
 To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
@@ -272,16 +277,113 @@ perform a quantitative analysis of the convergence of a metadynamics simulation.
 
 \subsection masterclass-21-4-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation 
 
+In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
+the same variable directly from the metadynamics bias potential using the \ref sum_hills utility. 
+However, in many cases you might decide which variable should be analyzed _after_
+having performed a metadynamics simulation. For example,
+you might want to calculate the free energy as a function of CVs other than those
+biased during the metadynamics simulation, such as the dihedral \f$ \psi \f$.
+At variance with standard MD simulations, you cannot simply calculate histograms of other variables directly from your metadynamics trajectory, 
+because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
+To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
+you must reweight (unbias) your simulation.
+
+There are multiple ways to calculate the correct
+statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
+For example:
+
+1. weights can be calculated by considering the time-dependence of the metadynamics bias
+   potential \cite Tiwary_jp504920s;
+2. weights can be calculated using the metadynamics bias potential obtained at the end of the
+   simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
+
+In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach.
+In order to compute the weights we will use the \ref driver tool.
+
+First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
+for running your metadynamics simulation except for a few modifications. First, you 
+need to add the keyword `RESTART=YES` to the \ref METAD command.
+This will make this action behave as if PLUMED was restarting, i.e. PLUMED will
+read from the `HILLS` file the Gaussians that have previously been accumulated.
+Second, you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
+This will actually avoid adding new Gaussians (and even if they are added they will have
+zero height). Finally, you need to modify the \ref PRINT statement so that you
+write every frame and that, in addition to `phi` and `psi`,
+you also write `metad.bias`. You might also want to change the name of the output file to `COLVAR_REWEIGHT`.
+
+\plumedfile
+# Activate MOLINFO functionalities
+MOLINFO STRUCTURE=__FILL__
+
+__FILL__ # here goes the definitions of the phi and psi CVs
+
+# Activate well-tempered metadynamics in phi
+metad: __FILL__ ARG=__FILL__ ...
+# Deposit a Gaussian every 10000000 time steps (never!), with initial height equal to 0.0 kJ/mol
+  PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
+# The bias factor and Gaussian width are the same as before
+  BIASFACTOR=__FILL__ SIGMA=__FILL__
+# Gaussians will be written to file and also stored on grid
+  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+# Say that METAD should be restarting (= reading an existing HILLS file)
+  RESTART=YES # <- this is the new stuff!
+...
+
+# Print out the values of phi, psi and the metadynamics bias potential
+# Make sure you print out the 3 variables in the specified order at every step
+PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this one!
+\endplumedfile
+
+Then run the \ref driver tool using this command:
+
+\verbatim
+> plumed driver --mf_xtc name_traj_file.xtc --plumed plumed_reweight.dat --kt 2.494339 
+\endverbatim
+
+Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
+this information was communicated by the MD code.
+
+As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
+metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
+
+You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
+(umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using, for example, a python script 
+and compute a weighted histogram. Alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
+lines at the end of the `plumed_reweight.dat` file:
+
+\plumedfile
+# Use the metadynamics bias as argument
+as: REWEIGHT_BIAS ARG=__FILL__
+
+# Calculate histograms of phi and psi dihedrals every 50 steps
+# using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
+# Look at the manual to understand the parameters of the HISTOGRAM action!
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
+
+# Convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+
+# Print out the free energies F(s) to file once the entire trajectory is processed 
+DUMPGRID GRID=ffphi FILE=ffphi.dat
+DUMPGRID GRID=ffpsi FILE=ffpsi.dat
+\endplumedfile
+
+You can now compare the free energies as a function of \f$ \phi \f$ calculated:
+1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref masterclass-21-4-ex-2; 
+2. using the reweighting procedure introduced in this exercise. 
+
+The results should be identical.
+
 
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
-
 
 \subsection masterclass-21-4-ex-5 Exercise 5: Playing with metadynamics parameters 
 
 \subsection masterclass-21-4-ex-6 Exercise 6: Recognizing good from bad CVs
 
 \subsection masterclass-21-4-ex-7 Exercise 7: A more complex exercise 
-
 
 */
 
