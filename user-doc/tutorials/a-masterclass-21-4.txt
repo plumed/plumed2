@@ -416,7 +416,7 @@ Thi script will produce an output file, which contains:
 - the average free energy across the blocks for each point of the grid;
 - the error associated to the average free energy for each point of the grid.
  
-The users now needs to:
+The users now should:
 - calculate the average error on the free-energy profile for each value of the block size;
 - visualize it as a function of the block size.
 
