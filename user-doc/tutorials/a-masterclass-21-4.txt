@@ -19,15 +19,7 @@ Once this Masterclass is completed, users will be able to:
 - Assess the convergence of metadynamics simulations.
 - Recognize good from bad collective variables.
  
-\section masterclass-21-4-install Setting up the software 
-
-\subsection masterclass-21-4-conda Installation
-
-The users can refer to the procedure introduce in \ref and \ref to install the required software.
-In this class, we will perform the simulations ourselves, so make sure that the [GROMACS](https://www.gromacs.org) code is properly installed.
-
-
-\subsection masterclass-21-4-theory Overview of the theory 
+\section masterclass-21-4-theory Overview of the theory 
 
 PLUMED can be used not only to analyze a pre-existing MD trajectory, but also to add forces on the CVs during a MD simulation, for example, 
 in order to accelerate sampling. To this aim, we have implemented a variety of possible biases acting on CVs. 
@@ -100,6 +92,11 @@ Additional information can be found in the several review papers on metadynamics
 \cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103 \cite bussi2015free.
 
 \endhidden
+
+\section masterclass-21-4-install Setting up the software 
+
+The users can refer to the procedure introduce in \ref and \ref to install the required software.
+In this class, we will perform the simulations ourselves, so make sure that the [GROMACS](https://www.gromacs.org) code is properly installed.
 
 \section masterclass-21-4-resources Resources
 
