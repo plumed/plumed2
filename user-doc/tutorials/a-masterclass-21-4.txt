@@ -95,7 +95,7 @@ Additional information can be found in the several review papers on metadynamics
 
 \section masterclass-21-4-install Setting up the software 
 
-The users can refer to the procedure introduce in \ref and \ref to install the required software.
+The users can refer to the procedure introduce in \ref masterclass-21-1 and \ref masterclass-21-3 to install the required software.
 In this class, we will perform the simulations ourselves, so make sure that the [GROMACS](https://www.gromacs.org) code is properly installed.
 
 \section masterclass-21-4-resources Resources
