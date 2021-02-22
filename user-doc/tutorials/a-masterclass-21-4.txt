@@ -428,6 +428,34 @@ What can we learn from this analysis about the convergence of the metadynamics s
 
 \subsection masterclass-21-4-ex-5 Exercise 5: Recognizing good from bad CVs
 
+In the previous exercises, we have performed metadynamics simulations on alanine dipeptide using the backbone dihedral \f$ \phi \f$ as CV.
+We have analyzed the simulations and noticed that:
+- under the effect of the bias potential, the system rapidly diffuses in the entire CV space;
+- the error in the reconstrcuted free energy calculated with block analysis rapidly reaches a plateau.
+
+These two observations suggests that our simulations are converged and that the dihedral \f$ \phi \f$ can be considered a _good_ CV.
+A good set of CVs for metadynamics should indeed:
+1. discriminate between the relevant metastable states of the system;
+2. include all the slow modes that characterize transitions between such states; 
+3. be as small as possible. 
+
+Identifying a priori a good set of CVs to describe a specific problem is far from trivial. In this exercise, the users will learn how to detect 
+potential problems in their choice of CV(s). Let's first perform additional 1D metadynamics simulations using one of the following CVs:
+- the end-to-end distance, i.e. the distance between Carbon atoms 2 and 19; 
+- the angle formed by Carbon atoms 2, 9 and 19;
+- the radius of gyration;
+- the number of hydrogen bonds.
+
+The users are invited to prepare, for each of the CV listed above, a PLUMED input file to perform a 1D well-tempered metadynamics simulation, execute the simulation, and analyse the results in terms of:
+- diffusion of the system in the space of the dihedral \f$ \phi \f$
+- error analysis in the free energy as a function of \f$ \phi \f$
+
+and compare the results with the previous simulations in which \f$ \phi \f$ was selected as the metadynamics CV. Based on this analysis, can you separate _good_ from _bad_ CVs?
+
+To complete this exercise, the users should define and test a new CV that is:
+- as good as the dihedral \f$ \phi \f$;
+- the worst possible CV to describe the conformational states of alanine dipeptide.
+  
 \subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' scenario
 
 */
