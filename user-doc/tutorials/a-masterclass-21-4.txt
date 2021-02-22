@@ -396,7 +396,7 @@ The users should verify that the results are identical. Are they?
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
 
 In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
-this quantity to calculate the correct statistical weight of each frame that we need to reweight the biased simulation.
+this quantity to calculate the correct statistical weight of each frame, which is needed to reweight the biased simulation.
 In this exercise, the user will learn how this information can be used to calculate the error in 
 the reconstructed free energies and assess whether the simulation is converged or not.
 
@@ -422,29 +422,30 @@ The users should properly choose the following input parameters:
 python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
 \endverbatim 
 
-Thi script will produce an output file, which contains:
+and run the above script for different block sizes ranging from 1 to 1000.
+The script will produce an output file, which contains:
 - the value of the \f$ \phi \f$ variable on a grid;
-- the average free energy across the blocks for each point of the grid;
-- the error associated to the average free energy for each point of the grid.
+- the free energy averaged across the blocks for each point of the grid;
+- the associated error for each point of the grid.
  
-The users now should:
-- calculate the average error on the free-energy profile for block sizes ranging from 1 to 1000;
-- visualize it as a function of the block size.
+At this point, the users should:
+- calculate the average error across the free-energy profile for each block size chosen;
+- visualize the error as a function of the block size.
 
-The users should verify that the error increases with the block size (why?) until it reaches a plateau in correspondence of a dimension
-of the block that exceeds the correlation between data points. If the plateau is not observed, it means that our simulation
-is not converged yet and should be run longer.
+The users should verify that the error increases with the block size (why?) until it reaches a plateau when the dimension
+of the block exceeds the correlation time between data points. If a plateau is not observed, then the simulation
+is not converged yet and should be run a bit longer.
 
 What can we learn from this analysis about the convergence of the metadynamics simulation performed in \ref masterclass-21-4-ex-2?
 
 \subsection masterclass-21-4-ex-5 Exercise 5: Recognizing good from bad CVs
 
-In the previous exercises, we have performed metadynamics simulations on alanine dipeptide using the backbone dihedral \f$ \phi \f$ as CV.
-We have analyzed the simulations and noticed that:
+In the previous exercises, we have performed a metadynamics simulation on alanine dipeptide using the backbone dihedral \f$ \phi \f$ as CV.
+We have analyzed the simulation and noticed that:
 - under the effect of the bias potential, the system rapidly diffuses in the entire CV space;
 - the error in the reconstrcuted free energy calculated with block analysis rapidly reaches a plateau.
 
-These two observations suggests that our simulations are converged and that the dihedral \f$ \phi \f$ can be considered a _good_ CV.
+These two observations indicate that our simulation is converged and that the dihedral \f$ \phi \f$ can be considered a _good_ CV.
 A good set of CVs for metadynamics should indeed:
 1. discriminate between the relevant metastable states of the system;
 2. include all the slow modes that characterize transitions between such states; 
@@ -461,11 +462,11 @@ The users are invited to prepare, for each of the CV listed above, a PLUMED inpu
 - diffusion of the system in the space of the dihedral \f$ \phi \f$
 - error analysis in the free energy as a function of \f$ \phi \f$
 
-and compare the results with the previous simulations in which \f$ \phi \f$ was selected as the metadynamics CV. Based on this analysis, can you separate _good_ from _bad_ CVs?
+and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. Based on this analysis, can you discriminate between _good_ from _bad_ CVs?
 
 To complete this exercise, the users should define and test a new CV that is either:
 - as good as the dihedral \f$ \phi \f$;
-- the worst possible CV to describe the conformational states of alanine dipeptide.
+- the worst possible CV to accelerate sampling and describe the two main conformational states of alanine dipeptide.
   
 \subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' application
 
