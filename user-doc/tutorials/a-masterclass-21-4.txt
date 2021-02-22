@@ -487,20 +487,23 @@ The objective of this exercises are:
 
 In order to complete the exercise, the students should:
 - choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV can be used,
-except for those CVs, like \RMSD, that require the knowledge of the structure of the two conformational states;
+except for those that require, like \RMSD, the knowledge of the structure of the two conformational states;
 - monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
-- analyze the results as done in previous exercises (assessment of convergence and error analysis);
+- analyze the results as done in the previous exercises (assessment of convergence and error analysis);
 - report the free energy (with error bar) as a function of the \RMSD with respect to the two reference structures;
 - report structure and population of other metastable states, if present. 
 
-Please keep in mind that (TO BE DONE):
-- force field, SMOG, no hydrogens
-- some of the CVs cannot be used, but workaround can be found.
-- typical biasfactor
-- temperature of the simulation is.
+Please keep in mind that:
+- we are simulating the system using a simplified, structure-based potential, called [SMOG](https://smog-server.org);
+- some of the CVs or PLUMED functionalities might not work as hydrogen atoms are not present in the system. However, there
+is always a way around this, so be creative;
+- due to the nature of the force field, we are simulating at an unphysical temperature of 100K.
 
-Due to the nature of the force field, please execute GROMACS using the following command:
+Finally, due to the special nature of the force field, please execute GROMACS using the following command, using a 
+maximum of 4 CPU cores for OpenMP parallelization (the system is small, more cores are inefficients):
+
 \verbatim
+gmx_mpi mdrun -plumed plumed.dat -ntomp 4 -noddcheck -nb cpu -pme cpu
 \endverbatim
 
 */
