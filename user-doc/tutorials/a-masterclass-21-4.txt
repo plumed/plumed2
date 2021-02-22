@@ -452,7 +452,7 @@ The users are invited to prepare, for each of the CV listed above, a PLUMED inpu
 
 and compare the results with the previous simulations in which \f$ \phi \f$ was selected as the metadynamics CV. Based on this analysis, can you separate _good_ from _bad_ CVs?
 
-To complete this exercise, the users should define and test a new CV that is:
+To complete this exercise, the users should define and test a new CV that is either:
 - as good as the dihedral \f$ \phi \f$;
 - the worst possible CV to describe the conformational states of alanine dipeptide.
   
