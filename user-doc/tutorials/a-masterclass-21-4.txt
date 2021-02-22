@@ -503,7 +503,7 @@ Finally, due to the special nature of the force field, please execute GROMACS us
 maximum of 4 CPU cores for OpenMP parallelization (the system is small, more cores are inefficients):
 
 \verbatim
-gmx_mpi mdrun -plumed plumed.dat -ntomp 4 -noddcheck -nb cpu -pme cpu
+gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck -nb cpu -pme cpu
 \endverbatim
 
 */
