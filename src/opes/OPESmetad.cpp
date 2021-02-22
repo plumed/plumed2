@@ -507,6 +507,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   checkRead();
 
 //restart if needed
+  bool convertKernelsToState=false;
   if(getRestart())
   {
     bool stateRestart=true;
@@ -670,7 +671,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_,kernels_.size());
+        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
+        convertKernelsToState=true;
       }
       ifile.reset(false);
       ifile.close();
@@ -739,6 +741,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     stateOfile_.open(stateFileName);
     if(fmt.length()>0)
       stateOfile_.fmtField(" "+fmt);
+    if(convertKernelsToState)
+      dumpStateToFile();
   }
 
 //set initial old values

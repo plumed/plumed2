@@ -208,15 +208,14 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
     else
       log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
-  if(left_HWHM==0 && right_HWHM==0)
-  {
-    log.printf(" +++ WARNING +++ %s range is very narrow, using MIN_%s and MAX_%s as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
-    return 2;
-  }
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("   estimated %s spacing = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
-  plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
+  if(steps<2 || grid_spacing==0)
+  {
+    log.printf(" +++ WARNING +++ %s range is very narrow, using MIN_%s and MAX_%s as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
+    steps=2;
+  }
   return steps;
 }
 
