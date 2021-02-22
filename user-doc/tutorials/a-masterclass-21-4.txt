@@ -499,8 +499,8 @@ Please keep in mind that:
 is always a way around this, so be creative;
 - due to the nature of the force field, we are simulating at an unphysical temperature of 100K.
 
-Finally, due to the special nature of the force field, please execute GROMACS using the following command, using a 
-maximum of 4 CPU cores for OpenMP parallelization (the system is small, more cores are inefficients):
+Finally, due to the special nature of the force field, please execute GROMACS using the following command (here
+the calculation is using 4 CPU cores with OpenMP parallelization):
 
 \verbatim
 gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck -nb cpu -pme cpu
