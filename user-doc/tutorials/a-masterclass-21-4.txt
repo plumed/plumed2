@@ -129,7 +129,7 @@ to perform a simulation starting from either one of the two metastable states of
 \anchor master-ISDD-2-transition-fig
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
-\note All the exercises have been tested with PLUMED version 2.7.0.
+\note All the exercises have been tested with PLUMED version 2.7.0 and GROMACS 2019.6.
 
 \section masterclass-21-4-ex Exercises
 
