@@ -467,7 +467,39 @@ To complete this exercise, the users should define and test a new CV that is eit
 - as good as the dihedral \f$ \phi \f$;
 - the worst possible CV to describe the conformational states of alanine dipeptide.
   
-\subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' scenario
+\subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' application
+
+In this last exercise, we will tackle a real-life biological problem: studying the conformational transition of a complex biological system.
+The system that we are going to study is the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_. This part of the system,
+which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from beta-sheet to alpha-helix, 
+which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-4-RfaH-CTD-fig).
+
+\anchor masterclass-21-4-RfaH-CTD-fig 
+\image html RfaH-CTD.png "Structural transformation of the RfaH CTD. Domain dissociation is triggered upon binding of the NTD (gray) to its target ops (operon polarity suppressor) element DNA, relieving the autoinhibited state and allowing the transformation of the CTD (colored) from an α-helical hairpin (A) towards a five-stranded β- barrel (B). Note that the NTD and CTD are connected by a linker that does not order within the crystals and therefore is not shown in the figure."
+ 
+In the `data/RfaH-CTD` folder of the `GitHub` repository, you will find:
+- two pdb files representing the RfaH-CTD in the two different conformational states;
+- a `topol.tpr` file that is needed to perform a MD simulation of this sytem with GROMACS.
+
+The objective of this exercises are:
+- estimating the free-energy difference between the two metastable state of RfaH-CTD (with error estimate);
+- determining the structure and population of other metastable states, if present.
+
+In order to complete the exercise, the students should:
+- choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV can be used,
+except for those CVs, like \RMSD, that require the knowledge of the structure of the two conformational states;
+- monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
+- analyze the results as learnt in previous exercises (assessment of convergence and error analysis);
+- report the free energy as a function of the \RMSD with respect to the two reference structures;
+- report structure and population of other metastable states, if present. 
+
+Please keep in mind that:
+- force field, SMOG, no hydrogens
+- some of the CVs cannot be used, but workaround can be found.
+
+Due to the nature of the force field, please execute GROMACS using the following command:
+\verbatim
+\endverbatim
 
 */
 
