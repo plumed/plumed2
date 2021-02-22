@@ -186,7 +186,7 @@ This notebook allows you to import a `COLVAR` file produced by PLUMED and to gen
 - calculate the fluctuations (standard deviation) of the two CVs in the different basins visited.
 
 Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of
-the phi/psi space? 
+the \f$ \phi \f$ / \f$ \psi \f$ space? 
 
 \subsection masterclass-21-4-ex-2 Exercise 2: My first metadynamics simulation 
 
@@ -354,7 +354,7 @@ metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians depo
 You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
 (umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using a python notebook and compute a weighted histogram
 or, alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
-lines at the end of the `plumed_reweight.dat` file and re-rerun PLUMED \driver:
+lines at the end of the `plumed_reweight.dat` file and re-run PLUMED \ref driver:
 
 \plumedfile
 # Use the metadynamics bias as argument
@@ -396,8 +396,8 @@ Let's first:
 At this point we can apply the block-analysis technique (for more info about the theory, 
 have a look at \ref masterclass-21-2) to calculate the average free energy across the blocks
 and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
-script provided in the `data` directory on `GitHub` `to read the `phi.weight` file and produce the desired output,
-after properly choosing the input parameters:
+script provided in the `data` directory of the `GitHub` repository to read the `phi.weight` file and produce the desired output.
+The users should properly choose the following input parameters:
 
 \verbatim
 # Arguments of do_block_fes.py
@@ -405,7 +405,7 @@ after properly choosing the input parameters:
 # - NCV: number of CVs
 # - MIN/MAX: CV range
 # - NBIN: # points in output free energy
-# - kBT: temperature in energy units (kJoule/mol)
+# - KBT: temperature in energy units (kJoule/mol)
 # - N: Block size
 # 
 python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
@@ -424,7 +424,7 @@ The users should verify that the error increases with the block size (why?) unti
 of the block that exceeds the correlation between data points. If the plateau is not observed, it means that our simulation
 is not converged yet and should be run longer.
 
-What can we learn from this analysis about the convergence of the metadynamics simulation?
+What can we learn from this analysis about the convergence of the metadynamics simulation performed in \ref masterclass-21-4-ex-2?
 
 \subsection masterclass-21-4-ex-5 Exercise 5: Recognizing good from bad CVs
 
