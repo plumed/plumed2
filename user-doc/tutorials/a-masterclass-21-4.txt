@@ -455,7 +455,7 @@ Identifying a priori a good set of CVs to describe a specific problem is far fro
 potential problems in their choice of CV(s). Let's first perform additional 1D metadynamics simulations using one of the following CVs:
 - the dihedral \f$ \psi \f$;
 - the radius of gyration, defined on all the heavy atoms of the system;
-- the number of hydrogen bonds.
+- the distance between Oxigen atom 6 and Hydrogen atom 8.
 
 The users are invited to prepare, for each of the CV listed above, a PLUMED input file to perform a 1D well-tempered metadynamics simulation, execute the simulation, and analyse the results in terms of:
 - diffusion of the system in the space of the dihedral \f$ \phi \f$
