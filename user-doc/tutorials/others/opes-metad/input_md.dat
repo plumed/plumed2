@@ -1,0 +1,12 @@
+# plumed pesmd input file
+nstep         20000000
+tstep         0.005
+temperature   1.0
+friction      10.0
+periodic      false
+dimension     2
+ipos          -1.6,0.9
+plumed        plumed.dat
+
+# to run:
+# plumed pesmd input_md.dat > log
