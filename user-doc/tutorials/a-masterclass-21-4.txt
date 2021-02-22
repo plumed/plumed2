@@ -455,7 +455,7 @@ Identifying a priori a good set of CVs to describe a specific problem is far fro
 potential problems in their choice of CV(s). Let's first perform additional 1D metadynamics simulations using one of the following CVs:
 - the end-to-end distance, i.e. the distance between Carbon atoms 2 and 19; 
 - the angle formed by Carbon atoms 2, 9 and 19;
-- the radius of gyration;
+- the radius of gyration, defined on all the heavy atoms of the system;
 - the number of hydrogen bonds.
 
 The users are invited to prepare, for each of the CV listed above, a PLUMED input file to perform a 1D well-tempered metadynamics simulation, execute the simulation, and analyse the results in terms of:
