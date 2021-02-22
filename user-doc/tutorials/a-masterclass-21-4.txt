@@ -487,10 +487,10 @@ The objective of this exercises are:
 
 In order to complete the exercise, the students should:
 - choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV can be used,
-except for those that require, like \RMSD, the knowledge of the structure of the two conformational states;
+except for those that require, like \ref RMSD, the knowledge of the structure of the two conformational states;
 - monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
 - analyze the results as done in the previous exercises (assessment of convergence and error analysis);
-- report the free energy (with error bar) as a function of the \RMSD with respect to the two reference structures;
+- report the free energy (with error bar) as a function of the \ref RMSD with respect to the two reference structures;
 - report structure and population of other metastable states, if present. 
 
 Please keep in mind that:
