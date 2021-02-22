@@ -486,25 +486,29 @@ The objective of this exercises are:
 2. determining the structure and population of other metastable states, if present.
 
 In order to complete the exercise, the students should:
-- choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV can be used,
-except for those that require, like \ref RMSD, the knowledge of the structure of the two conformational states;
+- choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV natively
+implemented in PLUMED (see \ref colvarintro) or defined by the users directly in the input file (see \ref CUSTOM) can be used;
 - monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
 - analyze the results as done in the previous exercises (assessment of convergence and error analysis);
-- report the free energy (with error bar) as a function of the \ref RMSD with respect to the two reference structures;
-- report structure and population of other metastable states, if present. 
+- report the free energy (with error bar) as a function of the two \ref RMSD CVs calculated with respect to the reference structures;
+- report structure and population of the most signicant, i.e. populated, states.
 
 Please keep in mind that:
-- we are simulating the system using a simplified, structure-based potential, called [SMOG](https://smog-server.org);
+- we are simulating the system using a simplified, structure-based potential, called [SMOG](https://smog-server.org). SMOG is significantly
+  less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
+  so allocate enough time to complete this exercise;
 - some of the CVs or PLUMED functionalities might not work as hydrogen atoms are not present in the system. However, there
 is always a way around this, so be creative;
-- due to the nature of the force field, we are simulating at an unphysical temperature of 100K.
+- due to the nature of the force field, we are simulating at an unphysical temperature of 75K. Be ready to test large values of the `BIASFACTOR`.
 
-Finally, due to the special nature of the force field, please execute GROMACS using the following command (here
-the calculation is using 4 CPU cores with OpenMP parallelization):
+Finally, due to the special nature of the force field, please execute GROMACS using the following command:
 
 \verbatim
-gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck -nb cpu -pme cpu
+gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck
 \endverbatim
+
+You can adjust the number of CPU cores you want to use (here 4, OpenMP parallelization), based on the available resources. The system is not
+particularly big, therefore using a large number of cores might be inefficient.
 
 */
 
