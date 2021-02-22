@@ -428,7 +428,7 @@ Thi script will produce an output file, which contains:
 - the error associated to the average free energy for each point of the grid.
  
 The users now should:
-- calculate the average error on the free-energy profile for each value of the block size;
+- calculate the average error on the free-energy profile for block sizes ranging from 1 to 1000;
 - visualize it as a function of the block size.
 
 The users should verify that the error increases with the block size (why?) until it reaches a plateau in correspondence of a dimension
