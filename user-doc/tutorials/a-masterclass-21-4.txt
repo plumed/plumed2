@@ -490,7 +490,7 @@ In order to complete the exercise, the students should:
 implemented in PLUMED (see \ref colvarintro) or defined by the users directly in the input file (see \ref CUSTOM) can be used;
 - monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
 - analyze the results as done in the previous exercises (assessment of convergence and error analysis);
-- report the free energy (with error bar) as a function of the two \ref RMSD CVs calculated with respect to the reference structures;
+- report the free energies (with error bar) as a function of the two \ref RMSD CVs calculated with respect to the reference structures;
 - report structure and population of the most signicant, i.e. populated, states.
 
 Please keep in mind that:
