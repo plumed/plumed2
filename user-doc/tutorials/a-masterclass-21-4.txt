@@ -480,7 +480,7 @@ which is stabilized by the N-terminal domain of the RfaH virulence factor (see F
 \image html RfaH-CTD.png "Structural transformation of the RfaH-CTD. Domain dissociation is triggered upon binding of the NTD (gray) to its target ops (operon polarity suppressor) element DNA, relieving the autoinhibited state and allowing the transformation of the CTD (colored) from an α-helical hairpin (A) towards a five-stranded β-barrel (B). Note that the NTD and CTD are connected by a linker that does not order within the crystals and therefore is not shown in the figure."
  
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
-- two pdb files representing the RfaH-CTD in the two different conformational states;
+- two PDB files of RfaH-CTD in the α-helical and β-barrel states; 
 - a `topol.tpr` file that is needed to perform a MD simulation of this sytem with GROMACS.
 
 The objective of this exercises are:
