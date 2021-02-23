@@ -108,7 +108,7 @@ git clone https://github.com/plumed/masterclass-21-4.git
 \endverbatim
 
 This repositoy contains 3 folders:
-- `data`: GROMACS topology files for the two systems that we are going to simulate and python script for error analysis;
+- `data`: GROMACS topology/PDB files for the two systems that we are going to simulate and python script for error analysis;
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
