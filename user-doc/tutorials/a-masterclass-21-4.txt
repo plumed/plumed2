@@ -277,7 +277,7 @@ two major states in the free-energy profile as a function of the CV \f$\phi\f$.
 The users should now:
 - calculate from the estimate of the free energy \f$F(\phi)\f$ at a given simulation time, the difference in free energy between the two basins.
 In order to do this, you should define a reasonable interval around the two local free-energy minima and recall that the probability
-of this state is the integral of the probability  \f$ P(\phi)= exp(-F(\phi)/k_B) \f$ in the chosen interval;
+of this state is the integral of the probability  \f$ P(\phi)= exp(-F(\phi)/k_BT) \f$ in the chosen interval;
 - plot the estimated free-energy difference as a function of simulation time.
 
 These two observations:
