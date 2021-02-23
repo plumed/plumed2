@@ -408,8 +408,9 @@ Let's first:
 
 At this point we can apply the block-analysis technique (for more info about the theory, 
 have a look at \ref masterclass-21-2) to calculate the average free energy across the blocks
-and the error as a function of block size. For your convenience, you can use the `do_block_fes.py` python
-script provided in the `data` directory of the `GitHub` repository to read the `phi.weight` file and produce the desired output.
+and the error as a function of block size. For your convenience, the `do_block_fes.py` python
+script provided in the `data` directory of the `GitHub` repository of this Masterclass
+ can be used to read the `phi.weight` file and produce the desired output.
 The users should properly choose the following input parameters:
 
 \verbatim
