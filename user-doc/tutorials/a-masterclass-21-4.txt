@@ -267,7 +267,9 @@ plumed sum_hills --hills HILLS --stride 200 --mintozero
 one free energy is calculated every 200 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
 Now, you can visualize the free-energy estimate as a function of simulation time and assess how it changed during the course
 of the simulation. In the last part of this 20 ns long metadynamics simulation, the free-energy estimate should not change
-significantly. Looking at the time-evolution of the entire free-energy profile might not be straightforward. Therefore, what
+significantly. 
+
+Looking at the time-evolution of the entire free-energy profile might not be straightforward. Therefore, what
 we usually do is focusing on a few metastable states, or local free-energy minima, and calculating their estimated
 free-energy difference as a function of time. In case of alanine dipeptide, this is rather easy since there are only
 two major states in the free-energy profile as a function of the CV \f$\phi\f$.
