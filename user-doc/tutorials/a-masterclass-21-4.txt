@@ -499,7 +499,7 @@ Please keep in mind that:
   so allocate enough time to complete this exercise;
 - some of the CVs or PLUMED functionalities might not work as hydrogen atoms are not present in the system. However, there
 is always a way around this, so be creative;
-- due to the nature of the force field, we are simulating at an unphysical temperature of 70K. Be ready to test large values of the `BIASFACTOR`.
+- due to the nature of the force field, we are simulating at an unphysical temperature of 60K. Be ready to test large values of the `BIASFACTOR`.
 
 Finally, due to the special nature of the force field, please execute GROMACS using the following command:
 
