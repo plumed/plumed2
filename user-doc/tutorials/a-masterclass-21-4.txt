@@ -311,7 +311,7 @@ For example:
 2. weights can be calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach.
+In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach that you learnt in \ref masterclass-21-2 and \ref masterclass-21-3.
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
