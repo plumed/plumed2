@@ -474,7 +474,7 @@ To complete this exercise, the users should define and test a new CV that is eit
 
 In this last exercise, we will tackle a real-life biological problem: studying the conformational transition of a complex biological system.
 The system that we are going to study is the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_. This part of the system,
-which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from beta-sheet to alpha-helix, 
+which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from β-barrel to α-helical, 
 which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-4-RfaH-CTD-fig).
 
 \anchor masterclass-21-4-RfaH-CTD-fig 
@@ -482,11 +482,11 @@ which is stabilized by the N-terminal domain of the RfaH virulence factor (see F
  
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
 - two PDB files of RfaH-CTD in the α-helical and β-barrel states; 
-- a `topol.tpr` file that is needed to perform a MD simulation of this sytem with GROMACS.
+- a `topol.tpr` file, which is needed to perform a MD simulation of this sytem with GROMACS.
 
-The objective of this exercises are:
-1. estimating the free-energy difference between the α-helical and β-barrel states of RfaH-CTD (with error estimate);
-2. optional: determining the structure and population of other metastable states, if present.
+The objective of this exercises are to:
+1. compute the free-energy difference between the α-helical and β-barrel states of RfaH-CTD (with error estimate);
+2. (optional) determine the structure and population of other metastable states, if present.
 
 In order to complete the exercise, the students should:
 - choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV natively
@@ -494,7 +494,7 @@ implemented in PLUMED (see \ref colvarintro) or defined by the users directly in
 - monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
 - analyze the results as done in the previous exercises (assessment of convergence and error analysis);
 - report the free energies (with error bar) as a function of the two \ref RMSD CVs calculated with respect to the reference PDBs;
-- optional: report structure and population of the most signicant, i.e. populated, states.
+- (optional) report structure and population of the most signicant, i.e. populated, states.
 
 Please keep in mind that:
 - we are simulating the system using a simplified, structure-based potential, called [SMOG](https://smog-server.org). SMOG is significantly
