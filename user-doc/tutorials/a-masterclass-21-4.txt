@@ -185,8 +185,7 @@ This notebook allows you to import a `COLVAR` file produced by PLUMED and to gen
 - inspect the dynamics of the two backbone dihedrals in the two separate simulations;
 - calculate the fluctuations (standard deviation) of the two CVs in the different basins visited.
 
-**Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of
-the** \f$ \phi \f$ / \f$ \psi \f$ **space?** 
+<b>Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of the</b> \f$ \phi \f$ / \f$ \psi \f$ **space?** 
 
 \subsection masterclass-21-4-ex-2 Exercise 2: My first metadynamics simulation 
 
@@ -230,8 +229,8 @@ The `COLVAR` file contains all the information specified by the \ref PRINT comma
 the value of the backbone dihedrals \f$ \phi \f$ and \f$ \psi \f$  every 10 steps of simulation.
 The `HILLS` file contains a list of the Gaussian kernels deposited along the simulation.
 
-Let's visualize the time series of the two collective variables. Take your time to inspect the behavior of the two CVs.
-**What are the main differences with respect to the trajectory produced in** \ref masterclass-21-4-ex-1 **?** 
+Let's visualize the time series of the two collective variables. Take your time to inspect the behavior of the two CVs. 
+<b>What are the main differences with respect to the trajectory produced in</b> \ref masterclass-21-4-ex-1 **?** 
 
 At this point, we can estimate the free energy as a function of the metadynamics CV directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
@@ -392,7 +391,7 @@ You can now compare the free energies as a function of \f$ \phi \f$ calculated:
 1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref masterclass-21-4-ex-2; 
 2. using the reweighting procedure introduced in this exercise. 
 
-The users should verify that the results are identical. **Are they?**
+<b>Are the two free energies identical?</b>
 
 
 \subsection masterclass-21-4-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
@@ -439,7 +438,7 @@ The users should verify that the error increases with the block size (why?) unti
 of the block exceeds the correlation time between data points. If a plateau is not observed, then the simulation
 is not converged yet and should be run a bit longer.
 
-**From this analysis, what can we say about the convergence of the metadynamics simulation performed in** \ref masterclass-21-4-ex-2 **?**
+<b>From this analysis, what can we say about the convergence of the metadynamics simulation performed in</b> \ref masterclass-21-4-ex-2 **?**
 
 \subsection masterclass-21-4-ex-5 Exercise 5: Recognizing good from bad CVs
 
@@ -470,7 +469,7 @@ To complete this exercise, the users should define and test a new CV that is eit
 - as good as the dihedral \f$ \phi \f$;
 - the worst possible CV to accelerate sampling and describe the two main conformational states of alanine dipeptide.
  
-**Please post the results of your simulations on Slack!**
+<b>Please post the results of your simulations on Slack!</b>
  
 \subsection masterclass-21-4-ex-6 Exercise 6: A 'real-life' application
 
@@ -515,7 +514,7 @@ gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck
 You can adjust the number of CPU cores you want to use (here 4, OpenMP parallelization), based on the available resources. The system is not
 particularly big, therefore using a large number of cores might be inefficient.
 
-**Please post the results of your simulations on Slack!**
+<b>Please post the results of your simulations on Slack!</b>
 
 */
 
