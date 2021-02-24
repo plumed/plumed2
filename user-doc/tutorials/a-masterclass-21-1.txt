@@ -9,7 +9,7 @@
 The aim of this Masterclass is to introduce users to the PLUMED syntax and to 
 illustrate how PLUMED can be used to analyze pre-existing molecular dynamics trajectories.
 
-\section masterclass-21-1-lo Learning Outcomes
+\section masterclass-21-1-lo Objectives
 
 Once this Masterclass is completed, users will be able to:
 
