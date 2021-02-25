@@ -140,7 +140,7 @@ opes: OPES_METAD ...
 \endplumedfile
 
 If you did not dump the STATE file while running your simulation, you can recover it with the \ref driver (see \ref READ).
-The script `State_from_Kernles.py` contains the minimal input to do so, and only requires the KERNELS file.
+The script `State_from_Kernels.py` contains the minimal input to do so, and only requires the KERNELS file.
 
 If the STATE file is available, one can run the provided script with the following command:
 

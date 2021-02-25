@@ -187,8 +187,8 @@ private:
   bool storeOldStates_;
 
   double getProbAndDerivatives(const std::vector<double>&,std::vector<double>&);
-  void addKernel(const kernel&,const bool);
-  void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const double,const bool);
+  void addKernel(const double,const std::vector<double>&,const std::vector<double>&);
+  void addKernel(const double,const std::vector<double>&,const std::vector<double>&,const double); //also print to file
   unsigned getMergeableKernel(const std::vector<double>&,const unsigned);
   void updateNlist(const std::vector<double>&);
   void dumpStateToFile();
@@ -599,7 +599,7 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
           ifile.scanField("height",height);
           ifile.scanField("logweight",logweight);
           ifile.scanField();
-          addKernel(height,center,sigma,logweight,false);
+          addKernel(height,center,sigma);
           const double weight=std::exp(logweight);
           sum_weights_+=weight; //this sum is slightly inaccurate, because when printing some precision is lost
           sum_weights2_+=weight*weight;
@@ -989,7 +989,7 @@ void OPESmetad::update()
 
     //add new kernel(s)
     if(NumWalkers_==1)
-      addKernel(height,center,sigma,current_bias_/kbt_,true);
+      addKernel(height,center,sigma,current_bias_/kbt_);
     else
     {
       std::vector<double> all_height(NumWalkers_,0.0);
@@ -998,7 +998,7 @@ void OPESmetad::update()
       std::vector<double> all_logweight(NumWalkers_,0.0);
       if(comm.Get_rank()==0)
       {
-        multi_sim_comm.Allgather(height,all_height); //heights were communicated also before...
+        multi_sim_comm.Allgather(height,all_height);
         multi_sim_comm.Allgather(center,all_center);
         multi_sim_comm.Allgather(sigma,all_sigma);
         multi_sim_comm.Allgather(current_bias_/kbt_,all_logweight);
@@ -1036,7 +1036,7 @@ void OPESmetad::update()
       {
         std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
         std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
-        addKernel(all_height[w],center_w,sigma_w,all_logweight[w],true);
+        addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
       }
     }
     getPntrToComponent("nker")->set(kernels_.size());
@@ -1195,12 +1195,7 @@ double OPESmetad::getProbAndDerivatives(const std::vector<double>& cv,std::vecto
   return prob;
 }
 
-void OPESmetad::addKernel(const kernel &new_kernel,const bool write_to_file)
-{
-  addKernel(new_kernel.height,new_kernel.center,new_kernel.sigma,current_bias_/kbt_,write_to_file);
-}
-
-void OPESmetad::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const double logweight,const bool write_to_file)
+void OPESmetad::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma)
 {
   bool no_match=true;
   if(threshold2_!=0)
@@ -1255,19 +1250,20 @@ void OPESmetad::addKernel(const double height,const std::vector<double>& center,
     if(nlist_)
       nlist_index_.push_back(kernels_.size()-1);
   }
+}
 
+void OPESmetad::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const double logweight)
+{
+  addKernel(height,center,sigma);
 //write to file
-  if(write_to_file)
-  {
-    kernelsOfile_.printField("time",getTime());
-    for(unsigned i=0; i<ncv_; i++)
-      kernelsOfile_.printField(getPntrToArgument(i),center[i]);
-    for(unsigned i=0; i<ncv_; i++)
-      kernelsOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-    kernelsOfile_.printField("height",height);
-    kernelsOfile_.printField("logweight",logweight);
-    kernelsOfile_.printField();
-  }
+  kernelsOfile_.printField("time",getTime());
+  for(unsigned i=0; i<ncv_; i++)
+    kernelsOfile_.printField(getPntrToArgument(i),center[i]);
+  for(unsigned i=0; i<ncv_; i++)
+    kernelsOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+  kernelsOfile_.printField("height",height);
+  kernelsOfile_.printField("logweight",logweight);
+  kernelsOfile_.printField();
 }
 
 unsigned OPESmetad::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k)
