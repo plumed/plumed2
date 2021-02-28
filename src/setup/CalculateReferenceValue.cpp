@@ -92,11 +92,11 @@ SetupReferenceBase(ao)
    p.cmd("setMasses",&masses[0]); if( atoms.chargesWereSet() ) p.cmd("setCharge",&charges[0]);
    p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
    // Copy values from reference to PLUMED 
+   std::vector<std::vector<double>> valdata( as->getNumberOfComponents() );
    for(unsigned i=0;i<as->getNumberOfComponents();++i) {
-      unsigned nvals = as->copyOutput(i)->getSize();
-      std::vector<double> valdata( nvals );
-      for(unsigned j=0;j<nvals;++j) valdata[j] = as->copyOutput(i)->get(j); 
-      p.cmd("setValue " + as->copyOutput(i)->getName(), &valdata[0] );
+      unsigned nvals = as->copyOutput(i)->getSize(); valdata[i].resize( nvals );
+      for(unsigned j=0;j<nvals;++j) valdata[i][j] = as->copyOutput(i)->get(j); 
+      p.cmd("setValue " + as->copyOutput(i)->getName(), &valdata[i][0] );
    }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value

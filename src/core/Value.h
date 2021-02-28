@@ -45,7 +45,7 @@ class ActionWithValue;
 /// objects.  However, if you find a use for a tempory PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
-  friend class PlumedMain;
+  friend class ValueFromMDCode;
   friend class ActionWithValue;
   friend class ActionWithArguments;
 private:

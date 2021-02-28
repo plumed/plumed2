@@ -178,7 +178,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                } 
              } else {
                // Search for value in PlumedMain
-               plumed.interpretDataLabel( c[i], getLabel(), nargs, arg );
+               plumed.getAtoms().interpretDataLabel( c[i], getLabel(), nargs, arg );
                if( nargs==carg ) {
                    std::string str=" (hint! the actions in this ActionSet are: ";
                    str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
@@ -207,7 +207,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
             // Search for value in PlumedMain
-            unsigned carg = nargs; plumed.interpretDataLabel( c[i], getLabel(), nargs, arg );
+            unsigned carg = nargs; plumed.getAtoms().interpretDataLabel( c[i], getLabel(), nargs, arg );
             if( nargs==carg ) {
                 std::string str=" (hint! the actions in this ActionSet are: ";
                 str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
@@ -225,6 +225,12 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       }
     }
   } 
+}
+
+void ActionWithArguments::prepareArguments() {
+  for(unsigned i=0;i<arguments.size();++i) {
+     if( arguments[i]->created_in_plumedmain ) plumed.getAtoms().collectArgument( arguments[i]->getName() );
+  }
 }
 
 void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
@@ -252,13 +258,13 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     if( arguments[i]->alwaysstore || arguments[i]->columnsums ) { storing=true; break; }
     if( !usingAllArgs[i] && arguments[i]->getNumberOfValues(getLabel())>1 ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
-    if( plumed.getPntrToValue( arguments[i]->getName() ) ) { storing=true; break; }
+    if( plumed.getAtoms().getPntrToValue( arguments[i]->getName() ) ) { storing=true; break; }
   }
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
-    if( !plumed.getPntrToValue(fullname) ) {
+    if( !plumed.getAtoms().getPntrToValue(fullname) ) {
         if(fullname.find(".")!=string::npos) {
           std::size_t dot=fullname.find_first_of('.');
           name=fullname.substr(0,dot);

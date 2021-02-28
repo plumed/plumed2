@@ -189,7 +189,7 @@ void PlumedFunction::turnOnDerivatives() {
 void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
    const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<myplumed.size()); 
    int istep=getStep(); const_cast<PlumedMain*>(&myplumed[t])->cmd("setStep",&istep);
-   std::vector<Vector> positions( 0 ), forces( 0 ); std::vector<double> masses( 0 );
+   std::vector<Vector> positions( 0 ), forces( 0 ); std::vector<double> masses( 0 ), fargv( args.size(), 0 );
    const_cast<PlumedMain*>(&myplumed[t])->cmd("setMasses",&masses[0]); 
    const_cast<PlumedMain*>(&myplumed[t])->cmd("setForces",&forces[0]); 
    const_cast<PlumedMain*>(&myplumed[t])->cmd("setPositions",&positions[0]);
@@ -197,6 +197,7 @@ void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiVa
    for(unsigned i=0;i<args.size();++i) {
        std::string num; Tools::convert(i+1,num);
        const_cast<PlumedMain*>(&myplumed[t])->cmd("setValue arg" + num, &args[i] ); 
+       const_cast<PlumedMain*>(&myplumed[t])->cmd("setValueForces arg" + num, &fargv[i] );
    }
    Tensor box; const_cast<PlumedMain*>(&myplumed[t])->cmd("setBox",&box[0][0]);
    // Do the calculation using the Plumed object
@@ -205,13 +206,7 @@ void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiVa
    for(unsigned i=0;i<getNumberOfComponents();++i) addValue( i, data[t][i], myvals );
    // And get the forces
    if( !doNotCalculateDerivatives() ) {
-       for(unsigned i=0;i<getNumberOfComponents();++i) {
-           for(unsigned j=0;j<args.size();++j) { 
-               std::string num; Tools::convert(j+1,num); double fargv=0; 
-               const_cast<PlumedMain*>(&myplumed[t])->cmd("getValueForces arg" + num, &fargv );
-               addDerivative( i, j, -fargv, myvals );
-           }
-       }
+       for(unsigned j=0;j<args.size();++j) addDerivative( 0, j, -fargv[j], myvals );
    }
 }
 

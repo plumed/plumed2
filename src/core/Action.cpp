@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
@@ -212,6 +213,8 @@ void Action::activate() {
 // activated
   if(!active) {
     this->unlockRequests();
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
+    if(aa) aa->prepareArguments(); 
     prepare();
     this->lockRequests();
   } else return;

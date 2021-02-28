@@ -13,7 +13,6 @@
 !/colvar
 !/config
 !/core
-!/crystallization
 !/dimred
 !/drr
 !/eds
@@ -29,7 +28,6 @@
 !/main
 !/maketools
 !/mapping
-!/manyrestraints
 !/maze
 !/molfile
 !/multicolvar
@@ -42,7 +40,6 @@
 !/tools
 !/vatom
 !/ves
-!/vesselbase
 !/volumes
 !/wrapper
 !/header.sh

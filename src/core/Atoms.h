@@ -28,6 +28,7 @@
 #include "tools/Exception.h"
 #include "tools/AtomNumber.h"
 #include "tools/ForwardDecl.h"
+#include "ValueFromMDCode.h"
 #include <vector>
 #include <set>
 #include <map>
@@ -57,6 +58,8 @@ class Atoms
   std::vector<int> g2l;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
+  /// An array containing values that were passed from the MD code to PLUMED
+  std::vector<std::unique_ptr<ValueFromMDCode>> values;
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionAtomistic*> virtualAtomsActions;
@@ -243,6 +246,19 @@ public:
   void setExtraCVForce(const std::string &name,void*p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
+  void createValue( const std::string& name, void* shape );
+  void setupValuePeriodicity( const std::string& name, const bool& isperiodic, const std::string& min, const std::string& max );
+  void setValueFixed( const std::string& name );
+  bool valueIsFixed( const std::string& name ) const ;
+  void collectArgument( const std::string& name );
+/// Set one of the values that are being passed to plumed
+  void setValue( const std::string& name, void* p);
+/// Get the forces on a particular value
+  void setValueForces( const std::string& name, void* f);
+/// Get a pointer to one of the values that was passed to plumed
+  Value* getPntrToValue( const std::string& name );
+/// Interpret the data request from one of the values that are pased from the MD code to PLUMED
+  void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
 };
 
 inline

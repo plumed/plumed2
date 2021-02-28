@@ -23,7 +23,6 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
-#include "Value.h"
 #include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
@@ -145,12 +144,6 @@ private:
 
 /// Name of the input file
   std::string plumedDat;
-
-/// An array containing values that were passed from the MD code to PLUMED
-  std::vector<std::unique_ptr<Value>> values;
-
-/// Records which of the input values are fixed
-  std::map<std::string,bool> fixed_vals;
 
 /// Object containing data we would like to grab and pass back
   std::unique_ptr<DataFetchingObject> mydatafetcher;
@@ -400,12 +393,6 @@ public:
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
-/// Get pointer to value that was passed from MD code to PLUMED
-  Value* getPntrToValue( const std::string& name );
-/// Interpret the data request from one of the values that are pased from the MD code to PLUMED
-  void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
-/// Is the value with this name fixed in the input
-  bool valueIsFixed( const std::string& name ) const ;
 /// Get the name of the MD engine that called PLUMED
   std::string getMDEngine() const ;
 };

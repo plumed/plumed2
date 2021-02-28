@@ -144,6 +144,7 @@ bool VectorProductMatrix::canBeAfterInChain( ActionWithValue* av ) const {
 }
 
 void VectorProductMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( tflags.size()!=getFullNumberOfTasks() ) return;
   // Get the flags for this chain
   std::vector<unsigned> lflags( tflags.size(), 0 ); std::vector<unsigned> pTaskList, pIndexList;
   unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );

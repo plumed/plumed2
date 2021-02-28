@@ -75,6 +75,7 @@ Atoms::~Atoms() {
 }
 
 void Atoms::startStep() {
+  for(unsigned i=0;i<values.size();++i) { values[i]->set=false; values[i]->collect=false; }
   collectEnergy=false; energyHasBeenSet=false; positionsHaveBeenSet=0;
   massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
   forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
@@ -273,6 +274,8 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
 
 void Atoms::wait() {
   dataCanBeSet=false; // Everything should be set by this stage
+  for(unsigned i=0;i<values.size();++i) values[i]->gather();
+  if(getNatoms()==0) return;
 // How many double per atom should be scattered
   int ndata=3;
   if(!massAndChargeOK)ndata=5;
@@ -306,6 +309,9 @@ void Atoms::wait() {
       }
       asyncSent=false;
     }
+    for(unsigned i=0;i<values.size();++i) {
+        if( values[i]->collect && !values[i]->domain_decomposed ) dd.Sum( values[i]->getDataToGather() );
+    }
     if(collectEnergy) dd.Sum(energy);
   }
 // I take note that masses and charges have been set once for all
@@ -314,7 +320,10 @@ void Atoms::wait() {
 }
 
 void Atoms::updateForces() {
+  for(unsigned i=0;i<values.size();++i) values[i]->updateForces();
+  if( getNatoms()==0 ) return;
   plumed_assert( forcesHaveBeenSet==3 );
+
   if(forceOnEnergy*forceOnEnergy>epsilon) {
     double alpha=1.0-forceOnEnergy;
     mdatoms->rescaleForces(gatindex,alpha);
@@ -609,5 +618,82 @@ double Atoms::getExtraCV(const std::string &name) {
 void Atoms::updateExtraCVForce(const std::string &name,double f) {
   mdatoms->updateExtraCVForce(name,f);
 }
+
+void Atoms::createValue( const std::string& name, void* ss ) {
+  int* srank = (static_cast<int*>(ss));
+  std::vector<unsigned> shape(srank[0]); 
+  for(unsigned i=0;i<srank[0];++i) shape[i]=srank[i+1];
+  values.push_back( ValueFromMDCode::create( mdatoms->getRealPrecision(), name, shape ) );
+}
+
+void Atoms::setupValuePeriodicity( const std::string& name, const bool& isperiodic, const std::string& min, const std::string& max ) {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { values[i]->setupPeriodicity( isperiodic, min, max ); return; }
+  }
+  plumed_merror("could not setup periodicity of input value named " + name );
+}
+
+void Atoms::setValueFixed( const std::string& name ) {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { values[i]->fixed=true; return; }
+  }
+  plumed_merror("could not fix value named " + name );
+}
+
+Value* Atoms::getPntrToValue( const std::string& name ) {
+  int outval=-1;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { outval = i; break; }
+  }        
+  if( outval<0 ) return NULL;
+  return values[outval]->getPntrToValue();
+}
+
+bool Atoms::valueIsFixed( const std::string& name ) const { 
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { return values[i]->isFixed(); }
+  }
+  return false;
+}
+
+void Atoms::setValue( const std::string& name, void* p) {
+  int outval=-1;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { outval = i; break; }
+  }
+  plumed_assert( outval>=0 ); values[outval]->setv(p);         
+}
+
+void Atoms::collectArgument( const std::string& name ) {
+  int outval=-1;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { outval = i; break; }
+  }
+  plumed_assert( outval<values.size() && outval>=0 ); 
+  values[outval]->collect=true;
+}
+
+void Atoms::setValueForces( const std::string& name, void* f) {
+  int outval=-1;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { outval = i; break; }
+  }
+  plumed_assert( outval>=0 ); values[outval]->setf(f);
+}
+
+void Atoms::interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args ) {
+  // If we are using all the values
+  Value* myval = getPntrToValue( argname );
+  if( myval ) { myval->interpretDataRequest( datauser, nargs, args, "" ); return; }
+  // If we are using a subset of the values for a action with a value
+  std::size_t dot1 = argname.find_first_of('.'); std::string thelab = argname.substr(0,dot1);
+  Value* myval2 = getPntrToValue( thelab ); std::string rest = argname.substr(dot1+1);
+  if( myval2 ) { myval2->interpretDataRequest( datauser, nargs, args, rest ); return; }
+  // If we are using a subset from a component 
+  std::size_t dot2 = rest.find_first_of('.'); std::string thelab2 = rest.substr(0,dot2);
+  Value* myval3 = getPntrToValue( thelab + "." + thelab2 ); std::string frest = rest.substr(dot2+1);
+  if( myval3 ) { myval->interpretDataRequest( datauser, nargs, args, frest ); }
+}
+
 
 }

@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "core/ActionSetup.h"
 
 #include <cmath>
@@ -63,12 +64,12 @@ Difference::Difference(const ActionOptions&ao):
   Function(ao)
 {
   if( !getPntrToArgument(0)->getPntrToAction() ) {
-      if( plumed.valueIsFixed( getPntrToArgument(0)->getName() ) ) error("fixed variable should be second argument to difference");
+      if( plumed.getAtoms().valueIsFixed( getPntrToArgument(0)->getName() ) ) error("fixed variable should be second argument to difference");
   }
   if( arg_ends.size()!=3 ) error("difference can only take two arguments as input");
   if( getPntrToArgument(0)->isPeriodic() ) {
       if( !getPntrToArgument(1)->getPntrToAction() ) {
-          if( !getPntrToArgument(1)->isPeriodic() && !plumed.valueIsFixed( getPntrToArgument(1)->getName() ) ) error("period for input variables should be the same");
+          if( !getPntrToArgument(1)->isPeriodic() && !plumed.getAtoms().valueIsFixed( getPntrToArgument(1)->getName() ) ) error("period for input variables should be the same");
       } else {
           ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
           if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 

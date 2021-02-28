@@ -281,32 +281,14 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API=7 */
       case cmd_setValue:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        {
-           Value* vv=getPntrToValue(words[1]); vv->clearInputForce();
-           unsigned nvals=vv->getSize();
-           if( atoms.getRealPrecision()==sizeof(double)) {
-               double* dval=static_cast<double*>(val);
-               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i];
-           } else if( atoms.getRealPrecision()==sizeof(float)) {
-               float* dval=static_cast<float*>(val);
-               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i];
-           } else plumed_merror("invalid real precision size");
-        }
+        CHECK_NOTNULL(val,words[0]);
+        atoms.setValue(words[1],val);
         break;
       /* ADDED WITH API=7 */
-      case cmd_getValueForces:
+      case cmd_setValueForces:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        {
-           Value* vv=getPntrToValue(words[1]); unsigned nvals=vv->inputForces.size();
-           if( atoms.getRealPrecision()==sizeof(double)) {
-               double* dval=static_cast<double*>(val);
-               for(unsigned i=0;i<nvals;++i) dval[i]+=vv->inputForces[i];
-           } else if( atoms.getRealPrecision()==sizeof(float)) {
-               float* dval=static_cast<float*>(val);
-               for(unsigned i=0;i<nvals;++i) dval[i]+=vv->inputForces[i];
-           } else plumed_merror("invalid real precision size");
-      }
-      break;
+        atoms.setValueForces(words[1],val);
+        break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -585,32 +567,22 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API=7 */
       case cmd_createValue:
         CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
-        {
-           int* srank = (static_cast<int*>(val));
-           std::vector<unsigned> shape(srank[0]); 
-           for(unsigned i=0;i<srank[0];++i) shape[i]=srank[i+1];
-           values.emplace_back(new Value(NULL, words[1], false, shape) );
-           values[values.size()-1]->created_in_plumedmain=true;
-           values[values.size()-1]->setShape( shape );
-           fixed_vals.insert(std::pair<std::string,bool>(words[1],false));
-        }
+        atoms.createValue( words[1], val );
         break;
       case cmd_setValueNotPeriodic:
         CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
-        getPntrToValue(words[1])->min=0; 
-        getPntrToValue(words[1])->max=0; 
-        getPntrToValue(words[1])->setupPeriodicity();
+        atoms.setupValuePeriodicity( words[1], false, "", "" );   
         break;
       case cmd_setValueDomain:
         CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
         {
            std::vector<std::string> domain=Tools::getWords( static_cast<char*>(val) );
-           getPntrToValue(words[1])->setDomain( domain[0], domain[1] );
+           atoms.setupValuePeriodicity( words[1], true, domain[0], domain[1] ); 
         }
         break; 
       case cmd_valueIsConstant:
         CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
-        fixed_vals.find(words[1])->second=true;
+        atoms.setValueFixed( words[1] );
         break;
       /* ADDED WITH API==7 */
       case cmd_convert:
@@ -821,7 +793,7 @@ void PlumedMain::waitData() {
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
-  if(atoms.getNatoms()>0) atoms.wait();
+  atoms.wait();
 }
 
 void PlumedMain::justCalculate() {
@@ -913,7 +885,7 @@ void PlumedMain::backwardPropagate() {
   Stopwatch::Handler sw1;
   if(detailedTimers) sw1=stopwatch.startStop("5B Update forces");
 // this is updating the MD copy of the forces
-  if(atoms.getNatoms()>0) atoms.updateForces();
+  atoms.updateForces();
 }
 
 void PlumedMain::update() {
@@ -1023,34 +995,6 @@ void PlumedMain::eraseFile(FileBase&f) {
 
 void PlumedMain::stop() {
   stopNow=true;
-}
-
-Value* PlumedMain::getPntrToValue( const std::string& name ) {
-  int outval=-1;
-  for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->getName()==name) { outval = i; break; }
-  }
-  if( outval<0 ) return NULL;
-  return values[outval].get();
-}
-
-void PlumedMain::interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args ) {
-  // If we are using all the values
-  Value* myval = getPntrToValue( argname );
-  if( myval ) { myval->interpretDataRequest( datauser, nargs, args, "" ); return; }
-  // If we are using a subset of the values for a action with a value
-  std::size_t dot1 = argname.find_first_of('.'); std::string thelab = argname.substr(0,dot1);
-  Value* myval2 = getPntrToValue( thelab ); std::string rest = argname.substr(dot1+1);
-  if( myval2 ) { myval2->interpretDataRequest( datauser, nargs, args, rest ); return; }
-  // If we are using a subset from a component 
-  std::size_t dot2 = rest.find_first_of('.'); std::string thelab2 = rest.substr(0,dot2);
-  Value* myval3 = getPntrToValue( thelab + "." + thelab2 ); std::string frest = rest.substr(dot2+1);
-  if( myval3 ) { myval->interpretDataRequest( datauser, nargs, args, frest ); }
-}
-
-bool PlumedMain::valueIsFixed( const std::string& name ) const {
-  plumed_massert( fixed_vals.count(name)>0, "could not find value named " + name ); 
-  return fixed_vals.find(name)->second;
 }
 
 void PlumedMain::runJobsAtEndOfCalculation() {

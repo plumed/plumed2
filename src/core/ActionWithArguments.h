@@ -114,6 +114,7 @@ public:
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
   void lockRequests() override;
   void unlockRequests() override;
+  void prepareArguments();
 /// Returns an array of pointers to the arguments
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values

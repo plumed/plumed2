@@ -102,17 +102,17 @@ unsigned PathProjectionCalculator::getNumberOfFrames() const {
 }
 
 void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box ) {
-  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata;
+  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata1, valdata2;
   if( reference_frames[ifrom]->getNumberOfComponents()>0 ) {
       Value* myval1 = reference_frames[ifrom]->copyOutput(0); unsigned nvals = myval1->getSize();
-      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval1->get(i);
-      metric.cmd("setValue arg1", &valdata[0] );
+      valdata1.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata1[i] = myval1->get(i);
+      metric.cmd("setValue arg1", &valdata1[0] );
   }
   reference_frames[ifrom]->getAtomsFromReference( 0, masses, charges, positions );
   if( reference_frames[ito]->getNumberOfComponents()>0 ) {
       Value* myval2 = reference_frames[ito]->copyOutput(0); unsigned nvals = myval2->getSize();
-      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval2->get(i); 
-      metric.cmd("setValue arg2", &valdata[0] );
+      valdata2.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata2[i] = myval2->get(i); 
+      metric.cmd("setValue arg2", &valdata2[0] );
   }
   reference_frames[ito]->getAtomsFromReference( positions.size()/2, masses, charges, positions );
   metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
