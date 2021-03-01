@@ -1,0 +1,93 @@
+/**
+\page masterclass-21-5 PLUMED Masterclass 21.5: Simulations with multiple replicas
+
+\authors Giovanni Bussi
+\date March 15, 2021
+
+\section masterclass-21-5-aims Aims
+
+In this Masterclass, we will discuss how to perform and analyze multi-replica simulations where different replicas feel a different bias potential. We will also understand how to compute statistical errors on the computed quantities.
+
+\section masterclass-21-5-lo Objectives
+
+Once you have completed this Masterclass you will be able to:
+
+- Use PLUMED and GROMACS to run multiple replica simulations.
+- Use WHAM to combine multiple simulations performed with different bias potentials.
+- Calculate error bars on free energies and populations, taking into account correlations induced by replica exchanges.
+ 
+\section masterclass-21-5-install Setting up PLUMED
+
+For this masterclass you will need versions of PLUMED and GROMACS that are compiled using the MPI library.
+The versions used in the previous masterclasses will thus not work properly.
+In order to obtain the correct versions, please use the following commands:
+
+\verbatim
+conda install --strict-channel-priority -c plumed/label/masterclass-mpi -c conda-forge plumed
+conda install --strict-channel-priority -c plumed/label/masterclass-mpi -c conda-forge gromacs
+\endverbatim
+
+The `--strict-channel-priority` might be necessary in case your conda install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here. Similarly, the channel `plumed/label/masterclass-mpi` should receive a priority higher than `conda-forge`, so as to install the MPI version of PLUMED.
+
+On Linux, the command above should install the following packages:
+
+\verbatim
+  gromacs            plumed/label/masterclass-mpi/linux-64::gromacs-2019.6-h3fd9d12_100
+  plumed             plumed/label/masterclass-mpi/linux-64::plumed-2.7.0-h3fd9d12_100
+  mpi                conda-forge/linux-64::mpi-1.0-openmpi
+  openmpi            conda-forge/linux-64::openmpi-4.1.0-h9b22176_1
+  [ etc ... ]
+\endverbatim
+
+The exact versions might be different. Notice however that GROMACS and PLUMED come from the `plumed/label/masterclass-mpi` channel, whereas the required libraries come from the `conda-forge` channel.
+To be sure the installed GROMACS is compiled with MPI patched with PLUMED, try the following shell command:
+
+\verbatim
+gmx_mpi mdrun -h 2> /dev/null | grep -q plumed && echo ok
+\endverbatim
+
+It should print `ok`.
+To be sure that PLUMED has been compiled with MPI, try the following shell command:
+
+\verbatim
+plumed --has-mpi && echo ok
+\endverbatim
+
+It should print `ok`.
+
+Please ensure that you have setup PLUMED and GROMACS on your machine before starting the exercises. Also notice that in order to obtain good performances it is better to compile GROMACS from source on the machine you are running your simulations. You can find out in the PLUMED documention how to patch GROMACS with PLUMED so as to be able to install it from source. For this tutorial, the conda precompiled binaries will be sufficient.
+
+\section masterclass-21-5-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-5).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/plumed/masterclass-21-5.git
+\endverbatim
+
+\note All the exercises were tested with PLUMED version 2.7.0 and GROMACS 2019.6
+
+\section masterclass-21-5-ex Exercises
+
+Throughout this tutorial we will run simulations of alanine dipeptide in vacuum using GROMACS and PLUMED.
+Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
+it is complex enough to be used in learning them. Notice that, although PLUMED has a portable interface,
+replica exchange simulations are likely only supported by GROMACS. You should check the documentation of
+the MD code you are using to know if replica exchange simulations will work correctly with PLUMED.
+
+\subsection masterclass-21-5-ex-1 Exercise 1: xxx
+
+\subsection masterclass-21-5-ex-2 Exercise 2: xxx
+
+\subsection masterclass-21-5-ex-3 Exercise 3: xxx
+
+\subsection masterclass-21-5-ex-4 Exercise 4: xxx
+
+\subsection masterclass-21-5-ex-5 Exercise 5: xxx
+
+*/
+
+link: @subpage masterclass-21-5 
+
+description: This Masterclass explains how to use PLUMED to run multiple replica simulations
