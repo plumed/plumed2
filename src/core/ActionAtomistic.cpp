@@ -230,8 +230,6 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
 
 void ActionAtomistic::retrieveAtoms() {
   pbc=atoms.pbc;
-  Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
   if(donotretrieve) return;
   chargesWereSet=atoms.chargesWereSet();
   const vector<Vector> & p(atoms.positions);
@@ -278,7 +276,6 @@ void ActionAtomistic::applyForces() {
   Tensor           & v(atoms.virial);
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
-  atoms.forceOnEnergy+=forceOnEnergy;
   if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
@@ -286,15 +283,11 @@ void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
   for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
-  forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
 }
 
 
 void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
-  Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
-
   for(unsigned j=0; j<indexes.size(); j++) {
     if( indexes[j].index()>pdb.size() ) error("there are not enough atoms in the input pdb file");
     if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) error("there are atoms missing in the pdb file");

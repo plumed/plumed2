@@ -67,14 +67,8 @@ class Atoms
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
   Tensor virial;
-// this is the energy set by each processor:
-  double md_energy;
-// this is the summed energy:
-  double energy;
 
   bool   dataCanBeSet;
-  bool   collectEnergy;
-  bool   energyHasBeenSet;
   unsigned positionsHaveBeenSet;
   bool massesHaveBeenSet;
   bool chargesHaveBeenSet;
@@ -176,15 +170,12 @@ public:
   void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
-  void setCollectEnergy(bool b) { collectEnergy=b; }
-
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 
   void startStep();
-  void setEnergy(void*);
   void setBox(void*);
   void setVirial(void*);
   void setPositions(void*);
@@ -212,10 +203,6 @@ public:
 
   void add(ActionAtomistic*);
   void remove(ActionAtomistic*);
-
-  double getEnergy()const {plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
-
-  bool isEnergyNeeded()const {return collectEnergy;}
 
   void setMDEnergyUnits(double d) {MDUnits.setEnergy(d);}
   void setMDLengthUnits(double d) {MDUnits.setLength(d);}
@@ -249,10 +236,13 @@ public:
   void createValue( const std::string& name, void* shape );
   void setupValuePeriodicity( const std::string& name, const bool& isperiodic, const std::string& min, const std::string& max );
   void setValueFixed( const std::string& name );
+  void setValueToGather( const std::string& name );
   bool valueIsFixed( const std::string& name ) const ;
   void collectArgument( const std::string& name );
 /// Set one of the values that are being passed to plumed
   void setValue( const std::string& name, void* p);
+/// Check if a particular named value is needed
+  bool isValueNeeded( const std::string& name ) const ;
 /// Get the forces on a particular value
   void setValueForces( const std::string& name, void* f);
 /// Get a pointer to one of the values that was passed to plumed

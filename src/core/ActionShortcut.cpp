@@ -86,15 +86,20 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
   // Now get the output components
   if( name=="*" ) {
       for(unsigned k=0; k<out_comps.size(); ++k) {
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
-          if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
-          else {
-             for(unsigned j=1;; ++j) {
-                 std::string numstr; Tools::convert( j, numstr );
-                 ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
-                 if(!act) break;
-                 act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
-             }
+          if( out_comps[k]=="" ) {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
+              if( action ) action->interpretDataLabel( a, myuser, nargs, arg );
+          } else {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
+              if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
+              else {
+                 for(unsigned j=1;; ++j) {
+                     std::string numstr; Tools::convert( j, numstr );
+                     ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
+                     if(!act) break;
+                     act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
+                 }
+              }
           }
       }
   } else {

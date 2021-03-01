@@ -87,6 +87,7 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
+  if( plumed.getAtoms().getPntrToValue( label ) ) error("label " + label + " is already used for item of data from MD code");
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);

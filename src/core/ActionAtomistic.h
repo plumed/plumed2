@@ -57,7 +57,6 @@ class ActionAtomistic :
   std::vector<double>   charges;
 
   std::vector<Vector>   forces;          // forces on the needed atoms
-  double                forceOnEnergy;
 
   double                forceOnExtraCV;
 
@@ -113,8 +112,6 @@ public:
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
-/// Get energy
-  const double & getEnergy()const;
 /// Get mass of i-th atom
   double getMass(int i)const;
 /// Get charge of i-th atom
@@ -123,8 +120,6 @@ public:
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
   Tensor & modifyVirial();
-/// Get a reference to force on energy
-  double & modifyForceOnEnergy();
 /// Get a reference to force on extraCV
   double & modifyForceOnExtraCV();
 /// Get number of available atoms
@@ -256,11 +251,6 @@ const std::vector<Vector> & ActionAtomistic::getPositions()const {
 }
 
 inline
-const double & ActionAtomistic::getEnergy()const {
-  return energy;
-}
-
-inline
 const Tensor & ActionAtomistic::getBox()const {
   return pbc.getBox();
 }
@@ -273,11 +263,6 @@ std::vector<Vector> & ActionAtomistic::modifyForces() {
 inline
 Tensor & ActionAtomistic::modifyVirial() {
   return virial;
-}
-
-inline
-double & ActionAtomistic::modifyForceOnEnergy() {
-  return forceOnEnergy;
 }
 
 inline

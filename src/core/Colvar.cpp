@@ -31,7 +31,6 @@ Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  isEnergy(false),
   isExtraCV(false)
 {
 }
@@ -44,7 +43,6 @@ void Colvar::registerKeywords( Keywords& keys ) {
 }
 
 void Colvar::requestAtoms(const vector<AtomNumber> & a) {
-  plumed_massert(!isEnergy,"request atoms should not be called if this is energy");
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
@@ -68,7 +66,7 @@ void Colvar::apply() {
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
-  if(!isEnergy && !isExtraCV) {
+  if(!isExtraCV) {
     #pragma omp parallel num_threads(nt)
     {
       vector<Vector> omp_f(fsz);
@@ -106,9 +104,6 @@ void Colvar::apply() {
       comm.Sum(&v[0][0],9);
     }
 
-  } else if( isEnergy ) {
-    vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   } else if( isExtraCV ) {
     vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];

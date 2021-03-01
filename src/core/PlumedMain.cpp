@@ -220,7 +220,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setEnergy(val);
+        atoms.setValue("Energy",val);
+        atoms.setValueToGather("Energy");
         break;
       case cmd_setForces:
         CHECK_INIT(initialized,word);
@@ -523,8 +524,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
-        else                       *(static_cast<int*>(val))=0;
+        if(atoms.isValueNeeded("Energy")) *(static_cast<int*>(val))=1;
+        else                              *(static_cast<int*>(val))=0;
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);

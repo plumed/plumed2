@@ -35,6 +35,9 @@ private:
   static std::unique_ptr<ValueFromMDCode> create(unsigned n, const std::string& name, const std::vector<unsigned>& shape );
 /// Returns the data array from the value so that Atoms can do an allgather on the data
   std::vector<double>& getDataToGather();
+/// Output binary for replica exchange 
+  void writeBinary(std::ostream&o) const ;
+  void readBinary(std::istream&i);
 protected:
 /// Is the value not time dependent
   bool fixed;
@@ -42,8 +45,12 @@ protected:
   bool collect;  
 /// This is set true once the variable has been obtained
   bool set;
-/// Is the value collected from the domain decomposition
-  bool domain_decomposed;
+/// Do we need to gather this value over the domains  
+  bool needs_gather_from_domains;
+/// Are the values scattered over the domains per atoms
+  bool scattered_over_domains;
+/// The unit of this value
+  double units;
 /// The value that we are creating based on the data from the MD code
   std::unique_ptr<Value> value;
 public:
@@ -60,8 +67,6 @@ public:
   virtual void gather()=0;
 /// Value does not change with time
   bool isFixed() const ;
-/// Value must be collected from domain decomposition
-  bool collectFromDomains() const ;
 /// Get the name of the input value
   const std::string& getName() const ;
 /// Return a pointer to the value
@@ -71,11 +76,6 @@ public:
 inline
 bool ValueFromMDCode::isFixed() const {
   return fixed;
-}
-
-inline
-bool ValueFromMDCode::collectFromDomains() const {
-  return domain_decomposed;
 }
 
 inline

@@ -41,11 +41,7 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
-  md_energy(0.0),
-  energy(0.0),
   dataCanBeSet(false),
-  collectEnergy(false),
-  energyHasBeenSet(false),
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
   chargesHaveBeenSet(false),
@@ -76,8 +72,7 @@ Atoms::~Atoms() {
 
 void Atoms::startStep() {
   for(unsigned i=0;i<values.size();++i) { values[i]->set=false; values[i]->collect=false; }
-  collectEnergy=false; energyHasBeenSet=false; positionsHaveBeenSet=0;
-  massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
+  positionsHaveBeenSet=0; massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
   forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
 }
 
@@ -108,13 +103,6 @@ void Atoms::setCharges(void*p) {
 void Atoms::setVirial(void*p) {
   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
   mdatoms->setVirial(p); virialHasBeenSet=true;
-}
-
-void Atoms::setEnergy(void*p) {
-  plumed_massert( dataCanBeSet,"setEnergy must be called after setStep in MD code interface");
-  MD2double(p,md_energy);
-  md_energy*=MDUnits.getEnergy()/units.getEnergy();
-  energyHasBeenSet=true;
 }
 
 void Atoms::setForces(void*p) {
@@ -191,7 +179,6 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     for(const auto & p : unique) forces[p.index()].zero();
   }
   for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
-  forceOnEnergy=0.0;
   mdatoms->getBox(box);
 
   if(!atomsNeeded) return;
@@ -285,8 +272,6 @@ void Atoms::wait() {
   }
   pbc.setBox(box);
 
-  if(collectEnergy) energy=md_energy;
-
   if(dd && shuffledAtoms>0) {
 // receive toBeReceived
     if(asyncSent) {
@@ -310,9 +295,8 @@ void Atoms::wait() {
       asyncSent=false;
     }
     for(unsigned i=0;i<values.size();++i) {
-        if( values[i]->collect && !values[i]->domain_decomposed ) dd.Sum( values[i]->getDataToGather() );
+        if( values[i]->collect && !values[i]->needs_gather_from_domains ) dd.Sum( values[i]->getDataToGather() );
     }
-    if(collectEnergy) dd.Sum(energy);
   }
 // I take note that masses and charges have been set once for all
 // at the beginning of the simulation.
@@ -508,6 +492,11 @@ void Atoms::init() {
     setAtomsNlocal(natoms);
     setAtomsContiguous(0);
   }
+  // Create a value to hold the energy
+  std::vector<unsigned> shape(0); values.push_back( ValueFromMDCode::create( mdatoms->getRealPrecision(), "Energy", shape ) );
+  setupValuePeriodicity( "Energy", false, "", "" );
+  values[values.size()-1]->units = MDUnits.getEnergy()/units.getEnergy();
+  values[values.size()-1]->setf(&forceOnEnergy);
 }
 
 void Atoms::setDomainDecomposition(Communicator& comm) {
@@ -551,13 +540,13 @@ void Atoms::removeGroup(const std::string&name) {
 void Atoms::writeBinary(std::ostream&o)const {
   o.write(reinterpret_cast<const char*>(&positions[0][0]),natoms*3*sizeof(double));
   o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&energy),sizeof(double));
+  for(unsigned i=0;i<values.size();++i) values[i]->writeBinary(o);
 }
 
 void Atoms::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&positions[0][0]),natoms*3*sizeof(double));
   i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
-  i.read(reinterpret_cast<char*>(&energy),sizeof(double));
+  for(unsigned j=0;j<values.size();++j) values[j]->readBinary(i);
   pbc.setBox(box);
 }
 
@@ -640,6 +629,13 @@ void Atoms::setValueFixed( const std::string& name ) {
   plumed_merror("could not fix value named " + name );
 }
 
+void Atoms::setValueToGather( const std::string& name ) {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { values[i]->needs_gather_from_domains=true; return; }
+  }
+  plumed_merror("could not fix value named " + name );
+}
+
 Value* Atoms::getPntrToValue( const std::string& name ) {
   int outval=-1;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -657,6 +653,7 @@ bool Atoms::valueIsFixed( const std::string& name ) const {
 }
 
 void Atoms::setValue( const std::string& name, void* p) {
+  plumed_massert( dataCanBeSet,"set" + name + " must be called after setStep in MD code interface");
   int outval=-1;
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->getName()==name) { outval = i; break; }
@@ -679,6 +676,13 @@ void Atoms::setValueForces( const std::string& name, void* f) {
     if (values[i]->getName()==name) { outval = i; break; }
   }
   plumed_assert( outval>=0 ); values[outval]->setf(f);
+}
+
+bool Atoms::isValueNeeded( const std::string& name ) const {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { return values[i]->collect; }
+  }
+  return false;
 }
 
 void Atoms::interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args ) {

@@ -27,7 +27,9 @@ ValueFromMDCode::ValueFromMDCode(const std::string& name, const std::vector<unsi
 fixed(false),
 collect(false),
 set(false),
-domain_decomposed(false)
+needs_gather_from_domains(false),
+scattered_over_domains(false),
+units(1)
 {
   value=std::unique_ptr<Value>(new Value(NULL, name, false, shape));
   value->created_in_plumedmain=true;
@@ -37,6 +39,16 @@ domain_decomposed(false)
 void ValueFromMDCode::setupPeriodicity( const bool& isperiodic, const std::string& min, const std::string& max ) {
   if( isperiodic ) { value->setDomain( min, max ); } 
   else { value->min=0; value->max=0; value->setupPeriodicity(); } 
+}
+
+void ValueFromMDCode::writeBinary(std::ostream&o) const {
+  if( fixed ) return; unsigned nvals=value->getSize();
+  o.write(reinterpret_cast<const char*>(&value->data[0]),nvals*sizeof(double)); 
+}
+
+void ValueFromMDCode::readBinary(std::istream&i) {
+  if( fixed ) return; unsigned nvals=value->getSize();
+  i.read(reinterpret_cast<char*>(&value->data[0]),nvals*sizeof(double));
 }
 
 template <class T>
@@ -72,9 +84,9 @@ void ValueFromMDCodeTyped<T>::setv(void*p) {
 
 template <class T>
 void ValueFromMDCodeTyped<T>::gather() {
-  if( !collect || domain_decomposed ) return;
+  if( !collect || scattered_over_domains ) return;
   unsigned nvals = value->getSize(); 
-  for(unsigned i=0;i<nvals;++i) value->set( i, this->v[i] );
+  for(unsigned i=0;i<nvals;++i) value->set( i, units*this->v[i] );
 } 
 
 template <class T>
@@ -88,7 +100,7 @@ void ValueFromMDCodeTyped<T>::updateForces(){
   if( fixed || !value->forcesWereAdded() ) return;
   // This adds forces if we more than one value
   unsigned nvals=value->getNumberOfValues( value->getName() );
-  for(unsigned i=0;i<nvals;++i) this->f[i] += T(value->getForce(i));
+  for(unsigned i=0;i<nvals;++i) this->f[i] = T(value->getForce(i));
 }
 
 std::unique_ptr<ValueFromMDCode> ValueFromMDCode::create(unsigned p, const std::string& name, const std::vector<unsigned>& shape ) {
