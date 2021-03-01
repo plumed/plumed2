@@ -63,7 +63,6 @@ class Stopwatch;
 class Citations;
 class ExchangePatterns;
 class FileBase;
-class DataFetchingObject;
 
 /**
 Main plumed object.
@@ -144,9 +143,6 @@ private:
 
 /// Name of the input file
   std::string plumedDat;
-
-/// Object containing data we would like to grab and pass back
-  std::unique_ptr<DataFetchingObject> mydatafetcher;
 
 /// End of input file.
 /// Set to true to terminate reading

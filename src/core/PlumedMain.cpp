@@ -41,7 +41,7 @@
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
 #include "lepton/Exception.h"
-#include "DataFetchingObject.h"
+#include "ActionToFetchData.h"
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -127,7 +127,6 @@ PlumedMain::PlumedMain():
   stopwatch_fwd(log),
   step(0),
   active(false),
-  mydatafetcher(DataFetchingObject::create(sizeof(double),*this)),
   endPlumed(false),
   atoms_fwd(*this),
   actionSet_fwd(*this),
@@ -325,21 +324,29 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+        std::string vtype=""; if( nw==3 ) vtype=" TYPE="+words[2];
+        readInputLine( "grab_" + words[1] + ": FETCH ARG=" + words[1] + vtype );
+        ActionToFetchData* as=actionSet.selectWithLabel<ActionToFetchData*>("grab_"+words[1]);
+        plumed_assert( as ); as->get_rank(static_cast<long*>(val)); 
+      }
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+      {
+        CHECK_INIT(initialized,words[0]); 
+        ActionToFetchData* as1=actionSet.selectWithLabel<ActionToFetchData*>("grab_"+words[1]);
+        plumed_assert( as1 ); as1->get_shape(static_cast<long*>(val));
+      }
         break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) mydatafetcher->setData( words[1], "", val );
-        else mydatafetcher->setData( words[1], words[2], val );
+        ActionToFetchData* as2=actionSet.selectWithLabel<ActionToFetchData*>("grab_"+words[1]);
+        plumed_assert( as2 ); as2->set_memory( val );
+      }
         break;
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
@@ -375,7 +382,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         atoms.setRealPrecision(*static_cast<int*>(val));
-        mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -749,7 +755,7 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=mydatafetcher->activate();
+  active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
@@ -787,7 +793,6 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
-  mydatafetcher->finishDataGrab();
 }
 
 void PlumedMain::waitData() {
