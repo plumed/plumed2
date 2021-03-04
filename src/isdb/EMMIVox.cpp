@@ -174,6 +174,8 @@ private:
   vector<Vector> pos_;
 // averaging
   bool no_aver_;
+// correlation;
+  bool do_corr_;
 // Monte Carlo stuff
   Random   random_;
   // Scale Monte Carlo
@@ -269,6 +271,8 @@ private:
 // calculate on cpu/gpu 
   void calculate_cpu();
   void calculate_gpu();
+// calculate correlation
+  double calculate_corr();
 // Marginal noise
   double calculate_Marginal(double scale, double offset, vector<double> &GMMid_der);
   double calculate_Marginal(double scale, double offset);
@@ -312,6 +316,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
+  keys.addFlag("CORRELATION",false,"calculate correlation coefficient");
   keys.addFlag("GPU",false,"calculate EMMIVOX using ARRAYFIRE on an accelerator device");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
@@ -319,6 +324,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("offset","default","offset");
   keys.addOutputComponent("accS",  "default","MC acceptance for scale");
   keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
+  keys.addOutputComponent("corr", "CORRELATION", "correlation coefficient");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):
@@ -326,7 +332,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   inv_pi2_(0.050660591821169),
-  first_time_(true), no_aver_(false),
+  first_time_(true), no_aver_(false), do_corr_(false),
   scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
   MCSstride_(1), MCSaccept_(0.), MCStrials_(0.),
   dbfact_(0.0), bfactmax_(4.0),
@@ -414,6 +420,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
+
+  // calculate correlation coefficient
+  parseFlag("CORRELATION",do_corr_);
 
   // write overlap file
   parse("WRITE_OV_STRIDE", ovstride_);
@@ -566,6 +575,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   addComponent("offset");                componentIsNotPeriodic("offset");
   if(dbfact_>0)   {addComponent("accB"); componentIsNotPeriodic("accB");}
   if(dscale_>0.0) {addComponent("accS"); componentIsNotPeriodic("accS");}
+  if(do_corr_)    {addComponent("corr"); componentIsNotPeriodic("corr");}
 
   // initialize random seed
   unsigned iseed = time(NULL)+replica_;
@@ -1531,6 +1541,7 @@ void EMMIVOX::calculate_gpu()
   if(ovstride_>0 && step%ovstride_==0)  do_comm = true;
   if(dscale_>0   && step%MCSstride_==0) do_comm = true; 
   if(dbfact_>0   && step%MCBstride_==0) do_comm = true;
+  if(do_corr_) do_comm = true;
   if(do_comm){
     // communicate
     ovmd_gpu.host(&ovmd_gpu_.front());
@@ -1575,6 +1586,11 @@ void EMMIVOX::calculate()
   // set scale and offset value
   getPntrToComponent("scale")->set(scale_);
   getPntrToComponent("offset")->set(offset_);
+  // calculate correlation coefficient
+  if(do_corr_){
+    double cc = calculate_corr();
+    getPntrToComponent("corr")->set(cc);
+  }
   // PRINT STUFF to other files
   // get time step
   long int step = getStep();
@@ -1603,6 +1619,30 @@ void EMMIVOX::calculate()
     getPntrToComponent("accB")->set(acc);
   }
 
+}
+
+double EMMIVOX::calculate_corr()
+{
+ // number of data points
+ double nd = static_cast<double>(ovdd_.size());
+ // average ovmd_ and ovdd_
+ double ave_md = std::accumulate(ovmd_.begin(), ovmd_.end(), 0.) / nd;
+ double ave_dd = std::accumulate(ovdd_.begin(), ovdd_.end(), 0.) / nd;
+ // calculate corr
+ double num = 0.;
+ double den1 = 0.;
+ double den2 = 0.;
+ #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : num, den1, den2)
+ for(unsigned i=0; i<ovdd_.size(); ++i){
+    double md = ovmd_[i]-ave_md;
+    double dd = ovdd_[i]-ave_dd;
+    num  += md*dd;
+    den1 += md*md;
+    den2 += dd*dd;
+ }
+ // correlation coefficient between ovmd_ and ovdd_
+ double cc = num / sqrt(den1*den2);
+ return cc;
 }
 
 double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &GMMid_der)
