@@ -463,7 +463,7 @@ The users are invited to prepare, for each of the CV listed above, a PLUMED inpu
 - diffusion of the system in the space of the dihedral \f$ \phi \f$
 - error analysis in the free energy as a function of \f$ \phi \f$
 
-and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. Based on this analysis, can you discriminate between _good_ from _bad_ CVs?
+and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. <b>Based on this analysis, can you discriminate between _good_ from _bad_ CVs?</b>
 
 To complete this exercise, the users should define and test a new CV that is either:
 - as good as the dihedral \f$ \phi \f$;
