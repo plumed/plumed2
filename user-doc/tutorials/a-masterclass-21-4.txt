@@ -310,7 +310,7 @@ For example:
 2. weights can be calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach that you learnt in \ref masterclass-21-2 and \ref masterclass-21-3.
+In this exercise we will use the second method, which is identical to the umbrella-sampling reweighting approach that you have already used in \ref masterclass-21-2 and \ref masterclass-21-3.
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
@@ -425,7 +425,7 @@ python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
 \endverbatim 
 
 and run the above script for different block sizes ranging from 1 to 1000.
-For each choice of block size, the script will produce an output file, which contains:
+For each choice of block size, the script will produce an output file, which contains 3 colums:
 - the value of the \f$ \phi \f$ variable on a grid;
 - the free energy averaged across the blocks for each point of the grid;
 - the associated error for each point of the grid.
