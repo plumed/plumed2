@@ -250,7 +250,7 @@ just set this variable to a blank ("SOEXT=").
 \subsection BlasAndLapack BLAS and LAPACK
 
 We tried to keep PLUMED as independent as possible from external libraries and as such those features
-that require external libraries (e.g. Matheval) are optional. However, to have a properly working version
+that require external libraries are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
 them.  However, if you cannot install BLAS and LAPACK, you can use the internal ones.
