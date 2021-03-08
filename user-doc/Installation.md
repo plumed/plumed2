@@ -309,6 +309,17 @@ Notice that it might be necessary to add to `LDFLAGS` the path to your TCL inter
 
 Then, rebuild plumed.
 
+\subsection additional-modules Additional Modules
+
+PLUMED includes some additional modules that by default are not compiled, but can be enabled during configuration.
+You can use the option `--enable-modules` to activate some of them, e.g.
+
+\verbatim
+> ./configure --enable-modules=module1name+module2name
+\endverbatim
+
+For more information on modules see \ref mymodules.
+
 \section CompilingPlumed Compiling PLUMED
 
 Once configured, PLUMED can be compiled using the following command:
