@@ -168,7 +168,6 @@ void PlumedFunction::createInputLine( std::string& input, std::vector<std::pair<
               size[0]=myval->getRank(); for(unsigned j=0;j<size[0];++j) size[j+1]=myval->getShape()[j];
               for(unsigned k=0;k<numthreads;++k) {
                   myplumed[k].cmd("createValue " + myval->getName(), &size[0] );
-                  myplumed[k].cmd("valueIsConstant " + myval->getName() );
                   if( !myval->isPeriodic() ) myplumed[k].cmd("setValueNotPeriodic " + myval->getName());
               }
           } else error("could not find setup action named " + farg );

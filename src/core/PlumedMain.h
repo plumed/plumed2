@@ -54,6 +54,7 @@ namespace PLMD {
 
 class ActionAtomistic;
 class ActionPilot;
+class ActionToPutData;
 class Log;
 class Atoms;
 class ActionSet;
@@ -157,6 +158,9 @@ private:
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
+
+/// Set of actions that are passed data from the MD code
+  std::vector<ActionToPutData*> inputs;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -327,6 +331,8 @@ public:
   Atoms& getAtoms();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;
+/// Reference to the list of input actions
+  std::vector<ActionToPutData*> & getInputActions();
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
@@ -399,6 +405,11 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
+}
+
+inline
+std::vector<ActionToPutData*> & PlumedMain::getInputActions() {
+  return inputs;
 }
 
 inline

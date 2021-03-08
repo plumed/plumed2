@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
 #include "ActionWithValue.h"
-#include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
@@ -73,7 +72,7 @@ Action::Action(const ActionOptions&ao):
   keywords(ao.keys)
 {
   line.erase(line.begin());
-  log.printf("Action %s\n",name.c_str());
+  if( name!="PUT" ) log.printf("Action %s\n",name.c_str());
 
   if(comm.Get_rank()==0) {
     replica_index=multi_sim_comm.Get_rank();
@@ -87,9 +86,8 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
-  if( plumed.getAtoms().getPntrToValue( label ) ) error("label " + label + " is already used for item of data from MD code");
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
-  log.printf("  with label %s\n",label.c_str());
+  if( name!="PUT" ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
@@ -214,8 +212,6 @@ void Action::activate() {
 // activated
   if(!active) {
     this->unlockRequests();
-    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
-    if(aa) aa->prepareArguments(); 
     prepare();
     this->lockRequests();
   } else return;

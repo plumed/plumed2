@@ -45,12 +45,10 @@ class ActionWithValue;
 /// objects.  However, if you find a use for a tempory PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
-  friend class ValueFromMDCode;
+  friend class Atoms;
   friend class ActionWithValue;
   friend class ActionWithArguments;
 private:
-/// Is this value created by plumedmain
-  bool created_in_plumedmain;
 /// The action in which this quantity is calculated
   ActionWithValue* action;
 /// Had the value been set
@@ -225,6 +223,9 @@ public:
   bool dataAlwaysStored() const ;
 ///
   bool storingData() const ;
+///
+  void writeBinary(std::ostream&o) const ;
+  void readBinary(std::istream&i);
 };
 
 inline

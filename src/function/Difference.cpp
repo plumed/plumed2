@@ -63,13 +63,10 @@ Difference::Difference(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  if( !getPntrToArgument(0)->getPntrToAction() ) {
-      if( plumed.getAtoms().valueIsFixed( getPntrToArgument(0)->getName() ) ) error("fixed variable should be second argument to difference");
-  }
   if( arg_ends.size()!=3 ) error("difference can only take two arguments as input");
   if( getPntrToArgument(0)->isPeriodic() ) {
       if( !getPntrToArgument(1)->getPntrToAction() ) {
-          if( !getPntrToArgument(1)->isPeriodic() && !plumed.getAtoms().valueIsFixed( getPntrToArgument(1)->getName() ) ) error("period for input variables should be the same");
+          if( !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same");
       } else {
           ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
           if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 

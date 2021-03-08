@@ -19,25 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ActionToFetchData_h
-#define __PLUMED_core_ActionToFetchData_h
+#ifndef __PLUMED_core_ActionToGetData_h
+#define __PLUMED_core_ActionToGetData_h
 
 #include "ActionWithArguments.h"
-#include "ActionRegister.h"
 #include "ActionPilot.h"
+#include "DataPassingObject.h"
 
 namespace PLMD {
 
-class OutputDataObject {
-public:
-  static std::unique_ptr<OutputDataObject> create(unsigned n);
-/// Set the pointer to the output
-  virtual void setPointer( void* outval )=0;
-/// This transfers everything to the output
-  virtual void setData( const std::vector<double>& data )=0;  
-};
-
-class ActionToFetchData : 
+class ActionToGetData : 
 public ActionPilot,
 public ActionWithArguments 
 {
@@ -45,12 +36,12 @@ private:
 /// What do you want to collect to pass back to python
   enum {val,deriv,force} gtype;
 /// This holds the pointer that we are setting 
-  std::unique_ptr<OutputDataObject> mydata;
+  std::unique_ptr<DataPassingObject> mydata;
 /// This temporarily holds the data so it can be passed out
   std::vector<double> data;
 public:
   static void registerKeywords(Keywords& keys);
-  explicit ActionToFetchData(const ActionOptions&ao);
+  explicit ActionToGetData(const ActionOptions&ao);
 /// Get the rank of the output
   void get_rank( long* rank );
 /// Get the shape of the output

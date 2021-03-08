@@ -48,7 +48,7 @@ ActionShortcut(ao)
           std::string pstr; Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
           if( ktype=="gaussian" || ktype=="GAUSSIAN" ) {
               readInputLine( getShortcutLabel() + "_vol: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref " +
-                             "INPUT={ det: PRODUCT ARG=" + getShortcutLabel() + "_ref.variance ; MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO}");
+                             "INPUT={ det: PRODUCT ARG=variance ; MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO}");
               if( height.length()>0 ) readInputLine( getShortcutLabel() + "_height: MATHEVAL ARG1=" + height + " ARG2=" + getShortcutLabel() + "_vol FUNC=x/y PERIODIC=NO");
               else readInputLine( getShortcutLabel() + "_height: MATHEVAL ARG1=" + getShortcutLabel() + "_vol FUNC=1/x PERIODIC=NO");
               height_str = " HEIGHTS=" + getShortcutLabel() + "_height";
@@ -69,7 +69,7 @@ void KDEShortcut::convertBandwiths( const std::string& lab, const std::vector<st
       if( i>0 ) { center += ",0.0"; band += "," + bwidths[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; }
   }
   action->readInputLine( lab + "_ref: READ_CLUSTER " + argstr + center + band );
-  action->readInputLine( lab + "_icov: CALCULATE_REFERENCE CONFIG=" + lab + "_ref INPUT={MATHEVAL ARG1=" + lab + "_ref.variance FUNC=1/x PERIODIC=NO}" );
+  action->readInputLine( lab + "_icov: CALCULATE_REFERENCE CONFIG=" + lab + "_ref INPUT={MATHEVAL ARG1=variance FUNC=1/x PERIODIC=NO}" );
 }
 
 }

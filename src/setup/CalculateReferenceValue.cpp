@@ -65,8 +65,10 @@ SetupReferenceBase(ao)
        std::vector<int> size(1+as->copyOutput(i)->getRank()); 
        size[0]=as->copyOutput(i)->getRank(); 
        for(unsigned j=0;j<size[0];++j) size[j+1]=as->copyOutput(i)->getShape()[j];
-       p.cmd("createValue " + as->copyOutput(i)->getName(), &size[0] );
-       if( !as->copyOutput(i)->isPeriodic() ) p.cmd("setValueNotPeriodic " + as->copyOutput(i)->getName());
+       std::size_t dot=as->copyOutput(i)->getName().find("."); 
+       std::string name=as->copyOutput(i)->getName().substr(dot+1); 
+       p.cmd("createValue " + name, &size[0] );
+       if( !as->copyOutput(i)->isPeriodic() ) p.cmd("setValueNotPeriodic " + name);
    }
    double tstep=1.0; p.cmd("setTimestep",&tstep);
    // Now read the PLUMED command that we have to execute
@@ -96,7 +98,9 @@ SetupReferenceBase(ao)
    for(unsigned i=0;i<as->getNumberOfComponents();++i) {
       unsigned nvals = as->copyOutput(i)->getSize(); valdata[i].resize( nvals );
       for(unsigned j=0;j<nvals;++j) valdata[i][j] = as->copyOutput(i)->get(j); 
-      p.cmd("setValue " + as->copyOutput(i)->getName(), &valdata[i][0] );
+      std::size_t dot=as->copyOutput(i)->getName().find(".");
+      std::string name=as->copyOutput(i)->getName().substr(dot+1); 
+      p.cmd("setValue " + name, &valdata[i][0] );
    }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value

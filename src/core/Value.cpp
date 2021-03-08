@@ -32,7 +32,6 @@
 namespace PLMD {
 
 Value::Value():
-  created_in_plumedmain(false),
   action(NULL),
   value_set(false),
   reset(true),
@@ -59,7 +58,6 @@ Value::Value():
 }
 
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
-  created_in_plumedmain(false),
   action(av),
   value_set(false),
   reset(true),
@@ -90,7 +88,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
 
-  if( (hasDeriv || storedata || istimeseries || created_in_plumedmain) && shape.size()>0 ) {
+  if( (hasDeriv || storedata || istimeseries || getPntrToAction()->getName()=="PUT") && shape.size()>0 ) {
      data.resize(getSize()); unsigned fsize=1; 
      for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
      inputForces.resize(fsize); 
@@ -283,7 +281,6 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
-  if( created_in_plumedmain ) return NULL;
   plumed_assert( action!=NULL );
   return action;
 }
@@ -364,9 +361,9 @@ const std::vector<unsigned>& Value::getShape() const {
 }
 
 void Value::set(const unsigned& n, const double& v ) {
-  value_set=true;
+  value_set=true; 
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
-  else if( !hasDeriv ) { data[n]=v; applyPeriodicity(n); }
+  else if( !hasDeriv ) { plumed_dbg_assert( n<data.size() ); data[n]=v; applyPeriodicity(n); }
   else { data[n*(1+ngrid_der)] = v; }
 }
 
@@ -430,6 +427,14 @@ void Value::setSymmetric( const bool& sym ) {
 
 bool Value::isSymmetric() const {
   return symmetric;
+}
+
+void Value::writeBinary(std::ostream&o) const {
+  o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
+}
+
+void Value::readBinary(std::istream&i) {
+  i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){
