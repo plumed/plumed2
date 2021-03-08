@@ -112,7 +112,8 @@ This repositoy contains 3 folders:
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
-To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-4`.
+To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-4`. The students are invited to solve the exercises by themselves after completing the PLUMED input file 
+templates provided below. In case of problems, students can rely on the solution notebook `solution.ipynb` provided in the [GitHub](https://github.com/plumed/masterclass-21-4) repository. 
 
 In many exercises, we will play with a toy system, alanine dipeptide simulated in vacuo (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
