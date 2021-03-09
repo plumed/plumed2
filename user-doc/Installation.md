@@ -250,7 +250,7 @@ just set this variable to a blank ("SOEXT=").
 \subsection BlasAndLapack BLAS and LAPACK
 
 We tried to keep PLUMED as independent as possible from external libraries and as such those features
-that require external libraries (e.g. Matheval) are optional. However, to have a properly working version
+that require external libraries are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
 them.  However, if you cannot install BLAS and LAPACK, you can use the internal ones.
@@ -297,17 +297,28 @@ which should be in `/pathtovmdplugins/include`.
 Then customize the configure command with something along the lines of:
 
 \verbatim
-./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
+> ./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
 Notice that it might be necessary to add to `LDFLAGS` the path to your TCL interpreter, e.g.
 
 \verbatim
-./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
+> ./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
             CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
 Then, rebuild plumed.
+
+\subsection additional-modules Additional Modules
+
+PLUMED includes some additional modules that by default are not compiled, but can be enabled during configuration.
+You can use the option `--enable-modules` to activate some of them, e.g.
+
+\verbatim
+> ./configure --enable-modules=module1name+module2name
+\endverbatim
+
+For more information on modules see \ref mymodules.
 
 \section CompilingPlumed Compiling PLUMED
 
@@ -693,7 +704,7 @@ PLUMED needs to be well optimized to run efficiently.
 If you need a single PLUMED binary to run efficiency on machines with different levels of hardware (e.g.: some
 of your workstations support AVX and some do not), with intel compiler you can use something like
 \verbatim
-./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
+> ./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
 \endverbatim
 It will take more time to compile but it will allow you to use a single module. Otherwise, you should install two
 PLUMED version with different optimization levels.
@@ -772,19 +783,19 @@ ld: TOC section size exceeds 64k
 \endverbatim
   please configure plumed again with the following flag
 \verbatim
-./configure --disable-ld-r
+> ./configure --disable-ld-r
 \endverbatim
 - On Cray machines, you might have to set the following environment variable
   before configuring and building both PLUMED and the MD code that you want
   to patch with PLUMED (kindly reported by Marco De La Pierre):
 \verbatim
-export CRAYPE_LINK_TYPE=dynamic
+> export CRAYPE_LINK_TYPE=dynamic
 \endverbatim
 - Intel MPI seems to require the flags `-lmpi_mt -mt_mpi` for compiling and linking and the flag `-DMPICH_IGNORE_CXX_SEEK` for compiling
   (kindly reported by Abhishek Acharya).
   You might want to try to configure using
 \verbatim
-./configure LDFLAGS=-lmpi_mt CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi" STATIC_LIBS=-mt_mpi
+> ./configure LDFLAGS=-lmpi_mt CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi" STATIC_LIBS=-mt_mpi
 \endverbatim
   Adding libraries to `STATIC_LIBS` uses them for all the linking steps, whereas those in `LIBS` are only used when linking the PLUMED kernel library.
   See more at [this thread](https://groups.google.com/d/msgid/plumed-users/CAB1aw3y0m%3D5qwzsZY4ZB-aBevsL5iuS%3DmQuSWK_cw527zCMqzg%40mail.gmail.com?utm_medium=email&utm_source=footer).
