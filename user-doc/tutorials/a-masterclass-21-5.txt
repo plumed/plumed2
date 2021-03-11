@@ -130,10 +130,21 @@ PRINT ARG=phi,psi,bb.bias FILE=../colvar_multi.dat STRIDE=100
 According to the instructions above, you should create 32 directories (one per replica), place the tpr file (for this exercise: `topolA.tpr`)
 in each of them, and run the following command
 \verbatim
-mpiexec -np 32 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat -s topolA.tpr
+mpiexec -np 32 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat -s topolA.tpr -replex 200
 \endverbatim
 
-TODO: run from A and B, run with replex and without, compare DeltaF
+We will now repeat exercises \ref masterclass-21-3-ex-4 and masterclass-21-3-ex-6 using replica exchange.
+Notice that by omitting the `-replex` option you will be able to run a non-replica-exchange umbrella sampling simulation,
+identical to the one you performed in \ref masterclass-21-3-ex-4. We will also test different initial conditions,
+as in \ref masterclass-21-3-ex-6. In short, run the following four simulations
+- Starting from state A, without `-replex` (will be identical to \ref masterclass-21-3-ex-4)
+- Starting from state B, without `-replex` (will be identical to \ref masterclass-21-3-ex-6)
+- Starting from state A, with `-replex 200`
+- Starting from state B, with `-replex 200`
+
+For all the four simulations, perform a WHAM analysis to compute the weights of each frame, and then compute
+the relative stability of the two minima (as in \ref masterclass-21-3-ex-5).
+Is the dependence on initial condition that we have seen in \ref masterclass-21-3 also present when you are using replica exchange?
 
 \subsection masterclass-21-5-ex-2 Exercise 2: Demuxing your trajectories
 
@@ -146,6 +157,14 @@ TODO: show how to perform block analysis from demuxed trajectories
 \subsection masterclass-21-5-ex-4 Exercise 4: Bias-exchange metadynamics
 
 TODO: run bias exchange with different combinations of variables from \ref masterclass-21-4-ex-5
+
+\subsection masterclass-21-5-ex-5 Exercise 5: Parallel-tempering metadynamics
+
+TODO: run a parallel-tempering metadynamics with different combinations of variables from \ref masterclass-21-4-ex-5
+
+\subsection masterclass-21-5-ex-6 Exercise 6: Check for pathological cases
+
+TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
 
 */
 
