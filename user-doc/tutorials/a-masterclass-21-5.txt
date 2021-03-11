@@ -76,15 +76,76 @@ it is complex enough to be used in learning them. Notice that, although PLUMED h
 replica exchange simulations are likely only supported by GROMACS. You should check the documentation of
 the MD code you are using to know if replica exchange simulations will work correctly with PLUMED.
 
-\subsection masterclass-21-5-ex-1 Exercise 1: xxx
+\subsection masterclass-21-5-intr Introduction to replica simulations
 
-\subsection masterclass-21-5-ex-2 Exercise 2: xxx
+Many methods are based on the simultaneous simulation of multiple replicas. In some cases, all the replicas
+will use the same input file, whereas in other cases a separate input file should be provided for each replica.
+Notice that using a single input file does not imply that all the replicas will feel the same biasing potential.
+Indeed, since biasing potentials in PLUMED might be history dependent, and the history of each replica might different
+from the history of other replicas, the potentials might in the end be different.
 
-\subsection masterclass-21-5-ex-3 Exercise 3: xxx
+PLUMED has been designed so that multiple-replica simulations can be run even if all the replicas are acting in the same
+directory. In order to avoid clashes in output files, thus, PLUMED will append a suffix corresponding to the index of the replica
+to the name of each output file (for instance, the command `PRINT FILE=colvar.dat` will print on a file names `colvar.0.dat` in the first replica, etc.).
+Suffixes will be added also to input file, so that if you run a simulation where the input file is `plumed.dat`, the first replica will open
+a file names `plumed.0.dat`, and so on. However, for input file, if the specific file does not exist, PLUMED will look for the file without the suffix
+(in the example, `plumed.dat`). This provides maximum flexibility and allows to manage both cases where the input file is the same and cases where specific
+input files should be used.
 
-\subsection masterclass-21-5-ex-4 Exercise 4: xxx
+In addition to this, it is possible to use a \ref special-replica-syntax that allows to differentiate the input of different replicas, even if they are all
+reading the same `plumed.dat` file. For instance, the command `RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0` will apply restraints at different positions
+for three replicas.
 
-\subsection masterclass-21-5-ex-5 Exercise 5: xxx
+Notice however that starting with GROMACS 2019 replica simulations are forced to run in separate directories. To exploit the possibility to use a single input file,
+one should put it in the parent directory. Output files will be produced in separate directories by default, but their names will be suffixed.
+
+In order to use multiple replica methods, you should run your simulation using MPI. This can be done prefixing your command
+with `mpiexec -np N --oversubscribe`, where `N` is the number of processes that you want to use and the `--oversubscribe`
+option is an OpenMPI option that is required to use more processes than the number of available processors. This is typically suboptimal,
+but we will need it in our lectures to run, e.g., simulations with 32 replicas even if we have a computer with 4 cores.
+
+In brief, to run a GROMACS simulation where the individual replicas are in directories names `dir0`, `dir1`, etc
+and the `plumed.dat` file is in the parent directory you will need a command such as
+```
+mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multi dir? dir?? -plumed ../plumed.dat
+```
+
+\subsection masterclass-21-5-ex-1 Exercise 1: Multiple-windows umbrella sampling with replica exchange
+
+In \ref masterclass-21-3-ex-4 we have seen how to run a multiple-windows umbrella sampling simulation with
+independent simulations. Here we will run it using replica exchange. The only differences are that:
+- Simulations should be run at the same time using `mpiexec`
+- You will have to specify a stride for GROMACS to attempt coordinate exchanges, using the `-replex` option.
+
+It will be sufficient to use a single `plumed.dat` file that looks like this:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=../reference.pdb
+phi: TORSION ATOMS=__FILL__
+psi: TORSION ATOMS=__FILL__
+bb: RESTRAINT ARG=phi KAPPA=200.0 AT=@replicas:__FILL__
+PRINT ARG=phi,psi,bb.bias FILE=../colvar_multi.dat STRIDE=100
+\endplumedfile
+
+According to the instructions above, you should create 32 directories (one per replica), place the tpr file (for this exercise: `topolA.tpr`)
+in each of them, and run the following command
+\verbatim
+mpiexec -np 32 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat -s topolA.tpr
+\endverbatim
+
+TODO: run from A and B, run with replex and without, compare DeltaF
+
+\subsection masterclass-21-5-ex-2 Exercise 2: Demuxing your trajectories
+
+TODO: show how to demux trajectories
+
+\subsection masterclass-21-5-ex-3 Exercise 3: Block analysis from demuxed trajectories
+
+TODO: show how to perform block analysis from demuxed trajectories
+
+\subsection masterclass-21-5-ex-4 Exercise 4: Bias-exchange metadynamics
+
+TODO: run bias exchange with different combinations of variables from \ref masterclass-21-4-ex-5
 
 */
 
