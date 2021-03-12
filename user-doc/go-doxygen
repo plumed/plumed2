@@ -112,7 +112,7 @@ if [ $? -ne 0 ]; then
    exit
 fi
 mv $file.tmp $file
-rm -f *
+rm -fr *
 done
 cd ../../
 rm -rf build_examples
