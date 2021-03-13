@@ -144,11 +144,52 @@ as in \ref masterclass-21-3-ex-6. In short, run the following four simulations
 
 For all the four simulations, perform a WHAM analysis to compute the weights of each frame, and then compute
 the relative stability of the two minima (as in \ref masterclass-21-3-ex-5).
+As a reminder, to compute weights you need to do the following steps:
+1. Concatenate the trajectories (`gmx_mpi trjcat -f dir? dir?? -o traj_multi.xtc`).
+2. Run plumed driver on the concatenated trajectory (`mpiexec -np 32 --oversubscribe plumed driver --ixtc traj_multi.xtc --plumed plumed.dat`).
+3. Read the resulting trajectories and perform WHAM with a script like this one:
+\verbatim
+import wham
+kb=0.008314462618
+T=300
+col=[]
+for i in range(32):
+    col.append(plumed.read_as_pandas("colvar" + str(i)+".dat"))
+bias=np.zeros((len(col[0]["bb.bias"]),32))
+w=wham.wham(bias,T=kBT)
+tr=col[0].phi
+is_in_B=np.int_(np.logical_and(tr>0,tr<2))
+is_in_A=np.int_(tr<0)
+print(np.average(is_in_B,weights=np.exp(w["logW"]))/np.average(is_in_A,weights=np.exp(w["logW"])))
+\endverbatim
+
 Is the dependence on initial condition that we have seen in \ref masterclass-21-3 also present when you are using replica exchange?
 
 \subsection masterclass-21-5-ex-2 Exercise 2: Demuxing your trajectories
 
-TODO: show how to demux trajectories
+We will now "demux" our trajectories. For these short trajectories we can use the `demux.pl` script provided by GROMACS.
+Notice that for long trajectories and frequent exchanges it could have problems to process correctly the output file
+The script present here: https://github.com/srnas/demux solves the problem.
+
+The demux script can be used to produce files named `replica_temp.xvg` and `replica_index.xvg` as follows
+\verbatim
+demux.pl dir0/md.log
+\endverbatim
+
+The `replica_temp.xvg` provides, as a function of time, the number of the replica on which each of the continuous simulations
+is located. For instance, you can follow the migration in the replica ladder of the first replica as follows:
+\verbatim
+replica_temp=np.loadtxt("replica_temp.xvg")
+plt.plot(replica_temp[:,0],replica_temp[:,1])
+\endverbatim
+
+The `replica_index.xvg` can be used to generate the "demuxed" trajectories. This can be done with the following command:
+\verbatim
+import subprocess
+subprocess.run("gmx_mpi trjcat -f dir_?/traj_comp.xtc dir_??/traj_comp.xtc -demux replica_index.xvg -o " + ''.join([" "+str(i)+"_trajout.xtc" for i in range(32)]),shell=True)
+\endverbatim
+
+The resulting trajectories can be visualized or analyzed as usual.
 
 \subsection masterclass-21-5-ex-3 Exercise 3: Block analysis from demuxed trajectories
 
@@ -156,13 +197,47 @@ TODO: show how to perform block analysis from demuxed trajectories
 
 \subsection masterclass-21-5-ex-4 Exercise 4: Bias-exchange metadynamics
 
-TODO: run bias exchange with different combinations of variables from \ref masterclass-21-4-ex-5
+We will now run a bias-exchange simulation of alanine dipeptide. In bias-exchange simulations,
+each replica biases a different collective variable. Prepare the input file for a simulation with 4 replicas where
+the following variables are biased:
+- `phi`
+- `psi`
+- The gyration radius of all the atoms of the system
+- The distance between atoms 6 and 8.
+You can use a single input file that looks like this:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=../reference.pdb
+RANDOM_EXCHANGES # this is needed to not have only exchanged between neighbors
+phi: TORSION ATOMS=__FILL__
+psi: TORSION ATOMS=__FILL__
+rgyr: __FILL__
+d: __FILL__
+m: METAD ...
+  ARG=@replicas:phi,psi,rgyr,d
+  SIGMA=@replicas:__FILL__
+  HEIGHT=__FILL__
+  BIASFACTOR=__FILL__
+...
+\endplumedfile
+
+Now run two separate simulations. In one of them you will propose exchanges between replicas with a pace 200, in the other
+you will not propose any exchange (just omit `-replex 200` from the command line). Combine your trajectories with WHAM
+as you did above. Is the result consistent with your expectation?
 
 \subsection masterclass-21-5-ex-5 Exercise 5: Parallel-tempering metadynamics
 
 TODO: run a parallel-tempering metadynamics with different combinations of variables from \ref masterclass-21-4-ex-5
 
-\subsection masterclass-21-5-ex-6 Exercise 6: Check for pathological cases
+\subsection masterclass-21-5-ex-6 Exercise 6: Parallel-tempering: pathological cases
+
+TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
+
+\subsection masterclass-21-5-ex-6 Exercise 7: Multiple walkers metadynamics
+
+TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
+
+\subsection masterclass-21-5-ex-6 Exercise 8: Multiple walkers: pathological cases
 
 TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
 
