@@ -82,8 +82,8 @@ The following is a minimal working example:
 
 \plumedfile
 cv: DISTANCE ATOMS=1,2
-opes: OPES_METAD ARG=cv PACE=100 BARRIER=40
-PRINT STRIDE=100 FILE=COLVAR ARG=*
+opes: OPES_METAD ARG=cv PACE=200 BARRIER=40
+PRINT STRIDE=200 FILE=COLVAR ARG=*
 \endplumedfile
 
 Another more articulated one:
@@ -102,9 +102,10 @@ opes: OPES_METAD ...
   BIASFACTOR=inf
   STATE_RFILE=Restart.data
   STATE_WFILE=State.data
-  STATE_WSTRIDE=50000
+  STATE_WSTRIDE=500*100
   STORE_STATES
   WALKERS_MPI
+  NLIST
 ...
 
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
