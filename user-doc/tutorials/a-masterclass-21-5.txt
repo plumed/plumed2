@@ -73,8 +73,14 @@ git clone https://github.com/plumed/masterclass-21-5.git
 Throughout this tutorial we will run simulations of alanine dipeptide in vacuum using GROMACS and PLUMED.
 Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
 it is complex enough to be used in learning them. Notice that, although PLUMED has a portable interface,
-replica exchange simulations are likely only supported by GROMACS. You should check the documentation of
-the MD code you are using to know if replica exchange simulations will work correctly with PLUMED.
+the support for replica-exchange simulations is limited depending on the specific molecular dynamics engine.
+You should check the documentation of the MD code you are using to know if replica exchange simulations will work correctly with PLUMED.
+
+\warning
+At the time of this writing there is a bug in the rendering of the manual for PLUMED 2.7. In particular,
+all pages containing an example that requires multiple replicas are truncated. Since there is no new features
+in v2.7 in this sense, you are recommended to switch to the v2.6 manual. To do so, just replace the string
+`doc-v2.7/user-doc` with the string `doc-v2.6/user-doc` in the address bar.
 
 \subsection masterclass-21-5-intr Introduction to replica simulations
 
@@ -133,21 +139,22 @@ in each of them, and run the following command
 mpiexec -np 32 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat -s topolA.tpr -replex 200
 \endverbatim
 
-We will now repeat exercises \ref masterclass-21-3-ex-4 and masterclass-21-3-ex-6 using replica exchange.
 Notice that by omitting the `-replex` option you will be able to run a non-replica-exchange umbrella sampling simulation,
-identical to the one you performed in \ref masterclass-21-3-ex-4. We will also test different initial conditions,
+identical to the one you performed in \ref masterclass-21-3-ex-4.
+We will now repeat exercises \ref masterclass-21-3-ex-4 and masterclass-21-3-ex-6 using replica exchange.
+We will also test different initial conditions,
 as in \ref masterclass-21-3-ex-6. In short, run the following four simulations
 - Starting from state A, without `-replex` (will be identical to \ref masterclass-21-3-ex-4)
 - Starting from state B, without `-replex` (will be identical to \ref masterclass-21-3-ex-6)
 - Starting from state A, with `-replex 200`
 - Starting from state B, with `-replex 200`
 
-For all the four simulations, perform a WHAM analysis to compute the weights of each frame, and then compute
+For the four simulations, perform a WHAM analysis to compute the weights of each frame, and then compute
 the relative stability of the two minima (as in \ref masterclass-21-3-ex-5).
-As a reminder, to compute weights you need to do the following steps:
-1. Concatenate the trajectories (`gmx_mpi trjcat -f dir? dir?? -o traj_multi.xtc`).
-2. Run plumed driver on the concatenated trajectory (`mpiexec -np 32 --oversubscribe plumed driver --ixtc traj_multi.xtc --plumed plumed.dat`).
-3. Read the resulting trajectories and perform WHAM with a script like this one:
+To compute weights you need to do the following steps:
+1. Concatenate the trajectories (`gmx_mpi trjcat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
+2. Run plumed driver on the concatenated trajectory (`mpiexec -np 32 --oversubscribe plumed driver --ixtc traj_multi.xtc --plumed plumed.dat -multi 32 --trajectory-stride 100`).
+3. Read the resulting trajectories and perform WHAM adapting this script:
 \verbatim
 import wham
 kb=0.008314462618
@@ -163,6 +170,7 @@ is_in_A=np.int_(tr<0)
 print(np.average(is_in_B,weights=np.exp(w["logW"]))/np.average(is_in_A,weights=np.exp(w["logW"])))
 \endverbatim
 
+Is the population different in the four runs?
 Is the dependence on initial condition that we have seen in \ref masterclass-21-3 also present when you are using replica exchange?
 
 \subsection masterclass-21-5-ex-2 Exercise 2: Demuxing your trajectories
@@ -182,62 +190,123 @@ is located. For instance, you can follow the migration in the replica ladder of 
 replica_temp=np.loadtxt("replica_temp.xvg")
 plt.plot(replica_temp[:,0],replica_temp[:,1])
 \endverbatim
+Notice that this file is called "replica_temp" because it has been implemented with temperature replica exchange in mind.
+The column 1 contains time, whereas the number on column i+1 says which is the current replica index
+(that is: temperature, in a temperature replica exchange simulation; position of the restraint in a replica-exchange umbrella sampling
+simulation) of the continuous simulations that started at position i.
+Now answer the following two questions:
+- Is there any replica that is able to explore the full range of indexes?
+- Are all the continuous replicas able to explore the full range of indexes?
 
 The `replica_index.xvg` can be used to generate the "demuxed" trajectories. This can be done with the following command:
 \verbatim
 import subprocess
-subprocess.run("gmx_mpi trjcat -f dir_?/traj_comp.xtc dir_??/traj_comp.xtc -demux replica_index.xvg -o " + ''.join([" "+str(i)+"_trajout.xtc" for i in range(32)]),shell=True)
+subprocess.run("gmx_mpi trjcat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -demux replica_index.xvg -o " + ''.join([" "+str(i)+"_trajout.xtc" for i in range(32)]),shell=True)
 \endverbatim
 
-The resulting trajectories can be visualized or analyzed as usual.
+The resulting trajectories can be visualized or analyzed as usual. In particular, you could compute phi on the demuxed trajectories.
+Now answer the following two questions:
+- Is there any replica that is able to jump from the metastable state at negative phi to the one at positive phi (or viceversa)?
+- Are all the continuous replicas able to do so?
+
+As a final comment, notice that these "demuxed" trajectories are expected to behave someway similarly to the trajectories generated
+by a metadynamics simulation (see ref masterclass-21-4), in that they should spend approximately the same time in each range of the
+biased CV. The flatness of the distribution depends however on the specific parameters of the restraints (stiffness and locations).
 
 \subsection masterclass-21-5-ex-3 Exercise 3: Block analysis from demuxed trajectories
 
-TODO: show how to perform block analysis from demuxed trajectories
+Notice that the WHAM analysis does not need to know where each of the frames come from. This implies that when you run WHAM you can do it equivalently using
+the concatenation of the original trajectories or the concatenation of the "demuxed" trajectories. The advantage of the latter choice is that
+you can then perform a block analysis on the resulting trajectory where the number of blocks is exactly equal to the number of replicas.
+These blocks will be independent simulation (with two small exceptions: the paths in replica space are constrained, since when a replica goes up another replica goes down;
+they might be initialized from correlated conformations).
+They are then optimally suited to perform a bootstrap analysis of the error without incurring in underestimation due to correlations between blocks.
+
+There is a small tricky issue here. In particular, when we perform the bootstrap analysis, we are going to pick each block a different number of times.
+Since each block (that is: each "demuxed" trajectory) has been spanning the replica indexes with spending a different time at each replica,
+the bootstrap trajectory will not satisfy anymore the property that it was generated spending the same time in each replica.
+The included wham script allows to use this information as shown in the script below:
+
+\code{.py}
+bias=np.zeros((2001*32,32))
+! demux.pl dir0/md.log
+replica_temp=np.loadtxt("replica_temp.xvg")
+replica_temp=np.int_(replica_temp[:,1:]) # ignore first column (time) and convert to int
+for i in range(32):
+    col=plumed.read_as_pandas("colvar.{}.dat".format(i))
+    bias[:,i]=col["bb.bias"]
+
+# here is the calculation done using the full trajectory
+w0=wham.wham(bias,T=kb*T)
+tr=col.phi
+is_in_B=np.int_(np.logical_and(tr>0,tr<2))
+is_in_A=np.int_(tr<0)
+# here is the resulting ratio in the population of the two minima:
+print(np.average(is_in_B,weights=np.exp(w0["logW"]))/np.average(is_in_A,weights=np.exp(w0["logW"])))
+
+# now we run the bootstrap analysis
+pop=[]
+for i in range(200): # will require some time, you can first play with less than 200 iterations
+    # here we pick the blocks
+    c=np.random.choice(32,32)
+    # here we count how much time was spent in each replica for the resulting trajectory
+    tr_w=np.zeros(32)
+    for k in range(32):
+        tr_w+=np.bincount(replica_temp[:,c[k]],minlength=32)
+    # we then use wham. The traj_weight option can be used to tell to the script
+    # how much time was spent at each replica
+    w=wham.wham(bias.reshape((32,-1,32))[c].reshape((-1,32)),T=kb*T,traj_weight=tr_w)
+    tr=np.array(col.phi).reshape((32,-1))[c].flatten()
+    is_in_B=np.int_(np.logical_and(tr>0,tr<2))
+    is_in_A=np.int_(tr<0)
+    pop.append(np.average(is_in_B,weights=np.exp(w["logW"]))/np.average(is_in_A,weights=np.exp(w["logW"])))
+# and here we print average and standard deviation
+print(np.average(pop),np.std(pop))
+\endcode
+
+Notice that this approach is not really standard, so use it with care.
+There are a few papers in the literature discussing similar ideas, but they usually require estimating the autocorrelation time
+in advance.
 
 \subsection masterclass-21-5-ex-4 Exercise 4: Bias-exchange metadynamics
 
 We will now run a bias-exchange simulation of alanine dipeptide. In bias-exchange simulations,
-each replica biases a different collective variable. Prepare the input file for a simulation with 4 replicas where
+each replica biases a different collective variable. Prepare the input file for a simulation with 3 replicas where
 the following variables are biased:
 - `phi`
 - `psi`
-- The gyration radius of all the atoms of the system
-- The distance between atoms 6 and 8.
+- none of them
 You can use a single input file that looks like this:
 \plumedfile
 # vim:ft=plumed
 MOLINFO STRUCTURE=../reference.pdb
-RANDOM_EXCHANGES # this is needed to not have only exchanged between neighbors
+RANDOM_EXCHANGES # this is needed to allow arbitrary pairs to try exchanges
 phi: TORSION ATOMS=__FILL__
 psi: TORSION ATOMS=__FILL__
-rgyr: __FILL__
-d: __FILL__
 m: METAD ...
-  ARG=@replicas:phi,psi,rgyr,d
+  ARG=@replicas:phi,psi,phi
   SIGMA=@replicas:__FILL__
-  HEIGHT=__FILL__
+  HEIGHT=__FILL__ # make sure that there is no bias on the third replica!
   BIASFACTOR=__FILL__
 ...
 \endplumedfile
 
+Similarly to the \ref masterclass-21-5-ex-1, you will be able to run the replicas separately (without `-replex 200`)
+or coupled (with `-replex 200`).
+
 Now run two separate simulations. In one of them you will propose exchanges between replicas with a pace 200, in the other
 you will not propose any exchange (just omit `-replex 200` from the command line). Combine your trajectories with WHAM
-as you did above. Is the result consistent with your expectation?
+as you did above. Is the result consistent with what you obtained in \ref masterclass-21-5-ex-1?
+
+Notice that the third replica has been simulated without any metadynamics. Compute the relative population of the two
+metastable states directly using the populations in that replica. Is the result the same as when using WHAM with
+all replicas?
 
 \subsection masterclass-21-5-ex-5 Exercise 5: Parallel-tempering metadynamics
 
 TODO: run a parallel-tempering metadynamics with different combinations of variables from \ref masterclass-21-4-ex-5
 
 \subsection masterclass-21-5-ex-6 Exercise 6: Parallel-tempering: pathological cases
-
-TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
-
-\subsection masterclass-21-5-ex-6 Exercise 7: Multiple walkers metadynamics
-
-TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
-
-\subsection masterclass-21-5-ex-6 Exercise 8: Multiple walkers: pathological cases
 
 TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
 
