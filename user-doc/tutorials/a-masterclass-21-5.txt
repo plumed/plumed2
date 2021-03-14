@@ -175,6 +175,16 @@ Is the dependence on initial condition that we have seen in \ref masterclass-21-
 
 \subsection masterclass-21-5-ex-2 Exercise 2: Demuxing your trajectories
 
+Close to the end of one of the `md.log` files produced by your simulation you will find a short report of the accepted
+exchanges. For instance
+\verbatim
+Repl  average probabilities:
+Repl     0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25   26   27   28   29   30   31
+Repl      .30  .32  .29  .24  .21  .17  .16  .21  .31  .27  .28  .26  .23  .21  .16  .08  .11  .23  .28  .27  .31  .32  .31  .36  .34  .25  .18  .01  .21  .28  .26
+\endverbatim
+A result like this one will already warn you that there is a bottleneck between replicas 27 and 28. Anyway, bottlenecks might be not visible in this
+representation. The full path in the replica-index space of the continuous trajectories ("demuxed") is much more informative.
+
 We will now "demux" our trajectories. For these short trajectories we can use the `demux.pl` script provided by GROMACS.
 Notice that for long trajectories and frequent exchanges it could have problems to process correctly the output file
 The script present here: https://github.com/srnas/demux solves the problem.
@@ -271,11 +281,18 @@ in advance.
 \subsection masterclass-21-5-ex-4 Exercise 4: Bias-exchange metadynamics
 
 We will now run a bias-exchange simulation of alanine dipeptide. In bias-exchange simulations,
-each replica biases a different collective variable. Prepare the input file for a simulation with 3 replicas where
+each replica biases a different collective variable. This is very practical way to enhance
+a large number of variables (as many as the replicas that you can affort!). Notice that they will be biased
+one at a time. As a matter of fact only those that are useful in identifying a transition state will help, but
+the other ones will not hurt.
+
+Prepare the input file for a simulation with 3 replicas where
 the following variables are biased:
 - `phi`
 - `psi`
 - none of them
+
+Initialize two of them in structure A (using topolA.tpr) and one of them is structure B (using topolB.tpr).
 You can use a single input file that looks like this:
 \plumedfile
 # vim:ft=plumed
@@ -283,32 +300,94 @@ MOLINFO STRUCTURE=../reference.pdb
 RANDOM_EXCHANGES # this is needed to allow arbitrary pairs to try exchanges
 phi: TORSION ATOMS=__FILL__
 psi: TORSION ATOMS=__FILL__
+# You can use the same parameters that you used in masterclass 21.4
 m: METAD ...
   ARG=@replicas:phi,psi,phi
   SIGMA=@replicas:__FILL__
   HEIGHT=__FILL__ # make sure that there is no bias on the third replica!
   BIASFACTOR=__FILL__
+  PACE=__FILL__
+  GRID_MIN=-pi
+  GRID_MAX=+pi
 ...
 \endplumedfile
 
-Similarly to the \ref masterclass-21-5-ex-1, you will be able to run the replicas separately (without `-replex 200`)
-or coupled (with `-replex 200`).
+Now run two separate simulations for 1000000 steps per replica. In one of them you will propose exchanges between replicas with a pace 200, in the other
+you will not propose any exchange (just omit `-replex 200` from the command line). The next step will be to combine the resulting trajectories
+using WHAM. We can proceed as we did above, but taking into account that when analyzing a metadynamics simulations the way
+to compute the weight is slightly different. As discussed in \ref masterclass-21-4-ex-3, one of the possible manner to obtain
+the weight is to use the final potential computed along the trajectory. This requires a further processing step, that is
+required when doing WHAM. In practice, the only difference with respect to the analysis done in \ref masterclass-21-5-ex-1
+is that here we will have to process our trajectories using a different input file, where `PACE` has been set to a large number
+and `HEIGHT` set to zero. You can then perform WHAM as in \ref masterclass-21-5-ex-1 and compute the population
+of the two metastable states. Now answer the following questions:
+- Is the relative population consisten with what you obtained above?
+- Are the two simulations (with exchanges and without exchanges) consistent with each other?
 
-Now run two separate simulations. In one of them you will propose exchanges between replicas with a pace 200, in the other
-you will not propose any exchange (just omit `-replex 200` from the command line). Combine your trajectories with WHAM
-as you did above. Is the result consistent with what you obtained in \ref masterclass-21-5-ex-1?
-
-Notice that the third replica has been simulated without any metadynamics. Compute the relative population of the two
+Notice that the third replica has been simulated without any metadynamics. This is a so-called neutral replica, that is used sometime
+in bias-exchange simulations. You can compute the relative population of the two
 metastable states directly using the populations in that replica. Is the result the same as when using WHAM with
 all replicas?
 
+What do you expect would happen if you were not biasing phi (that is: one replica biasing psi and one neutral replica)?
+
 \subsection masterclass-21-5-ex-5 Exercise 5: Parallel-tempering metadynamics
 
-TODO: run a parallel-tempering metadynamics with different combinations of variables from \ref masterclass-21-4-ex-5
+We will now learn how to use parallel-tempering metadynamics. In parallel-tempering metadynamics, sampling is enhanced using
+parallel-tempering (which enhances all degrees of freedom), whereas metadynamics is used to enhance the sampling of a small set of CVs
+and, in general, to flatten their histogram. If the parallel-tempering side of the algorithm is sufficient to enhance sampling, it is
+not necessary to use CVs that can really identify the transition state.
 
-\subsection masterclass-21-5-ex-6 Exercise 6: Parallel-tempering: pathological cases
+First we will need to prepare our input files. We will use 4 replicas, with temperatures taken from a geometric distribution
+ranging between 300 and 800K. You should be able to generate the corresponding tpr files using the following script
+\code{.py}
+import re
+T=np.geomspace(300,800,4)
+for i in range(len(T)):
+    with open("top/grompp.mdp") as f:
+        l=f.read()
+    with open("top/grompp{}.mdp".format(i),"w") as f:
+        print(re.sub("300",str(T[i]),l),file=f)
+    subprocess.run("mkdir -p ptmetad_{}".format(i),shell=True)
+    # we will initialize some replica in A and some replica in B
+    if i%2==0:
+        conf="A"
+    else:
+        conf="B"
+    subprocess.run("cd top/; gmx_mpi grompp -f grompp{}.mdp -c conf{}.gro -maxwarn 1 -o ../ptmetad_{}/topol.tpr".format(i,conf,i), shell=True)
+\endcode
+You will then be able to run a parallel tempering simulation with the following command
+\verbatim
+mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multi ptmetad_? -replex 200
+\endverbatim
+In order to add metadynamics, you will have to prepare your plumed input file. Since parallel-tempering metadynamics is designed to cope with
+cases where you do not have a good CV available, we will directly use `psi` rather than `phi`!
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=../reference.pdb
+phi: TORSION ATOMS=__FILL__
+psi: TORSION ATOMS=__FILL__
+# You can use the same parameters that you used in masterclass 21.4
+m: METAD ...
+  ARG=psi
+  SIGMA=__FILL__
+  HEIGHT=__FILL__
+  BIASFACTOR=__FILL__
+  PACE=__FILL__
+  GRID_MIN=-pi
+  GRID_MAX=+pi
+...
+\endplumedfile
 
-TODO: same as \ref masterclass-21-5-ex-5, but using replicas in a narrow temperature range.
+The analysis will be simpler here. We will just analyze the first replica (in `ptmetad_0`) as if it was generated using a simple metadynamics simulation.
+Now compute the usual ratio between the populations of the two metastable minima and answer the following questions:
+- Is the result compatible with what you obtained using umbrella sampling?
+- Was biasing psi useful in this case?
+
+\subsection masterclass-21-5-ex-6 Exercise 6: Parallel-tempering: pathological case
+
+Repeat exercise \ref masterclass-21-5-ex-5, but now place your replicas in the range between 300 and 310.
+- Is the population of the two states compatible with what you obtained using umbrella sampling? Why?
 
 */
 
