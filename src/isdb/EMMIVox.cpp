@@ -167,8 +167,6 @@ private:
   double   ns_cutoff_;
   bool first_time_;
   vector<unsigned> nl_;
-  vector<unsigned> nl_id_;
-  vector<unsigned> nl_im_;
   vector<unsigned> ns_;
   vector<Vector> refpos_;
   vector<Vector> pos_;
@@ -1284,27 +1282,14 @@ void EMMIVOX::update_neighbor_list()
   const unsigned nl_size = nl_.size();
   // now resize derivatives
   ovmd_der_.resize(nl_size);
-  // built data and model neighbor lists
-  nl_id_.resize(nl_size); nl_im_.resize(nl_size);
-  // built in parallel
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<nl_size; ++i) {
-    // get data (id) and atom (im) indexes
-    const unsigned id = nl_[i] / GMM_m_size;
-    const unsigned im = nl_[i] % GMM_m_size;
-    // put into nl_id_ and nl_im_
-    nl_id_[i] = id;
-    nl_im_[i] = im;
-  }
   // in case of B-factors sampling
   if(dbfact_>0) {
     // now cycle over the neighbor list to creat a list of voxels per atom
     GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
     GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
-    unsigned id, im;
     for(unsigned i=0; i<nl_size; ++i) {
-      id = nl_id_[i];
-      im = nl_im_[i];
+      unsigned id = nl_[i] / GMM_m_size;
+      unsigned im = nl_[i] % GMM_m_size;
       GMM_m_nb_[im].push_back(id);
       GMM_d_nb_[id].push_back(im);
     }
@@ -1349,6 +1334,9 @@ void EMMIVOX::prepare()
 // calculate fm+score on cpu
 void EMMIVOX::calculate_cpu() {
 
+  // number of atoms
+  const unsigned GMM_m_size = GMM_m_type_.size();
+
   // clear overlap vector
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
 
@@ -1361,8 +1349,8 @@ void EMMIVOX::calculate_cpu() {
     #pragma omp for
     for(unsigned i=0; i<nl_.size(); ++i) {
       // get data (id) and atom (im) indexes
-      id = nl_id_[i];
-      im = nl_im_[i];
+      id = nl_[i] / GMM_m_size;
+      im = nl_[i] % GMM_m_size;
       // add overlap with im component of model GMM
       v_[id] += get_overlap_der(GMM_d_m_[id],pos_[im],pref_[im],invs2_[im],ovmd_der_[i]);
     }
@@ -1400,8 +1388,8 @@ void EMMIVOX::calculate_cpu() {
     #pragma omp for reduction (sumTensor : virial_)
     for(unsigned i=0; i<nl_.size(); ++i) {
       // get indexes of data and model component
-      id = nl_[i] / GMM_m_type_.size();
-      im = nl_[i] % GMM_m_type_.size();
+      id = nl_[i] / GMM_m_size;
+      im = nl_[i] % GMM_m_size;
       // chain rule + replica normalization
       tot_der = GMMid_der_[id] * ovmd_der_[i] * scale_;
       // increment atom derivatives

@@ -35,8 +35,8 @@ extern "C" {
 #endif
 
 /* Workaround a lack of optimization in gcc */
-float exp_cst1_f = 2139095040.f;
-float exp_cst2_f = 0.f;
+inline float exp_cst1_f = 2139095040.f;
+inline float exp_cst2_f = 0.f;
 
 /* Relative error bounded by 1e-5 for normalized outputs
    Returns invalid outputs for nan inputs
@@ -67,8 +67,8 @@ inline float expapprox(float val) {
 
 /* Same code with better precision, less performance and using double */
 
-double exp_cst1_d = 9218868437227405312.;
-double exp_cst2_d = 0.;
+inline double exp_cst1_d = 9218868437227405312.;
+inline double exp_cst2_d = 0.;
 
 /* Relative error bounded by 3e-9 for normalized outputs
    Returns invalid outputs for nan inputs
