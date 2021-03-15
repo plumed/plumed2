@@ -418,6 +418,9 @@ MOLINFO STRUCTURE=../reference.pdb
 phi: TORSION ATOMS=__FILL__
 psi: TORSION ATOMS=__FILL__
 # You can use the same parameters that you used in masterclass 21.4
+# However, it is recommended to scale HEIGHT with temperature.
+# You can do it either using replicas: syntax in HEIGHT or specifying TAU
+# instead of HEIGHT
 m: METAD ...
   ARG=psi
   SIGMA=__FILL__
