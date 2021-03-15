@@ -27,7 +27,7 @@
 #include "core/ActionSet.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
-#include <iostream> 
+#include <iostream>
 #include <string>
 #include <cmath>
 #include <map>
@@ -208,7 +208,7 @@ private:
   string       ovfilename_;
   // gpu stuff
   bool gpu_;
-  int  deviceid_; 
+  int  deviceid_;
 #ifdef __PLUMED_HAS_ARRAYFIRE
   // gpu stuff
   vector<float> pos_gpu_;
@@ -268,7 +268,7 @@ private:
 // update the neighbor sphere
   void update_neighbor_sphere();
   bool do_neighbor_sphere();
-// calculate on cpu/gpu 
+// calculate on cpu/gpu
   void calculate_cpu();
   void calculate_gpu();
 // calculate correlation
@@ -545,13 +545,13 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     sigma_min_.push_back(sqrt(err_m*err_m+sigma_min*ovdd_m*sigma_min*ovdd_m));
   }
   // populate ismin: cycle on all ovdd
-  for(unsigned id=0; id<GMM_d_beta_.size(); ++id){
-     // id of the group
-     unsigned ig = GMM_d_beta_[id];
-     // and to ismin_
-     ismin_.push_back(1.0 / sigma_min_[ig]);
+  for(unsigned id=0; id<GMM_d_beta_.size(); ++id) {
+    // id of the group
+    unsigned ig = GMM_d_beta_[id];
+    // and to ismin_
+    ismin_.push_back(1.0 / sigma_min_[ig]);
   }
- 
+
   // prepare gpu stuff
   if(gpu_) prepare_gpu();
 
@@ -601,26 +601,26 @@ void EMMIVOX::prepare_gpu()
   sqrt2_pi  = static_cast<float>(sqrt2_pi_);
   // 2) create float version of ismin_
   vector<float> ismin_f;
-  for(unsigned i=0; i<ismin_.size(); ++i){
-     ismin_f.push_back(static_cast<float>(ismin_[i]));
+  for(unsigned i=0; i<ismin_.size(); ++i) {
+    ismin_f.push_back(static_cast<float>(ismin_[i]));
   }
   // create arrayfire [GMM_d_size, 1]
   ismin_gpu = af::array(ismin_f.size(), &ismin_f.front());
   // 3) create float version of ovdd_
   vector<float> ovdd_f;
-  for(unsigned i=0; i<ovdd_.size(); ++i){
-     ovdd_f.push_back(static_cast<float>(ovdd_[i]));
+  for(unsigned i=0; i<ovdd_.size(); ++i) {
+    ovdd_f.push_back(static_cast<float>(ovdd_[i]));
   }
   // create arrayfire [GMM_d_size, 1]
   ovdd_gpu = af::array(ovdd_f.size(), &ovdd_f.front());
   // 4) store GMM_d_m_ as flattened vector of floats
   const unsigned GMM_d_size = GMM_d_m_.size();
   vector<float> GMM_d_m_gpu_(3*GMM_d_size);
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0; i<GMM_d_size; ++i){
-     GMM_d_m_gpu_[i]              = static_cast<float>(GMM_d_m_[i][0]); 
-     GMM_d_m_gpu_[GMM_d_size+i]   = static_cast<float>(GMM_d_m_[i][1]);
-     GMM_d_m_gpu_[2*GMM_d_size+i] = static_cast<float>(GMM_d_m_[i][2]);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<GMM_d_size; ++i) {
+    GMM_d_m_gpu_[i]              = static_cast<float>(GMM_d_m_[i][0]);
+    GMM_d_m_gpu_[GMM_d_size+i]   = static_cast<float>(GMM_d_m_[i][1]);
+    GMM_d_m_gpu_[2*GMM_d_size+i] = static_cast<float>(GMM_d_m_[i][2]);
   }
   // create array [GMM_d_size, 3]
   GMM_d_m_gpu = af::array(GMM_d_size, 3, &GMM_d_m_gpu_.front());
@@ -682,7 +682,7 @@ void EMMIVOX::read_status()
       ifile->scanField("scale", scale_);
       ifile->scanField("offset", offset_);
       // read bfactors
-      if(dbfact_>0){
+      if(dbfact_>0) {
         for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
           // convert i to string
           std::string num; Tools::convert(i,num);
@@ -717,7 +717,7 @@ void EMMIVOX::print_status(long int step)
   statusfile_.printField("scale", scale_);
   statusfile_.printField("offset", offset_);
   // write bfactors only if doing fitting
-  if(dbfact_>0){
+  if(dbfact_>0) {
     for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
       // convert i to string
       std::string num; Tools::convert(i,num);
@@ -784,7 +784,7 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
   // list of weights - one per atom
   vector<double> GMM_m_w;
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this); 
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
   // B is in Angstrom squared
@@ -812,7 +812,7 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
 
   // check if MOLINFO line is present
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n"; 
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       // get atom name
       string name = moldat->getAtomName(atoms[i]);
@@ -954,7 +954,7 @@ void EMMIVOX::get_auxiliary_vectors()
       invs2_[im]= invs2;
     }
   }
-  if(gpu_) push_auxiliary_gpu(); 
+  if(gpu_) push_auxiliary_gpu();
 }
 
 void EMMIVOX::push_auxiliary_gpu()
@@ -964,11 +964,11 @@ void EMMIVOX::push_auxiliary_gpu()
   const unsigned GMM_m_size = GMM_m_res_.size();
   vector<float> pref(5*GMM_m_size);
   vector<float> invs2(5*GMM_m_size);
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0; i<GMM_m_size; ++i){
-    for(unsigned j=0; j<5; ++j){
-       pref[GMM_m_size*j+i]  = static_cast<float>(pref_[i][j]);
-       invs2[GMM_m_size*j+i] = static_cast<float>(invs2_[i][j]);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<GMM_m_size; ++i) {
+    for(unsigned j=0; j<5; ++j) {
+      pref[GMM_m_size*j+i]  = static_cast<float>(pref_[i][j]);
+      invs2[GMM_m_size*j+i] = static_cast<float>(invs2_[i][j]);
     }
   }
   // 2) initialize gpu arrays [GMM_m_size, 5]
@@ -1155,12 +1155,12 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
 {
   // initialize stuff
   double ov_tot = 0.0;
-  // derivative accumulator 
+  // derivative accumulator
   double ov_der_p = 0.0;
   // calculate vector difference with/without pbc
   Vector md = delta(m_m, d_m);
-  // norm squared 
-  double md2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2]; 
+  // norm squared
+  double md2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
   // cycle on 5 Gaussians
   for(unsigned j=0; j<5; ++j) {
     // calculate exponent
@@ -1257,7 +1257,7 @@ void EMMIVOX::update_neighbor_list()
   // dimension of atom vectors
   const unsigned GMM_m_size = GMM_m_type_.size();
 
-  // clear old neighbor list 
+  // clear old neighbor list
   nl_.clear();
 
   // cycle on neighbour sphere - in parallel
@@ -1288,13 +1288,13 @@ void EMMIVOX::update_neighbor_list()
   nl_id_.resize(nl_size); nl_im_.resize(nl_size);
   // built in parallel
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<nl_size; ++i){
-     // get data (id) and atom (im) indexes
-     const unsigned id = nl_[i] / GMM_m_size;
-     const unsigned im = nl_[i] % GMM_m_size;
-     // put into nl_id_ and nl_im_ 
-     nl_id_[i] = id;
-     nl_im_[i] = im;
+  for(unsigned i=0; i<nl_size; ++i) {
+    // get data (id) and atom (im) indexes
+    const unsigned id = nl_[i] / GMM_m_size;
+    const unsigned im = nl_[i] % GMM_m_size;
+    // put into nl_id_ and nl_im_
+    nl_id_[i] = id;
+    nl_im_[i] = im;
   }
   // in case of B-factors sampling
   if(dbfact_>0) {
@@ -1324,7 +1324,7 @@ void EMMIVOX::update_gpu()
   // build nl_id and nl_im arrays on the GPU
   id_gpu = nl_gpu / GMM_m_size;
   im_gpu = nl_gpu % GMM_m_size;
-  // now we need to create pref_gpu_nl [nl_size, 5] 
+  // now we need to create pref_gpu_nl [nl_size, 5]
   pref_gpu_nl = pref_gpu(im_gpu, af::span);
   // and invs2_gpu_nl [nl_size, 5]
   invs2_gpu_nl = invs2_gpu(im_gpu, af::span);
@@ -1333,7 +1333,7 @@ void EMMIVOX::update_gpu()
   // finding sorting arrays
   af::array d_sort;
   af::seq s(nl_size);
-  af::array s_arr = s; 
+  af::array s_arr = s;
   // this will be used for overlap derivatives
   af::sort(ov_k_keys, ov_k_sort, id_gpu, s_arr);
   // this will be used for final derivatives
@@ -1372,9 +1372,9 @@ void EMMIVOX::calculate_cpu() {
 
   // average overlap across replicas
   if(!no_aver_ && nrep_>1) {
-     double escale = 1.0 / static_cast<double>(nrep_);
-     multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+    double escale = 1.0 / static_cast<double>(nrep_);
+    multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
   }
 
   // calculate total energy and get derivatives
@@ -1429,14 +1429,14 @@ void EMMIVOX::calculate_gpu()
   // fill positions in in parallel
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<GMM_m_size; ++i) {
-      // fill vectors
-      pos_gpu_[i]              = static_cast<float>(pos_[i][0]);
-      pos_gpu_[GMM_m_size+i]   = static_cast<float>(pos_[i][1]);
-      pos_gpu_[2*GMM_m_size+i] = static_cast<float>(pos_[i][2]);
+    // fill vectors
+    pos_gpu_[i]              = static_cast<float>(pos_[i][0]);
+    pos_gpu_[GMM_m_size+i]   = static_cast<float>(pos_[i][1]);
+    pos_gpu_[2*GMM_m_size+i] = static_cast<float>(pos_[i][2]);
   }
   // load positions into pos_gpu [GMM_m_size, 3]
   af::array pos_gpu = af::array(GMM_m_size, 3, &pos_gpu_.front());
-  // create pos_gpu_nl [nl_size, 3] 
+  // create pos_gpu_nl [nl_size, 3]
   af::array pos_gpu_nl = pos_gpu(im_gpu, af::span);
   // calculate vector difference [nl_size, 3]
   af::array md = GMM_d_m_gpu_nl-pos_gpu_nl;
@@ -1455,7 +1455,7 @@ void EMMIVOX::calculate_gpu()
   // final derivative calculation [nl_size, 3]
   ov_der_nl = af::tile(ov_der_nl, 1, 3) * md;
   // now we have to sum up contributions from the same atom
-  // sort by data id 
+  // sort by data id
   af::array ov_sort = ov(ov_k_sort);
   // sum equal keys (it works only if adjacent, that's why we sort before)
   af::array ov_k_sum, ov_sum;
@@ -1477,7 +1477,7 @@ void EMMIVOX::calculate_gpu()
   }
 
   // calculate score
-  // calculate deviation model/data [GMM_d_size, 1] 
+  // calculate deviation model/data [GMM_d_size, 1]
   af::array dev   = scale * ovmd_gpu + offset - ovdd_gpu;
   // check zero deviation and replace
   af::replace(dev,!(af::iszero(dev)),0.0000001);
@@ -1498,14 +1498,14 @@ void EMMIVOX::calculate_gpu()
   // now we have to sum contributions for each atom
   // first, reshuffle der_gpu to sort by atom id [nl_size, 3]
   af::array der_gpu_s = der_gpu(d_k_sort, af::span);
-  //  then sum contributions for atom id 
+  //  then sum contributions for atom id
   af::array d_k_sum, d_sum;
   af::sumByKey(d_k_sum, d_sum, d_k_keys, der_gpu_s, 0);
   // prepare final derivative vector [GMM_m_size, 3]
   af::array at_der = af::constant(0.0, GMM_m_size, 3);
   // and assign at the right places
   at_der(d_k_sum, af::span) = d_sum(af::span, af::span);
- 
+
   // FINAL STUFF
   //
   // 1) communicate total energy
@@ -1520,8 +1520,8 @@ void EMMIVOX::calculate_gpu()
   at_der.host(&der_gpu_.front());
   // convert to double vectors
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<GMM_m_size; ++i){
-      atom_der_[i] = Vector(static_cast<double>(der_gpu_[i]),static_cast<double>(der_gpu_[GMM_m_size+i]),static_cast<double>(der_gpu_[2*GMM_m_size+i]));
+  for(unsigned i=0; i<GMM_m_size; ++i) {
+    atom_der_[i] = Vector(static_cast<double>(der_gpu_[i]),static_cast<double>(der_gpu_[GMM_m_size+i]),static_cast<double>(der_gpu_[2*GMM_m_size+i]));
   }
   //
   // 3) calculate virial
@@ -1530,8 +1530,8 @@ void EMMIVOX::calculate_gpu()
   #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction (sumTensor : virial_)
-  for(unsigned i=0; i<GMM_m_size; ++i){
-     virial_ += Tensor(pos_[i], -atom_der_[i]);
+  for(unsigned i=0; i<GMM_m_size; ++i) {
+    virial_ += Tensor(pos_[i], -atom_der_[i]);
   }
   //
   // 4) communicate overlaps
@@ -1539,16 +1539,16 @@ void EMMIVOX::calculate_gpu()
   long int step = getStep();
   bool do_comm = false;
   if(ovstride_>0 && step%ovstride_==0)  do_comm = true;
-  if(dscale_>0   && step%MCSstride_==0) do_comm = true; 
+  if(dscale_>0   && step%MCSstride_==0) do_comm = true;
   if(dbfact_>0   && step%MCBstride_==0) do_comm = true;
   if(do_corr_) do_comm = true;
-  if(do_comm){
+  if(do_comm) {
     // communicate
     ovmd_gpu.host(&ovmd_gpu_.front());
     // convert overlaps to double
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned i=0; i<ovmd_.size(); ++i){
-       ovmd_[i] = static_cast<double>(ovmd_gpu_[i]);
+    for(unsigned i=0; i<ovmd_.size(); ++i) {
+      ovmd_[i] = static_cast<double>(ovmd_gpu_[i]);
     }
   }
 #endif
@@ -1587,7 +1587,7 @@ void EMMIVOX::calculate()
   getPntrToComponent("scale")->set(scale_);
   getPntrToComponent("offset")->set(offset_);
   // calculate correlation coefficient
-  if(do_corr_){
+  if(do_corr_) {
     double cc = calculate_corr();
     getPntrToComponent("corr")->set(cc);
   }
@@ -1623,26 +1623,26 @@ void EMMIVOX::calculate()
 
 double EMMIVOX::calculate_corr()
 {
- // number of data points
- double nd = static_cast<double>(ovdd_.size());
- // average ovmd_ and ovdd_
- double ave_md = std::accumulate(ovmd_.begin(), ovmd_.end(), 0.) / nd;
- double ave_dd = std::accumulate(ovdd_.begin(), ovdd_.end(), 0.) / nd;
- // calculate corr
- double num = 0.;
- double den1 = 0.;
- double den2 = 0.;
- #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : num, den1, den2)
- for(unsigned i=0; i<ovdd_.size(); ++i){
+// number of data points
+  double nd = static_cast<double>(ovdd_.size());
+// average ovmd_ and ovdd_
+  double ave_md = std::accumulate(ovmd_.begin(), ovmd_.end(), 0.) / nd;
+  double ave_dd = std::accumulate(ovdd_.begin(), ovdd_.end(), 0.) / nd;
+// calculate corr
+  double num = 0.;
+  double den1 = 0.;
+  double den2 = 0.;
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : num, den1, den2)
+  for(unsigned i=0; i<ovdd_.size(); ++i) {
     double md = ovmd_[i]-ave_md;
     double dd = ovdd_[i]-ave_dd;
     num  += md*dd;
     den1 += md*md;
     den2 += dd*dd;
- }
- // correlation coefficient between ovmd_ and ovdd_
- double cc = num / sqrt(den1*den2);
- return cc;
+  }
+// correlation coefficient between ovmd_ and ovdd_
+  double cc = num / sqrt(den1*den2);
+  return cc;
 }
 
 double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &GMMid_der)
@@ -1650,17 +1650,17 @@ double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &
   double ene = 0.0;
   // cycle on all the overlaps
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : ene)
-  for(unsigned id=0; id<ovdd_.size(); ++id){
-       // get ismin
-       double ismin = ismin_[id];
-       // calculate deviation
-       double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
-       // calculate errf
-       double errf = erf ( dev * inv_sqrt2_ * ismin );
-       // add to  energy
-       ene += -kbt_ * std::log( 0.5 / dev * errf );
-       // store derivative for later
-       GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev*ismin*ismin)*ismin+kbt_/dev;
+  for(unsigned id=0; id<ovdd_.size(); ++id) {
+    // get ismin
+    double ismin = ismin_[id];
+    // calculate deviation
+    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
+    // calculate errf
+    double errf = erf ( dev * inv_sqrt2_ * ismin );
+    // add to  energy
+    ene += -kbt_ * std::log( 0.5 / dev * errf );
+    // store derivative for later
+    GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev*ismin*ismin)*ismin+kbt_/dev;
   }
   // return total energy
   return ene;
@@ -1671,15 +1671,15 @@ double EMMIVOX::calculate_Marginal(double scale, double offset)
   double ene = 0.0;
   // cycle on all the overlaps
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : ene)
-  for(unsigned id=0; id<ovdd_.size(); ++id){
-       // get ismin
-       double ismin = ismin_[id];
-       // calculate deviation
-       double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
-       // calculate errf
-       double errf = erf ( dev * inv_sqrt2_ * ismin );
-       // add to  energy
-       ene += -kbt_ * std::log( 0.5 / dev * errf );
+  for(unsigned id=0; id<ovdd_.size(); ++id) {
+    // get ismin
+    double ismin = ismin_[id];
+    // calculate deviation
+    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
+    // calculate errf
+    double errf = erf ( dev * inv_sqrt2_ * ismin );
+    // add to  energy
+    ene += -kbt_ * std::log( 0.5 / dev * errf );
   }
   // return total energy
   return ene;
