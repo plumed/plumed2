@@ -123,6 +123,10 @@ To run the PLUMED driver processing a trajectory with multiple processes you wil
 mpiexec -np 16 --oversubscribe plumed driver -multi 16 -plumed plumed.dat --ixtc traj.xtc
 ```
 
+If you have random crashes on MacOS, try to set this environemnt variable:
+\verbatim
+export OMPI_MCA_btl="self,tcp"
+\endverbatim
 
 \subsection masterclass-21-5-ex-1 Exercise 1: Multiple-windows umbrella sampling with replica exchange
 
@@ -160,8 +164,8 @@ as in \ref masterclass-21-3-ex-6. Please run the following four simulations:
 For the four simulations, perform a WHAM analysis to compute the weights of each frame, and then compute
 the relative stability of the two minima (as in \ref masterclass-21-3-ex-5).
 To compute weights you need to do the following steps:
-1. Concatenate the trajectories (`gmx_mpi trjcat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
-2. Run plumed driver on the concatenated trajectory (`mpiexec -np 32 --oversubscribe plumed driver --ixtc traj_multi.xtc --plumed plumed.dat -multi 32 --trajectory-stride 100`).
+1. Concatenate the trajectories (`gmx_mpi trjcat -cat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
+2. Run plumed driver on the concatenated trajectory (`mpiexec -np 32 --oversubscribe plumed driver --ixtc traj_multi.xtc --plumed plumed.dat --multi 32 --trajectory-stride 100`).
 3. Read the resulting trajectories, perform WHAM, and compute relative population of the two states adapting this script:
 \verbatim
 import wham
@@ -171,6 +175,8 @@ col=[]
 for i in range(32):
     col.append(plumed.read_as_pandas("colvar_multi." + str(i)+".dat"))
 bias=np.zeros((len(col[0]["bb.bias"]),32))
+for i in range(32):
+        bias[:,i]=traj[i]["bb.bias"]
 w=wham.wham(bias,T=kBT)
 tr=col[0].phi
 is_in_B=np.int_(np.logical_and(tr>0,tr<2))
@@ -226,7 +232,7 @@ Notice that each row of the `replica_temp.xvg` file contains a permutation. The 
 this permutation.  The `replica_index.xvg` can be used to generate the "demuxed" (continuous) trajectories with the following command:
 \verbatim
 import subprocess
-subprocess.run("gmx_mpi trjcat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -demux replica_index.xvg -o " + ''.join([" "+str(i)+"_trajout.xtc" for i in range(32)]),shell=True)
+subprocess.run("gmx_mpi trjcat -cat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -demux replica_index.xvg -o " + ''.join([" "+str(i)+"_trajout.xtc" for i in range(32)]),shell=True)
 \endverbatim
 
 The resulting trajectories can be visualized or analyzed as usual and, at variance with the original trajectories, will have no jump or discontinuity
