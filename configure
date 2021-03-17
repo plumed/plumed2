@@ -709,6 +709,7 @@ enable_doc
 enable_pdfdoc
 enable_debug
 enable_gcov
+enable_cxx
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
@@ -1390,6 +1391,9 @@ Optional Features:
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-gcov           enable gcov to estimate code coverage, default: no
+  --enable-cxx            11 or 14. To link libraries with headers that need
+                          this C++ level. Use --enable-cxx=none to remove
+                          -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
@@ -2604,6 +2608,25 @@ else
 
 fi
 
+
+# Check whether --enable-cxx was given.
+if test "${enable_cxx+set}" = set; then :
+  enableval=$enable_cxx;
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) as_fn_error $? "cxx level not supported" "$LINENO" 5
+    esac
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Selected C++ level: $cxx_level" >&5
+$as_echo "$as_me: Selected C++ level: $cxx_level" >&6;}
+
+else
+
+    cxx_level="11"
+
+
+fi
 
 
 basic_warnings=
@@ -4615,11 +4638,15 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test -n "$cxx_level"
+then
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++11"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
