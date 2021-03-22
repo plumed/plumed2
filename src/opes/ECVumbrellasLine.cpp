@@ -130,13 +130,31 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     length+=std::pow(max_cv[j]-min_cv[j],2);
   length=std::sqrt(length);
-  const unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
+  unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
   centers_.resize(getNumberOfArguments()); //centers_[cv][umbrellas]
+  unsigned full_period=0;
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     centers_[j].resize(sizeUmbrellas);
     for(unsigned k=0; k<sizeUmbrellas; k++)
       centers_[j][k]=min_cv[j]+k*(max_cv[j]-min_cv[j])/(sizeUmbrellas-1);
+    if(getPntrToArgument(j)->isPeriodic())
+    {
+      double min,max;
+      std::string min_str,max_str;
+      getPntrToArgument(j)->getDomain(min,max);
+      getPntrToArgument(j)->getDomain(min_str,max_str);
+      plumed_massert(min_cv[j]>=min,"ARG "+std::to_string(j)+": MIN_CV cannot be smaller than the periodic bound "+min_str);
+      plumed_massert(max_cv[j]<=max,"ARG "+std::to_string(j)+": MAX_CV cannot be greater than the periodic bound "+max_str);
+      if(min_cv[j]==min && max_cv[j]==max)
+        full_period++;
+    }
+  }
+  if(full_period==getNumberOfArguments() && sizeUmbrellas>1) //first and last are the same point
+  {
+    sizeUmbrellas--;
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+      centers_[j].pop_back();
   }
 
   checkRead();
