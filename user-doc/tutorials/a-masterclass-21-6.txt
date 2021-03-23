@@ -6,7 +6,7 @@
 
 \section masterclass-21-6-aims Aims
 
-The primary aim of this Masterclass is to show you how you might use PLUMED for your own work.
+The primary aim of this Masterclass is to show you how you might use PLUMED in your work.
 We will see how to call PLUMED from a python notebook and discuss some strategies for selecting
 collective variables.
 
@@ -15,7 +15,7 @@ collective variables.
 Once this Masterclass is completed, users will be able to:
 
 - Calculate CVs and import them into a python notebook.
-- Generate visualisations of data using chemiscope
+- Generate visualizations of data using chemiscope
 - Use the projection of a vector as a CV.
 - Use path collective variables.
 - Run dimensionality reduction algorithms with PLUMED
@@ -23,7 +23,7 @@ Once this Masterclass is completed, users will be able to:
 
 \section masterclass-21-6-theory Acknowledgements
 
-Throughout this exercise we use the atomistic simulation environment:
+Throughout this exercise, we use the atomistic simulation environment:
 
 https://wiki.fysik.dtu.dk/ase/
 
@@ -35,7 +35,7 @@ Please look at the websites for these codes that are given above for more inform
 
 \section masterclass-21-6-install Setting up the software 
 
-For this masterclass you will need to set up the plumed and gromacs as you did for \ref masterclass-21-5.  You thus install plumed and gromacs using:
+For this Masterclass, you will need to set up the plumed and gromacs as you did for \ref masterclass-21-5.  You thus install plumed and gromacs using:
 
 \verbatim
 conda install --strict-channel-priority -c plumed/label/masterclass-mpi -c conda-forge plumed
@@ -45,10 +45,10 @@ conda install --strict-channel-priority -c plumed/label/masterclass-mpi -c conda
 You can install the other software you need using:
 
 \verbatim
-conda install -c conda-forge py-plumed numpy pandas matplotlib notebook mdtraj mdanalysis git ase
+conda install -c conda-forge py-plumed Numpy pandas matplotlib notebook mdtraj mdanalysis git ase
 \endverbatim
 
-Notice that you need a package called ase (the atomic simulation environment) for these exercises as well as the other packaged you have been using.
+Notice that you need a package called ase (the atomic simulation environment) for these exercises and the other packages you have been using.
 You also need to install chemiscope, which you can do by using the following command:
 
 \verbatim
@@ -57,23 +57,23 @@ pip install chemiscope
 
 \section masterclass-21-6-resources Resources
 
-The data needed to complete the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-6).
+The data needed to complete this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-6).
 You can clone this repository locally on your machine using the following command:
 
 \verbatim
 git clone https://github.com/plumed/masterclass-21-6.git
 \endverbatim
 
-To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-6`.
+I recommend that you run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-6`. Organizing your data this way will help you to keep things clean.
 
-\note All the exercises have been tested with PLUMED version 2.7.0 .
+\note All the exercises have been tested with PLUMED version 2.7.0.
 
 \section masterclass-21-6-ex Exercises
 
 \subsection masterclass-21-6-ex-1 Exercise 1: Running PLUMED from a python notebook
 
-I like working with Python notebooks.  Using notebooks allows me to keep the codes that I am working close to the explanations of how these codes work.
-I can also make all my figures within a notebook.  By using notebooks I can thus have a single file that contains:
+I like working with Python notebooks.  Using notebooks allows me to keep the codes that I am working on close to the explanations of how these codes work.
+I can also make all my figures within a notebook.  By using notebooks, I can thus have a single file that contains:
 
 - Discussion of the work done.
 - The analysis code.
@@ -87,9 +87,9 @@ In previous masterclasses we have run plumed driver through bash from within a n
 data = np.loadtxt("../Exercises/Exercise_1/colvar")
 \endcode
 
-We have then read in the colvar file produced and analysed it from within the notebook.  We can avoid using plumed driver and can call 
-plumed directly from python by making use of the python interface.  The code below, for instance, generates the plot underneath the 
-code.  The code reads in the trajectory from the file traj.pdb that you obtained from the GitHub respository.  The plot then shows how 
+We have then read in the colvar file produced and analyzed it from within the notebook.  We can avoid using plumed driver and can call 
+plumed directly from python using the python interface.  The code below, for instance, generates the plot underneath the 
+code.  The code reads in the trajectory from the file traj.pdb that you obtained from the GitHub repository.  The plot then shows how 
 the \f$\phi\f$ angle on the second residue of the protein changes with time.     
  
 \code{.py}
@@ -157,26 +157,26 @@ plt.show()
 \image html masterclass-21-6-phi-time.png "The value of the phi angle as a function of time."
 
 <b>Your task in this first exercise is to modify the code above and to produce a figure similar to the one shown below.</b>  This figure 
-shows all the values the \f$\phi\f$ and \f$\psi\f$ angles in the second residue of the protein took during the simulation.
+shows all the values of the \f$\phi\f$ and \f$\psi\f$ angles in the second residue of the protein during the simulation.
 
 \anchor masterclass-21-6-phi-psi
 \image html masterclass-21-6-phi-psi.png "A plot showing phi against psi for the second residue of the protein."
 
 \subsection masterclass-21-6-ex-2 Exercise 2: Generating a chemiscope representation
 
-Plots showing the trajectory in CV space similar to the one that you generated at the end of the previous exercise are useful.  What would be more 
-useful, however, was if we had some way of understanding the relationship between the positions in CV space and the structures of the various atoms.
+Plots showing the trajectory in CV space similar to those you generated at the end of the previous exercise are helpful.  What would be more 
+useful, however, is some way of understanding the relationship between the positions in CV space and the structures of the various atoms.
 In other words, what we would like is something like this:
 
 \anchor masterclass-21-6-chemiscope
 \image html masterclass-21-6-chemiscope.png "A representation of the time against phi plot from the previous exercise that was generated using chemiscope."
 
-The figure above allows one to see the frame in the trjactory that each point in the plot corresponds to.  The snapshots on the right correspond to the structures the system
+You can see the frame in the trajectory that each point in the plot corresponds to from the above figure.  The snapshots on the right correspond to the structures the system
 had at the points highlighted in red, yellow, green and blue respectively in the plot on the left.  
 
 The figure above was generated using chemiscope.  
 This server allows you to generate and interact with plots like the one shown above.  <b> Your task in this exercise is to generate your own chemiscope representation
-of the data in traj.pdb. </b>  To create a chemiscope representation of the \f$\phi\f$ angles that we generated using the first python script from the previous exercise you would 
+of the data in traj.pdb. </b>  To create a chemiscope representation of the \f$\phi\f$ angles that we generated using the first python script from the previous exercise, you would 
 add the following python code:
 
 \code{.py}
@@ -184,9 +184,9 @@ from ase.data import atomic_masses
 from chemiscope import write_input
 
 # This ensures that the atomic masses are used in place of the symbols
-# when constructing the chemiscope respresentations of the atomic configurations.
+# when constructing the atomic configurations' chemiscope representations.
 # Using the symbols will not work because ase is written by chemists and not 
-# biologists.  For a chemist HG1 is mercury as opposed to the first hydrogen
+# biologists.  For a chemist, HG1 is mercury as opposed to the first hydrogen
 # on a guanine residue.  
 for frame in traj:
     frame.numbers = np.array(
@@ -214,24 +214,24 @@ properties = {
 write_input("torsion_chemiscope.json.gz", frames=traj, properties=properties )
 \endcode
 
-You would then upload the torsion_chemiscope.json.gz file that is generated by this script at https://chemiscope.org
+You would then upload the torsion_chemiscope.json.gz file that is generated by this script at https://chemiscope.org.
 
-<b> See if you can generate your own chemiscope reprensetation of the data in traj.pdb.</b> I would recommend calculating and uploading a chemiscope representation of all the torsional angles in the protein.  
-At the very least you need to do at least two backbone torsional angles.  If you do more than 2 torsions, however, you can generate a plot like the one shown below.
+<b> See if you can generate your own chemiscope representation of the data in traj.pdb.</b> I would recommend calculating and uploading a chemiscope representation of all the protein's torsional angles.  
+At the very least, you need to do at least two backbone torsional angles.  However, if you do more than two torsions, you can generate a plot like the one shown below.
 
 \anchor masterclass-21-6-chemiscope2
-\image html masterclass-21-6-chemiscope2.png "A representation of the trajectory that was generated using chemiscope.  Here psi_2 is plotted on the x axis phi_2 is plotted on the y axies and phi_3 is plotted on the z axis.  The points are coloured in accordance with the value of psi_3 and the sizes of the points are proporitional to phi_4."
+\image html masterclass-21-6-chemiscope2.png "A representation of the trajectory that was generated using chemiscope.  Here psi_2 is plotted on the x-axis, phi_2 is plotted on the y-axis, and phi_3 is plotted on the z-axis.  The points are coloured following the value of psi_3, and the points' sizes are proportional to phi_4."
 
 \subsection masterclass-21-6-ex-3 Exercise 3: Dimensionality reduction
 
-Chemiscope comes into its own when you are working with machine learning algorithm.  These algorithms can (in theory) learn the collective variables you need to use from the trajectory data.
-To make sense of the coordinates that have been learned you have to carefully visualise where structures are projected in the low dimensional space.  You can use chemiscope to complete this 
-process of visualising the representation the computer has found for you.  In this next set of exercises we are thus going to apply various dimensionality reduction algorthms to the data 
-contained in the file traj.pdb.  If you visualise the contents of that file using VMD you will see that this file contains a trajectory for a short protein.  You are perhaps unsure what 
-CV to use to analyse this data and thus want to see if you can shed any light on the contents of the trajectory by using machine learning.
+Chemiscope comes into its own when you are working with a machine learning algorithm.  These algorithms can (in theory) learn the collective variables you need to use from the trajectory data.
+To make sense of the coordinates that have been learned, you have to carefully visualize where structures are projected in the low dimensional space.  You can use chemiscope to complete this 
+process of visualizing the representation the computer has found for you.  In this next set of exercises, we will apply various dimensionality reduction algorithms to the data 
+contained in the file traj.pdb.  If you visualize the contents of that file using VMD, you will see that this file contains a short protein trajectory.  You are perhaps unsure what 
+CV to analyze this data and thus want to see if you can shed any light on the contents of the trajectory by using machine learning.
 
-Normally, PLUMED analyses one set of atomic coordinates at a time.  To run a machine learning algorithm, however, you need to gather information on multiple configurations.
-The first thing you therefore need to learn in order to use these algortihms is to store configurations for later analysis with a machine learning algorithm.  The following input
+Typically, PLUMED analyses one set of atomic coordinates at a time.  To run a machine learning algorithm, however, you need to gather information on multiple configurations.
+Therefore, the first thing you need to learn to use these algorithms is how to store configurations for later analysis with a machine learning algorithm.  The following input
 illustrates how to complete this task using PLUMED.
         
 \plumedfile
@@ -255,18 +255,18 @@ plumed driver --mf_pdb traj.pdb
 \endverbatim
 
 You can also store the values of collective variables for later analysis with these algorithms.  <b> Modify the input above so that all
-30 backbone dihedral angles in the protein are stored and output using \ref OUTPUT_ANALYSIS_DATA_TO_COLVAR and rerun the calculation. </b>
+Thirty backbone dihedral angles in the protein are stored, and output using \ref OUTPUT_ANALYSIS_DATA_TO_COLVAR and rerun the calculation. </b>
 
 \subsection masterclass-21-6-ex-4a PCA
 
-Having learned how to store data for later analysis with a dimensionality reduction algorithm lets now apply principal component analysis (PCA) upon
-our stored data.  In principal component analysis a low dimensional projections for our trajectory are constructed by:
+Having learned how to store data for later analysis with a dimensionality reduction algorithm, lets now apply principal component analysis (PCA) upon
+our stored data.  In principle component analysis, low dimensional projections for our trajectory are constructed by:
 
 - Computing a covariance matrix from the trajectory data
 - Diagonalizing the covariance matrix.
 - Calculating the projection of each trajectory frame on a subset of the eigenvectors of the covariance matrix.
 
-To perform PCA using PLUMED we are going to use the following input with the blanks filled in: 
+To perform PCA using PLUMED, we are going to use the following input with the blanks filled in: 
 
 \plumedfile
 # This reads in the template pdb file and thus allows us to use the @nonhydrogens
@@ -285,8 +285,8 @@ dat: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FILL__
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=dat.* FILE=pca_data
 
 # These next three commands calculate the secondary structure variables.  These
-# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
-# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta-sheet
+# and a parallel beta-sheet.  Configurations that have different secondary structures should be projected
 # in different parts of the low dimensional space.
 alpha: ALPHARMSD RESIDUES=all
 abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
@@ -298,7 +298,7 @@ cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
 \endplumedfile
 
-To generate the projection you run the command:
+To generate the projection, you run the command:
 
 \verbatim
 plumed driver --mf_pdb traj.pdb
@@ -307,21 +307,21 @@ plumed driver --mf_pdb traj.pdb
 You can generate a projection of the data above using chemiscope by using the following script:
 
 \code{.py}
-# This ase command should read in the traj.pdb file that was analysed.  Notice that the analysis
-# actions below ignore the first frame in this trajectory so we need to take that into account
+# This ase command should read in the traj.pdb file that was analyzed.  Notice that the analysis
+# actions below ignore the first frame in this trajectory, so we need to take that into account
 # when we generated the chemiscope
 traj = ase.io.read('../data/traj.pdb',':')
 # This reads in the PCA projection that are output by by the OUTPUT_ANALYSIS_DATA_TO_COLVAR command
 # above
 projection = np.loadtxt("pca_data")
-# We also read in the secondary structure data by colouring points in accordance with the secondary
-# structure we can get a sense of how good our projection is.
+# We also read in the secondary structure data by colouring points following the secondary
+# structure. We can get a sense of how good our projection is.
 structure = np.loadtxt("secondary_structure_data")
 
 # This ensures that the atomic masses are used in place of the symbols
-# when constructing the chemiscope respresentations of the atomic configurations.
+# when constructing the atomic configurations' chemiscope representations.
 # Using the symbols will not work because ase is written by chemists and not
-# biologists.  For a chemist HG1 is mercury as opposed to the first hydrogen
+# biologists.  For a chemist, HG1 is mercury as opposed to the first hydrogen
 # on a guanine residue.
 for frame in traj:
     frame.numbers = np.array(
@@ -364,33 +364,33 @@ properties = {
 write_input("pca_chemiscope.json.gz", frames=traj[1:], properties=properties )
 \endcode
 
-When the output from this set of commands is loaded into chemiscope we can construct figures like the one shown below.  On the axes here we have plotted the pca coordinates.  The
-points are then colooured according to the alpha helical content.
+When the output from this set of commands is loaded into chemiscope, we can construct figures like the one shown below.  On the axes here, we have plotted the PCA coordinates.  The
+points are then coloured according to the alpha-helical content.
 
 \anchor masterclass-21-6-chemiscope-pca
 \image html masterclass-21-6-chemiscope-pca.png "A representation of the PCA projection that was generated using chemiscope."
 
-<b>See if you can use PLUMED and chemiscope to generate a figure similar to the one above.</b>  Try to experiment with the way the points are coloured.  Look at the beta sheet content as well.
+<b>See if you can use PLUMED and chemiscope to generate a figure similar to the one above.</b>  Try to experiment with the way the points are coloured.  Look at the beta-sheet content as well.
 
 \subsection masterclass-21-6-ex-4b MDS
 
-In the previous section we performed PCA on the atomic positions directly.  In the section before last, however, we also saw how we can store high-dimensional vectors of collective variables and then
-use these vectors as input to a dimensionality reduction algorithm.  We might legitimately ask, therefore, if we can do PCA using these high-dimensional vectors as input rather than atomic positions.
-The answer to this question is yes as long as the CV is not periodic.  If any of our CVs are not periodic we cannot analyze them using the \ref PCA action.  We can, however, formulate the PCA algorithm
-in a different way.  In this alternative formulation, which is known as classical multidimensional scaling (MDS) we do the following:
+In the previous section, we performed PCA on the atomic positions directly.  In the section before last, however, we also saw how we could store high-dimensional vectors of collective variables and then
+use them as input to a dimensionality reduction algorithm.  Therefore, we might legitimately ask if we can do PCA using these high-dimensional vectors as input rather than atomic positions.
+The answer to this question is yes as long as the CV is not periodic.  If any of our CVs are not periodic, we cannot analyze them using the \ref PCA action.  We can, however, formulate the PCA algorithm
+differently.  In this alternative formulation, which is known as classical multidimensional scaling (MDS), we do the following:
 
 - We calculate the matrix of distances between configurations
-- We perform an operation known as centering the matrix.
-- We diagonalize the centered matrix
-- The eigenvectors multiplied by the square root of the corresponding eigenvalue can then be used as a set of projections for our input points.
+- We perform an operation known as centring the matrix.
+- We diagonalize the centred matrix
+The eigenvectors multiplied by the corresponding eigenvalue's square root can then be used as a set of projections for our input points.
 
-This method is used less often the PCA as the matrix that we have to diagonalize here in the third step can be considerably larger than the matrix that we have to diagonalize when we perform PCA.  In fact
-in order to avoid this expensive diagonalization step we often select a subset of so called landmark points on which to run the algorithm directly.  Projections for the remaining points are then found
+This method is used less often than PCA as the matrix that we have to diagonalize here in the third step can be considerably larger than the matrix that we have to diagonalize when we perform PCA.  
+To avoid this expensive diagonalization step, we often select a subset of so-called landmark points on which to run the algorithm directly.  Projections for the remaining points are then found
 by using a so-called out-of-sample procedure.  This is what has been done in the following input:
 
 \plumedfile
- This reads in the template pdb file and thus allows us to use the @nonhydrogens
-# special group later in the input
+ This command reads in the template pdb file and thus allows us to use the @nonhydrogens
+# group later in the input
 MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
 
 # This stores the positions of all the nonhydrogen atoms for later analysis
@@ -443,8 +443,8 @@ osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FI
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=osample.* FILE=mds_data
 
 # These next three commands calculate the secondary structure variables.  These
-# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
-# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta-sheet
+# and a parallel beta-sheet.  Configurations that have different secondary structures should be projected
 # in different parts of the low dimensional space.
 alpha: ALPHARMSD RESIDUES=all
 abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
@@ -456,17 +456,17 @@ cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
 \endplumedfile
 
-This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed and a set of landmark points
+This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed, and a set of landmark points
 is selected using a method known as farthest point sampling.  A matrix that contains only those distances between the landmarks is then constructed and diagonalized by the \ref CLASSICAL_MDS action so that
-projections of the landmarks can be constructed.  The final step is then to project the remainder of the trajectory using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
+projections of the landmarks can be built.  The final step is then to project the remainder of the trajectory using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
 and run this calculation now using the command:
 
 \verbatim
 plumed driver --mf_pdb traj.pdb
 \endverbatim
 
-Once the calculation has completed you can, once again, visualise the data using chemiscope by using a suitably modified version of the script from the previous exercise.  The image below shows the
-MDS coordinates coloured accordrding to the alpha helical content.
+Once the calculation has completed, you can, once again, visualize the data using chemiscope by using a suitably modified version of the script from the previous exercise.  The image below shows the
+MDS coordinates coloured according to the alpha-helical content.
 
 \anchor masterclass-21-6-chemiscope-mds
 \image html masterclass-21-6-chemiscope-mds.png "A representation of the MDS projection that was generated using chemiscope."
@@ -475,10 +475,10 @@ MDS coordinates coloured accordrding to the alpha helical content.
 
 \subsection masterclass-21-6-ex-4c Sketch-map
 
-The two algorithms (PCA and MDS) that we have looked at thus far are both linear dimensionality reduction algorithms.  In addition to these there are a whole class of non-linear dimensionality reduction
+The two algorithms (PCA and MDS) that we have looked at thus far are linear dimensionality reduction algorithms.  In addition to these, there are a whole class of non-linear dimensionality reduction
 reduction algorithms which work by transforming the matrix of dissimilarities between configurations, calculating geodesic rather than Euclidean distances between configurations or by changing the form of the
-loss function that is optimized.  In this final exercise we are going to use an algorithm that uses the last of the these three strategies to construct a non-linear projection.  The algorithm is known as sketch-map
-and an input for sketch-map is provided below:
+loss function that is optimized.  In this final exercise, we will use an algorithm that uses the last of these three strategies to construct a non-linear projection.  The algorithm is known as sketch-map
+and input for sketch-map is provided below:
 
 \plumedfile
 # This reads in the template pdb file and thus allows us to use the @nonhydrogens
@@ -537,8 +537,8 @@ osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=__FILL__ PROJECTION=__FI
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=__FILL__ ARG=osample.* FILE=smap_data
 
 # These next three commands calculate the secondary structure variables.  These
-# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
-# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta-sheet
+# and a parallel beta-sheet.  Configurations that have different secondary structures should be projected
 # in different parts of the low dimensional space.
 alpha: ALPHARMSD RESIDUES=all
 abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
@@ -550,18 +550,18 @@ cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
 \endplumedfile
 
-This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed and a set of landmark points
-is selected using a method known as farthest point sampling.  A matrix that contains only those distances between the landmarks is then constructed and diagonalized by the \ref CLASSICAL_MDS action and this
-set of projections is used as the initial configuration for the various minimization algorithms that are then used to optimize the sketch-map stress function.  As in the previous exercise once the projections of
-the landmarks are found the projections for the remainder of the points in the trajectory are found by using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
+This input collects all the torsional angles for the configurations in the trajectory.  Then, at the end of the calculation, the matrix of distances between these points is computed, and a set of landmark points
+is selected using a method known as farthest point sampling.  A matrix that contains only those distances between the landmarks is then constructed and diagonalized by the \ref CLASSICAL_MDS action, and this
+set of projections is used as the initial configuration for the various minimization algorithms that are then used to optimize the sketch-map stress function.  As in the previous exercise, once the projections of
+the landmarks are found, the projections for the remainder of the points in the trajectory are found by using the \ref PROJECT_ALL_ANALYSIS_DATA action.  Try to fill in the blanks in the input above
 and run this calculation now using the command:
 
 \verbatim
 plumed driver --mf_pdb traj.pdb
 \endverbatim
 
-Once the calculation has completed you can, once again, visualize the data generated using chemiscope by using the scripts from earlier exercises.  This is what my projection looked like.  Points are, once again,
-coloured in accordance with the alpha helical content of the corresponding structure.
+Once the calculation has completed, you can, once again, visualize the data generated using chemiscope by using the scripts from earlier exercises.  My projection is shown in the figure below.  Points are, once again,
+coloured following the alpha-helical content of the corresponding structure.
 
 \anchor masterclass-21-6-chemiscope-smap
 \image html masterclass-21-6-chemiscope-smap.png "A representation of the sketch-map projection that was generated using chemiscope."
@@ -575,35 +575,34 @@ This exercise has shown you that running dimensionality reduction algorithms usi
 - Data is collected from the trajectory using \ref COLLECT_FRAMES.
 - Landmark points are selected using a \ref landmarks algorithm
 - The distances between the trajectory frames are computed using \ref EUCLIDEAN_DISSIMILARITIES
-- A loss function is optimized in order to generate projections of the landmarks.
-- Projections of the non-landmark points are generated using \ref PROJECT_ALL_ANALYSIS_DATA.
+- A loss function is optimized to generate projections of the landmarks.
+- Projections of the non-landmark points are found using \ref PROJECT_ALL_ANALYSIS_DATA.
 
 There are multiple choices to be made in each of the various stages described above.  For example, you can change the particular sort of data this is collected from the
-trajectory, there are multiple different ways to select landmarks, you can use the distances directly or you can transform them, you can use various different loss function and you can
-optimize the loss function using a variety of different algorithms.  When you tackle your own research problems using these methods you can experiment with these various different choices that can
+trajectory. There are multiple different ways to select landmarks. You can use the distances directly, or you can transform them. You can use various loss functions and
+optimize the loss function using a variety of different algorithms.  When you tackle your own research problems using these methods, you can experiment with the various choices that can
 be made.  
 
-<b>Generating a low-dimensional representation using these algorithms is not enough to publish a paper. </b>  We want to get some physical understanding from our simulation and as we will see in the
-next section obtaining an understanding of what machine-learned coordinates might mean is often not straightforward.
+<b>Generating a low-dimensional representation using these algorithms is not enough to publish a paper. </b>  We want to get some physical understanding from our simulation. Gaining this understanding is the hard part.
 
 \subsection masterclass-21-6-ex-4 Exercise 4: Path collective variables
 
-In many papers in this area you will hear people talk about the distinction between collective variables and the reaction coordinate.  The distinction these authors are trying emphasize when they use this language 
+In many papers in this area, you will hear people talk about the distinction between collective variables and the reaction coordinate.  The distinction these authors are trying emphasize when they use this language 
 is between a descriptor that takes different values for the various important basins in the energy landscape (the collective variable) and the actual pathway the reaction proceeds along (the reaction coordinate).
 Furthermore, the authors of such papers will often argue that the reaction coordinate is simply some linear/non-linear combination of collective variables.
-In this exercise we are going to study alanine dipeptide with path collective variables to show you one way of thinking about this distinction between collective variables and reaction coordinates.  
-By studying a system that is this simple you will also hopefully come to understand how we can interpret the coordinates that we extract using the dimensionality reduction algorithms that were discussed in the previous exercise.
+In this exercise, we will study alanine dipeptide with path collective variables to show you one way of thinking about this distinction between collective variables and reaction coordinates.  
+By studying a system that is this simple, you will also hopefully come to understand how we can interpret the coordinates that we extract using the dimensionality reduction algorithms that were discussed in the previous exercise.
 
-To remind you the free energy surface as a function of the \f$\phi\f$ and \f$\psi\f$ angles for alanine dipeptide is shown below:
+To remind you, the free energy surface as a function of the \f$\phi\f$ and \f$\psi\f$ angles for alanine dipeptide is shown below:
 
 \anchor masterclass21-6-rama-fig
 \image html belfast-2-rama.png  "The Free energy landscape of alanine dipeptide in Ramachandran angles in the CHARMM27 force field."
 
-In other masterclasses we have discussed how there are two key states in the above energy landscape.  These states are labelled C7eq and C7ax above.  
-The two Ramachandran angles that have been plotted on the x and y axes of the free energy surface
+In other masterclasses, we have discussed how there are two critical states in the above energy landscape.  These states are labelled C7eq and C7ax above.  
+The two Ramachandran angles plotted on the x and y axes of the free energy surface
 above are examples of what we have called collective variables.  Both of these angles can be used to distinguish between C7eq and C7ax configurations.
 The reaction coordinate is the path that the system actually takes as it moves from the C7ax to the C7eq configuration.  Based on the shape of the free
-energy surface we might suppose that this reaction  coordinate looks something like the black line shown below: 
+energy surface, we might suppose that this reaction  coordinate looks something like the black line shown below: 
 
 \anchor marvel-2-good-bad-path-fig
 \image html belfast-2-good-bad-path.png "Paths that connect the C7eq and C7ax configurations." 
@@ -612,13 +611,13 @@ The file called alanine-transformation.pdb that you can find in the data directo
 \f$\phi\f$ and \f$\psi\f$ change as the system moves along this path.  <b>Try to see if you can use what you have learned in previous masterclasses to reproduce the figure above before continuing. </b>  
 
 \anchor masterclass21-6-rama-transitions
-\image html masterclass-21-6-rama-transition.png "Changes in the ramachandran angles as the protein transitions from the C7ax to C7eq state"
+\image html masterclass-21-6-rama-transition.png "Changes in the Ramachandran angles as the protein transitions from the C7ax to C7eq state."
 
 \subsubsection masterclass-21-6-ex30 RMSD distances
 
-We know what structures correspond to the various stable states of our system.  We might, therefore, be tempted to ask ourself if we can not just use the RMSD distance from a structure as the reaction coordinate.
-This approach would work if there is a single important configuration in the energy landscape.  We could use the RMSD distance from this lowest energy structure as a CV to extract the free energy of this configuration
-relative to everything else.  How well does this work if we have two distinct states though as we have for alanine dipeptide?  Too investigate this question fill in the PLUMED input below that calculates the RMSD distances 
+We know what structures correspond to the various stable states of our system.  We might, therefore, be tempted to ask ourselves if we can not just use the RMSD distance from a structure as the reaction coordinate.
+This approach will work if there is a single important configuration in the energy landscape.  We could use the RMSD distance from this lowest energy structure as a CV to extract this configuration's free energy
+relative to everything else.  How well does this work if we have two distinct states, though, as we have for alanine dipeptide?  To investigate this question, fill in the PLUMED input below that calculates the RMSD distances 
 from the C7ax and C7eq configurations:
 
 \plumedfile
@@ -665,26 +664,25 @@ generate_gromacs_input( '../Unbiased_MD', plm, 500000, 1000 )
 unbiased_data = np.loadtxt('../Unbiased_MD/colvar')
 \endcode
 
-I ran simulations at 300K and 1000K using the above script.  When the simulations completed I was able to construct the figures below:
+I ran simulations at 300K and 1000K using the above script.  When the simulations completed, I was able to construct the figures below:
 
 \anchor masterclass21-6-rmsd-distances
-\image html masterclass-21-6-rmsd-distances.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  In the lower panel I have projected the trajectories on the RMSD distances from the two reference states"
+\image html masterclass-21-6-rmsd-distances.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  In the lower panel, I have projected the trajectories on the RMSD distances from the two reference states."
 
 The black points above are the RMSD values for the trajectories.  I have also shown the RMSD values for the frames in
-alanine-transofrmation in red.  Notice that all the configurations explored in the MD are very distant from the C7ax and C7eq states.
+alanine-transformation in red.  Notice that all the configurations explored in the MD are very distant from the C7ax and C7eq states.
 <b>Try now to reproduce the above figure yourself.</b>
 
-You can see that at 300K the simulation we ran did not visit the C7eq state.  Furthermore, you can also clearly see this from the 
+You can see that at 300K, the simulation we ran did not visit the C7eq state.  Furthermore, you can also clearly see this from the 
 projections of the trajectories on the RMSD distances from these two configurations.  Notice in these figures, however, that the distances
-from these two reference configurations were often considerably larger than the distanace between these refernece configurations and the 
-configurations on the reference path in alanine-transformation.pdb.
+from these two reference configurations were often considerably larger than the distance between these reference configurations and the configurations on the reference path in alanine-transformation.pdb.
 
 \subsubsection masterclass-21-6-ex3a Using dot products to calculate CVs
 
-Instead of calculating two distances we might ask ourself if the linear combination of \f$\phi\f$ and \f$\psi\f$ that is illustrated in the figure below:
+Instead of calculating two distances, we might ask ourselves if the linear combination of \f$\phi\f$ and \f$\psi\f$ that is illustrated in the figure below:
 
 \anchor masterclass-21-6-pca-figure
-\image html marvel-2-pca-coordinates.png "An illustration showing how PCAVARS coorditates work.  The vector connecting some reference state to any state the system is in can be in (purple and orange points) can be projected onto the vector connecting the two states of interest (black arrow) by using the dot product of the vectors shown here."
+\image html marvel-2-pca-coordinates.png "An illustration showing how PCAVARS coordinates work.  The vector connecting some reference state to any state the system is in can be in (purple and orange points) can be projected onto the vector connecting the two states of interest (black arrow) by using the dot product of the vectors shown here."
 
 gives a better description for the transition.  We can define this CV as follows:
 
@@ -697,14 +695,14 @@ In this expression \f$(\phi_1,\psi_1)\f$ are the Ramachandran angles in the \f$C
 instantaneous configuration.  You should thus be able to see that we have arrived at the above expression
 by using our knowledge of the dot product between two vectors.
 
-<b>See if you can write an input to reannalyse the data in alanine-transformation.pdb and the MD simulations from the previous section using this CV.</b>  
-You should be able to get plots of the value of this CV as a function of step number that look like the ones shown below:
+<b>See if you can write an input to re-analyse the data in alanine-transformation.pdb and the MD simulations from the previous section using this CV.</b>  
+You should be able to get plots of the value of this CV as a function of step number that looks like the ones shown below:
 
 \anchor masterclass21-6-pcavars-transitions
-\image html masterclass-21-6-pcavars-transition.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  In the lower panel I have projected the trajectories on vector in the ramachandran plane shown above"
+\image html masterclass-21-6-pcavars-transition.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  In the lower panel, I have projected the trajectories on vector in the Ramachandran plane shown above."
 
 I implemented this CV using a combination of \ref TORSION and \ref COMBINE.  I also ignored the fact that the torsions are periodic variables when calculating the linear combination.  
-You cant really use the sort of linear algebra above with periodic variables but it is OK for these illustrative purposes.  
+You can't use the sort of linear algebra above with periodic variables, but it is OK for these illustrative purposes.  
 
 Notice that the first frame in alanine-transformation.pdb has the molecule in the \f$C_7ax\f$ configuration.  The last frame has the molecule in the \f$C_7eq\f$ state.  
 
@@ -735,17 +733,17 @@ p: PCAVARS __FILL__=pca-reference.pdb __FILL__=OPTIMAL
 PRINT ARG=p.* FILE=colvar
 \endverbatim
 
-<b>Use this input to reannalyse the data in alanine-transformation.pdb and your MD simulations before continuing.</b>  The figure below shows the results that I obtained by analysing the 
-data using the the PCAVARS command above.
+<b>Use this input to re-analyse the data in alanine-transformation.pdb and your MD simulations before continuing.</b>  The figure below shows the results that I obtained by analyzing the 
+data using the PCAVARS command above.
 
 \anchor masterclass-21-6-pcavars
-\image html masterclass-21-6-pcavars.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  The projection on the vector connecting the C7ax and C7eq states (left) and the perpendicular distance from this vector (right) and shown in the bottom panels"
+\image html masterclass-21-6-pcavars.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.  The projection on the vector connecting the C7ax and C7eq states (left) and the perpendicular distance from this vector (right) and shown in the bottom panels."
 
 The figure above shows that this coordinate is good.  We move quite far from this initial vector when we move to the C7ax state, however.
 
-\subsubsection masterclass-21-6-ex9 Two PCA Collective variables
+\subsubsection masterclass-21-6-ex90 Two PCA Collective variables
 
-Instead of using a single PCA variable and calculating the projection on the vector connecting these two points we can instead use the projection of the instantaneous coordinates 
+Instead of using a single PCA variable and calculating the projection on the vector connecting these two points, we can instead use the projection of the instantaneous coordinates 
 in the plane that contains three reference configurations.  You can calculate these collective variables using PLUMED by using the input below:
 
 \verbatim
@@ -753,22 +751,22 @@ p: PCAVARS __FILL__=pca2-reference.pdb __FILL__=OPTIMAL
 PRINT ARG=p.* FILE=colvar
 \endverbatim
 
-Notice that there are now three structures within pca2-reference.pdb and thus two vectors are defined.  <b>Use this input to reannalyse the data in alanine-transformation.pdb and your MD simulations before continuing.</b>  
-The figure below shows the results that I obtained by analysing the
-data using the the PCAVARS command above.
+Notice that there are now three structures within pca2-reference.pdb, and thus two vectors are defined.  <b>Use this input to re-analyse the data in alanine-transformation.pdb and your MD simulations before continuing.</b>  
+The figure below shows the results that I obtained by analyzing the
+data using the PCAVARS command above.
 
 \anchor masterclass-21-6-pcavars2
-\image html masterclass-21-6-pcavars2.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.   The projection on the vectors that are defined using the configurations in pca2-reference.pdb are shown in the bottom panel.  The green points in the top panel give the Ramachandran angles for the configurations that were used to defined the reference configurations."
+\image html masterclass-21-6-pcavars2.png "The black points are the configurations visited in MD simulations at 300K (left) and 1000K (right).  The top panel shows these trajectories in the Ramachandran plane.   The projection on the vectors defined using the configurations in pca2-reference.pdb is shown in the bottom panel.  The green points in the top panel give the Ramachandran angles for the configurations used to define the reference configurations."
 
 \subsubsection masterclass-21-6-ex3c Path collective variables
 
-Instead of using more the projection on more than one vector, we can extend the ideas in the previous section and use curvilinear paths rather than linear paths.  This is what is done with the \ref PATH CVs that are illustrated in the figure below:
+Instead of using the projection on more than one vector, we can extend the ideas in the previous section and use curvilinear paths rather than linear paths.  This trick is what is done with the \ref PATH CVs that are illustrated in the figure below:
 
 \anchor masterclass-21-sz-fig
 \image html belfast-2-ab-sz.png "The S variable can be thought as the length of the red segment, while the Z variable is the length of the green one."
 \endhidden
 
-As you can see there are two path collective variables, \f$S(X)\f$ measures your position on a path and is calculated using:
+As you can see, there are two path collective variables, \f$S(X)\f$ measures your position on a path and is calculated using:
 
 \f[
 S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
@@ -780,48 +778,48 @@ S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N}
 Z(X) = - \frac{1}{\lambda} \ln\left[ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } \right]
 \f]
 
-We can calculate these CVs using a filled in version of the input that is shown below:
+We can calculate these CVs using a filled-in version of the input that is shown below:
 
 \verbatim
 path: PATH __FILL__=../data/alanine-path.pdb TYPE=__FILL__ LAMBDA=15100.
 PRINT ARG=* FILE=colvar
 \endverbatim
 
-The figure below shows the \f$\phi\f$ and \f$\psi\f$ angles for the configurations that have been used to define the path as red dots.  The black dots meanwhile are the 
+The figure below shows the \f$\phi\f$ and \f$\psi\f$ angles for the configurations that define the path as red dots.  Meanwhile, the black dots are the 
 \f$\phi\f$ and \f$\psi\f$ angles that are visited during a high temperature, unbiased MD trajectory.  The green dots are then the configurations in alanine-transformation.pdb 
 You can clearly see that the red dots lie along the transition path that connects the C7eq and C7ax configurations and that the green dots follow this pathway: 
 
 \anchor masterclass21-6-path-angles
 \image html masterclass-21-6-path-angles.png "The path that we have defined for our transition in the Ramachandran plane.  Black dots are the configurations visited at 300 K (left) and 1000 K (right)"
 
-When we calculate the path collective variables for the black and red data points in the above figure we get the result shown on the right. The panel on the left shows the result from 
+When we calculate the path collective variables for the black and red data points in the above figure, we get the result shown on the right. The panel on the left shows the output from 
 a 300 K simulation during which the C7eq configuration was not visited:
 
 \anchor masterclass21-6-path-path
-\image html masterclass-21-6-path-path.png "An analysis of the path CV values that are visited during a trajectories at 300 K and 1000 K"
+\image html masterclass-21-6-path-path.png "An analysis of the path CV values visited during trajectories at 300 K and 1000 K."
 
 You can see that the majority of configurations have very small z values.  It would thus seem that we have identified our reaction coordinate.  We can use the S-path coordinate
-to tell us where we are on the transitiion pathway betwene the two states.  Furthermore, in defining this coordinate we have used the positions of all the heavy atoms in the protein.  
+to tell us where we are on the transition pathway between the two states.  Furthermore, in defining this coordinate, we have used the positions of all the heavy atoms in the protein.  
 
 \subsubsection masterclass-21-6-ex3b The isocommittor
 
-Notice that when we talk about the reaction coordinate we are not talking about a single set of configurations that connect the two states.
+Notice that when we talk about the reaction coordinate, we are not talking about a single set of configurations that connect the two states.
 The previous sections have shown that there are always multiple pathways that connect the two states.  The task of identifying a single reaction coordinate thus appears
-impossible.  How after all, can there be a single reaction path, if we know that there are multiple pathways that connect the two states?  
+impossible.  How, after all, can there be a single reaction path if we know that there are multiple pathways that connect the two states?  
 
-One way of answering this question can be found by looking at how far the transitions you observe deviate from the reference transition path using the Z-coordinate.  An
-alternative answer to this apparent contradiction can be found by considering so called isocommittor surfaces.  When use using this method you suppose there is a
+One way of answering this question is to look at how far the transitions you observe deviate from the reference transition path using the Z-coordinate.  An
+alternative answer can be found by considering so-called isocommittor surfaces.  When using this method, you suppose there is a
 saddle point between the two states of interest (the \f$C_7ax\f$ and \f$C_7eq\f$ configurations in our alanine dipeptide example).  
-Lets suppose that we now start a simulation with the system balanced precariously on this saddle point.  The system will, very-rapidly, fall off the maximum and move
-towards either the left or the right basin.  If we are exactly at the saddle 50% of the trajectories will fall to the right and 50% will fall to the left. 
+Let's suppose that we now start a simulation with the system balanced precariously on this saddle point.  The system will, very-rapidly, fall off the maximum and move
+towards either the left or the right basin.  If we are exactly at the saddle, 50% of the trajectories will fall to the right, and 50% will fall to the left. 
 
-We can use the idea of the isocommittor to identify whether any collective variable is giving a good description for the location of the transition state ensemble.
+We can use the idea of the isocommittor to identify whether any collective variable is giving a good description of the transition state ensemble's location.
 The idea in such simulations is to define regions of space that correspond to the various stable states in the free energy landscape.  We then launch lots of simulations
 from configurations that are not within these basins and identify the basin that these calculations visit first.  We can then make graphs like those shown below. These graphs 
 show the fraction of times a particular CV value was visited in a trajectory that visited the c7eq basin before it visited the c7ax basin. 
 
 \anchor masterclass21-6-rmsd-committor
-\image html masterclass-21-6-committor.png "Probabilities of visiting the C7eq basin before the C7ax basin if you are differents points on each of the CV ranges"
+\image html masterclass-21-6-committor.png "Probabilities of visiting the C7eq basin before the C7ax basin if you are differents points on each of the CV ranges."
 
 The PLUMED input that I used when making the figure above is a filled in version of the following:
 
@@ -863,8 +861,8 @@ bas_data, all_data = gen_trajectories( ntraj, p )
 \endcode
 
 Notice how the above script stores the CV values from trajectories that finished in the C7eq basin in the NumPy array called bas_data. 
-We can thus use the data in this to construct the (unormalised) histograms of CV value that finished in C7eq and the total histogram. 
-The script I used to construct these histograms is shown below.  This script also shows how we can arrive at the final conditional probablity distributions from 
+We can use the data in this file to construct the (unnormalized) histograms of CV value that finished in C7eq and the total histogram. 
+The script I used to construct these histograms is shown below.  This script also shows how we can arrive at the final conditional probability distributions from 
 \ref masterclass21-6-rmsd-committor  by dividing by the total number of configurations that moves to C7eq first by the total number of configuration that visited 
 a point.
 
@@ -889,21 +887,18 @@ def get_isocommitor( bas_data, full_data, nbins, xmin, xmax ) :
 commit = get_isocommitor( bas_data[:,1],  all_data[:,1], 30, -np.pi, np.pi )
 \endcode
 
-Notice that the script above does not compute the error bars I included in \ref masterclass21-6-rmsd-committor.  <b> Your task in this exercise is to try to reproduce this 
-figure with the error bars.</b>   I generated the error bars in \ref masterclass21-6-rmsd-committor by running 10 sets of 500 simulations.  I constructed a separate histograms
-from each of these batches of simuulations and then calculated the mean and variance from these 10 sets of samples. 
+Notice that the script above does not compute the error bars I included in \ref masterclass21-6-rmsd-committor.  <b> Your task in this exercise is to reproduce this 
+figure with the error bars.</b>   I generated the error bars in \ref masterclass21-6-rmsd-committor by running 10 sets of 500 simulations.  I constructed separate histograms
+from each of these batches of simulations and calculated the mean and variance from these ten sets of samples. 
 
 \subsubsection masterclass-21-6-ex9 Conclusions
 
-The aim of the exercises in these section was to discuss the difference between collective variables and the reaction coordinate.  What I have argued is that collective 
-variables are developed by researchers thinking about coordinates that can distinguish between the important states.  Reaction coordinates, meanwhile, are the actual pathways
+The exercises in this section aimed to discuss the difference between collective variables and the reaction coordinate.  I have argued that collective variables are developed by researchers thinking about coordinates that can distinguish between the important states.  Reaction coordinates, meanwhile, are the actual pathways
 that reactions proceed along.  These reaction coordinates are found by probing the data we get from simulations.    
 
-Personally I am not convinced that the distinction between reaction coordinates and collective variables is very important.  What we have seen in the exrcise above is that every coordinate we have tried in the previous 
-sections has allowed us to determine whether we are in the C7eq or the C7ax basin.   My view is that when we do science we impose structure on our results by asking questions.  In this exercise our question has been
-to determine the relative free energies of the C7ax and C7eq basins.  To do this we have to come up with some way of defining what configurations are in the C7ax basin and what configurations are in the C7eq basin.  The 
-distinction between these two structures is an arbitrary figment of our imagination.  If we use different variables we might be defininig these states in different ways and we might get slightly different answers. 
-We should not be surprised by the fact that we get different answers if we ask the question in different ways.  The important thing is to come up with an interesting question and to tell a good story about whatever you find out. 
+I am not convinced that the distinction between reaction coordinates and collective variables is very important.  Every coordinate we have tried in the previous sections has allowed us to determine whether we are in the C7eq or the C7ax basin.   My view is that when we do science, we impose structure on our results by asking questions.  Our question has been
+to determine the relative free energies of the C7ax and C7eq basins in this exercise.  To do this, we have to define what configurations are in the C7ax basin and what configurations are in the C7eq basin.  The distinction between these two structures is an arbitrary figment of our imagination.  If we use different variables, we might be defining these states differently, and we might get slightly different answers. 
+We should not be surprised by the fact that we get different answers if we ask the question differently.  The important thing is to develop an interesting question and to tell a good story about whatever you find out. 
 
 \subsection masterclass-21-5-ex-5 Exercise 4: Dealing with indistinguishability
 
@@ -941,7 +936,7 @@ You can run this from a python notebook and read in the values of the order para
 
 \code{.py}
 p = '''
-INSEERT YOUR PLUMED INPUT HERE
+INSERT YOUR PLUMED INPUT HERE
 '''
 
 inp = '''
@@ -973,7 +968,7 @@ cub = np.loadtxt("../LJ-trajectories/First-run/cub.dat")
 fcub = np.loadtxt("../LJ-trajectories/First-run/fcub.dat")
 \endcode
 
-A visualiation of the order parameters for all the atoms can then by produced using chemiscope, which allows you to see the value of all the individual atom order parameters.  
+A visualization of the order parameters for all the atoms can then be produced using chemiscope, which allows you to see the value of all the individual atom order parameters.  
 
 \code{.py}
 import ase
@@ -1009,12 +1004,11 @@ write_input("fccubic_chemiscope.json.gz", cutoff=1.5, frames=traj, properties=pr
 <b> Put all the above together and see if you can produce a chemiscope representation like the one below </b>
 
 \anchor masterclass-21-6-lj-chemiscope
-\image html masterclass-21-lj-chemiscope.png "A representation of a solid liquid system that was generated using chemiscope"
+\image html masterclass-21-lj-chemiscope.png "A representation of a solid-liquid system that was generated using chemiscope."
 
-Chemiscope is invaluable for determining whether our order parameter is any good at distinguishing the atoms that are within the solid from those that are within the liquid.   If you visualise the \ref FCCCUBIC or the transformed values of these parameters 
-in the example above you can see that we are studying a system in which roughly half of the atoms are solid-like and roughly half of the atoms are liquid like.  Notice also that we can use the dimensionality reduction that were discussed in \ref masterclass-21-6-ex-4 
-and clustering algorithms to develop these atomic order parameters.  Generating the data to analyse using these algorithms is easier in this case as we can get multiple sets of coordinates to analyse from each trajectory frame.  The atoms are, 
-after all, indistignuishable.
+Chemiscope is invaluable for determining whether our order parameter is good at distinguishing the atoms within the solid from those within the liquid.   If you visualize the \ref FCCCUBIC or the transformed values of these parameters in the example above, you see that roughly half of the atoms are solid-like, and nearly half of the atoms are liquid-like.  Notice also that we can use the dimensionality reduction that were discussed in \ref masterclass-21-6-ex-4 
+and clustering algorithms to develop these atomic order parameters.  Generating the data to analyze using these algorithms is easier because we can get multiple sets of coordinates to analyze from each trajectory frame.  The atoms are, 
+after all, indistinguishable.
 
 Once we have identified an order parameter we can analyse the distribution of values that it takes by using an input like the one shown below:
 
@@ -1034,13 +1028,12 @@ __FILL__ __FILL__=fcub_histo FILE=fcub_histo.dat
 The resulting distributions of order parameter values should look like this:
 
 \anchor masterclass-21-6-order-params
-\image html masterclass-21-6-order-params.png "The distributions of the various order parameters in a simulation of the solid liquid system"
+\image html masterclass-21-6-order-params.png "The distributions of the various order parameters in a simulation of the solid-liquid system."
 
-<b> Try to use the information above to reproduce this plot. </b> Notice that the distribution of order parameters for the FCC Cubic order parameters is bimodal.  There is a peak correpsonding to the value that this quantity takes in the liquid 
-part of the box and a second peak that corresponds to the value that the quantity takes in the solid part of the box.  The same cannot be said for the coordination number by contrast.  Notice, last of all, that by transforming the values above
+<b> Try to use the information above to reproduce this plot. </b> Notice that the distribution of order parameters for the FCC Cubic order parameters is bimodal.  There is a peak corresponding to the value that this quantity takes in the box's liquid part. The second peak then corresponds to the value that the quantity takes in the box's solid part.  The same cannot be said for the coordination number by contrast.  Notice, last of all, that by transforming the values above
 we have an order parameter that is one for atoms that are within the solid and zero otherwise. 
 
-It is tempting at this stage to argue that the number of solid particles is equal to the number of atoms that have an order parameter that is greater than some threshold.  A better way to calculate the number of solid
+It is tempting to argue that the number of solid particles is equal to the number of atoms that have an order parameter that is greater than some threshold.  A better way to calculate the number of solid
 particles, however, is to proceed as follows:
 
 - Run simulations of the solid and liquid under the same thermodynamic conditions.
@@ -1051,7 +1044,7 @@ particles, however, is to proceed as follows:
 \Phi = \sum_{i=1}^N \phi_i
 \f]
 
-where the sum runs over all the atoms and where \f$\phi_i\f$ is the order paremeter for the \f$i\f$th atom in the system.
+The sum runs over all the atoms and where \f$\phi_i\f$ is the order parameter for the \f$i\f$th atom in the system.
 
 This procedure works because \f$\Phi\f$ is an extensive quantity and is thus additive.  If we have a system that contains a aolid liquid interface we can express the value of any extensive quantity, \f$\Psi\f$ using:
 
@@ -1059,34 +1052,31 @@ This procedure works because \f$\Phi\f$ is an extensive quantity and is thus add
 \Psi = n_s \psi_s + n_l \psi_l + \psi_i
 \f]
 
-where \f$\psi_s\f$ and \f$\psi_l\f$ is the average value per atom value of the quantity \f$\psi\f$ in the solid and liquid phases.  \f$\psi_i\f$, meanwhile, is the so-called surface excess term which measures the contribution 
-that the presence of the interface makes to the value of \f$\Psi\f$.  When we find \f$n_s\f$ by solving the simultaneous equations above we assume that this excess term is zero.
+where \f$\psi_s\f$ and \f$\psi_l\f$ is the average value per atom value of the quantity \f$\psi\f$ in the solid and liquid phases.  \f$\psi_i\f$, meanwhile, is the so-called surface excess term which measures the contribution that the presence of the interface makes to the value of \f$\Psi\f$.  When we find \f$n_s\f$ by solving the simultaneous equations above, we assume that this excess term is zero.
 
-<b> To complete this exercise you should run simulations of the solid, liquid and interface.  You should use the ensemble average of the order parameter for your solid and liquid simulations to make a graph like the one below that shows the number of 
-atoms of solid as a function of time for the system that contains the interface</b>.  The number of solid atoms has been determined by solving the simultaneous equations using the theory above.  Notice that there are input configurations for the 
-solid, liquid and interface systems in the data directory of the GitHub repository.  The solid configuration is in solid.xyz, the liquid is in liquid.xyz and the interface is in interface.xyz.  The final result you get will look something like this:
+<b> To complete this exercise, you should run simulations of the solid, liquid and interface.  You should use the ensemble average of the order parameter for your solid and liquid simulations to make a graph like the one below that shows the number of atoms of solid as a function of time for the system that contains the interface</b>.  The number of solid atoms has been determined by solving the simultaneous equations using the theory above.  Notice that there are input configurations for the solid, liquid and interface systems in the data directory of the GitHub repository.  The solid configuration is in solid.xyz. The liquid is in liquid.xyz, and the interface is in interface.xyz.  The final result you get will look something like this:
 
 \anchor masterclass-21-6-solid-liquid
 \image html masterclass-21-6-solid-liquid.png "The number of solid atoms calculated by assuming a zero excess term for the sum of coordination numbers (black), the sum of fcc order parameters (red) and the sum of transformed fcc order parameters (green)"
 
 Notice that the green line is the least noisy of these curves.  The reason the line is less noisy is connected to the fact that you have the clearest delineation between solid and liquid atoms when you use this order parameter.
 
-N.B. We are running at constant volume because we are keepign things simple and using simplemd.  If you are studying nucleation using these techniques you should run at constant pressure. 
+NB. We are running at constant volume because we are keeping things simple and using simplemd.  If you are studying nucleation using these techniques, you should run at constant pressure. 
 
-\subsection masterclass-21-6-ex-7 Exercise 7: Applying these ideas in your own research
+\subsection masterclass-21-6-ex-7 Exercise 7: Applying these ideas in your research
 
 The exercises in this tutorial have introduced you to the following ideas:
 
-- Using chemiscope to visualise trajectories and collective variables.
+- Using chemiscope to visualize trajectories and collective variables.
 - Using dimensionality reduction algorithms
 - Using Path collective variables
 - Clustering trajectories
 - Dealing with indistinguishable atoms
 
-What I would really like to do in the follow up session is to think about how you can use these ideas as you do your own research.  The first step in using any of these questions is asking a 
-research question that is amenable to answering using one of these methods.  In this final exercise I would thus like you to think about how you can use these methods in your own research.
-The first step in doing so is asking yourself the question <b>what am I trying to find out?</b>  The clearer you make this question the easier you will find the subsequent research project.
-With this in mind here are some examples of terrible research questions:
+What I would like to do in the follow-up session is to think about how you can use these ideas as you do your research.  The first step in using any of these questions is asking a 
+research question that is amenable to answering using one of these methods.  In this final exercise, I would like you to think about using these methods in your research.
+The first step in doing so is asking yourself the question <b>what am I trying to find out?</b>  The clearer you make this question, the easier you will find the subsequent research project.
+With this in mind, here are some examples of terrible research questions:
 
 - Understanding protein-ligand interactions using machine learning algorithms.
 - Understanding the mechanism via which limescale forms in pipes
@@ -1094,8 +1084,7 @@ With this in mind here are some examples of terrible research questions:
 - Studying transport through membrane proteins.
 - Understanding the catalytic mechanism of iron in ammonia formation.
 
-These research questions are terrible because the final result that you will obtain has not been specified.  It is thus not clear when the project will be finished or what sucess in this particular 
-project looks like.  With this in mind consider the following alternative questions, which each have a clear goal.  Each of the goals below maps on to one of the terrible research questions above:
+These research questions are terrible because the final result that you will obtain has not been specified.  It is unclear when the project will be finished, or what success in this project looks like.  With this in mind, consider the following alternative questions, which each have a clear goal.  Each of the goals below maps on to one of the terrible research questions above:
 
 - Calculate the free energy change when ligand A binds to protein B.
 - Calculate the free energy change when single calcium and carbonate ions bind to copper surfaces.
@@ -1103,22 +1092,21 @@ project looks like.  With this in mind consider the following alternative questi
 - Calculate the free energy change as a sodium ion moves through a sodium channel protein.
 - Calculate the free energy change when nitrogen, hydrogen and ammonia gas bind to iron surfaces.
 
-For each of the questions above it is clear what sucess will look like -- you will have a converged estimate of the free energy difference.  In previous masterclasses we have shown you how 
-such estimates can be extracted and what it looks like when such calculations go wrong.  Answering these research questions is thus simply a matter of applying what you have learned. 
-Notice, also, how for each of the questions above it is clear what you can do in the first step:
+For each of the questions above, it is clear what success will look like -- you will have a converged estimate of the free energy difference.  We have shown you how such estimates can be extracted in previous masterclasses and what it looks like when such calculations go wrong.  Answering these research questions is thus simply a matter of applying what you have learned. 
+Notice, also, how for each of the questions above, it is clear what you can do in the first step:
 
 - Run a parallel tempering metadynamics simulation with the distance between the centres of mass of the protein and the ligand as a CV.
 - Run a metadynamics simulation of a slab of copper in contact with an aqueous solution containing a single calcium ion.  Use the z component of the vector connecting the calcium ion and the centre of mass of the copper slab as the CV.
-- Run a metadynamics simulation using the distance from the folded state of the protein as the collective variable.
-- Run a metadynamics simulation of the sodium in the channel protein.  Use the z position of the sodium relative to the center of the chanel protein as a CVs. 
+Run a metadynamics simulation using the distance from the protein's folded state as the collective variable.
+- Run a metadynamics simulation of the sodium in the channel protein.  Use the z position of the sodium relative to the centre of the channel protein as a CVs. 
 - Run a metadynamics simulation of a slab of iron in contact with a simulation box that is empty except for one nitrogen molecule.  Use the z component of the vector connecting the centre of mass of the nitrogen and the centre of mass of the iron slab as the CV.
 
-These simulations may or may not give you the desired free energy difference.  You will at least get some trajectory data from them, however.  You can then analyse the trajectories using a machine learning
-algorithm or similar in order to refine your approach.  This refining stage is where the experience of your supervisor should be invaluable.
+These simulations may or may not give you the desired free energy difference.  You will at least get some trajectory data from them, however.  You can then analyze the trajectories using a machine learning
+algorithm or similar to refine your approach.  This refining stage is where the experience of your supervisor should be invaluable.
 
-With all this mind, have a think about your own research project and try to come up with a research question to work on and an approach that you can use to tackle this question.  Your question should not be some grand challenege.  
-It should be something simple that you know how to do.  You do not need to run these simulations.  I want you to think about the research question so we can discuss them at the follow up session.  I want you to think about how you 
-can actually use these methods in your own research as if you are not doing so attending these masterclasses is pointless as you will never really apply these methods.  
+With all this in mind, think about your research project.  Try to develop a research question to work on and an approach that you can use to tackle this question.  Your question should not be some grand challenge.  
+It should be something simple that you know how to do.  You do not need to run these simulations.  I want you to think about the research question to discuss them at the follow-up session.  I want you to think about how you 
+can use these methods in your research as if you are not doing so, attending these masterclasses is pointless as you will never really apply these methods.  
 
 */
 
