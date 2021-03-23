@@ -753,7 +753,7 @@ p: PCAVARS __FILL__=pca2-reference.pdb __FILL__=OPTIMAL
 PRINT ARG=p.* FILE=colvar
 \endverbatim
 
-Notice that there are now three structures within pca2-reference.pdb and thus two vectors are defined.  <b>Use this input to reannalyse the data in alanine-transformation.pdb and your MD simulations before continuing.<b>  
+Notice that there are now three structures within pca2-reference.pdb and thus two vectors are defined.  <b>Use this input to reannalyse the data in alanine-transformation.pdb and your MD simulations before continuing.</b>  
 The figure below shows the results that I obtained by analysing the
 data using the the PCAVARS command above.
 
