@@ -112,7 +112,8 @@ This repositoy contains 3 folders:
 - `notebooks`: Jupyter notebook to be used as template for the analysis of the PLUMED output;
 - `slides`: a brief presentation of the metadynamics theory.  
 
-To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-4`.
+To keep things clean, it is recommended to run each exercise in a separate sub-directory (i.e. Exercise-1, Exercise-2, ...), which you can create inside the root directory `masterclass-21-4`. The students are invited to solve the exercises by themselves after completing the PLUMED input file 
+templates provided below. In case of problems, students can rely on the solution notebook `solution.ipynb` provided in the [GitHub](https://github.com/plumed/masterclass-21-4) repository. 
 
 In many exercises, we will play with a toy system, alanine dipeptide simulated in vacuo (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
@@ -310,7 +311,7 @@ For example:
 2. weights can be calculated using the metadynamics bias potential obtained at the end of the
    simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
 
-In this exercise we will use the second method, which resembles the umbrella-sampling reweighting approach that you learnt in \ref masterclass-21-2 and \ref masterclass-21-3.
+In this exercise we will use the second method, which is identical to the umbrella-sampling reweighting approach that you have already used in \ref masterclass-21-2 and \ref masterclass-21-3.
 In order to compute the weights we will use the \ref driver tool.
 
 First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
@@ -425,7 +426,7 @@ python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
 \endverbatim 
 
 and run the above script for different block sizes ranging from 1 to 1000.
-For each choice of block size, the script will produce an output file, which contains:
+For each choice of block size, the script will produce an output file, which contains 3 colums:
 - the value of the \f$ \phi \f$ variable on a grid;
 - the free energy averaged across the blocks for each point of the grid;
 - the associated error for each point of the grid.
@@ -463,7 +464,7 @@ The users are invited to prepare, for each of the CV listed above, a PLUMED inpu
 - diffusion of the system in the space of the dihedral \f$ \phi \f$
 - error analysis in the free energy as a function of \f$ \phi \f$
 
-and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. Based on this analysis, can you discriminate between _good_ from _bad_ CVs?
+and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. <b>Based on this analysis, can you discriminate between _good_ from _bad_ CVs?</b>
 
 To complete this exercise, the users should define and test a new CV that is either:
 - as good as the dihedral \f$ \phi \f$;

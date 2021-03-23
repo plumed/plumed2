@@ -496,6 +496,15 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
   plumed_merror("Not enough residues in pdb input file");
 }
 
+std::string PDB::getChainID(AtomNumber a) const {
+  const auto p=number2index.find(a);
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Chain for atom " + num + " not found" );
+    return 0;
+  } else return chain[p->second];
+}
+
 bool PDB::checkForResidue( const std::string& name ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residuenames[i]==name ) return true;
