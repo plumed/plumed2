@@ -741,7 +741,7 @@ data using the PCAVARS command above.
 
 The figure above shows that this coordinate is good.  We move quite far from this initial vector when we move to the C7ax state, however.
 
-\subsubsection masterclass-21-6-ex9 Two PCA Collective variables
+\subsubsection masterclass-21-6-ex90 Two PCA Collective variables
 
 Instead of using a single PCA variable and calculating the projection on the vector connecting these two points, we can instead use the projection of the instantaneous coordinates 
 in the plane that contains three reference configurations.  You can calculate these collective variables using PLUMED by using the input below:
