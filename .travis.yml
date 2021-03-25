@@ -3,7 +3,7 @@ cache: ccache
 jobs:
   include:
 # list of configurations to be attempted:
-  - name: MacOS, serial build
+  - name: MacOS, serial build 
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode11.3
