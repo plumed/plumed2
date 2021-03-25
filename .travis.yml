@@ -212,7 +212,7 @@ script:
 
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKECOVERAGE" == yes ; then make -C developer-doc coverage ; fi
-  - if test "$MAKEDOC" == yes ; then make doc > /dev/null ; fi
+  - if test "$MAKEDOC" == yes ; then make doc ; fi
   - if test "$MAKEDOC" == yes ; then make -C user-doc spelling ; fi
   - if test "$MAKEDOC" == yes ; then make -C user-doc showerrors ; fi
   - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
