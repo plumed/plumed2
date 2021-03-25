@@ -22,6 +22,7 @@
 #include "ActionToPutData.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 #include "Atoms.h"
 
 namespace PLMD {
@@ -31,7 +32,9 @@ PLUMED_REGISTER_ACTION(ActionToPutData,"PUT")
 void ActionToPutData::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys); ActionWithValue::registerKeywords( keys );
   keys.add("compulsory","SHAPE","0","the shape of the value that is being passed to PLUMED");
+  keys.add("optional","FORCES_FOR_POTENTIAL","If your input quantity is an energy this lists the input actions that hold the forces.  These are rescaled");
   keys.addFlag("SUM_OVER_DOMAINS",false,"does this quantity need to be summed over domains");
+  keys.addFlag("NOFORCE",false,"always set the forces on this value to zero");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
@@ -43,11 +46,21 @@ mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
    std::vector<unsigned> shape; parseVector("SHAPE",shape);
    if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
    else { addValue( shape ); }    
-   parseFlag("SUM_OVER_DOMAINS",sum_domains);
+   parseFlag("SUM_OVER_DOMAINS",sum_domains); parseFlag("NOFORCE", noforce);
+   std::vector<std::string> toscale; parseVector("FORCES_FOR_POTENTIAL",toscale);
+   for(unsigned i=0;i<toscale.size();++i) {
+       plumed_assert( shape.size()==0 );
+       ActionToPutData* ap=plumed.getActionSet().selectWithLabel< ActionToPutData*>(toscale[i]);
+       plumed_assert(ap); forces_to_scale.push_back(ap);  
+   }
 }
 
 void ActionToPutData::setUnit( const double& u ) {
    mydata->setUnit(u);
+}
+
+void ActionToPutData::setForceUnit( const double& u ) {
+   mydata->setForceUnit(u);
 }
 
 void ActionToPutData::set_value(void* val ) {
@@ -72,7 +85,15 @@ void ActionToPutData::wait() {
 }
 
 void ActionToPutData::apply() {
-   if( getPntrToValue()->forcesWereAdded() ) mydata->set_force( getPntrToValue() );
+   if( getPntrToValue()->forcesWereAdded() && !noforce ) {
+       for(unsigned i=0;i<forces_to_scale.size();++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0)); 
+       mydata->add_force( getPntrToValue() );
+   }
+}
+
+void ActionToPutData::rescaleForces( const double& alpha ) {
+   if( noforce ) return;
+   mydata->rescale_force( alpha, getPntrToValue() );
 }
 
 void ActionToPutData::writeBinary(std::ostream&o) {

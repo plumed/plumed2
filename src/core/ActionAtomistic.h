@@ -49,6 +49,7 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
+  Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
   Pbc&                  pbc=*pbc_fwd;
   Tensor                virial;
@@ -103,8 +104,9 @@ public:
 ///           Notice that for efficiency reason plumed does not check if this is done!
   Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
+  Tensor & modifyVirial();
 /// Should be used by action that need to modify the stored virial
-  Tensor & modifyGlobalVirial();
+//  Tensor & modifyGlobalVirial();
 /// Get modifiable PBC
 /// Should be used by action that need to modify the stored box
   Pbc & modifyGlobalPbc();
@@ -119,7 +121,7 @@ public:
 /// Get a reference to forces array
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
-  Tensor & modifyVirial();
+  void addVirial( const Tensor& v );
 /// Get a reference to force on extraCV
   double & modifyForceOnExtraCV();
 /// Get number of available atoms
@@ -219,10 +221,10 @@ Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
   return atoms.forces[i.index()];
 }
 
-inline
-Tensor & ActionAtomistic::modifyGlobalVirial() {
-  return atoms.virial;
-}
+// inline
+// Tensor & ActionAtomistic::modifyGlobalVirial() {
+//   return atoms.virial;
+// }
 
 inline
 double ActionAtomistic::getMass(int i)const {

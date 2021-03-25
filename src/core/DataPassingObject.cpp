@@ -40,7 +40,9 @@ public:
 /// Share the data and put it in the value
   void share_data( Value* vv ) override;
 /// Pass the force from the value to the output value
-  void set_force( Value* vv ) override;
+  void add_force( Value* vv ) override;
+/// Rescale the force on the output value
+  void rescale_force( const double& factor, Value* value );
 /// This transfers everything to the output
   void setData( const std::vector<double>& data ) override;
 };
@@ -78,9 +80,15 @@ void DataPassingObjectTyped<T>::share_data( Value* value ) {
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::set_force( Value* value ) {
+void DataPassingObjectTyped<T>::add_force( Value* value ) {
    unsigned nvals=value->getNumberOfValues( value->getName() );
-   for(unsigned i=0;i<nvals;++i) this->f[i] = T(value->getForce(i));
+   for(unsigned i=0;i<nvals;++i) this->f[i] += T(funit*value->getForce(i));
+}
+
+template <class T>
+void DataPassingObjectTyped<T>::rescale_force( const double& factor, Value* value ) {
+   unsigned nvals=value->getNumberOfValues( value->getName() );
+   for(unsigned i=0;i<nvals;++i) this->f[i] *= T(factor);
 }
  
 }

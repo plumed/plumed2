@@ -60,24 +60,25 @@ class Atoms
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionAtomistic*> virtualAtomsActions;
-  Tensor box;
+  //Tensor box;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
-  Tensor virial;
+//  Tensor virial;
 
   bool   dataCanBeSet;
   unsigned positionsHaveBeenSet;
   bool massesHaveBeenSet;
   bool chargesHaveBeenSet;
-  bool boxHasBeenSet;
+  // bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
-  bool virialHasBeenSet;
+  // bool virialHasBeenSet;
   bool massAndChargeOK;
   unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
   void resizeVectors(unsigned);
+  void setPbcFromBox();
 
   std::vector<int> fullList;
 
@@ -166,7 +167,7 @@ public:
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
   void getLocalMDForces(std::vector<Vector>&);
-  const Tensor& getVirial()const;
+//  const Tensor& getVirial()const;
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -175,7 +176,7 @@ public:
 
   void startStep();
   void setBox(void*);
-  void setVirial(void*);
+  // void setVirial(void*);
   void setPositions(void*);
   void setPositions(void*,int);
   void setVatomPosition( const AtomNumber&, const Vector& );
@@ -190,7 +191,7 @@ public:
   void setMasses(void*);
   void setCharges(void*);
   bool chargesWereSet() const ;
-  bool boxWasSet() const ;
+  // bool boxWasSet() const ;
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;
@@ -273,15 +274,15 @@ bool Atoms::chargesWereSet() const {
   return chargesHaveBeenSet;
 }
 
-inline
-bool Atoms::boxWasSet() const {
-  return boxHasBeenSet;
-}
+// inline
+// bool Atoms::boxWasSet() const {
+//   return boxHasBeenSet;
+// }
 
-inline
-const Tensor& Atoms::getVirial()const {
-  return virial;
-}
+//inline
+//const Tensor& Atoms::getVirial()const {
+//  return virial;
+//}
 
 inline
 void Atoms::setVatomPosition( const AtomNumber& ind, const Vector& pos ) {

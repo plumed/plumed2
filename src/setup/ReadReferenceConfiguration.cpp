@@ -149,8 +149,8 @@ SetupReferenceBase(ao)
              }
          }
          // Set the box size if this information was read
-         Tensor box( pdb.getBoxVec() );
-         atoms.setBox( &box[0][0] );
+         // Tensor box( pdb.getBoxVec() );
+         // atoms.setBox( &box[0][0] );
          break;
       }
       if( !do_read ) error("not enough frames input input file " + reference );

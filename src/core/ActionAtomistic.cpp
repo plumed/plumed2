@@ -51,6 +51,10 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   atoms(plumed.getAtoms())
 {
   atoms.add(this);
+  if( atoms.getNatoms()>0 ) {
+      ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
+      boxValue=bv->copyOutput(0); addDependency(bv);
+  }
 //  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
 
@@ -69,7 +73,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clea
   charges.resize(nat);
   int n=atoms.positions.size();
   if(clearDep) clearDependencies();
-  unique.clear();
+  unique.clear(); if(a.size()>0 ) addDependency( boxValue->getPntrToAction() );
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
@@ -250,32 +254,19 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     forces[i][2]+=forcesToApply[ind]; ind++;
   }
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(0,0)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(0,1)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(0,2)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(1,0)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(1,1)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(1,2)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(2,0)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(2,1)+=forcesToApply[ind]; ind++;
-  plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-  virial(2,2)+=forcesToApply[ind]; ind++;
+  for(unsigned i=0;i<9;++i) { 
+     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+     boxValue->addForce( i, forcesToApply[ind] ); ind++; 
+  }
 }
 
 void ActionAtomistic::applyForces() {
-  if(donotforce) return;
+  if(donotforce || atoms.getNatoms()==0) return;
   vector<Vector>   & f(atoms.forces);
-  Tensor           & v(atoms.virial);
+  // Tensor           & v(atoms.virial);
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
-  v+=virial;
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
+  // v+=virial;
   if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
@@ -303,7 +294,7 @@ void ActionAtomistic::makeWhole( const unsigned start, const unsigned end ) {
   if( start>0 ) ss = start; if( end>0 ) ff = end; 
   for(unsigned j=ss; j<ff-1; ++j) {
     const Vector & first (positions[j]);
-    Vector & second (positions[j+1]);
+    Vector & second (positions[j+1]); 
     second=first+pbcDistance(first,second);
   }
 }
@@ -317,6 +308,10 @@ void ActionAtomistic::updateUniqueLocal() {
   } else {
     unique_local.insert(unique.begin(),unique.end());
   }
+}
+
+void ActionAtomistic::addVirial( const Tensor& v ) {
+  for(unsigned j=0; j<3; ++j) for(unsigned k=0; k<3; ++k) boxValue->addForce( 3*j+k, v[j][k] );
 }
 
 const std::map<AtomNumber,Tensor> & ActionAtomistic::getVatomGradients( const AtomNumber& ind ) {

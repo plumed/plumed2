@@ -29,6 +29,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionSet.h"
+#include "core/ActionToPutData.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -81,6 +82,7 @@ class EffectiveEnergyDrift:
   double eed;
 
   Atoms& atoms;
+  Value* boxValue;
   vector<ActionWithValue*> biases;
 
   long int pDdStep;
@@ -143,6 +145,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   fmt("%f"),
   eed(0.0),
   atoms(plumed.getAtoms()),
+  boxValue(NULL),
   nProc(plumed.comm.Get_size()),
   initialBias(0.0),
   isFirstStep(true),
@@ -189,6 +192,9 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   indexR.resize(atoms.getNatoms());
   dataR.resize(atoms.getNatoms()*6);
   backmap.resize(atoms.getNatoms());
+  // Retrieve the box
+  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  if( ap ) boxValue=ap->copyOutput(0); addDependency( ap );
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
@@ -211,8 +217,9 @@ void EffectiveEnergyDrift::update() {
       positions[i]=matmul(positions[i],IB);
       forces[i]=matmul(B,forces[i]);
     }
-    box=B;
-    fbox=matmul(transpose(inverse(box)),atoms.getVirial());
+    box=B; Tensor virial; plumed_assert( boxValue );
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j]=boxValue->getForce(3*i+j);
+    fbox=matmul(transpose(inverse(box)),virial);
   }
 
   //init stored data at the first step

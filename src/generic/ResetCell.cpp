@@ -22,6 +22,9 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
+#include "core/ActionToPutData.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "tools/Vector.h"
 #include "tools/Matrix.h"
 #include "tools/AtomNumber.h"
@@ -100,7 +103,7 @@ class ResetCell:
 {
   std::string type;
   Tensor rotation,newbox;
-
+  Value* boxValue;
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -128,7 +131,9 @@ ResetCell::ResetCell(const ActionOptions&ao):
   log<<"  type: "<<type<<"\n";
   if(type!="TRIANGULAR") error("undefined type "+type);
 
-  checkRead();
+  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  if( !ap ) error("cannot reset cell if box has not been set");
+  boxValue=ap->copyOutput(0); addDependency( ap ); checkRead();
 }
 
 
@@ -176,7 +181,7 @@ void ResetCell::apply() {
     f=matmul(transpose(rotation),f);
   }
 
-  Tensor& virial(modifyGlobalVirial());
+//   Tensor& virial(modifyGlobalVirial());
 // I have no mathematical derivation for this.
 // The reasoning is the following.
 // virial= h^T * dU/dh, where h is the box matrix and dU/dh its derivatives.
@@ -189,12 +194,14 @@ void ResetCell::apply() {
 // Thus, the only possibility is to set the corresponding elements
 // of the virial matrix equal to their symmetric ones.
 // GB
+  Tensor virial;
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j]=boxValue->getForce( 3*i+j ); 
   virial[0][1]=virial[1][0];
   virial[0][2]=virial[2][0];
   virial[1][2]=virial[2][1];
 // rotate back virial
-  virial=matmul(transpose(rotation),matmul(virial,rotation));
-
+  virial=matmul(transpose(rotation),matmul(virial,rotation)); boxValue->clearInputForce();
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
 
 
 }

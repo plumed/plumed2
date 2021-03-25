@@ -47,9 +47,9 @@ Atoms::Atoms(PlumedMain&plumed):
   positionsHaveBeenSet(0),
   massesHaveBeenSet(false),
   chargesHaveBeenSet(false),
-  boxHasBeenSet(false),
+  //boxHasBeenSet(false),
   forcesHaveBeenSet(0),
-  virialHasBeenSet(false),
+  // virialHasBeenSet(false),
   massAndChargeOK(false),
   shuffledAtoms(0),
   mdatoms(MDAtomsBase::create(sizeof(double))),
@@ -73,14 +73,15 @@ Atoms::~Atoms() {
 }
 
 void Atoms::startStep() {
-  positionsHaveBeenSet=0; massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
-  forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
+  positionsHaveBeenSet=0; massesHaveBeenSet=false; chargesHaveBeenSet=false; //boxHasBeenSet=false;
+  forcesHaveBeenSet=0; // virialHasBeenSet=false; 
+  dataCanBeSet=true;
 }
 
-void Atoms::setBox(void*p) {
-  mdatoms->setBox(p);
-  Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
-}
+// void Atoms::setBox(void*p) {
+//   mdatoms->setBox(p);
+//   Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
+// }
 
 void Atoms::setPositions(void*p) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
@@ -101,10 +102,10 @@ void Atoms::setCharges(void*p) {
   mdatoms->setc(p); chargesHaveBeenSet=true;
 }
 
-void Atoms::setVirial(void*p) {
-  plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
-  mdatoms->setVirial(p); virialHasBeenSet=true;
-}
+// void Atoms::setVirial(void*p) {
+//   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
+//   mdatoms->setVirial(p); virialHasBeenSet=true;
+// }
 
 void Atoms::setForces(void*p) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
@@ -173,14 +174,15 @@ void Atoms::shareAll() {
 void Atoms::share(const std::set<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
 
-  virial.zero();
+  // virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
     for(int i=0; i<natoms; i++) forces[i].zero();
   } else {
     for(const auto & p : unique) forces[p.index()].zero();
   }
   for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
-  mdatoms->getBox(box);
+  forceOnEnergy=0.0;
+  //mdatoms->getBox(box);
 
   if(!atomsNeeded) return;
   atomsNeeded=false;
@@ -260,6 +262,14 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   }
 }
 
+void Atoms::setPbcFromBox() {
+  ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  plumed_assert( apb ); Tensor box; Value* myval( apb->copyOutput(0) );
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) box(i,j) = myval->get(3*i+j);
+  if(dd) dd.Bcast(box,0);
+  pbc.setBox(box);
+}
+
 void Atoms::wait() {
   dataCanBeSet=false; // Everything should be set by this stage
   if(getNatoms()==0) return;
@@ -267,10 +277,10 @@ void Atoms::wait() {
   int ndata=3;
   if(!massAndChargeOK)ndata=5;
 
-  if(dd) {
-    dd.Bcast(box,0);
-  }
-  pbc.setBox(box);
+  // if(dd) {
+  //   dd.Bcast(box,0);
+  // }
+  setPbcFromBox();
 
   if(dd && shuffledAtoms>0) {
 // receive toBeReceived
@@ -316,10 +326,10 @@ void Atoms::updateForces() {
     if(int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
     else mdatoms->updateForces(unique,uniq_index,forces);
   }
-  if( !plumed.novirial && dd.Get_rank()==0 ) {
-    plumed_assert( virialHasBeenSet );
-    mdatoms->updateVirial(virial);
-  }
+  // if( !plumed.novirial && dd.Get_rank()==0 ) {
+  //   // plumed_assert( virialHasBeenSet );
+  //   //mdatoms->updateVirial(virial);
+  // }
 }
 
 void Atoms::setNatoms(int n) {
@@ -434,6 +444,10 @@ void Atoms::updateUnits() {
   // Set the units of the energy
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Energy");
   plumed_assert( ap ); ap->setUnit( MDUnits.getEnergy()/units.getEnergy() );
+  // Update the units of the box
+  ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  plumed_assert( apb ); apb->setUnit( MDUnits.getLength()/units.getLength() ); 
+  apb->setForceUnit( units.getEnergy()/MDUnits.getEnergy() );
 }
 
 void Atoms::setTimeStep(void*p) {
@@ -498,8 +512,14 @@ void Atoms::init() {
 }
 
 void Atoms::setup() {
+  // Create holder for the cell
+  std::string noforce=""; 
+  if( plumed.novirial || dd.Get_rank()!=0 ) noforce = " NOFORCE";
+  plumed.readInputLine( "Box: PUT SHAPE=3,3 " + noforce);
+  ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  plumed_assert( apb ); apb->set_domain( false, "", "" );
   // Create holder for the energy
-  plumed.readInputLine( "Energy: PUT SUM_OVER_DOMAINS"); 
+  plumed.readInputLine( "Energy: PUT SUM_OVER_DOMAINS FORCES_FOR_POTENTIAL=Box");
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Energy");
   plumed_assert( ap ); ap->set_domain( false, "", "" ); ap->set_force( &forceOnEnergy );
 }
@@ -544,17 +564,18 @@ void Atoms::removeGroup(const std::string&name) {
 
 void Atoms::writeBinary(std::ostream&o)const {
   o.write(reinterpret_cast<const char*>(&positions[0][0]),natoms*3*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
+  // o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
   std::vector<ActionToPutData*> & inputs(plumed.getInputActions()); 
   for(unsigned i=0;i<inputs.size();++i) inputs[i]->writeBinary(o);
 }
 
 void Atoms::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&positions[0][0]),natoms*3*sizeof(double));
-  i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
+  // i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
   std::vector<ActionToPutData*> & inputs(plumed.getInputActions());
   for(unsigned j=0;j<inputs.size();++j) inputs[j]->readBinary(i);
-  pbc.setBox(box);
+  setPbcFromBox();
+  // pbc.setBox(box);
 }
 
 double Atoms::getKBoltzmann()const {

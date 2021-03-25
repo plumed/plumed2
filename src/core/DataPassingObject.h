@@ -30,13 +30,17 @@ namespace PLMD {
 
 class DataPassingObject {
 protected:
-/// The units of the quantity that 
+/// The units of the quantity 
   double unit;
+/// The units of the force on this quantity
+  double funit;
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
-  explicit DataPassingObject() : unit(1) {}
-/// Set the unit for the conversion
+  explicit DataPassingObject() : unit(1), funit(1) {}
+/// Set the unit for the value
   void setUnit( const double& u ) { unit=u; }
+/// Set the unit for the force
+  void setForceUnit( const double& u ) { funit=u; }
 /// Set the pointer to the value 
   virtual void setValuePointer( void* p )=0;
 /// Set the pointer to the force
@@ -44,7 +48,9 @@ public:
 /// Share the data and put it in the value
   virtual void share_data( Value* vv )=0;
 /// Pass the force from the value to the output value
-  virtual void set_force( Value* vv )=0;
+  virtual void add_force( Value* vv )=0;
+/// Rescale the forces that were passed
+  virtual void rescale_force( const double& factor, Value* value )=0;
 /// This transfers everything to the output
   virtual void setData( const std::vector<double>& data )=0;
 };

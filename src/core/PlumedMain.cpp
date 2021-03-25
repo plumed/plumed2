@@ -186,7 +186,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setBox(val);
+        cmd("setValue Box",val);
+        // atoms.setBox(val);
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
@@ -215,7 +216,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setVirial:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setVirial(val);
+        cmd("setValueForces Box", val);
+        // atoms.setVirial(val);
         break;
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
@@ -815,10 +817,11 @@ void PlumedMain::waitData() {
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
-  atoms.wait();
   for(unsigned i=0; i<inputs.size();++i) {
-      if( inputs[i]->isActive() ) inputs[i]->wait();
+      if( inputs[i]->isActive() && inputs[i]->hasBeenSet() ) inputs[i]->wait();
+      else if( inputs[i]->isActive() ) inputs[i]->warning("input requested but this quantity has not been set");
   }
+  atoms.wait();
 }
 
 void PlumedMain::justCalculate() {

@@ -148,13 +148,15 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setNoVirial"); 
   plmd.cmd("setMDEngine","pathtools");
-  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  int natoms = 1; plmd.cmd("setNatoms",&natoms);
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);
   std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
   std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
- 
+  std::vector<Vector> pos(1); plmd.cmd("setPositions",&pos[0][0]); 
+  std::vector<Vector> forces(1); plmd.cmd("setForces",&forces[0][0]);
+
   std::string mtype; parse("--metric",mtype);
   std::string ifilename; parse("--path",ifilename);
   std::string ofmt; parse("--arg-fmt",ofmt);
@@ -339,12 +341,14 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setNoVirial");
   plmd.cmd("setMDEngine","pathtools");
-  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  int natoms = 1; plmd.cmd("setNatoms",&natoms);
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);
   std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
   std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
+  std::vector<Vector> pos(1); plmd.cmd("setPositions",&pos[0][0]);
+  std::vector<Vector> forces(1); plmd.cmd("setForces",&forces[0][0]);
 
   FILE* fp=fopen(ofile.c_str(),"r");
   bool do_read=true; unsigned nfram=0;

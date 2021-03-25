@@ -367,11 +367,13 @@ void RMSD::apply() {
   // Retrieve instantaneous configuration
   for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
 
-  Tensor& v(modifyVirial()); std::vector<Vector>& f(modifyForces()); unsigned n=pos.size();
+  // Tensor& v(modifyVirial()); 
+  Tensor v; v.zero(); std::vector<Vector>& f(modifyForces()); unsigned n=pos.size();
   for(unsigned i=0; i<pos.size(); i++) {
       f[n][0] += forcesToApply[i][0]; f[n][1] += forcesToApply[i][1]; f[n][2] += forcesToApply[i][2]; n++; 
       v -= Tensor( pos[i], forcesToApply[i] );
   }
+  addVirial(v);
 }
 
 }

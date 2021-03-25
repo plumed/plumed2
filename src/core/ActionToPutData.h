@@ -35,6 +35,10 @@ private:
   bool wasset;
 /// Do the domains need to be summed
   bool sum_domains;
+/// Are we not applying forces on this values
+  bool noforce;
+/// This is the list of forces that must be scaled
+  std::vector<ActionToPutData*> forces_to_scale;
 /// This holds the pointer that we getting data from
   std::unique_ptr<DataPassingObject> mydata;
 public:
@@ -42,6 +46,8 @@ public:
   explicit ActionToPutData(const ActionOptions&ao);
 /// Set the periodicity of the variable
   void set_domain( const bool& periodic, const std::string& min, const std::string& max );
+/// Check if the value has been set
+  bool hasBeenSet() const ;
 /// Override clear the input data 
   void clearDerivatives( const bool& force ){}
 /// Do not add chains to setup actions
@@ -52,8 +58,10 @@ public:
   unsigned getNumberOfDerivatives() const { return 0; }
 /// Do we need to sum this over all the domains
   bool sumOverDomains() const ;
-/// Set the unit of the energy
+/// Set the unit for this quantity
   void setUnit( const double& u );
+/// Set the unit of the force on this quantity
+  void setForceUnit( const double& u );
 /// Set the memory that holds the value
   void set_value(void* val );
 /// Set the memory that holds the force
@@ -63,6 +71,7 @@ public:
 /// Actually set the values for the output
   void calculate(){}
   void apply();
+  void rescaleForces( const double& alpha );
 /// For replica exchange
   void writeBinary(std::ostream&o);
   void readBinary(std::istream&i);
@@ -71,6 +80,11 @@ public:
 inline
 bool ActionToPutData::sumOverDomains() const {
   return sum_domains;
+}
+
+inline
+bool ActionToPutData::hasBeenSet() const {
+  return wasset;
 }
 
 }

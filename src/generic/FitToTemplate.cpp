@@ -23,6 +23,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionToPutData.h"
 #include "tools/Vector.h"
 #include "tools/Matrix.h"
 #include "tools/AtomNumber.h"
@@ -176,6 +177,7 @@ class FitToTemplate:
 {
   std::string type;
   bool nopbc;
+  Value* boxValue;
   std::vector<double> weights;
   std::vector<AtomNumber> aligned;
   Vector center;
@@ -289,6 +291,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   // this is required so as to allow modifyGlobalForce() to return correct
   // also for forces that are not owned (and thus not zeored) by all processors.
   allowToAccessGlobalForces();
+  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  if( !ap ) error("cannot align box has not been set");
+  boxValue=ap->copyOutput(0); addDependency( ap ); checkRead();
 }
 
 
@@ -331,8 +336,8 @@ void FitToTemplate::apply() {
     for(unsigned i=0; i<getTotAtoms(); i++) {
       totForce+=modifyGlobalForce(AtomNumber::index(i));
     }
-    Tensor & vv(modifyGlobalVirial());
-    vv+=Tensor(center,totForce);
+    Tensor vv=Tensor(center,totForce);
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, vv(i,j) );
     for(unsigned i=0; i<aligned.size(); ++i) {
       Vector & ff(modifyGlobalForce(aligned[i]));
       ff-=totForce*weights[i];
@@ -346,13 +351,13 @@ void FitToTemplate::apply() {
 // accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
       totForce+=f;
     }
-    Tensor& virial(modifyGlobalVirial());
+    Tensor virial;
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j] = boxValue->getForce( 3*i+j );
 // notice that an extra Tensor(center,matmul(rotation,totForce)) is required to
 // compute the derivatives of the rotation with respect to center
     Tensor ww=matmul(transpose(rotation),virial+Tensor(center,matmul(rotation,totForce)));
 // rotate back virial
-    virial=matmul(transpose(rotation),matmul(virial,rotation));
-
+    virial=matmul(transpose(rotation),matmul(virial,rotation)); boxValue->clearInputForce();
 // now we compute the force due to alignment
     for(unsigned i=0; i<aligned.size(); i++) {
       Vector g;
@@ -370,6 +375,7 @@ void FitToTemplate::apply() {
     }
 // finally, correction to the virial
     virial+=extProduct(matmul(transpose(rotation),center),totForce);
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
   }
 }
 
