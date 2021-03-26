@@ -57,6 +57,8 @@ if test "$GITHUB_ACTIONS" == true ; then
   fi
 fi
 
+cat html/special-replica-syntax.html
+
 # THIS IS FOR DOXYGEN <= 1.8.10
 # I leave it here for the moment
 mkdir build_examples
