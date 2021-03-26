@@ -129,7 +129,7 @@ jobs:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       if: contains( matrix.variant, '-doc-' )
       run: |
-         make doc >/dev/null
+         make doc 
     - name: Coverage
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
