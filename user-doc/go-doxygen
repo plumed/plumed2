@@ -130,6 +130,7 @@ EOF
 
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css
+cat html/special-replica-syntax.html
 
 if [ "$make_pdfdoc" != yes ] ; then
   exit
