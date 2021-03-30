@@ -187,7 +187,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         cmd("setValue Box",val);
-        // atoms.setBox(val);
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
@@ -195,11 +194,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_setMasses:
         CHECK_INIT(initialized,word);
-        atoms.setMasses(val);
+        cmd("setValue Masses", val);
         break;
       case cmd_setCharges:
         CHECK_INIT(initialized,word);
-        atoms.setCharges(val);
+        cmd("setValue Charges", val);
         break;
       case cmd_setPositionsX:
         CHECK_INIT(initialized,word);
@@ -217,7 +216,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         cmd("setValueForces Box", val);
-        // atoms.setVirial(val);
         break;
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
@@ -284,7 +282,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setValue:
       {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        CHECK_NOTNULL(val,words[0]);
         ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(words[1]);
         ap->set_value(val);
       }

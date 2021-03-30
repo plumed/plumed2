@@ -91,8 +91,10 @@ SetupReferenceBase(ao)
    std::vector<Vector> positions( natoms ), forces( natoms );
    std::vector<double> masses( natoms ), charges( natoms );
    as->getAtomsFromReference( 0, masses, charges, positions );
-   p.cmd("setMasses",&masses[0]); if( atoms.chargesWereSet() ) p.cmd("setCharge",&charges[0]);
-   p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
+   if( natoms>0 ) {
+       p.cmd("setMasses",&masses[0]); p.cmd("setCharges",&charges[0]);
+       p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
+   }
    // Copy values from reference to PLUMED 
    std::vector<std::vector<double>> valdata( as->getNumberOfComponents() );
    for(unsigned i=0;i<as->getNumberOfComponents();++i) {

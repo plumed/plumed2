@@ -171,7 +171,7 @@ void WeightedAtomAverage::prepareForTasks( const unsigned& nactive, const std::v
           }
         }
     // Check we have charges if we need them
-    } else if ( weight_charge && !plumed.getAtoms().chargesWereSet() ) {
+    } else if ( weight_charge  ) {
         error(
             "You are trying to compute a center of charnge but chargest are not known.\n"
             "        If you are using plumed driver, please use the --mc option"
@@ -192,7 +192,6 @@ void WeightedAtomAverage::performTask( const unsigned& task_index, MultiValue& m
   if( weight_mass ) {
     w = getMass(task_index);
   } else if( weight_charge ) {
-    if( !plumed.getAtoms().chargesWereSet() ) plumed_merror("cannot calculate center of charge if chrages are unset");
     w = getCharge(task_index);
   } else if( val_weights && actionInChain() ) {
     w = myvals.get( val_weights->getPositionInStream() );

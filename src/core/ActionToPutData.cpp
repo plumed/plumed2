@@ -35,18 +35,23 @@ void ActionToPutData::registerKeywords(Keywords& keys){
   keys.add("optional","FORCES_FOR_POTENTIAL","If your input quantity is an energy this lists the input actions that hold the forces.  These are rescaled");
   keys.addFlag("SUM_OVER_DOMAINS",false,"does this quantity need to be summed over domains");
   keys.addFlag("NOFORCE",false,"always set the forces on this value to zero");
+  keys.addFlag("SCATTERED",false,"is this vector scattered over the domains");
+  keys.addFlag("FIXED",false,"does this quantity not depend on time");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 wasset(false),
+firststep(true),
+dataCanBeSet(true),
 mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
 {
    std::vector<unsigned> shape; parseVector("SHAPE",shape);
    if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
    else { addValue( shape ); }    
-   parseFlag("SUM_OVER_DOMAINS",sum_domains); parseFlag("NOFORCE", noforce);
+   parseFlag("SUM_OVER_DOMAINS",sum_domains); parseFlag("NOFORCE", noforce); parseFlag("FIXED",fixed); 
+   parseFlag("SCATTERED",scattered); if( scattered ) plumed_assert( shape.size()>0 );
    std::vector<std::string> toscale; parseVector("FORCES_FOR_POTENTIAL",toscale);
    for(unsigned i=0;i<toscale.size();++i) {
        plumed_assert( shape.size()==0 );
@@ -64,10 +69,12 @@ void ActionToPutData::setForceUnit( const double& u ) {
 }
 
 void ActionToPutData::set_value(void* val ) {
-   wasset=true; mydata->setValuePointer(val);
+   wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time");
+   mydata->setValuePointer(val);
 }
 
 void ActionToPutData::set_force(void* val ) {
+   plumed_massert( dataCanBeSet, "force on " + getLabel() + " cannot be set at this time");
    mydata->setForcePointer(val);
 }
 
@@ -76,12 +83,18 @@ void ActionToPutData::set_domain( const bool& periodic, const std::string& min, 
 }
 
 void ActionToPutData::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) {
-   if( mystr.find("*")!=std::string::npos ) return ;
+   if( mystr.find("*")!=std::string::npos ) return;
    ActionWithValue::interpretDataLabel( mystr, myuser, nargs, args );
 }
 
+void ActionToPutData::share( const std::vector<int>& gatindex ) {
+   plumed_assert( scattered ); 
+   if( wasset ) mydata->share_data( gatindex, getPntrToValue() );
+}
+
 void ActionToPutData::wait() {
-   plumed_assert( wasset ); mydata->share_data( getPntrToValue() );
+   dataCanBeSet=false; if( scattered || !wasset ) { return; }
+   plumed_assert( wasset ); mydata->share_data( getPntrToValue() ); // firststep=false;
 }
 
 void ActionToPutData::apply() {
@@ -97,13 +110,11 @@ void ActionToPutData::rescaleForces( const double& alpha ) {
 }
 
 void ActionToPutData::writeBinary(std::ostream&o) {
-  // if( fixed ) return; 
-  getPntrToValue()->writeBinary(o);
+  if(!fixed) getPntrToValue()->writeBinary(o);
 }
 
 void ActionToPutData::readBinary(std::istream&i) {
-  // if( fixed ) return; 
-  getPntrToValue()->readBinary(i);
+  if(!fixed) getPntrToValue()->readBinary(i);
 }
 
 }

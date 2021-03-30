@@ -47,6 +47,8 @@ public:
   virtual void setForcePointer( void* p )=0;
 /// Share the data and put it in the value
   virtual void share_data( Value* vv )=0;
+/// Share the data and put it in the value from a scattered data
+  virtual void share_data( const std::vector<int>& index, Value* value )=0;
 /// Pass the force from the value to the output value
   virtual void add_force( Value* vv )=0;
 /// Rescale the forces that were passed

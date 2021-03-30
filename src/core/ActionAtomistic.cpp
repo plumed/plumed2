@@ -33,6 +33,7 @@
 #include "AverageBase.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
+#include "ActionToPutData.h"
 
 using namespace std;
 
@@ -54,6 +55,10 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   if( atoms.getNatoms()>0 ) {
       ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
       boxValue=bv->copyOutput(0); addDependency(bv);
+      ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Masses");
+      massValue=mv->copyOutput(0); addDependency(mv);
+      ActionWithValue* qv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Charges");
+      chargeValue=qv->copyOutput(0); addDependency(qv);
   }
 //  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
@@ -73,7 +78,12 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clea
   charges.resize(nat);
   int n=atoms.positions.size();
   if(clearDep) clearDependencies();
-  unique.clear(); if(a.size()>0 ) addDependency( boxValue->getPntrToAction() );
+  unique.clear(); 
+  if(a.size()>0 ) { 
+     addDependency( boxValue->getPntrToAction() );
+     addDependency( massValue->getPntrToAction() );
+     addDependency( chargeValue->getPntrToAction() );
+  }
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
@@ -234,14 +244,21 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
 
 void ActionAtomistic::retrieveAtoms() {
   pbc=atoms.pbc;
-  if(donotretrieve) return;
-  chargesWereSet=atoms.chargesWereSet();
-  const vector<Vector> & p(atoms.positions);
+  if(donotretrieve || indexes.size()==0 ) return;
+  // chargesWereSet=atoms.chargesWereSet();
+  ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargeValue->getPntrToAction() );
+  chargesWereSet=cv->hasBeenSet(); const vector<Vector> & p(atoms.positions);
   const vector<double> & c(atoms.charges);
   const vector<double> & m(atoms.masses);
   for(unsigned j=0; j<indexes.size(); j++) positions[j]=p[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) charges[j]=c[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
+  for(unsigned j=0; j<indexes.size(); j++) {
+      if( atoms.isVirtualAtom(indexes[j]) ) {
+          charges[j]=c[indexes[j].index()]; masses[j]=m[indexes[j].index()];
+      } else {
+          charges[j]=chargeValue->get(indexes[j].index()); 
+          masses[j]=massValue->get(indexes[j].index());    
+      }
+   }
 }
 
 void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned& ind ) {

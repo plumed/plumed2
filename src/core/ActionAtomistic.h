@@ -49,12 +49,13 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
+  Value*                massValue;
+  Value*                chargeValue;
   Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
   Pbc&                  pbc=*pbc_fwd;
   Tensor                virial;
   std::vector<double>   masses;
-  bool                  chargesWereSet;
   std::vector<double>   charges;
 
   std::vector<Vector>   forces;          // forces on the needed atoms
@@ -69,6 +70,7 @@ class ActionAtomistic :
   bool                  donotforce;
 
 protected:
+  bool                  chargesWereSet;
   Atoms&                atoms;
 
   void setExtraCV(const std::string &name);
@@ -228,6 +230,7 @@ Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
 
 inline
 double ActionAtomistic::getMass(int i)const {
+  plumed_assert( i<masses.size() );
   return masses[i];
 }
 

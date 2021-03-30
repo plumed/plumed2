@@ -188,11 +188,8 @@ void PlumedFunction::turnOnDerivatives() {
 void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
    const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<myplumed.size()); 
    int istep=getStep(); const_cast<PlumedMain*>(&myplumed[t])->cmd("setStep",&istep);
-   std::vector<Vector> positions( 0 ), forces( 0 ); std::vector<double> masses( 0 ), fargv( args.size(), 0 );
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setMasses",&masses[0]); 
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setForces",&forces[0]); 
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setPositions",&positions[0]);
    // Copy values from reference to PLUMED 
+   std::vector<double> fargv( args.size(), 0 );
    for(unsigned i=0;i<args.size();++i) {
        std::string num; Tools::convert(i+1,num);
        const_cast<PlumedMain*>(&myplumed[t])->cmd("setValue arg" + num, &args[i] ); 

@@ -60,19 +60,12 @@ class Atoms
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionAtomistic*> virtualAtomsActions;
-  //Tensor box;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
-//  Tensor virial;
 
   bool   dataCanBeSet;
   unsigned positionsHaveBeenSet;
-  bool massesHaveBeenSet;
-  bool chargesHaveBeenSet;
-  // bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
-  // bool virialHasBeenSet;
-  bool massAndChargeOK;
   unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
@@ -132,6 +125,7 @@ class Atoms
   DomainDecomposition dd;
   long int ddStep;  //last step in which dd happened
 
+  bool needsAllAtoms() const;
   void share(const std::set<AtomNumber>&);
 
 public:
@@ -163,11 +157,9 @@ public:
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
-  void getLocalMasses(std::vector<double>&);
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
   void getLocalMDForces(std::vector<Vector>&);
-//  const Tensor& getVirial()const;
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -176,7 +168,6 @@ public:
 
   void startStep();
   void setBox(void*);
-  // void setVirial(void*);
   void setPositions(void*);
   void setPositions(void*,int);
   void setVatomPosition( const AtomNumber&, const Vector& );
@@ -188,10 +179,6 @@ public:
   Vector & getVatomForces( const AtomNumber& );
   void setForces(void*);
   void setForces(void*,int);
-  void setMasses(void*);
-  void setCharges(void*);
-  bool chargesWereSet() const ;
-  // bool boxWasSet() const ;
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;
@@ -268,21 +255,6 @@ inline
 bool Atoms::usingNaturalUnits() const {
   return naturalUnits || MDnaturalUnits;
 }
-
-inline
-bool Atoms::chargesWereSet() const {
-  return chargesHaveBeenSet;
-}
-
-// inline
-// bool Atoms::boxWasSet() const {
-//   return boxHasBeenSet;
-// }
-
-//inline
-//const Tensor& Atoms::getVirial()const {
-//  return virial;
-//}
 
 inline
 void Atoms::setVatomPosition( const AtomNumber& ind, const Vector& pos ) {

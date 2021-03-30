@@ -1,4 +1,4 @@
-#! FIELDS time t d @4.bias @4.force2 @4.t_cntr @4.t_work @4.t_kappa @4.d_cntr @4.d_work @4.d_kappa @4.work
+#! FIELDS time t d @6.bias @6.force2 @6.t_cntr @6.t_work @6.t_kappa @6.d_cntr @6.d_work @6.d_kappa @6.work
 #! SET min_t -pi
 #! SET max_t pi
  0.000000 -1.571  1.000  3.777  7.553  2.827  0.000  1.000  3.000  0.000  1.000  0.000

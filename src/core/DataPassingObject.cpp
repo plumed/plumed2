@@ -39,6 +39,8 @@ public:
   void setForcePointer( void* p ) override;
 /// Share the data and put it in the value
   void share_data( Value* vv ) override;
+/// Share the data and put it in the value from a scattered data
+  void share_data( const std::vector<int>& index, Value* value ) override;
 /// Pass the force from the value to the output value
   void add_force( Value* vv ) override;
 /// Rescale the force on the output value
@@ -77,6 +79,11 @@ template <class T>
 void DataPassingObjectTyped<T>::share_data( Value* value ) {
    unsigned nvals = value->getSize();
    for(unsigned i=0;i<nvals;++i) value->set( i, unit*this->v[i] );
+}
+
+template <class T>
+void DataPassingObjectTyped<T>::share_data( const std::vector<int>& index, Value* value ) {
+   for(unsigned i=0;i<index.size();++i) value->set( index[i], unit*this->v[i] );
 }
 
 template <class T>

@@ -89,8 +89,6 @@ public:
   void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions) const override;
   void getPositions(unsigned j,unsigned k,vector<Vector>&positions) const override;
   void getLocalPositions(std::vector<Vector>&p) const override;
-  void getMasses(const vector<int>&index,vector<double>&) const override;
-  void getCharges(const vector<int>&index,vector<double>&) const override;
   void updateVirial(const Tensor&) const override;
   void updateForces(const vector<int>&index,const vector<Vector>&) override;
   void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) override;
@@ -164,17 +162,17 @@ void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const {
 }
 
 
-template <class T>
-void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const {
-  if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*m[i];
-  else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
-}
-
-template <class T>
-void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)const {
-  if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*c[i];
-  else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
-}
+// template <class T>
+// void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const {
+//   if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*m[i];
+//   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
+// }
+// 
+// template <class T>
+// void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)const {
+//   if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*c[i];
+//   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
+// }
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {

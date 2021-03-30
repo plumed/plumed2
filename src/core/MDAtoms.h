@@ -91,10 +91,10 @@ public:
   virtual void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&p)const=0;
 /// Retrieve selected masses.
 /// The operation is done in such a way that m[index[i]] is equal to the mass of atom i
-  virtual void getMasses(const std::vector<int>&index,std::vector<double>&m)const=0;
+//  virtual void getMasses(const std::vector<int>&index,std::vector<double>&m)const=0;
 /// Retrieve selected charges.
 /// The operation is done in such a way that c[index[i]] is equal to the charge of atom i
-  virtual void getCharges(const std::vector<int>&index,std::vector<double>&c)const=0;
+//   virtual void getCharges(const std::vector<int>&index,std::vector<double>&c)const=0;
 /// Retrieve local positions.
   virtual void getLocalPositions(std::vector<Vector>&p)const=0;
 /// Increment the virial by an amount v

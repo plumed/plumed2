@@ -115,9 +115,12 @@ void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom
       metric.cmd("setValue arg2", &valdata2[0] );
   }
   reference_frames[ito]->getAtomsFromReference( positions.size()/2, masses, charges, positions );
-  metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
-  metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
-  metric.cmd("setBox",&box[0][0]); metric.cmd("calc");
+  if( positions.size()>0 ) {
+      metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
+      metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
+      metric.cmd("setBox",&box[0][0]); 
+  }
+  metric.cmd("calc");
 }
 
 void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace ) {

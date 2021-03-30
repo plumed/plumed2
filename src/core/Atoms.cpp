@@ -37,7 +37,7 @@ namespace PLMD {
 
 /// We assume that charges and masses are constant along the simulation
 /// Set this to false if you want to revert to the original (expensive) behavior
-static const bool shareMassAndChargeOnlyAtFirstStep=true;
+// static const bool shareMassAndChargeOnlyAtFirstStep=true;
 
 class PlumedMain;
 
@@ -45,12 +45,7 @@ Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   dataCanBeSet(false),
   positionsHaveBeenSet(0),
-  massesHaveBeenSet(false),
-  chargesHaveBeenSet(false),
-  //boxHasBeenSet(false),
   forcesHaveBeenSet(0),
-  // virialHasBeenSet(false),
-  massAndChargeOK(false),
   shuffledAtoms(0),
   mdatoms(MDAtomsBase::create(sizeof(double))),
   plumed(plumed),
@@ -73,39 +68,18 @@ Atoms::~Atoms() {
 }
 
 void Atoms::startStep() {
-  positionsHaveBeenSet=0; massesHaveBeenSet=false; chargesHaveBeenSet=false; //boxHasBeenSet=false;
-  forcesHaveBeenSet=0; // virialHasBeenSet=false; 
+  positionsHaveBeenSet=0; 
+  forcesHaveBeenSet=0; 
+  std::vector<ActionToPutData*> & inputs(plumed.getInputActions()); 
+  for(unsigned i=0;i<inputs.size();++i) { inputs[i]->dataCanBeSet=true; }
   dataCanBeSet=true;
 }
-
-// void Atoms::setBox(void*p) {
-//   mdatoms->setBox(p);
-//   Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
-// }
 
 void Atoms::setPositions(void*p) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL position pointer with non-zero local atoms");
   mdatoms->setp(p); positionsHaveBeenSet=3;
 }
-
-void Atoms::setMasses(void*p) {
-  plumed_massert( dataCanBeSet,"setMasses must be called after setStep in MD code interface");
-  plumed_massert( p || gatindex.size()==0, "NULL mass pointer with non-zero local atoms");
-  mdatoms->setm(p); massesHaveBeenSet=true;
-
-}
-
-void Atoms::setCharges(void*p) {
-  plumed_massert( dataCanBeSet, "setCharges must be called after setStep in MD code interface");
-  plumed_massert( p || gatindex.size()==0, "NULL charges pointer with non-zero local atoms");
-  mdatoms->setc(p); chargesHaveBeenSet=true;
-}
-
-// void Atoms::setVirial(void*p) {
-//   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
-//   mdatoms->setVirial(p); virialHasBeenSet=true;
-// }
 
 void Atoms::setForces(void*p) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
@@ -130,7 +104,7 @@ void Atoms::share() {
 // At first step I scatter all the atoms so as to store their mass and charge
 // Notice that this works with the assumption that charges and masses are
 // not changing during the simulation!
-  if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
+  if( needsAllAtoms() ) {
     shareAll();
     return;
   }
@@ -172,7 +146,7 @@ void Atoms::shareAll() {
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique) {
-  plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
+  plumed_assert( positionsHaveBeenSet==3 );   // && massesHaveBeenSet );
 
   // virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
@@ -199,16 +173,19 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     mdatoms->getPositions(unique,uniq_index,positions);
   }
 
-
 // how many double per atom should be scattered:
-  int ndata=3;
-  if(!massAndChargeOK) {
-    ndata=5;
-    masses.assign(natoms,std::numeric_limits<double>::quiet_NaN());
-    charges.assign(natoms,std::numeric_limits<double>::quiet_NaN());
-    mdatoms->getCharges(gatindex,charges);
-    mdatoms->getMasses(gatindex,masses);
+  int ndata=3; std::vector<Value*> values_to_get;
+  std::vector<ActionToPutData*> & inputs(plumed.getInputActions()); 
+  for(unsigned i=0;i<inputs.size();++i) { 
+      if( inputs[i]->collectFromDomains() ) { inputs[i]->share( gatindex ); values_to_get.push_back(inputs[i]->copyOutput(0)); ndata++; }
   }
+  // if(!massAndChargeOK) {
+  //   ndata=5;
+  //   masses.assign(natoms,std::numeric_limits<double>::quiet_NaN());
+  //   charges.assign(natoms,std::numeric_limits<double>::quiet_NaN());
+  //   mdatoms->getCharges(gatindex,charges);
+  //   mdatoms->getMasses(gatindex,masses);
+  // }
 
   if(dd && shuffledAtoms>0) {
     if(dd.async) {
@@ -221,9 +198,10 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
       dd.positionsToBeSent[ndata*count+0]=positions[p.index()][0];
       dd.positionsToBeSent[ndata*count+1]=positions[p.index()][1];
       dd.positionsToBeSent[ndata*count+2]=positions[p.index()][2];
-      if(!massAndChargeOK) {
-        dd.positionsToBeSent[ndata*count+3]=masses[p.index()];
-        dd.positionsToBeSent[ndata*count+4]=charges[p.index()];
+      int dpoint=3;
+      for(unsigned i=0;i<values_to_get.size();++i) { 
+          dd.positionsToBeSent[ndata*count+dpoint]=values_to_get[i]->get(p.index()); 
+          dpoint++; 
       }
       count++;
     }
@@ -253,9 +231,10 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
         positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[ndata*i+0];
         positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[ndata*i+1];
         positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[ndata*i+2];
-        if(!massAndChargeOK) {
-          masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[ndata*i+3];
-          charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[ndata*i+4];
+        int dpoint=3;
+        for(unsigned j=0;j<values_to_get.size();++j) {
+            values_to_get[j]->set( dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] ); 
+            dpoint++; 
         }
       }
     }
@@ -274,8 +253,11 @@ void Atoms::wait() {
   dataCanBeSet=false; // Everything should be set by this stage
   if(getNatoms()==0) return;
 // How many double per atom should be scattered
-  int ndata=3;
-  if(!massAndChargeOK)ndata=5;
+  int ndata=3; std::vector<Value*> values_to_set;
+  std::vector<ActionToPutData*> & inputs(plumed.getInputActions());
+  for(unsigned i=0;i<inputs.size();++i) { 
+      if( inputs[i]->collectFromDomains() ) { values_to_set.push_back(inputs[i]->copyOutput(0)); ndata++; }  
+  }
 
   // if(dd) {
   //   dd.Bcast(box,0);
@@ -297,21 +279,21 @@ void Atoms::wait() {
         positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[ndata*i+0];
         positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[ndata*i+1];
         positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[ndata*i+2];
-        if(!massAndChargeOK) {
-          masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[ndata*i+3];
-          charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[ndata*i+4];
+        int dpoint=3;
+        for(unsigned j=0;j<values_to_set.size();++j) {
+            values_to_set[j]->set(dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] ); 
+            dpoint++;
         }
       }
       asyncSent=false;
     }
-    std::vector<ActionToPutData*> & inputs(plumed.getInputActions()); 
     for(unsigned i=0;i<inputs.size();++i) {
         if( inputs[i]->sumOverDomains() ) dd.Sum( (inputs[i]->copyOutput(0))->data  );
     }
   }
 // I take note that masses and charges have been set once for all
 // at the beginning of the simulation.
-  if(shareMassAndChargeOnlyAtFirstStep) massAndChargeOK=true;
+  // if(shareMassAndChargeOnlyAtFirstStep) massAndChargeOK=true;
 }
 
 void Atoms::updateForces() {
@@ -448,6 +430,14 @@ void Atoms::updateUnits() {
   ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
   plumed_assert( apb ); apb->setUnit( MDUnits.getLength()/units.getLength() ); 
   apb->setForceUnit( units.getEnergy()/MDUnits.getEnergy() );
+  // Update the units of the mass
+  if( natoms>0 ) {
+      ActionToPutData* apm=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Masses");
+      plumed_assert( apm ); apm->setUnit( MDUnits.getMass()/units.getMass() );
+      // Update the units of the charge
+      ActionToPutData* apq=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Charges");
+      plumed_assert( apq ); apq->setUnit( MDUnits.getCharge()/units.getCharge() );
+  }
 }
 
 void Atoms::setTimeStep(void*p) {
@@ -466,9 +456,16 @@ double Atoms::getKbT()const {
   return kbT/units.getEnergy()*MDUnits.getEnergy();
 }
 
+bool Atoms::needsAllAtoms() const {
+  std::vector<ActionToPutData*> & inputs(plumed.getInputActions()); bool getall=false;
+  for(unsigned i=0;i<inputs.size();++i) {
+      if( inputs[i]->collectFromDomains() ) { getall=true; }
+  } 
+  return getall;
+}
 
 void Atoms::createFullList(int*n) {
-  if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
+  if( needsAllAtoms() ) {
     *n=natoms;
     fullList.resize(natoms);
     for(unsigned i=0; i<natoms; i++) fullList[i]=i;
@@ -522,6 +519,17 @@ void Atoms::setup() {
   plumed.readInputLine( "Energy: PUT SUM_OVER_DOMAINS FORCES_FOR_POTENTIAL=Box");
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Energy");
   plumed_assert( ap ); ap->set_domain( false, "", "" ); ap->set_force( &forceOnEnergy );
+  // Create holder for the masses
+  if( natoms>0 ) { 
+      std::string str_natoms; Tools::convert( natoms, str_natoms );
+      plumed.readInputLine("Masses: PUT SHAPE=" + str_natoms + " SCATTERED FIXED NOFORCE");
+      ActionToPutData* apm=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Masses");
+      plumed_assert( apm ); apm->set_domain( false, "", "" ); 
+      // Create holder for the charges 
+      plumed.readInputLine("Charges: PUT SHAPE=" + str_natoms + " SCATTERED FIXED NOFORCE");
+      ActionToPutData* apq=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Charges");
+      plumed_assert( apq ); apq->set_domain( false, "", "" );
+  }
 }
 
 void Atoms::setDomainDecomposition(Communicator& comm) {
@@ -588,10 +596,10 @@ double Atoms::getMDKBoltzmann()const {
   else return kBoltzmann/MDUnits.getEnergy();
 }
 
-void Atoms::getLocalMasses(std::vector<double>& localMasses) {
-  localMasses.resize(gatindex.size());
-  for(unsigned i=0; i<gatindex.size(); i++) localMasses[i] = masses[gatindex[i]];
-}
+// void Atoms::getLocalMasses(std::vector<double>& localMasses) {
+//   localMasses.resize(gatindex.size());
+//   for(unsigned i=0; i<gatindex.size(); i++) localMasses[i] = masses[gatindex[i]];
+// }
 
 void Atoms::getLocalPositions(std::vector<Vector>& localPositions) {
   localPositions.resize(gatindex.size());
