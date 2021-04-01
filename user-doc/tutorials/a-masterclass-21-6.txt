@@ -196,7 +196,7 @@ for frame in traj:
         ]
     )
 
-# This constructs the dicitionary of properties for chemiscope
+# This constructs the dictionary of properties for chemiscope
 properties = {
     "time": {
         "target": "structure",
@@ -335,7 +335,7 @@ for frame in traj:
         ]
     )
 
-# This constructs the dicitionary of properties for chemiscope
+# This constructs the dictionary of properties for chemiscope
 properties = {
     "pca1": {
         "target": "structure",
@@ -982,7 +982,7 @@ from chemiscope import write_input
 # Read in the trajectory
 traj = ase.io.read('../LJ-trajectories/First-run/trajectory.xyz',':')
 
-# This constructs the dicitionary of properties for chemiscope
+# This constructs the dictionary of properties for chemiscope
 properties = {
     "coord": {
         "target": "atom",
