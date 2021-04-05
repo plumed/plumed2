@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DataPassingObject.h"
+#include "tools/OpenMP.h"
 #include "tools/Tools.h"
 
 namespace PLMD {
@@ -32,19 +33,20 @@ private:
 /// A pointer to the force 
   T* f;
 public:
-  static std::unique_ptr<DataPassingObject> create(unsigned n);
 /// Set the pointer to the value
   void setValuePointer( void* p ) override;
 /// Set the pointer to the force
   void setForcePointer( void* p ) override;
-/// Share the data and put it in the value
-  void share_data( Value* vv ) override;
+/// Share the data and put it in the value from sequential data
+  void share_data( const unsigned& j, const unsigned& k, Value* value ) override;
 /// Share the data and put it in the value from a scattered data
-  void share_data( const std::vector<int>& index, Value* value ) override;
+  void share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) override;
 /// Pass the force from the value to the output value
   void add_force( Value* vv ) override;
+  void add_force( const std::vector<int>& index, Value* value ) override;
+  void add_force( const std::set<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) override;
 /// Rescale the force on the output value
-  void rescale_force( const double& factor, Value* value );
+  void rescale_force( const unsigned& n, const double& factor, Value* value ) override;
 /// This transfers everything to the output
   void setData( const std::vector<double>& data ) override;
 };
@@ -76,26 +78,39 @@ void DataPassingObjectTyped<T>::setData( const std::vector<double>& data ) {
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::share_data( Value* value ) {
-   unsigned nvals = value->getSize();
-   for(unsigned i=0;i<nvals;++i) value->set( i, unit*this->v[i] );
+void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k, Value* value ) {
+  #pragma omp parallel for num_threads(value->getGoodNumThreads(j,k))
+  for(unsigned i=j; i<k; ++i) { value->set( i, unit*this->v[i*stride] ); }
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::share_data( const std::vector<int>& index, Value* value ) {
-   for(unsigned i=0;i<index.size();++i) value->set( index[i], unit*this->v[i] );
+void DataPassingObjectTyped<T>::share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) {
+  // cannot be parallelized with omp because access to data is not ordered
+  unsigned k=0; for(const auto & p : index) { value->set( p.index(), unit*this->v[i[k]*stride] ); k++; }
 }
 
 template <class T>
 void DataPassingObjectTyped<T>::add_force( Value* value ) {
    unsigned nvals=value->getNumberOfValues( value->getName() );
-   for(unsigned i=0;i<nvals;++i) this->f[i] += T(funit*value->getForce(i));
+   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(this->f,nvals))
+   for(unsigned i=0;i<nvals;++i) this->f[i*stride] += T(funit*value->getForce(i));
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::rescale_force( const double& factor, Value* value ) {
-   unsigned nvals=value->getNumberOfValues( value->getName() );
-   for(unsigned i=0;i<nvals;++i) this->f[i] *= T(factor);
+void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value* value ) {
+   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(this->f,index.size()))
+   for(unsigned i=0; i<index.size(); ++i) this->f[i*stride] += T(funit*value->getForce(index[i])); 
+}
+
+template <class T>
+void DataPassingObjectTyped<T>::add_force( const std::set<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
+   unsigned k=0; for(const auto & p : index) { this->f[stride*i[k]] += T(funit*value->getForce(p.index())); k++; }
+}
+
+template <class T>
+void DataPassingObjectTyped<T>::rescale_force( const unsigned& n, const double& factor, Value* value ) {
+   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(this->f,n))
+   for(unsigned i=0;i<n;++i) this->f[i*stride] *= T(factor);
 }
  
 }

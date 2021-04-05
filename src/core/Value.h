@@ -226,6 +226,8 @@ public:
 ///
   void writeBinary(std::ostream&o) const ;
   void readBinary(std::istream&i);
+/// This gets the number of threads to use for setting the value
+  unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
 };
 
 inline

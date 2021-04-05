@@ -46,6 +46,8 @@ private:
   bool firststep;
 /// Can we set data at the current time
   bool dataCanBeSet;
+/// Have the original forces been scaled
+  bool wasscaled;
 /// This is the list of forces that must be scaled
   std::vector<ActionToPutData*> forces_to_scale;
 /// This holds the pointer that we getting data from
@@ -53,8 +55,8 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
-/// Set the periodicity of the variable
-  void set_domain( const bool& periodic, const std::string& min, const std::string& max );
+/// This resets the stride in the collection object
+  void setStride( const unsigned& sss );
 /// Check if the value has been set
   bool hasBeenSet() const ;
 /// Override clear the input data 
@@ -69,6 +71,8 @@ public:
   bool sumOverDomains() const ;
 /// Is this quantity scattered over the domains
   bool collectFromDomains() const;
+/// Do we always need to collect the atoms from all domains
+  bool collectAllFromDomains() const;
 /// Set the unit for this quantity
   void setUnit( const double& u );
 /// Set the unit of the force on this quantity
@@ -77,12 +81,13 @@ public:
   void set_value(void* val );
 /// Set the memory that holds the force
   void set_force(void* val );
-/// Share the data from the holder
-  void share( const std::vector<int>& gatindex );
+/// Share the data from the holder when the data is distributed over domains
+  void share( const unsigned& j, const unsigned& k );
+  void share( const std::set<AtomNumber>&index, const std::vector<unsigned>& i );
 /// Get the data to share
   void wait();
 /// Actually set the values for the output
-  void calculate(){ firststep=false; }
+  void calculate(){ firststep=false; wasscaled=false; }
   void apply();
   void rescaleForces( const double& alpha );
 /// For replica exchange
@@ -104,6 +109,12 @@ inline
 bool ActionToPutData::collectFromDomains() const {
   if( scattered && fixed ) return firststep;
   return scattered;
+}
+
+inline
+bool ActionToPutData::collectAllFromDomains() const {
+  if( scattered && fixed ) return firststep;
+  return false;
 }
 
 }

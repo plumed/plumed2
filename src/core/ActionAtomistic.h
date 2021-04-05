@@ -41,7 +41,6 @@ class PDB;
 class ActionAtomistic :
   virtual public Action
 {
-
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique;
@@ -49,6 +48,7 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
+  std::vector<Value*>   pos_values;
   Value*                massValue;
   Value*                chargeValue;
   Value*                boxValue;
@@ -89,11 +89,11 @@ public:
 /// With direct access to the global atom array.
 /// \warning Should be only used by actions that need to read the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  const Vector & getGlobalPosition(AtomNumber)const;
-/// Get modifiable position of i-th atom (access by absolute AtomNumber).
+  Vector getGlobalPosition(AtomNumber)const;
+/// Modify position of i-th atom (access by absolute AtomNumber).
 /// \warning Should be only used by actions that need to modify the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  Vector & modifyGlobalPosition(AtomNumber);
+  void setGlobalPosition(AtomNumber, const Vector& pos);
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
@@ -104,7 +104,7 @@ public:
 ///           if an action require this, one should during constructor
 ///           call allowToAccessGlobalForces().
 ///           Notice that for efficiency reason plumed does not check if this is done!
-  Vector & modifyGlobalForce(AtomNumber);
+//  Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
   Tensor & modifyVirial();
 /// Should be used by action that need to modify the stored virial
@@ -163,7 +163,7 @@ public:
 /// If start and end are set to particular indices then do a subset
   void makeWhole( const unsigned start=0, const unsigned end=0 );
 /// Allow calls to modifyGlobalForce()
-  void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
+//   void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
 /// updates local unique atoms
   void updateUniqueLocal();
 public:
@@ -208,20 +208,11 @@ const Vector & ActionAtomistic::getPosition(int i)const {
   return positions[i];
 }
 
-inline
-const Vector & ActionAtomistic::getGlobalPosition(AtomNumber i)const {
-  return atoms.positions[i.index()];
-}
 
-inline
-Vector & ActionAtomistic::modifyGlobalPosition(AtomNumber i) {
-  return atoms.positions[i.index()];
-}
-
-inline
-Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
-  return atoms.forces[i.index()];
-}
+// inline
+// Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
+//   return atoms.forces[i.index()];
+// }
 
 // inline
 // Tensor & ActionAtomistic::modifyGlobalVirial() {
@@ -298,11 +289,6 @@ const std::set<AtomNumber> & ActionAtomistic::getUnique()const {
 inline
 const std::set<AtomNumber> & ActionAtomistic::getUniqueLocal()const {
   return unique_local;
-}
-
-inline
-unsigned ActionAtomistic::getTotAtoms()const {
-  return atoms.positions.size();
 }
 
 inline

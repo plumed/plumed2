@@ -45,6 +45,7 @@ class Pbc;
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
+  friend class ActionToPutData;
   friend class ActionAtomistic;
   int natoms;
   std::set<AtomNumber> unique;
@@ -63,9 +64,9 @@ class Atoms
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
 
-  bool   dataCanBeSet;
-  unsigned positionsHaveBeenSet;
-  unsigned forcesHaveBeenSet;
+//   bool   dataCanBeSet;
+//   unsigned positionsHaveBeenSet;
+//  unsigned forcesHaveBeenSet;
   unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
@@ -139,10 +140,10 @@ public:
   void share();
   void shareAll();
   void wait();
-  void updateForces();
+//  void updateForces();
 
   void setRealPrecision(int);
-  int  getRealPrecision()const;
+//  int  getRealPrecision()const;
 
   void setTimeStep(void*);
   double getTimeStep()const;
@@ -157,9 +158,9 @@ public:
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
-  void getLocalPositions(std::vector<Vector>&);
-  void getLocalForces(std::vector<Vector>&);
-  void getLocalMDForces(std::vector<Vector>&);
+//   void getLocalPositions(std::vector<Vector>&);
+//   void getLocalForces(std::vector<Vector>&);
+//   void getLocalMDForces(std::vector<Vector>&);
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -168,8 +169,8 @@ public:
 
   void startStep();
   void setBox(void*);
-  void setPositions(void*);
-  void setPositions(void*,int);
+//   void setPositions(void*);
+//   void setPositions(void*,int);
   void setVatomPosition( const AtomNumber&, const Vector& );
   Vector getVatomPosition( const AtomNumber& ) const ;
   double getVatomMass( const AtomNumber& ) const ;
@@ -177,8 +178,8 @@ public:
   void setVatomMass( const AtomNumber&, const double& );
   void setVatomCharge( const AtomNumber&, const double& );
   Vector & getVatomForces( const AtomNumber& );
-  void setForces(void*);
-  void setForces(void*,int);
+//  void setForces(void*);
+//  void setForces(void*,int);
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;

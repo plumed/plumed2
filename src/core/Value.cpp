@@ -26,6 +26,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
+#include "tools/OpenMP.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
 
@@ -435,6 +436,10 @@ void Value::writeBinary(std::ostream&o) const {
 
 void Value::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
+}
+
+unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
+  return OpenMP::getGoodNumThreads( &data[j], (k-j) );
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){

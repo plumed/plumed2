@@ -104,6 +104,7 @@ class ResetCell:
   std::string type;
   Tensor rotation,newbox;
   Value* boxValue;
+  std::vector<Value*> pos_values;
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -131,9 +132,18 @@ ResetCell::ResetCell(const ActionOptions&ao):
   log<<"  type: "<<type<<"\n";
   if(type!="TRIANGULAR") error("undefined type "+type);
 
+  ActionToPutData* ax=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posx");
+  if( !ax ) error("cannot align posx has not been set");
+  pos_values.push_back( ax->copyOutput(0) );
+  ActionToPutData* ay=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posy");
+  if( !ay ) error("cannot align posx has not been set");
+  pos_values.push_back( ay->copyOutput(0) );
+  ActionToPutData* az=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posz");
+  if( !az ) error("cannot align posx has not been set");
+  pos_values.push_back( az->copyOutput(0) );
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
   if( !ap ) error("cannot reset cell if box has not been set");
-  boxValue=ap->copyOutput(0); addDependency( ap ); checkRead();
+  boxValue=ap->copyOutput(0); checkRead();
 }
 
 
@@ -167,8 +177,8 @@ void ResetCell::calculate() {
 
 // rotate all coordinates
   for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
-    ato=matmul(rotation,ato);
+    Vector ato=getGlobalPosition(AtomNumber::index(i));
+    setGlobalPosition(AtomNumber::index(i),matmul(rotation,ato));
   }
 // rotate box
   pbc.setBox(newbox);
@@ -177,8 +187,8 @@ void ResetCell::calculate() {
 void ResetCell::apply() {
 // rotate back forces
   for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector & f(modifyGlobalForce(AtomNumber::index(i)));
-    f=matmul(transpose(rotation),f);
+    Vector f; for(unsigned k=0; k<3; ++k) f[k]=pos_values[k]->getForce(i); 
+    Vector nf=matmul(transpose(rotation),f); for(unsigned k=0; k<3; ++k) pos_values[k]->addForce( i, nf[k]-f[k] ); 
   }
 
 //   Tensor& virial(modifyGlobalVirial());

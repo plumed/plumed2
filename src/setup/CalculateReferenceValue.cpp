@@ -63,12 +63,15 @@ SetupReferenceBase(ao)
    // Create copies of the values computed by the reference object
    for(unsigned i=0;i<as->getNumberOfComponents();++i) {
        std::vector<int> size(1+as->copyOutput(i)->getRank()); 
-       size[0]=as->copyOutput(i)->getRank(); 
-       for(unsigned j=0;j<size[0];++j) size[j+1]=as->copyOutput(i)->getShape()[j];
+       unsigned rank=as->copyOutput(i)->getRank(); std::string shape_str="0";
+       if( rank>0 ) {
+           Tools::convert(as->copyOutput(i)->getShape()[0], shape_str ); 
+           for(unsigned j=1;j<rank;++j) { std::string sss; Tools::convert( as->copyOutput(i)->getShape()[j],sss); shape_str += "," + sss; }
+       }
        std::size_t dot=as->copyOutput(i)->getName().find("."); 
        std::string name=as->copyOutput(i)->getName().substr(dot+1); 
-       p.cmd("createValue " + name, &size[0] );
-       if( !as->copyOutput(i)->isPeriodic() ) p.cmd("setValueNotPeriodic " + name);
+       std::string period_str=" PERIODIC=NO";  plumed_assert( !as->copyOutput(i)->isPeriodic() );
+       p.cmd("createValue " + name + ": PUT SHAPE=" + shape_str + period_str); 
    }
    double tstep=1.0; p.cmd("setTimestep",&tstep);
    // Now read the PLUMED command that we have to execute
@@ -94,6 +97,7 @@ SetupReferenceBase(ao)
    if( natoms>0 ) {
        p.cmd("setMasses",&masses[0]); p.cmd("setCharges",&charges[0]);
        p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
+       Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    }
    // Copy values from reference to PLUMED 
    std::vector<std::vector<double>> valdata( as->getNumberOfComponents() );
@@ -104,7 +108,6 @@ SetupReferenceBase(ao)
       std::string name=as->copyOutput(i)->getName().substr(dot+1); 
       p.cmd("setValue " + name, &valdata[i][0] );
    }
-   Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value
    ActionWithValue* fav = p.getActionSet().getFinalActionOfType<ActionWithValue*>();
    std::vector<unsigned> nvals( fav->getNumberOfComponents() ); 

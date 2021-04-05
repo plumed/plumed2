@@ -82,6 +82,7 @@ class EffectiveEnergyDrift:
   double eed;
 
   Atoms& atoms;
+  std::vector<Value*> pos_values;
   Value* boxValue;
   vector<ActionWithValue*> biases;
 
@@ -192,9 +193,16 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   indexR.resize(atoms.getNatoms());
   dataR.resize(atoms.getNatoms()*6);
   backmap.resize(atoms.getNatoms());
+  // Retrieve the positions
+  ActionToPutData* ax=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posx");
+  if( ax ) { pos_values.push_back(ax->copyOutput(0)); addDependency( ax ); }
+  ActionToPutData* ay=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posy");
+  if( ay ) { pos_values.push_back(ay->copyOutput(0)); addDependency( ay ); }
+  ActionToPutData* az=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posz");
+  if( az ) { pos_values.push_back(az->copyOutput(0)); addDependency( az ); }
   // Retrieve the box
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-  if( ap ) boxValue=ap->copyOutput(0); addDependency( ap );
+  if( ap ) { boxValue=ap->copyOutput(0); addDependency( ap ); }
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
@@ -205,10 +213,14 @@ void EffectiveEnergyDrift::update() {
   bool pbc=atoms.getPbc().isSet();
 
   //retrive data of local atoms
-  const vector<int>& gatindex = atoms.getGatindex();
-  nLocalAtoms = gatindex.size();
-  atoms.getLocalPositions(positions);
-  atoms.getLocalForces(forces);
+  const vector<int>& gatindex = atoms.getGatindex(); nLocalAtoms = gatindex.size();
+  positions.resize( nLocalAtoms ); forces.resize( nLocalAtoms );
+  for(unsigned i=0; i<nLocalAtoms; ++i) {
+      for(unsigned k=0; k<3; ++k ) {
+          positions[i][k] = pos_values[k]->get(gatindex[i]);
+          forces[i][k] = pos_values[k]->getForce(gatindex[i]);
+      }
+  }
   if(pbc) {
     Tensor B=atoms.getPbc().getBox();
     Tensor IB=atoms.getPbc().getInvBox();
