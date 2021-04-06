@@ -32,6 +32,8 @@ class DataPassingTools {
 public:
   static std::unique_ptr<DataPassingTools> create(unsigned n);
   virtual int getRealPrecision() const = 0;
+  virtual double MD2double(const void*) const=0;
+  virtual void double2MD(const double&,void*) const=0;
   virtual void setThreeVectorValues( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp )=0;
   virtual void setThreeVectorForces( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp )=0;
   virtual void setVectorValues( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp )=0;

@@ -30,8 +30,7 @@ namespace PLMD {
 Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao),
-  isExtraCV(false)
+  ActionWithValue(ao)
 {
 }
 
@@ -66,48 +65,43 @@ void Colvar::apply() {
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
-  if(!isExtraCV) {
-    #pragma omp parallel num_threads(nt)
-    {
-      vector<Vector> omp_f(fsz);
-      Tensor         omp_v;
-      vector<double> forces(3*nat+9);
-      #pragma omp for
-      for(unsigned i=rank; i<ncp; i+=stride) {
-        std::fill(forces.begin(),forces.end(),0);
-        if(getPntrToComponent(i)->applyForce(forces)) {
-          for(unsigned j=0; j<nat; ++j) {
-            omp_f[j][0]+=forces[3*j+0];
-            omp_f[j][1]+=forces[3*j+1];
-            omp_f[j][2]+=forces[3*j+2];
-          }
-          omp_v(0,0)+=forces[3*nat+0];
-          omp_v(0,1)+=forces[3*nat+1];
-          omp_v(0,2)+=forces[3*nat+2];
-          omp_v(1,0)+=forces[3*nat+3];
-          omp_v(1,1)+=forces[3*nat+4];
-          omp_v(1,2)+=forces[3*nat+5];
-          omp_v(2,0)+=forces[3*nat+6];
-          omp_v(2,1)+=forces[3*nat+7];
-          omp_v(2,2)+=forces[3*nat+8];
+  #pragma omp parallel num_threads(nt)
+  {
+    vector<Vector> omp_f(fsz);
+    Tensor         omp_v;
+    vector<double> forces(3*nat+9);
+    #pragma omp for
+    for(unsigned i=rank; i<ncp; i+=stride) {
+      std::fill(forces.begin(),forces.end(),0);
+      if(getPntrToComponent(i)->applyForce(forces)) {
+        for(unsigned j=0; j<nat; ++j) {
+          omp_f[j][0]+=forces[3*j+0];
+          omp_f[j][1]+=forces[3*j+1];
+          omp_f[j][2]+=forces[3*j+2];
         }
-      }
-      #pragma omp critical
-      {
-        for(unsigned j=0; j<nat; ++j) f[j]+=omp_f[j];
-        v+=omp_v;
+        omp_v(0,0)+=forces[3*nat+0];
+        omp_v(0,1)+=forces[3*nat+1];
+        omp_v(0,2)+=forces[3*nat+2];
+        omp_v(1,0)+=forces[3*nat+3];
+        omp_v(1,1)+=forces[3*nat+4];
+        omp_v(1,2)+=forces[3*nat+5];
+        omp_v(2,0)+=forces[3*nat+6];
+        omp_v(2,1)+=forces[3*nat+7];
+        omp_v(2,2)+=forces[3*nat+8];
       }
     }
-
-    if(ncp>4*comm.Get_size()) {
-      if(fsz>0) comm.Sum(&f[0][0],3*fsz);
-      comm.Sum(&v[0][0],9);
+    #pragma omp critical
+    {
+      for(unsigned j=0; j<nat; ++j) f[j]+=omp_f[j];
+      v+=omp_v;
     }
-
-  } else if( isExtraCV ) {
-    vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
   }
+
+  if(ncp>4*comm.Get_size()) {
+    if(fsz>0) comm.Sum(&f[0][0],3*fsz);
+    comm.Sum(&v[0][0],9);
+  }
+
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {

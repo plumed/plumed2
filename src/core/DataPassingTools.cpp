@@ -27,6 +27,8 @@ template <class T>
 class DataPassingToolsTyped : public DataPassingTools {
 public:
   int getRealPrecision() const override;
+  double MD2double(const void*)const override;
+  void double2MD(const double&d,void*m) const override;
   void setThreeVectorValues( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
   void setThreeVectorForces( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
   void setVectorValues( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
@@ -47,6 +49,16 @@ std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
 template <class T>
 int DataPassingToolsTyped<T>::getRealPrecision() const {
   return sizeof(T);
+}
+
+template <class T>
+double DataPassingToolsTyped<T>::MD2double(const void*m) const {
+  double d=double(*(static_cast<const T*>(m))); return d;
+}
+
+template <class T>
+void DataPassingToolsTyped<T>::double2MD(const double&d,void*m) const {
+  *(static_cast<T*>(m))=T(d);
 }
 
 template <class T>

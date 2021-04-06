@@ -36,7 +36,7 @@
 
 namespace PLMD {
 
-class MDAtomsBase;
+//class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
 class Pbc;
@@ -76,7 +76,7 @@ class Atoms
 
   std::vector<int> fullList;
 
-  std::unique_ptr<MDAtomsBase> mdatoms;
+  //std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 
@@ -145,10 +145,10 @@ public:
   void setRealPrecision(int);
 //  int  getRealPrecision()const;
 
-  void setTimeStep(void*);
+  void setTimeStep(const double tstep);
   double getTimeStep()const;
 
-  void setKbT(void*);
+  void setKbT(const double t);
   double getKbT()const;
 
   void setNatoms(int);

@@ -60,7 +60,6 @@ class ActionAtomistic :
 
   std::vector<Vector>   forces;          // forces on the needed atoms
 
-  double                forceOnExtraCV;
 
   std::string           extraCV;
 
@@ -72,8 +71,6 @@ class ActionAtomistic :
 protected:
   bool                  chargesWereSet;
   Atoms&                atoms;
-
-  void setExtraCV(const std::string &name);
 
 public:
 /// Request an array of atoms.
@@ -124,8 +121,6 @@ public:
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
   void addVirial( const Tensor& v );
-/// Get a reference to force on extraCV
-  double & modifyForceOnExtraCV();
 /// Get number of available atoms
   unsigned getNumberOfAtoms()const {return indexes.size();}
 /// Compute the pbc distance between two positions
@@ -262,11 +257,6 @@ Tensor & ActionAtomistic::modifyVirial() {
 }
 
 inline
-double & ActionAtomistic::modifyForceOnExtraCV() {
-  return forceOnExtraCV;
-}
-
-inline
 const Pbc & ActionAtomistic::getPbc() const {
   return pbc;
 }
@@ -295,12 +285,6 @@ inline
 Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
 }
-
-inline
-void ActionAtomistic::setExtraCV(const std::string &name) {
-  extraCV=name;
-}
-
 
 
 }

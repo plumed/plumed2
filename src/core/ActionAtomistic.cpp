@@ -303,14 +303,12 @@ void ActionAtomistic::applyForces() {
   }
   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
   // v+=virial;
-  if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
   for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
-  forceOnExtraCV=0.0;
 }
 
 

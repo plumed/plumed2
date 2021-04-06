@@ -386,38 +386,32 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(*static_cast<int*>(val));
         passtools=DataPassingTools::create(*static_cast<int*>(val));
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDLengthUnits(d);
+        atoms.setMDLengthUnits(passtools->MD2double(val));
         break;
       case cmd_setMDChargeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDChargeUnits(d);
+        atoms.setMDChargeUnits(passtools->MD2double(val));
         break;
       case cmd_setMDMassUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDMassUnits(d);
+        atoms.setMDMassUnits(passtools->MD2double(val));
         break;
       case cmd_setMDEnergyUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDEnergyUnits(d);
+        atoms.setMDEnergyUnits(passtools->MD2double(val));
         break;
       case cmd_setMDTimeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDTimeUnits(d);
+        atoms.setMDTimeUnits(passtools->MD2double(val));
         break;
       case cmd_setNaturalUnits:
         // set the boltzman constant for MD in natural units (kb=1)
@@ -457,13 +451,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setTimeStep(val);
+        atoms.setTimeStep( passtools->MD2double(val) );
         break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setKbT(val);
+        atoms.setKbT( passtools->MD2double(val) );
         break;
       /* ADDED WITH API==3 */
       case cmd_setRestart:
@@ -545,7 +539,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_getBias:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+        passtools->double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
         break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
@@ -553,14 +547,12 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
         break;
       case cmd_setExtraCV:
-        CHECK_NOTNULL(val,word);
-        plumed_assert(nw==2);
-        atoms.setExtraCV(words[1],val);
+        CHECK_NOTNULL(val,word); plumed_assert(nw==2);
+        if( inputs.count(words[1]) ) (inputs.find(words[1])->second)->set_value(val);
         break;
       case cmd_setExtraCVForce:
-        CHECK_NOTNULL(val,word);
-        plumed_assert(nw==2);
-        atoms.setExtraCVForce(words[1],val);
+        CHECK_NOTNULL(val,word); plumed_assert(nw==2);
+        if( inputs.count(words[1]) ) (inputs.find(words[1])->second)->set_force(val);
         break;
       case cmd_GREX:
         if(!grex) grex.reset(new GREX(*this));
@@ -583,7 +575,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API=7 */
       case cmd_createValue:
       {
-         CHECK_NOTINIT(initialized,words[0]); 
          std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
          readInputLine( inpt ); std::size_t col=words[1].find_first_of(":"); std::string lab=words[1].substr(0,col);
          ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(lab);
@@ -613,7 +604,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
         double v;
         plumed_assert(words.size()==2);
-        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+        if(Tools::convert(words[1],v)) passtools->double2MD(v,val);
       }
       break;
       default:

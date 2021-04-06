@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Atoms.h"
 #include "ActionAtomistic.h"
-#include "MDAtoms.h"
 #include "PlumedMain.h"
 #include "ActionToPutData.h"
 #include "ActionSet.h"
@@ -47,7 +46,7 @@ Atoms::Atoms(PlumedMain&plumed):
   // positionsHaveBeenSet(0),
   // forcesHaveBeenSet(0),
   shuffledAtoms(0),
-  mdatoms(MDAtomsBase::create(sizeof(double))),
+  // mdatoms(MDAtomsBase::create(sizeof(double))),
   plumed(plumed),
   naturalUnits(false),
   MDnaturalUnits(false),
@@ -404,23 +403,23 @@ void Atoms::setAtomsContiguous(int start) {
   unique.clear();
 }
 
-void Atoms::setRealPrecision(int p) {
-  mdatoms=MDAtomsBase::create(p);
-}
+//void Atoms::setRealPrecision(int p) {
+//  //mdatoms=MDAtomsBase::create(p);
+//}
 
 // int Atoms::getRealPrecision()const {
 //   return mdatoms->getRealPrecision();
 // }
 
-void Atoms::MD2double(const void*m,double&d)const {
-  plumed_assert(mdatoms); mdatoms->MD2double(m,d);
-}
-void Atoms::double2MD(const double&d,void*m)const {
-  plumed_assert(mdatoms); mdatoms->double2MD(d,m);
-}
+// void Atoms::MD2double(const void*m,double&d)const {
+//   plumed_assert(mdatoms); mdatoms->MD2double(m,d);
+// }
+// void Atoms::double2MD(const double&d,void*m)const {
+//   plumed_assert(mdatoms); mdatoms->double2MD(d,m);
+// }
 
 void Atoms::updateUnits() {
-  mdatoms->setUnits(units,MDUnits);
+  // mdatoms->setUnits(units,MDUnits);
   if( natoms==0 ) return;
   // Set the units of the energy
   ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Energy");
@@ -447,16 +446,16 @@ void Atoms::updateUnits() {
   plumed_assert( apq ); apq->setUnit( MDUnits.getCharge()/units.getCharge() );
 }
 
-void Atoms::setTimeStep(void*p) {
-  MD2double(p,timestep);
+void Atoms::setTimeStep(const double tstep) {
+  timestep=tstep;
 }
 
 double Atoms::getTimeStep()const {
   return timestep/units.getTime()*MDUnits.getTime();
 }
 
-void Atoms::setKbT(void*p) {
-  MD2double(p,kbT);
+void Atoms::setKbT(const double t) {
+  kbT=t;
 }
 
 double Atoms::getKbT()const {
@@ -623,20 +622,20 @@ ActionAtomistic* Atoms::getVirtualAtomsAction(AtomNumber i)const {
   return virtualAtomsActions[va_action_ind];
 }
 
-void Atoms::setExtraCV(const std::string &name,void*p) {
-  mdatoms->setExtraCV(name,p);
-}
+//void Atoms::setExtraCV(const std::string &name,void*p) {
+//  mdatoms->setExtraCV(name,p);
+//}
+//
+//void Atoms::setExtraCVForce(const std::string &name,void*p) {
+//  mdatoms->setExtraCVForce(name,p);
+//}
 
-void Atoms::setExtraCVForce(const std::string &name,void*p) {
-  mdatoms->setExtraCVForce(name,p);
-}
-
-double Atoms::getExtraCV(const std::string &name) {
-  return mdatoms->getExtraCV(name);
-}
-
-void Atoms::updateExtraCVForce(const std::string &name,double f) {
-  mdatoms->updateExtraCVForce(name,f);
-}
+//double Atoms::getExtraCV(const std::string &name) {
+//  return mdatoms->getExtraCV(name);
+//}
+//
+//void Atoms::updateExtraCVForce(const std::string &name,double f) {
+//  mdatoms->updateExtraCVForce(name,f);
+//}
 
 }
