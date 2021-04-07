@@ -52,6 +52,9 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   while(atoms.size()>0) {
    // TODO
    // This can be easily parallelized with OpenMP
+   // It is too slow, we calculate the same distances multiple times
+   // Why not precalculating in parallel the distance matrix beforehand?
+   // Too much memory?
    // reset minimum distance
    double mindist = std::numeric_limits<double>::max();
    unsigned iat, itr;
