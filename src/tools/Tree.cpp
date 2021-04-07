@@ -44,8 +44,6 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   std::vector<AtomNumber> tree;
   // clear root_ vector
   root_.clear();
-  // store position of first atom
-  refpos_ = moldat_->getPosition(atoms[0]);
   // initialize tree
   tree.push_back(atoms[0]);
   // remove first entry in atoms
@@ -86,11 +84,6 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
 std::vector<AtomNumber> Tree::getRoot() const
 {
   return root_;
-}
-
-Vector Tree::getFirstPosition() const
-{
-  return refpos_;
 }
 
 }

@@ -37,7 +37,6 @@ class Tree
 private:
  GenericMolInfo* moldat_;
  std::vector<AtomNumber> root_;
- Vector refpos_;
 
 public:
 /// constructor 
@@ -46,8 +45,6 @@ public:
   std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);  
 /// get root
   std::vector<AtomNumber> getRoot() const; 
-/// get position of first atom
-  Vector getFirstPosition() const;
 };
 
 }
