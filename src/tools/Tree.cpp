@@ -78,10 +78,8 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
         }
       }
     }
-    // get minimum distance across threads
-    double mind = *std::min_element(mindist.begin(), mindist.end());
-    // and index
-    unsigned imind = std::distance(mindist.begin(), std::find(mindist.begin(), mindist.end(), mind));
+    // index of minimum distance across threads
+    unsigned imind = std::distance(mindist.begin(), std::min_element(mindist.begin(), mindist.end()));
     // now update tree, root_ and atoms vectors
     tree.push_back(atoms[iat[imind]]);
     root_.push_back(tree[itr[imind]]);
