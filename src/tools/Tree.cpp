@@ -40,6 +40,8 @@ Tree::Tree(GenericMolInfo* moldat) {
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
 {
+  // OpenMP stuff
+  unsigned nth = OpenMP::getNumThreads();
   // list of AtomNumbers ordered by proximity in PDB file
   std::vector<AtomNumber> tree;
   // clear root_ vector
@@ -56,8 +58,9 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
     // Why not precalculating in parallel the distance matrix beforehand?
     // Too much memory?
     // reset minimum distance
-    double mindist = std::numeric_limits<double>::max();
-    unsigned iat, itr;
+    std::vector<double> mindist(nth, std::numeric_limits<double>::max());
+    std::vector<unsigned> iat(nth), itr(nth);
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     // find closest pair of atoms
     for(unsigned i=0; i<atoms.size(); ++i) {
       // get position in atoms
@@ -68,17 +71,21 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
         // calculate distance
         double dist = delta(posi,posj).modulo();
         // check if minimum distance
-        if(dist<mindist) {
-          mindist = dist;
-          iat = i;
-          itr = j;
+        if(dist<mindist[OpenMP::getThreadNum()]) {
+          mindist[OpenMP::getThreadNum()] = dist;
+          iat[OpenMP::getThreadNum()] = i;
+          itr[OpenMP::getThreadNum()] = j;
         }
       }
     }
+    // get minimum distance across threads
+    double mind = *std::min_element(mindist.begin(), mindist.end());
+    // and index
+    unsigned imind = std::distance(mindist.begin(), std::find(mindist.begin(), mindist.end(), mind));
     // now update tree, root_ and atoms vectors
-    tree.push_back(atoms[iat]);
-    root_.push_back(tree[itr]);
-    atoms.erase(atoms.begin()+iat);
+    tree.push_back(atoms[iat[imind]]);
+    root_.push_back(tree[itr[imind]]);
+    atoms.erase(atoms.begin()+iat[imind]);
   }
   // return
   return tree;
