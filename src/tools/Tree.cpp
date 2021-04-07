@@ -53,6 +53,8 @@ std::vector<AtomNumber> Tree::buildTree(std::vector<AtomNumber> atoms)
   atoms.erase(atoms.begin());
   // loop on remaining atoms
   while(atoms.size()>0) {
+   // TODO
+   // This can be easily parallelized with OpenMP
    // reset minimum distance
    double mindist = std::numeric_limits<double>::max();
    unsigned iat, itr;
