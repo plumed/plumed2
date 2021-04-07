@@ -43,7 +43,7 @@ public:
 /// constructor 
   Tree(GenericMolInfo* moldat);
 /// build a tree
-  std::vector<AtomNumber> buildTree(std::vector<AtomNumber> atoms);  
+  std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);  
 /// get root
   std::vector<AtomNumber> getRoot() const; 
 /// get position of first atom

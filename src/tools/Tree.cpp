@@ -38,7 +38,7 @@ Tree::Tree(GenericMolInfo* moldat) {
    if(!moldat_) plumed_merror("MOLINFO DATA not found");
 }
 
-std::vector<AtomNumber> Tree::buildTree(std::vector<AtomNumber> atoms)
+std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
 {
   // list of AtomNumbers ordered by proximity in PDB file
   std::vector<AtomNumber> tree;
