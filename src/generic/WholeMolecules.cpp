@@ -225,29 +225,19 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  if(addref) {
-    for(unsigned i=0; i<groups.size(); ++i) {
+  for(unsigned i=0; i<groups.size(); ++i) {
+    if(addref){
       Vector & first (modifyGlobalPosition(groups[i][0]));
       first = refs[i]+pbcDistance(refs[i],first);
-      for(unsigned j=0; j<groups[i].size()-1; ++j) {
-        const Vector & first (getGlobalPosition(roots[i][j]));
-        Vector & second (modifyGlobalPosition(groups[i][j+1]));
-        second=first+pbcDistance(first,second);
-      }
     }
-  } else {
-    for(unsigned i=0; i<groups.size(); ++i) {
-      for(unsigned j=0; j<groups[i].size()-1; ++j) {
-        const Vector & first (getGlobalPosition(roots[i][j]));
-        Vector & second (modifyGlobalPosition(groups[i][j+1]));
-        second=first+pbcDistance(first,second);
-      }
+    for(unsigned j=0; j<groups[i].size()-1; ++j) {
+      const Vector & first (getGlobalPosition(roots[i][j]));
+      Vector & second (modifyGlobalPosition(groups[i][j+1]));
+      second=first+pbcDistance(first,second);
     }
   }
 }
 
 
-
 }
-
 }
