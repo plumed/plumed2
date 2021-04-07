@@ -66,6 +66,7 @@ public:
   bool checkForAtom(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;
   std::string getChainID(AtomNumber a)const;
+  Vector getPosition(AtomNumber a)const;
   unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );
