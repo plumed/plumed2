@@ -35,16 +35,16 @@ class Tree
 {
 
 private:
- GenericMolInfo* moldat_;
- std::vector<AtomNumber> root_;
+  GenericMolInfo* moldat_;
+  std::vector<AtomNumber> root_;
 
 public:
-/// constructor 
+/// constructor
   Tree(GenericMolInfo* moldat);
 /// build a tree
-  std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);  
+  std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);
 /// get root
-  std::vector<AtomNumber> getRoot() const; 
+  std::vector<AtomNumber> getRoot() const;
 };
 
 }

@@ -172,29 +172,29 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   if(groups.size()==0) error("no atoms found for WHOLEMOLECULES!");
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
-  if(usepdb){
+  if(usepdb) {
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) error("Unable to find MOLINFO in input");
     // initialize tree
     Tree tree = Tree(moldat);
     // cycle on groups and reorder atoms
     for(unsigned i=0; i<groups.size(); ++i) {
-       groups[i] = tree.getTree(groups[i]);
-       // store root atoms
-       roots.push_back(tree.getRoot());
+      groups[i] = tree.getTree(groups[i]);
+      // store root atoms
+      roots.push_back(tree.getRoot());
     }
   } else {
-  // fill root vector with previous atom in groups
+    // fill root vector with previous atom in groups
     for(unsigned i=0; i<groups.size(); ++i) {
-       std::vector<AtomNumber> root;
-       for(unsigned j=0; j<groups[i].size()-1; ++j) root.push_back(groups[i][j]);
-       // store root atoms
-       roots.push_back(root);
+      std::vector<AtomNumber> root;
+      for(unsigned j=0; j<groups[i].size()-1; ++j) root.push_back(groups[i][j]);
+      // store root atoms
+      roots.push_back(root);
     }
   }
 
   // adding reference if needed
-  if(addref){
+  if(addref) {
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) error("Unable to find MOLINFO in input");
     for(unsigned i=0; i<groups.size(); ++i) {
@@ -205,16 +205,16 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
   // print out info
   for(unsigned i=0; i<groups.size(); ++i) {
-     log.printf("  atoms in entity %d : ",i);
-     for(unsigned j=0; j<groups[i].size(); ++j) log.printf("%d ",groups[i][j].serial() );
-     log.printf("\n");
-     if(addref) log.printf("     with reference position : %lf %lf %lf\n",refs[i][0],refs[i][1],refs[i][2]);
+    log.printf("  atoms in entity %d : ",i);
+    for(unsigned j=0; j<groups[i].size(); ++j) log.printf("%d ",groups[i][j].serial() );
+    log.printf("\n");
+    if(addref) log.printf("     with reference position : %lf %lf %lf\n",refs[i][0],refs[i][1],refs[i][2]);
   }
 
   // collect all atoms
   std::vector<AtomNumber> merge;
   for(unsigned i=0; i<groups.size(); ++i) {
-     merge.insert(merge.end(),groups[i].begin(),groups[i].end());
+    merge.insert(merge.end(),groups[i].begin(),groups[i].end());
   }
 
   checkRead();

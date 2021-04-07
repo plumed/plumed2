@@ -32,10 +32,10 @@
 namespace PLMD {
 
 Tree::Tree(GenericMolInfo* moldat) {
-// initialize class 
-   moldat_ = moldat;
+// initialize class
+  moldat_ = moldat;
 // check if molinfo present
-   if(!moldat_) plumed_merror("MOLINFO DATA not found");
+  if(!moldat_) plumed_merror("MOLINFO DATA not found");
 }
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
@@ -50,37 +50,37 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   atoms.erase(atoms.begin());
   // loop on remaining atoms
   while(atoms.size()>0) {
-   // TODO
-   // This can be easily parallelized with OpenMP
-   // It is too slow, we calculate the same distances multiple times
-   // Why not precalculating in parallel the distance matrix beforehand?
-   // Too much memory?
-   // reset minimum distance
-   double mindist = std::numeric_limits<double>::max();
-   unsigned iat, itr;
-   // find closest pair of atoms
-   for(unsigned i=0; i<atoms.size(); ++i){
-    // get position in atoms
-    Vector posi = moldat_->getPosition(atoms[i]);
-    for(unsigned j=0; j<tree.size(); ++j){
-      // get position in tree
-      Vector posj = moldat_->getPosition(tree[j]);
-      // calculate distance
-      double dist = delta(posi,posj).modulo();
-      // check if minimum distance
-      if(dist<mindist){
-         mindist = dist;
-         iat = i;
-         itr = j;
+    // TODO
+    // This can be easily parallelized with OpenMP
+    // It is too slow, we calculate the same distances multiple times
+    // Why not precalculating in parallel the distance matrix beforehand?
+    // Too much memory?
+    // reset minimum distance
+    double mindist = std::numeric_limits<double>::max();
+    unsigned iat, itr;
+    // find closest pair of atoms
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      // get position in atoms
+      Vector posi = moldat_->getPosition(atoms[i]);
+      for(unsigned j=0; j<tree.size(); ++j) {
+        // get position in tree
+        Vector posj = moldat_->getPosition(tree[j]);
+        // calculate distance
+        double dist = delta(posi,posj).modulo();
+        // check if minimum distance
+        if(dist<mindist) {
+          mindist = dist;
+          iat = i;
+          itr = j;
+        }
       }
     }
-   }
-   // now update tree, root_ and atoms vectors
-   tree.push_back(atoms[iat]);
-   root_.push_back(tree[itr]);
-   atoms.erase(atoms.begin()+iat);
+    // now update tree, root_ and atoms vectors
+    tree.push_back(atoms[iat]);
+    root_.push_back(tree[itr]);
+    atoms.erase(atoms.begin()+iat);
   }
-  // return 
+  // return
   return tree;
 }
 
