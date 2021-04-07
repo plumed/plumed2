@@ -27,9 +27,9 @@
 #include "OpenMP.h"
 #include "core/GenericMolInfo.h"
 #include <vector>
+#include <limits>
 
 namespace PLMD {
-
 
 Tree::Tree(GenericMolInfo* moldat) {
 // initialize class 
@@ -54,7 +54,7 @@ std::vector<AtomNumber> Tree::buildTree(std::vector<AtomNumber> atoms)
   // loop on remaining atoms
   while(atoms.size()>0) {
    // reset minimum distance
-   double mindist = 1.0e+14;
+   double mindist = std::numeric_limits<double>::max();
    unsigned iat, itr;
    // find closest pair of atoms
    for(unsigned i=0; i<atoms.size(); ++i){
