@@ -53,7 +53,7 @@ ActionShortcut(ao)
   // Product of matrices
   readInputLine( getShortcutLabel() + "_pmat: MATHEVAL ARG1=" + getShortcutLabel() + "_cmat.w ARG2=" + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering
-  readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING MATRIX=" + getShortcutLabel() + "_pmat"); 
+  readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING ARG=" + getShortcutLabel() + "_pmat"); 
   // And final cluster weights
   readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS CLUSTERS=" + getShortcutLabel() + "_clust CLUSTER=1");
 

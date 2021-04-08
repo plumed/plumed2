@@ -22,17 +22,13 @@
 #ifndef __PLUMED_clusters_ClusteringBase_h
 #define __PLUMED_clusters_ClusteringBase_h
 
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "matrixtools/ActionWithInputMatrices.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
 namespace clusters {
 
-class ClusteringBase :
-  public ActionWithArguments,
-  public ActionWithValue
-{
+class ClusteringBase : public matrixtools::ActionWithInputMatrices {
 protected:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
@@ -51,14 +47,12 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusteringBase(const ActionOptions&);
-/// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const override { return 0; }
-/// Do the calculation
-  void calculate() override;
-/// Do the clustering
+///
+  void completeMatrixOperations() override;
+///
   virtual void performClustering()=0;
-/// Do nothing for apply here
-  void apply() override {}
+/// Cannot apply forces on a clustering object
+  void apply() override ;
 };
 
 inline

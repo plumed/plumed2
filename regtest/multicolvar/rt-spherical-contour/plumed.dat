@@ -5,7 +5,7 @@ c1: COORDINATIONNUMBER WEIGHT=c1_mat.w
 # Select coordination numbers that are more than 2.0
 cf: MORE_THAN ARG1=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
 # Find largest cluster
-dfs: DFSCLUSTERING MATRIX=c1_mat.w 
+dfs: DFSCLUSTERING ARG=c1_mat.w 
 clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1 
 com: CENTER ATOMS=1-512 WEIGHTS=clust1 PHASES 
 # Filtered coordination numbers for atoms in largest cluster
