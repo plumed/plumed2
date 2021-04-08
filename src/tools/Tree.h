@@ -37,10 +37,11 @@ class Tree
 private:
   GenericMolInfo* moldat_;
   std::vector<AtomNumber> root_;
+  bool nopbc_;
 
 public:
 /// constructor
-  Tree(GenericMolInfo* moldat);
+  Tree(GenericMolInfo* moldat, bool nopbc);
 /// build a tree
   std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);
 /// get root

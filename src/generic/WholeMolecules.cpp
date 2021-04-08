@@ -107,7 +107,7 @@ class WholeMolecules:
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   std::vector<Vector> refs;
-  bool usepdb, addref;
+  bool nopbc, usepdb, addref;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -131,17 +131,19 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
   keys.addFlag("USE_PDB", false, "Define atoms sequence in entities based on proximity in PDB file");
   keys.addFlag("ADD_REFERENCE", false, "Define reference position for the first atom of each entity based on PDB file");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  usepdb(false), addref(false)
+  nopbc(false), usepdb(false), addref(false)
 {
   // parse optional flags
   parseFlag("USE_PDB", usepdb);
   parseFlag("ADD_REFERENCE", addref);
+  parseFlag("NOPBC",nopbc);
 
   // create groups from ENTITY
   for(int i=0;; i++) {
@@ -176,7 +178,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) error("Unable to find MOLINFO in input");
     // initialize tree
-    Tree tree = Tree(moldat);
+    Tree tree = Tree(moldat,nopbc);
     // cycle on groups and reorder atoms
     for(unsigned i=0; i<groups.size(); ++i) {
       groups[i] = tree.getTree(groups[i]);

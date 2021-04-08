@@ -31,11 +31,13 @@
 
 namespace PLMD {
 
-Tree::Tree(GenericMolInfo* moldat) {
+Tree::Tree(GenericMolInfo* moldat, bool nopbc) {
 // initialize class
   moldat_ = moldat;
 // check if molinfo present
   if(!moldat_) plumed_merror("MOLINFO DATA not found");
+// pbc
+  nopbc_ = nopbc;
 }
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
