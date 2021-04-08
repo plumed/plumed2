@@ -35,7 +35,7 @@ You can choose the umbrellas manually, or place them on a grid, or along a path,
 They must cover all the CV space that one wishes to sample.
 
 You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
-As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the DeltaFs.
+As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the \f$\Delta F(\mathbf{s}_i)\f$.
 The first column of the umbrellas file is always ignored and must be called "time".
 
 Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
@@ -94,11 +94,12 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
 
-void ECVumbrellasFile::registerKeywords(Keywords& keys) {
+void ECVumbrellasFile::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess DeltaF_i=-kbt*log(h_i)");
+  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess \\f$\\Delta F_i=-\\frac{1}{\\beta}\\log(h_i)\\f$");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
 }
@@ -136,14 +137,14 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf("  reading from FILE '%s'\n",umbrellasFileName.c_str());
     ifile.open(umbrellasFileName);
     ifile.allowIgnoredFields();
-    double time;//first field is ignored
+    double time; //first field is ignored
     while(ifile.scanField("time",time))
     {
       for(unsigned j=0; j<ncv; j++)
       {
         double centers_j;
         ifile.scanField(getPntrToArgument(j)->getName(),centers_j);
-        centers_[j].push_back(centers_j);//this might be slow
+        centers_[j].push_back(centers_j); //this might be slow
       }
       for(unsigned j=0; j<ncv; j++)
       {
@@ -190,7 +191,8 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf(" -- READ_HEIGHT: the height of the umbrellas is used to estimate an initial guess for the DeltaFs\n");
 }
 
-void ECVumbrellasFile::calculateECVs(const double * cv) {
+void ECVumbrellasFile::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
@@ -259,7 +261,7 @@ void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,co
   }
   else
   {
-    calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
+    calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
     for(unsigned j=0; j<getNumberOfArguments(); j++)
       for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
         ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
@@ -270,9 +272,9 @@ void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos=lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

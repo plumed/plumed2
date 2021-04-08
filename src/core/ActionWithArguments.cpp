@@ -30,7 +30,6 @@
 #include <regex.h>
 #endif
 
-using namespace std;
 namespace PLMD {
 
 void ActionWithArguments::registerKeywords(Keywords& keys) {
@@ -47,7 +46,7 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
-  std::string def; vector<string> c; arg.clear(); parseVector(key,c);
+  std::string def; std::vector<std::string> c; arg.clear(); parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) c.push_back( def );
     else return;
@@ -56,7 +55,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
-  vector<string> c;
+  std::vector<std::string> c;
   arg.clear();
   if(parseNumberedVector(key,i,c)) {
     interpretArgumentList(c,arg);
@@ -135,9 +134,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       }
     } else {
       std::size_t dot=c[i].find_first_of('.');
-      string a=c[i].substr(0,dot);
-      string name=c[i].substr(dot+1);
-      if(c[i].find(".")!=string::npos) {   // if it contains a dot:
+      std::string a=c[i].substr(0,dot);
+      std::string name=c[i].substr(dot+1);
+      if(c[i].find(".")!=std::string::npos) {   // if it contains a dot:
         if(a=="*" && name=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
@@ -207,7 +206,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   }
 }
 
-void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
+void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {
   std::vector<std::string> arg_names = pdb.getArgumentNames();
   if( arg_names.size()>0 ) {
     std::vector<Value*> arg_vals;
@@ -215,14 +214,15 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
   }
 }
 
-void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
+void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   arguments=arg;
   clearDependencies();
-  std::string fullname,name;
+  std::string fullname;
+  std::string name;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
-    if(fullname.find(".")!=string::npos) {
+    if(fullname.find(".")!=std::string::npos) {
       std::size_t dot=fullname.find_first_of('.');
       name=fullname.substr(0,dot);
     } else {
@@ -239,7 +239,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   lockRequestArguments(false)
 {
   if( keywords.exists("ARG") ) {
-    vector<Value*> arg;
+    std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
 
     if(!arg.empty()) {

@@ -1,0 +1,11 @@
+#! /bin/bash
+
+LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::")
+
+if test -n "$LIST" ;
+then
+  echo "WARNING: there are unique global symbols"
+  echo "$LIST"
+  echo "see https://github.com/plumed/plumed2/issues/549"
+  exit 1
+fi

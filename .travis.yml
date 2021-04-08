@@ -3,39 +3,6 @@ cache: ccache
 jobs:
   include:
 # list of configurations to be attempted:
-# MPI + doc
-# this is the "master" one, it is going to update the manual every time
-# Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
-# If some of them is not enabled, the whole suite will fail.
-  - name: Run all tests and build doc on ubuntu 18. All features enabled (system blas and lapack + asmjit)
-    os: linux
-    dist: bionic
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
-  - name: Run all tests and scan coverage
-    os: linux
-    dist: trusty
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
-  - name: Debug flags, no MPI
-    os: linux
-    dist: trusty
-    env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - name: Debug flags, MPI
-    os: linux
-    dist: trusty
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - name: Cppcheck and codecheck
-    os: linux
-    dist: trusty
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.90
-  - name: External blas with internal lapack, including asmjit
-    os: linux
-    if: branch =~ ^test- OR type IN(pull_request)
-    dist: trusty
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
-  - name: Docker image (ubuntu 17, with gcc6)
-    if: branch =~ ^test- OR type IN(pull_request)
-    services: docker
-    env: PLUMED_DOCKER=yes
   - name: MacOS, serial build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
@@ -77,23 +44,6 @@ jobs:
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# linux conda package
-  - name: Conda build, linux
-    os: linux
-    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
-    dist: trusty
-    env: PLUMED_CONDA=yes
-# osx conda package
-  - name: Conda build, MacOS
-    os: osx
-    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
-    osx_image: xcode9.4
-    env: PLUMED_CONDA=yes
-# I don't put any mpi variant with macports since it takes too long to compile
-## This command can be used to allow failures:
-  allow_failures:
-# I allow this to fail temporarily
-  - env: PLUMED_DOCKER=yes
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -220,6 +170,11 @@ script:
       make -j 4 ;
       make install ;
       ccache -s ;
+    fi
+
+# test symbols
+  - if test "$PLUMED_CXX" ; then
+      make nmcheck ;
     fi
 
 # build using macports

@@ -32,8 +32,6 @@
 #include <vector>
 #include <iostream>
 
-using namespace std;
-
 namespace PLMD {
 namespace mapping {
 
@@ -110,7 +108,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PathTools(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  std::string description()const {
     return "print out a description of the keywords for an action in html";
   }
 };

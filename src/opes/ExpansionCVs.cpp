@@ -23,7 +23,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-void ExpansionCVs::registerKeywords(Keywords& keys) {
+void ExpansionCVs::registerKeywords(Keywords& keys)
+{
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -153,7 +154,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
     double func_b=func(side,obs,av_obs);
     if(func_b>=0)
       return 0.0; //no zero is present!
-    if(b<0)//left side case
+    if(b<0) //left side case
     {
       std::swap(a,b);
       std::swap(func_a,func_b);
@@ -173,7 +174,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
         func_b=func_c;
       }
       c=(a*func_b-b*func_a)/(func_b-func_a);
-      func_c=func(c,obs,av_obs);//func is evaluated only here, it might be expensive
+      func_c=func(c,obs,av_obs); //func is evaluated only here, it might be expensive
     }
     return std::abs(c);
   };

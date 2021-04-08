@@ -22,13 +22,13 @@ namespace opes {
 
 //+PLUMEDOC EXPANSION_CV ECV_CUSTOM
 /*
-Turn any set of CVs into expansion collective variables.
+Use some given CVs as a set of expansion collective variables (ECVs).
 
-This can be useful for testing new ECVs, but from a performance point of view it is better to code a new class.
+This can be useful e.g. for quickly testing new ECVs, but from a performance point of view it is probably better to implement a new ECV class.
 
-By default an energy is expected as ARG, and it is then multiplied by the inverse temperature \f$\beta\f$.
+By default the ARGs are expeted to be energies, \f$\Delta U_i\f$, and are then multiplied by the inverse temperature \f$\beta\f$
 \f[
-  \Delta u_i=\beta \text{ARG}_i\, .
+  \Delta u_i=\beta \Delta U_i\, .
 \f]
 Use the DIMENSIONLESS flag to avoid this multiplication.
 
@@ -49,7 +49,7 @@ It is equivalent to the following:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTICANONICAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
+ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 \endplumedfile
 
@@ -82,10 +82,11 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
 
-void ECVcustom::registerKeywords(Keywords& keys) {
+void ECVcustom::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the single ECVs, in energy units \\f$\\Delta u/\\beta\\f$");
+  keys.add("compulsory","ARG","the labels of the single ECVs, \\f$\\Delta U_i\\f$, in energy units");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("DIMENSIONLESS",false,"consider ARG as dimensionless rather than an energy, thus do not multiply it by \\f$\\beta\\f$");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
@@ -136,7 +137,8 @@ ECVcustom::ECVcustom(const ActionOptions&ao)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
 
-void ECVcustom::calculateECVs(const double * cv) {
+void ECVcustom::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     ECVs_[j][j+P0_contribution_]=beta0_*cv[j];
   //derivative is constant
@@ -218,9 +220,9 @@ void ECVcustom::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos = lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos = lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

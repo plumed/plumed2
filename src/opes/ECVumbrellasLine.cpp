@@ -88,7 +88,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasLine,"ECV_UMBRELLAS_LINE")
 
-void ECVumbrellasLine::registerKeywords(Keywords& keys) {
+void ECVumbrellasLine::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
@@ -155,7 +156,8 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
 }
 
-void ECVumbrellasLine::calculateECVs(const double * cv) {
+void ECVumbrellasLine::calculateECVs(const double * cv)
+{
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
@@ -216,7 +218,7 @@ void ECVumbrellasLine::initECVs_observ(const std::vector<double>& all_obs_cvs,co
 {
   //this non-linear exansion never uses automatic initialization
   initECVs();
-  calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
+  calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
       ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
@@ -226,9 +228,9 @@ void ECVumbrellasLine::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos=lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

@@ -30,8 +30,6 @@
 #include <gsl/gsl_blas.h>
 #endif
 
-using namespace std;
-
 namespace PLMD {
 namespace isdb {
 
@@ -180,7 +178,7 @@ private:
   double         Const;
   double         mu_s;
   double         scale;
-  vector<double> coupl;
+  std::vector<double> coupl;
   bool           svd;
   bool           pbc;
 
@@ -262,7 +260,7 @@ RDC::RDC(const ActionOptions&ao):
   else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
 
   // Read in the atoms
-  vector<AtomNumber> t, atoms;
+  std::vector<AtomNumber> t, atoms;
   for(int i=1;; ++i ) {
     parseAtomList("ATOMS", i, t );
     if( t.empty() ) break;
@@ -385,7 +383,7 @@ void RDC::do_svd()
   gsl_vector_set_zero(bc.get());
 
   unsigned index=0;
-  vector<double> dmax(coupl.size());
+  std::vector<double> dmax(coupl.size());
   for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
     Vector  distance;
     if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
@@ -449,7 +447,7 @@ void RDC::calculate()
 
   const double max  = -Const*scale*mu_s;
   const unsigned N=getNumberOfAtoms();
-  vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
+  std::vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
   /* RDC Calculations and forces */
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -462,7 +460,7 @@ void RDC::calculate()
       if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
       else    distance   = delta(getPosition(r),getPosition(r+1));
       const double d2    = distance.modulo2();
-      const double ind   = 1./sqrt(d2);
+      const double ind   = 1./std::sqrt(d2);
       const double ind2  = 1./d2;
       const double ind3  = ind2*ind;
       const double x2    = distance[0]*distance[0]*ind2;
@@ -480,7 +478,7 @@ void RDC::calculate()
       dRDC[index][1] *= prod_xy;
       dRDC[index][2] *= prod_z;
 
-      string num; Tools::convert(index,num);
+      std::string num; Tools::convert(index,num);
       Value* val=getPntrToComponent("rdc-"+num);
       val->set(rdc);
       if(!getDoScore()) {

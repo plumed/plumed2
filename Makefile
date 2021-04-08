@@ -13,7 +13,7 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle python
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check installcheck cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle
+.PHONY: all lib clean $(SRCDIRS) doc docclean check installcheck cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle nmcheck
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -126,5 +126,13 @@ config.status: configure
 astyle:
 	$(MAKE) -C astyle
 	$(MAKE) -C src astyle
+
+ifeq ($(use_debug_glibcxx),yes)
+nmcheck:
+	@echo SKIPPING nmcheck due to debug flags
+else
+nmcheck:
+	$(MAKE) -C src nmcheck
+endif
 
 

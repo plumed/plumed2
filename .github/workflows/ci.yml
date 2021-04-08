@@ -15,7 +15,7 @@ env:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -80,15 +80,15 @@ jobs:
       run: |
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        ./.travis/install.doxygen Release_1_8_14
+        ./.travis/install.doxygen Release_1_8_17
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc --enable-asmjit" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        ./.travis/install.lcov v1.14
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --enable-asmjit --disable-external-blas --enable-gcov CXXFLAGS=-O0" >> $GITHUB_ENV
+        ./.travis/install.lcov v1.15
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --enable-asmjit --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
@@ -104,13 +104,16 @@ jobs:
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
+        echo "MPIEXEC=mpirun --oversubscribe" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
-        ccache -s
+        ccache -s -M 100M
         ./configure CXX="ccache $CXX" --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
         make -j 4
         make install
-        ccache -s
+        # check for global symbols, see https://github.com/plumed/plumed2/issues/549
+        make nmcheck
+        ccache -s -M 100M
     - name: Run tests
       run: |
          make --no-print-directory -C regtest
@@ -141,7 +144,7 @@ jobs:
          ./.travis/push doc
 
   codecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: Set path
@@ -150,7 +153,6 @@ jobs:
     - name: Install requirements
       run: |
         ./.travis/install.cppcheck 1.90
-        ./.travis/install.gawk 5.0.1
     - name: Build astyle
       run: |
         make -j 4 -C astyle
@@ -162,7 +164,7 @@ jobs:
         make codecheck
 
   centos7:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Build and run tests
@@ -170,7 +172,7 @@ jobs:
         make -C docker centos7
 
   macports:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
@@ -210,7 +212,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: Set paths
@@ -237,7 +239,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest , macos-latest]
+        os: [ubuntu-20.04 , macos-10.15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2

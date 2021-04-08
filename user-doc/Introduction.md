@@ -43,6 +43,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [LAMMPS](https://lammps.sandia.gov/) since Nov 2018.
 - [Yaff](https://github.com/molmod/yaff), since Jul 2019.
 - [DFTB+](https://www.dftbplus.org/), since release 20.1.
+- [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.

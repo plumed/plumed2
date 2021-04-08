@@ -34,36 +34,35 @@
 
 #include <iomanip>
 
-using namespace std;
 namespace PLMD {
 
 template<class T>
-bool Tools::convertToAny(const string & str,T & t) {
-  istringstream istr(str.c_str());
+bool Tools::convertToAny(const std::string & str,T & t) {
+  std::istringstream istr(str.c_str());
   bool ok=static_cast<bool>(istr>>t);
   if(!ok) return false;
-  string remaining;
+  std::string remaining;
   istr>>remaining;
   return remaining.length()==0;
 }
 
-bool Tools::convert(const string & str,int & t) {
+bool Tools::convert(const std::string & str,int & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,long int & t) {
+bool Tools::convert(const std::string & str,long int & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,unsigned & t) {
+bool Tools::convert(const std::string & str,unsigned & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,long unsigned & t) {
+bool Tools::convert(const std::string & str,long unsigned & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,AtomNumber &a) {
+bool Tools::convert(const std::string & str,AtomNumber &a) {
   // Note: AtomNumber's are NOT converted as int, so as to
   // avoid using lepton conversions.
   unsigned i;
@@ -73,7 +72,7 @@ bool Tools::convert(const string & str,AtomNumber &a) {
 }
 
 template<class T>
-bool Tools::convertToInt(const string & str,T & t) {
+bool Tools::convertToInt(const std::string & str,T & t) {
   // First try standard conversion
   if(convertToAny(str,t)) return true;
   // Then use lepton
@@ -109,7 +108,7 @@ bool Tools::convertToInt(const string & str,T & t) {
 
 
 template<class T>
-bool Tools::convertToReal(const string & str,T & t) {
+bool Tools::convertToReal(const std::string & str,T & t) {
   if(convertToAny(str,t)) return true;
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi; return true;
@@ -124,7 +123,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
     if(str.substr(pi_start)!="PI") return false;
-    istringstream nstr(str.substr(0,pi_start));
+    std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
     if(!ok) return false;
     t=ff*pi;
@@ -133,7 +132,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   } else if( str.find("pi")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("pi");
     if(str.substr(pi_start)!="pi") return false;
-    istringstream nstr(str.substr(0,pi_start));
+    std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
     if(!ok) return false;
     t=ff*pi;
@@ -146,36 +145,36 @@ bool Tools::convertToReal(const string & str,T & t) {
   return false;
 }
 
-bool Tools::convert(const string & str,float & t) {
+bool Tools::convert(const std::string & str,float & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,double & t) {
+bool Tools::convert(const std::string & str,double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,long double & t) {
+bool Tools::convert(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,string & t) {
+bool Tools::convert(const std::string & str,std::string & t) {
   t=str;
   return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
+std::vector<std::string> Tools::getWords(const std::string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
   plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
   if(!separators) separators=" \t\n";
-  const string sep(separators);
+  const std::string sep(separators);
   char openpar=parenthesis[0];
   char closepar;
   if(openpar=='(') closepar=')';
   if(openpar=='[') closepar=']';
   if(openpar=='{') closepar='}';
-  vector<string> words;
-  string word;
+  std::vector<std::string> words;
+  std::string word;
   int parenthesisLevel=0;
   if(parlevel) parenthesisLevel=*parlevel;
   for(unsigned i=0; i<line.length(); i++) {
@@ -205,8 +204,8 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments) {
-  string line("");
+bool Tools::getParsedLine(IFile& ifile,std::vector<std::string> & words, bool trimcomments) {
+  std::string line("");
   words.clear();
   bool stat;
   bool inside=false;
@@ -216,7 +215,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments
     if(trimcomments) trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line,NULL,&parlevel,"{",trimcomments);
+    std::vector<std::string> w=getWords(line,NULL,&parlevel,"{",trimcomments);
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
@@ -245,7 +244,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments
 }
 
 
-bool Tools::getline(FILE* fp,string & line) {
+bool Tools::getline(FILE* fp,std::string & line) {
   line="";
   const int bufferlength=1024;
   char buffer[bufferlength];
@@ -261,12 +260,12 @@ bool Tools::getline(FILE* fp,string & line) {
   return ret;
 }
 
-void Tools::trim(string & s) {
+void Tools::trim(std::string & s) {
   size_t n=s.find_last_not_of(" \t");
   s=s.substr(0,n+1);
 }
 
-void Tools::trimComments(string & s) {
+void Tools::trimComments(std::string & s) {
   size_t n=s.find_first_of("#");
   s=s.substr(0,n);
 }
@@ -278,14 +277,14 @@ bool Tools::caseInSensStringCompare(const std::string & str1, const std::string 
   }));
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
+bool Tools::getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep) {
   s.clear();
   for(auto p=line.begin(); p!=line.end(); ++p) {
     if((*p).length()==0) continue;
-    string x=(*p).substr(0,key.length());
+    std::string x=(*p).substr(0,key.length());
     if(caseInSensStringCompare(x,key)) {
       if((*p).length()==key.length())return false;
-      string tmp=(*p).substr(key.length(),(*p).length());
+      std::string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
       const std::string multi("@replicas:");
@@ -302,17 +301,17 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s) {
-  vector<string> news;
+  std::vector<std::string> news;
   for(const auto & p :s) {
     news.push_back(p);
     size_t dash=p.find("-");
-    if(dash==string::npos) continue;
+    if(dash==std::string::npos) continue;
     int first;
     if(!Tools::convertToAny(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
     size_t colon=p.substr(dash+1).find(":");
-    if(colon!=string::npos) {
+    if(colon!=std::string::npos) {
       if(!Tools::convertToAny(p.substr(dash+1).substr(0,colon),second) ||
           !Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
@@ -322,14 +321,14 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
     if(first<=second) {
       plumed_massert(stride>0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first; i<=second; i+=stride) {
-        string ss;
+        std::string ss;
         convert(i,ss);
         news.push_back(ss);
       }
     } else {
       plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first; i>=second; i+=stride) {
-        string ss;
+        std::string ss;
         convert(i,ss);
         news.push_back(ss);
       }
@@ -338,9 +337,9 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
   s=news;
 }
 
-void Tools::interpretLabel(vector<string>&s) {
+void Tools::interpretLabel(std::vector<std::string>&s) {
   if(s.size()<2)return;
-  string s0=s[0];
+  std::string s0=s[0];
   unsigned l=s0.length();
   if(l<1) return;
   if(s0[l-1]==':') {
@@ -350,9 +349,9 @@ void Tools::interpretLabel(vector<string>&s) {
   std::transform(s[0].begin(), s[0].end(), s[0].begin(), ::toupper);
 }
 
-vector<string> Tools::ls(const string&d) {
+std::vector<std::string> Tools::ls(const std::string&d) {
   DIR*dir;
-  vector<string> result;
+  std::vector<std::string> result;
   if ((dir=opendir(d.c_str()))) {
 #if defined(__PLUMED_HAS_READDIR_R)
     struct dirent ent;
@@ -365,7 +364,7 @@ vector<string> Tools::ls(const string&d) {
       res=readdir(dir);
 #endif
       if(!res) break;
-      if(string(res->d_name)!="." && string(res->d_name)!="..") result.push_back(res->d_name);
+      if(std::string(res->d_name)!="." && std::string(res->d_name)!="..") result.push_back(res->d_name);
     }
     closedir (dir);
   }
@@ -384,7 +383,7 @@ std::string Tools::extension(const std::string&s) {
   if(n!=std::string::npos && n+1<s.length() && n+5>=s.length()) {
     ext=s.substr(n+1);
     if(ext.find("/")!=std::string::npos) ext="";
-    string base=s.substr(0,n);
+    std::string base=s.substr(0,n);
     if(base.length()==0) ext="";
     if(base.length()>0 && base[base.length()-1]=='/') ext="";
   }
@@ -392,11 +391,11 @@ std::string Tools::extension(const std::string&s) {
 }
 
 double Tools::bessel0( const double& val ) {
-  if (fabs(val)<3.75) {
+  if (std::abs(val)<3.75) {
     double y = Tools::fastpow( val/3.75, 2 );
     return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
   }
-  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  double ax=std::abs(val), y=3.75/ax, bx=std::exp(ax)/std::sqrt(ax);
   ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
   return ax*bx;
 }

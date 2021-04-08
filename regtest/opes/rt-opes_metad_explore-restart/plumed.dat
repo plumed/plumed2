@@ -5,7 +5,7 @@ phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
 opes: OPES_METAD_EXPLORE ...
-  ARG=psi,phi
+  ARG=phi,psi
   PACE=5
   TEMP=300.0
   BARRIER=20

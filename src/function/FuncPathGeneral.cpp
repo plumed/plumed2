@@ -19,18 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <cmath>
 
 #include "Function.h"
 #include "ActionRegister.h"
-
-#include <string>
-#include <cstring>
-#include <iostream>
-
 #include "tools/IFile.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -91,31 +83,31 @@ class FuncPathGeneral : public Function {
   int neigh_size;
   double neigh_stride;
 
-  vector<double> coefficients;
-  vector< vector<double> > path_cv_values;
+  std::vector<double> coefficients;
+  std::vector< std::vector<double> > path_cv_values;
 
   // For faster calculation
-  vector<double> expdists;
+  std::vector<double> expdists;
 
   // For calculating derivatives
-  vector< vector<double> > numerators;
-  vector<double> s_path_ders;
-  vector<double> z_path_ders;
+  std::vector< std::vector<double> > numerators;
+  std::vector<double> s_path_ders;
+  std::vector<double> z_path_ders;
 
   // For handling periodicity
-  vector<double> domains;
+  std::vector<double> domains;
 
-  string reference;
-  vector<int> columns;
+  std::string reference;
+  std::vector<int> columns;
 
-  vector< pair<int,double> > neighpair;
-  vector <Value*> allArguments;
+  std::vector< std::pair<int,double> > neighpair;
+  std::vector <Value*> allArguments;
 
   // Methods
   void loadReference();
 
   struct pairordering {
-    bool operator ()(pair<int, double> const& a, pair<int, double> const& b) {
+    bool operator ()(std::pair<int, double> const& a, std::pair<int, double> const& b) {
       return (a).second < (b).second;
     }
   };
@@ -137,11 +129,11 @@ void FuncPathGeneral::loadReference() {
     plumed_merror("Could not open the reference file!");
   while (input)
   {
-    vector<string> strings;
+    std::vector<std::string> strings;
     Tools::getParsedLine(input, strings);
     if (strings.empty())
       continue;
-    vector<double> colvarLine;
+    std::vector<double> colvarLine;
     double value;
     int max = columns.empty() ? strings.size() : columns.size();
     for (int i = 0; i < max; ++i)
@@ -214,7 +206,7 @@ FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
 
   // Initialise vectors
-  vector<double> temp (coefficients.size());
+  std::vector<double> temp (coefficients.size());
   for (unsigned i = 0; i < path_cv_values.size(); ++i) {
     numerators.push_back(temp);
     expdists.push_back(0.);
@@ -245,7 +237,7 @@ void FuncPathGeneral::calculate() {
   double tmp, value, diff, expdist, s_der, z_der;
   int ii;
 
-  typedef vector< pair< int,double> >::iterator pairiter;
+  typedef std::vector< std::pair< int,double> >::iterator pairiter;
 
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
     (*it).second = 0.;
@@ -277,7 +269,7 @@ void FuncPathGeneral::calculate() {
   }
 
   for (pairiter it = neighpair.begin(); it != neighpair.end(); ++it) {
-    expdist = exp(-lambda * (*it).second);
+    expdist = std::exp(-lambda * (*it).second);
     expdists[(*it).first] = expdist;
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
@@ -320,7 +312,7 @@ void FuncPathGeneral::prepare() {
     if (neighpair.size() == path_cv_values.size()) {
       // The complete round has been done: need to sort, shorten and give it a go
       // Sort the values
-      sort(neighpair.begin(), neighpair.end(), pairordering());
+      std::sort(neighpair.begin(), neighpair.end(), pairordering());
       // Resize the effective list
       neighpair.resize(neigh_size);
       log.printf("  NEIGHBOUR LIST NOW INCLUDES INDICES: ");

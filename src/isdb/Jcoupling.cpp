@@ -24,8 +24,6 @@
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace isdb {
 
@@ -134,7 +132,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   pbc =! nopbc;
 
   // Read in the atoms
-  vector<AtomNumber> t, atoms;
+  std::vector<AtomNumber> t, atoms;
   for (int i = 1; ; ++i) {
     parseAtomList("ATOMS", i, t );
     if (t.empty()) {
@@ -162,7 +160,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   // Parse J-Coupling type, this will determine the Karplus parameters
   unsigned jtype_ = CUSTOM;
-  string string_type;
+  std::string string_type;
   parse("TYPE", string_type);
   if(string_type == "HAN") {
     jtype_ = HAN;
@@ -179,7 +177,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   }
 
   // Optionally add an experimental value (like with RDCs)
-  vector<double> coupl;
+  std::vector<double> coupl;
   coupl.resize( ncoupl_ );
   unsigned ntarget=0;
   for(unsigned i=0; i<ncoupl_; ++i) {
@@ -297,8 +295,8 @@ JCoupling::JCoupling(const ActionOptions&ao):
 void JCoupling::calculate()
 {
   if (pbc) makeWhole();
-  vector<Vector> deriv(ncoupl_*6);
-  vector<double> j(ncoupl_,0.);
+  std::vector<Vector> deriv(ncoupl_*6);
+  std::vector<double> j(ncoupl_,0.);
 
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
@@ -320,8 +318,8 @@ void JCoupling::calculate()
 
       // Calculate the Karplus relation and its derivative
       double theta = torsion + kshift_;
-      double cos_theta = cos(theta);
-      double sin_theta = sin(theta);
+      double cos_theta = std::cos(theta);
+      double sin_theta = std::sin(theta);
       j[r] = ka_*cos_theta*cos_theta + kb_*cos_theta + kc_;
       double derj = -2.*ka_*sin_theta*cos_theta - kb_*sin_theta;
 
@@ -366,7 +364,7 @@ void JCoupling::calculate()
   } else {
     for (unsigned r=0; r<ncoupl_; r++) {
       const unsigned a0 = 6*r;
-      string num; Tools::convert(r,num);
+      std::string num; Tools::convert(r,num);
       Value* val=getPntrToComponent("j-"+num);
       val->set(j[r]);
       setAtomsDerivatives(val, a0, deriv[a0]);

@@ -28,8 +28,6 @@
 #include "BridgedMultiColvarFunction.h"
 #include "vesselbase/StoreDataVessel.h"
 
-using namespace std;
-
 //+PLUMEDOC VATOM CENTER_OF_MULTICOLVAR
 /*
 Calculate a a weighted average position based on the value of some multicolvar.

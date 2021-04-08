@@ -36,8 +36,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
@@ -72,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit GenExample(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
-  string description()const override {
+  std::string description()const override {
     return "construct an example for the manual that users can interact with";
   }
   void printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile );
@@ -112,7 +110,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     intracomm.Set_comm(pc.Get_comm());
   }
 
-  if( config::getVersionLong().find("dev")==std::string::npos ) version=config::getVersion();
+  if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
   std::string fname, egname, outfile; parse("--plumed",fname);
   parse("--name",egname); parse("--out",outfile); parse("--status",status);
 

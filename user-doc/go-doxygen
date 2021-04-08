@@ -2,6 +2,12 @@
 
 source ../sourceme.sh
 
+if ../src/lib/plumed --no-mpi config mpiexec ; then
+   mpirun=$(../src/lib/plumed --no-mpi config mpiexec)
+else
+   mpirun=mpirun
+fi
+
 LISTMORE=`ls *PP.md | grep -wvFf basic.list`
 
 LIST="
@@ -59,7 +65,7 @@ mkdir build
 cd build
 for file in ../../html/*.html
 do
-echo final processing of html for file: $file
+echo final processing of html for file: $file using $mpirun
 gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
@@ -100,13 +106,13 @@ gawk -v version="$version" '{
     print "</script>"
   } else print
 }' $file |
-gawk -f ../../plumed-syntax.awk > $file.tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
 fi
 mv $file.tmp $file
-rm -f *
+rm -rf *
 done
 cd ../../
 rm -rf build_examples

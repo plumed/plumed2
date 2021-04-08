@@ -49,11 +49,11 @@ public:
   void apply() override;
   void calculate() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives() override {return 1;};
+  inline unsigned getNumberOfDerivatives() override {return 1;};
 
-  double getKbT() const {return kbt_;};
-  unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
-  virtual std::vector< std::vector<unsigned> > getIndex_k() const;//might need to override this
+  inline double getKbT() const {return kbt_;};
+  inline unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
+  virtual std::vector< std::vector<unsigned> > getIndex_k() const; //might need to override this
 
   virtual void calculateECVs(const double *) = 0;
   virtual const double * getPntrToECVs(unsigned) = 0;

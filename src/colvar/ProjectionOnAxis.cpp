@@ -23,11 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Angle.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -95,10 +90,10 @@ ProjectionOnAxis::ProjectionOnAxis(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true)
 {
-  vector<AtomNumber> axis_atoms;
+  std::vector<AtomNumber> axis_atoms;
   parseAtomList("AXIS_ATOMS",axis_atoms);
   if( axis_atoms.size()!=2 ) error("There should only be two atoms specified to AXIS_ATOMS keyword");
-  vector<AtomNumber> atom;
+  std::vector<AtomNumber> atom;
   parseAtomList("ATOM",atom);
   if( atom.size()!=1 ) error("There should only be one atom specified to ATOM keyword");
   log.printf("  calculating projection of vector connecting atom %d and atom %d on vector connecting atom %d and atom %d \n",
@@ -154,7 +149,7 @@ void ProjectionOnAxis::calculate() {
   setAtomsDerivatives( pval, 2, dd3 );
   setBoxDerivatives( pval, -Tensor( rik, dd1 ) - Tensor( rjk, dd2 ) );
   // Calculate derivatives of perpendicular distance from axis
-  double c = sqrt( rik.modulo2() - d*d ); double invc = (1.0/c);
+  double c = std::sqrt( rik.modulo2() - d*d ); double invc = (1.0/c);
   // Calculate derivatives of the other thing
   Vector der1 = invc*(rik - d*dd1);
   Vector der2 = invc*(-d*dd2);

@@ -99,8 +99,13 @@ for file in *.dat ; do
             hasrep=`grep "#SETTINGS" $file | grep "NREPLICAS=" | wc -l | awk '{print $1}'`
        fi
        if [ $hasrep -gt 0 ] ; then
+           if ../../../src/lib/plumed --no-mpi config mpiexec ; then
+              mpirun=$(../../../src/lib/plumed --no-mpi config mpiexec)
+           else
+              mpirun=mpirun
+           fi
            nrep=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"NREPLICAS=")){print $i}}}' | sed -e 's/NREPLICAS=//'`
-           mpirun -np $nrep ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file --multi $nrep > check.log
+           $mpirun -np $nrep ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file --multi $nrep > check.log
        else
            ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file > check.log
        fi

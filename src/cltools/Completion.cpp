@@ -29,8 +29,6 @@
 #include <vector>
 #include <iostream>
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
@@ -58,7 +56,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
-  string description()const override {
+  std::string description()const override {
     return "dump a function usable for programmable completion";
   }
 };
@@ -83,12 +81,12 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   };
   fprintf(out,"local cmds=\"help -h --help");
 // Build list of available C++ tools:
-  std::vector<string> availableCxx=cltoolRegister().list();
+  std::vector<std::string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
-  vector<string> tmp=Tools::ls(string(config::getPlumedRoot()+"/scripts"));
+  std::vector<std::string> tmp=Tools::ls(std::string(config::getPlumedRoot()+"/scripts"));
   for(unsigned j=0; j<tmp.size(); ++j) {
     size_t ff=tmp[j].find(".sh");
-    if(ff==string::npos) tmp[j].erase();
+    if(ff==std::string::npos) tmp[j].erase();
     else                 tmp[j].erase(ff);
   }
   for(unsigned j=0; j<availableCxx.size(); j++) fprintf(out," %s",availableCxx[j].c_str());
@@ -117,36 +115,6 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
     }
     fprintf(out,"\"\n");
   }
-
-////  ALTERNATIVE IMPLEMENTATION
-////  checking tools on the fly
-////     for(unsigned j=0; j<tmp.size(); j++) {
-////       std::string s=tmp[j];
-////   // handle - sign (convert to underscore)
-////       for(;;) {
-////         size_t n=s.find("-");
-////         if(n==std::string::npos) break;
-////         s[n]='_';
-////       }
-////       fprintf(out,"local cmd_keys_%s=\"",s.c_str());
-////       std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"/scripts/"+s+".sh\" --options";
-////       FILE *fp=popen(cmd.c_str(),"r");
-////       std::string line,manual;
-////       while(Tools::getline(fp,line))manual+=line;
-////       pclose(fp);
-////       std::vector<std::string> keys=Tools::getWords(manual);
-////       for(unsigned k=0; k<keys.size(); k++) {
-////   // handle --help/-h
-////         std::string s=keys[k];
-////         for(;;) {
-////           size_t n=s.find("/");
-////           if(n==std::string::npos) break;
-////           s[n]=' ';
-////         }
-////         fprintf(out," %s",s.c_str());
-////       }
-////       fprintf(out,"\"\n");
-////     }
 
   fprintf(out,"%s\n",completion);
   std::string name=config::getPlumedProgramName();

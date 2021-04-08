@@ -23,12 +23,7 @@
 #include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/Pbc.h"
-
-#include <string>
-#include <cmath>
 #include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -74,7 +69,7 @@ class NOE :
 {
 private:
   bool             pbc;
-  vector<unsigned> nga;
+  std::vector<unsigned> nga;
   std::unique_ptr<NeighborList> nl;
   unsigned         tot_size;
 public:
@@ -112,7 +107,7 @@ NOE::NOE(const ActionOptions&ao):
   pbc=!nopbc;
 
   // Read in the atoms
-  vector<AtomNumber> t, ga_lista, gb_lista;
+  std::vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPA", i, t );
     if( t.empty() ) break;
@@ -120,7 +115,7 @@ NOE::NOE(const ActionOptions&ao):
     nga.push_back(t.size());
     t.resize(0);
   }
-  vector<unsigned> ngb;
+  std::vector<unsigned> ngb;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPB", i, t );
     if( t.empty() ) break;
@@ -134,7 +129,7 @@ NOE::NOE(const ActionOptions&ao):
   nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,false,true,pbc,getPbc(),comm);
 
   // Optionally add an experimental value (like with RDCs)
-  vector<double> noedist;
+  std::vector<double> noedist;
   noedist.resize( nga.size() );
   unsigned ntarget=0;
   for(unsigned i=0; i<nga.size(); ++i) {
@@ -164,13 +159,13 @@ NOE::NOE(const ActionOptions&ao):
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
-        string num; Tools::convert(i,num);
+        std::string num; Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
         Value* comp=getPntrToComponent("exp-"+num);
@@ -179,12 +174,12 @@ NOE::NOE(const ActionOptions&ao):
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponent("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
       Value* comp=getPntrToComponent("exp-"+num);
@@ -204,7 +199,7 @@ NOE::NOE(const ActionOptions&ao):
 void NOE::calculate()
 {
   const unsigned ngasz=nga.size();
-  vector<Vector> deriv(tot_size, Vector{0,0,0});
+  std::vector<Vector> deriv(tot_size, Vector{0,0,0});
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<ngasz; i++) {
@@ -212,7 +207,7 @@ void NOE::calculate()
     double noe=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
-    string num; Tools::convert(i,num);
+    std::string num; Tools::convert(i,num);
     Value* val=getPntrToComponent("noe-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {

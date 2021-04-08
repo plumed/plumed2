@@ -23,11 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Pbc.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -141,7 +136,7 @@ Distance::Distance(const ActionOptions&ao):
   scaled_components(false),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=2)
     error("Number of specified atoms should be 2");

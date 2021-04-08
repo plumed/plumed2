@@ -57,8 +57,6 @@ using namespace PLMD::molfile;
 #include <xdrfile/xdrfile_xtc.h>
 #endif
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
@@ -180,11 +178,11 @@ In addition, it allows \ref DUMPATOMS to write compressed xtc files.
 //
 
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-static vector<molfile_plugin_t *> plugins;
-static map <string, unsigned> pluginmap;
+static std::vector<molfile_plugin_t *> plugins;
+static std::map <std::string, unsigned> pluginmap;
 static int register_cb(void *v, vmdplugin_t *p) {
   //const char *key = p->name;
-  const auto ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
+  const auto ret = pluginmap.insert ( std::pair<std::string,unsigned>(std::string(p->name),plugins.size()) );
   if (ret.second==false) {
     //cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl;
   } else {
@@ -204,7 +202,7 @@ public:
   void evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
-  string description()const override;
+  std::string description()const override;
 };
 
 template<typename real>
@@ -222,6 +220,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
+  keys.addFlag("--restart",false,"makes driver behave as if restarting");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
   keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
@@ -252,8 +251,8 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   MOLFILE_INIT_ALL
   MOLFILE_REGISTER_ALL(NULL, register_cb)
   for(unsigned i=0; i<plugins.size(); i++) {
-    string kk="--mf_"+string(plugins[i]->name);
-    string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
+    std::string kk="--mf_"+std::string(plugins[i]->name);
+    std::string mm=" molfile: the trajectory in "+std::string(plugins[i]->name)+" format " ;
     keys.add("atoms",kk,mm);
   }
 #endif
@@ -265,7 +264,7 @@ Driver<real>::Driver(const CLToolOptions& co ):
   inputdata=commandline;
 }
 template<typename real>
-string Driver<real>::description()const { return "analyze trajectories with plumed"; }
+std::string Driver<real>::description()const { return "analyze trajectories with plumed"; }
 
 template<typename real>
 int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
@@ -287,6 +286,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
   bool parseOnly; parseFlag("--parse-only",parseOnly);
+  bool restart; parseFlag("--restart",restart);
 
   std::string fakein;
   bool debug_float=false;
@@ -349,8 +349,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(noatoms) error("must have atoms to debug_grex");
     if(multi<2)  error("--debug_grex needs --multi with at least two replicas");
     Tools::convert(fakein,grex_stride);
-    string n; Tools::convert(intercomm.Get_rank(),n);
-    string file;
+    std::string n; Tools::convert(intercomm.Get_rank(),n);
+    std::string file;
     parse("--debug-grex-log",file);
     if(file.length()>0) {
       file+="."+n;
@@ -359,14 +359,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
 // Read the plumed input file name
-  string plumedFile; parse("--plumed",plumedFile);
+  std::string plumedFile; parse("--plumed",plumedFile);
 // the timestep
   double t; parse("--timestep",t);
   real timestep=real(t);
 // the stride
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
-  string dumpforces(""), debugforces(""), dumpforcesFmt("%f");;
+  std::string dumpforces(""), debugforces(""), dumpforcesFmt("%f");;
   bool dumpfullvirial=false;
   if(!noatoms) {
     parse("--dump-forces",dumpforces);
@@ -379,7 +379,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   real kt=-1.0;
   parse("--kt",kt);
-  string trajectory_fmt;
+  std::string trajectory_fmt;
 
   bool use_molfile=false;
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
@@ -395,8 +395,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #endif
 
 // Read in an xyz file
-  string trajectoryFile(""), pdbfile(""), mcfile("");
-  bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
+  std::string trajectoryFile(""), pdbfile(""), mcfile("");
+  bool pbc_cli_given=false; std::vector<double> pbc_cli_box(9,0.0);
   int command_line_natoms=-1;
 
   if(!noatoms) {
@@ -411,13 +411,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
     for(unsigned i=0; i<plugins.size(); i++) {
-      string molfile_key="--mf_"+string(plugins[i]->name);
-      string traj_molfile;
+      std::string molfile_key="--mf_"+std::string(plugins[i]->name);
+      std::string traj_molfile;
       parse(molfile_key,traj_molfile);
       if(traj_molfile.length()>0) {
         fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins[i]->name,traj_molfile.c_str());
         trajectoryFile=traj_molfile;
-        trajectory_fmt=string(plugins[i]->name);
+        trajectory_fmt=std::string(plugins[i]->name);
         use_molfile=true;
         api = plugins[i];
       }
@@ -461,11 +461,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       if(grex_log)fclose(grex_log);
       return 1;
     }
-    string lengthUnits(""); parse("--length-units",lengthUnits);
+    std::string lengthUnits(""); parse("--length-units",lengthUnits);
     if(lengthUnits.length()>0) units.setLength(lengthUnits);
-    string chargeUnits(""); parse("--charge-units",chargeUnits);
+    std::string chargeUnits(""); parse("--charge-units",chargeUnits);
     if(chargeUnits.length()>0) units.setCharge(chargeUnits);
-    string massUnits(""); parse("--mass-units",massUnits);
+    std::string massUnits(""); parse("--mass-units",massUnits);
     if(massUnits.length()>0) units.setMass(massUnits);
 
     parse("--pdb",pdbfile);
@@ -476,16 +476,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     parse("--mc",mcfile);
 
-    string pbc_cli_list; parse("--box",pbc_cli_list);
+    std::string pbc_cli_list; parse("--box",pbc_cli_list);
     if(pbc_cli_list.length()>0) {
       pbc_cli_given=true;
-      vector<string> words=Tools::getWords(pbc_cli_list,",");
+      std::vector<std::string> words=Tools::getWords(pbc_cli_list,",");
       if(words.size()==3) {
         for(int i=0; i<3; i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[4*i]));
       } else if(words.size()==9) {
         for(int i=0; i<9; i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[i]));
       } else {
-        string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
+        std::string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
         fprintf(stderr,"%s\n",msg.c_str());
         return 1;
       }
@@ -508,6 +508,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int checknatoms=-1;
   long int step=0;
   parse("--initial-step",step);
+
+  if(restart) {
+    int irestart=1;
+    p.cmd("setRestart",&irestart);
+  }
 
   if(Communicator::initialized()) {
     if(multi) {
@@ -544,7 +549,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       fp=in;
     else {
       if(multi) {
-        string n;
+        std::string n;
         Tools::convert(intercomm.Get_rank(),n);
         std::string testfile=FileBase::appendSuffix(trajectoryFile,"."+n);
         FILE* tmp_fp=fopen(testfile.c_str(),"r");
@@ -564,7 +569,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #ifdef __PLUMED_HAS_XDRFILE
         xd=xdrfile_open(trajectoryFile.c_str(),"r");
         if(!xd) {
-          string msg="ERROR: Error opening trajectory file "+trajectoryFile;
+          std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           fprintf(stderr,"%s\n",msg.c_str());
           return 1;
         }
@@ -574,7 +579,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       } else {
         fp=fopen(trajectoryFile.c_str(),"r");
         if(!fp) {
-          string msg="ERROR: Error opening trajectory file "+trajectoryFile;
+          std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           fprintf(stderr,"%s\n",msg.c_str());
           return 1;
         }
@@ -582,7 +587,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     if(dumpforces.length()>0) {
       if(Communicator::initialized() && pc.Get_size()>1) {
-        string n;
+        std::string n;
         Tools::convert(pc.Get_rank(),n);
         dumpforces+="."+n;
       }
@@ -590,7 +595,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     if(debugforces.length()>0) {
       if(Communicator::initialized() && pc.Get_size()>1) {
-        string n;
+        std::string n;
         Tools::convert(pc.Get_rank(),n);
         debugforces+="."+n;
       }
@@ -710,8 +715,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if( first_step || rnd.U01()>0.5) {
       if(debug_pd) {
         int npe=intracomm.Get_size();
-        vector<int> loc(npe,0);
-        vector<int> start(npe,0);
+        std::vector<int> loc(npe,0);
+        std::vector<int> start(npe,0);
         for(int i=0; i<npe-1; i++) {
           int cc=(natoms*2*rnd.U01())/npe;
           if(start[i]+cc>natoms) cc=natoms-start[i];
@@ -777,7 +782,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             real By=real(ts_in.B)*sinAB;
             real Cx=real(ts_in.C)*cosAC;
             real Cy=(real(ts_in.C)*real(ts_in.B)*cosBC-Cx*Bx)/By;
-            real Cz=sqrt(real(ts_in.C)*real(ts_in.C)-Cx*Cx-Cy*Cy);
+            real Cz=std::sqrt(real(ts_in.C)*real(ts_in.C)-Cx*Cx-Cy*Cy);
             cell[0]=Ax/10.; cell[1]=0.; cell[2]=0.;
             cell[3]=Bx/10.; cell[4]=By/10.; cell[5]=0.;
             cell[6]=Cx/10.; cell[7]=Cy/10.; cell[8]=Cz/10.;
@@ -904,7 +909,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         }
         if(trajectory_fmt=="gro") {
           if(!Tools::getline(fp,line)) error("premature end of trajectory file");
-          std::vector<string> words=Tools::getWords(line);
+          std::vector<std::string> words=Tools::getWords(line);
           if(words.size()<3) error("cannot understand box format");
           Tools::convert(words[0],cell[0]);
           Tools::convert(words[1],cell[4]);
@@ -983,7 +988,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("GREX calculate");
         p.cmd("GREX shareAllDeltaBias");
         for(int i=0; i<n; i++) {
-          string s; Tools::convert(i,s);
+          std::string s; Tools::convert(i,s);
           real a=std::numeric_limits<real>::quiet_NaN(); s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
           if(grex_log) fprintf(grex_log," %f",a);
         }
@@ -994,8 +999,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     if(fp_forces) {
       fprintf(fp_forces,"%d\n",natoms);
-      string fmtv=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
-      string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
+      std::string fmtv=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
+      std::string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
       if(dumpfullvirial) {
         fprintf(fp_forces,fmtv.c_str(),virial[0],virial[1],virial[2],virial[3],virial[4],virial[5],virial[6],virial[7],virial[8]);
       } else {
@@ -1009,7 +1014,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       // Now call the routine to work out the derivatives numerically
       numder.assign(3*natoms+9,real(0.0)); real base=0;
       p.cmd("getBias",&base);
-      if( fabs(base)<epsilon ) printf("WARNING: bias for configuration appears to be zero so debugging forces is trivial");
+      if( std::abs(base)<epsilon ) printf("WARNING: bias for configuration appears to be zero so debugging forces is trivial");
       evaluateNumericalDerivatives( step, p, coordinates, masses, charges, cell, base, numder );
 
       // And output everything to a file
@@ -1054,7 +1059,7 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
     const std::vector<real>& masses, const std::vector<real>& charges,
     std::vector<real>& cell, const double& base, std::vector<real>& numder ) {
 
-  int natoms = coordinates.size() / 3; real delta = sqrt(epsilon);
+  int natoms = coordinates.size() / 3; real delta = std::sqrt(epsilon);
   std::vector<Vector> pos(natoms); real bias=0;
   std::vector<real> fake_forces( 3*natoms ), fake_virial(9);
   for(int i=0; i<natoms; ++i) {

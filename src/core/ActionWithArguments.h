@@ -46,7 +46,7 @@ class ActionWithArguments:
   bool lockRequestArguments;
 protected:
 /// This changes the arg keyword in the pdb file
-  void expandArgKeywordInPDB( PDB& pdb );
+  void expandArgKeywordInPDB( const PDB& pdb );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

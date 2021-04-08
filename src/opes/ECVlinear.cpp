@@ -25,7 +25,7 @@ namespace opes {
 Linear expansion, according to a parameter lambda.
 
 This can be used e.g. for thermodynamic integration, or for multibaric simulations, in which case lambda=pressure.
-It can also be used for multicanonical simulations, but for simplicity it is more convenient to use \ref ECV_MULTICANONICAL.
+It can also be used for multithermal simulations, but for simplicity it is more convenient to use \ref ECV_MULTITHERMAL.
 
 The difference in Hamiltonian \f$\Delta U\f$ is expected as ARG.
 \f[
@@ -87,7 +87,8 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
 
-void ECVlinear::registerKeywords(Keywords& keys) {
+void ECVlinear::registerKeywords(Keywords& keys)
+{
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the Hamiltonian difference \\f$\\Delta U\\f$");
@@ -169,7 +170,8 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
 }
 
-void ECVlinear::calculateECVs(const double * DeltaU) {
+void ECVlinear::calculateECVs(const double * DeltaU)
+{
   for(unsigned k=0; k<lambda_.size(); k++)
   {
     const double diff_k=beta0_*(lambda_[k]-lambda0_);
@@ -218,10 +220,10 @@ void ECVlinear::initECVs()
 
 void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
-  if(todoAutomatic_)//estimate the steps in lambda from observations
+  if(todoAutomatic_) //estimate the steps in lambda from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_cv(all_obs_cvs.size()/ncv);//copy only useful observation //TODO we should avoid this...
+    std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_lambda=estimateSteps(beta0_*(lambda_[0]-lambda0_),beta0_*(lambda_[1]-lambda0_),obs_cv,"LAMBDA");

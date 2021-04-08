@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace setup {
 
