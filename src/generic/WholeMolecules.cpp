@@ -228,7 +228,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
 void WholeMolecules::calculate() {
   for(unsigned i=0; i<groups.size(); ++i) {
-    if(addref){
+    if(addref) {
       Vector & first (modifyGlobalPosition(groups[i][0]));
       first = refs[i]+pbcDistance(refs[i],first);
     }
