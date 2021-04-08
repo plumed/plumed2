@@ -53,8 +53,7 @@ MultiplyMatrix::MultiplyMatrix(const ActionOptions& ao):
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix should equal number of rows in second");
  
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; 
-  shape[1]=getPntrToArgument(1)->getShape()[1]; addValue( shape ); setNotPeriodic();
-  getPntrToOutput(0)->alwaysStoreValues();
+  shape[1]=getPntrToArgument(1)->getShape()[1]; addValue( shape ); 
 }
 
 void MultiplyMatrix::completeMatrixOperations() {

@@ -34,6 +34,8 @@ class ActionWithInputMatrices :
   public ActionWithValue
 {
 protected:
+/// Add an output value to this action
+  void addValue( const std::vector<unsigned>& shape );
 /// Retrieve a dense version of the ith matrix that is used by this action
   void retrieveFullMatrix( const unsigned& imat, Matrix<double>& mymatrix ) const ;
 public:

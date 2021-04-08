@@ -82,9 +82,8 @@ MatrixJoin::MatrixJoin(const ActionOptions& ao):
     else if( cstart!=shape[1] ) error("mismatched matrix sizes");
     shape[0] += arglist[k-1]->getShape()[0];
   }
-  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   // Now request the arguments to make sure we store things we need
-  requestArguments(arglist, false );
+  requestArguments(arglist, false ); addValue( shape ); 
 }
 
 void MatrixJoin::completeMatrixOperations() {

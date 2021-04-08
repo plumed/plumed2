@@ -41,6 +41,21 @@ ActionWithInputMatrices::ActionWithInputMatrices(const ActionOptions& ao):
   requestArguments(args, false ); 
 }
 
+void ActionWithInputMatrices::addValue( const std::vector<unsigned>& shape ) {
+  ActionWithValue::addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
+  bool istimeseries=false;
+  for(unsigned i=0; i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(0)->isTimeSeries() ) { istimeseries=true; break; }
+  }
+
+  if( istimeseries  ) {
+      for(unsigned i=0; i<getNumberOfArguments();++i) {
+          if( !getPntrToArgument(0)->isTimeSeries() ) error( "on argument is time series but " + getPntrToArgument(i)->getName() + " is not a time series");
+      }
+      getPntrToOutput(0)->makeTimeSeries();
+  }
+}
+
 unsigned ActionWithInputMatrices::getNumberOfDerivatives() const {
   return 0;
 }
@@ -57,6 +72,7 @@ void ActionWithInputMatrices::retrieveFullMatrix( const unsigned& imat, Matrix<d
 }
 
 void ActionWithInputMatrices::calculate() {
+  if( skipCalculate() ) return;
   completeMatrixOperations();
 }
 
@@ -67,7 +83,12 @@ void ActionWithInputMatrices::update() {
 
 void ActionWithInputMatrices::runFinalJobs() {
   if( skipUpdate() ) return;
-  resizeForFinalTasks(); completeMatrixOperations();
+  if( getName()=="VORONOI" ) {
+      std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+      for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
+      getPntrToOutput(0)->setShape( shape );
+  } else resizeForFinalTasks(); 
+  completeMatrixOperations();
 }
 
 }

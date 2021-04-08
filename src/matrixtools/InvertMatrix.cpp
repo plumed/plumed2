@@ -53,8 +53,7 @@ InvertMatrix::InvertMatrix(const ActionOptions& ao):
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
  
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->alwaysStoreValues();
+  std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0]; addValue( shape ); 
 
   mymatrix.resize( shape[0], shape[1] ); inverse.resize( shape[0], shape[1] );
   // Now request the arguments to make sure we store things we need

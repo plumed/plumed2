@@ -19,54 +19,44 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
+#include "ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
-#include "tools/Angle.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class Voronoi :
-  public ActionWithValue,
-  public ActionWithArguments
-{
+class Voronoi : public ActionWithInputMatrices {
 private:
   bool highest;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Voronoi(const ActionOptions&);
-  unsigned getNumberOfDerivatives() const ;
-  unsigned getNumberOfColumns() const override ;
-  void calculate();
-  void performTask( const unsigned& current, MultiValue& myvals ) const {}
+  void performTask( const unsigned& current, MultiValue& myvals ) const override {}
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  void apply() {}
-  void update();
-  void runFinalJobs();
+                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
+  void completeMatrixOperations() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(Voronoi,"VORONOI")
 
 void Voronoi::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithInputMatrices::registerKeywords( keys ); 
   keys.addFlag("HIGHEST",false,"input matrix is such that atoms are close if the matrix element is large");
 }
 
 Voronoi::Voronoi(const ActionOptions&ao):
   Action(ao),
-  ActionWithValue(ao),
-  ActionWithArguments(ao)
+  ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only input one argument");
-  if( getPntrToArgument(0)->getRank()!=2 ) error("input should be a matrix");
   // Now create a value
-  std::vector<unsigned> shape(2); getPntrToArgument(0)->buildDataStore( getLabel() );
-  shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[1];
+  std::vector<unsigned> shape(2); 
+  shape[0]=getPntrToArgument(0)->getShape()[0]; 
+  shape[1]=getPntrToArgument(0)->getShape()[1];
+  addValue( shape );
+  // Create a task list for this action
   for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
-  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
 
   parseFlag("HIGHEST",highest);
   if( highest ) log.printf("  connecting each element to largest matrix element \n");
@@ -74,33 +64,10 @@ Voronoi::Voronoi(const ActionOptions&ao):
   checkRead();
 }
 
-unsigned Voronoi::getNumberOfDerivatives() const {
-  return 0;
-}
 
-unsigned Voronoi::getNumberOfColumns() const {
-  return getPntrToArgument(0)->getShape()[1];
-}
-
-void Voronoi::calculate() {
-  if( skipCalculate() ) return;
-  plumed_dbg_assert( !actionInChain() );
+void Voronoi::completeMatrixOperations() {
   runAllTasks();
 }
-
-void Voronoi::update() {
-  if( skipUpdate() ) return;
-  plumed_dbg_assert( !actionInChain() );
-  runAllTasks();
-}
-
-void Voronoi::runFinalJobs() {
-  if( skipUpdate() ) return;
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()==0 );
-  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() ); 
-  for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
-  getPntrToOutput(0)->setShape( shape ); runAllTasks();
-} 
 
 void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                  const unsigned& bufstart, std::vector<double>& buffer ) const {
@@ -111,6 +78,10 @@ void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code,
       else if( !highest && value<minmax ) { minmax = value; nv = i; } 
   }
   buffer[bufstart + nv*arg0->getShape()[1] + code] = 1;
+}
+
+void Voronoi::apply() {
+   if( getPntrToOutput(0)->forcesWereAdded() ) error("forces on voronoi matrix cannot work as voroni matrix is not differentiable");
 }
 
 }

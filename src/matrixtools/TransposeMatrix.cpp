@@ -49,8 +49,10 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[1]; shape[1]=getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
+  std::vector<unsigned> shape(2); 
+  shape[0]=getPntrToArgument(0)->getShape()[1]; 
+  shape[1]=getPntrToArgument(0)->getShape()[0];
+  addValue( shape ); 
 }
 
 unsigned TransposeMatrix::getNumberOfColumns() const {
