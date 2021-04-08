@@ -299,6 +299,11 @@ void Function::fixTimeSeries() {
   }
 }
 
+unsigned Function::getNumberOfColumns() const {
+  plumed_assert( getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
+  return getPntrToArgument(0)->getNumberOfColumns();
+}
+
 void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
@@ -427,7 +432,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
           for(unsigned i=0; i<nderivatives; ++i) myvals.updateIndex( ostrn, i );
           return;
-        } 
+        }
       }
   } else if( myvals.inVectorCall() ) {
       plumed_dbg_assert( getNumberOfArguments()==1 && getPntrToArgument(0)->getRank()==2 );

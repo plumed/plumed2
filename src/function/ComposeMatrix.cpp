@@ -33,7 +33,8 @@ class ComposeMatrix :
 public:
   static void registerKeywords(Keywords&);
   explicit ComposeMatrix(const ActionOptions&);
-  unsigned getNumberOfDerivatives() const ;
+  unsigned getNumberOfDerivatives() const override;
+  unsigned getNumberOfColumns() const override;
   bool canChainFromThisAction() const { return false; }
   void calculate();
   void apply();
@@ -63,6 +64,10 @@ ActionWithArguments(ao)
 
 unsigned ComposeMatrix::getNumberOfDerivatives() const {
   return 1;
+}
+
+unsigned ComposeMatrix::getNumberOfColumns() const {
+  return getPntrToOutput(0)->getShape()[1];
 }
 
 void ComposeMatrix::calculate() {

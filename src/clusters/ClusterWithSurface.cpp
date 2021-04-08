@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class ClusterWithSurface : public ActionShortcut {
 public:

@@ -19,18 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
-#include "tools/Matrix.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class InvertMatrix :
-  public ActionWithArguments,
-  public ActionWithValue
-{
+class InvertMatrix : public ActionWithInputMatrices {
 private:
   Matrix<double> mymatrix;
   Matrix<double> inverse;
@@ -39,10 +34,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit InvertMatrix(const ActionOptions&);
-/// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
 /// Do the calculation
-  void calculate();
+  void completeMatrixOperations() override;
 ///
   void apply();
 };
@@ -50,41 +43,31 @@ public:
 PLUMED_REGISTER_ACTION(InvertMatrix,"INVERT_MATRIX")
 
 void InvertMatrix::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys ); keys.use("ARG");
+  ActionWithInputMatrices::registerKeywords( keys );
 }
 
 InvertMatrix::InvertMatrix(const ActionOptions& ao):
   Action(ao),
-  ActionWithArguments(ao),
-  ActionWithValue(ao)
+  ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  if( getPntrToArgument(0)->getRank()!=2 ) error("input argument for this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
  
   std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); setNotPeriodic();
+  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->alwaysStoreValues();
 
   mymatrix.resize( shape[0], shape[1] ); inverse.resize( shape[0], shape[1] );
   // Now request the arguments to make sure we store things we need
-  std::vector<Value*> args( getArguments() ); requestArguments(args, false );
   forcesToApply.resize( shape[0]*shape[1] );
 }
 
-void InvertMatrix::calculate() {
+void InvertMatrix::completeMatrixOperations() {
   // Retrieve the matrix from input
-  unsigned k = 0;
-  for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-    for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-      mymatrix(i,j) = getPntrToArgument(0)->get( k ); k++;
-    }
-  }
+  retrieveFullMatrix( 0, mymatrix );
   // Now invert the matrix
   Invert( mymatrix, inverse );
   // And set the inverse
-  k = 0;
+  unsigned k = 0;
   for(unsigned i=0; i<mymatrix.nrows(); ++i) {
     for(unsigned j=0; j<mymatrix.ncols(); ++j) {
         getPntrToOutput(0)->set( k, inverse(i,j) ); k++;

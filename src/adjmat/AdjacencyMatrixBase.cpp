@@ -227,6 +227,15 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
   }
 }
 
+unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
+  return getPntrToOutput(0)->getShape()[1];
+  // unsigned maxcol=nlist[0];
+  // for(unsigned i=1; i<getFullNumberOfTasks(); ++i) {
+  //     if( nlist[i]>maxcol ) maxcol = nlist[i]; 
+  // }
+  // return maxcol;
+}
+
 void AdjacencyMatrixBase::calculate() {
   if( actionInChain() ) return;
   // Now run all the tasks

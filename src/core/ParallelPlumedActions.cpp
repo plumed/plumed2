@@ -127,6 +127,11 @@ unsigned ParallelPlumedActions::getNumberOfDerivatives() const {
   return nderivatives;
 }
 
+unsigned ParallelPlumedActions::getNumberOfColumns() const {
+  plumed_assert( getPntrToOutput(0)->getRank()==2 );
+  return getPntrToOutput(0)->getShape()[1];
+}
+
 void ParallelPlumedActions::clearDerivatives( const bool& force ) {
   ActionWithValue::clearDerivatives( force );
   for(unsigned i=0;i<action_lists.size();++i) {

@@ -19,35 +19,27 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
-#include "tools/Matrix.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class DiagonalizeMatrix :
-  public ActionWithArguments,
-  public ActionWithValue
-{
+class DiagonalizeMatrix : public ActionWithInputMatrices {
 private:
   std::vector<unsigned> desired_vectors;
   Matrix<double> mymatrix;
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
   std::vector<double> forcesToApply;
-  void diagonalizeMatrix();
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit DiagonalizeMatrix(const ActionOptions&);
-/// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
+/// This is required to set the number of derivatives for the eigenvalues
+  unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
 /// Do the calculation
-  void calculate();
-  void update();
-  void runFinalJobs();
+  void completeMatrixOperations() override;
 ///
   void apply();
 };
@@ -55,9 +47,7 @@ public:
 PLUMED_REGISTER_ACTION(DiagonalizeMatrix,"DIAGONALIZE")
 
 void DiagonalizeMatrix::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys ); keys.use("ARG");
+  ActionWithInputMatrices::registerKeywords( keys );
   keys.add("compulsory","VECTORS","all","the eigenvalues and vectors that you would like to calculate.  1=largest, 2=second largest and so on");
   keys.addOutputComponent("vals","default","the eigevalues of the input matrix");
   keys.addOutputComponent("vecs","default","the eigenvectors of the input matrix");
@@ -65,11 +55,9 @@ void DiagonalizeMatrix::registerKeywords( Keywords& keys ) {
 
 DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   Action(ao),
-  ActionWithArguments(ao),
-  ActionWithValue(ao)
+  ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  if( getPntrToArgument(0)->getRank()!=2 ) error("input argument for this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
 
   std::vector<std::string> eigv; parseVector("VECTORS",eigv);
@@ -100,22 +88,21 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
   mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] );
-  eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
-  // Now request the arguments to make sure we store things we need
-  std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(1);  
-  requestArguments(args, false ); forcesToApply.resize( evec_shape[0]*evec_shape[0] );
+  eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); forcesToApply.resize( evec_shape[0]*evec_shape[0] );
 }
 
-void DiagonalizeMatrix::diagonalizeMatrix() {
+void DiagonalizeMatrix::completeMatrixOperations() {
   if( getPntrToArgument(0)->getShape()[0]==0 ) return ;
 
-  // Retrieve the matrix from input
-  unsigned k = 0;
-  for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-    for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-      mymatrix(i,j) = getPntrToArgument(0)->get( k ); k++;
-    }
+  // Resize stuff that might need resizing
+  unsigned nvals=getPntrToArgument(0)->getShape()[0]; 
+  if( eigvals.size()!=nvals ) { 
+      mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); 
+      eigvecs.resize( nvals, nvals );
   }
+
+  // Retrieve the matrix from input
+  retrieveFullMatrix( 0, mymatrix );
   // Now diagonalize the matrix
   diagMat( mymatrix, eigvals, eigvecs );
   // And set the eigenvalues and eigenvectors
@@ -136,22 +123,6 @@ void DiagonalizeMatrix::diagonalizeMatrix() {
       }
     }
   }
-}
-
-void DiagonalizeMatrix::calculate() {
-  diagonalizeMatrix();
-}
-
-void DiagonalizeMatrix::update() {
-  if( skipUpdate() ) return;
-  diagonalizeMatrix();
-}
-
-void DiagonalizeMatrix::runFinalJobs() {
-  if( skipUpdate() ) return;
-  unsigned nvals=getPntrToArgument(0)->getShape()[0]; resizeForFinalTasks();
-  mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); eigvecs.resize( nvals, nvals );
-  diagonalizeMatrix();
 }
 
 void DiagonalizeMatrix::apply() {

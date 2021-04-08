@@ -58,6 +58,7 @@ public:
   explicit AdjacencyMatrixBase(const ActionOptions&);
   bool canBeAfterInChain( ActionWithValue* av ) const ;
   unsigned getNumberOfDerivatives() const ;
+  unsigned getNumberOfColumns() const override;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void calculate();

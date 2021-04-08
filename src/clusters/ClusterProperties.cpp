@@ -54,7 +54,7 @@ PRINT ARG=clust1.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class ClusterProperties : public ActionShortcut {
 public:

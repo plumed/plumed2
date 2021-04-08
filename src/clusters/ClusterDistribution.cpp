@@ -65,7 +65,7 @@ PRINT ARG=nclust.* FILE=colvar
 
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class ClusterDistribution :
   public ActionWithArguments,

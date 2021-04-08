@@ -36,7 +36,8 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit GyrationTensor(const ActionOptions&);
   void setupEntity() override;
-  unsigned getNumberOfStoredQuantities() const ;
+  unsigned getNumberOfStoredQuantities() const override;
+  unsigned getNumberOfColumns() const override;
   void compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const override;
   void finalizeValue( const std::vector<double>& final_vals );
   void finalizeDerivatives( const std::vector<double>& final_vals, const std::vector<std::vector<double> >& final_deriv,
@@ -77,6 +78,10 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
 
 void GyrationTensor::setupEntity() {
   if(!nopbc) makeWhole(0, getNumberOfAtoms()-1);
+}
+
+unsigned GyrationTensor::getNumberOfColumns() const {
+  return 3;
 }
 
 unsigned GyrationTensor::getNumberOfStoredQuantities() const {

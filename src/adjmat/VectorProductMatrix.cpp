@@ -222,6 +222,11 @@ void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiVa
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
 }
 
+unsigned VectorProductMatrix::getNumberOfColumns() const { 
+  plumed_massert( !actionInChain(), "I am not sure how to do this so I am not allowing it GAT");  
+  return getPntrToOutput(0)->getShape()[1];
+}
+
 void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( actionInChain() ) {
     updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );

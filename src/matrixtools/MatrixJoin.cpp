@@ -19,17 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class MatrixJoin :
-  public ActionWithArguments,
-  public ActionWithValue
-{
+class MatrixJoin : public ActionWithInputMatrices {
 private:
   std::vector<unsigned> row_starts;
   std::vector<unsigned> col_starts;
@@ -37,10 +33,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit MatrixJoin(const ActionOptions&);
-/// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const { return 1; }
 /// Do the calculation
-  void calculate();
+  void completeMatrixOperations() override;
 ///
   void apply();
 };
@@ -48,14 +42,13 @@ public:
 PLUMED_REGISTER_ACTION(MatrixJoin,"COMBINE_MATRICES")
 
 void MatrixJoin::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); keys.remove("ARG");
+  ActionWithInputMatrices::registerKeywords( keys ); keys.remove("ARG");
   keys.add("numbered","MATRIX","specify the matrices that you wish to join together into a single matrix"); keys.reset_style("MATRIX","compulsory");
 }
 
 MatrixJoin::MatrixJoin(const ActionOptions& ao):
   Action(ao),
-  ActionWithArguments(ao),
-  ActionWithValue(ao)
+  ActionWithInputMatrices(ao)
 {
   plumed_assert( getNumberOfArguments()==0 );
   unsigned nrows=0, ncols=0; std::vector<Value*> arglist;
@@ -94,11 +87,13 @@ MatrixJoin::MatrixJoin(const ActionOptions& ao):
   requestArguments(arglist, false );
 }
 
-void MatrixJoin::calculate() {
+void MatrixJoin::completeMatrixOperations() {
   // Retrieve the matrix from input
   unsigned ncols = getPntrToOutput(0)->getShape()[1];
   for(unsigned k=0; k<getNumberOfArguments(); ++k) {
     Value* argn = getPntrToArgument(k); unsigned nn=0;
+    // PLUMED cannot deal with sparsity when calculating these things
+    plumed_assert( argn->getShape()[1]==(argn->getPntrToAction())->getNumberOfColumns() );
     for(unsigned i=0; i<argn->getShape()[0]; ++i) {
       for(unsigned j=0; j<argn->getShape()[1]; ++j) { getPntrToOutput(0)->set( ncols*(row_starts[k]+i)+col_starts[k]+j, argn->get(nn) ); nn++; }
     }

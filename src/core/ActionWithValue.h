@@ -260,6 +260,8 @@ public:
   unsigned getFullNumberOfTasks() const ;
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
+/// Get the number of columns for the matrix
+  virtual unsigned getNumberOfColumns() const { plumed_merror("in " + getName() + " method for number of columns is not defined"); }
 /// Run a task for a matrix element
   void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;

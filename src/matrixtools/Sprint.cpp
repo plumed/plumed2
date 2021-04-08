@@ -77,7 +77,7 @@ PRINT ARG=ss.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class Sprint : public ActionShortcut {
 public:

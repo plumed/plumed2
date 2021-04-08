@@ -58,7 +58,7 @@ PRINT ARG=dia FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class ClusterDiameter : public ActionShortcut {
 public:

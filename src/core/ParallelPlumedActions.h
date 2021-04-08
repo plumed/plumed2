@@ -56,7 +56,9 @@ public:
 ///
   void activate();
 /// Get the number of derivatives we need to store
-  unsigned getNumberOfDerivatives() const ;
+  unsigned getNumberOfDerivatives() const override;
+/// Get the number of columns for the matrices
+  unsigned getNumberOfColumns() const override;
 /// Clear the derivatives in all the underlying actions
   void clearDerivatives( const bool& force );
 /// Calculate the vector

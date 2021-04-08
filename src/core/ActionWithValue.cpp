@@ -600,6 +600,8 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
       if( values[i]->getShape()[1]>ncols ) { ncols = values[i]->getShape()[1]; }
       values[i]->matpos=nmat; nmat++;
+      // Matrices store is reshaped every step as we do a sparse storage of data to minimise memory requirements
+      if( values[i]->storedata ) values[i]->reshapeMatrixStore();
     } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
       values[i]->matpos=nmat; nmat++;
     }
@@ -610,10 +612,7 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
 
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
   for(unsigned i=0; i<values.size(); ++i) {
-    values[i]->bufstart=bufsize;
-    if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
-    else if( values[i]->getRank()==0 ) bufsize += 1;
-    else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize();
+    values[i]->bufstart=bufsize; bufsize += values[i]->data.size();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -693,7 +692,7 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
   unsigned sind = values[valindex]->streampos;
   // This looks after storing for matrices
   if( values[valindex]->getRank()==2 ) {
-    unsigned ncols = values[valindex]->getShape()[1];
+    unsigned ncols =  values[valindex]->getNumberOfColumns(); 
     unsigned vindex = bufstart + code*ncols; unsigned matind = values[valindex]->getPositionInMatrixStash();
     for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
       unsigned jind = myvals.getStashedMatrixIndex(matind,j);

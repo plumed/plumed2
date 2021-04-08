@@ -64,15 +64,15 @@ SetupReferenceBase(ao)
           // Read in the covariance
           std::vector<double> sigma; parseVector("SIGMA",sigma);
           if( sigma.size()==shape[0] ) {
-              addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
+              addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->alwaysStoreValues();
               for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, sigma[i]*sigma[i] );
           } else if( sigma.size()==0 ) {
               std::vector<double> covar; parseVector("COVAR",covar); 
               if( covar.size()==shape[0] ) {
-                  addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
+                  addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->alwaysStoreValues();
                   for(unsigned i=0;i<shape[0];++i) getPntrToComponent(1)->set( i, covar[i] );
               } else if( covar.size()==shape[0]*shape[0] ) {
-                  shape.push_back( shape[0] ); addComponent("covariance", shape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->buildDataStore( getLabel() );
+                  shape.push_back( shape[0] ); addComponent("covariance", shape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->alwaysStoreValues();
                   for(unsigned i=0;i<covar.size();++i) getPntrToComponent(1)->set( i, covar[i] ); 
               } else error("covariance has the wrong shape");
           } else error("sigma has the wrong shape");
@@ -120,7 +120,7 @@ SetupReferenceBase(ao)
 }
 
 void ReadReferenceCluster::setCenterFromVector( const std::vector<double>& center ) {
-  getPntrToComponent(0)->buildDataStore( getLabel() );
+  getPntrToComponent(0)->alwaysStoreValues();
   std::vector<unsigned> shape( getPntrToComponent(0)->getShape() );
   if( center.size()!=shape[0] ) error("size of center does not match number of arguments");
   for(unsigned i=0;i<shape[0];++i) getPntrToComponent(0)->set( i, center[i] );

@@ -198,6 +198,10 @@ public:
 ///
   unsigned getPositionInMatrixStash() const ;
 ///
+  void reshapeMatrixStore();
+/// Get the number of columns in the matrix
+  unsigned getNumberOfColumns() const ;
+///
   std::size_t getIndex(const std::vector<unsigned> & indices) const ;
 ///
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;

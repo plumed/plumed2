@@ -19,15 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_ClusteringBase_h
-#define __PLUMED_adjmat_ClusteringBase_h
+#ifndef __PLUMED_clusters_ClusteringBase_h
+#define __PLUMED_clusters_ClusteringBase_h
 
 #include "core/ActionWithArguments.h"
 #include "core/ActionWithValue.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class ClusteringBase :
   public ActionWithArguments,

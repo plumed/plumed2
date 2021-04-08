@@ -38,6 +38,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Voronoi(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
+  unsigned getNumberOfColumns() const override ;
   void calculate();
   void performTask( const unsigned& current, MultiValue& myvals ) const {}
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -75,6 +76,10 @@ Voronoi::Voronoi(const ActionOptions&ao):
 
 unsigned Voronoi::getNumberOfDerivatives() const {
   return 0;
+}
+
+unsigned Voronoi::getNumberOfColumns() const {
+  return getPntrToArgument(0)->getShape()[1];
 }
 
 void Voronoi::calculate() {

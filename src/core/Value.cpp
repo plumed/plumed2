@@ -81,18 +81,22 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
-  if( ss.size()>0 ) storedata=false;
-  setShape( ss );
+  if( action ) alwaysstore=action->getName()=="PUT";
+  if( ss.size()>0 && !alwaysstore ) storedata=false;
+  setShape( ss ); 
 }
 
 void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
+  // Matrices are resized dynamically so we can use the sparsity pattern to reduce the 
+  // overhead on memory
+  if( getRank()==2 && !hasDeriv && !alwaysstore && !istimeseries ) return;
 
-  if( (hasDeriv || storedata || istimeseries || getPntrToAction()->getName()=="PUT") && shape.size()>0 ) {
-     data.resize(getSize()); unsigned fsize=1; 
-     for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-     inputForces.resize(fsize); 
+  if( (hasDeriv || storedata || istimeseries) && shape.size()>0 ) {
+     unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+     unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+     if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
      if( hasDeriv ) {
          ngrid_der = shape.size();
          if( action ) ngrid_der = action->getNumberOfDerivatives();
@@ -120,26 +124,15 @@ void Value::buildDataStore( const std::string& actlabel ) {
     if( actlabel==store_data_for[i].first ) found=true;
   }
   if( !found ) store_data_for.push_back( std::pair<std::string,int>(actlabel,-1) );
-  storedata=true;
-  if( getRank()>0 && !hasDeriv ) {
-      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
-      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-      if( fsize!=inputForces.size() ) inputForces.resize(fsize);
-  }
+  storedata=true; setShape( shape );
 }
 
 void Value::alwaysStoreValues() {
-  plumed_assert( !neverstore); alwaysstore=true; storedata=true;
-  if( getRank()>0 && !hasDeriv ) {
-      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
-      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-      if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
-  }
+  plumed_assert( !neverstore); alwaysstore=true; storedata=true; setShape( shape );
 }
 
 void Value::makeTimeSeries() {
-  istimeseries=true;
-  unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
+  istimeseries=true; setShape( shape );
 }
 
 void Value::neverStoreValues() {
@@ -181,12 +174,6 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
   if( getIndex(indices)>=getNumberOfValues(aname) ) action->error("action does not have this many components");
   userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
-
-// void Value::addStreamIndex( const int& newi ){
-//   plumed_dbg_assert( shape.size()>0 );
-//   if( indices_in_stream.size()>0 ) plumed_assert( indices_in_stream[0]!=-1 );
-//   indices_in_stream.push_back( newi );
-// }
 
 bool Value::isPeriodic()const {
   plumed_massert(periodicity!=unset,"periodicity should be set");
@@ -289,7 +276,7 @@ ActionWithValue* Value::getPntrToAction() {
 unsigned Value::getSize() const {
   unsigned size=getNumberOfValues( name );
   if( shape.size()>0 && hasDeriv && action ) return size*( 1 + action->getNumberOfDerivatives() ); 
-  else return size*( 1 + shape.size() );
+  else if( shape.size()>0 && hasDeriv ) return size*( 1 + shape.size() );
   return size;
 }
 
@@ -355,6 +342,19 @@ unsigned Value::getPositionInStream() const {
 
 unsigned Value::getPositionInMatrixStash() const {
   return matpos;
+}
+
+unsigned Value::getNumberOfColumns() const {
+  plumed_assert( shape.size()==2 && !hasDeriv );
+  if( alwaysstore ) return shape[1];
+  return action->getNumberOfColumns();
+}
+
+void Value::reshapeMatrixStore() {
+  plumed_assert( shape.size()==2 && !hasDeriv && storedata && action );
+  unsigned size = shape[0]*getNumberOfColumns();
+  if( data.size()==size ) return;
+  data.resize( size ); inputForces.resize( size );
 }
 
 const std::vector<unsigned>& Value::getShape() const {

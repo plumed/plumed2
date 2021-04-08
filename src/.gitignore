@@ -13,6 +13,7 @@
 !/colvar
 !/config
 !/core
+!/clusters
 !/dimred
 !/drr
 !/eds
@@ -28,6 +29,7 @@
 !/main
 !/maketools
 !/mapping
+!/matrixtools
 !/maze
 !/molfile
 !/multicolvar

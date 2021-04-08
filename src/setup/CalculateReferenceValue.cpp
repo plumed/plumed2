@@ -128,6 +128,7 @@ SetupReferenceBase(ao)
    // And setup the values 
    if( fav->getNumberOfComponents()==1 ) {
        addValue( shapes[0] ); 
+       if( shapes[0].size()==2 ) getPntrToComponent(0)->alwaysStoreValues(); 
        if( (fav->copyOutput(0))->isPeriodic() ) {
            std::string min, max; (fav->copyOutput(0))->getDomain( min, max ); 
            setPeriodic( min, max );
@@ -138,6 +139,7 @@ SetupReferenceBase(ao)
            std::size_t dot = name.find_first_of(".");
            std::string subname=name.substr(dot+1);
            addComponent( subname, shapes[i] );
+           if( shapes[i].size()==2 ) getPntrToComponent(i)->alwaysStoreValues();
            if( (fav->copyOutput(i))->isPeriodic() ) {
                std::string min, max; (fav->copyOutput(i))->getDomain( min, max );
                componentIsPeriodic( subname, min, max );

@@ -24,7 +24,7 @@
 #include "core/Atoms.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

@@ -19,25 +19,21 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithArguments.h"
-#include "core/ActionWithValue.h"
+#include "ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class TransposeMatrix :
-  public ActionWithArguments,
-  public ActionWithValue
-{
+class TransposeMatrix : public ActionWithInputMatrices {
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit TransposeMatrix(const ActionOptions&);
-/// Get the numebr of derivatives
-  unsigned getNumberOfDerivatives() const { return 1; }
+///
+  unsigned getNumberOfColumns() const override;
 /// Do the calculation
-  void calculate();
+  void completeMatrixOperations() override;
 ///
   void apply();
 };
@@ -45,28 +41,27 @@ public:
 PLUMED_REGISTER_ACTION(TransposeMatrix,"TRANSPOSE")
 
 void TransposeMatrix::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  keys.use("ARG");
+  ActionWithInputMatrices::registerKeywords( keys );
 }
 
 TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   Action(ao),
-  ActionWithArguments(ao),
-  ActionWithValue(ao)
+  ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  if( getPntrToArgument(0)->getRank()!=2 ) error("input argument for this action should be a matrix");
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[1]; shape[1]=getPntrToArgument(0)->getShape()[0];
   addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
-  // Now request the arguments to make sure we store things we need
-  std::vector<Value*> args( getArguments() ); requestArguments(args, false );
 }
 
-void TransposeMatrix::calculate() {
+unsigned TransposeMatrix::getNumberOfColumns() const {
+  return getPntrToArgument(0)->getShape()[0];
+}
+
+void TransposeMatrix::completeMatrixOperations() {
   // Retrieve the matrix from input
   unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+  // PLUMED cannot deal with sparsity when calculating these things
+  plumed_assert( getPntrToArgument(0)->getShape()[1]==(getPntrToArgument(0)->getPntrToAction())->getNumberOfColumns() );
   for(unsigned i=0; i<shape[0]; ++i) {
     for(unsigned j=0; j<shape[1]; ++j) {
       getPntrToOutput(0)->set( j*shape[1] + i, getPntrToArgument(0)->get( k ) ); k++;
