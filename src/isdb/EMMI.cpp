@@ -19,8 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Matrix.h"
 #include "core/GenericMolInfo.h"
@@ -103,8 +105,11 @@ PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 */
 //+ENDPLUMEDOC
 
-class EMMI : public Colvar {
-
+class EMMI :
+    public ActionAtomistic,
+    public ActionWithArguments,
+    public ActionWithValue
+{
 private:
 
 // temperature in kbt
@@ -191,6 +196,16 @@ private:
   unsigned int ovstride_;
   std::string       ovfilename_;
 
+  // Reweighting additions
+  bool do_reweight_;
+  bool first_time_w_;
+  std::vector<double> forces;
+  std::vector<double> forcesToApply;
+
+  // average weights
+  double decay_w_;
+  std::vector<double> average_weights_;
+
 // write file with model overlap
   void write_model_overlap(long int step);
 // get median of std::vector
@@ -242,19 +257,139 @@ private:
 // Marginal noise
   void calculate_Marginal();
 
+  // See MetainferenceBase
+  void get_weights(double &weight, double &norm, double &neff);
+
 public:
   static void registerKeywords( Keywords& keys );
   explicit EMMI(const ActionOptions&);
+  // needed for reweighting
+  void setDerivatives();
+  void turnOnDerivatives() override;
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void apply() override;
+  void setArgDerivatives(Value *v, const double &d);
+  void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
+  void setBoxDerivatives(Value*v, const Tensor&d);
 // active methods:
   void prepare() override;
   void calculate() override;
 };
 
+inline
+void EMMI::setDerivatives() {
+  // Get appropriate number of derivatives
+  // Derivatives are first for arguments and then for atoms
+  unsigned nder;
+  if( getNumberOfAtoms()>0 ) {
+    nder = 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
+  } else {
+    nder = getNumberOfArguments();
+  }
+
+  // Resize all derivative arrays
+  forces.resize( nder ); forcesToApply.resize( nder );
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+}
+
+inline
+void EMMI::turnOnDerivatives() {
+  ActionWithValue::turnOnDerivatives();
+}
+
+inline
+unsigned EMMI::getNumberOfDerivatives() {
+  if( getNumberOfAtoms()>0 ) {
+    return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
+  }
+  return getNumberOfArguments();
+}
+
+inline
+void EMMI::lockRequests() {
+  ActionAtomistic::lockRequests();
+  ActionWithArguments::lockRequests();
+}
+
+inline
+void EMMI::unlockRequests() {
+  ActionAtomistic::unlockRequests();
+  ActionWithArguments::unlockRequests();
+}
+
+inline
+void EMMI::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
+  if( getNumberOfArguments()>0 ) {
+    ActionWithArguments::calculateNumericalDerivatives( a );
+  }
+  if( getNumberOfAtoms()>0 ) {
+    Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
+    for(int j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+    }
+    calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
+    for(int j=0; j<getNumberOfComponents(); ++j) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+    }
+  }
+}
+
+inline
+void EMMI::apply() {
+  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    if( getPntrToComponent(i)->applyForce( forces ) ) {
+      wasforced=true;
+      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
+    }
+  }
+  if( wasforced ) {
+    addForcesOnArguments( forcesToApply );
+    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+  }
+}
+
+inline
+void EMMI::setArgDerivatives(Value *v, const double &d) {
+  v->addDerivative(0,d);
+}
+
+inline
+void EMMI::setAtomsDerivatives(Value*v, const unsigned i, const Vector&d) {
+  const unsigned noa=getNumberOfArguments();
+  v->addDerivative(noa+3*i+0,d[0]);
+  v->addDerivative(noa+3*i+1,d[1]);
+  v->addDerivative(noa+3*i+2,d[2]);
+}
+
+inline
+void EMMI::setBoxDerivatives(Value* v,const Tensor&d) {
+  const unsigned noa=getNumberOfArguments();
+  const unsigned nat=getNumberOfAtoms();
+  v->addDerivative(noa+3*nat+0,d(0,0));
+  v->addDerivative(noa+3*nat+1,d(0,1));
+  v->addDerivative(noa+3*nat+2,d(0,2));
+  v->addDerivative(noa+3*nat+3,d(1,0));
+  v->addDerivative(noa+3*nat+4,d(1,1));
+  v->addDerivative(noa+3*nat+5,d(1,2));
+  v->addDerivative(noa+3*nat+6,d(2,0));
+  v->addDerivative(noa+3*nat+7,d(2,1));
+  v->addDerivative(noa+3*nat+8,d(2,2));
+}
+
 PLUMED_REGISTER_ACTION(EMMI,"EMMI")
 
 void EMMI::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.use("ARG");
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
@@ -280,7 +415,11 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
+  keys.add("optional","SIGMA_MEAN0","initial value of the uncertainty of the mean estimate");
+  keys.add("optional","AVERAGING", "Averaging window for weights and sigma_mean");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
+  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
+  keys.addFlag("OPTSIGMAMEAN",false,"Set to manually set sigma mean, or to estimate it on the fly");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
@@ -288,10 +427,18 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
   keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
+  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
+  keys.addOutputComponent("sigmaMean",      "OPTSIGMAMEAN",     "uncertainty in the mean estimate");
+  keys.addOutputComponent("sigma",      "NOISETYPE",     "uncertainty in the forward models and experiment");
+  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
 }
 
 EMMI::EMMI(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  Action(ao),
+  ActionAtomistic(ao),
+  ActionWithArguments(ao),
+  ActionWithValue(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false), pbc_(true),
@@ -299,7 +446,8 @@ EMMI::EMMI(const ActionOptions&ao):
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
+  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0),
+  do_reweight_(false), first_time_w_(true), decay_w_(1.)
 {
   // periodic boundary conditions
   bool nopbc=!pbc_;
@@ -407,8 +555,6 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("WRITE_OV", ovfilename_);
   if(ovstride_>0 && ovfilename_=="") error("With WRITE_OV_STRIDE you must specify WRITE_OV");
 
-  checkRead();
-
   // set parallel stuff
   size_=comm.Get_size();
   rank_=comm.Get_rank();
@@ -427,6 +573,22 @@ EMMI::EMMI(const ActionOptions&ao):
   }
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
+
+  // Reweighting flag
+  parseFlag("REWEIGHT", do_reweight_);
+  if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide one single bias as an argument");
+  if(do_reweight_&&no_aver_) error("REWEIGHT cannot be used with NO_AVER");
+  if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas");
+  if(!getRestart()) average_weights_.resize(nrep_, 1./static_cast<double>(nrep_));
+  else average_weights_.resize(nrep_, 0.);
+
+  unsigned averaging=0;
+  parse("AVERAGING", averaging);
+  if(averaging>0) {
+    decay_w_ = 1./static_cast<double> (averaging);
+  }
+
+  checkRead();
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
@@ -541,6 +703,7 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // prepare data and derivative std::vectors
   ovmd_.resize(ovdd_.size());
+  ovmd_ave_.resize(ovdd_.size());
   atom_der_.resize(GMM_m_type_.size());
   GMMid_der_.resize(ovdd_.size());
 
@@ -560,6 +723,22 @@ EMMI::EMMI(const ActionOptions&ao):
 
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
+  if(do_reweight_) {
+    addComponent("biasDer");
+    componentIsNotPeriodic("biasDer");
+    addComponent("weight");
+    componentIsNotPeriodic("weight");
+  }
+
+  addComponent("neff");
+  componentIsNotPeriodic("neff");
+
+  for(unsigned i=0; i<sigma_.size(); ++i) {
+    std::string num; Tools::convert(i, num);
+    addComponent("sigma-"+num); componentIsNotPeriodic("sigma-"+num);
+    getPntrToComponent("sigma-"+num)->set(sigma_[i]);
+  }
+
   // initialize random seed
   unsigned iseed;
   if(rank_==0) iseed = time(NULL)+replica_;
@@ -569,6 +748,7 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // request the atoms
   requestAtoms(atoms);
+  setDerivatives();
 
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
@@ -707,7 +887,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] );
       // add to chi2
       chi2 += dev * dev;
     }
@@ -722,7 +902,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] );
       // add to energies
       old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
       new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
@@ -750,6 +930,10 @@ void EMMI::doMonteCarlo()
     comm.Sum(&sigma_[0], sigma_.size());
     comm.Sum(&MCaccept_, 1);
   }
+
+  // update sigma output
+  std::string num; Tools::convert(nGMM, num);
+  getPntrToComponent("sigma-"+num)->set(sigma_[nGMM]);
 }
 
 std::vector<double> EMMI::read_exp_errors(std::string errfile)
@@ -1209,7 +1393,7 @@ double EMMI::scaleEnergy(double s)
 {
   double ene = 0.0;
   for(unsigned i=0; i<ovdd_.size(); ++i) {
-    ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
+    ene += std::log( abs ( s * ovmd_ave_[i] - ovdd_[i] ) );
   }
   return ene;
 }
@@ -1307,6 +1491,53 @@ double EMMI::get_annealing(long int step)
   return fact;
 }
 
+void EMMI::get_weights(double &weight, double &norm, double &neff)
+{
+  const double dnrep = static_cast<double>(nrep_);
+  // calculate the weights either from BIAS
+  if(do_reweight_) {
+    std::vector<double> bias(nrep_,0);
+    if(rank_==0) {
+      bias[replica_] = getArgument(0);
+      if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
+    }
+    comm.Sum(&bias[0], nrep_);
+
+    // accumulate weights
+    if(!first_time_w_) {
+      for(unsigned i=0; i<nrep_; ++i) {
+        const double delta=bias[i]-average_weights_[i];
+        // FIXME: multiplying by fractional decay here causes problems with numerical derivatives,
+        // probably because we're making several calls to calculate(), causing accumulation
+        // of epsilons. Maybe we can work on a temporary copy of the action instead?
+        average_weights_[i]+=decay_w_*delta;
+      }
+    } else {
+      first_time_w_ = false;
+      for(unsigned i=0; i<nrep_; ++i) average_weights_[i] = bias[i];
+    }
+
+    // set average back into bias and set norm to one
+    const double maxbias = *(std::max_element(average_weights_.begin(), average_weights_.end()));
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp((average_weights_[i]-maxbias)/kbt_);
+    // set local weight, norm and weight variance
+    weight = bias[replica_];
+    double w2=0.;
+    for(unsigned i=0; i<nrep_; ++i) {
+      w2 += bias[i]*bias[i];
+      norm += bias[i];
+    }
+    neff = norm*norm/w2;
+    getPntrToComponent("weight")->set(weight/norm);
+  } else {
+    // or arithmetic ones
+    neff = dnrep;
+    weight = 1.0;
+    norm = dnrep;
+  }
+  getPntrToComponent("neff")->set(neff);
+}
+
 void EMMI::calculate()
 {
 
@@ -1314,19 +1545,24 @@ void EMMI::calculate()
   calculate_overlap();
 
   // rescale factor for ensemble average
-  double escale = 1.0 / static_cast<double>(nrep_);
+  double weight = 0.;
+  double neff = 0.;
+  double norm = 0.;
+  get_weights(weight, norm, neff);
 
   // in case of ensemble averaging, calculate average overlap
   if(!no_aver_ && nrep_>1) {
     // if master node, calculate average across replicas
     if(rank_==0) {
-      multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] = weight / norm * ovmd_[i];
+      multi_sim_comm.Sum(&ovmd_ave_[0], ovmd_ave_.size());
     } else {
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
+      for(unsigned i=0; i<ovmd_ave_.size(); ++i) ovmd_ave_[i] = 0.0;
     }
     // local communication
-    if(size_>1) comm.Sum(&ovmd_[0], ovmd_.size());
+    if(size_>1) comm.Sum(&ovmd_ave_[0], ovmd_ave_.size());
+  } else {
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] = ovmd_[i];
   }
 
   // get time step
@@ -1364,21 +1600,29 @@ void EMMI::calculate()
   // annealing rescale
   ene_ /= anneal_;
 
+  std::vector<double> GMMid_der_av_(GMMid_der_.size(), 0.0);
   // in case of ensemble averaging
   if(!no_aver_ && nrep_>1) {
     // if master node, sum der_GMMid derivatives and ene
     if(rank_==0) {
-      multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+      for(unsigned i=0; i<GMMid_der_.size(); ++i) {
+        GMMid_der_av_[i] = (weight / norm) * GMMid_der_[i];
+      }
+      multi_sim_comm.Sum(&GMMid_der_av_[0], GMMid_der_av_.size());
       multi_sim_comm.Sum(&ene_, 1);
     } else {
       // set der_GMMid derivatives and energy to zero
-      for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
+      for(unsigned i=0; i<GMMid_der_av_.size(); ++i) GMMid_der_av_[i]=0.0;
       ene_ = 0.0;
     }
     // local communication
     if(size_>1) {
-      comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+      comm.Sum(&GMMid_der_av_[0], GMMid_der_av_.size());
       comm.Sum(&ene_, 1);
+    }
+  } else {
+    for (unsigned i = 0; i < GMMid_der_.size(); ++i) {
+      GMMid_der_av_[i] = GMMid_der_[i];
     }
   }
 
@@ -1391,7 +1635,7 @@ void EMMI::calculate()
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = GMMid_der_av_[id] * ovmd_der_[i] * scale_ / anneal_;
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
     else     pos = getPosition(im);
@@ -1410,6 +1654,17 @@ void EMMI::calculate()
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
   getPntrToComponent("scoreb")->set(ene_);
+
+  if (do_reweight_) {
+    double w_tmp = 0.;
+    for (unsigned i = 0; i < ovmd_.size(); ++i) {
+      w_tmp += (ovmd_[i] - ovmd_ave_[i]) * GMMid_der_[i];
+    }
+    w_tmp *= scale_ * (weight / norm) / kbt_ * decay_w_;
+
+    setArgDerivatives(getPntrToComponent("scoreb"), w_tmp);
+    getPntrToComponent("biasDer")->set(w_tmp);
+  }
 
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
@@ -1440,7 +1695,7 @@ void EMMI::calculate_Gauss()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += 0.5 * dev * dev;
       // store derivative for later
@@ -1461,7 +1716,7 @@ void EMMI::calculate_Outliers()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
@@ -1481,7 +1736,7 @@ void EMMI::calculate_Marginal()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] );
       // calculate errf
       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
       // add to group energy
