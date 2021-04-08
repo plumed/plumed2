@@ -301,6 +301,14 @@ std::string GenericMolInfo::getResidueName(AtomNumber a)const {
   return pdb.getResidueName(a);
 }
 
+std::string GenericMolInfo::getChainID(AtomNumber a)const {
+  return pdb.getChainID(a);
+}
+
+Vector GenericMolInfo::getPosition(AtomNumber a)const {
+  return pdb.getPosition(a);
+}
+
 void GenericMolInfo::prepare() {
   if(selector) {
     log<<"  MOLINFO "<<getLabel()<<": killing python interpreter\n";

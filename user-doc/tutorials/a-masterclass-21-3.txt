@@ -590,4 +590,4 @@ Plot the free energy as a function of \f$ \phi \f$ and as a function of psi. How
 
 link: @subpage masterclass-21-3 
 
-description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
+description: This Masterclass explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
