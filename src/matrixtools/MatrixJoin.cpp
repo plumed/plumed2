@@ -59,7 +59,7 @@ MatrixJoin::MatrixJoin(const ActionOptions& ao):
       std::vector<Value*> argn; parseArgumentList("MATRIX", i*10+j, argn);
       if( argn.size()==0 ) break;
       if( argn.size()>1 ) error("should only be one argument to each matrix keyword");
-      if( argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
+      if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
       arglist.push_back( argn[0] ); nt_cols++;
       log.printf("  %d %d component of composed matrix is %s \n", i, j, argn[0]->getName().c_str() );
     }
@@ -72,15 +72,20 @@ MatrixJoin::MatrixJoin(const ActionOptions& ao):
   std::vector<unsigned> shape(2); shape[0]=0; unsigned k=0;
   row_starts.resize( arglist.size() ); col_starts.resize( arglist.size() );
   for(unsigned i=0; i<nrows; ++i) {
-    unsigned cstart = 0, nr = arglist[k]->getShape()[1];
+    unsigned cstart = 0, nr = 1; if( arglist[k]->getRank()==2 ) nr=arglist[k]->getShape()[1];
     for(unsigned j=0; j<ncols; ++j) {
-      if( arglist[k]->getShape()[1]!=nr ) error("mismatched matrix sizes");
+      if( arglist[k]->getRank()==0 ) {
+          if( nr!=1 ) error("mismatched matrix sizes");
+      } else if( arglist[k]->getShape()[1]!=nr ) error("mismatched matrix sizes");
       row_starts[k] = shape[0]; col_starts[k] = cstart;
-      cstart += arglist[k]->getShape()[1]; k++;
+      if( arglist[k]->getRank()==0 ) cstart += 1;
+      else cstart += arglist[k]->getShape()[1]; 
+      k++;
     }
     if( i==0 ) shape[1]=cstart;
     else if( cstart!=shape[1] ) error("mismatched matrix sizes");
-    shape[0] += arglist[k-1]->getShape()[0];
+    if( arglist[k-1]->getRank()==0 ) shape[0] += 1;
+    else shape[0] += arglist[k-1]->getShape()[0];
   }
   // Now request the arguments to make sure we store things we need
   requestArguments(arglist, false ); addValue( shape ); 
@@ -90,11 +95,15 @@ void MatrixJoin::completeMatrixOperations() {
   // Retrieve the matrix from input
   unsigned ncols = getPntrToOutput(0)->getShape()[1];
   for(unsigned k=0; k<getNumberOfArguments(); ++k) {
-    Value* argn = getPntrToArgument(k); unsigned nn=0;
-    // PLUMED cannot deal with sparsity when calculating these things
-    plumed_assert( argn->getShape()[1]==(argn->getPntrToAction())->getNumberOfColumns() );
-    for(unsigned i=0; i<argn->getShape()[0]; ++i) {
-      for(unsigned j=0; j<argn->getShape()[1]; ++j) { getPntrToOutput(0)->set( ncols*(row_starts[k]+i)+col_starts[k]+j, argn->get(nn) ); nn++; }
+    Value* argn = getPntrToArgument(k);
+    if( argn->getRank()==0 ) {
+        getPntrToOutput(0)->set( ncols*row_starts[k]+col_starts[k], argn->get() ); 
+    } else {
+        // PLUMED cannot deal with sparsity when calculating these things
+        plumed_assert( argn->getShape()[1]==(argn->getPntrToAction())->getNumberOfColumns() ); unsigned nn=0;
+        for(unsigned i=0; i<argn->getShape()[0]; ++i) {
+            for(unsigned j=0; j<argn->getShape()[1]; ++j) { getPntrToOutput(0)->set( ncols*(row_starts[k]+i)+col_starts[k]+j, argn->get(nn) ); nn++; }
+        }
     }
   }
 }
@@ -103,11 +112,16 @@ void MatrixJoin::apply() {
   if( doNotCalculateDerivatives() ) return;
 
   if( getPntrToOutput(0)->forcesWereAdded() ) {
-    unsigned ncols = getPntrToOutput(0)->getShape()[1];
+    unsigned ncols = 1; if( getPntrToOutput(0)->getRank()==2 ) ncols=getPntrToOutput(0)->getShape()[1];
     for(unsigned k=0; k<getNumberOfArguments(); ++k) {
-      Value* argn = getPntrToArgument(k); unsigned nn=0;
-      for(unsigned i=0; i<argn->getShape()[0]; ++i) {
-        for(unsigned j=0; j<argn->getShape()[1]; ++j) { argn->addForce( nn, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) ); nn++; }
+      Value* argn = getPntrToArgument(k); 
+      if( argn->getRank()==0 ) { 
+          argn->addForce( 0, getPntrToOutput(0)->getForce(ncols*row_starts[k]+col_starts[k]) );
+      } else {
+          unsigned nn=0;
+          for(unsigned i=0; i<argn->getShape()[0]; ++i) {
+            for(unsigned j=0; j<argn->getShape()[1]; ++j) { argn->addForce( nn, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) ); nn++; }
+          }
       }
     }
   }
