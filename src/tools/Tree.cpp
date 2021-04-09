@@ -24,7 +24,6 @@
 #include "Tools.h"
 #include "Vector.h"
 #include "AtomNumber.h"
-#include "OpenMP.h"
 #include "core/GenericMolInfo.h"
 #include <vector>
 #include <limits>
@@ -42,50 +41,41 @@ Tree::Tree(GenericMolInfo* moldat, bool nopbc) {
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
 {
-  // OpenMP stuff
-  unsigned nth = OpenMP::getNumThreads();
+  // Implementation inspired from:
+  // https://mayanknatani.wordpress.com/2013/05/31/euclidean-minimummaximum-spanning-tree-emst/
+  //
   // list of AtomNumbers ordered by proximity in PDB file
   std::vector<AtomNumber> tree;
   // clear root_ vector
   root_.clear();
-  // initialize tree
-  tree.push_back(atoms[0]);
-  // remove first entry in atoms
-  atoms.erase(atoms.begin());
-  // loop on remaining atoms
-  while(atoms.size()>0) {
-    // TODO
-    // This can be easily parallelized with OpenMP
-    // It is too slow, we calculate the same distances multiple times
-    // Why not precalculating in parallel the distance matrix beforehand?
-    // Too much memory?
-    // reset minimum distance
-    std::vector<double> mindist(nth, std::numeric_limits<double>::max());
-    std::vector<unsigned> iat(nth), itr(nth);
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    // find closest pair of atoms
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      // get position in atoms
-      Vector posi = moldat_->getPosition(atoms[i]);
-      for(unsigned j=0; j<tree.size(); ++j) {
-        // get position in tree
-        Vector posj = moldat_->getPosition(tree[j]);
-        // calculate distance
-        double dist = delta(posi,posj).modulo();
-        // check if minimum distance
-        if(dist<mindist[OpenMP::getThreadNum()]) {
-          mindist[OpenMP::getThreadNum()] = dist;
-          iat[OpenMP::getThreadNum()] = i;
-          itr[OpenMP::getThreadNum()] = j;
-        }
+  // useful vectors
+  std::vector<bool> intree(atoms.size(), false);
+  std::vector<double> mindist(atoms.size(), std::numeric_limits<double>::max());
+  // initialize tree with first atom
+  mindist[0] = 0.0;
+  // loops
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    int selected_vertex = -1;
+    for(unsigned j=0; j<atoms.size(); ++j) {
+      if( !intree[j] && (selected_vertex==-1 || mindist[j] < mindist[selected_vertex]) )
+        selected_vertex = j;
+    }
+    // add to tree
+    tree.push_back(atoms[selected_vertex]);
+    intree[selected_vertex] = true;
+    // update distances
+    double minroot = std::numeric_limits<double>::max();
+    int iroot = -1;
+    for(unsigned j=0; j<atoms.size(); ++j) {
+      double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo();
+      if(dist < mindist[j]) mindist[j] = dist;
+      if(dist < minroot && intree[j] && dist>0.0) {
+        minroot = dist;
+        iroot = j;
       }
     }
-    // index of minimum distance across threads
-    unsigned imind = std::distance(mindist.begin(), std::min_element(mindist.begin(), mindist.end()));
-    // now update tree, root_ and atoms vectors
-    tree.push_back(atoms[iat[imind]]);
-    root_.push_back(tree[itr[imind]]);
-    atoms.erase(atoms.begin()+iat[imind]);
+    // add to root vector
+    if(iroot>=0) root_.push_back(atoms[iroot]);
   }
   // return
   return tree;

@@ -107,7 +107,7 @@ class WholeMolecules:
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   std::vector<Vector> refs;
-  bool nopbc, usepdb, addref;
+  bool nopbc, doemst, addref;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -129,8 +129,8 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("USE_PDB", false, "Define atoms sequence in entities based on proximity in PDB file");
-  keys.addFlag("ADD_REFERENCE", false, "Define reference position for the first atom of each entity based on PDB file");
+  keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
+  keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
@@ -138,11 +138,11 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  nopbc(false), usepdb(false), addref(false)
+  nopbc(false), doemst(false), addref(false)
 {
   // parse optional flags
-  parseFlag("USE_PDB", usepdb);
-  parseFlag("ADD_REFERENCE", addref);
+  parseFlag("EMST", doemst);
+  parseFlag("ADDREFERENCE", addref);
   parseFlag("NOPBC",nopbc);
 
   // create groups from ENTITY
@@ -162,7 +162,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     std::string moltype; parse("MOLTYPE",moltype);
     if(moltype.length()==0) error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("Unable to find MOLINFO in input");
+    if( !moldat ) error("MOLINFO is required to use RESIDUES");
     std::vector< std::vector<AtomNumber> > backatoms;
     moldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
@@ -174,9 +174,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   if(groups.size()==0) error("no atoms found for WHOLEMOLECULES!");
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
-  if(usepdb) {
+  if(doemst) {
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("Unable to find MOLINFO in input");
+    if( !moldat ) error("MOLINFO is required to use EMST");
     // initialize tree
     Tree tree = Tree(moldat,nopbc);
     // cycle on groups and reorder atoms
@@ -198,7 +198,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // adding reference if needed
   if(addref) {
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    if( !moldat ) error("Unable to find MOLINFO in input");
+    if( !moldat ) error("MOLINFO is required to use ADDREFERENCE");
     for(unsigned i=0; i<groups.size(); ++i) {
       // add reference position of first atom in entity
       refs.push_back(moldat->getPosition(groups[i][0]));
