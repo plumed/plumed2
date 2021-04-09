@@ -415,11 +415,9 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
-  keys.add("optional","SIGMA_MEAN0","initial value of the uncertainty of the mean estimate");
   keys.add("optional","AVERAGING", "Averaging window for weights and sigma_mean");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
-  keys.addFlag("OPTSIGMAMEAN",false,"Set to manually set sigma mean, or to estimate it on the fly");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
@@ -429,7 +427,6 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
   keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
-  keys.addOutputComponent("sigmaMean",      "OPTSIGMAMEAN",     "uncertainty in the mean estimate");
   keys.addOutputComponent("sigma",      "NOISETYPE",     "uncertainty in the forward models and experiment");
   keys.addOutputComponent("neff",         "default",      "effective number of replicas");
 }
