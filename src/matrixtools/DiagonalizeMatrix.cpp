@@ -31,7 +31,6 @@ private:
   Matrix<double> mymatrix;
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
-  std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -79,16 +78,16 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   std::vector<unsigned> evec_shape(1); evec_shape[0] = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     Tools::convert( desired_vectors[i], num );
-    addComponentWithDerivatives( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num );
+    addComponent( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num );
     addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
     // Make sure eigenvalues are always stored
     getPntrToComponent( 2*i+1 )->alwaysStoreValues();
+    // And convert eigenvector is a time series if it should be a time series  
     if( getPntrToArgument(0)->isTimeSeries() ) getPntrToComponent( 2*i+1 )->makeTimeSeries();
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
-  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] );
-  eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); forcesToApply.resize( evec_shape[0]*evec_shape[0] );
+  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); 
 }
 
 void DiagonalizeMatrix::completeMatrixOperations() {
@@ -111,54 +110,47 @@ void DiagonalizeMatrix::completeMatrixOperations() {
     Value* evec_out = getPntrToOutput(2*i+1); unsigned vreq = mymatrix.ncols()-desired_vectors[i];
     for(unsigned j=0; j<mymatrix.ncols(); ++j) evec_out->set( j, eigvecs( vreq, j ) );
   }
-
-  if( !doNotCalculateDerivatives() ) {
-    for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-      for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-        unsigned nplace = i*mymatrix.nrows()+j;
-        for(unsigned k=0; k<desired_vectors.size(); ++k) {
-          unsigned ncol = mymatrix.ncols()-desired_vectors[k];
-          getPntrToOutput(2*k)->addDerivative( nplace, eigvecs(ncol,i)*eigvecs(ncol,j) );
-        }
-      }
-    }
-  }
 }
 
 void DiagonalizeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
 
-  // Forces on eigenvalues
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
-
-  // Check for forces on eigenvectors
-  bool eigvec_forces=false;
+  // Check for forces on eigenvectors or eigenvalues
+  bool forces=false;
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
-    if( getPntrToOutput(2*i+1)->forcesWereAdded() ) { eigvec_forces=true; break; }
+    if( getPntrToOutput(2*i)->forcesWereAdded() || getPntrToOutput(2*i+1)->forcesWereAdded() ) { forces=true; break; }
   }
-  if( !eigvec_forces ) return;
+  if( !forces ) return;
 
   // Forces on eigenvectors
-  unsigned nn=0;
-  for(unsigned j=0; j<mymatrix.nrows(); ++j) {
-    for(unsigned k=0; k<mymatrix.ncols(); ++k) {
-      double tmp1=0;
-      for(unsigned i=0; i<desired_vectors.size(); ++i) {
-        if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
-
-        unsigned ncol = mymatrix.ncols()-desired_vectors[i];
-        for(unsigned n=0; n<mymatrix.nrows(); ++n) {
-          double tmp2 = 0;
-          for(unsigned m=0; m<mymatrix.nrows(); ++m) {
-            if( m==ncol ) continue;
-            tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
-          }
-          tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
-        }
+  unsigned nedge=0, ncols=getPntrToArgument(0)->getNumberOfColumns(); 
+  bool symmetric=getPntrToArgument(0)->isSymmetric(); retrieveEdgeList( 0, nedge );
+  for(unsigned l=0; l<nedge; ++l ) { 
+    unsigned j=pairs[l].first, k=pairs[l].second; double tmp1=0, tmp4=0;
+    for(unsigned i=0; i<desired_vectors.size(); ++i) {
+      // Deal with forces on eigenvalues
+      if( getPntrToOutput(2*i)->forcesWereAdded() ) {
+          unsigned ncol = mymatrix.ncols()-desired_vectors[i];
+          getPntrToArgument(0)->addForce( j*ncols+k, getPntrToOutput(2*i)->getForce(0)*eigvecs(ncol,j)*eigvecs(ncol,k) );
+          if( symmetric ) getPntrToArgument(0)->addForce( k*ncols+j, getPntrToOutput(2*i)->getForce(0)*eigvecs(ncol,k)*eigvecs(ncol,j) );
       }
-      getPntrToArgument(0)->addForce( nn, tmp1 ); nn++;
+      // And forces on eigenvectors
+      if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
+
+      unsigned ncol = mymatrix.ncols()-desired_vectors[i];
+      for(unsigned n=0; n<mymatrix.nrows(); ++n) {
+        double tmp2 = 0, tmp3 = 0;
+        for(unsigned m=0; m<mymatrix.nrows(); ++m) {
+          if( m==ncol ) continue;
+          tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
+          if( symmetric ) tmp3 += eigvecs(m,n)*eigvecs(m,k)*eigvecs(ncol,j) / (eigvals[ncol]-eigvals[m]); 
+        }
+        tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
+        if( symmetric ) tmp4 += getPntrToOutput(2*i+1)->getForce(n) * tmp3;
+      }
     }
+    getPntrToArgument(0)->addForce( j*ncols+k, tmp1 ); 
+    if( symmetric ) getPntrToArgument(0)->addForce( k*ncols+j, tmp4 );
   }
 
 }
