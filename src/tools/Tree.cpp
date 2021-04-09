@@ -54,9 +54,9 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   // initialize tree with first atom
   mindist[0] = 0.0;
   // loops
-  for(unsigned i=0; i<atoms.size(); ++i){
+  for(unsigned i=0; i<atoms.size(); ++i) {
     int selected_vertex = -1;
-    for(unsigned j=0; j<atoms.size(); ++j){
+    for(unsigned j=0; j<atoms.size(); ++j) {
       if( !intree[j] && (selected_vertex==-1 || mindist[j] < mindist[selected_vertex]) )
         selected_vertex = j;
     }
@@ -67,12 +67,12 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
     double minroot = std::numeric_limits<double>::max();
     int iroot = -1;
     for(unsigned j=0; j<atoms.size(); ++j) {
-       double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo();
-       if(dist < mindist[j]) mindist[j] = dist;
-       if(dist < minroot && intree[j] && dist>0.0) {
-           minroot = dist;
-           iroot = j;
-       }
+      double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo();
+      if(dist < mindist[j]) mindist[j] = dist;
+      if(dist < minroot && intree[j] && dist>0.0) {
+        minroot = dist;
+        iroot = j;
+      }
     }
     // add to root vector
     if(iroot>=0) root_.push_back(atoms[iroot]);
