@@ -64,11 +64,33 @@ unsigned ActionWithInputMatrices::getNumberOfColumns() const {
   return getPntrToOutput(0)->getShape()[1];
 }
 
-void ActionWithInputMatrices::retrieveFullMatrix( const unsigned& imat, Matrix<double>& mymatrix ) const {
-  unsigned k = 0;
-  for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-    for(unsigned j=0; j<mymatrix.ncols(); ++j) { mymatrix(i,j) = getPntrToArgument(imat)->get( k ); k++; }
+void ActionWithInputMatrices::retrieveEdgeList( const unsigned& imat, unsigned& nedge ) {
+  nedge=0; Value* mat = getPntrToArgument(imat); unsigned nrows = mat->getShape()[0];
+  // Check we have enough space to store the edge list
+  if( pairs.size()<nrows*mat->getNumberOfColumns() ) { 
+      vals.resize( nrows*mat->getNumberOfColumns() ); 
+      pairs.resize( nrows*mat->getNumberOfColumns() );
   }
+
+  bool symmetric = mat->isSymmetric();
+  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
+    // Check if atoms are connected
+    if( fabs(mat->get(i))<epsilon ) continue ;
+
+    unsigned j = std::floor( i / nrows ); unsigned k = i%nrows;
+    if( symmetric && k>j ) continue ;  // Ensures each connection is only stored once
+
+    pairs[nedge].first = j; pairs[nedge].second = k; vals[nedge]=mat->get(i); nedge++;
+  }
+}
+
+void ActionWithInputMatrices::retrieveFullMatrix( const unsigned& imat, Matrix<double>& mymatrix ) {
+  unsigned nedge; retrieveEdgeList( imat, nedge  ); mymatrix=0; 
+  bool symmetric=getPntrToArgument(imat)->isSymmetric();
+  for(unsigned i=0; i<nedge; ++i ) {
+      mymatrix( pairs[i].first, pairs[i].second ) = vals[i];  
+      if( symmetric ) mymatrix( pairs[i].second, pairs[i].first ) = vals[i];
+  } 
 }
 
 void ActionWithInputMatrices::calculate() {

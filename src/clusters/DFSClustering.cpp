@@ -68,10 +68,7 @@ namespace clusters {
 
 class DFSClustering : public ClusteringBase {
 private:
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-/// The list of edges in the graph
-  std::vector<std::pair<unsigned,unsigned> > edge_list;
-#else
+#ifndef __PLUMED_HAS_BOOST_GRAPH
 /// The number of neighbors each atom has
   std::vector<unsigned> nneigh;
 /// The adjacency list
@@ -108,10 +105,10 @@ DFSClustering::DFSClustering(const ActionOptions&ao):
 void DFSClustering::performClustering() {
 #ifdef __PLUMED_HAS_BOOST_GRAPH
   // Get the list of edges
-  unsigned nedges=0; retrieveEdgeList( nedges, edge_list );
+  unsigned nedges=0; retrieveEdgeList( 0, nedges );
 
   // Build the graph using boost
-  boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&edge_list[0],&edge_list[nedges],getNumberOfNodes());
+  boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&pairs[0],&pairs[nedges],getNumberOfNodes());
 
   // Find the connected components using boost (-1 here for compatibility with non-boost version)
   number_of_cluster=boost::connected_components(sg,&which_cluster[0]) - 1;

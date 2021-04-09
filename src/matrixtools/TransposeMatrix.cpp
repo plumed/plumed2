@@ -49,6 +49,7 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
+  if( getPntrToArgument(0)->isSymmetric() ) error("input matrix is symmetric.  Transposing will achieve nothing!");
   std::vector<unsigned> shape(2); 
   shape[0]=getPntrToArgument(0)->getShape()[1]; 
   shape[1]=getPntrToArgument(0)->getShape()[0];
@@ -60,26 +61,20 @@ unsigned TransposeMatrix::getNumberOfColumns() const {
 }
 
 void TransposeMatrix::completeMatrixOperations() {
-  // Retrieve the matrix from input
-  unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
-  // PLUMED cannot deal with sparsity when calculating these things
-  plumed_assert( getPntrToArgument(0)->getShape()[1]==(getPntrToArgument(0)->getPntrToAction())->getNumberOfColumns() );
-  for(unsigned i=0; i<shape[0]; ++i) {
-    for(unsigned j=0; j<shape[1]; ++j) {
-      getPntrToOutput(0)->set( j*shape[1] + i, getPntrToArgument(0)->get( k ) ); k++;
-    }
-  }
+  // Retrieve the non-zero pairs
+  unsigned nedge=0; retrieveEdgeList( 0, nedge ); std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+  for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] ); 
 }
 
 void TransposeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
 
   if( getPntrToOutput(0)->forcesWereAdded() ) {
-    unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
-    for(unsigned i=0; i<shape[0]; ++i) {
-      for(unsigned j=0; j<shape[1]; ++j) {
-        getPntrToArgument(0)->addForce( j*shape[1] + i, getPntrToOutput(0)->getForce(k) ); k++;
-      }
+    unsigned nedge=0; retrieveEdgeList( 0, nedge ); 
+    unsigned ncols = getPntrToArgument(0)->getNumberOfColumns(); 
+    std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+    for(unsigned i=0; i<nedge;++i) {
+       getPntrToArgument(0)->addForce( pairs[i].first*ncols+pairs[i].second, getPntrToOutput(0)->getForce(pairs[i].second*shape[1] + pairs[i].first) ); 
     }
   }
 }

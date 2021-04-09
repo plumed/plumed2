@@ -51,39 +51,22 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {
-  Value* mat = getPntrToArgument(0); unsigned nrows = mat->getShape()[0];
+  // Make sure we have the edges stored 
+  unsigned nedge; retrieveEdgeList( 0, nedge ); 
   // Currently everything has zero neighbors
   for(unsigned i=0; i<nneigh.size(); ++i) nneigh[i]=0;
   // Resize the adjacency list if it is needed
-  if( adj_list.ncols()!=mat->getNumberOfColumns() ) adj_list.resize( nrows, mat->getNumberOfColumns() );
+  if( adj_list.ncols()!=getPntrToArgument(0)->getNumberOfColumns() ) {
+      unsigned nrows = getPntrToArgument(0)->getShape()[0]; 
+      adj_list.resize( nrows, getPntrToArgument(0)->getNumberOfColumns() );
+  }
 
   // And set up the adjacency list
-  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
-    // Check if atoms are connected
-    if( mat->get(i)<epsilon ) continue ;
-
-    unsigned j = std::floor( i / nrows ); unsigned k = i%nrows;
-    if( k>j ) continue ;  // Ensures each connection is only stored once
-
-    if( nneigh[j]>=adj_list.ncols() || nneigh[k]>=adj_list.ncols() ) error("adjacency lists are not large enough, increase maxconnections");
+  for(unsigned i=0; i<nedge; ++i) {
     // Store if atoms are connected
-    adj_list(k,nneigh[k])=j; nneigh[k]++;
+    unsigned j=pairs[i].first, k=pairs[i].second;
     adj_list(j,nneigh[j])=k; nneigh[j]++;
-  }
-}
-
-void ClusteringBase::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ) {
-  nedge=0; Value* mat = getPntrToArgument(0); unsigned nrows = mat->getShape()[0];
-  if( edge_list.size()!=nrows*mat->getNumberOfColumns() ) edge_list.resize( nrows*mat->getNumberOfColumns() );
-
-  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
-    // Check if atoms are connected
-    if( mat->get(i)<epsilon ) continue ;
-
-    unsigned j = std::floor( i / nrows ); unsigned k = i%nrows;
-    if( k>j ) continue ;  // Ensures each connection is only stored once
-
-    edge_list[nedge].first = j; edge_list[nedge].second = k; nedge++;
+    adj_list(k,nneigh[k])=j; nneigh[k]++;
   }
 }
 

@@ -109,11 +109,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
   if( components ) {
     addComponent( "x", shape ); componentIsNotPeriodic("x");
-    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); } 
     addComponent( "y", shape ); componentIsNotPeriodic("y");
-    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); }
     addComponent( "z", shape ); componentIsNotPeriodic("z");
-    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); }
   }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }

@@ -34,10 +34,16 @@ class ActionWithInputMatrices :
   public ActionWithValue
 {
 protected:
+/// These are used to hold the matrix
+  std::vector<double> vals;
+  std::vector<std::pair<unsigned,unsigned> > pairs;  
 /// Add an output value to this action
   void addValue( const std::vector<unsigned>& shape );
+/// This sets the values in vals equal to the non-zero elements fo the matrix
+/// pairs is then used to keep track of the indices of these non-zero values
+  void retrieveEdgeList( const unsigned& imat, unsigned& nedge );
 /// Retrieve a dense version of the ith matrix that is used by this action
-  void retrieveFullMatrix( const unsigned& imat, Matrix<double>& mymatrix ) const ;
+  void retrieveFullMatrix( const unsigned& imat, Matrix<double>& mymatrix );
 public:
   static void registerKeywords( Keywords& keys );
 ///

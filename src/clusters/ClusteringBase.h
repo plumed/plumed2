@@ -40,8 +40,6 @@ protected:
   unsigned getNumberOfNodes() const ;
 /// Get the neighbour list based on the adjacency matrix
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
-/// Retrieve the list of edges in the adjacency matrix/graph
-  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
