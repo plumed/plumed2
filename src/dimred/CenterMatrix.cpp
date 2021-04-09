@@ -64,17 +64,18 @@ CenterMatrix::CenterMatrix( const ActionOptions& ao):
 }
 
 void CenterMatrix::completeMatrixOperations() {
-  plumed_dbg_assert( !actionInChain() ); Value* arg0=getPntrToArgument(0); Value* val0=getPntrToOutput(0);
+  plumed_dbg_assert( !actionInChain() ); Value* val0=getPntrToOutput(0);
 
   // Apply centering transtion
-  unsigned n=arg0->getShape()[0]; 
+  unsigned n=val0->getShape()[0]; 
   if( n==0 ) return ;
+  Matrix<double> mymatrix( n, n ); retrieveFullMatrix( 0, mymatrix );
 
   // First HM
   double sum; wasupdated=true;
   for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=-0.5*arg0->get( i*n+j );             
-    sum /= n; for(unsigned j=0; j<n; ++j) val0->set( i*n+j, -0.5*arg0->get( i*n+j ) - sum );  
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=-0.5*mymatrix(i,j);             
+    sum /= n; for(unsigned j=0; j<n; ++j) val0->set( i*n+j, -0.5*mymatrix(i,j) - sum );  
   }
   // Now (HM)H
   for(unsigned i=0; i<n; ++i) {

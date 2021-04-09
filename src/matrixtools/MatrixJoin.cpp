@@ -99,10 +99,11 @@ void MatrixJoin::completeMatrixOperations() {
     if( argn->getRank()==0 ) {
         getPntrToOutput(0)->set( ncols*row_starts[k]+col_starts[k], argn->get() ); 
     } else {
-        // PLUMED cannot deal with sparsity when calculating these things
-        plumed_assert( argn->getShape()[1]==(argn->getPntrToAction())->getNumberOfColumns() ); unsigned nn=0;
-        for(unsigned i=0; i<argn->getShape()[0]; ++i) {
-            for(unsigned j=0; j<argn->getShape()[1]; ++j) { getPntrToOutput(0)->set( ncols*(row_starts[k]+i)+col_starts[k]+j, argn->get(nn) ); nn++; }
+        bool symmetric=getPntrToArgument(k)->isSymmetric(); unsigned nedge=0; retrieveEdgeList( k, nedge );
+        for(unsigned l=0; l<nedge; ++l ) {
+            unsigned i=pairs[l].first, j=pairs[l].second;
+            getPntrToOutput(0)->set( ncols*(row_starts[k]+i)+col_starts[k]+j, vals[l] ); 
+            if( symmetric ) getPntrToOutput(0)->set( ncols*(row_starts[k]+j)+col_starts[k]+i, vals[l] ); 
         }
     }
   }
@@ -118,9 +119,13 @@ void MatrixJoin::apply() {
       if( argn->getRank()==0 ) { 
           argn->addForce( 0, getPntrToOutput(0)->getForce(ncols*row_starts[k]+col_starts[k]) );
       } else {
-          unsigned nn=0;
-          for(unsigned i=0; i<argn->getShape()[0]; ++i) {
-            for(unsigned j=0; j<argn->getShape()[1]; ++j) { argn->addForce( nn, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) ); nn++; }
+          unsigned nedge=0; retrieveEdgeList( k, nedge );
+          bool symmetric=getPntrToArgument(k)->isSymmetric(); 
+          unsigned nc=getPntrToArgument(k)->getNumberOfColumns();
+          for(unsigned l=0; l<nedge; ++l ) {
+              unsigned i=pairs[l].first, j=pairs[l].second;
+              argn->addForce( i*nc+j, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) );
+              if( symmetric ) argn->addForce( j*nc+i, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+j)+col_starts[k]+i) );
           }
       }
     }

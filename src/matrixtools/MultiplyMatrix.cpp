@@ -27,8 +27,7 @@ namespace matrixtools {
 
 class MultiplyMatrix : public ActionWithInputMatrices {
 private:
-  Matrix<double> mymatrix;
-  Matrix<double> inverse;
+  Matrix<double> mat1, mat2, matout;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -54,22 +53,17 @@ MultiplyMatrix::MultiplyMatrix(const ActionOptions& ao):
  
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; 
   shape[1]=getPntrToArgument(1)->getShape()[1]; addValue( shape ); 
+  mat1.resize( shape[0], getPntrToArgument(0)->getShape()[1] ); 
+  mat2.resize( getPntrToArgument(1)->getShape()[0], shape[1] ); 
+  matout.resize( shape[0], shape[1] );
 }
 
 void MultiplyMatrix::completeMatrixOperations() {
-  // Retrieve the matrix from input
-  unsigned k = 0; Value* myout=getPntrToOutput(0); 
-  unsigned nc = myout->getShape()[0], nr = myout->getShape()[1];
-  Value* mat1=getPntrToArgument(0); Value* mat2=getPntrToArgument(1); unsigned nn=mat1->getShape()[1];
-  // PLUMED cannot deal with sparsity when calculating products
-  plumed_assert( mat1->getShape()[1]==(mat1->getPntrToAction())->getNumberOfColumns() );
-  plumed_assert( mat2->getShape()[1]==(mat2->getPntrToAction())->getNumberOfColumns() );
+  // Retrieve the matrices from input and do the multiplication
+  retrieveFullMatrix( 0, mat1 ); retrieveFullMatrix( 1, mat2 ); mult( mat1, mat2, matout );
+  Value* myout=getPntrToOutput(0); unsigned nc = myout->getShape()[0], nr = myout->getShape()[1];
   for(unsigned i=0; i<nc; ++i) {
-    for(unsigned j=0; j<nr; ++j) {
-      double val=0; 
-      for(unsigned k=0; k<nn; ++k) val += mat1->get( i*nc+k )*mat2->get( k*nn + j );
-      myout->set( i*nc+j, val );
-    }
+     for(unsigned j=0; j<nr; ++j) myout->set( i*nc+j, matout(i,j) );
   }
 
   if( !doNotCalculateDerivatives() ) error("derivatives of inverse matrix have not been implemented");
