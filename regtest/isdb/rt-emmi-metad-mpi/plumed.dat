@@ -19,4 +19,4 @@ WRITE_STRIDE=100
 
 # print useful info to file
 PRINT ARG=gmm.* FILE=GMM STRIDE=1
-DUMPDERIVATIVES ARG=gmm.scoreb FILE=deriva STRIDE=1 FMT=%8.1f
+DUMPDERIVATIVES ARG=gmm.scoreb FILE=deriva STRIDE=1 FMT=%8.4f
