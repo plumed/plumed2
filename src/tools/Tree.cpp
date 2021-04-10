@@ -36,7 +36,7 @@ Tree::Tree(GenericMolInfo* moldat) {
 // check if molinfo present
   if(!moldat_) plumed_merror("MOLINFO DATA not found");
 // check if reference structure is whole
-  if(!moldat->isWhole()) plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
+  if(!moldat_->isWhole()) plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
 }
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
@@ -48,7 +48,25 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   std::vector<AtomNumber> tree;
   // clear root_ vector
   root_.clear();
-  // useful vectors
+
+  // remove atoms not in PDB file
+  std::vector<AtomNumber> addtotree, addtoroot;
+  // check 1st atom
+  if(!moldat_->checkForAtom(atoms[0])) plumed_merror("The first atom in the list should be present in the PDB file");
+  // check the other atoms
+  for(unsigned i=1; i<atoms.size(); ++i){
+     if(!moldat_->checkForAtom(atoms[i])) {
+        // store this atom for later
+        addtotree.push_back(atoms[i]);
+        // along with its root (the previous atom)
+        addtoroot.push_back(atoms[i-1]);
+     }
+  }
+  // remove atoms not in PDB file
+  for(unsigned i=0; i<addtotree.size(); ++i)
+    atoms.erase(std::remove(atoms.begin(), atoms.end(), addtotree[i]), atoms.end());
+
+  // start EMST
   std::vector<bool> intree(atoms.size(), false);
   std::vector<double> mindist(atoms.size(), std::numeric_limits<double>::max());
   // initialize tree with first atom
@@ -77,6 +95,13 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
     // add to root vector
     if(iroot>=0) root_.push_back(atoms[iroot]);
   }
+
+  // now re-add atoms not present in the PDB
+  for(unsigned i=0; i<addtotree.size(); ++i){
+     tree.push_back(addtotree[i]);
+     root_.push_back(addtoroot[i]);
+  }
+
   // return
   return tree;
 }
