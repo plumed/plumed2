@@ -54,13 +54,13 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   // check 1st atom
   if(!moldat_->checkForAtom(atoms[0])) plumed_merror("The first atom in the list should be present in the PDB file");
   // check the other atoms
-  for(unsigned i=1; i<atoms.size(); ++i){
-     if(!moldat_->checkForAtom(atoms[i])) {
-        // store this atom for later
-        addtotree.push_back(atoms[i]);
-        // along with its root (the previous atom)
-        addtoroot.push_back(atoms[i-1]);
-     }
+  for(unsigned i=1; i<atoms.size(); ++i) {
+    if(!moldat_->checkForAtom(atoms[i])) {
+      // store this atom for later
+      addtotree.push_back(atoms[i]);
+      // along with its root (the previous atom)
+      addtoroot.push_back(atoms[i-1]);
+    }
   }
   // remove atoms not in PDB file
   for(unsigned i=0; i<addtotree.size(); ++i)
@@ -97,9 +97,9 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   }
 
   // now re-add atoms not present in the PDB
-  for(unsigned i=0; i<addtotree.size(); ++i){
-     tree.push_back(addtotree[i]);
-     root_.push_back(addtoroot[i]);
+  for(unsigned i=0; i<addtotree.size(); ++i) {
+    tree.push_back(addtotree[i]);
+    root_.push_back(addtoroot[i]);
   }
 
   // return
