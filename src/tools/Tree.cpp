@@ -35,6 +35,8 @@ Tree::Tree(GenericMolInfo* moldat) {
   moldat_ = moldat;
 // check if molinfo present
   if(!moldat_) plumed_merror("MOLINFO DATA not found");
+// check if reference structure is whole
+  if(!moldat->isWhole()) plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
 }
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)

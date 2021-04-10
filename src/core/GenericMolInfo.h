@@ -55,6 +55,8 @@ private:
   std::string pythonCmd;
 /// Selector subprocess
   std::unique_ptr<Subprocess> selector;
+/// Structure in pdb file is whole
+  bool iswhole_;
 public:
   ~GenericMolInfo();
   void calculate() override {}
@@ -67,6 +69,7 @@ public:
   unsigned getResidueNumber(AtomNumber a)const;
   std::string getChainID(AtomNumber a)const;
   Vector getPosition(AtomNumber a)const;
+  bool isWhole() const;
   unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );
