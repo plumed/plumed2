@@ -107,7 +107,7 @@ class WholeMolecules:
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   std::vector<Vector> refs;
-  bool nopbc, doemst, addref;
+  bool doemst, addref;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -131,19 +131,17 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
   keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  nopbc(false), doemst(false), addref(false)
+  doemst(false), addref(false)
 {
   // parse optional flags
   parseFlag("EMST", doemst);
   parseFlag("ADDREFERENCE", addref);
-  parseFlag("NOPBC",nopbc);
 
   // create groups from ENTITY
   for(int i=0;; i++) {
@@ -178,7 +176,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) error("MOLINFO is required to use EMST");
     // initialize tree
-    Tree tree = Tree(moldat,nopbc);
+    Tree tree = Tree(moldat);
     // cycle on groups and reorder atoms
     for(unsigned i=0; i<groups.size(); ++i) {
       groups[i] = tree.getTree(groups[i]);

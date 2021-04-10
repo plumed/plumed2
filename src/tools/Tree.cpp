@@ -30,13 +30,11 @@
 
 namespace PLMD {
 
-Tree::Tree(GenericMolInfo* moldat, bool nopbc) {
+Tree::Tree(GenericMolInfo* moldat) {
 // initialize class
   moldat_ = moldat;
 // check if molinfo present
   if(!moldat_) plumed_merror("MOLINFO DATA not found");
-// pbc
-  nopbc_ = nopbc;
 }
 
 std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
@@ -67,7 +65,7 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
     double minroot = std::numeric_limits<double>::max();
     int iroot = -1;
     for(unsigned j=0; j<atoms.size(); ++j) {
-      double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo();
+      double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo2();
       if(dist < mindist[j]) mindist[j] = dist;
       if(dist < minroot && intree[j] && dist>0.0) {
         minroot = dist;
