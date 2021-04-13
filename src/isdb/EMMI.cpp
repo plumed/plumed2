@@ -106,9 +106,9 @@ PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 //+ENDPLUMEDOC
 
 class EMMI :
-    public ActionAtomistic,
-    public ActionWithArguments,
-    public ActionWithValue
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public ActionWithValue
 {
 private:
 
@@ -1559,7 +1559,7 @@ void EMMI::calculate()
     // local communication
     if(size_>1) comm.Sum(&ovmd_ave_[0], ovmd_ave_.size());
   } else {
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] = ovmd_[i];
+    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] = ovmd_[i];
   }
 
   // get time step
