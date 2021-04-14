@@ -35,7 +35,9 @@ public:
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
-  void apply();
+  void apply() override;
+///
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const override;
 };
 
 PLUMED_REGISTER_ACTION(TransposeMatrix,"TRANSPOSE")
@@ -68,16 +70,14 @@ void TransposeMatrix::completeMatrixOperations() {
 
 void TransposeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
-
-  if( getPntrToOutput(0)->forcesWereAdded() ) {
-    unsigned nedge=0; retrieveEdgeList( 0, nedge ); 
-    unsigned ncols = getPntrToArgument(0)->getNumberOfColumns(); 
-    std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
-    for(unsigned i=0; i<nedge;++i) {
-       getPntrToArgument(0)->addForce( pairs[i].first*ncols+pairs[i].second, getPntrToOutput(0)->getForce(pairs[i].second*shape[1] + pairs[i].first) ); 
-    }
-  }
+  // Apply force on the matrix
+  if( getPntrToOutput(0)->forcesWereAdded() ) applyForceOnMatrix(0);
 }
+
+double TransposeMatrix::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {
+  return getPntrToOutput(0)->getForce(kcol*getPntrToOutput(0)->getShape()[0]+jrow);
+}
+
 
 }
 }

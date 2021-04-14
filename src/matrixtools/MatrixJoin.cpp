@@ -37,6 +37,8 @@ public:
   void completeMatrixOperations() override;
 ///
   void apply();
+///
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MatrixJoin,"COMBINE_MATRICES")
@@ -113,24 +115,18 @@ void MatrixJoin::apply() {
   if( doNotCalculateDerivatives() ) return;
 
   if( getPntrToOutput(0)->forcesWereAdded() ) {
-    unsigned ncols = 1; if( getPntrToOutput(0)->getRank()==2 ) ncols=getPntrToOutput(0)->getShape()[1];
+    unsigned ncols=getPntrToOutput(0)->getShape()[0];
     for(unsigned k=0; k<getNumberOfArguments(); ++k) {
-      Value* argn = getPntrToArgument(k); 
-      if( argn->getRank()==0 ) { 
-          argn->addForce( 0, getPntrToOutput(0)->getForce(ncols*row_starts[k]+col_starts[k]) );
-      } else {
-          unsigned nedge=0; retrieveEdgeList( k, nedge );
-          bool symmetric=getPntrToArgument(k)->isSymmetric(); 
-          unsigned nc=getPntrToArgument(k)->getNumberOfColumns();
-          for(unsigned l=0; l<nedge; ++l ) {
-              unsigned i=pairs[l].first, j=pairs[l].second;
-              argn->addForce( i*nc+j, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) );
-              if( symmetric ) argn->addForce( j*nc+i, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+j)+col_starts[k]+i) );
-          }
-      }
+      Value* argn=getPntrToArgument(k);
+      if( argn->getRank()==0 ) argn->addForce( 0, getPntrToOutput(0)->getForce(ncols*row_starts[k]+col_starts[k]) );
+      else applyForceOnMatrix( k ); 
     }
   }
+}
 
+double MatrixJoin::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {
+  unsigned ncols = getPntrToOutput(0)->getShape()[0];
+  return getPntrToOutput(0)->getForce(ncols*(row_starts[imat]+jrow)+col_starts[imat]+kcol);
 }
 
 }

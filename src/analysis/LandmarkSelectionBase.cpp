@@ -126,9 +126,9 @@ void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
       Value* val0=getPntrToOutput(i); 
       if( val0->getRank()==2 && val0->storingData() ) {
-          Value* arg0 = getPntrToArgument(arg_ends[i]); 
-          for(unsigned j=0;j<nvals;++j) {
-              val0->set( nvals*jframe + j, arg0->get(nvals*iframe+j) );
+          Value* arg0 = getPntrToArgument(arg_ends[i]); unsigned ncols = arg0->getNumberOfColumns();
+          for(unsigned j=0;j<arg0->getRowLength(iframe);++j) {
+              val0->set( nvals*jframe + arg0->getRowIndex(iframe,j), arg0->get(ncols*iframe+j) );
           }
       } else if( val0->getRank()==1 && val0->storingData() ) val0->set( jframe, retrieveRequiredArgument( i, iframe ) );
   }

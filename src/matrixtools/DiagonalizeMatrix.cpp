@@ -41,6 +41,8 @@ public:
   void completeMatrixOperations() override;
 ///
   void apply();
+///
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override;
 };
 
 PLUMED_REGISTER_ACTION(DiagonalizeMatrix,"DIAGONALIZE")
@@ -121,38 +123,32 @@ void DiagonalizeMatrix::apply() {
     if( getPntrToOutput(2*i)->forcesWereAdded() || getPntrToOutput(2*i+1)->forcesWereAdded() ) { forces=true; break; }
   }
   if( !forces ) return;
+  // Get forces from matrix
+  applyForceOnMatrix( 0 );
+}
 
-  // Forces on eigenvectors
-  unsigned nedge=0, ncols=getPntrToArgument(0)->getNumberOfColumns(); 
-  bool symmetric=getPntrToArgument(0)->isSymmetric(); retrieveEdgeList( 0, nedge );
-  for(unsigned l=0; l<nedge; ++l ) { 
-    unsigned j=pairs[l].first, k=pairs[l].second; double tmp1=0, tmp4=0;
-    for(unsigned i=0; i<desired_vectors.size(); ++i) {
-      // Deal with forces on eigenvalues
-      if( getPntrToOutput(2*i)->forcesWereAdded() ) {
-          unsigned ncol = mymatrix.ncols()-desired_vectors[i];
-          getPntrToArgument(0)->addForce( j*ncols+k, getPntrToOutput(2*i)->getForce(0)*eigvecs(ncol,j)*eigvecs(ncol,k) );
-          if( symmetric ) getPntrToArgument(0)->addForce( k*ncols+j, getPntrToOutput(2*i)->getForce(0)*eigvecs(ncol,k)*eigvecs(ncol,j) );
-      }
-      // And forces on eigenvectors
-      if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
-
-      unsigned ncol = mymatrix.ncols()-desired_vectors[i];
-      for(unsigned n=0; n<mymatrix.nrows(); ++n) {
-        double tmp2 = 0, tmp3 = 0;
-        for(unsigned m=0; m<mymatrix.nrows(); ++m) {
-          if( m==ncol ) continue;
-          tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
-          if( symmetric ) tmp3 += eigvecs(m,n)*eigvecs(m,k)*eigvecs(ncol,j) / (eigvals[ncol]-eigvals[m]); 
-        }
-        tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
-        if( symmetric ) tmp4 += getPntrToOutput(2*i+1)->getForce(n) * tmp3;
-      }
+double DiagonalizeMatrix::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {
+  double ff = 0;
+  for(unsigned i=0; i<desired_vectors.size(); ++i) {
+    // Deal with forces on eigenvalues
+    if( getPntrToOutput(2*i)->forcesWereAdded() ) {
+        unsigned ncol = mymatrix.ncols()-desired_vectors[i]; 
+        ff += getPntrToOutput(2*i)->getForce(0)*eigvecs(ncol,jrow)*eigvecs(ncol,kcol);
     }
-    getPntrToArgument(0)->addForce( j*ncols+k, tmp1 ); 
-    if( symmetric ) getPntrToArgument(0)->addForce( k*ncols+j, tmp4 );
-  }
+    // And forces on eigenvectors
+    if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
 
+    unsigned ncol = mymatrix.ncols()-desired_vectors[i];
+    for(unsigned n=0; n<mymatrix.nrows(); ++n) {
+      double tmp2 = 0;
+      for(unsigned m=0; m<mymatrix.nrows(); ++m) {
+        if( m==ncol ) continue;
+        tmp2 += eigvecs(m,n)*eigvecs(m,jrow)*eigvecs(ncol,kcol) / (eigvals[ncol]-eigvals[m]);
+      }
+      ff += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
+    }
+  }
+  return ff;
 }
 
 }

@@ -85,6 +85,8 @@ private:
   bool columnsums;
 /// Some variables for dealing with matrices
   bool symmetric;
+/// These variables are used to hold the matrix rows that are non-zero
+  std::vector<unsigned> matindexes;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value
@@ -120,7 +122,7 @@ public:
 /// Get the value of the function
   double get() const;
 /// Get the value of a particular function
-  double get( const unsigned& ival ) const ;
+  double get( const unsigned& ival, const bool trueind=true ) const ;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -201,6 +203,10 @@ public:
   void reshapeMatrixStore();
 /// Get the number of columns in the matrix
   unsigned getNumberOfColumns() const ;
+///
+  unsigned getRowLength( const unsigned& irow ) const ;
+///
+  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
 ///
   std::size_t getIndex(const std::vector<unsigned> & indices) const ;
 ///

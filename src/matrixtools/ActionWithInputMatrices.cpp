@@ -61,26 +61,24 @@ unsigned ActionWithInputMatrices::getNumberOfDerivatives() const {
 }
 
 unsigned ActionWithInputMatrices::getNumberOfColumns() const {
-  return getPntrToOutput(0)->getShape()[1];
+  return getPntrToOutput(0)->getShape()[0];
 }
 
 void ActionWithInputMatrices::retrieveEdgeList( const unsigned& imat, unsigned& nedge ) {
-  nedge=0; Value* mat = getPntrToArgument(imat); unsigned nrows = mat->getShape()[0];
+  nedge=0; Value* mat = getPntrToArgument(imat); 
+  unsigned nrows = mat->getShape()[0], ncols = mat->getNumberOfColumns();
   // Check we have enough space to store the edge list
-  if( pairs.size()<nrows*mat->getNumberOfColumns() ) { 
-      vals.resize( nrows*mat->getNumberOfColumns() ); 
-      pairs.resize( nrows*mat->getNumberOfColumns() );
-  }
+  if( pairs.size()<nrows*ncols ) { vals.resize( nrows*ncols ); pairs.resize( nrows*ncols ); }
 
   bool symmetric = mat->isSymmetric();
-  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
-    // Check if atoms are connected
-    if( fabs(mat->get(i))<epsilon ) continue ;
-
-    unsigned j = std::floor( i / nrows ); unsigned k = i%nrows;
-    if( symmetric && k>j ) continue ;  // Ensures each connection is only stored once
-
-    pairs[nedge].first = j; pairs[nedge].second = k; vals[nedge]=mat->get(i); nedge++;
+  for(unsigned i=0; i<nrows; ++i) {
+      unsigned ncol = mat->getRowLength(i);
+      for(unsigned j=0; j<ncol; ++j) {
+          if( fabs(mat->get(i*ncols+j,false))<epsilon ) continue;
+          if( symmetric && mat->getRowIndex(i,j)>i ) continue;
+          pairs[nedge].first = i; pairs[nedge].second = mat->getRowIndex(i,j); 
+          vals[nedge] = mat->get(i*ncols+j,false); nedge++;
+      }
   }
 }
 
@@ -96,6 +94,16 @@ void ActionWithInputMatrices::retrieveFullMatrix( const unsigned& imat, Matrix<d
 void ActionWithInputMatrices::calculate() {
   if( skipCalculate() ) return;
   completeMatrixOperations();
+}
+
+void ActionWithInputMatrices::applyForceOnMatrix( const unsigned& imat ) {
+  Value* mat = getPntrToArgument(imat);
+
+  unsigned ncols=mat->getNumberOfColumns();
+  for(unsigned i=0; i<mat->getShape()[0]; ++i) {
+      unsigned ncol = mat->getRowLength(i);
+      for(unsigned j=0; j<ncol; ++j) mat->addForce( i*ncols+j, getForceOnMatrixElement( imat, i, mat->getRowIndex(i,j) ) );
+  }
 }
 
 void ActionWithInputMatrices::update() {

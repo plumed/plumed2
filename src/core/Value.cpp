@@ -91,7 +91,9 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
   // Matrices are resized dynamically so we can use the sparsity pattern to reduce the 
   // overhead on memory
-  if( getRank()==2 && !hasDeriv && !alwaysstore && !istimeseries ) return;
+  if( getRank()==2 ) {
+      if( !hasDeriv && !alwaysstore && !istimeseries ) return;
+  }
 
   if( (hasDeriv || storedata || istimeseries) && shape.size()>0 ) {
      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
@@ -289,11 +291,19 @@ unsigned Value::getNumberOfValues( const std::string& alab ) const {
   }
 }
 
-double Value::get(const unsigned& ival) const {
+double Value::get(const unsigned& ival, const bool trueind) const {
   if( hasDeriv ) return data[ival*(1+ngrid_der)] / norm;
 #ifdef DNDEBUG 
   if( action ) plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
 #endif
+  if( shape.size()==2 && getNumberOfColumns()<shape[1] && trueind ) {
+      unsigned irow = std::floor( ival / shape[0] ), jcol = ival%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) return data[irow*getNumberOfColumns()+i] / norm;
+      }
+      return 0.0;
+  }
+  plumed_assert( ival<data.size() );
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 }
@@ -350,11 +360,22 @@ unsigned Value::getNumberOfColumns() const {
   return action->getNumberOfColumns();
 }
 
+unsigned Value::getRowLength( const unsigned& irow ) const {
+  if( !alwaysstore ) return matindexes[(1+getNumberOfColumns())*irow];
+  return shape[1];
+}
+ 
+unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+  if( !alwaysstore ) return matindexes[(1+getNumberOfColumns())*irow+1+jind];
+  return jind;
+}
+
 void Value::reshapeMatrixStore() {
   plumed_assert( shape.size()==2 && !hasDeriv && storedata && action );
   unsigned size = shape[0]*getNumberOfColumns();
-  if( data.size()==size ) return;
-  data.resize( size ); inputForces.resize( size );
+  if( matindexes.size()==(size+shape[0]) ) return;
+  data.resize( size ); inputForces.resize( size ); 
+  matindexes.resize( size + shape[0] );
 }
 
 const std::vector<unsigned>& Value::getShape() const {

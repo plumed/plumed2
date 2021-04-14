@@ -38,6 +38,7 @@ public:
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
   void completeMatrixOperations() override;
   void apply() override;
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(Voronoi,"VORONOI")
@@ -67,46 +68,26 @@ Voronoi::Voronoi(const ActionOptions&ao):
 }
 
 unsigned Voronoi::getNumberOfColumns() const {
-  return getPntrToArgument(0)->getNumberOfColumns();
+  return getPntrToOutput(0)->getShape()[1];
 }
 
 void Voronoi::completeMatrixOperations() {
-  if( getPntrToArgument(0)->getNumberOfColumns()<getPntrToArgument(0)->getShape()[1] ) {
-     npairs=0; retrieveEdgeList( 0, npairs ); 
-  }
   runAllTasks();
 }
 
 void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                  const unsigned& bufstart, std::vector<double>& buffer ) const {
-  int nv=-1; Value* arg0 = getPntrToArgument(0);
-  if( arg0->getNumberOfColumns()<arg0->getShape()[1] ) { 
-       plumed_merror("this will perhaps work something like this but this code has not been tested");
-       double minmax; bool symmetric=arg0->isSymmetric();
-       for(unsigned i=0; i<npairs;++i ) {
-           if( pairs[i].second==code ) { 
-               if( nv<0 ) { minmax=vals[i]; nv=pairs[i].first; }
-               else if( highest && vals[i]>minmax ) { minmax=vals[i]; nv=pairs[i].first; } 
-               else if( !highest && vals[i]<minmax ) { minmax=vals[i]; nv=pairs[i].first; } 
-           } else if( symmetric && pairs[i].first==code ) {
-               if( nv<0 ) { minmax=vals[i]; nv=pairs[i].second; }
-               else if( highest && vals[i]>minmax ) { minmax=vals[i]; nv=pairs[i].second; } 
-               else if( !highest && vals[i]<minmax ) { minmax=vals[i]; nv=pairs[i].second; }
-           }
-       }
-  } else {
-       double minmax = arg0->get( code ); nv=0;
-       for(unsigned i=0;i<arg0->getShape()[0];++i) {
-           double value = arg0->get( i*arg0->getShape()[1] + code );
-           if( highest && value>minmax ) { minmax = value; nv = i; }
-           else if( !highest && value<minmax ) { minmax = value; nv = i; } 
-       }
+  Value* arg0 = getPntrToArgument(0); unsigned nv = 0; double minmax = arg0->get( code );
+  for(unsigned i=0;i<arg0->getShape()[0];++i) {
+      double value = arg0->get( i*arg0->getShape()[1] + code );
+      if( highest && value>minmax ) { minmax = value; nv = i; }
+      else if( !highest && value<minmax ) { minmax = value; nv = i; }
   }
-  buffer[bufstart + nv*getNumberOfColumns() + code] =  1; 
+  buffer[bufstart + nv*arg0->getShape()[1] + code] = 1;
 }
 
 void Voronoi::apply() {
-   if( getPntrToOutput(0)->forcesWereAdded() ) error("forces on voronoi matrix cannot work as voroni matrix is not differentiable");
+  if( getPntrToOutput(0)->forcesWereAdded() ) error("forces on voronoi matrix cannot work as voroni matrix is not differentiable");
 }
 
 }

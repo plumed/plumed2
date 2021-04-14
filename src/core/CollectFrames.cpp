@@ -107,6 +107,7 @@ void CollectFrames::turnOnBiasHistory() {
   save_all_bias=true; std::vector<unsigned> shape(2);
   shape[0]=shape[1]=getPntrToOutput( getNumberOfComponents()-1 )->getShape()[0]; 
   getPntrToOutput( getNumberOfComponents()-1 )->setShape( shape );
+  getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
  
   const ActionSet & as=plumed.getActionSet(); task_counts.resize(0);
   std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false ); 

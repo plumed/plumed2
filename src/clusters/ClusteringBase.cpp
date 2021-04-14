@@ -65,6 +65,7 @@ void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matr
   for(unsigned i=0; i<nedge; ++i) {
     // Store if atoms are connected
     unsigned j=pairs[i].first, k=pairs[i].second;
+    if( j==k ) continue; 
     adj_list(j,nneigh[j])=k; nneigh[j]++;
     adj_list(k,nneigh[k])=j; nneigh[k]++;
   }

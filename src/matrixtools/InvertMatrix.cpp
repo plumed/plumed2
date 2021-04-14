@@ -37,7 +37,8 @@ public:
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
-  void apply();
+  void apply() override;
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(InvertMatrix,"INVERT_MATRIX")

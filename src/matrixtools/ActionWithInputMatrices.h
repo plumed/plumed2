@@ -60,6 +60,10 @@ public:
   void runFinalJobs() override;
 ///
   virtual void completeMatrixOperations()=0;
+///
+  void applyForceOnMatrix( const unsigned& imat );
+///
+  virtual double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const = 0 ;
 };
 
 }

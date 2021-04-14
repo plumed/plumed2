@@ -427,7 +427,7 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
                                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
   // Check which actions are using the values calculated by this action
-  bool usedOutsideOfChain=false; bool usedByPython=false;
+  bool usedOutsideOfChain=false;
   for(unsigned i=0;i<values.size();++i) {
       for(const auto & p : values[i]->userdata) {
           // Check if the action is only being used within the chain
@@ -441,16 +441,11 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
               if( user ) user->getTasksForParent( getLabel(), actionsThatSelectTasks, tflags ); 
               usedOutsideOfChain=true; 
           }
-          // Check if it is used by a data gatherer
-          if( p.first=="python" ) usedByPython=true;
       }
   }
-  // Check if a data gather is getting all the data 
-  if( usedByPython ) { 
-      forceAllTasks=true;
   // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
   // allows deactivated tasks
-  } else if( usedOutsideOfChain ) {
+  if( usedOutsideOfChain ) {
       bool OKToDeactivate=false;
       for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
           if( getLabel()==actionsThatSelectTasks[i] ){ OKToDeactivate=true; break; }
@@ -645,13 +640,14 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   if( matrix ) {
     unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
     for(unsigned i=0; i<values.size(); ++i) {
+      unsigned matindex = values[i]->getPositionInMatrixStash();;
       if( values[i]->hasForce ) {
-        unsigned sind = values[i]->streampos, matindex = values[i]->getPositionInMatrixStash();
-        double fforce = values[i]->getForce( myvals.getTaskIndex()*getFullNumberOfTasks() + col_stash_index );
+        unsigned sind = values[i]->streampos;
+        double fforce = values[i]->getForce( myvals.getTaskIndex()*getNumberOfColumns() + col_stash_index );
         for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
-      } else if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
+      } else if( values[i]->storedata ) myvals.stashMatrixElement( matindex, col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
     }
   }
 
@@ -691,14 +687,30 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
   plumed_dbg_assert( !values[valindex]->hasDeriv && values[valindex]->getRank()>0 );
   unsigned sind = values[valindex]->streampos;
   // This looks after storing for matrices
-  if( values[valindex]->getRank()==2 ) {
-    unsigned ncols =  values[valindex]->getNumberOfColumns(); 
-    unsigned vindex = bufstart + code*ncols; unsigned matind = values[valindex]->getPositionInMatrixStash();
-    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
-      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-    }
+  if( values[valindex]->getRank()==2 && !values[valindex]->alwaysstore ) {
+    unsigned rstart = (1+values[valindex]->getNumberOfColumns())*code;
+    unsigned matind = values[valindex]->getPositionInMatrixStash();
+    unsigned vindex = bufstart + code*values[valindex]->getNumberOfColumns();
+    // Only matrix elements that are definitely non-zero are stored here
+    // This is used with contact matrices to reduce the ammount of memory required
+    if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[0] ) {
+        values[valindex]->matindexes[rstart]=0; 
+        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+          unsigned jind = myvals.getStashedMatrixIndex(matind,j); 
+          values[valindex]->matindexes[rstart+1+values[valindex]->matindexes[rstart]]=jind; values[valindex]->matindexes[rstart]++;
+          plumed_dbg_massert( vindex+j<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+          buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind );
+        }
+    // This stores all matrix elements in the expected places for when the matrix is dense
+    } else {
+        values[valindex]->matindexes[rstart]=values[valindex]->getShape()[1]; unsigned k=rstart+1;
+        for(unsigned j=0;j<values[valindex]->matindexes[rstart];++j) { values[valindex]->matindexes[k]=j; k++; }
+        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+           unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+           plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+           buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );    
+        } 
+    } 
     // This looks after sums over columns of matrix
   } else if ( values[valindex]->getRank()==1 && values[valindex]->columnsums ) {
     unsigned vindex = bufstart; unsigned matind = values[valindex]->getPositionInMatrixStash();
@@ -761,8 +773,9 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
       unsigned bufstart = values[i]->bufstart;
       if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
       if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) {
-        unsigned sz_v = values[i]->getSize();
+        unsigned sz_v = values[i]->data.size();
         for(unsigned j=0; j<sz_v; ++j) values[i]->add( j, buffer[bufstart+j] );
+        if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) comm.Sum( values[i]->matindexes );
       }
       if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ) {
         for(unsigned j=0; j<values[i]->getNumberOfDerivatives(); ++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );

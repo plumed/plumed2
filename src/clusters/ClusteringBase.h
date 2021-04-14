@@ -51,6 +51,7 @@ public:
   virtual void performClustering()=0;
 /// Cannot apply forces on a clustering object
   void apply() override ;
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 inline

@@ -159,6 +159,7 @@ void ArrangePoints::checkInputMatrix( const std::string& key, const unsigned& nv
   if( mat.size()!=1 ) error("should only be one value in input to " + key );
   if( mat[0]->getRank()!=2 || mat[0]->hasDerivatives() ) error("input to " + key + " keyword should be a matrix");
   if( mat[0]->getShape()[0]!=nvals || mat[0]->getShape()[1]!=nvals ) error("input to " + key + " keyword has the wrong size");
+  if( mat[0]->getNumberOfColumns()<mat[0]->getShape()[0] ) error("cannot use sparse matrices " + key );
 }
 
 double ArrangePoints::calculateStress( const std::vector<double>& p, std::vector<double>& d ) { 

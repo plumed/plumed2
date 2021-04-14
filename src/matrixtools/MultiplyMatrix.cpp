@@ -36,6 +36,7 @@ public:
   void completeMatrixOperations() override;
 ///
   void apply();
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(MultiplyMatrix,"MULTIPLY_MATRICES")
