@@ -257,6 +257,10 @@ plumed driver --mf_pdb traj.pdb
 You can also store the values of collective variables for later analysis with these algorithms.  <b> Modify the input above so that all
 Thirty backbone dihedral angles in the protein are stored, and output using \ref OUTPUT_ANALYSIS_DATA_TO_COLVAR and rerun the calculation. </b>
 
+For more information on the dimensionality reduction algorithms that we are using in this section see:
+
+https://arxiv.org/abs/1907.04170
+
 \subsection masterclass-21-6-ex-4a PCA
 
 Having learned how to store data for later analysis with a dimensionality reduction algorithm, lets now apply principal component analysis (PCA) upon
