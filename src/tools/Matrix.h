@@ -100,7 +100,7 @@ public:
   /// Set the matrix from a vector input
   inline void setFromVector( const std::vector<T>& vecin ) { plumed_assert( vecin.size()==sz ); for(unsigned i=0; i<sz; ++i) data[i]=vecin[i]; }
   /// Return element i,j of the matrix
-  inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
+  inline const T& operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
   /// Return a referenre to element i,j of the matrix
   inline T& operator () (const unsigned& i, const unsigned& j)      { return data[j+i*cl]; }
   /// Set all elements of the matrix equal to the value of v
