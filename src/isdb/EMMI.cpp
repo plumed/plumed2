@@ -58,7 +58,8 @@ To use \ref EMMI, the user should always add a \ref MOLINFO line and specify a p
 
 \note
 To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
-In this case, the user should add the NO_AVER flag to the input line.
+In this case, the user should add the NO_AVER flag to the input line. To use a replica-based enhanced sampling scheme such as
+Parallel-Bias Metadynamics (\ref PBMETAD), one should use the REWEIGHT flag and pass the Metadynamics bias using the ARG keyword.
 
 \note
 \ref EMMI can be used in combination with periodic and non-periodic systems. In the latter case, one should
@@ -415,7 +416,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
-  keys.add("optional","AVERAGING", "Averaging window for weights and sigma_mean");
+  keys.add("optional","AVERAGING", "Averaging window for weights");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
   componentsAreNotOptional(keys);
@@ -751,6 +752,7 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
   log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, Biophys. J. 114, 1604 (2018)");
+  if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
 }
