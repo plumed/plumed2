@@ -308,6 +308,18 @@ double Value::get(const unsigned& ival, const bool trueind) const {
   return 0.0;
 }
 
+void Value::addForce(const unsigned& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && getNumberOfColumns()<shape[1] && trueind ) { 
+      unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) { inputForces[irow*getNumberOfColumns()+i]+=f; return; }
+      }
+      plumed_assert( fabs(f)<epsilon ); return;
+  } 
+  inputForces[iforce]+=f;
+}
+
 double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
   plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
   return data[n*(1+ngrid_der) + 1 + j] / norm;

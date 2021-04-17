@@ -642,12 +642,14 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
     for(unsigned i=0; i<values.size(); ++i) {
       unsigned matindex = values[i]->getPositionInMatrixStash();;
       if( values[i]->hasForce ) {
-        unsigned sind = values[i]->streampos;
-        double fforce = values[i]->getForce( myvals.getTaskIndex()*getNumberOfColumns() + col_stash_index );
+        unsigned sind = values[i]->streampos, find = col_stash_index;
+        if( values[i]->getNumberOfColumns()<values[i]->shape[1] ) find=myvals.getNumberOfStashedMatrixElements(matindex);
+        double fforce = values[i]->getForce( myvals.getTaskIndex()*getNumberOfColumns() + find );
         for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
-      } else if( values[i]->storedata ) myvals.stashMatrixElement( matindex, col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
+      } 
+      if( values[i]->storedata ) myvals.stashMatrixElement( matindex, col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
     }
   }
 

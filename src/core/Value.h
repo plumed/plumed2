@@ -160,7 +160,7 @@ public:
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
-  void  addForce(const unsigned& iforce, double f);
+  void  addForce(const unsigned& iforce, double f, const bool trueind=true);
 /// Get the value of the force on this colvar
   double getForce( const unsigned& iforce ) const ;
 /// Check if forces have been added on this value
@@ -326,13 +326,6 @@ void Value::clearInputForce() {
 inline
 void Value::clearDerivatives() {
   value_set=false; if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
-}
-
-inline
-void Value::addForce(const unsigned& iforce, double f) {
-  plumed_dbg_assert( iforce<inputForces.size() );
-  hasForce=true;
-  inputForces[iforce]+=f;
 }
 
 inline
