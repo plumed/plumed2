@@ -51,21 +51,23 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
 
   // remove atoms not in PDB file
   std::vector<AtomNumber> addtotree, addtoroot;
-  // check 1st atom
+  std::vector<AtomNumber> newatoms;
+  newatoms.reserve(atoms.size());
   if(!moldat_->checkForAtom(atoms[0])) plumed_merror("The first atom in the list should be present in the PDB file");
-  // check the other atoms
+  // store first atom
+  newatoms.push_back(atoms[0]);
   for(unsigned i=1; i<atoms.size(); ++i) {
     if(!moldat_->checkForAtom(atoms[i])) {
       // store this atom for later
       addtotree.push_back(atoms[i]);
       // along with its root (the previous atom)
       addtoroot.push_back(atoms[i-1]);
+    } else {
+      newatoms.push_back(atoms[i]);
     }
   }
-  // remove atoms not in PDB file
-  for(unsigned i=0; i<addtotree.size(); ++i)
-    atoms.erase(std::remove(atoms.begin(), atoms.end(), addtotree[i]), atoms.end());
-
+  // reassign atoms
+  atoms=newatoms;
   // start EMST
   std::vector<bool> intree(atoms.size(), false);
   std::vector<double> mindist(atoms.size(), std::numeric_limits<double>::max());
