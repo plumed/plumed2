@@ -24,6 +24,7 @@
 !/manyrestraints
 !/molfile_plugin
 !/pamm
+!/rascal
 !/isdb
 !/ves
 # These files we just want to ignore completely

@@ -1,0 +1,13 @@
+rr: SOAP ...
+  SPECIES=1-40 
+  HYPERPARAMS={ "max_radial": 3, 
+                "max_angular": 2, 
+                "compute_gradients": true, 
+                "soap_type": "PowerSpectrum", 
+                "normalize": true,
+                "cutoff_function": {"type": "ShiftedCosine", "cutoff": {"value": 4.0}, "smooth_width": {"value": 0.5}},
+                "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 0.4}},
+                "radial_contribution": {"type": "GTO"} 
+              }
+...
+PRINT ARG=rr FILE=soap.matx STRIDE=1 FMT=%8.4f
