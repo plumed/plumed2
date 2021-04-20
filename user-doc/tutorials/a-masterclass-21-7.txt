@@ -1,0 +1,121 @@
+/**
+\page masterclass-21-7 PLUMED Masterclass 21.7: Simulations with multiple replicas
+
+\authors Giovanni Bussi and Max Bonomi
+\date April 21, 2021
+
+\section masterclass-21-7-aims Aims
+
+In this Masterclass, we will discuss 
+
+\section masterclass-21-7-lo Objectives
+
+Once you have completed this Masterclass you will be able to:
+
+- xx
+ 
+\section masterclass-21-7-install Setting up PLUMED
+
+For this masterclass you will need versions of PLUMED and GROMACS that are compiled using the MPI library.
+Thus follow the instructions that are reported for \ref masterclass-21-5.
+
+Natively-compiled GROMACS and PLUMED will be significantly faster than the conda versions that we are providing.
+Since we are focusing on performance here, this might be the right time to learn how to install them on your own.
+
+\section masterclass-21-7-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-21-7).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/plumed/masterclass-21-7.git
+\endverbatim
+
+\note All the exercises were tested with PLUMED version 2.7.0 and GROMACS 2019.6
+
+\section masterclass-21-7-ex Exercises
+
+Notice that the results of these exercises might depend on the details of the hardware and software you are using.
+It is thus instructive to test them on different architectures, or with different PLUMED or GROMACS versions.
+
+\subsection masterclass-21-7-ex-intro Measuring performance
+
+NOTE: general introduction with an example showing how to see ns/day in GROMACS, then mention to \ref DEBUG DETAILED_TIMERS
+
+\subsection masterclass-21-7-ex-1 Exercise 1: Dissociation of NaCl in water
+
+NOTE: Explain the system and introduce the exercise and add a figure with the result.
+
+We will start with the following input file:
+\plumedfile
+# vim:ft=plumed
+NA: GROUP ATOMS=1
+CL: GROUP ATOMS=2
+WAT: GROUP ATOMS=3-8544:3
+d: DISTANCE ATOMS=NA,CL
+cn: COORDINATION GROUPA=1 GROUPB=WAT R_0=0.3
+PRINT ARG=d,cn STRIDE=100 FILE=COLVAR
+METAD ARG=d,cn SIGMA=0.05,0.1 HEIGHT=0.1 PACE=10 BIASFACTOR=5
+\end
+
+NOTE: specify number of steps and gromacs command line.
+
+\subsection masterclass-21-7-ex-1-a Exercise 1a: Optimizing the calculation of a metadynamics bias
+
+For this first point, we will focus on the calculation and update of the metadynamics bias.
+We will try to have a simulation that runs faster without changing significantly the result.
+Check the manual of \ref METAD and find out how to speed up this calculation.
+A few hints:
+- What matters is the deposition rate (that is: height/pace). Increasing the pace and height by
+  the same factor should not change the result significantly.
+- Grids will make calculation faster (especially for long runs) but update slower.
+
+Notice that these changes are not expected to impact the convergence of the algorithm.
+Thus, you do not need a converged simulation to measure the impact on performances.
+
+\subsection masterclass-21-7-ex-1-b Exercise 1b: Optimizing the calculation of a coordination number
+
+For this second point, we will focus on the calculation of one of the two biased collective variables,
+namely the coordination of the Na ion with water oxygens.
+We will try to have a simulation that runs faster without changing significantly the result.
+Check the manual of \ref COORDINATION and find out how to speed up this calculation.
+A few hints:
+- Neighbor lists might help, but be very careful with parameters.
+- Starting with PLUMED v2.7 the construction of neighbor lists is parallelized.
+  Performances might thus be very different if you test your input with PLUMED v2.6 or earlier.
+
+Notice that these changes are not expected to impact the convergence of the algorithm.
+Thus, you do not need a converged simulation to measure the impact on performances.
+
+\subsection masterclass-21-7-ex-1-c Exercise 1c: Optimizing GROMACS parallelization
+
+For this third point, we will try to make sure that GROMACS runs at its maximum speed.
+For this you will have to check GROMACS manual.
+A few hints:
+- Based on the number of processors in your computer, play with the number of OpenMP threads and of MPI processes.
+- Check if the `-pin on` option improves performances.
+
+Notice that these changes are not expected to impact the convergence of the algorithm.
+Thus, you do not need a converged simulation to measure the impact on performances.
+
+\subsection masterclass-21-7-ex-1-d Exercise 1d: Optimizing metadynamics parameters
+
+We will now make modifications to the algorithm so as to be able to arrive to the same result
+running a shorter simulation. Try to play with \ref METAD parameters and see if you can
+improve them. A few hints:
+- Changing hills width might affect that speed at which you fill free-energy basins.
+- Limiting the domain of the collective variables that you explore might help, if you can predict what happens
+  in the portion of the domain that the simulation does not explore.
+- You can even try to reduce the number of CVs.
+
+Notice that these changes are expected to impact the convergence of the algorithm.
+Thus, you do not need a converged simulation to measure the impact on performances, and you have
+to make sure that the statistical accuracy is comparable.
+
+\subsection masterclass-21-7-ex-2 Exercise 2: xxxxxxxxxxxxx
+
+*/
+
+link: @subpage masterclass-21-7 
+
+description: This Masterclass explains how to use optimize PLUMED performances
