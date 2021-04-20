@@ -27,9 +27,6 @@
 #include "core/ActionSetup.h"
 #include "tools/PDB.h"
 
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -54,9 +51,6 @@ public:
   void apply() override;
   static void registerKeywords(Keywords& keys);
 };
-
-
-using namespace std;
 
 //+PLUMEDOC DCOLVAR RMSD
 /*
@@ -226,8 +220,22 @@ RMSD::RMSD(const ActionOptions&ao):
   if( atoms_ref.size()!=atoms_conf.size() ) error("size mismatch between reference atoms and atoms involved");
   double wa=0, wd=0; sqrtdisplace.resize( displace.size() );
   for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
-  if( unorm ) { wd = 1; }
-  for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; sqrtdisplace[i] = sqrt(displace[i]); }
+
+  if( wa>epsilon ) { 
+      double iwa = 1. / wa; 
+      for(unsigned i=0; i<align.size(); ++i) align[i] *= iwa; 
+  } else {
+      double iwa = 1. / atoms_ref.size();
+      for(unsigned i=0; i<align.size(); ++i) align[i] = iwa; 
+  } 
+  if( wd>epsilon ) {
+      if( unorm ) { wd = 1; } double iwd = 1. / wd; 
+      for(unsigned i=0; i<align.size(); ++i) displace[i] *= iwd; 
+  } else {
+      double iwd = 1. / atoms_ref.size();
+      for(unsigned i=0; i<align.size(); ++i) displace[i] = iwd;
+  }
+  for(unsigned i=0; i<align.size(); ++i) sqrtdisplace[i] = sqrt(displace[i]);
 
   if( displacement ) {
      std::vector<unsigned> shape(1); shape[0] = 3*atoms_conf.size();

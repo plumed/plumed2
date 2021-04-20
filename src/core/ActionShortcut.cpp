@@ -29,6 +29,7 @@ namespace PLMD {
 
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
+  keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
@@ -61,6 +62,23 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
     std::string t; Tools::convert(plumed.getActionSet().size()+1,t);
     shortcutlabel="@" + t;
   } else label = ("@" + s);
+}
+
+void ActionShortcut::readInputLine( const std::string& input, const bool never_update ) {
+  std::string f_input = input; savedInputLines.push_back( input );
+  if( !never_update ) {
+      if( update_from!=std::numeric_limits<double>::max() ) {
+        std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
+      }
+      if( update_until!=std::numeric_limits<double>::max() ) {
+        std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
+      }
+      if( keywords.exists("RESTART") ) {
+        if( restart ) f_input += " RESTART=YES";
+        if( !restart ) f_input += " RESTART=NO";
+      }
+  }
+  plumed.readInputLine( f_input );
 }
 
 const std::string & ActionShortcut::getShortcutLabel() const {
@@ -121,6 +139,10 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
           }
       }
   }
+}
+
+std::vector<std::string> ActionShortcut::getSavedInputLines() const {
+  return savedInputLines;
 }
 
 }

@@ -24,8 +24,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 

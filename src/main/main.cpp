@@ -21,13 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "wrapper/Plumed.h"
 #include <cstring>
-#include <memory>
 
 #ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
 #endif
-
-using namespace std;
 
 /**
   This main uses only the interface published in
@@ -49,18 +46,23 @@ int main(int argc,char**argv) {
 #endif
   int ret=0;
 
-  std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed);
-  p->cmd("CLTool setArgc",&argc);
-  p->cmd("CLTool setArgv",argv);
+  try {
+    PLMD::Plumed p;
+    p.cmd("CLTool setArgc",&argc);
+    p.cmd("CLTool setArgv",argv);
 #ifdef __PLUMED_HAS_MPI
-  if(!nompi) {
-    MPI_Comm comm;
-    MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-    p->cmd("CLTool setMPIComm",&comm);
-  }
+    if(!nompi) {
+      MPI_Comm comm;
+      MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+      p.cmd("CLTool setMPIComm",&comm);
+    }
 #endif
-  p->cmd("CLTool run",&ret);
-  p.reset(); // this is to delete p here
+    p.cmd("CLTool run",&ret);
+// end block deletes p also in case an exception occurs
+  } catch(...) {
+// exception is rethrown and results in a call to terminate
+    throw;
+  }
 
 #ifdef __PLUMED_HAS_MPI
   if(!nompi) MPI_Finalize();

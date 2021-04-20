@@ -27,7 +27,6 @@
 #include "tools/Communicator.h"
 #include <string>
 #include <cstdio>
-#include <cmath>
 #include <vector>
 #include <memory>
 
@@ -93,13 +92,11 @@ within plumed in addition in order to do a biased dynamics on the potential ener
 */
 //+ENDPLUMEDOC
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
 class PesMD  : public PLMD::CLTool {
-  string description() const override {
+  std::string description() const override {
     return "Langevin dynamics on PLUMED energy landscape";
   }
 public:
@@ -184,7 +181,7 @@ public:
     else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
 
     // Create plumed object and initialize
-    std::unique_ptr<PLMD::PlumedMain> plumed(new PLMD::PlumedMain);
+    auto plumed=Tools::make_unique<PLMD::PlumedMain>();
     int s=sizeof(double);
     plumed->cmd("setRealPrecision",&s);
     if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
@@ -207,8 +204,8 @@ public:
         k++;
       }
     // And initialize the velocities
-    for(int i=0; i<nat; ++i) for(int j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * sqrt( temp );
-    // And calcualte the kinetic energy
+    for(int i=0; i<nat; ++i) for(int j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * std::sqrt( temp );
+    // And calculate the kinetic energy
     double tke=0;
     for(int i=0; i<nat; ++i) {
       for(int j=0; j<3; ++j) {
@@ -237,8 +234,8 @@ public:
       if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %i\n",istep);
 
       // Langevin thermostat
-      double lscale=exp(-0.5*tstep/friction);
-      double lrand=sqrt((1.-lscale*lscale)*temp);
+      double lscale=std::exp(-0.5*tstep/friction);
+      double lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
           if( 3*j+k>dim-1 ) break;
@@ -280,8 +277,8 @@ public:
       }
 
       // Langevin thermostat
-      lscale=exp(-0.5*tstep/friction);
-      lrand=sqrt((1.-lscale*lscale)*temp);
+      lscale=std::exp(-0.5*tstep/friction);
+      lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
           if( 3*j+k>dim-1) break;

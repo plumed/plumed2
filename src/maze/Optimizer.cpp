@@ -218,9 +218,11 @@ Optimizer::Optimizer(const ActionOptions& ao)
       neighbor_list_ = new NeighborList(
         ga_list,
         gb_list,
+        runInSerial(),
         do_pair,
         pbc_,
         getPbc(),
+        comm,
         nl_cutoff_,
         nl_stride_
       );
@@ -229,9 +231,11 @@ Optimizer::Optimizer(const ActionOptions& ao)
       neighbor_list_=new NeighborList(
         ga_list,
         gb_list,
+        runInSerial(),
         do_pair,
         pbc_,
-        getPbc()
+        getPbc(),
+        comm
       );
     }
   }
@@ -239,8 +243,10 @@ Optimizer::Optimizer(const ActionOptions& ao)
     if (do_neigh) {
       neighbor_list_ = new NeighborList(
         ga_list,
+        runInSerial(),
         pbc_,
         getPbc(),
+        comm,
         nl_cutoff_,
         nl_stride_
       );
@@ -248,8 +254,10 @@ Optimizer::Optimizer(const ActionOptions& ao)
     else {
       neighbor_list_=new NeighborList(
         ga_list,
+        runInSerial(),
         pbc_,
-        getPbc()
+        getPbc(),
+        comm
       );
     }
   }

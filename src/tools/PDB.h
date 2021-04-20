@@ -33,7 +33,7 @@
 
 namespace PLMD {
 
-class SetupMolInfo;
+class GenericMolInfo;
 class OFile;
 class Log;
 
@@ -83,6 +83,8 @@ public:
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
+/// Get the chain ID from atom number
+  std::string getChainID(AtomNumber a) const;
 ///use the log to dump information
   friend Log& operator<<(Log& ostr, const PDB& pdb);
 /// return the name of a specific atom
@@ -100,6 +102,8 @@ public:
   bool checkForResidue( const std::string& name ) const ;
 /// Check if any of the atoms are named atom
   bool checkForAtom( const std::string& name ) const ;
+/// Check if specific atom exists
+  bool checkForAtom( AtomNumber a ) const ;
 /// Return the atom named aname from residue number resnum
   AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
 /// Return the atom named aname from residue number resnum and chain.
@@ -132,7 +136,7 @@ public:
 /// Access to the position array
   Vector getPosition(AtomNumber a)const;
 /// Print out a PDB object
-  void print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt );
+  void print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt );
 /// Does the PDB have this flag
   bool hasFlag( const std::string& fname ) const ;
 /// Get the metric type

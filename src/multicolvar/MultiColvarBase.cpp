@@ -23,6 +23,9 @@
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include <vector>
+#include <string>
+#include <limits>
 
 namespace PLMD {
 namespace multicolvar {
@@ -236,6 +239,7 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one or more scalars will be "
            "calculated for each ATOM keyword you specify");
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
+  keys.addFlag("NOLOCATION",false,"do not create a virtual atom for this location");
   keys.reset_style("ATOMS","atoms"); keys.reset_style("LOCATION","atoms");
 }
 
@@ -243,7 +247,8 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  usepbc(true)
+  usepbc(true),
+  nolocation(false)
 {
   if( keywords.exists("NOPBC") ) {
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
@@ -251,6 +256,7 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   }
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
+  parseFlag("NOLOCATION",nolocation);
 
   std::vector<AtomNumber> catoms, all_atoms; parseAtomList( "ATOMS", all_atoms );
   if( getName()=="TORSION" ) {
@@ -272,7 +278,7 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
       if( catoms.size()!=1 ) error("should provide position of one atom only for location");
       log.printf("  CV is located on position of atom : %d \n", catoms[0].serial() );
       catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
-    } else {
+    } else if( !nolocation ) {
       log.printf("  CV is located at center of mass for atoms : ");
       for(unsigned j=0; j<ablocks.size(); ++j) log.printf("%d ", all_atoms[j].serial() );
       log.printf("\n"); mygroup.push_back( atoms.addVirtualAtom( this ) );
@@ -324,7 +330,7 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
         log.printf("  CV %d is located on position of atom : %d \n", i, cc[0].serial() );
         catom_indices.push_back( all_atoms.size() + i ); catoms.push_back( cc[0] ); mygroup.push_back( cc[0] );
       }
-    } else {
+    } else if( !nolocation) {
       for(int i=0; i<ablocks[0].size(); ++i) mygroup.push_back( atoms.addVirtualAtom( this ) );
     }
   }
@@ -334,11 +340,11 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   if( all_atoms.size()>0 ) {
     for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
-  if( catom_indices.size()==0 ) vatom_forces.resize( getNumberOfAtoms() );
+  if( catom_indices.size()==0 && !nolocation ) vatom_forces.resize( getNumberOfAtoms() );
 }
 
 MultiColvarBase::~MultiColvarBase() {
-  if(catom_indices.size()==0 ) atoms.removeVirtualAtom( this );
+  if(catom_indices.size()==0 && !nolocation) atoms.removeVirtualAtom( this );
   atoms.removeGroup( getLabel() );
 }
 
@@ -383,7 +389,7 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
 
 void MultiColvarBase::calculate() {
   // Set positions of all virtual atoms
-  if( catom_indices.size()==0 ) {
+  if( catom_indices.size()==0 && !nolocation ) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
     if( runInSerial() ) { stride=1; rank=0; }
@@ -466,7 +472,7 @@ void MultiColvarBase::apply() {
   if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
 
   // Virtual atom forces
-  if( catom_indices.size()==0 ) {
+  if( catom_indices.size()==0 && !nolocation ) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
     if( runInSerial() ) { stride=1; rank=0; }

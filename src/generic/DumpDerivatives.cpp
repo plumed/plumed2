@@ -25,8 +25,6 @@
 #include "core/ActionRegister.h"
 #include "tools/File.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 
@@ -58,8 +56,8 @@ class DumpDerivatives :
   public ActionPilot,
   public ActionWithArguments
 {
-  string file;
-  string fmt;
+  std::string file;
+  std::string fmt;
   OFile of;
 public:
   void calculate() override {}

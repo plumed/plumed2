@@ -81,7 +81,7 @@ BIASES1=13
 ... ANN
 \endplumedfile
 
-To access its components, we use "ann.node-0", "ann.node-1", ..., which represents 0th, 1st,..., component of neural network outputs.
+To access its components, we use "ann.node-0", "ann.node-1", ..., which represents the components of neural network outputs.
 
 
 */

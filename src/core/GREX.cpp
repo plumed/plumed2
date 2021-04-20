@@ -28,7 +28,6 @@
 #include <sstream>
 #include <unordered_map>
 
-using namespace std;
 namespace PLMD {
 
 GREX::GREX(PlumedMain&p):
@@ -54,7 +53,7 @@ GREX::~GREX() {
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
-void GREX::cmd(const string&key,void*val) {
+void GREX::cmd(const std::string&key,void*val) {
 
 // Enumerate all possible commands:
   enum {
@@ -190,15 +189,14 @@ void GREX::savePositions() {
   plumedMain.resetActive(true);
   atoms.shareAll();
   plumedMain.waitData();
-  ostringstream o;
+  std::ostringstream o;
   atoms.writeBinary(o);
   buffer=o.str();
 }
 
 void GREX::calculate() {
-//fprintf(stderr,"CALCULATE %d %d\n",intercomm.Get_rank(),partner);
   unsigned nn=buffer.size();
-  vector<char> rbuf(nn);
+  std::vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -206,7 +204,7 @@ void GREX::calculate() {
     req.wait();
   }
   intracomm.Bcast(rbuf,0);
-  istringstream i(string(&rbuf[0],rbuf.size()));
+  std::istringstream i(std::string(&rbuf[0],rbuf.size()));
   atoms.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
@@ -218,7 +216,6 @@ void GREX::calculate() {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();
-//fprintf(stderr,">>> %d %d %20.12f %20.12f %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias,localUSwap,localUNow);
   }
   intracomm.Bcast(foreignDeltaBias,0);
 }

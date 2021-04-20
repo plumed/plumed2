@@ -25,12 +25,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-#include <iostream>
-
-#include <string>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -139,7 +133,7 @@ double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)con
     return 0.0;
   }
   double invdistance=1.0/distance;
-  double tmp=exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
+  double tmp=std::exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
   double dtmp=-(k+invdistance)*tmp;
   dfunc=dtmp*invdistance;
   return tmp;

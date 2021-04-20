@@ -636,6 +636,7 @@ dot
 doxygen
 make_doc
 readelf
+use_debug_glibcxx
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -1446,10 +1447,9 @@ Optional Features:
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
-  --enable-af_ocl         enable arrayfire_opencl, default: search for
-                          arrayfire
-  --enable-af_cuda        enable arrayfire_cuda, default: search for arrayfire
-  --enable-af_cpu         enable arrayfire_cpu, default: search for arrayfire
+  --enable-af_ocl         enable search for arrayfire_ocl, default: no
+  --enable-af_cuda        enable search for arrayfire_cuda, default: no
+  --enable-af_cpu         enable search for arrayfire_cpu, default: no
   --enable-rascal         enable search for rascal, default: no
   --disable-openmp        do not use OpenMP
 
@@ -3252,7 +3252,7 @@ if test "${enable_af_ocl+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_ocl" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_ocl=true ;;
              (no)  af_ocl=false ;;
   esac
@@ -3270,7 +3270,7 @@ if test "${enable_af_cuda+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cuda" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cuda=true ;;
              (no)  af_cuda=false ;;
   esac
@@ -3288,7 +3288,7 @@ if test "${enable_af_cpu+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cpu" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cpu=true ;;
              (no)  af_cpu=false ;;
   esac
@@ -9498,12 +9498,16 @@ $as_echo "$as_me: Release mode, adding -DNDEBUG" >&6;}
 
 fi
 
+
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
 $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
 
+  use_debug_glibcxx=yes
 fi
 
 # check for librascal

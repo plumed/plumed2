@@ -30,7 +30,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 
-using namespace std;
 namespace PLMD {
 
 void ActionWithValue::registerKeywords(Keywords& keys) {
@@ -212,12 +211,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), false, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), true, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -253,7 +252,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, false, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -270,7 +269,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, true, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }

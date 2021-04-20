@@ -12,18 +12,18 @@ version_=${version//./_}
 
 echo $version $version_
 
-wget https://sourceforge.net/projects/boost/files/boost/$version/boost_${version_}.tar.gz/download > /dev/null 2> /dev/null
-tar xzf download
+wget https://dl.bintray.com/boostorg/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+tar xzf boost_${version_}.tar.gz
 
 cd boost_${version_}
 
 ./bootstrap.sh --with-libraries=serialization --prefix="$HOME/opt"
 
+if [ "$1" = release ] ; then
+# release build:
+./b2 release install -j 4  > /dev/null 2> /dev/null
+else
 # debug build:
 ./b2 debug cxxflags=-D_GLIBCXX_DEBUG install -j 4 > /dev/null 2> /dev/null
-
-# release build would be this one:
-#./b2 release install -j 4 
-# not needed since we can use system boost
-
+fi
 

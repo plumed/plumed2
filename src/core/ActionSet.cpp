@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionSet.h"
 
-using namespace std;
 namespace PLMD {
 
 ActionSet::ActionSet(PlumedMain&p):

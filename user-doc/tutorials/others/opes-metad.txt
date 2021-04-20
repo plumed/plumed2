@@ -1,0 +1,174 @@
+/**
+\page opes-metad OPES_METAD Tutorial: Running and post-processing
+
+\section opes-metad-aim Aim
+
+The aim of this tutorial is to briefly present an example of an \ref OPES_METAD simulation, together with some useful post-processing tools for obtaining an estimate of the free energy surface.
+This tutorial does not contain theory explanations.
+The opes method is presented in detail in Ref. \cite Invernizzi2020rethinking and in its supporting information.
+
+\section opes-metad-resources Resources
+
+The \tarball{opes-metad} for this project contains the following:
+- input files for running a simple double-well model with \ref pesmd
+- plumed files for \ref OPES_METAD and \ref METAD simulations
+- `FES_from_Reweighting.py`: script for estimating free energy surface via reweighting
+- `FES_from_State.py`: analogous to \ref sum_hills, but for OPES simulations
+- `State_from_Kernels.py`: script for obtaining an OPES state file from a kernels file
+
+\section opes-metad-simrew Simulating and reweighting
+
+We will perform Langevin dynamics on the following two-dimensional model potential:
+
+\anchor opes-metad-ModelPotential
+\image html opes-metad-ModelPotential.png "Fig. 1: Model potential"
+
+To run such simulations, we use the \ref pesmd tool and define the potential directly inside the plumed input file.
+
+We choose as collective variable (CV) the \f$x\f$ coordinate only, in order to mimic a realistic situation in which some of the slow modes of the system are unknown and not accelerated by the biasing.
+The following is a typical plumed input for performing an \ref OPES_METAD simulation:
+
+\plumedfile
+UNITS NATURAL
+p: DISTANCE ATOMS=1,2 COMPONENTS
+opes: OPES_METAD ARG=p.x TEMP=1 PACE=500 BARRIER=10
+PRINT FILE=COLVAR STRIDE=500 ARG=p.x,p.y,opes.bias
+\endplumedfile
+
+By default an \ref OPES_METAD simulation generates a KERNELS file that, similarly to the HILLS file from \ref METAD, contains all the Gaussians deposited during the run, and can be used for restarting a simulation.
+We also print a COLVAR file containing the system coordinates and the instantaneous value of the bias.
+Here is the time evolution of the \f$x\f$ coordinate.
+
+\anchor opes-metad-ColvarOPES
+\image html opes-metad-ColvarOPES.png "Fig. 2: Time evolution of the opes simulation"
+
+From this simulation we can estimate via reweighting the free energy surface (FES) along \f$x\f$.
+We use a weighted kernel density estimation with bandwidth `sigma`, and use block average for uncertainty estimation.
+You should run the following script from the same folder where the COLVAR file is stored.
+
+\verbatim
+../FES_from_Reweighting.py --kt 1 --sigma 0.03 --blocks 5
+\endverbatim
+
+As value for `sigma` we used the one from the last line of the KERNELS file.
+Notice that a similar FES estimate could have been obtained using \ref REWEIGHT_BIAS instead of the python script.
+For this simple system we can compare the result with the true FES (black dashed line):
+
+\anchor opes-metad-fesOPES
+\image html opes-metad-fesOPES.png "Fig. 3: Free energy estimate obtained by reweighting the opes simulation"
+
+\note
+If the COLVAR file is not available one can use instead the KERNELS file, choosing the `logweight` column as bias
+
+We now run a well-tempered metadynamics simulation on the same system, to get an idea of the differences between the two methods.
+This is the plumed input used:
+
+\plumedfile
+UNITS NATURAL
+p: DISTANCE ATOMS=1,2 COMPONENTS
+metad: METAD ...
+  ARG=p.x
+  TEMP=1
+  PACE=500
+  HEIGHT=1
+  SIGMA=0.185815
+  BIASFACTOR=10
+  GRID_MIN=-3.5
+  GRID_MAX=3.5
+  GRID_BIN=200
+  CALC_RCT
+...
+PRINT FILE=COLVAR STRIDE=500 ARG=p.x,p.y,metad.rbias,metad.rct
+\endplumedfile
+
+And here is the resulting \f$x\f$ trajectory.
+
+\anchor opes-metad-ColvarMETAD
+\image html opes-metad-ColvarMETAD.png "Fig. 4: Time evolution of the metadynamics simulation"
+
+One can see that with metadynamics more transitions are present, especially in the initial part of the simulation.
+This is because the bias is changing quickly and can efficiently push the system through high free-energy pathways.
+Unfortunately, these out-of-equilibrium transitions cannot be efficiently reweighted and might lead to systematic errors.
+
+\anchor opes-metad-fesMETAD
+\image html opes-metad-fesMETAD.png "Fig. 5: Free energy estimate obtained by (naively) reweighting the metadynamics simulation"
+
+To avoid these systematic errors, one must remove the part of the metadynamics simulation where the bias is not quasi-static.
+You can do so using the option `--skiprows` in the `FES_from_Reweighting.py` script.
+Removing an initial transient might be useful also for opes simulations, in particular when the chosen `BARRIER` is much higher than the real one.
+
+\note
+Several different reweighting schemes have been proposed for metadynamics. The one we report here is among the most commonly used, but it is not guaranteed to be the most efficient.
+
+
+\section opes-metad-fesbias Free energy estimate from the bias
+
+A quick way to get a FES estimate along the biased CVs in opes, is to directly look at the instantaneous bias, since \f$F(x)=-(1-1/\gamma)^{-1}V(x)\f$.
+For metadynamics simulations one should use the `rbias` instead, which is the bias shifted by the \f$c(t)\f$ factor.
+In Fig. 6 we plot the COLVAR file using on the x-axis the CV \f$x\f$ and on the y-axis this instantaneous FES estimate.
+Points are colored according to the simulation time.
+
+\anchor opes-metad-biasFES
+\image html opes-metad-biasFES.png "Fig. 6: Free energy estimate obtained from the instantaneous bias"
+
+We can see that the running estimate from metadynamics has much broader oscillations.
+This can be seen also in Fig. 3 of Ref. \cite Invernizzi2020rethinking, where only the free energy difference between the basins is plotted.
+It is also clearly visible that the opes simulation does not explore free energy regions much higher than the given `BARRIER` parameter.
+
+A more clear picture of this type of FES estimate is usually obtained in metadynamics via the \ref sum_hills tool, e.g. with the following command:
+
+\verbatim
+plumed sum_hills --hills HILLS --mintozero --stride 1000 
+\endverbatim
+
+A similar thing can be done also with opes, but requires the STATE file to be printed. 
+This file contains the compressed kernels that are used internally to define the bias, together with all the information needed for a smooth restart.
+The syntax to print it is similar to the one used to print the bias grid in \ref METAD:
+
+\plumedfile
+UNITS NATURAL
+p: DISTANCE ATOMS=1,2 COMPONENTS
+opes: OPES_METAD ...
+  ARG=p.x
+  TEMP=1
+  PACE=500
+  BARRIER=10
+  STATE_WFILE=STATE
+  STATE_WSTRIDE=500*1000
+  STORE_STATES
+...
+\endplumedfile
+
+If you did not dump the STATE file while running your simulation, you can recover it with the \ref driver (see \ref READ).
+The script `State_from_Kernels.py` contains the minimal input to do so, and only requires the KERNELS file.
+
+If the STATE file is available, one can run the provided script with the following command:
+
+\verbatim
+../FES_from_State.py --kt 1 --all_stored
+\endverbatim
+
+For \ref OPES_METAD the resulting FES estimate will be very similar to the one obtained from reweighting.
+
+In this tutorial a single simulation is presented for opes and metadynamics, but you can check Fig. S2 and S3 in the supporting information of Ref. \cite Invernizzi2020rethinking to see the results obtained by averaging 100 independent realizations.
+
+\section opes-metad-misc Some other considerations
+
+The \ref OPES_METAD has a few quantities one can print to monitor the simulation:
+- `rct`, contrary to the one of \ref METAD, converges to a constant and can be useful to quickly check the status of the simulation, especially when running with many CVs. It should not be used for reweighting.
+- `zed` should change only when a new region of CV-space is sampled.
+- `neff` is an estimate of the effective sample size and should always grow.
+- `nker` is the number of compressed kernels. If it is equal to the number of deposited kernels, it means that the simulation never comes back to where it has already been (too many CVs? too small `SIGMA`? too small `COMPRESSION_THRESHOLD`?).
+
+Finally, here are some optional keywords that might be useful:
+- `NLIST` activates a neighbor list over the kernels. It can considerably speed up the simulation, especially when using two or more CVs.
+- `SIGMA_MIN` can be useful to reduce the total number of compressed kernels (`nker`) and thus speed up the simulation. It can help especially with long simulations, and can also be added after a restart (see also `FIXED_SIGMA`).
+
+
+*/
+
+link: @subpage opes-metad
+
+description: Simple example of how to run and post-process an OPES_METAD simulation.
+
+additional-files: opes-metad

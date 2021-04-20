@@ -25,9 +25,6 @@
 #include "function/Function.h"
 #include "function/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -69,7 +66,7 @@ PRINT ARG=pbactive STRIDE=100 FILE=COLVAR
 
 class Select : public function::Function
 {
-  string selector_;
+  std::string selector_;
 
 public:
   explicit Select(const ActionOptions&);

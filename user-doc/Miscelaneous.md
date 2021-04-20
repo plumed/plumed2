@@ -1,4 +1,4 @@
-\page Miscelaneous Miscelaneous
+\page Miscellaneous Miscellaneous
 
 - \subpage comments
 - \subpage ContinuationLines
@@ -392,9 +392,9 @@ Try to do the following. Enable plumed syntax:
 :set ft=plumed
 \endverbatim
 Then add the following line
-\plumedfile
+\verbatim
 DISTANCE
-\endplumedfile
+\endverbatim
 Now, in normal mode, go with the cursor on the `DISTANCE` line and type
 \verbatim
 :PHelp

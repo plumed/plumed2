@@ -61,7 +61,7 @@ protected:
   std::vector< std::pair<ActionWithValue*,unsigned> > distinct_arguments;
   std::vector<unsigned> arg_ends, arg_deriv_starts;
 /// This changes the arg keyword in the pdb file
-  void expandArgKeywordInPDB( PDB& pdb );
+  void expandArgKeywordInPDB( const PDB& pdb );
 /// Create a list of tasks from the argument streams
   void createTasksFromArguments();
 /// Get the total number of input arguments

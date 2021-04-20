@@ -24,7 +24,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 namespace PLMD {
 
 Colvar::Colvar(const ActionOptions&ao):
@@ -41,15 +40,15 @@ void Colvar::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
-void Colvar::requestAtoms(const vector<AtomNumber> & a) {
+void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-//  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
 void Colvar::apply() {
-  vector<Vector>&   f(modifyForces());
+  std::vector<Vector>&   f(modifyForces());
   Tensor&           v(modifyVirial());
   const unsigned    nat=getNumberOfAtoms();
   const unsigned    ncp=getNumberOfComponents();
@@ -67,9 +66,9 @@ void Colvar::apply() {
 
   #pragma omp parallel num_threads(nt)
   {
-    vector<Vector> omp_f(fsz);
+    std::vector<Vector> omp_f(fsz);
     Tensor         omp_v;
-    vector<double> forces(3*nat+9);
+    std::vector<double> forces(3*nat+9);
     #pragma omp for
     for(unsigned i=rank; i<ncp; i+=stride) {
       std::fill(forces.begin(),forces.end(),0);

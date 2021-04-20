@@ -53,13 +53,16 @@ void HistogramBase::createKDEObject( const std::string& lab, const std::string& 
 }
 
 void HistogramBase::readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) { 
-  Keywords keys; HistogramBase::histogramKeywords( keys ); action->readShortcutKeywords( keys, keymap );
+  Keywords keys; keys.add("optional","UPDATE_FROM",""); keys.add("optional","UPDATE_UNTIL","");
+  HistogramBase::histogramKeywords( keys ); action->readShortcutKeywords( keys, keymap );
 }
 
 void HistogramBase::createAveragingObject( const std::string& ilab, const std::string& olab, 
                                            const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
   std::string av_words = "STRIDE=" + keymap.find("STRIDE")->second + " CLEAR=" + keymap.find("CLEAR")->second + " NORMALIZATION=" + keymap.find("NORMALIZATION")->second;
   if( keymap.count("LOGWEIGHTS") ) av_words += " LOGWEIGHTS=" + keymap.find("LOGWEIGHTS")->second;
+  if( keymap.count("UPDATE_UNTIL") ) av_words += " UPDATE_UNTIL=" + keymap.find("UPDATE_UNTIL")->second;
+  if( keymap.count("UPDATE_FROM") ) av_words += " UPDATE_FROM=" + keymap.find("UPDATE_FROM")->second;
   action->readInputLine( olab + ": AVERAGE ARG=" + ilab + " " + av_words );
 }
 

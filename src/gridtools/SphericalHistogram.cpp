@@ -47,7 +47,7 @@ ActionShortcut(ao)
     // Parse the keymap
     std::map<std::string,std::string> keymap; HistogramBase::readHistogramKeywords( keymap, this ); 
     // Make the kde object
-    readInputLine( getShortcutLabel() + "_kde: SPHERICAL_KDE " + convertInputLineToString() ); 
+    readInputLine( getShortcutLabel() + "_kde: SPHERICAL_KDE " + convertInputLineToString(), true ); 
     // And the averaging object
     HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
 }

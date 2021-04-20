@@ -26,12 +26,10 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/AverageBase.h"
-#include "core/SetupMolInfo.h"
+//#include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "setup/SetupReferenceBase.h"
 #include "tools/h36.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -80,11 +78,11 @@ class Print :
   public ActionWithArguments,
   public ActionAtomistic
 {
-  string tstyle;
-  string file;
+  std::string tstyle;
+  std::string file;
   OFile ofile;
-  string description;
-  string fmt;
+  std::string description;
+  std::string fmt;
   bool hasorigin;
   double lenunit;
   std::vector<std::string> names;
@@ -97,8 +95,8 @@ class Print :
   int rotate;
   int rotateCountdown;
   int rotateLast;
-  vector<Value*> rotateArguments;
-  vector<double> lower, upper;
+  std::vector<Value*> rotateArguments;
+  std::vector<double> lower, upper;
 /////////////////////////////////////////
   bool timeseries;
   double dot_connection_cutoff;
@@ -215,8 +213,8 @@ Print::Print(const ActionOptions&ao):
     if(rotate>0) {
       rotateCountdown=rotate;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
-      vector<Value*> a(1,rotateArguments[0]);
-      requestArguments(vector<Value*>(1,rotateArguments[0]),false);
+      std::vector<Value*> a(1,rotateArguments[0]);
+      requestArguments(std::vector<Value*>(1,rotateArguments[0]),false);
       rotateLast=0;
     }
   } else if( tstyle=="xyz" || tstyle=="ndx" ) {
@@ -298,11 +296,11 @@ Print::Print(const ActionOptions&ao):
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
         }
-        std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-        if( moldat.size()==1 ) {
-          names.resize(atoms.size());
-          for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
-        }
+        // std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+        // if( moldat.size()==1 ) {
+        //   names.resize(atoms.size());
+        //   for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
+        // }
         log.printf("  atom positions printed are : ");
       } else if( tstyle=="ndx" ) {
         log.printf("  printing ndx file containing indices of atoms that have symmetry functions in ranges prescribed above \n");
@@ -414,7 +412,7 @@ void Print::prepare() {
       rotateCountdown=rotate;
       rotateLast++;
       rotateLast%=rotateArguments.size();
-      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]), false);
+      requestArguments(std::vector<Value*>(1,rotateArguments[rotateLast]), false);
     }
   }
 /////////////////////////////////////////
