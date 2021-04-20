@@ -1,5 +1,5 @@
 /**
-\page masterclass-21-7 PLUMED Masterclass 21.7: Simulations with multiple replicas
+\page masterclass-21-7 PLUMED Masterclass 21.7: Optimizing PLUMED performances
 
 \authors Giovanni Bussi and Max Bonomi
 \date April 21, 2021
@@ -56,7 +56,7 @@ d: DISTANCE ATOMS=NA,CL
 cn: COORDINATION GROUPA=1 GROUPB=WAT R_0=0.3
 PRINT ARG=d,cn STRIDE=100 FILE=COLVAR
 METAD ARG=d,cn SIGMA=0.05,0.1 HEIGHT=0.1 PACE=10 BIASFACTOR=5
-\end
+\endplumedfile
 
 NOTE: specify number of steps and gromacs command line.
 
