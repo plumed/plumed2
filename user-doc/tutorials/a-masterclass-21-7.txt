@@ -171,9 +171,11 @@ The objectives of this exercise are to:
 2. optimize the performances of well-tempered metadynamics, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
-The users should consult the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/index.html) in order to optimize the CV.
-Suggestion: the \ref COORDINATION CV can be defined using a custom switching function, whose calculation can be made faster by
-using [AsmJit](https://asmjit.com). For more information, have a look [here](https://www.plumed.org/doc-v2.7/user-doc/html/_lepton.html). 
+Suggestions:
+- the users should consult the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/index.html) in order to optimize the CV;
+- the \ref COORDINATION CV can be defined using a custom switching function, whose calculation can be made faster by
+using [AsmJit](https://asmjit.com). For more information, have a look [here](https://www.plumed.org/doc-v2.7/user-doc/html/_lepton.html); 
+- try to apply the metadynamics bias every 2 or 4 steps using the \ref STRIDE option on the \ref METAD line.
 
 Please keep in mind that:
 - SMOG is significantly less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
