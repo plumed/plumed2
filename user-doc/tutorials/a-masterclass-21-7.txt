@@ -120,17 +120,18 @@ which is stabilized by the N-terminal domain of the RfaH virulence factor (see F
 The system is simulated using a simplified, structure-based potential, called [SMOG](https://smog-server.org). 
 The SMOG energy function has been designed to have two local minima that correspond to the β-barrel and α-helical states of RfaH-CTD.
 To achieve this goal, the energy function promotes native contacts, i.e. interactions that are present in the native structure(s).
-For these types of force fields, a CV that is correlated with the energy of the system has been shown to be good to enhance sampling.
-An example of good CV is the total number of native contacts. These types of CVs are often computationally expensive to calculate
-at every step of the simulation. In this exercise, the user will learn how to write and optimize these types of CVs. 
+For these types of force fields, a function of the coordinates that is correlated with the energy of the system has been shown to be a
+good CV for enhanced-sampling simulations.
+An example is the total number of native contacts. These types of CVs are often computationally expensive to calculate
+at every step of the simulation. In this exercise, we will learn how to write and optimize these types of CVs.
 
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
 - two PDB files of RfaH-CTD in the β-barrel (stateA.pdb) and α-helical (stateB.pdb) states;
 - a `topol.tpr` file, which is needed to perform a MD simulation of this system with GROMACS;
 - a template PLUMED input file to perform a metadynamics simulation using the total number of native contacts as CV.
-  These contacts are defined based only on the β-barrel state, which is the most populated in the conditions we are simulating.
+  These contacts are defined using only the β-barrel conformation, which is the most populated state in the conditions we are simulating.
 
-The PLUMED input file looks as follows:
+The provided PLUMED input file looks as follows:
 
 \plumedfile
 # reconstruct molecule
