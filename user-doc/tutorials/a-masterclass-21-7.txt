@@ -133,7 +133,14 @@ In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, yo
 The user can start from the following template PLUMED input file:
 
 \plumedfile
-XXX
+# define a list of N distances between those CA atoms that are closer
+# than 0.8 nm in the reference PDB file
+d1: DISTANCE ATOMS=__FILL__
+d2: DISTANCE ATOMS=__FILL__
+...
+dN: DISTANCE ATOMS=__FILL__
+
+
 \endplumedfile
 
 Please keep in mind that:
