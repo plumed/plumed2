@@ -157,7 +157,7 @@ metad: METAD ARG=cv ...
    # equal to 1.2 kJ/mol and bias factor equal to 60
    PACE=500 HEIGHT=1.2 BIASFACTOR=60 
    # Gaussian width (sigma) based on the CV fluctuations in unbiased run 
-   SIGMA=15.0
+   SIGMA=10.0
    # Gaussians will be written to file
    FILE=HILLS
 ...
@@ -170,6 +170,10 @@ The objectives of this exercise are to:
 1. optimize the distance-based CV provided in the template PLUMED input file;
 2. optimize the performances of well-tempered metadynamics, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
+
+The users should consult the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/index.html) in order to optimize the CV.
+Suggestion: the \ref COORDINATION CV can be defined using a custom switching function, whose calculation can be made faster by
+using [AsmJit](https://asmjit.com). For more information, have a look [here](https://www.plumed.org/doc-v2.7/user-doc/html/_lepton.html). 
 
 Please keep in mind that:
 - SMOG is significantly less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
