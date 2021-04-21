@@ -184,7 +184,6 @@ using [AsmJit](https://asmjit.com). For more information, have a look [here](htt
 Please keep in mind that:
 - SMOG is significantly less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
   so allocate enough time to complete this exercise;
-- due to the nature of the force field, we are simulating at an unphysical temperature of 60K. Be ready to test large values of the `BIASFACTOR`.
 - due to the special nature of the force field, please execute GROMACS using the following command: `gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck`.
   You can adjust the number of CPU cores you want to use (here 4, OpenMP parallelization), based on the available resources. The system is not
 particularly big, therefore using a large number of cores might be inefficient.
