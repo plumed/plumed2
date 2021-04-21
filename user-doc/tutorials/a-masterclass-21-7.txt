@@ -141,20 +141,18 @@ rmsd_B: RMSD REFERENCE=stateB.pdb TYPE=OPTIMAL
 # than 0.6 nm in the reference PDB file (stateA.pdb, β-barrel state)
 d1: DISTANCE ATOMS=2,11
 d2: DISTANCE ATOMS=2,103
-...
 d93: DISTANCE ATOMS=315,324
 
 # switching functions to define a contact from the distance between two atoms
 c1: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d1 PERIODIC=NO
 c2: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d2 PERIODIC=NO 
-...
 c93: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d93 PERIODIC=NO
 
 # sum of switching functions
 cv: COMBINE ARG=c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c40,c41,c42,c43,c44,c45,c46,c47,c48,c49,c50,c51,c52,c53,c54,c55,c56,c57,c58,c59,c60,c61,c62,c63,c64,c65,c66,c67,c68,c69,c70,c71,c72,c73,c74,c75,c76,c77,c78,c79,c80,c81,c82,c83,c84,c85,c86,c87,c88,c89,c90,c91,c92,c93 PERIODIC=NO
 
 # metadynamics parameters
-metad: METAD ARG=cv
+metad: METAD ARG=cv ...
    # Deposit a Gaussian every 500 time steps, with initial height 
    # equal to 1.2 kJ/mol and bias factor equal to 60
    PACE=500 HEIGHT=1.2 BIASFACTOR=60 
