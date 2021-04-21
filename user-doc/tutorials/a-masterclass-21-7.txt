@@ -123,7 +123,7 @@ To achieve this goal, the energy function promotes native contacts, i.e. residue
 
 The objective of this exercises are to:
 1. design a distance-based CV able to quantify the number of native contacts in the β-barrel state;
-2. optimize the performance of a well-tempered metadynamics simulation that uses the CV defined above;
+2. optimize the performance of a well-tempered metadynamics simulation that uses the CV defined above, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
