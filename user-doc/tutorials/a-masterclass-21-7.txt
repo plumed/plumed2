@@ -119,29 +119,53 @@ This part of the system, which we refer to as RfaH-CTD, undergoes a dramatic con
 which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-4-RfaH-CTD-fig). 
 The system is simulated using a simplified, structure-based potential, called [SMOG](https://smog-server.org). 
 The SMOG energy function has been designed to have two local minima that correspond to the β-barrel and α-helical states of RfaH-CTD.
-To achieve this goal, the energy function promotes native contacts, i.e. residues interactions that are present in the reference PDB(s). 
-
-The objective of this exercises are to:
-1. design a distance-based CV able to quantify the number of native contacts in the β-barrel state;
-2. optimize the performance of a well-tempered metadynamics simulation that uses the CV defined above, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
-3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
+To achieve this goal, the energy function promotes native contacts, i.e. interactions that are present in the native structure(s).
+For these types of force fields, a CV that is correlated with the energy of the system has been shown to be good to enhance sampling.
+An example of good CV is the total number of native contacts. These types of CVs are often computationally expensive to calculate
+at every step of the simulation. In this exercise, the user will learn how to write and optimize these types of CVs. 
 
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
 - two PDB files of RfaH-CTD in the α-helical and β-barrel states;
-- a `topol.tpr` file, which is needed to perform a MD simulation of this sytem with GROMACS.
-
-The user can start from the following template PLUMED input file:
+- a `topol.tpr` file, which is needed to perform a MD simulation of this sytem with GROMACS;
+- a template PLUMED input file to perform a metadynamic simulations using the total number of native contacts as CV.
+  These contacts are defined based only on the β-barrel state, which is the most populated in the conditions we are simulating.
 
 \plumedfile
-# define a list of N distances between those CA atoms that are closer
-# than 0.8 nm in the reference PDB file
-d1: DISTANCE ATOMS=__FILL__
-d2: DISTANCE ATOMS=__FILL__
+# list of N distances between CA atoms that are closer
+# than 0.8 nm in the reference PDB file (XXX, β-barrel state)
+d1: DISTANCE ATOMS=
+d2: DISTANCE ATOMS=
 ...
-dN: DISTANCE ATOMS=__FILL__
+dN: DISTANCE ATOMS=
 
+# switching functions to define a contact from the distance between two atoms
+c1: CUSTOM FUNC= ARG=
+c2:
+...
+cN:
 
+# sum of the switching functions
+cv: 
+
+# metadynamics parameters
+metad: METAD ARG=cv
+   # Deposit a Gaussian every 500 time steps, with initial height 
+   # equal to 1.2 kJ/mol and bias factor equal to 60
+   PACE=500 HEIGHT=1.2 BIASFACTOR=60 
+   # Gaussian width (sigma) based on the CV fluctuations in unbiased run 
+   SIGMA=XXXX
+   # Gaussians will be written to file
+   FILE=HILLS
+...
+
+# print useful stuff
+PRINT ARG=cv,metad.bias STRIDE=500 FILE=COLVAR
 \endplumedfile
+
+The objective of this exercise are to:
+1. optimize the distance-based CV provided in the template PLUMED input file;
+2. optimize the performance of a well-tempered metadynamics simulation that uses the CV defined above, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
+3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
 Please keep in mind that:
 - SMOG is significantly less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
