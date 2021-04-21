@@ -125,27 +125,33 @@ An example of good CV is the total number of native contacts. These types of CVs
 at every step of the simulation. In this exercise, the user will learn how to write and optimize these types of CVs. 
 
 In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
-- two PDB files of RfaH-CTD in the α-helical and β-barrel states;
-- a `topol.tpr` file, which is needed to perform a MD simulation of this sytem with GROMACS;
-- a template PLUMED input file to perform a metadynamic simulations using the total number of native contacts as CV.
+- two PDB files of RfaH-CTD in the β-barrel (stateA.pdb) and α-helical (stateB.pdb) states;
+- a `topol.tpr` file, which is needed to perform a MD simulation of this system with GROMACS;
+- a template PLUMED input file to perform a metadynamics simulation using the total number of native contacts as CV.
   These contacts are defined based only on the β-barrel state, which is the most populated in the conditions we are simulating.
 
+The PLUMED input file looks as follows:
+
 \plumedfile
-# list of N distances between CA atoms that are closer
-# than 0.8 nm in the reference PDB file (XXX, β-barrel state)
-d1: DISTANCE ATOMS=
-d2: DISTANCE ATOMS=
+# CA-RMSDs from the two reference conformations
+rmsd_A: RMSD REFERENCE=stateA.pdb TYPE=OPTIMAL
+rmsd_B: RMSD REFERENCE=stateB.pdb TYPE=OPTIMAL
+
+# list of distances between CA atoms that are closer
+# than 0.6 nm in the reference PDB file (stateA.pdb, β-barrel state)
+d1: DISTANCE ATOMS=2,11
+d2: DISTANCE ATOMS=2,103
 ...
-dN: DISTANCE ATOMS=
+d93: DISTANCE ATOMS=315,324
 
 # switching functions to define a contact from the distance between two atoms
-c1: CUSTOM FUNC= ARG=
-c2:
+c1: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d1 PERIODIC=NO
+c2: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d2 PERIODIC=NO 
 ...
-cN:
+c93: CUSTOM FUNC=((1.0-(x/0.6)^8)/(1.0-(x/0.6)^12)) ARG=d93 PERIODIC=NO
 
-# sum of the switching functions
-cv: 
+# sum of switching functions
+cv: COMBINE ARG=c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c40,c41,c42,c43,c44,c45,c46,c47,c48,c49,c50,c51,c52,c53,c54,c55,c56,c57,c58,c59,c60,c61,c62,c63,c64,c65,c66,c67,c68,c69,c70,c71,c72,c73,c74,c75,c76,c77,c78,c79,c80,c81,c82,c83,c84,c85,c86,c87,c88,c89,c90,c91,c92,c93 PERIODIC=NO
 
 # metadynamics parameters
 metad: METAD ARG=cv
@@ -153,18 +159,18 @@ metad: METAD ARG=cv
    # equal to 1.2 kJ/mol and bias factor equal to 60
    PACE=500 HEIGHT=1.2 BIASFACTOR=60 
    # Gaussian width (sigma) based on the CV fluctuations in unbiased run 
-   SIGMA=XXXX
+   SIGMA=3.0
    # Gaussians will be written to file
    FILE=HILLS
 ...
 
 # print useful stuff
-PRINT ARG=cv,metad.bias STRIDE=500 FILE=COLVAR
+PRINT ARG=cv,rmsd_A,rmsd_B,metad.bias STRIDE=500 FILE=COLVAR
 \endplumedfile
 
-The objective of this exercise are to:
+The objectives of this exercise are to:
 1. optimize the distance-based CV provided in the template PLUMED input file;
-2. optimize the performance of a well-tempered metadynamics simulation that uses the CV defined above, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
+2. optimize the performances of well-tempered metadynamics, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
 Please keep in mind that:
