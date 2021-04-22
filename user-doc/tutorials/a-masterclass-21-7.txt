@@ -6,13 +6,16 @@
 
 \section masterclass-21-7-aims Aims
 
-In this Masterclass, we will discuss 
+In this Masterclass, we will discuss how to monitor and optimize the performances of a PLUMED-enhanced MD simulation. 
 
 \section masterclass-21-7-lo Objectives
 
 Once you have completed this Masterclass you will be able to:
 
-- xx
+- measure the performances of a PLUMED-enhanced simulation using the \ref DEBUG action;
+- optimize a metadynamics simulation;
+- optimize GROMACS parallelization;
+- define complex CVs in the PLUMED input file in a computationally efficient manner.
  
 \section masterclass-21-7-install Setting up PLUMED
 
