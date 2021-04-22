@@ -154,13 +154,13 @@ rmsd_B: RMSD REFERENCE=stateB.pdb TYPE=OPTIMAL NOPBC
 # than 0.6 nm in the reference PDB file (stateA.pdb, β-barrel state)
 d1: DISTANCE ATOMS=1,110 NOPBC
 d2: DISTANCE ATOMS=1,115 NOPBC
-# ...
+#
 d379: DISTANCE ATOMS=239,265 NOPBC
 
 # list of 379 switching functions to define a contact from the distance between two atoms
 c1: CUSTOM FUNC=1-erf(x^4) ARG=d1 PERIODIC=NO
 c2: CUSTOM FUNC=1-erf(x^4) ARG=d2 PERIODIC=NO
-# ...
+# 
 c379: CUSTOM FUNC=1-erf(x^4) ARG=d379 PERIODIC=NO
 
 # sum of switching functions = total number of contacts
