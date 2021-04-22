@@ -117,7 +117,8 @@ to make sure that the statistical accuracy is comparable.
 
 \subsection masterclass-21-7-ex-2 Exercise 2: Folding of the C-terminal domain (CTD) of the RfaH virulence factor
 
-In this exercise, we will work with the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_ introduced in \ref masterclass-21-4-ex-6.
+In this exercise, we will work with the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_ introduced in 
+\ref masterclass-21-4 (see \ref masterclass-21-4-ex-6).
 This part of the system, which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from β-barrel to α-helical,
 which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-7-RfaH-CTD-fig).
 
