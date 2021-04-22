@@ -11,7 +11,6 @@ In this Masterclass, we will discuss how to monitor and optimize the performance
 \section masterclass-21-7-lo Objectives
 
 Once you have completed this Masterclass you will be able to:
-
 - measure the performances of a PLUMED-enhanced simulation using the \ref DEBUG action;
 - optimize a metadynamics simulation;
 - optimize GROMACS parallelization;
@@ -43,9 +42,89 @@ It is thus instructive to test them on different architectures, or with differen
 
 \subsection masterclass-21-7-ex-intro Measuring performance
 
-NOTE: general introduction with an example showing how to see ns/day in GROMACS, then mention to \ref DEBUG DETAILED_TIMERS
+In these exercises you will have to maximise the performance of your simulation. When using GROMACS, the common
+way to report performances is to check at how many ns/day the simulation can produce.
+At the end of the log file you should find lines like these ones
+\verbatim
+               Core t (s)   Wall t (s)        (%)
+       Time:      141.898       11.825     1200.0
+                 (ns/day)    (hour/ns)
+Performance:       14.628        1.641
+\endverbatim
+Here, the higher the ns/day the faster your simulation will be.
+Another important information it the wallclock time, that indicates how many seconds
+elapsed since the start of your simulation.
+If you then run the same input file using PLUMED as well you will instead see something like this:
+\verbatim
+               Core t (s)   Wall t (s)        (%)
+       Time:      170.519       14.210     1200.0
+                 (ns/day)    (hour/ns)
+Performance:       12.173        1.972
+Finished mdrun on rank 0 Thu Apr 22 16:37:32 2021
+
+PLUMED:                                               Cycles        Total      Average      Minimum      Maximum
+PLUMED:                                                    1     2.009397     2.009397     2.009397     2.009397
+PLUMED: 1 Prepare dependencies                          1001     0.004042     0.000004     0.000003     0.000013
+PLUMED: 2 Sharing data                                  1001     0.151432     0.000151     0.000032     0.019904
+PLUMED: 3 Waiting for data                              1001     0.021681     0.000022     0.000005     0.013026
+PLUMED: 4 Calculating (forward loop)                    1001     1.392920     0.001392     0.000349     0.032230
+PLUMED: 5 Applying (backward loop)                      1001     0.303819     0.000304     0.000089     0.025517
+PLUMED: 6 Update                                        1001     0.003255     0.000003     0.000002     0.000175 
+\endverbatim
+Notice that:
+- The performance has decreased.
+- The wallclock time has increased.
+- PLUMED is reporting some information about the time spent using it.
+
+Notice that the total time spent using PLUMED is approximately equal to the increment in the wallclock time.
+This might be different when using a GPU (and indeed the increment in the wallclock time should be smaller).
+This extra time measures the cost of using PLUMED. The goal of this Masterclass is to understand how to
+decrease this extra time without impacting the result of your simulation.
+
+Notice that PLUMED gives a breakdown of the time spent. Some rows correspond to communication, and might become
+important if you run with a lot of MPI processes. Usually, most of the time is spent in the forward loop, where
+collective variables are calculated.
+
+You can obtain a more detailed breakdown adding to your input this line:
+\plumedfile
+DEBUG DETAILED_TIMERS
+\endplumedfile
+
+The tail of the log will then look like this:
+\verbatim
+PLUMED:                                               Cycles        Total      Average      Minimum      Maximum
+PLUMED:                                                    1     2.055374     2.055374     2.055374     2.055374
+PLUMED: 1 Prepare dependencies                          1001     0.004168     0.000004     0.000003     0.000023
+PLUMED: 2 Sharing data                                  1001     0.118547     0.000118     0.000033     0.016011
+PLUMED: 3 Waiting for data                              1001     0.008541     0.000009     0.000005     0.000035
+PLUMED: 4 Calculating (forward loop)                    1001     1.449592     0.001448     0.000375     0.034236
+PLUMED: 4A 0 @0                                         1001     0.004118     0.000004     0.000002     0.000134
+PLUMED: 4A 4 d                                          1001     0.293253     0.000293     0.000011     0.023584
+PLUMED: 4A 5 cn                                         1001     0.810816     0.000810     0.000308     0.034087
+PLUMED: 4A 7 @7                                           11     0.000045     0.000004     0.000003     0.000008
+PLUMED: 4A 8 @8                                         1001     0.225797     0.000226     0.000016     0.021056
+PLUMED: 4A 9 @9                                         1001     0.066718     0.000067     0.000010     0.016033
+PLUMED: 5 Applying (backward loop)                      1001     0.349111     0.000349     0.000120     0.025091
+PLUMED: 5A 0 @9                                         1001     0.003697     0.000004     0.000003     0.000015
+PLUMED: 5A 1 @8                                         1001     0.002814     0.000003     0.000002     0.000012
+PLUMED: 5A 2 @7                                           11     0.000023     0.000002     0.000002     0.000002 
+PLUMED: 5A 4 cn                                         1001     0.102383     0.000102     0.000063     0.013438
+PLUMED: 5A 5 d                                          1001     0.008055     0.000008     0.000006     0.000148
+PLUMED: 5A 9 @0                                         1001     0.002417     0.000002     0.000002     0.000014
+PLUMED: 5B Update forces                                1001     0.191250     0.000191     0.000020     0.023919
+PLUMED: 6 Update                                        1001     0.003271     0.000003     0.000002     0.000166
+\endverbatim
+
+Notice that for both the forward and the backward loop you are shown with a breakdown of the time required for each
+of the actions included in the input file. You should recognize the name of the actions that you defined, whereas
+unnamed actions are referred to with a generic `@`-number that corresponds to their position in the input file.
+From this detailed log you can also appreciate how often each action has been performed.
+PLUMED tries to optimize this, e.g., only computing variables when they are needed.
+This breakdown is very useful to know where you should direct your effort.
 
 \subsection masterclass-21-7-ex-1 Exercise 1: Dissociation of NaCl in water
+
+As a first test system we will consider a single Na Cl pair in a water box.
 
 NOTE: Explain the system and introduce the exercise and add a figure with the result.
 
