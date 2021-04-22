@@ -33,6 +33,7 @@
 #include "tools/File.h"
 #include <ctime>
 #include <numeric>
+#include <iostream>
 #if defined(__PLUMED_HAS_GETCWD)
 #include <unistd.h>
 #endif
@@ -253,6 +254,12 @@ private:
   std::vector<std::unique_ptr<GridBase>> BiasGrids_;
   std::vector<std::unique_ptr<OFile>> gridfiles_;
   int wgridstride_;
+  // Partitioned Families
+  int pf_n_; // initialize number of partitioned families
+  std::vector<int> pfs_; //std::vector length of arguments that holds which pf# each cv belongs in
+  std::vector<int> pflen_; // std::vector length of pf_n which stores how many cvs belong in each family
+  std::vector<Value*> pfhold_; // std::vector length of pf_n which stores a pointer to the first argument fed to each family
+  bool do_pf_; // if partitioned families are enabled
   // multiple walkers
   int mw_n_;
   std::string mw_dir_;
@@ -325,6 +332,8 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.add("optional","PF_N", "number of partitioned families"); // read in number of PF CF
+  keys.add("numbered","PF", "List of CVs in PF"); // List of CVs in a family CF
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
@@ -352,8 +361,18 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   wgridstride_(0),
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi_(false), mpi_nw_(0),
+  pf_n_(0),
   do_select_(false)
 {
+
+//  volatile int i = 0;
+//  char hostname[256];
+//  std::cerr<<"PID ready for attach" << getpid() << std::endl;
+//  while (0 == i) {
+//
+//  };
+
+
   // parse the flexible hills
   std::string adaptiveoption;
   adaptiveoption="NONE";
@@ -372,11 +391,54 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   parse("FMT",fmt_);
 
+  // Partitioned Families CF
+  parse("PF_N", pf_n_);
+
+  // If we didn't get a PF arg, all arguments are partitioned IL
+  if (pf_n_ == 0) {
+    pf_n_ = getNumberOfArguments();
+    do_pf_ = false;
+  } else {
+    do_pf_ = true;
+  }
+
+  pfs_.resize(getNumberOfArguments());
+  pflen_.resize(pf_n_);
+  pfhold_.resize(pf_n_);
+  for(unsigned i=0; i < pf_n_; i++) {
+    // If we're doing pf, parse PF args and put them in the correct families
+    if (do_pf_) {
+      std::vector<Value*> familyargs;
+      parseArgumentList("PF", i + 1, familyargs);
+      log.printf("Identified Partitioned Families");
+      pflen_[i]=familyargs.size(); //store number of cvs for each family.
+      for(unsigned j=0; j < familyargs.size(); j++) {
+        log.printf(" %s", familyargs[j]->getName().c_str());
+        for(unsigned ru=0; ru<getNumberOfArguments(); ru++){
+          if (familyargs[j]->getName().c_str() == getPntrToArgument(ru)->getName()){
+            pfs_[ru]= i + 1; //store the pf# for each cv
+            if(pfhold_[i] == nullptr){ // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
+              pfhold_[i]=getPntrToArgument(ru);
+            }
+            log.printf(" %d", pfs_[ru]);
+          }
+        }
+        log.printf("\n");
+      }
+    // Otherwise, each argument is its own family
+    } else {
+      pfhold_[i] = getPntrToArgument(i);
+      pfs_[i] = i + 1;
+      pflen_[i] = 1;
+    }
+
+  }
+
   // parse the sigma
   parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none) {
     // if you use normal sigma you need one sigma per argument
-    if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
+    if( sigma0_.size()!=pf_n_ ) error("number of arguments/PF does not match number of SIGMA parameters");
   } else {
     // if you use flexible hills you need one sigma
     if(sigma0_.size()!=1) {
@@ -390,22 +452,22 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
     // here evtl parse the sigma min and max values
     parseVector("SIGMA_MIN",sigma0min_);
-    if(sigma0min_.size()>0 && sigma0min_.size()!=getNumberOfArguments()) {
-      error("the number of SIGMA_MIN values be the same of the number of the arguments");
+    if(sigma0min_.size()>0 && sigma0min_.size()!=pf_n_) {
+      error("the number of SIGMA_MIN values be the same of the number of the arguments/PF");
     } else if(sigma0min_.size()==0) {
-      sigma0min_.resize(getNumberOfArguments());
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0min_[i]=-1.;}
+      sigma0min_.resize(pf_n_);
+      for(unsigned i=0; i<pf_n_; i++) {sigma0min_[i]=-1.;}
     }
 
     parseVector("SIGMA_MAX",sigma0max_);
-    if(sigma0max_.size()>0 && sigma0max_.size()!=getNumberOfArguments()) {
-      error("the number of SIGMA_MAX values be the same of the number of the arguments");
+    if(sigma0max_.size()>0 && sigma0max_.size()!=pf_n_) {
+      error("the number of SIGMA_MAX values be the same of the number of the arguments/PF");
     } else if(sigma0max_.size()==0) {
-      sigma0max_.resize(getNumberOfArguments());
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
+      sigma0max_.resize(pf_n_);
+      for(unsigned i=0; i<pf_n_; i++) {sigma0max_[i]=-1.;}
     }
 
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    for(unsigned i=0; i<pf_n_; i++) {
       std::vector<double> tmp_smin, tmp_smax;
       tmp_smin.resize(1,sigma0min_[i]);
       tmp_smax.resize(1,sigma0max_[i]);
@@ -418,11 +480,21 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parse("PACE",stride_);
   if(stride_<=0) error("frequency for hill addition is nonsensical");
 
+
   parseVector("FILE",hillsfname_);
   if(hillsfname_.size()==0) {
-    for(unsigned i=0; i<getNumberOfArguments(); i++) hillsfname_.push_back("HILLS."+getPntrToArgument(i)->getName());
+    for(unsigned i=0; i< pf_n_; i++) {
+      std::string name;
+      if (do_pf_) {
+        name = "HILLS.PF"+std::to_string(i + 1); // number of hills files corresponds to number of pf_n now. CF
+      } else {
+       name = "HILLS."+getPntrToArgument(i)->getName();
+      }
+      hillsfname_.push_back(name);
+
+    }
   }
-  if( hillsfname_.size()!=getNumberOfArguments() ) {
+  if( hillsfname_.size()!=pf_n_ ) {
     error("number of FILE arguments does not match number of HILLS files");
   }
 
@@ -448,6 +520,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
   }
 
+
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
@@ -466,7 +539,15 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
   if(gridfilenames_.size()==0 && wgridstride_ > 0) {
-    for(unsigned i=0; i<getNumberOfArguments(); i++) gridfilenames_.push_back("GRID."+getPntrToArgument(i)->getName());
+    for(unsigned i=0; i<pf_n_; i++) {
+      std::string name;
+      if (do_pf_) {
+        name = "GRID.PF" + std::to_string(i + 1);
+      } else {
+        name = "GRID."+getPntrToArgument(i)->getName();
+      }
+      gridfilenames_.push_back(name);
+    }
   }
   if(gridfilenames_.size() > 0 && hillsfname_.size() > 0 && gridfilenames_.size() != hillsfname_.size())
     error("number of GRID_WFILES arguments does not match number of HILLS files");
@@ -476,18 +557,18 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("GRID_RFILES",gridreadfilenames_);
 
   // Grid Stuff
-  std::vector<std::string> gmin(getNumberOfArguments());
+  std::vector<std::string> gmin(pf_n_);
   parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=getNumberOfArguments() && gmin.size()!=0) error("not enough values for GRID_MIN");
-  std::vector<std::string> gmax(getNumberOfArguments());
+  if(gmin.size()!=pf_n_ && gmin.size()!=0) error("not enough values for GRID_MIN");
+  std::vector<std::string> gmax(pf_n_);
   parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) error("not enough values for GRID_MAX");
-  std::vector<unsigned> gbin(getNumberOfArguments());
+  if(gmax.size()!=pf_n_ && gmax.size()!=0) error("not enough values for GRID_MAX");
+  std::vector<unsigned> gbin(pf_n_);
   std::vector<double>   gspacing;
   parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
+  if(gbin.size()!=pf_n_ && gbin.size()!=0) error("not enough values for GRID_BIN");
   parseVector("GRID_SPACING",gspacing);
-  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
+  if(gspacing.size()!=pf_n_ && gspacing.size()!=0) error("not enough values for GRID_SPACING");
   if(gmin.size()!=gmax.size()) error("GRID_MAX and GRID_MIN should be either present or absent");
   if(gspacing.size()!=0 && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN and GRID_MAX should be present");
   if(gbin.size()!=0     && gmin.size()==0) error("If GRID_BIN is present also GRID_MIN and GRID_MAX should be present");
@@ -495,14 +576,14 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     if(gbin.size()==0 && gspacing.size()==0) {
       if(adaptive_==FlexibleBin::none) {
         log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
-        plumed_assert(sigma0_.size()==getNumberOfArguments());
-        gspacing.resize(getNumberOfArguments());
+        plumed_assert(sigma0_.size()==pf_n_);
+        gspacing.resize(pf_n_);
         for(unsigned i=0; i<gspacing.size(); i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
         for(unsigned i=0; i<sigma0min_.size(); i++) if(sigma0min_[i]<=0) error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
         log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
-        gspacing.resize(getNumberOfArguments());
+        gspacing.resize(pf_n_);
         for(unsigned i=0; i<gspacing.size(); i++) gspacing[i]=0.2*sigma0min_[i];
       }
     } else if(gspacing.size()!=0 && gbin.size()==0) {
@@ -511,8 +592,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       log<<"  You specified both GRID_BIN and GRID_SPACING\n";
       log<<"  The more conservative (highest) number of bins will be used for each variable\n";
     }
-    if(gbin.size()==0) gbin.assign(getNumberOfArguments(),1);
-    if(gspacing.size()!=0) for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    if(gbin.size()==0) gbin.assign(pf_n_,1);
+    if(gspacing.size()!=0) for(unsigned i=0; i<pf_n_; i++) {
         double a,b;
         Tools::convert(gmin[i],a);
         Tools::convert(gmax[i],b);
@@ -530,16 +611,16 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if(!grid_&&gridfilenames_.size() > 0) error("To write a grid you need first to define it!");
   if(!grid_&&gridreadfilenames_.size() > 0) error("To read a grid you need first to define it!");
 
-  doInt_.resize(getNumberOfArguments(),false);
+  doInt_.resize(pf_n_,false);
   // Interval keyword
   parseVector("INTERVAL_MIN",lowI_);
   parseVector("INTERVAL_MAX",uppI_);
   // various checks
   if(lowI_.size()!=uppI_.size()) error("both a lower and an upper limits must be provided with INTERVAL");
-  if(lowI_.size()!=0 && lowI_.size()!=getNumberOfArguments()) error("check number of argument of INTERVAL");
+  if(lowI_.size()!=0 && lowI_.size()!=pf_n_) error("check number of argument of INTERVAL");
   for(unsigned i=0; i<lowI_.size(); ++i) {
     if(uppI_[i]<lowI_[i]) error("The Upper limit must be greater than the Lower limit!");
-    if(getPntrToArgument(i)->isPeriodic()) warning("INTERVAL is not used for periodic variables");
+    if(pfhold_[i]->isPeriodic()) warning("INTERVAL is not used for periodic variables");
     else doInt_[i]=true;
   }
 
@@ -622,7 +703,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
 
   // initializing vector of hills
-  hills_.resize(getNumberOfArguments());
+  hills_.resize(pf_n_);
 
   // restart from external grid
   bool restartedFromGrid=false;
@@ -630,11 +711,12 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   // initializing and checking grid
   if(grid_) {
     // check for mesh and sigma size
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    for(unsigned i=0; i<pf_n_; i++) {
       double a,b;
-      Tools::convert(gmin[i],a);
-      Tools::convert(gmax[i],b);
-      double mesh=(b-a)/((double)gbin[i]);
+      int family = pfs_[i] - 1; // point to families instead of arguments IL
+      Tools::convert(gmin[family],a);
+      Tools::convert(gmax[family],b);
+      double mesh=(b-a)/((double)gbin[family]);
       if(adaptive_==FlexibleBin::none) {
         if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a PBMETAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
       } else {
@@ -642,9 +724,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       }
     }
     std::string funcl=getLabel() + ".bias";
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    for(unsigned i=0; i<pf_n_; ++i) {
       std::vector<Value*> args(1);
-      args[0] = getPntrToArgument(i);
+      args[0] = pfhold_[i];  //Use the arguments in pf_hold as the dummy pointer to interacting with gridfiles. CF
       std::vector<std::string> gmin_t(1);
       std::vector<std::string> gmax_t(1);
       std::vector<unsigned>    gbin_t(1);
@@ -666,7 +748,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
         }
-        if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
+        if(pfhold_[i]->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
           error("periodicity mismatch between arguments and input bias");
         }
         log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
@@ -686,8 +768,11 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
 
 
+
 // creating vector of ifile* for hills reading
 // open all files at the beginning and read Gaussians if restarting
+
+// Not sure if this will work, but I think it should. IL
   for(int j=0; j<mw_n_; ++j) {
     for(unsigned i=0; i<hillsfname_.size(); ++i) {
       unsigned k=j*hillsfname_.size()+i;
@@ -746,6 +831,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       ofile->enforceSuffix("");
     }
     if(mw_n_>1) ofile->enforceSuffix("");
+    std::cout << "RANK NUMBER " << mw_id_ << " WRITING " << mw_id_*hillsfname_.size()+i << std::endl;
     ofile->open(ifilesnames_[mw_id_*hillsfname_.size()+i]);
     if(fmt_.length()>0) ofile->fmtField(fmt_);
     ofile->addConstantField("multivariate");
@@ -756,7 +842,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     }
     ofile->setHeavyFlush();
     // output periodicities of variables
-    ofile->setupPrintValue( getPntrToArgument(i) );
+    ofile->setupPrintValue( pfhold_[i] );  //assuming cvs in the same family have the same periodicity and boundaries.
     // push back
     hillsOfiles_.emplace_back(std::move(ofile));
   }
@@ -793,6 +879,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
                                           "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   log<<"\n";
+
+
 }
 
 void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
@@ -802,33 +890,35 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
   double height;
   int nhills=0;
   bool multivariate=false;
+  int family=pfs_[iarg] - 1;
 
   std::vector<Value> tmpvalues;
-  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) );
+  tmpvalues.push_back( Value( this, pfhold_[family]->getName(), false ) );
 
   while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)) {
     ;
     nhills++;
     if(welltemp_) {height*=(biasf_-1.0)/biasf_;}
-    addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
+    addGaussian(family, Gaussian(center,sigma,height,multivariate));
   }
   log.printf("      %d Gaussians read\n",nhills);
 }
 
 void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
 {
+  int family=pfs_[iarg] - 1;
   ofile->printField("time",getTimeStep()*getStep());
-  ofile->printField(getPntrToArgument(iarg),hill.center[0]);
+  ofile->printField(pfhold_[family],hill.center[0]);
 
   ofile->printField("kerneltype","stretched-gaussian");
-  if(hill.multivariate) {
+  if(hill.multivariate) {     // LEFT OUT OF PF IL
     ofile->printField("multivariate","true");
     double lower = std::sqrt(1./hill.sigma[0]);
-    ofile->printField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
-                      getPntrToArgument(iarg)->getName(),lower);
+    ofile->printField("sigma_"+pfhold_[family]->getName()+"_"+
+                      pfhold_[family]->getName(),lower);
   } else {
     ofile->printField("multivariate","false");
-    ofile->printField("sigma_"+getPntrToArgument(iarg)->getName(),hill.sigma[0]);
+    ofile->printField("sigma_"+pfhold_[family]->getName(),hill.sigma[0]);
   }
   double height=hill.height;
   if(welltemp_) height *= biasf_/(biasf_-1.0);
@@ -904,21 +994,22 @@ std::vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian&
 double PBMetaD::getBiasAndDerivatives(unsigned iarg, const std::vector<double>& cv, double* der)
 {
   double bias=0.0;
+  int family = pfs_[iarg] - 1;
   if(!grid_) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
-    for(unsigned i=rank; i<hills_[iarg].size(); i+=stride) {
-      bias += evaluateGaussian(iarg,cv,hills_[iarg][i],der);
+    for(unsigned i=rank; i<hills_[family].size(); i+=stride) {
+      bias += evaluateGaussian(iarg,cv,hills_[family][i],der);
     }
     comm.Sum(bias);
     if(der) comm.Sum(der,1);
   } else {
     if(der) {
       std::vector<double> vder(1);
-      bias = BiasGrids_[iarg]->getValueAndDerivatives(cv,vder);
+      bias = BiasGrids_[family]->getValueAndDerivatives(cv,vder);
       der[0] = vder[0];
     } else {
-      bias = BiasGrids_[iarg]->getValue(cv);
+      bias = BiasGrids_[family]->getValue(cv);
     }
   }
 
@@ -1040,8 +1131,10 @@ void PBMetaD::update()
     double norm = 0.0;
     double bmin = 1.0e+19;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin_[i].getInverseMatrix(i)[0];
-      else thissigma[i]=sigma0_[i];
+      int family=pfs_[i] - 1;
+      // get flex/sigmas for each family and assign them to this args sigma IL
+      if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin_[family].getInverseMatrix(i)[0];
+      else thissigma[i]=sigma0_[family];
       cv[i]     = getArgument(i);
       cv_tmp[0] = getArgument(i);
       bias[i] = getBiasAndDerivatives(i, cv_tmp);
@@ -1085,23 +1178,27 @@ void PBMetaD::update()
       // now add hills one by one
       for(unsigned j=0; j<mpi_nw_; ++j) {
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          // Add CVs of same family together and write to same file IL
+          int family = pfs_[i] - 1;
           cv_tmp[0]    = all_cv[j*cv.size()+i];
           double height_tmp = all_height[j*cv.size()+i];
           sigma_tmp[0] = all_sigma[j*cv.size()+i];
           Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
-          addGaussian(i, newhill);
-          writeGaussian(i, newhill, hillsOfiles_[i].get());
+          addGaussian(family, newhill);
+          writeGaussian(i, newhill, hillsOfiles_[family].get());
         }
       }
       // just add your own hills
     } else {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        // Add CVs of same family together and write to same file IL
+        int family = pfs_[i] - 1;
         cv_tmp[0] = cv[i];
         if(adaptive_!=FlexibleBin::none) sigma_tmp[0]=thissigma[i];
-        else sigma_tmp[0] = sigma0_[i];
+        else sigma_tmp[0] = sigma0_[family];
         Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i], multivariate);
-        addGaussian(i, newhill);
-        writeGaussian(i, newhill, hillsOfiles_[i].get());
+        addGaussian(family, newhill);
+        writeGaussian(i, newhill, hillsOfiles_[family].get());
       }
     }
   }
@@ -1153,13 +1250,14 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, std::vector<Value> &tmpva
 {
   double dummy;
   multivariate=false;
+  Value* argPtr = pfhold_[pfs_[iarg] - 1];
   if(ifile->scanField("time",dummy)) {
     ifile->scanField( &tmpvalues[0] );
-    if( tmpvalues[0].isPeriodic() && ! getPntrToArgument(iarg)->isPeriodic() ) {
+    if( tmpvalues[0].isPeriodic() && ! argPtr->isPeriodic() ) {
       error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
     } else if( tmpvalues[0].isPeriodic() ) {
       std::string imin, imax; tmpvalues[0].getDomain( imin, imax );
-      std::string rmin, rmax; getPntrToArgument(iarg)->getDomain( rmin, rmax );
+      std::string rmin, rmax; argPtr->getDomain( rmin, rmax );
       if( imin!=rmin || imax!=rmax ) {
         error("in hills file periodicity for variable " + tmpvalues[0].getName() + " does not match periodicity in input");
       }
@@ -1180,11 +1278,11 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, std::vector<Value> &tmpva
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
     if(multivariate) {
-      ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
-                       getPntrToArgument(iarg)->getName(),sigma[0]);
+      ifile->scanField("sigma_"+argPtr->getName()+"_"+
+                       argPtr->getName(),sigma[0]);
       sigma[0] = 1./(sigma[0]*sigma[0]);
     } else {
-      ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName(),sigma[0]);
+      ifile->scanField("sigma_"+argPtr->getName(),sigma[0]);
     }
     ifile->scanField("height",height);
     ifile->scanField("biasf",dummy);

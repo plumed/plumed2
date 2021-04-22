@@ -233,6 +233,3 @@ void RMSD::calculate() {
 
 }
 }
-
-
-
