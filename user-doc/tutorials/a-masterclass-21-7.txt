@@ -119,13 +119,17 @@ to make sure that the statistical accuracy is comparable.
 
 In this exercise, we will work with the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_ introduced in \ref masterclass-21-4-ex-6.
 This part of the system, which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from β-barrel to α-helical,
-which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-4-RfaH-CTD-fig). 
-The system is simulated using a simplified, structure-based potential, called [SMOG](https://smog-server.org). 
-The SMOG energy function has been designed to have two local minima that correspond to the β-barrel and α-helical states of RfaH-CTD.
-To achieve this goal, the energy function promotes native contacts, i.e. interactions that are present in the native structure(s).
-For these types of force fields, a function of the coordinates that is correlated with the energy of the system has been shown to be a
-good CV for enhanced-sampling simulations.
-An example is the total number of native contacts. These types of CVs are often computationally expensive to calculate
+which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-21-7-RfaH-CTD-fig).
+
+\anchor masterclass-21-7-RfaH-CTD-fig
+\image html RfaH-CTD.png "Structural transformation of the RfaH-CTD. Domain dissociation is triggered upon binding of the NTD (gray) to its target ops (operon polarity suppressor) element DNA, relieving the autoinhibited state and allowing the transformation of the CTD (colored) from an α-helical hairpin (A) towards a five-stranded β-barrel (B). Note that the NTD and CTD are connected by a linker that does not order within the crystals and therefore is not shown in the figure."
+
+RfaH-CTD  is simulated using a simplified, structure-based potential, called [SMOG](https://smog-server.org). 
+The SMOG energy function has been designed to have two local minima corresponding to the β-barrel and α-helical states of RfaH-CTD.
+To achieve this goal, the SMOG energy function promotes native contacts, i.e. interactions that are present in the native structure(s).
+When using structure-based force fields, a function of the coordinates that is correlated with the energy of the system,
+such as the total number of native contacts, has been shown to be a
+good CV for enhanced-sampling simulations. Unfortunately, these types of CVs often involve a large number of atoms and are therefore computationally expensive to calculate
 at every step of the simulation. In this exercise, we will learn how to write and optimize these types of CVs.
 
 In the `data/exercise2` folder of the `GitHub` repository of this Masterclass, you will find:
@@ -182,10 +186,10 @@ The objectives of this exercise are to:
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
 Suggestions:
-- the users should consult the PLUMED [manual](https://www.plumed.org/doc-v2.7/user-doc/html/index.html) in order to optimize the CV;
+- the users should consult the PLUMED manual in order to optimize the proposed CV;
 - the \ref COORDINATION CV can be defined using a custom switching function, whose calculation can be made faster by
 using [AsmJit](https://asmjit.com). For more information, have a look [here](https://www.plumed.org/doc-v2.7/user-doc/html/_lepton.html); 
-- try [Multiple time stepping](https://www.plumed.org/doc-v2.7/user-doc/html/_m_t_s.html) to apply the metadynamics bias every 2 or 4 steps using the \ref STRIDE option on the \ref METAD line.
+- try [Multiple time stepping](https://www.plumed.org/doc-v2.7/user-doc/html/_m_t_s.html) to apply the metadynamics bias every 2 or 4 steps using the `STRIDE` option on the \ref METAD line.
 
 Please keep in mind that:
 - SMOG is significantly less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
