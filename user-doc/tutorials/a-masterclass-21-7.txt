@@ -125,10 +125,18 @@ This breakdown is very useful to know where you should direct your effort.
 \subsection masterclass-21-7-ex-1 Exercise 1: Dissociation of NaCl in water
 
 As a first test system we will consider a single Na Cl pair in a water box.
+The two ions are expected to attract each other, so that the bound conformation should be stable.
+The free energy as a function of the distance between the two ions should thus have a minimum
+followed by a barrier. At larger distances, it is not expected to become flat but rather to
+decrease as -2*kBT log d, due to the entropic contribution, and then to grow again when reaching the
+boundaries of the simulation box.
+In this exercise we will compute the free-energy as a function of the distance between the two ions.
+As collective variables we will use the distance between the two ions as well as the number of water oxygens
+that are coordinated with the sodium ion.
 
-NOTE: Explain the system and introduce the exercise and add a figure with the result.
-
-We will start with the following input file:
+In the `data/exercise1` folder of the `GitHub` repository of this Masterclass, you will find
+a `topol.tpr` file, which is needed to perform a MD simulation of this system with GROMACS.
+You can then create a `plumed.dat` file like this one as a starting point:
 \plumedfile
 # vim:ft=plumed
 NA: GROUP ATOMS=1
@@ -140,7 +148,14 @@ PRINT ARG=d,cn STRIDE=100 FILE=COLVAR
 METAD ARG=d,cn SIGMA=0.05,0.1 HEIGHT=0.1 PACE=10 BIASFACTOR=5
 \endplumedfile
 
-NOTE: specify number of steps and gromacs command line.
+As usual, you can run a simulation with the following command
+\verbatim
+gmx_mpi mdrun -plumed plumed.dat -nsteps 100000
+\endverbatim
+
+For the first three points, you can run relatively short simulations, so choose nsteps based on what you can
+quickly test on your machine. For the fourth point instead you will need to reach convergence.
+A time on the order of a ns should be more the sufficient.
 
 \subsection masterclass-21-7-ex-1-a Exercise 1a: Optimizing the calculation of a metadynamics bias
 
@@ -193,6 +208,12 @@ improve them. A few hints:
 Notice that these changes are expected to impact the convergence of the algorithm.
 Thus, you do not need a converged simulation to measure the impact on performances, and you have
 to make sure that the statistical accuracy is comparable.
+
+\subsection masterclass-21-7-ex-1-e Exercise 1e: Computing the binding free energy
+
+As a final step, analyze the simulations performed so far to compute the standard binding free energy
+between the two species. Notice that even though this is defined at 1M concentration, the calculations
+that you are running are actually at infinite dilution.
 
 \subsection masterclass-21-7-ex-2 Exercise 2: Folding of the C-terminal domain (CTD) of the RfaH virulence factor
 
