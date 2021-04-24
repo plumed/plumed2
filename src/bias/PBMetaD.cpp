@@ -255,9 +255,8 @@ private:
   std::vector<std::unique_ptr<OFile>> gridfiles_;
   int wgridstride_;
   // Partitioned Families
-  int pf_n_; // initialize number of partitioned families
+  unsigned int pf_n_; // initialize number of partitioned families
   std::vector<int> pfs_; //std::vector length of arguments that holds which pf# each cv belongs in
-  std::vector<int> pflen_; // std::vector length of pf_n which stores how many cvs belong in each family
   std::vector<Value*> pfhold_; // std::vector length of pf_n which stores a pointer to the first argument fed to each family
   bool do_pf_; // if partitioned families are enabled
   // multiple walkers
@@ -359,9 +358,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   adaptive_(FlexibleBin::none),
   grid_(false),
   wgridstride_(0),
+  pf_n_(0), do_pf_(false),
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi_(false), mpi_nw_(0),
-  pf_n_(0),
   do_select_(false)
 {
 
@@ -391,54 +390,63 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   parse("FMT",fmt_);
 
-  // Partitioned Families CF
-  parse("PF_N", pf_n_);
+  // Partitioned Families
+  pfs_.assign(getNumberOfArguments(), -1);
+  pfhold_.resize(getNumberOfArguments());
+  std::vector<Value*> familyargs;
+  for(int i = 0;; i++) {
+    parseArgumentList("PF", i + 1, familyargs);
+    if (familyargs.empty()) break;
 
-  // If we didn't get a PF arg, all arguments are partitioned IL
-  if (pf_n_ == 0) {
-    pf_n_ = getNumberOfArguments();
-    do_pf_ = false;
-  } else {
     do_pf_ = true;
-  }
-
-  pfs_.resize(getNumberOfArguments());
-  pflen_.resize(pf_n_);
-  pfhold_.resize(pf_n_);
-  for(unsigned i=0; i < pf_n_; i++) {
-    // If we're doing pf, parse PF args and put them in the correct families
-    if (do_pf_) {
-      std::vector<Value*> familyargs;
-      parseArgumentList("PF", i + 1, familyargs);
-      log.printf("Identified Partitioned Families");
-      pflen_[i]=familyargs.size(); //store number of cvs for each family.
-      for(unsigned j=0; j < familyargs.size(); j++) {
-        log.printf(" %s", familyargs[j]->getName().c_str());
-        for(unsigned ru=0; ru<getNumberOfArguments(); ru++){
-          if (familyargs[j]->getName().c_str() == getPntrToArgument(ru)->getName()){
-            pfs_[ru]= i + 1; //store the pf# for each cv
-            if(pfhold_[i] == nullptr){ // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
-              pfhold_[i]=getPntrToArgument(ru);
-            }
-            log.printf(" %d", pfs_[ru]);
+    log << "  Identified Partitioned Family " << i + 1 << ":";
+    for (unsigned j = 0; j < familyargs.size(); j++) {
+      log << " " << familyargs[j]->getName();
+      // loop through the argument list to make sure it exists and assign it
+      bool foundArg = false;
+      for (unsigned argnum = 0; argnum < getNumberOfArguments(); argnum++) {
+        if (familyargs[j]->getName() == getPntrToArgument(argnum)->getName()) {
+          foundArg = true;
+          if (pfs_[argnum] != -1) {
+            error(familyargs[j]->getName() + " already present in PF" + std::to_string(pfs_[argnum]));
+          }
+          pfs_[argnum] = i + 1;  // store the pf# for each cv
+          if (pfhold_[i] == nullptr) {
+            // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
+            pfhold_[i] = getPntrToArgument(argnum);
           }
         }
-        log.printf("\n");
       }
-    // Otherwise, each argument is its own family
-    } else {
+      if (!foundArg) {
+        error(familyargs[j]->getName() + " in PF" + std::to_string(i+1) + " not found in ARG");
+      }
+    }
+    log << "\n";
+    pf_n_++;
+  }
+
+  // if PF were specified, every argument gets treated as its own PF
+  if (!do_pf_) {
+    pf_n_ = getNumberOfArguments();
+    for(unsigned i=0; i < pf_n_; i++) {
       pfhold_[i] = getPntrToArgument(i);
       pfs_[i] = i + 1;
-      pflen_[i] = 1;
     }
-
+  } else {
+    // If we are doing PF, make sure each argument got assigned to a family.
+    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+      if (pfs_[i] == -1) error(getPntrToArgument(i)->getName() + " was not assigned a PF");
+    }
   }
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
   if(adaptive_==FlexibleBin::none) {
     // if you use normal sigma you need one sigma per argument
-    if( sigma0_.size()!=pf_n_ ) error("number of arguments/PF does not match number of SIGMA parameters");
+    if( sigma0_.size()!=pf_n_ ) {
+      std::string fields = do_pf_ ? "PFs" : "arguments";
+      error("number of " + fields + " does not match number of SIGMA parameters");
+    }
   } else {
     // if you use flexible hills you need one sigma
     if(sigma0_.size()!=1) {
@@ -484,14 +492,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("FILE",hillsfname_);
   if(hillsfname_.size()==0) {
     for(unsigned i=0; i< pf_n_; i++) {
-      std::string name;
-      if (do_pf_) {
-        name = "HILLS.PF"+std::to_string(i + 1); // number of hills files corresponds to number of pf_n now. CF
-      } else {
-       name = "HILLS."+getPntrToArgument(i)->getName();
-      }
+      std::string name = do_pf_ ? "HILLS.PF"+std::to_string(i + 1) : "HILLS."+getPntrToArgument(i)->getName();
       hillsfname_.push_back(name);
-
     }
   }
   if( hillsfname_.size()!=pf_n_ ) {
@@ -540,12 +542,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   if(gridfilenames_.size()==0 && wgridstride_ > 0) {
     for(unsigned i=0; i<pf_n_; i++) {
-      std::string name;
-      if (do_pf_) {
-        name = "GRID.PF" + std::to_string(i + 1);
-      } else {
-        name = "GRID."+getPntrToArgument(i)->getName();
-      }
+      std::string name = do_pf_ ? "GRID.PF"+std::to_string(i + 1) : "GRID."+getPntrToArgument(i)->getName();
       gridfilenames_.push_back(name);
     }
   }
