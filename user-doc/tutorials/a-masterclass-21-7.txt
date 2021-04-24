@@ -282,8 +282,8 @@ PRINT ARG=cv,rmsd_A,rmsd_B,metad.bias STRIDE=500 FILE=COLVAR
 \endplumedfile
 
 The objectives of this exercise are to:
-1. optimize the distance-based CV provided in the template PLUMED input file. The user should *report the speedup obtained with the optimized CV with respect to the one
-   defined in the provided input file*;
+1. optimize the distance-based CV provided in the template PLUMED input file. **The user should report the speedup obtained with the optimized CV with respect to the one
+   defined in the provided input file**;
 2. optimize the performances of well-tempered metadynamics, as done in \ref masterclass-21-7-ex-1-a and \ref masterclass-21-7-ex-1-d;
 3. evaluate the stability of the β-barrel state of RfaH-CTD (with error estimate).
 
