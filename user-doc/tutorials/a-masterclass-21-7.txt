@@ -233,7 +233,7 @@ such as the total number of native contacts, has been shown to be a
 good CV for enhanced-sampling simulations. Unfortunately, these types of CVs often involve a large number of atoms and are therefore computationally expensive to calculate
 at every step of the simulation. In this exercise, we will learn how to write and optimize these types of CVs.
 
-In the `data/exercise2` folder of the `GitHub` repository of this Masterclass, you will find:
+In the `data/exercise2` folder of the [GitHub](https://github.com/plumed/masterclass-21-7) repository of this Masterclass, you will find:
 - two PDB files of RfaH-CTD in the β-barrel (`stateA.pdb`) and α-helical (`stateB.pdb`) states;
 - a `topol.tpr` file, which is needed to perform a MD simulation of this system with GROMACS;
 - a template PLUMED input file (`plumed.dat`) to perform a metadynamics simulation using the total number of native contacts as CV.
