@@ -29,7 +29,7 @@
 #include "tools/Units.h"
 #include <cstdio>
 #include <memory>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 
 #if defined(__PLUMED_HAS_XDRFILE)
@@ -37,8 +37,6 @@
 #include <xdrfile/xdrfile_trr.h>
 #endif
 
-
-using namespace std;
 
 namespace PLMD
 {
@@ -174,8 +172,8 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   ActionPilot(ao),
   iprecision(3)
 {
-  vector<AtomNumber> atoms;
-  string file;
+  std::vector<AtomNumber> atoms;
+  std::string file;
   parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
   type=Tools::extension(file);
@@ -186,7 +184,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     log<<"  file extension not detected, assuming xyz\n";
     type="xyz";
   }
-  string ntype;
+  std::string ntype;
   parse("TYPE",ntype);
   if(ntype.length()>0) {
     if(ntype!="xyz" && ntype!="gro" && ntype!="xtc" && ntype!="trr"
@@ -202,12 +200,12 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   fmt_gro_box="%12.7f";
   fmt_xyz="%f";
 
-  string precision;
+  std::string precision;
   parse("PRECISION",precision);
   if(precision.length()>0) {
     Tools::convert(precision,iprecision);
     log<<"  with precision "<<iprecision<<"\n";
-    string a,b;
+    std::string a,b;
     Tools::convert(iprecision+5,a);
     Tools::convert(iprecision,b);
     fmt_gro_pos="%"+a+"."+b+"f";
@@ -246,15 +244,15 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names \n";
-    names.resize(atoms.size(),"");
-    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat[0]->getPDBsize()) names[i]=moldat[0]->getAtomName(atoms[i]);
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    names.resize(atoms.size());
+    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat->getPDBsize()) names[i]=moldat->getAtomName(atoms[i]);
     residueNumbers.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
+    for(unsigned i=0; i<residueNumbers.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNumbers[i]=moldat->getResidueNumber(atoms[i]);
     residueNames.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
+    for(unsigned i=0; i<residueNames.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNames[i]=moldat->getResidueName(atoms[i]);
   }
 }
 
@@ -306,7 +304,7 @@ void DumpAtoms::update() {
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
-    std::unique_ptr<rvec[]> pos(new rvec [natoms]);
+    auto pos = Tools::make_unique<rvec[]>(natoms);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);

@@ -113,6 +113,7 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
   keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
+  keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
 }
 
 Path::Path( const ActionOptions& ao ):
@@ -178,8 +179,9 @@ void Path::readPropertyData( const std::string& refname, const std::vector<std::
 
 void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
                             ActionShortcut* action, std::vector<std::string>& refactions ) {
-  std::vector<std::string> argnames; action->parseVector("ARG",argnames);
+  std::vector<std::string> argnames; action->parseVector("ARG",argnames); std::vector<double> coeff;
   action->parse("TYPE",mtype); if( argnames.size()>0 && mtype=="OPTIMAL-FAST" ) mtype="EUCLIDEAN";
+  if( mtype=="EUCLIDEAN") action->parseVector("COEFFICIENTS",coeff);
 
   action->parse("REFERENCE",refname); 
   std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
@@ -260,6 +262,11 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
           }
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
           if( mtype=="DRMSD" ) powstr += " NORMALIZE"; 
+          if( coeff.size()>0 ) {
+              if( coeff.size()!=nquantities ) action->error("mismatch between number of coefficients and number of values");
+              std::string str_coeff; Tools::convert( coeff[0]*coeff[0], str_coeff); powstr += " COEFFICIENTS=" + str_coeff;
+              for(unsigned i=1;i<nquantities;++i) { Tools::convert( coeff[i]*coeff[i], str_coeff); powstr += "," + str_coeff; } 
+          }
           if( !geometric) ref_line += "; COMBINE ARG=" + scut_lab + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
           else ref_line += "} ";
       } 

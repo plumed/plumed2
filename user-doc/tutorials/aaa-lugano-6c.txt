@@ -1,0 +1,77 @@
+/**
+\page lugano-6c Lugano tutorial: Computing proton transfer in water
+
+\section lugano-6c-aim Aims
+
+In this tutorial I will show you how you can use PLUMED and metadynamics in combinations with CP2K.
+
+\section lugano-6c-lo Objectives
+
+Once this tutorial is completed students will
+
+- Know how to enhance the sampling in an ab initio simulation.
+
+\section lugano-6c-resources Resources
+
+The \tarball{lugano-6c} for this project contains the following files:
+
+- H-transfer.inp: a CP2K input file to perform BO-MD and Free Energy calculations with PLUMED
+- H-transfer.pdb: a PDB file with the starting configuration for a few water molecules
+
+This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
+
+\section lugano-6c-intro Introduction
+
+For this tutorial we will consider a practical application. The aim is that of studying proton transfer in water. 
+The system is simplified and the accuracy of the ab initio simulation is not production like so do not reuse the
+CP2K input for real-life applications.
+
+\section lugano-6c-exercises Exercises
+
+In this example the system is initially in a configuration where there are H3O+ and an OH- molecule separated by a few
+other water molecules. In a standard MD the system will quickly equilibrate. Here the aim is to use metadynamics to estimate
+the free energy of this process and to understand the role of the solvent. 
+
+When you download CP2K it already includes the interface for PLUMED but it must be compiled using the proper flags, check CP2K installation instructions.
+
+
+\section lugano-6c-ex-1 Exercise 1: Preliminary run 
+
+The starting configuration is represented in the H-transfer.pdb. While a simple CP2K input file to perform BO-MD is written in
+H-transfer.inp. In particular here the section to enable PLUMED is commented out initially.
+
+\verbatim
+# &FREE_ENERGY
+#   &METADYN
+#     USE_PLUMED .TRUE.
+#     PLUMED_INPUT_FILE ./plumed.dat
+#   &END METADYN
+# &END FREE_ENERGY
+\endverbatim
+
+To run a preliminary simulation it is enough to:
+
+\verbatim
+cp2k.sopt H-transfer.inp >& log &
+\endverbatim
+
+use the plumed \ref driver and VMD to choose to water molecule relatively far apart to study the proton transfer.
+
+\section  lugano-6c-ex-2 Exercise 2: Proton transfer
+
+In this exercise you are challenged to
+- Select two water molecule to be kept far apart using \ref LOWER_WALLS and the distance between their two oxygen atoms.
+- Use the distances of an hydrogen from both oxygen atoms to setup a first \ref METAD calculation to study the proton transfer between the selected water molecules
+- Test more complex CVs maybe taking into account the role of the other molecules.
+- Think how to study proton transfer in a general way instead than between two specific water molecules and using a specific hydrogen.
+
+The number of steps in the simulation is initially set to 100, this should be increased so to allow a more extensive exploration of the conformational space.
+This simulation can be slow and is better run on a workstation with multiple processors.
+
+*/
+
+link: @subpage lugano-6c 
+
+description: An exercise to run a simple proton transfer calculation with CP2K 
+
+additional-files: lugano-6c

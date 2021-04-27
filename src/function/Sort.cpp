@@ -22,12 +22,6 @@
 #include "ActionRegister.h"
 #include "Function.h"
 
-#include <cmath>
-#include <algorithm>
-#include <utility>
-
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
@@ -83,7 +77,7 @@ Sort::Sort(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+ getPntrToArgument(i)->getName() +")");
     for(unsigned j=0; j<getPntrToArgument(i)->getNumberOfValues(getLabel()); ++j) {
-      string s; Tools::convert(k+1,s);
+      std::string s; Tools::convert(k+1,s);
       addComponentWithDerivatives(s+"th");
       getPntrToComponent(k)->setNotPeriodic(); k++;
     }
@@ -93,14 +87,14 @@ Sort::Sort(const ActionOptions&ao):
 }
 
 void Sort::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  vector<pair<double,int> > vals(getNumberOfScalarArguments());
+  std::vector<std::pair<double,int> > vals(getNumberOfScalarArguments());
   for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) {
     vals[i].first=args[i];
 // In this manner I remember from which argument the component depends:
     vals[i].second=i;
   }
 // STL sort sorts based on first element (value) then second (index)
-  sort(vals.begin(),vals.end());
+  std::sort(vals.begin(),vals.end());
   for(int i=0; i<getNumberOfComponents(); ++i) {
     addValue( i, vals[i].first, myvals );
     addDerivative( i, vals[i].second, 1.0, myvals );

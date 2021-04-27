@@ -45,6 +45,7 @@
 #include "ActionToPutData.h"
 #include "DataPassingTools.h"
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <unordered_map>
@@ -60,8 +61,6 @@
 #include <functional>
 #endif
 
-
-using namespace std;
 
 namespace PLMD {
 
@@ -370,13 +369,23 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTNULL(val,word);
         readInputLine(static_cast<char*>(val));
         break;
+      case cmd_readInputLines:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        readInputLines(static_cast<char*>(val));
+        break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
+        inputs.clear();
+        initialized=false;
+        atoms.setup();
+        initialized=true;
+        atoms.updateUnits();
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=7;
+        *(static_cast<int*>(val))=8;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -555,7 +564,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         if( inputs.count(words[1]) ) (inputs.find(words[1])->second)->set_force(val);
         break;
       case cmd_GREX:
-        if(!grex) grex.reset(new GREX(*this));
+        if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
         {
           std::string kk=words[1];
@@ -565,7 +574,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_CLTool:
         CHECK_NOTINIT(initialized,word);
-        if(!cltool) cltool.reset(new CLToolMain);
+        if(!cltool) cltool=Tools::make_unique<CLToolMain>();
         {
           std::string kk=words[1];
           for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
@@ -694,6 +703,36 @@ void PlumedMain::readInputLine(const std::string & str) {
   }
 }
 
+void PlumedMain::readInputLines(const std::string & str) {
+  plumed_assert(initialized);
+  if(str.empty()) return;
+  char tmpname[L_tmpnam];
+  // Generate temporary name
+  // Although tmpnam generates a warning as a deprecated function, it is part of the C++ standard
+  // so it should be ok.
+  {
+    auto ret=std::tmpnam(tmpname);
+    plumed_assert(ret);
+  }
+  // write buffer
+  {
+    FILE* fp=std::fopen(tmpname,"w");
+    plumed_assert(fp);
+    // make sure file is closed also if an exception occurs
+    auto deleter=[](FILE* fp) { std::fclose(fp); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+    auto ret=std::fputs(str.c_str(),fp);
+    plumed_assert(ret!=EOF);
+  }
+  // read file
+  {
+    // make sure file is deleted also if an exception occurs
+    auto deleter=[](const char* name) { std::remove(name); };
+    std::unique_ptr<char,decltype(deleter)> file_deleter(&tmpname[0],deleter);
+    readInputFile(tmpname);
+  }
+}
+
 void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   if(words.empty())return;
   else if(words[0]=="_SET_SUFFIX") {
@@ -711,7 +750,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
       log << msg;
       log.flush();
       plumed_merror(msg);
-    };
+    }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
   };

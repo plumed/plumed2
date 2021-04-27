@@ -537,7 +537,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   std::array<int,2*m> isup;
   int nn=n;              // dimension of matrix
   double vl=0.0, vu=1.0; // ranges - not used
-  int one=1,mm=m;        // minimun and maximum index
+  int one=1,mm=m;        // minimum and maximum index
   double abstol=0.0;     // tolerance
   int mout=0;            // number of eigenvalues found (same as mm)
   int info=0;            // result

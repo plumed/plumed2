@@ -1,4 +1,5 @@
 plumed_modules=rascal
+plumed_needs=rascal
 type=driver
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f --box 10.43563090,0,0,0,11.52099212,0,0,-28.62814727,52.05084097" # --debug-forces forces.num"

@@ -48,6 +48,26 @@ for file in ./tutorials/others/*.txt ; do
 
 done
 
+for file in ./tutorials/old_tutorials/*.txt ; do
+
+   check=`grep additional-files: $file | wc -l`
+   if [ $check -gt 1 ] ; then
+        echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
+   elif [ $check -gt 0 ] ; then
+      resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
+     for addfile in $resources; do 
+        if test -d tutorials/old_tutorials/$addfile; then
+          cd tutorials
+          tar czf ../html/tutorial-resources/$addfile.tar.gz old_tutorials/$addfile
+          cd -
+        else
+          cp tutorials/old_tutorials/$addfile html/tutorial-resources
+        fi
+     done
+   fi
+
+done
+
 nerrors=`wc -l errors | awk '{print NF}'`
 if [ $nerrors -eq 0 ] ; then
   rm errors
@@ -57,4 +77,61 @@ else
   echo ""
   cat errors
   echo "************************************************"
-fi  
+fi
+
+# Test for existance of errors in example input files
+if [ ! -f example_errors ] ; then
+   exit 0
+fi
+
+echo "************************************************"
+echo "Found errors in examples in documentation"
+echo ""
+cat example_errors
+echo "************************************************"
+
+PULL_REQUEST=false
+
+if test "$TRAVIS" == true ; then
+  BRANCH="$TRAVIS_BRANCH"
+  GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+  PULL_REQUEST="$TRAVIS_PULL_REQUEST"
+  COMMIT=$TRAVIS_COMMIT
+fi
+
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    BRANCH="${GITHUB_REF#refs/heads/}"
+  fi
+  GIT_OWNER=$(  echo $GITHUB_REPOSITORY | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $GITHUB_REPOSITORY | sed "s/^.*\///" )
+  if test -n "$GITHUB_BASE_REF" ; then
+    PULL_REQUEST=true
+  fi
+  COMMIT=$GITHUB_SHA
+fi
+
+# only comment from github actions (TRAVIS to be retired)
+if test "$GITHUB_ACTIONS" == true && test -n "GIT_TOKEN" ; then
+# If not a pull request add a comment on the commit message
+if [ $PULL_REQUEST=="false" ] ; then
+    if [ "$GIT_OWNER" = plumed ] ; then
+        EXGEN_RESULTS=`cat example_errors`
+        curl -i -H "Authorization: token $GIT_TOKEN" \
+        -H "Content-Type: application/json" \
+        -X POST -d "{\"body\":\"$EXGEN_RESULTS\"}" \
+        https://api.github.com/repos/plumed/plumed2/commits/$COMMIT/comments
+    fi
+# If it is a pull request comment on the pull request
+elif [ "$GIT_OWNER" = plumed ] ; then
+    EXGEN_RESULTS=`cat example_errors`
+    curl -i -H "Authorization: token $GIT_TOKEN" \
+    -H "Content-Type: application/json" \
+    -X POST -d "{\"body\":\"$EXGEN_RESULTS\"}" \
+    https://api.github.com/repos/plumed/plumed2/issues/$PULL_REQUEST/comments
+fi
+
+fi
+
+exit 0

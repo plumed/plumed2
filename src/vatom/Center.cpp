@@ -27,8 +27,6 @@
 #include "core/Atoms.h"
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace vatom {
 

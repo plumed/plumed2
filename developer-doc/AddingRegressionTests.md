@@ -56,7 +56,7 @@ type=simplemd tells PLUMED that the test will involve
 running some Lennard Jones MD using <a href="../../user-doc/html/simplemd.html">simplemd</a>, 
 type=sum_hills tells PLUMED that the test will involve summing gaussians using the 
 <a href="../../user-doc/html/sum_hills.html">sum_hills</a> untility
- and type=make tells PLUMED that a main function (called main.cpp) is included in the regtest directory and that the test should compile this fuction, link in 
+ and type=make tells PLUMED that a main function (called main.cpp) is included in the regtest directory and that the test should compile this function, link in
 the PLUMED library and run the resulting executible. The vast majority of features are best tested using type=driver here although the type=make function
 can be useful for testing tools that are used in many places in the code (see the code in regtest/basic/rt-make-4 for an example of how use type=make to test
 PLUMED's internal matrix class).  If you need to test PLUMED in a way that is not included in these various types please contact the PLUMED developers before
@@ -73,7 +73,7 @@ run is thus as follows:
 plumed driver --plumed plumed.dat --trajectory-stride 50 --timestep 0.005 --ixyz diala_traj_nm.xyz --dump-forces forces --dump-forces-fmt=%10.6f
 \endverbatim    
 
-- The final line tells PLUMED that a few files need to be copied from elsewhere in the PLUMED directory heirarchy in order to run the test.  This copying of files
+- The final line tells PLUMED that a few files need to be copied from elsewhere in the PLUMED directory hierarchy in order to run the test.  This copying of files
 is useful as it ensures that our repository does not grow large because the same trajectory is duplicated in many regtest directory.  However, if all the files you 
 need to run the test  are contained in the test directory this line is not necessary.  Having said that, however, it may be useful to reuse the trajectories contained 
 in the directory regtest/trajectories in creating your own regression tests.  

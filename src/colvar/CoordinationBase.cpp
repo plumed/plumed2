@@ -24,10 +24,6 @@
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
-#include <string>
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -49,7 +45,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 {
 
 
-  vector<AtomNumber> ga_lista,gb_lista;
+  std::vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
 
@@ -75,11 +71,11 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
-    if(doneigh)  nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st) );
-    else         nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc()) );
+    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,runInSerial(),dopair,pbc,getPbc(),comm,nl_cut,nl_st);
+    else         nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,runInSerial(),dopair,pbc,getPbc(),comm);
   } else {
-    if(doneigh)  nl.reset( new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st) );
-    else         nl.reset( new NeighborList(ga_lista,pbc,getPbc()) );
+    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,runInSerial(),pbc,getPbc(),comm,nl_cut,nl_st);
+    else         nl=Tools::make_unique<NeighborList>(ga_lista,runInSerial(),pbc,getPbc(),comm);
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -130,8 +126,7 @@ void CoordinationBase::calculate()
 
   double ncoord=0.;
   Tensor virial;
-  vector<Vector> deriv(getNumberOfAtoms());
-// deriv.resize(getPositions().size());
+  std::vector<Vector> deriv(getNumberOfAtoms());
 
   if(nl->getStride()>0 && invalidateList) {
     nl->update(getPositions());

@@ -37,7 +37,7 @@ PlumedHandle::DlHandle::~DlHandle() {
 }
 
 PlumedHandle::PlumedHandle():
-  local(new PlumedMain)
+  local(Tools::make_unique<PlumedMain>())
 {
 }
 

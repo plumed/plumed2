@@ -102,7 +102,7 @@ void ActionWithInputMatrices::applyForceOnMatrix( const unsigned& imat ) {
   unsigned ncols=mat->getNumberOfColumns();
   for(unsigned i=0; i<mat->getShape()[0]; ++i) {
       unsigned ncol = mat->getRowLength(i);
-      for(unsigned j=0; j<ncol; ++j) mat->addForce( i*ncols+j, getForceOnMatrixElement( imat, i, mat->getRowIndex(i,j) ) );
+      for(unsigned j=0; j<ncol; ++j) mat->addForce( i*ncols+j, getForceOnMatrixElement( imat, i, mat->getRowIndex(i,j) ), false );
   }
 }
 

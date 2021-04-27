@@ -23,11 +23,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Angle.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace multicolvar {
 
@@ -103,6 +98,7 @@ Angle::Angle(const ActionOptions&ao):
 {
   if(getNumberOfAtomsInEachCV()==3 ) useFourAtomsForEachCV();
   if( getNumberOfAtomsInEachCV()!=4 ) error("Number of specified atoms should be 3 or 4");
+
   addValueWithDerivatives(); setNotPeriodic();
 }
 

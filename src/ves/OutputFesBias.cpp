@@ -73,6 +73,19 @@ VES_OUTPUT_FES ...
 ... VES_OUTPUT_FES
 \endplumedfile
 
+The header of coeffs.input.data should look like the following:
+
+\auxfile{coeffs.input.data}
+#! FIELDS idx_phi idx_psi ves1.coeffs ves1.aux_coeffs index
+#! SET time 100.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  2
+#! SET ncoeffs_total  121
+#! SET shape_phi  11
+#! SET shape_psi  11
+\endauxfile
+
 This input should be run through the driver by using a command similar to the
 following one where the trajectory/configuration file configuration.gro is needed to
 correctly define the CVs

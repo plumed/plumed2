@@ -22,6 +22,8 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "MultiColvarBase.h"
+#include <string>
+#include <cmath>
 
 namespace PLMD {
 namespace multicolvar {

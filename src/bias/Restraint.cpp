@@ -22,10 +22,6 @@
 #include "ActionRegister.h"
 #include "core/ActionShortcut.h"
 
-
-using namespace std;
-
-
 namespace PLMD {
 namespace bias {
 

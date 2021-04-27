@@ -89,8 +89,8 @@ for(unsigned i=0;i<aa.size();++i){ aa[i].doSomething(); }
 
 \section arse2 Activating and deactivating members
 
-The important bussiness comes when we start activating and deactivating members.  When we create
-a dynamic list none of the members are active for bussiness.  Hence, getNumberActive() returns 0.
+The important business comes when we start activating and deactivating members.  When we create
+a dynamic list none of the members are active for business.  Hence, getNumberActive() returns 0.
 There are four routines that we can use to change this situation.
 
 <table align="center" frame="void" width="95%" cellpadding="5%">
@@ -137,7 +137,7 @@ class DynamicList {
   template <typename U>
   friend void mpi_gatherActiveMembers(Communicator&, std::vector< DynamicList<U> >& );
 private:
-/// This is the list of all the relevent members
+/// This is the list of all the relevant members
   std::vector<T> all;
 /// This tells us what members of all are on/off at any given time
   std::vector<unsigned> onoff;

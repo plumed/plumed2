@@ -32,11 +32,6 @@
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
 
-#include <vector>
-#include <string>
-
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 

@@ -105,6 +105,8 @@ private:
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
+/// A constructor that can be used to make Vectors of named values
+  explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
 /// Add information on who is using this action
@@ -160,7 +162,7 @@ public:
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
-  void  addForce(const unsigned& iforce, double f);
+  void  addForce(const unsigned& iforce, double f, const bool trueind=true);
 /// Get the value of the force on this colvar
   double getForce( const unsigned& iforce ) const ;
 /// Check if forces have been added on this value
@@ -326,13 +328,6 @@ void Value::clearInputForce() {
 inline
 void Value::clearDerivatives() {
   value_set=false; if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
-}
-
-inline
-void Value::addForce(const unsigned& iforce, double f) {
-  plumed_dbg_assert( iforce<inputForces.size() );
-  hasForce=true;
-  inputForces[iforce]+=f;
 }
 
 inline

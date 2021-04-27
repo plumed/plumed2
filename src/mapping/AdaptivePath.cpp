@@ -95,12 +95,7 @@ public:
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); 
-  keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
-  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
-           "metrics that are available in PLUMED can be found in the section of the manual on "
-           "\\ref dists");
-  keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
+  ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");

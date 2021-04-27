@@ -141,7 +141,7 @@ public:
   void print_html() const ;
 /// Print keywords in form readable by vim
   void print_vim() const ;
-/// Print the template version for the documenation
+/// Print the template version for the documentation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
@@ -165,10 +165,14 @@ public:
   const std::vector<std::string>& getAllOutputComponents() const ;
 /// Get the keyword that tells PLUMED to calculate this particular quantity
   bool getKeywordForThisOutput( const std::string& oname, std::string& keyname ) const ;
+/// Get the description of this component
+  std::string getOutputComponentDescription( const std::string& name ) const ;
 /// Remove a component with a particular name from the keywords
   void removeComponent( const std::string& name );
 /// Reference to keys
   std::vector<std::string> getKeys() const { return keys; }
+/// Get the description of a particular keyword
+  std::string getTooltip( const std::string& name ) const ;
 };
 
 }

@@ -22,8 +22,6 @@
 #include "Units.h"
 #include "Tools.h"
 
-using namespace std;
-
 namespace PLMD {
 
 Units::Units():
@@ -56,7 +54,7 @@ void Units::setEnergy(const std::string &s) {
     energy=-1.0;
     energyString="";
     if(!Tools::convert(s,energy)) {
-      plumed_merror("problem with setting the energy unit, either use give an numerical value or use one of the defined units: kj/mol, kcal/mol, j/mol, eV, Ha (case senstive)");
+      plumed_merror("problem with setting the energy unit, either use give an numerical value or use one of the defined units: kj/mol, kcal/mol, j/mol, eV, Ha (case sensitive)");
     }
     plumed_massert(energy>0.0,"energy unit should be positive");
   }

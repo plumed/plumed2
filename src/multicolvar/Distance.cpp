@@ -23,11 +23,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 
-#include <string>
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace multicolvar {
 

@@ -75,18 +75,14 @@ p(s)=\frac{p_{\mathrm{WT}}(s) \, p_{\mathrm{barrier}}(s)}
 {\int ds \, p_{\mathrm{WT}}(s) \, p_{\mathrm{barrier}}(s)}
 \f]
 where \f$ p_{\mathrm{WT}}(s) \f$ is the well-tempered target distribution and:
-\f[
-p_{\mathrm{barrier}}(s)=
-        \begin{cases}
-                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
-                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
-\mathrm{if} \: s>s_0\\
-        \end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
+
 with \f$ C \f$ a normalization factor.
 The files needed for this exercise are in the directory Example1.
 This target distribution can be specified in plumed using:
 \plumedfile
+__FILL__
 td_uniform: TD_UNIFORM MINIMA=0.23 MAXIMA=0.6 SIGMA_MAXIMA=0.05 
 td_welltemp: TD_WELLTEMPERED BIASFACTOR=5
 td_combination: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_uniform,td_welltemp
@@ -134,6 +130,7 @@ sed '2,5000d' ../COLVAR > COLVAR
 To calculate the biased and unbiased distribution of CVs we use the following
 PLUMED input:
 \plumedfile
+__FILL__
 distance:       READ FILE=COLVAR  IGNORE_TIME VALUES=d1
 ves:       READ FILE=COLVAR IGNORE_TIME VALUES=b1.bias
 
@@ -215,6 +212,7 @@ where \f$ f_{i_1}(s_1)\f$ and \f$ f_{i_2}(s_2) \f$ are the basis functions.
 We will choose to expand the bias potential in Legendre polynomials up to
 order 20 in both dimensions.
 \plumedfile
+__FILL__
 # CV1
 BF_LEGENDRE ...
  ORDER=20
@@ -239,6 +237,7 @@ are given by the first two columns.
 We use the well-tempered target distribution together with a barrier at 0.6 nm
 on the distance Na-Cl.
 \plumedfile
+__FILL__
 td_uniform: TD_UNIFORM MINIMA=0.2,2.5 MAXIMA=0.6,7.5 SIGMA_MAXIMA=0.05,0.0
 td_welltemp: TD_WELLTEMPERED BIASFACTOR=5
 td_combination: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_uniform,td_welltemp

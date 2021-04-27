@@ -58,6 +58,22 @@ Value::Value():
   data.resize(1); inputForces.resize(1);
 }
 
+Value::Value(const std::string& name):
+  action(NULL),
+  value_set(false),
+  hasForce(false),
+  hasDeriv(true),
+  name(name),
+  periodicity(unset),
+  min(0.0),
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
+{
+  data.resize(1); inputForces.resize(1); 
+  data[0]=inputForces[0]=0;
+}
+
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
   action(av),
   value_set(false),
@@ -306,6 +322,18 @@ double Value::get(const unsigned& ival, const bool trueind) const {
   plumed_assert( ival<data.size() );
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
+}
+
+void Value::addForce(const unsigned& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && getNumberOfColumns()<shape[1] && trueind ) { 
+      unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) { inputForces[irow*getNumberOfColumns()+i]+=f; return; }
+      }
+      plumed_assert( fabs(f)<epsilon ); return;
+  } 
+  inputForces[iforce]+=f;
 }
 
 double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {

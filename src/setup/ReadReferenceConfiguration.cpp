@@ -76,7 +76,14 @@ SetupReferenceBase(ao)
              if( !noalign ) {
                  std::vector<double> align( pdb.getOccupancy() ); double asum=0;
                  for(unsigned i=0;i<align.size();++i) asum += align[i];
-                 for(unsigned i=0;i<pdb.getPositions().size();++i) center += align[i]*pdb.getPositions()[i] / asum;
+                 if( asum>epsilon ) {
+                     double iasum = 1 / asum;
+                     for(unsigned i=0;i<align.size();++i) align[i] *= iasum; 
+                 } else {
+                     double iasum = 1 / pdb.size();
+                     for(unsigned i=0;i<align.size();++i) align[i] = iasum;
+                 }
+                 for(unsigned i=0;i<pdb.getPositions().size();++i) center += align[i]*pdb.getPositions()[i];
              }
          }
          if( getNumberOfArguments()>0 ) {

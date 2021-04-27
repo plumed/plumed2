@@ -27,8 +27,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace multicolvar {
 
@@ -122,9 +120,9 @@ void DihedralCorrelation::compute( const std::vector<Vector>& pos, MultiValue& m
 
   // Calculate value
   const double diff = phi2 - phi1;
-  const double value = 0.5*(1.+cos(diff));
+  const double value = 0.5*(1.+std::cos(diff));
   // Derivatives wrt phi1
-  const double dval = 0.5*sin(diff);
+  const double dval = 0.5*std::sin(diff);
   dd10 *= dval;
   dd11 *= dval;
   dd12 *= dval;

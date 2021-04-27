@@ -27,6 +27,7 @@ PLUMED can be incorporated into an MD code and used to analyze or bias a molecul
 Some MD code could already include calls to the PLUMED library
 and be PLUMED-ready in its original distribution.
 As far as we know, the following MD codes can be used with PLUMED out of the box:
+- [Amber](http://ambermd.org/), pmemd module, since version 20.
 - [AmberTools](http://ambermd.org/), sander module, since version 15.
 - [CP2K](http://www.cp2k.org), since Feb 2015.
 - [ESPResSo](http://espressomd.org), in a version that has been patched with PLUMED can be found
@@ -34,13 +35,15 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
 - [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
 - [AceMD](http://www.multiscalelab.org/acemd/), see [this link](https://github.com/tonigi/ACEMD-PLUMED).
-- [OpenMM](http://openmm.org), using the [openmmp-plumed plugin](http://github.com/peastman/openmm-plumed).
+- [OpenMM](http://openmm.org), using the [openmm-plumed plugin](http://github.com/peastman/openmm-plumed).
 - [DL_POLY4](https://www.scd.stfc.ac.uk/Pages/DL_POLY.aspx).
 - [VNL-ATK](https://quantumwise.com), see [this link](https://docs.quantumwise.com/tutorials/metadynamics_with_plumed/metadynamics_with_plumed.html).
 - [ABIN](https://github.com/PHOTOX/ABIN).
 - [i-pi](https://github.com/i-pi/i-pi).
 - [LAMMPS](https://lammps.sandia.gov/) since Nov 2018.
 - [Yaff](https://github.com/molmod/yaff), since Jul 2019.
+- [DFTB+](https://www.dftbplus.org/), since release 20.1.
+- [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.

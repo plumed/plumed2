@@ -33,9 +33,11 @@
 !/maze
 !/molfile
 !/multicolvar
+!/opes
 !/python
 !/pamm
 !/rascal
+!/piv
 !/reference
 !/secondarystructure
 !/setup
@@ -48,6 +50,8 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
+!/funnel
+!/fisst
 
 
 # And just ignore these files

@@ -22,10 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-
-using namespace std;
-
-
 namespace PLMD {
 namespace bias {
 
@@ -101,7 +97,7 @@ BiasValue::BiasValue(const ActionOptions&ao):
   checkRead();
   // add one bias for each argument
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string ss=getPntrToArgument(i)->getName()+"_bias";
+    std::string ss=getPntrToArgument(i)->getName()+"_bias";
     addComponent(ss); componentIsNotPeriodic(ss);
   }
 }

@@ -1,0 +1,24 @@
+# vim:ft=plumed
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#ene: ENERGY #cannot get the energy in driver!
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+
+mc: ECV_MULTITHERMAL ARG=ene TEMP=300 MIN_TEMP=200 MAX_TEMP=600 STEPS_TEMP=4
+umb: ECV_UMBRELLAS_LINE ARG=psi TEMP=300 MIN_CV=-pi MAX_CV=pi SIGMA=0.8
+opes: OPES_EXPANDED ...
+  ARG=mc.ene,umb.psi
+  PACE=2
+  OBSERVATION_STEPS=10
+  PRINT_STRIDE=10
+  CALC_WORK
+  FILE=DeltaFs.data
+  FMT={% f}
+  WALKERS_MPI
+...
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
+
