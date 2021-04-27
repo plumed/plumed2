@@ -65,7 +65,7 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   // Create the reference object
   readInputLine( getShortcutLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
   // And now create the rmsd object
-  std::string rmsd_line =  getShortcutLabel() + ": RMSD DISPLACEMENT SQUARED REFERENCE_ATOMS=" + getShortcutLabel() + "_ref";
+  std::string rmsd_line =  getShortcutLabel() + ": RMSD_CALC DISPLACEMENT SQUARED REFERENCE_ATOMS=" + getShortcutLabel() + "_ref";
   // Read the reference pdb file
   FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb;
   if(!fp) error("could not open reference file " + reference );

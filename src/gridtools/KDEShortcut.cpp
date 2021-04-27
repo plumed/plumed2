@@ -62,7 +62,7 @@ ActionShortcut(ao)
   HistogramBase::createKDEObject( getShortcutLabel(), "KDE", height, height_str + kernel, this );
 }
 
-void KDEShortcut::convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, Action* action ) {
+void KDEShortcut::convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, ActionShortcut* action ) {
   double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + bwidths[0], argstr=" READ_ARG=cv1";
   for(unsigned i=0;i<bwidths.size();++i) {
       if( !Tools::convert( bwidths[i], bw ) ) action->error("could not convert input bandwidth to real number");

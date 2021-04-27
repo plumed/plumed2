@@ -202,7 +202,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     reparam_str += " METRIC={";
     if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
         std::string atnum; Tools::convert( indices[0].serial(), atnum ); 
-        reparam_str += "RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=" + atnum;
+        reparam_str += "RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=" + atnum;
         for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); reparam_str += "," + atnum; }       
         natoms=indices[0].serial(); 
         for(unsigned i=1;i<indices.size();++i) {
@@ -265,7 +265,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
       PDB pdb; pdb.read(istart,false,0.1); 
       std::vector<double> alig( pdb.getOccupancy() ), disp( pdb.getBeta() );
-      std::string minput = "RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=start ATOMS=end";
+      std::string minput = "RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=start ATOMS=end";
       // Get the align values 
       std::string anum; Tools::convert( alig[0], anum ); minput += " ALIGN=" + anum;
       for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); minput += "," + anum; }
@@ -284,7 +284,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // Retrieve final displacement vector
   ActionWithValue* av=dynamic_cast<ActionWithValue*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
   if( !av ) error("invalid input for metric" );
-  if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) error("cannot use multi component actions as metric");
+  if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD_CALC" ) error("cannot use multi component actions as metric");
   std::string mydisp = av->copyOutput(0)->getName();
 // Now add calls so we can grab the data from plumed
   long rank; plmd.cmd("getDataRank " + mydisp, &rank );
@@ -373,7 +373,7 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
     for(unsigned j=1;j<nfram;++j) {
         std::string istr, jstr; Tools::convert( j, istr); Tools::convert( j+1, jstr );
         if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-            std::string dstring = "d" + istr + ": RMSD TYPE=" + mtype + " REFERENCE_ATOMS=ref_" + istr +  " ATOMS=ref_" + jstr;
+            std::string dstring = "d" + istr + ": RMSD_CALC TYPE=" + mtype + " REFERENCE_ATOMS=ref_" + istr +  " ATOMS=ref_" + jstr;
             // Get the align values 
             std::string anum; Tools::convert( alig[0], anum ); dstring += " ALIGN=" + anum;
             for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); dstring += "," + anum; }

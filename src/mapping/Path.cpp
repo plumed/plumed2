@@ -239,7 +239,7 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
   for(unsigned i=0;i<nfram;++i) {
       std::string num; Tools::convert(i+1, num );
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-          ref_line += " INPUT" + num + "={RMSD REFERENCE_ATOMS=" + scut_lab + "_ref" + num;
+          ref_line += " INPUT" + num + "={RMSD_CALC REFERENCE_ATOMS=" + scut_lab + "_ref" + num;
           if( geometric ) ref_line += " DISPLACEMENT";
           std::string atnum; Tools::convert( indices[0].serial(), atnum ); ref_line += " ATOMS=" + atnum;
           for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); ref_line += "," + atnum; } 
@@ -292,7 +292,7 @@ unsigned Path::getNumberOfFramesAndMetric( const std::string& mtype, const std::
   }   
   // Now setup action to compute distances between configurations
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-      std::string atnum; Tools::convert( indices[0].serial(), atnum ); metric  = " METRIC={RMSD REFERENCE_ATOMS=" + atnum;
+      std::string atnum; Tools::convert( indices[0].serial(), atnum ); metric  = " METRIC={RMSD_CALC REFERENCE_ATOMS=" + atnum;
       for(unsigned i=1;i<alig.size();++i){ Tools::convert(indices[i].serial(), atnum); metric += "," + atnum; }
       unsigned natoms=indices[0].serial();
       for(unsigned i=1;i<indices.size();++i) {

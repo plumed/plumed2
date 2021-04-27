@@ -134,9 +134,6 @@ public:
 /// Return true if we are doing at a checkpoint step
   bool getCPT()const;
 
-/// Read an input line and construct an action from it. This is used in shortcuts
-  void readInputLine( const std::string& input );
-
 /// Just read one of the keywords and return the whole thing as a string
   std::string getKeyword(const std::string& key);
 

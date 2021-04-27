@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReadReferenceCluster.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/IFile.h"
 
 namespace PLMD {
@@ -115,7 +116,7 @@ SetupReferenceBase(ao)
           input = "ARG=" + getPntrToArgument(0)->getName(); for(unsigned i=1;i<getNumberOfArguments();++i) input += "," + getPntrToArgument(i)->getName();
           input += " " + convertFileToLine( reference, number, names );
       }
-      std::string slab = getLabel(); readInputLine( slab + ": READ_CLUSTER " + input );
+      std::string slab = getLabel(); plumed.readInputLine( slab + ": READ_CLUSTER " + input );
   }
 }
 

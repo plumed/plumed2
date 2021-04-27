@@ -73,7 +73,7 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       // Check that final command in input is just a scalar
       const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i-1].second-1].get() );
       if( !av ) error("final action in each created set of action should have a value");
-      if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) error("final action in each created set of actions should calculate only one scalar");
+      if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD_CALC" ) error("final action in each created set of actions should calculate only one scalar");
       if( i==1 && av->copyOutput(0)->isPeriodic() ) { periodic=true; av->copyOutput(0)->getDomain( pmin, pmax ); }
       else if( !periodic && av->copyOutput(0)->isPeriodic() ) error("mismatched periodicities in inputs");
       else if( periodic && !av->copyOutput(0)->isPeriodic() ) error("mismatched periodicities in inputs");

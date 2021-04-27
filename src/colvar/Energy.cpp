@@ -83,7 +83,6 @@ Energy::Energy(const ActionOptions&ao):
 
 void Energy::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.addOutputComponent("","default","the energy of the system");
 }
 
 }

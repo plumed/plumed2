@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,22 +19,40 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_KDEShortcut_h
-#define __PLUMED_gridtools_KDEShortcut_h
+#ifndef __PLUMED_colvar_RMSD_h
+#define __PLUMED_colvar_RMSD_h
 
-#include "HistogramBase.h"
-#include "core/ActionShortcut.h"
+#include "Colvar.h"
+#include "tools/RMSD.h"
 
 namespace PLMD {
-namespace gridtools {
+namespace colvar {
 
-class KDEShortcut : public ActionShortcut {
+class RMSD : public Colvar {
+private:
+  bool fixed_reference;
+  Tensor rot;
+  Matrix<std::vector<Vector> > DRotDPos;
+  std::vector<Vector> pos, der, direction, centeredpos, centeredreference;
+  bool squared;
+  bool nopbc;
+  bool displacement;
+  bool norm_weights;
+  std::string type;
+  std::vector<double> align,displace,sqrtdisplace;
+  PLMD::RMSD myrmsd;
+  std::vector<Vector> forcesToApply;
+  void setReferenceConfiguration();
 public:
+  explicit RMSD(const ActionOptions&);
+  virtual void calculate() override;
+  void apply() override;
+  static void registerRMSD(Keywords& keys );
   static void registerKeywords(Keywords& keys);
-  static void convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, ActionShortcut* action );
-  explicit KDEShortcut(const ActionOptions&);
 };
 
 }
 }
+
 #endif
+

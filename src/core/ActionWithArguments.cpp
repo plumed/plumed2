@@ -191,9 +191,16 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           for(unsigned j=0; j<all.size(); j++) {
               bool found=false;
               for(unsigned k=0; k<shortcuts.size(); ++k) {
-                  if( all[j]->getLabel().find(shortcuts[k]->getShortcutLabel())!=std::string::npos ) { found=true; break; }
+                  if( all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
+              } 
+              if( found ) {
+                  all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
+              } else {
+                  for(unsigned k=0; k<shortcuts.size(); ++k) {
+                      if( all[j]->getLabel().find(shortcuts[k]->getShortcutLabel())!=std::string::npos ) { found=true; break; }
+                  }
+                  if( !found ) all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
               }
-              if( !found ) all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
           }
           for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, nargs, arg );
           if( nargs==carg ) warning("no arguments in input");

@@ -19,38 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/Colvar.h"
-#include "core/PlumedMain.h"
+#include "RMSD.h"
 #include "core/ActionRegister.h"
-#include "tools/RMSD.h"
-#include "core/Atoms.h"
 #include "core/ActionSetup.h"
-#include "tools/PDB.h"
 
 namespace PLMD {
 namespace colvar {
-
-class RMSD : public Colvar {
-private:
-  bool fixed_reference;
-  Tensor rot;
-  Matrix<std::vector<Vector> > DRotDPos;
-  std::vector<Vector> pos, der, direction, centeredpos, centeredreference;
-  bool squared;
-  bool nopbc;
-  bool displacement;
-  bool norm_weights;
-  std::string type;
-  std::vector<double> align,displace,sqrtdisplace;
-  PLMD::RMSD myrmsd;
-  std::vector<Vector> forcesToApply;
-  void setReferenceConfiguration();
-public:
-  explicit RMSD(const ActionOptions&);
-  virtual void calculate() override;
-  void apply() override;
-  static void registerKeywords(Keywords& keys);
-};
 
 //+PLUMEDOC DCOLVAR RMSD
 /*
@@ -167,19 +141,22 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(RMSD,"RMSD")
+PLUMED_REGISTER_ACTION(RMSD,"RMSD_CALC")
 
-void RMSD::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
-  keys.add("optional","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV");
-  keys.add("atoms","REFERENCE_ATOMS","the atom numbers for the reference configuration");
-  keys.add("atoms","ATOMS","the atom numbers that you would like to consider");
-  keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
-  keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
+void RMSD::registerRMSD(Keywords& keys ) {
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("UNORMALIZED",false,"by default the mean sequare deviation or root mean square deviation is calculated.  If this option is given no averaging is done");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
+}
+
+void RMSD::registerKeywords(Keywords& keys) {
+  Colvar::registerKeywords(keys);
+  keys.add("atoms","REFERENCE_ATOMS","the atom numbers for the reference configuration");
+  keys.add("atoms","ATOMS","the atom numbers that you would like to consider");
+  keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
+  keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
+  RMSD::registerRMSD( keys );
   keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
 }
@@ -194,25 +171,10 @@ RMSD::RMSD(const ActionOptions&ao):
 {
   // Check for shorcut 
   std::vector<AtomNumber> atoms_ref, atoms_conf;
-  std::string reference; parse("REFERENCE",reference);
   bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
-  if( reference!="") {
-      // Create the input reference position
-      readInputLine( getLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
-      // Now create the input for the real RMSD object
-      std::string rmsd_line = getLabel() + ": RMSD REFERENCE_ATOMS=" + getLabel() + "_ref";
-      // Read the reference pdb file
-      PDB pdb; 
-      if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) plumed_merror("missing file " + reference );
-      // Get the reference atoms
-      std::vector<std::string> refname(1); refname[0]=getLabel() + "_ref"; interpretAtomList( refname, atoms_ref ); 
-      // Get the atom numbers
-      atoms_conf = pdb.getAtomNumbers(); align = pdb.getOccupancy(); displace = pdb.getBeta();
-  } else {
-      parseAtomList("REFERENCE_ATOMS",atoms_ref); parseAtomList("ATOMS",atoms_conf);
-      align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
-      displace.resize( atoms_ref.size() ); parseVector("DISPLACE",displace);
-  }
+  parseAtomList("REFERENCE_ATOMS",atoms_ref); parseAtomList("ATOMS",atoms_conf);
+  align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
+  displace.resize( atoms_ref.size() ); parseVector("DISPLACE",displace);
 
   type.assign("SIMPLE"); parse("TYPE",type);
   parseFlag("SQUARED",squared); parseFlag("NOPBC",nopbc); parseFlag("DISPLACEMENT",displacement);
