@@ -35,7 +35,7 @@ public:
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
-  void apply();
+  void apply() override;
   double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
@@ -66,13 +66,23 @@ void MultiplyMatrix::completeMatrixOperations() {
   for(unsigned i=0; i<nc; ++i) {
      for(unsigned j=0; j<nr; ++j) myout->set( i*nc+j, matout(i,j) );
   }
-
-  if( !doNotCalculateDerivatives() ) error("derivatives of inverse matrix have not been implemented");
 }
 
 void MultiplyMatrix::apply() {
-  if( doNotCalculateDerivatives() ) return;
-  error("derivatives of inverse matrix have not been implemented");
+  // Do nothing if no forces were added
+  if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
+  // Apply the forces on the matrix elements 
+  Value* outval=getPntrToOutput(0); std::vector<unsigned> shape( outval->getShape() );
+  Value* arg1=getPntrToArgument(0); Value* arg2=getPntrToArgument(1); unsigned ktot=arg1->getShape()[1];
+  for(unsigned i=0; i<shape[0]; ++i) {
+      for(unsigned j=0; j<shape[1]; ++j) {
+          double force = outval->getForce( i*shape[1] + j );
+          for(unsigned k=0; k<ktot; ++k ) {
+              arg1->addForce( i*ktot + k, force*arg2->get(k*shape[1] + j) );
+              arg2->addForce( k*shape[1]+j, force*arg1->get(i*ktot + k)  );
+          }
+      }
+  }
 }
 
 }
