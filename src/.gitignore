@@ -13,7 +13,7 @@
 !/colvar
 !/config
 !/core
-!/crystallization
+!/clusters
 !/dimred
 !/drr
 !/eds
@@ -29,12 +29,15 @@
 !/main
 !/maketools
 !/mapping
-!/manyrestraints
+!/matrixtools
 !/maze
 !/molfile
 !/multicolvar
+!/opes
 !/python
 !/pamm
+!/rascal
+!/piv
 !/reference
 !/secondarystructure
 !/setup
@@ -42,12 +45,13 @@
 !/tools
 !/vatom
 !/ves
-!/vesselbase
 !/volumes
 !/wrapper
 !/header.sh
 !/release.sh
 !/astyle.sh
+!/funnel
+!/fisst
 
 
 # And just ignore these files

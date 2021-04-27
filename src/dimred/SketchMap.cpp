@@ -53,8 +53,16 @@ void SketchMap::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
   keys.add("compulsory","CGTOL","1E-6","The tolerance for the conjugate gradient minimization that finds the projection of the landmarks");
+  keys.add("compulsory","MAXITER","1000","maximum number of optimization cycles for optimisation algorithms");
+  keys.add("compulsory","NCYCLES","0","The number of cycles of pointwise global optimisation that are required");
+  keys.add("compulsory","BUFFER","1.1","grid extent for search is (max projection - minimum projection) multiplied by this value");
+  keys.add("compulsory","CGRID_SIZE","10","number of points to use in each grid direction");
+  keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");
   keys.addFlag("PROJECT_ALL",false,"if the input are landmark coordinates then project the out of sample configurations");
   keys.add("compulsory","OS_CGTOL","1E-6","The tolerance for the conjugate gradient minimization that finds the out of sample projections");
+  keys.addFlag("USE_SMACOF",false,"find the projection in the low dimensional space using the SMACOF algorithm");
+  keys.add("compulsory","SMACTOL","1E-4","the tolerance for the smacof algorithm");
+  keys.add("compulsory","SMACREG","0.001","this is used to ensure that we don't divide by zero when updating weights for SMACOF algorithm");
 }
 
 SketchMap::SketchMap( const ActionOptions& ao):
@@ -83,15 +91,36 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // And now create the matrix of weights
   readInputLine( wvec + "_mat: DOTPRODUCT_MATRIX GROUP1=" + wvec + "_normed");
   // Run the arrange points object
-  std::string ldfunc, cgtol; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol); 
-  std::string num, argstr; for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + "_mds-" + num; } 
-  readInputLine( getShortcutLabel() + ": ARRANGE_POINTS " + argstr  + " TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);  
-  // Out of sample projection
-  if( projall ) {
-      parse("OS_CGTOL",cgtol);
-      argstr=""; for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + ".coord-" + num; }
-      readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat " +
-                     "FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
+  std::string ldfunc, cgtol, maxiter; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol); parse("MAXITER",maxiter); unsigned ncycles; parse("NCYCLES",ncycles);
+  std::string num, argstr, lname=getShortcutLabel(); if( ncycles>0 ) lname = getShortcutLabel() + "_cg";
+  for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + "_mds-" + num; } 
+  bool usesmacof; parseFlag("USE_SMACOF",usesmacof);
+  if( usesmacof ) {
+      std::string smactol, smacreg; parse("SMACTOL",smactol); parse("SMACREG",smacreg);
+      readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=smacof TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat" +
+                             " MAXITER=" + maxiter + " SMACTOL=" + smactol + " SMACREG=" + smacreg + " TARGET2=" + dissmat + " WEIGHTS2=" + wvec + "_mat");
+  } else {
+      readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=conjgrad TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);  
+      if( ncycles>0 ) {
+          std::string buf; parse("BUFFER",buf); 
+          std::vector<std::string> fgrid; parseVector("FGRID_SIZE",fgrid); 
+          std::string ncyc; Tools::convert(ncycles,ncyc); std::string pwise_args=" NCYCLES=" + ncyc + " BUFFER=" + buf; 
+          if( fgrid.size()>0 ) { 
+              if( fgrid.size()!=ndim ) error("number of elements of fgrid is not correct");
+              pwise_args += " FGRID_SIZE=" + fgrid[0];  for(unsigned i=1;i<fgrid.size();++i) pwise_args += "," + fgrid[i]; 
+          }
+          std::vector<std::string> cgrid(ndim); parseVector("CGRID_SIZE",cgrid); 
+          pwise_args += " CGRID_SIZE=" + cgrid[0]; for(unsigned i=1;i<cgrid.size();++i) pwise_args += "," + cgrid[i];
+          argstr=""; for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + "_cg.coord-" + num; }
+          readInputLine( getShortcutLabel() + ": ARRANGE_POINTS " + argstr  + pwise_args + " MINTYPE=pointwise TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);
+      }
+      // Out of sample projection
+      if( projall ) {
+          parse("OS_CGTOL",cgtol);
+          argstr=""; for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + ".coord-" + num; }
+          readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat " +
+                         "FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
+      }
   }
 }
 

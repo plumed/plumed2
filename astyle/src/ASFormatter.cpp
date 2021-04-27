@@ -4164,7 +4164,7 @@ void ASFormatter::formatPointerOrReferenceToType()
 			break;
 		}
 	}
-	// append the seqence
+	// append the sequence
 	string charSave;
 	size_t prevCh = formattedLine.find_last_not_of(" \t");
 	if (prevCh < formattedLine.length())

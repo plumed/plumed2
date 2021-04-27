@@ -22,17 +22,15 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
+#include "core/ActionToPutData.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "tools/Vector.h"
 #include "tools/Matrix.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
-
-#include <vector>
-#include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -100,7 +98,8 @@ class ResetCell:
 {
   std::string type;
   Tensor rotation,newbox;
-
+  Value* boxValue;
+  std::vector<Value*> pos_values;
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -128,7 +127,18 @@ ResetCell::ResetCell(const ActionOptions&ao):
   log<<"  type: "<<type<<"\n";
   if(type!="TRIANGULAR") error("undefined type "+type);
 
-  checkRead();
+  ActionToPutData* ax=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posx");
+  if( !ax ) error("cannot align posx has not been set");
+  pos_values.push_back( ax->copyOutput(0) );
+  ActionToPutData* ay=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posy");
+  if( !ay ) error("cannot align posx has not been set");
+  pos_values.push_back( ay->copyOutput(0) );
+  ActionToPutData* az=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posz");
+  if( !az ) error("cannot align posx has not been set");
+  pos_values.push_back( az->copyOutput(0) );
+  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
+  if( !ap ) error("cannot reset cell if box has not been set");
+  boxValue=ap->copyOutput(0); checkRead();
 }
 
 
@@ -162,8 +172,8 @@ void ResetCell::calculate() {
 
 // rotate all coordinates
   for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
-    ato=matmul(rotation,ato);
+    Vector ato=getGlobalPosition(AtomNumber::index(i));
+    setGlobalPosition(AtomNumber::index(i),matmul(rotation,ato));
   }
 // rotate box
   pbc.setBox(newbox);
@@ -172,11 +182,11 @@ void ResetCell::calculate() {
 void ResetCell::apply() {
 // rotate back forces
   for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector & f(modifyGlobalForce(AtomNumber::index(i)));
-    f=matmul(transpose(rotation),f);
+    Vector f; for(unsigned k=0; k<3; ++k) f[k]=pos_values[k]->getForce(i); 
+    Vector nf=matmul(transpose(rotation),f); for(unsigned k=0; k<3; ++k) pos_values[k]->addForce( i, nf[k]-f[k] ); 
   }
 
-  Tensor& virial(modifyGlobalVirial());
+//   Tensor& virial(modifyGlobalVirial());
 // I have no mathematical derivation for this.
 // The reasoning is the following.
 // virial= h^T * dU/dh, where h is the box matrix and dU/dh its derivatives.
@@ -189,12 +199,14 @@ void ResetCell::apply() {
 // Thus, the only possibility is to set the corresponding elements
 // of the virial matrix equal to their symmetric ones.
 // GB
+  Tensor virial;
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j]=boxValue->getForce( 3*i+j ); 
   virial[0][1]=virial[1][0];
   virial[0][2]=virial[2][0];
   virial[1][2]=virial[2][1];
 // rotate back virial
-  virial=matmul(transpose(rotation),matmul(virial,rotation));
-
+  virial=matmul(transpose(rotation),matmul(virial,rotation)); boxValue->clearInputForce();
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
 
 
 }

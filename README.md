@@ -8,6 +8,8 @@
 [![MacPorts package](https://repology.org/badge/version-for-repo/macports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/plumed/badges/version.svg)](https://anaconda.org/conda-forge/plumed)
 [![AUR package](https://repology.org/badge/version-for-repo/aur/plumed.svg)](https://repology.org/project/plumed/versions)
+[![DPorts package](https://repology.org/badge/version-for-repo/dports/plumed.svg)](https://repology.org/project/plumed/versions)
+[![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
 Branches and releases
@@ -40,13 +42,15 @@ When reporting please provide the git hash (you can obtain it with `git rev-pars
 Status
 ------
 
-Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) for the release branches.
+Below you find the status on [GitHub Actions](https://github.com/plumed/plumed2/actions) for the release branches.
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2019 (expected) | / |
-| v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
-| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | yes |
+| master   | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions) | 2021 (expected) | / |
+| v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions)   | 2020 | yes |
+| v2.6     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions)   | 2019 | yes |
+| v2.5     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions)   | 2018 | yes |
+| v2.4     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions)   | 2017 | no |
 | v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
 | v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |

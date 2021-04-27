@@ -22,10 +22,6 @@
 #include "Function.h"
 #include "ActionRegister.h"
 
-#include <cmath>
-
-using namespace std;
-
 namespace PLMD {
 namespace function {
 

@@ -27,8 +27,6 @@
 #include "core/Atoms.h"
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace vatom {
 
@@ -212,11 +210,11 @@ void Center::setupEntity() {
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   setMass( mass );
   // Set charge for center
-  if( plumed.getAtoms().chargesWereSet() ) {
-    double charge=0.;
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
-    setCharge(charge);
-  } else setCharge(0.0);
+  double charge=0.;
+  if( chargesWereSet ) {
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+  } 
+  setCharge(charge);
 }
 
 unsigned Center::getNumberOfStoredQuantities() const {

@@ -155,6 +155,8 @@ protected:
 
 ///
   unsigned getTaskCode( const unsigned& ii ) const ;
+///
+  unsigned setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList );
 /// Run all the tasks in the list
   void runAllTasks();
 /// Run all calculations in serial
@@ -253,11 +255,13 @@ public:
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments
-  void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
+  virtual void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
 /// Reperform one of the tasks
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
+/// Get the number of columns for the matrix
+  virtual unsigned getNumberOfColumns() const { plumed_merror("in " + getName() + " method for number of columns is not defined"); }
 /// Run a task for a matrix element
   void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
@@ -297,6 +301,7 @@ public:
   virtual bool writeInGraph( std::string& exline ) const { return false; }
 ///
   void generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const ;
+  static std::string getCleanGraphLabel( const std::string& glab );
 };
 
 inline

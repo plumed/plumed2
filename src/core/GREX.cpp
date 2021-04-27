@@ -21,19 +21,20 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GREX.h"
 #include "PlumedMain.h"
+#include "DataPassingTools.h"
 #include "Atoms.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
 #include <unordered_map>
 
-using namespace std;
 namespace PLMD {
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
   plumedMain(p),
   atoms(p.getAtoms()),
+  passtools(DataPassingTools::create(p.getRealPrecision())),
   partner(-1), // = unset
   localDeltaBias(0),
   foreignDeltaBias(0),
@@ -52,7 +53,7 @@ GREX::~GREX() {
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
-void GREX::cmd(const string&key,void*val) {
+void GREX::cmd(const std::string&key,void*val) {
 
 // Enumerate all possible commands:
   enum {
@@ -130,14 +131,13 @@ void GREX::cmd(const string&key,void*val) {
     case cmd_getLocalDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      passtools->double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
       break;
     case cmd_cacheLocalUNow:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
-        double x;
-        atoms.MD2double(val,x);
+        double x = passtools->MD2double(val);
         localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
         intracomm.Sum(localUNow);
       }
@@ -146,8 +146,7 @@ void GREX::cmd(const string&key,void*val) {
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
-        double x;
-        atoms.MD2double(val,x);
+        double x = passtools->MD2double(val);
         localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
         intracomm.Sum(localUSwap);
       }
@@ -155,7 +154,7 @@ void GREX::cmd(const string&key,void*val) {
     case cmd_getForeignDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      passtools->double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
       break;
     case cmd_shareAllDeltaBias:
       CHECK_INIT(initialized,key);
@@ -175,7 +174,7 @@ void GREX::cmd(const string&key,void*val) {
         Tools::convert(words[1],rep);
         plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
         double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-        atoms.double2MD(d,val);
+        passtools->double2MD(d,val);
       }
       break;
     default:
@@ -190,15 +189,14 @@ void GREX::savePositions() {
   plumedMain.resetActive(true);
   atoms.shareAll();
   plumedMain.waitData();
-  ostringstream o;
+  std::ostringstream o;
   atoms.writeBinary(o);
   buffer=o.str();
 }
 
 void GREX::calculate() {
-//fprintf(stderr,"CALCULATE %d %d\n",intercomm.Get_rank(),partner);
   unsigned nn=buffer.size();
-  vector<char> rbuf(nn);
+  std::vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -206,7 +204,7 @@ void GREX::calculate() {
     req.wait();
   }
   intracomm.Bcast(rbuf,0);
-  istringstream i(string(&rbuf[0],rbuf.size()));
+  std::istringstream i(std::string(&rbuf[0],rbuf.size()));
   atoms.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
@@ -218,7 +216,6 @@ void GREX::calculate() {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();
-//fprintf(stderr,">>> %d %d %20.12f %20.12f %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias,localUSwap,localUNow);
   }
   intracomm.Bcast(foreignDeltaBias,0);
 }

@@ -157,7 +157,7 @@ Kernel::Kernel(const ActionOptions&ao):
   if( as->copyOutput(1)->getRank()==1 ) {
       // Invert the variance
       readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref " +
-                                          "  INPUT={MATHEVAL ARG=" + getShortcutLabel() + "_ref.variance FUNC=1/x PERIODIC=NO}" );
+                                          "  INPUT={MATHEVAL ARG=variance FUNC=1/x PERIODIC=NO}" );
       // Compute the distance between the center of the basin and the current configuration
       readInputLine( getShortcutLabel() + "_dist_2: NORMALIZED_EUCLIDEAN_DISTANCE SQUARED" + vm_str +" ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() +
                      "_ref.center METRIC=" + getShortcutLabel() + "_icov");
@@ -166,13 +166,13 @@ Kernel::Kernel(const ActionOptions&ao):
           if( ktype=="von-misses" ) {
              det_inp = "vec: MATHEVAL ARG=" + getShortcutLabel() + "_icov FUNC=x PERIODIC=NO ; ";
           } else {
-             det_inp = "det: PRODUCT ARG=" + getShortcutLabel() + "_ref.variance ; ";
+             det_inp = "det: PRODUCT ARG=variance ; ";
           }
       } 
   } else { 
       if( as->copyOutput(1)->getRank()!=2 ) error("invalid input for metric");
       // Invert the input covariance matrix
-      readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={INVERT_MATRIX ARG=" + getShortcutLabel() + "_ref.covariance}" );
+      readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={INVERT_MATRIX ARG=covariance}" );
       // Compute the distance between the center of the basin and the current configuration
       readInputLine( getShortcutLabel() + "_dist_2: MAHALANOBIS_DISTANCE SQUARED ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() + "_ref.center METRIC=" + 
                      getShortcutLabel() + "_icov " + vm_str );
@@ -180,10 +180,10 @@ Kernel::Kernel(const ActionOptions&ao):
       if( norm ) {
           if( ktype=="von-misses" ) {
              std::string num, argnames="det.vals-1"; for(unsigned i=1;i<nvals;++i) { Tools::convert( i+1, num ); argnames += ",det.vals-" + num; }
-             det_inp = "det: DIAGONALIZE ARG=" + getShortcutLabel() + "_ref.covariance VECTORS=all ; ";
+             det_inp = "det: DIAGONALIZE ARG=covariance VECTORS=all ; ";
              det_inp += "comp: COMPOSE_VECTOR ARG=" + argnames + " ; vec: MATHEVAL ARG1=comp FUNC=1/x PERIODIC=NO ; ";
           } else {
-             det_inp = "det: DETERMINANT ARG=" + getShortcutLabel() + "_ref.covariance ; ";
+             det_inp = "det: DETERMINANT ARG=covariance ; ";
           }
       }
   } 

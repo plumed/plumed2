@@ -34,7 +34,7 @@ namespace ves {
 
 /// \ingroup TOOLBOX
 /// Small class to compute fermi switching function.
-/// kept similar to the orignal SwitchingFunction class.
+/// kept similar to the original SwitchingFunction class.
 class FermiSwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init;

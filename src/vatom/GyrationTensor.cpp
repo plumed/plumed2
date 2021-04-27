@@ -36,7 +36,8 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit GyrationTensor(const ActionOptions&);
   void setupEntity() override;
-  unsigned getNumberOfStoredQuantities() const ;
+  unsigned getNumberOfStoredQuantities() const override;
+  unsigned getNumberOfColumns() const override;
   void compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const override;
   void finalizeValue( const std::vector<double>& final_vals );
   void finalizeDerivatives( const std::vector<double>& final_vals, const std::vector<std::vector<double> >& final_deriv,
@@ -70,13 +71,17 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
 
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
-  addValue(shape); setNotPeriodic(); 
+  std::vector<unsigned> shape(2); shape[0]=shape[1]=3; 
+  addValue(shape); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues(); 
   for(unsigned i=0;i<9;++i) atom_deriv[i].resize( getNumberOfAtoms() );
 }
 
 void GyrationTensor::setupEntity() {
   if(!nopbc) makeWhole(0, getNumberOfAtoms()-1);
+}
+
+unsigned GyrationTensor::getNumberOfColumns() const {
+  return 3;
 }
 
 unsigned GyrationTensor::getNumberOfStoredQuantities() const {

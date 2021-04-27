@@ -1,4 +1,4 @@
-#! FIELDS time parameter ens.arg-1 ens.arg-2 ensn.arg-1 ensn.arg-2
+#! FIELDS time parameter ens.mu0 ens.mu3 ensn.mu0 ensn.mu3
  0.000000 0  0.333  0.000  0.333  0.000
  0.000000 1  0.333  0.000  0.333  0.000
  0.000000 2  0.333  0.000  0.333  0.000

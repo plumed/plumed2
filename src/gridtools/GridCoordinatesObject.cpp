@@ -236,21 +236,22 @@ void GridCoordinatesObject::getFibonacciCoordinates( const unsigned& ipoint, std
   norm = sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
 }
 
-void GridCoordinatesObject::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const {
+void GridCoordinatesObject::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
   plumed_dbg_assert( gtype==flat ); mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
 
+  unsigned inind; nneighbors = 0; 
   std::vector<unsigned> tmp_indices( dimension );
   std::vector<unsigned> my_indices( dimension );
   getIndices( mybox, my_indices );
   for(unsigned i=0; i<mysneigh.size(); ++i) {
-    unsigned tmp=i;
+    unsigned tmp=i; inind=0;
     for(unsigned j=0; j<dimension; ++j) {
       unsigned i0=tmp%2+my_indices[j]; tmp/=2;
-      if(!pbc[j] && i0==nbin[j]) plumed_merror("Extrapolating function on grid");
+      if(!pbc[j] && i0==nbin[j]) continue;
       if( pbc[j] && i0==nbin[j]) i0=0;
-      tmp_indices[j]=i0;
+      tmp_indices[inind++]=i0;
     }
-    mysneigh[i]=getIndex( tmp_indices );
+    if( inind==dimension ) mysneigh[nneighbors++]=getIndex( tmp_indices );
   }
 }
 

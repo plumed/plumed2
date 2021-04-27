@@ -72,7 +72,7 @@ Action::Action(const ActionOptions&ao):
   keywords(ao.keys)
 {
   line.erase(line.begin());
-  log.printf("Action %s\n",name.c_str());
+  if( name!="PUT" ) log.printf("Action %s\n",name.c_str());
 
   if(comm.Get_rank()==0) {
     replica_index=multi_sim_comm.Get_rank();
@@ -87,7 +87,7 @@ Action::Action(const ActionOptions&ao):
     label="@"+s;
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
-  log.printf("  with label %s\n",label.c_str());
+  if( name!="PUT" ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
@@ -97,8 +97,9 @@ Action::Action(const ActionOptions&ao):
     parse("RESTART",srestart);
     if(srestart=="YES") restart=true;
     else if(srestart=="NO")  restart=false;
-    else if(srestart=="AUTO") {}
-    else error("RESTART should be either YES, NO, or AUTO");
+    else if(srestart=="AUTO") {
+      // do nothing, this is the default
+    } else error("RESTART should be either YES, NO, or AUTO");
   }
 }
 

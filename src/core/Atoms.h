@@ -36,7 +36,7 @@
 
 namespace PLMD {
 
-class MDAtomsBase;
+//class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
 class Pbc;
@@ -45,6 +45,7 @@ class Pbc;
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
+  friend class ActionToPutData;
   friend class ActionAtomistic;
   int natoms;
   std::set<AtomNumber> unique;
@@ -60,34 +61,22 @@ class Atoms
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionAtomistic*> virtualAtomsActions;
-  Tensor box;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
-  Tensor virial;
-// this is the energy set by each processor:
-  double md_energy;
-// this is the summed energy:
-  double energy;
 
-  bool   dataCanBeSet;
-  bool   collectEnergy;
-  bool   energyHasBeenSet;
-  unsigned positionsHaveBeenSet;
-  bool massesHaveBeenSet;
-  bool chargesHaveBeenSet;
-  bool boxHasBeenSet;
-  unsigned forcesHaveBeenSet;
-  bool virialHasBeenSet;
-  bool massAndChargeOK;
+//   bool   dataCanBeSet;
+//   unsigned positionsHaveBeenSet;
+//  unsigned forcesHaveBeenSet;
   unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
   void resizeVectors(unsigned);
+  void setPbcFromBox();
 
   std::vector<int> fullList;
 
-  std::unique_ptr<MDAtomsBase> mdatoms;
+  //std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 
@@ -137,6 +126,7 @@ class Atoms
   DomainDecomposition dd;
   long int ddStep;  //last step in which dd happened
 
+  bool needsAllAtoms() const;
   void share(const std::set<AtomNumber>&);
 
 public:
@@ -145,19 +135,20 @@ public:
   ~Atoms();
 
   void init();
+  void setup();
 
   void share();
   void shareAll();
   void wait();
-  void updateForces();
+//  void updateForces();
 
   void setRealPrecision(int);
-  int  getRealPrecision()const;
+//  int  getRealPrecision()const;
 
-  void setTimeStep(void*);
+  void setTimeStep(const double tstep);
   double getTimeStep()const;
 
-  void setKbT(void*);
+  void setKbT(const double t);
   double getKbT()const;
 
   void setNatoms(int);
@@ -167,13 +158,9 @@ public:
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
-  void getLocalMasses(std::vector<double>&);
-  void getLocalPositions(std::vector<Vector>&);
-  void getLocalForces(std::vector<Vector>&);
-  void getLocalMDForces(std::vector<Vector>&);
-  const Tensor& getVirial()const;
-
-  void setCollectEnergy(bool b) { collectEnergy=b; }
+//   void getLocalPositions(std::vector<Vector>&);
+//   void getLocalForces(std::vector<Vector>&);
+//   void getLocalMDForces(std::vector<Vector>&);
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -181,11 +168,9 @@ public:
   void setAtomsNlocal(int);
 
   void startStep();
-  void setEnergy(void*);
   void setBox(void*);
-  void setVirial(void*);
-  void setPositions(void*);
-  void setPositions(void*,int);
+//   void setPositions(void*);
+//   void setPositions(void*,int);
   void setVatomPosition( const AtomNumber&, const Vector& );
   Vector getVatomPosition( const AtomNumber& ) const ;
   double getVatomMass( const AtomNumber& ) const ;
@@ -193,12 +178,8 @@ public:
   void setVatomMass( const AtomNumber&, const double& );
   void setVatomCharge( const AtomNumber&, const double& );
   Vector & getVatomForces( const AtomNumber& );
-  void setForces(void*);
-  void setForces(void*,int);
-  void setMasses(void*);
-  void setCharges(void*);
-  bool chargesWereSet() const ;
-  bool boxWasSet() const ;
+//  void setForces(void*);
+//  void setForces(void*,int);
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;
@@ -209,10 +190,6 @@ public:
 
   void add(ActionAtomistic*);
   void remove(ActionAtomistic*);
-
-  double getEnergy()const {plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
-
-  bool isEnergyNeeded()const {return collectEnergy;}
 
   void setMDEnergyUnits(double d) {MDUnits.setEnergy(d);}
   void setMDLengthUnits(double d) {MDUnits.setLength(d);}
@@ -278,21 +255,6 @@ bool Atoms::isVirtualAtom(AtomNumber i)const {
 inline
 bool Atoms::usingNaturalUnits() const {
   return naturalUnits || MDnaturalUnits;
-}
-
-inline
-bool Atoms::chargesWereSet() const {
-  return chargesHaveBeenSet;
-}
-
-inline
-bool Atoms::boxWasSet() const {
-  return boxHasBeenSet;
-}
-
-inline
-const Tensor& Atoms::getVirial()const {
-  return virial;
 }
 
 inline

@@ -79,16 +79,14 @@ PlumedFunction::PlumedFunction(const ActionOptions&ao):
   }
   // Create values to hold the arguments
   for(unsigned i=0; i<arg_ends.size()-1; ++i ) {
-     std::vector<int> size(1); size[0]=0; std::string num; Tools::convert(i+1,num);
+     std::string num; Tools::convert(i+1,num);
      for(unsigned k=0;k<OpenMP::getNumThreads();++k){
-         myplumed[k].cmd("createValue arg" + num, &size[0] );
-         if( !getPntrToArgument(arg_ends[i])->isPeriodic() ) myplumed[k].cmd("setValueNotPeriodic arg" + num); 
-         else {
-            std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
-            std::string dom( min + " " + max ); unsigned doml = dom.length();
-            char domain[doml+1]; strcpy( domain, dom.c_str()); 
-            myplumed[k].cmd("setValueDomain arg" + num, domain );
+         std::string periodstr="PERIODIC=NO";
+         if( getPntrToArgument(arg_ends[i])->isPeriodic() ) {
+             std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
+             periodstr="PERIODIC=" + min + "," + max;
          }
+         myplumed[k].cmd("createValue arg" + num + ": PUT SHAPE=0 " + periodstr );
      }
   }
   // Parse the input and create input values
@@ -165,11 +163,13 @@ void PlumedFunction::createInputLine( std::string& input, std::vector<std::pair<
           setup::SetupReferenceBase* myset=plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( farg );
           if( myset ) {
               Value* myval=myset->copyOutput( aargs ); std::vector<int> size(1+myval->getRank());
-              size[0]=myval->getRank(); for(unsigned j=0;j<size[0];++j) size[j+1]=myval->getShape()[j];
+              unsigned rank=myval->getRank(); std::string shape_str="0";
+              if( rank>0 ) {
+                  Tools::convert(myval->getShape()[0], shape_str );
+                  for(unsigned j=1;j<rank;++j) { std::string sss; Tools::convert( myval->getShape()[j],sss); shape_str += "," + sss; }
+              }      
               for(unsigned k=0;k<numthreads;++k) {
-                  myplumed[k].cmd("createValue " + myval->getName(), &size[0] );
-                  myplumed[k].cmd("valueIsConstant " + myval->getName() );
-                  if( !myval->isPeriodic() ) myplumed[k].cmd("setValueNotPeriodic " + myval->getName());
+                  myplumed[k].cmd("createValue " + myval->getName() + ": PUT CONSTANT PERIODIC=NO SHAPE=" + shape_str );
               }
           } else error("could not find setup action named " + farg );
       } 
@@ -189,29 +189,20 @@ void PlumedFunction::turnOnDerivatives() {
 void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
    const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<myplumed.size()); 
    int istep=getStep(); const_cast<PlumedMain*>(&myplumed[t])->cmd("setStep",&istep);
-   std::vector<Vector> positions( 0 ), forces( 0 ); std::vector<double> masses( 0 );
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setMasses",&masses[0]); 
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setForces",&forces[0]); 
-   const_cast<PlumedMain*>(&myplumed[t])->cmd("setPositions",&positions[0]);
    // Copy values from reference to PLUMED 
+   std::vector<double> fargv( args.size(), 0 );
    for(unsigned i=0;i<args.size();++i) {
        std::string num; Tools::convert(i+1,num);
        const_cast<PlumedMain*>(&myplumed[t])->cmd("setValue arg" + num, &args[i] ); 
+       const_cast<PlumedMain*>(&myplumed[t])->cmd("setValueForces arg" + num, &fargv[i] );
    }
-   Tensor box; const_cast<PlumedMain*>(&myplumed[t])->cmd("setBox",&box[0][0]);
    // Do the calculation using the Plumed object
    const_cast<PlumedMain*>(&myplumed[t])->cmd("calc");
    // And set the final value
    for(unsigned i=0;i<getNumberOfComponents();++i) addValue( i, data[t][i], myvals );
    // And get the forces
    if( !doNotCalculateDerivatives() ) {
-       for(unsigned i=0;i<getNumberOfComponents();++i) {
-           for(unsigned j=0;j<args.size();++j) { 
-               std::string num; Tools::convert(j+1,num); double fargv=0; 
-               const_cast<PlumedMain*>(&myplumed[t])->cmd("getValueForces arg" + num, &fargv );
-               addDerivative( i, j, -fargv, myvals );
-           }
-       }
+       for(unsigned j=0;j<args.size();++j) addDerivative( 0, j, -fargv[j], myvals );
    }
 }
 

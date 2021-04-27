@@ -22,9 +22,10 @@
 #ifndef __PLUMED_tools_MultiValue_h
 #define __PLUMED_tools_MultiValue_h
 
-#include <vector>
 #include "Exception.h"
 #include "Vector.h"
+#include <vector>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -63,8 +64,8 @@ private:
   unsigned symfunc_index;
   std::vector<std::vector<double> > symfunc_tmp_derivs;
 public:
-  MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0, const unsigned nfder=0 );
-  void resize( const unsigned&, const unsigned&, const unsigned&, const unsigned& );
+  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t ncols=0, const std::size_t nmat=0, const std::size_t nfder=0 );
+  void resize( const std::size_t&, const std::size_t&, const std::size_t&, const std::size_t& );
 /// Set the task index prior to the loop
   void setTaskIndex( const unsigned& tindex );
 /// Get the task index

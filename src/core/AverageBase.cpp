@@ -22,6 +22,7 @@
 #include "AverageBase.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "ActionToPutData.h"
 
 namespace PLMD {
 
@@ -106,6 +107,9 @@ AverageBase::AverageBase( const ActionOptions& ao):
       log.printf("  aligning atoms to first frame in data set using %s algorithm \n", rmsd_type.c_str() );
   } 
   requestArguments( arg, false ); arg_ends.push_back( getNumberOfArguments() );
+  if( all_atoms.size()>0 ) {
+      ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box"); addDependency(ap);
+  }
 
   // Read in clear instructions
   parse("CLEAR",clearstride);

@@ -23,7 +23,6 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
-#include "Value.h"
 #include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
@@ -55,6 +54,7 @@ namespace PLMD {
 
 class ActionAtomistic;
 class ActionPilot;
+class ActionToPutData;
 class Log;
 class Atoms;
 class ActionSet;
@@ -64,7 +64,7 @@ class Stopwatch;
 class Citations;
 class ExchangePatterns;
 class FileBase;
-class DataFetchingObject;
+class DataPassingTools;
 
 /**
 Main plumed object.
@@ -117,6 +117,8 @@ private:
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
   bool  initialized;
+/// Ensures that stride is only set once
+  bool strideWasSet;
 /// Name of MD engine
   std::string MDEngine;
 
@@ -146,15 +148,6 @@ private:
 /// Name of the input file
   std::string plumedDat;
 
-/// An array containing values that were passed from the MD code to PLUMED
-  std::vector<std::unique_ptr<Value>> values;
-
-/// Records which of the input values are fixed
-  std::map<std::string,bool> fixed_vals;
-
-/// Object containing data we would like to grab and pass back
-  std::unique_ptr<DataFetchingObject> mydatafetcher;
-
 /// End of input file.
 /// Set to true to terminate reading
   bool endPlumed;
@@ -168,6 +161,12 @@ private:
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
+
+/// These are tools to pass data to PLUMED 
+  std::unique_ptr<DataPassingTools> passtools;
+
+/// Map of actions that are passed data from the MD code
+  std::map<std::string,ActionToPutData*> inputs;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -266,6 +265,15 @@ public:
   void readInputLine(const std::string & str);
 
   /**
+    Read an input buffer.
+    \param str name of the string
+    Same as readInputFile, but first write str on a temporary file and then read
+    that files. At variance with readInputLine, it can take care of comments and
+    continuation lines.
+  */
+  void readInputLines(const std::string & str);
+
+  /**
     Initialize the object.
     Should be called once.
   */
@@ -338,6 +346,10 @@ public:
   Atoms& getAtoms();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;
+/// Get the real preicision
+  int getRealPrecision() const;
+/// Reference to the list of input actions
+  std::map<std::string,ActionToPutData*> & getInputActions();
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
@@ -400,12 +412,6 @@ public:
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
-/// Get pointer to value that was passed from MD code to PLUMED
-  Value* getPntrToValue( const std::string& name );
-/// Interpret the data request from one of the values that are pased from the MD code to PLUMED
-  void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
-/// Is the value with this name fixed in the input
-  bool valueIsFixed( const std::string& name ) const ;
 /// Get the name of the MD engine that called PLUMED
   std::string getMDEngine() const ;
 };
@@ -416,6 +422,11 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
+}
+
+inline
+std::map<std::string,ActionToPutData*> & PlumedMain::getInputActions() {
+  return inputs;
 }
 
 inline

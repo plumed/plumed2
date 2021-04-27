@@ -24,7 +24,6 @@
 #include "Tools.h"
 #include <iostream>
 
-using namespace std;
 namespace PLMD {
 
 std::string Citations::cite(const std::string & item) {
@@ -32,7 +31,7 @@ std::string Citations::cite(const std::string & item) {
   for(i=0; i<items.size(); ++i) if(items[i]==item) break;
   if(i==items.size()) items.push_back(item);
   plumed_assert(i<items.size());
-  string ret;
+  std::string ret;
   Tools::convert(i+1,ret);
   ret="["+ret+"]";
   return ret;

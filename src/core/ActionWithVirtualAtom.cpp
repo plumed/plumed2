@@ -22,8 +22,6 @@
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
 
-using namespace std;
-
 namespace PLMD {
 
 void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {

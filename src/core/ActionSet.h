@@ -75,6 +75,12 @@ public:
   T getFinalActionOfType() const;  
 /// Get any shortcuts with this shortcut label 
   ActionShortcut* getShortcutActionWithLabel( const std::string& s ) const ;
+/// Extract pointer to last action of type T located before
+/// action. If action is not in ActionSet or if there is no action of type T
+/// returns NULL.
+/// Typically to be used as selectLatest<Type>(this);
+  template <class T>
+  T selectLatest(const Action*action)const;
 };
 
 /////
@@ -137,6 +143,18 @@ T ActionSet::getFinalActionOfType() const {
   plumed_merror("could not find final action of appropriate type");
   return NULL;
 }
+
+template <class T>
+T ActionSet::selectLatest(const Action*action) const {
+  T t=nullptr;
+  for(const auto & p : (*this)) {
+    if(p.get()==action) return t;
+    T r=dynamic_cast<T>(p.get());
+    if(r) t=r;
+  }
+  return t;
+}
+
 
 }
 

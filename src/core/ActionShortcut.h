@@ -35,12 +35,15 @@ class ActionShortcut :
 friend class ActionSet;
 private:
   std::string shortcutlabel;
+  std::vector<std::string> savedInputLines;
 public:
   static void registerKeywords( Keywords& keys );
 /// Read keywords
   void readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
+/// Read a line of input and create appropriate actions
+  void readInputLine( const std::string& input, const bool never_update=false );
 /// Get the label for the shortcut
   const std::string & getShortcutLabel() const ;
 /// Take everything that was input to this action and convert it to a string
@@ -53,6 +56,8 @@ public:
   void calculate() override {}
 /// Do nothing.
   void apply() override {}
+/// Get the lines of the shortcut that were read in
+  std::vector<std::string> getSavedInputLines() const ;
 };
 
 }

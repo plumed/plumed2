@@ -23,8 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/OpenMP.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
@@ -89,21 +87,20 @@ PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
 void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC"); //ActionWithValue::useCustomisableComponents(keys);
-  keys.addOutputComponent("arg","default","the output arguments");
+  keys.add("compulsory","NUM","the number of local replicas");
+  keys.use("ARG"); ActionWithValue::useCustomisableComponents(keys);
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
   Function(ao)
-{  
-  std::vector<std::string> period; parseVector("PERIODIC",period);
+{
+  // these are the averages
   std::vector<unsigned> shape; shape.resize(0);
-  for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-      std::string num; Tools::convert(i+1,num);
-      ActionWithValue::addComponentWithDerivatives( "arg-" + num, shape );
-      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg-" + num );
-      else if(period.size()==2) componentIsPeriodic("arg-" + num, period[0], period[1]);
+  for(unsigned i=0; i<arg_ends.size()-1; i++) {
+    std::string s=getPntrToArgument(arg_ends[i])->getName();
+    ActionWithValue::addComponentWithDerivatives(s, shape);
+    getPntrToComponent(i)->setNotPeriodic();
   }
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }

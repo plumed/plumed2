@@ -55,23 +55,44 @@ for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.s
     fi
 done
 
-# Test for existance of spelling results
+# Test for existence of spelling results
 if [ ! -f spelling_results ] ; then
    exit 0
 fi
 
-GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+PULL_REQUEST=false
 
-if test -z $TRAVIS ; then
+if test "$TRAVIS" == true ; then
+  BRANCH="$TRAVIS_BRANCH"
+  GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+  PULL_REQUEST="$TRAVIS_PULL_REQUEST"
+  COMMIT=$TRAVIS_COMMIT
+fi
+
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    BRANCH="${GITHUB_REF#refs/heads/}"
+  fi
+  GIT_OWNER=$(  echo $GITHUB_REPOSITORY | sed "s/\/.*$//" )
+  GIT_REPO=$(   echo $GITHUB_REPOSITORY | sed "s/^.*\///" )
+  if test -n "$GITHUB_BASE_REF" ; then
+    PULL_REQUEST=true
+  fi
+  COMMIT=$GITHUB_SHA
+fi
+
+# only comment from github actions (TRAVIS to be retired)
+if test -z $GITHUB_ACTIONS || test -z "$GIT_TOKEN" ; then
     awk '{for(i=1;i<=NF;++i){ if($i=="\\n") {printf("\n"); } else {printf("%s ", $i)} }}' spelling_results
 # If not a pull request add a comment on the commit message
-elif [ $TRAVIS_PULL_REQUEST=="false" ] ; then
+elif [ $PULL_REQUEST=="false" ] ; then
     if [ "$GIT_OWNER" = plumed ] ; then 
         ASPELL_RESULTS=`cat spelling_results`
         curl -i -H "Authorization: token $GIT_TOKEN" \
         -H "Content-Type: application/json" \
         -X POST -d "{\"body\":\"$ASPELL_RESULTS\"}" \
-        https://api.github.com/repos/plumed/plumed2/commits/$TRAVIS_COMMIT/comments
+        https://api.github.com/repos/plumed/plumed2/commits/$COMMIT/comments
     fi
 # If it is a pull request comment on the pull request
 elif [ "$GIT_OWNER" = plumed ] ; then
@@ -79,7 +100,7 @@ elif [ "$GIT_OWNER" = plumed ] ; then
     curl -i -H "Authorization: token $GIT_TOKEN" \
     -H "Content-Type: application/json" \
     -X POST -d "{\"body\":\"$ASPELL_RESULTS\"}" \
-    https://api.github.com/repos/plumed/plumed2/issues/$TRAVIS_PULL_REQUEST/comments
+    https://api.github.com/repos/plumed/plumed2/issues/$PULL_REQUEST/comments
 fi
 
 rm -f spelling_results

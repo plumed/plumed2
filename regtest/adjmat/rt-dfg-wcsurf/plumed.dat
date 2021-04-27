@@ -10,7 +10,7 @@ dp_mat: DOTPRODUCT_MATRIX GROUP1=cf
 # Build the final matrix
 mat: MATHEVAL ARG1=c1_mat2.w ARG2=dp_mat FUNC=x*y PERIODIC=NO
 # Find largest cluster
-dfs: DFSCLUSTERING MATRIX=mat 
+dfs: DFSCLUSTERING ARG=mat 
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 
 nat: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=1
 

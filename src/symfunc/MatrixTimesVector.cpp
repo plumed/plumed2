@@ -97,6 +97,7 @@ public:
   void update();
   void runFinalJobs();
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ); 
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
   void updateDerivativeIndices( MultiValue& myvals ) const ;
 };
@@ -136,6 +137,35 @@ unsigned MatrixTimesVector::getNumberOfDerivatives() const {
   else if ( fixed_matrix ) return vecder_start + getPntrToArgument(1)->getShape()[0];
   else if( getPntrToArgument(1)->getRank()==0 ) return vecder_start + 1;
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
+}
+
+void MatrixTimesVector::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( fixed_matrix ) return ;
+  // Get the flags for this chain
+  std::vector<unsigned> lflags( tflags.size(), 0 ); std::vector<unsigned> pTaskList, pIndexList;
+  unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );
+  // Check if anything has been deactivated downstream
+  if( n_active==tflags.size() ) return;
+  // And retrieve the non zero elements for the input matrix
+  adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
+  if( ab ) {
+      // If tasks are deactivated in this child we can deactivate things in parent
+      actionsThatSelectTasks.push_back( parent );
+      // Get the atoms so that we can setup the neightbor lists
+      ab->retrieveAtoms(); 
+      // Now prepare the input matrix for the task loop
+      ab->prepareForTasks( n_active, pTaskList );
+      // Get the neighbours of each of the active atoms
+      std::vector<unsigned> indices( getPntrToArgument(0)->getShape()[1] );
+      for(unsigned i=0;i<n_active;++i) {
+          unsigned nneigh = ab->retrieveNeighbours( pTaskList[i], indices );
+          for(unsigned j=0;j<nneigh;++j) tflags[indices[j]] = 1;
+      }
+      unsigned nacc = 0; 
+      for(unsigned i=0; i<tflags.size(); ++i) {
+        if( tflags[i]>0 ) nacc++;
+      }
+  }
 }
 
 void MatrixTimesVector::calculate() {

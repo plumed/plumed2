@@ -1,0 +1,18 @@
+nstep             100
+tstep             0.005
+temperature       1.0
+friction          10.0
+random_seed       4525
+plumed_input      plumed.dat
+dimension         1
+replicas          1
+basis_functions_1 BF_FOURIER ORDER=5 MINIMUM=0 MAXIMUM=2*pi
+input_coeffs       pot_coeffs_input.data
+output_coeffs      pot_coeffs_output.data
+output_coeffs_fmt  %22.8e
+# kJ/mol to kBT units
+coeffs_prefactor   -0.400906
+initial_position   +6.20
+output_potential        potential.data
+output_potential_grid   300
+output_histogram        histogram.data

@@ -29,6 +29,7 @@ namespace PLMD {
 
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
+  keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
@@ -63,6 +64,23 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
   } else label = ("@" + s);
 }
 
+void ActionShortcut::readInputLine( const std::string& input, const bool never_update ) {
+  std::string f_input = input; savedInputLines.push_back( input );
+  if( !never_update ) {
+      if( update_from!=std::numeric_limits<double>::max() ) {
+        std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
+      }
+      if( update_until!=std::numeric_limits<double>::max() ) {
+        std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
+      }
+      if( keywords.exists("RESTART") ) {
+        if( restart ) f_input += " RESTART=YES";
+        if( !restart ) f_input += " RESTART=NO";
+      }
+  }
+  plumed.readInputLine( f_input );
+}
+
 const std::string & ActionShortcut::getShortcutLabel() const {
   return shortcutlabel;
 }
@@ -86,15 +104,20 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
   // Now get the output components
   if( name=="*" ) {
       for(unsigned k=0; k<out_comps.size(); ++k) {
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
-          if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
-          else {
-             for(unsigned j=1;; ++j) {
-                 std::string numstr; Tools::convert( j, numstr );
-                 ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
-                 if(!act) break;
-                 act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
-             }
+          if( out_comps[k]=="" ) {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
+              if( action ) action->interpretDataLabel( a, myuser, nargs, arg );
+          } else {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
+              if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
+              else {
+                 for(unsigned j=1;; ++j) {
+                     std::string numstr; Tools::convert( j, numstr );
+                     ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
+                     if(!act) break;
+                     act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
+                 }
+              }
           }
       }
   } else {
@@ -116,6 +139,10 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
           }
       }
   }
+}
+
+std::vector<std::string> ActionShortcut::getSavedInputLines() const {
+  return savedInputLines;
 }
 
 }

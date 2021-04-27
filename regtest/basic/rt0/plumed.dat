@@ -1,3 +1,5 @@
+RESTART NO # revert command line option --restart
+
 rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb NOPBC
 rmsds0:  RMSD TYPE=SIMPLE  REFERENCE=test0.pdb NOPBC
 rmsd1:   RMSD TYPE=OPTIMAL REFERENCE=test1.pdb NOPBC

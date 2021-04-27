@@ -67,6 +67,7 @@ public:
   void update() override;
   void runFinalJobs();
   unsigned getNumberOfDerivatives() const override;
+  unsigned getNumberOfColumns() const override;
 };
 
 inline

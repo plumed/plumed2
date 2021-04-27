@@ -30,7 +30,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 
-using namespace std;
 namespace PLMD {
 
 void ActionWithValue::registerKeywords(Keywords& keys) {
@@ -212,12 +211,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), false, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), true, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -253,7 +252,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, false, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -270,7 +269,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, true, shape ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -427,7 +426,7 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
                                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
   // Check which actions are using the values calculated by this action
-  bool usedOutsideOfChain=false; bool usedByPython=false;
+  bool usedOutsideOfChain=false;
   for(unsigned i=0;i<values.size();++i) {
       for(const auto & p : values[i]->userdata) {
           // Check if the action is only being used within the chain
@@ -436,17 +435,16 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
               if( p.first==actionLabelsInChain[j] ){ inchain=true; break; } 
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
-          if( !inchain ) usedOutsideOfChain=true; 
-          // Check if it is used by a data gatherer
-          if( p.first=="python" ) usedByPython=true;
+          if( !inchain ) {
+              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p.first );
+              if( user ) user->getTasksForParent( getLabel(), actionsThatSelectTasks, tflags ); 
+              usedOutsideOfChain=true; 
+          }
       }
   }
-  // Check if a data gather is getting all the data 
-  if( usedByPython ) { 
-      forceAllTasks=true;
   // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
   // allows deactivated tasks
-  } else if( usedOutsideOfChain ) {
+  if( usedOutsideOfChain ) {
       bool OKToDeactivate=false;
       for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
           if( getLabel()==actionsThatSelectTasks[i] ){ OKToDeactivate=true; break; }
@@ -468,6 +466,25 @@ void ActionWithValue::prepareForTaskLoop( const unsigned& nactive, const std::ve
   if( action_to_do_after ) action_to_do_after->prepareForTaskLoop( nactive, pTaskList );
 }
 
+unsigned ActionWithValue::setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList ) {
+  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false;
+  tflags.assign(tflags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
+  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) tflags.assign(tflags.size(),1);
+  // Now actually build the list of active tasks
+  unsigned n_active = 0;
+  for(unsigned i=0; i<fullTaskList.size(); ++i) {
+    if( tflags[i]>0 ) n_active++;
+  }
+  // Now create the partial task list
+  unsigned n=0; pTaskList.resize( n_active ); pIndexList.resize( n_active );
+  for(unsigned i=0; i<fullTaskList.size(); ++i) {
+    // Deactivate sets inactive tasks to number not equal to zero
+    if( tflags[i]>0 ) { pTaskList[n] = fullTaskList[i]; pIndexList[n]=i; n++; } 
+  }
+  return n_active;
+}
+
 void ActionWithValue::runAllTasks() {
 // Skip this if this is done elsewhere
   if( action_to_do_before ) return;
@@ -476,30 +493,13 @@ void ActionWithValue::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
-  // Determine if some tasks can be switched off
-  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
-  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false; 
-  taskFlags.assign(taskFlags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, taskFlags ); 
-  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) taskFlags.assign(taskFlags.size(),1);
-  // Now actually build the list of active tasks
-  nactive_tasks = 0;
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    if( taskFlags[i]>0 ) nactive_tasks++;
-  }
-
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
   if( nt==0 || no_openmp ) nt=1;
 
-  // Now create the partial task list
-  unsigned n=0; partialTaskList.resize( nactive_tasks ); indexOfTaskInFullList.resize( nactive_tasks );
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    // Deactivate sets inactive tasks to number not equal to zero
-    if( taskFlags[i]>0 ) {
-      partialTaskList[n] = fullTaskList[i]; indexOfTaskInFullList[n]=i; n++;
-    }
-  }
+  // Determine if some tasks can be switched off
+  nactive_tasks = setTaskFlags( taskFlags, partialTaskList, indexOfTaskInFullList );
   // Now do all preparations required to run all the tasks
   prepareForTaskLoop( nactive_tasks, partialTaskList );
 
@@ -594,6 +594,8 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
       if( values[i]->getShape()[1]>ncols ) { ncols = values[i]->getShape()[1]; }
       values[i]->matpos=nmat; nmat++;
+      // Matrices store is reshaped every step as we do a sparse storage of data to minimise memory requirements
+      if( values[i]->storedata ) values[i]->reshapeMatrixStore();
     } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
       values[i]->matpos=nmat; nmat++;
     }
@@ -604,10 +606,7 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
 
 void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
   for(unsigned i=0; i<values.size(); ++i) {
-    values[i]->bufstart=bufsize;
-    if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
-    else if( values[i]->getRank()==0 ) bufsize += 1;
-    else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize();
+    values[i]->bufstart=bufsize; bufsize += values[i]->data.size();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -640,13 +639,16 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   if( matrix ) {
     unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
     for(unsigned i=0; i<values.size(); ++i) {
+      unsigned matindex = values[i]->getPositionInMatrixStash();;
       if( values[i]->hasForce ) {
-        unsigned sind = values[i]->streampos, matindex = values[i]->getPositionInMatrixStash();
-        double fforce = values[i]->getForce( myvals.getTaskIndex()*getFullNumberOfTasks() + col_stash_index );
+        unsigned sind = values[i]->streampos, find = col_stash_index;
+        if( values[i]->getNumberOfColumns()<values[i]->shape[1] ) find=myvals.getNumberOfStashedMatrixElements(matindex);
+        double fforce = values[i]->getForce( myvals.getTaskIndex()*getNumberOfColumns() + find );
         for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
-      } else if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
+      } 
+      if( values[i]->storedata ) myvals.stashMatrixElement( matindex, col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
     }
   }
 
@@ -686,14 +688,30 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
   plumed_dbg_assert( !values[valindex]->hasDeriv && values[valindex]->getRank()>0 );
   unsigned sind = values[valindex]->streampos;
   // This looks after storing for matrices
-  if( values[valindex]->getRank()==2 ) {
-    unsigned ncols = values[valindex]->getShape()[1];
-    unsigned vindex = bufstart + code*ncols; unsigned matind = values[valindex]->getPositionInMatrixStash();
-    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
-      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-    }
+  if( values[valindex]->getRank()==2 && !values[valindex]->alwaysstore ) {
+    unsigned rstart = (1+values[valindex]->getNumberOfColumns())*code;
+    unsigned matind = values[valindex]->getPositionInMatrixStash();
+    unsigned vindex = bufstart + code*values[valindex]->getNumberOfColumns();
+    // Only matrix elements that are definitely non-zero are stored here
+    // This is used with contact matrices to reduce the ammount of memory required
+    if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[0] ) {
+        values[valindex]->matindexes[rstart]=0; 
+        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+          unsigned jind = myvals.getStashedMatrixIndex(matind,j); 
+          values[valindex]->matindexes[rstart+1+values[valindex]->matindexes[rstart]]=jind; values[valindex]->matindexes[rstart]++;
+          plumed_dbg_massert( vindex+j<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+          buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind );
+        }
+    // This stores all matrix elements in the expected places for when the matrix is dense
+    } else {
+        values[valindex]->matindexes[rstart]=values[valindex]->getShape()[1]; unsigned k=rstart+1;
+        for(unsigned j=0;j<values[valindex]->matindexes[rstart];++j) { values[valindex]->matindexes[k]=j; k++; }
+        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+           unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+           plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+           buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );    
+        } 
+    } 
     // This looks after sums over columns of matrix
   } else if ( values[valindex]->getRank()==1 && values[valindex]->columnsums ) {
     unsigned vindex = bufstart; unsigned matind = values[valindex]->getPositionInMatrixStash();
@@ -756,8 +774,9 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
       unsigned bufstart = values[i]->bufstart;
       if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
       if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) {
-        unsigned sz_v = values[i]->getSize();
+        unsigned sz_v = values[i]->data.size();
         for(unsigned j=0; j<sz_v; ++j) values[i]->add( j, buffer[bufstart+j] );
+        if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) comm.Sum( values[i]->matindexes );
       }
       if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ) {
         for(unsigned j=0; j<values[i]->getNumberOfDerivatives(); ++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
@@ -871,6 +890,24 @@ void ActionWithValue::clearAllForcesInChain() {
   clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain();
 }
 
+std::string ActionWithValue::getCleanGraphLabel( const std::string& gilab ) {
+  std::string glab = gilab; 
+  if( glab.find("@")!=std::string::npos ){ std::size_t at=glab.find_first_of("@"); glab=glab.substr(at+1); }
+  for(unsigned j=0;;++j) {
+      std::size_t pos = glab.find_first_of("-"); if( pos==std::string::npos ) break;
+      glab = glab.substr(0,pos) + "h" + glab.substr(pos+1);
+  }
+  for(unsigned j=0;;++j) {
+     std::size_t pos = glab.find_first_of("["); if( pos==std::string::npos ) break;
+     glab = glab.substr(0,pos) + glab.substr(pos+1);
+  }
+  for(unsigned j=0;;++j) {
+     std::size_t pos = glab.find_first_of("]"); if( pos==std::string::npos ) break;
+     glab = glab.substr(0,pos) + glab.substr(pos+1);
+  }
+  return glab;
+}
+
 void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const {
   if( action_to_do_before ) return ;
   const ActionWithVirtualAtom* ava=dynamic_cast<const ActionWithVirtualAtom*>(this);
@@ -892,7 +929,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       unsigned gstart = graph_actions.size(); 
       for(unsigned i=0;i<chain.size();++i){
           ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string exline, num; 
-          std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }
+          std::string label=getCleanGraphLabel( av->getLabel() );
           if( av->writeInGraph(exline) ) {
               ofile.printf("     %s [label=\"%d \\n %s: \\n %s \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str(), exline.c_str() );
           } else {
@@ -907,7 +944,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
                   }
                   if( inchain ) {
                       ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( p.first ); plumed_assert( av2 );
-                      std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
+                      std::string label2=getCleanGraphLabel( av2->getLabel() ); 
                       std::string color="orange";
                       if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
                       else if( (av->values[j])->getRank()==2 ) color="red";
@@ -921,7 +958,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       }
       ofile.printf("   }\n");
   } else {
-      std::string label=getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      std::string label=getCleanGraphLabel( getLabel() ); 
       const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); std::string exline; graph_actions.push_back( getLabel() );
       if( av ) {  
           if( av->writeInGraph(exline) ) {
@@ -933,8 +970,7 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
   }
   // Now create the links to the nodes outside of this chain
   for(unsigned i=0;i<chain.size();++i) {
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] );
-      std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string label=getCleanGraphLabel( av->getLabel() ); 
       for(unsigned j=0;j<av->values.size();++j) {
           for(const auto & p : (av->values[j])->userdata) {
               // Check if the action is only being used within the chain
@@ -951,13 +987,12 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
                           if( av2->getLabel()==graph_actions[i] ){ found=true; break; }
                       } 
                       if( !found ) {
-                          std::string label=av2->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }  
+                          std::string label=getCleanGraphLabel( av2->getLabel() ); 
                           ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), av2->getLabel().c_str(), av2->getName().c_str() );
                           graph_actions.push_back( av2->getLabel() );
                       }
                   }
-                  std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
-                  std::string color="orange";
+                  std::string label2=getCleanGraphLabel( av2->getLabel() ); std::string color="orange";
                   if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
                   else if( (av->values[j])->getRank()==2 ) color="red";
                   else if( (av->values[j])->getRank()==1 ) color="blue";

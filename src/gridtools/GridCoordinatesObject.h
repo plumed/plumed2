@@ -107,7 +107,7 @@ public:
   void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
                      unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const ;
 /// Get the points neighboring a particular spline point
-  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
+  void getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
   const std::vector<double>& getGridSpacing() const ;
 /// Get the stride (the distance between the grid points of an index)

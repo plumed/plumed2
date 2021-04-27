@@ -41,6 +41,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("optional","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
+  keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):

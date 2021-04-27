@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "GridCoordinatesObject.h"
+#include "Interpolator.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -34,6 +35,7 @@ class ActionWithInputGrid :
   public ActionWithArguments {
 private:
   enum {spline,floor} interpolation_type;
+  Interpolator my_interpolator;
   void doTheCalculation();
 protected:
   bool firststep;

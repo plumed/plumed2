@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include <string>
 
-using namespace std;
-
 namespace PLMD {
 namespace isdb {
 
@@ -82,7 +80,7 @@ void Selector::registerKeywords( Keywords& keys ) {
 Selector::Selector(const ActionOptions&ao):
   Action(ao)
 {
-  string name;
+  std::string name;
   parse("NAME", name);
   double value;
   parse("VALUE", value);

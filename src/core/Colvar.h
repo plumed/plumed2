@@ -42,8 +42,6 @@ class Colvar :
 {
 private:
 protected:
-  bool isEnergy;
-  bool isExtraCV;
   void requestAtoms(const std::vector<AtomNumber> & a);
 // Set the derivatives for a particular atom equal to the input Vector
 // This routine is called setAtomsDerivatives because not because you
@@ -64,7 +62,6 @@ protected:
   void           setBoxDerivativesNoPbc();
   void           setBoxDerivativesNoPbc(Value*);
 public:
-  bool checkIsEnergy() {return isEnergy;}
   explicit Colvar(const ActionOptions&);
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );
@@ -112,7 +109,6 @@ void Colvar::setBoxDerivativesNoPbc() {
 
 inline
 unsigned Colvar::getNumberOfDerivatives() const {
-  if( isEnergy ) return 1;
   return 3*getNumberOfAtoms() + 9;
 }
 

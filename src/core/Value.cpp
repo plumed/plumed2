@@ -26,19 +26,20 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
+#include "tools/OpenMP.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
 
 Value::Value():
-  created_in_plumedmain(false),
   action(NULL),
   value_set(false),
   reset(true),
   norm(1.0),
   hasForce(false),
   hasDeriv(true),
+  ngrid_der(0),
   istimeseries(false),
   shape(std::vector<unsigned>()),
   alwaysstore(false),
@@ -57,8 +58,23 @@ Value::Value():
   data.resize(1); inputForces.resize(1);
 }
 
+Value::Value(const std::string& name):
+  action(NULL),
+  value_set(false),
+  hasForce(false),
+  hasDeriv(true),
+  name(name),
+  periodicity(unset),
+  min(0.0),
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
+{
+  data.resize(1); inputForces.resize(1); 
+  data[0]=inputForces[0]=0;
+}
+
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
-  created_in_plumedmain(false),
   action(av),
   value_set(false),
   reset(true),
@@ -66,6 +82,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
+  ngrid_der(0),
   istimeseries(false),
   alwaysstore(false),
   storedata(true),
@@ -80,18 +97,28 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
-  if( ss.size()>0 ) storedata=false;
-  setShape( ss );
+  if( action ) alwaysstore=action->getName()=="PUT";
+  if( ss.size()>0 && !alwaysstore ) storedata=false;
+  setShape( ss ); 
 }
 
 void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
+  // Matrices are resized dynamically so we can use the sparsity pattern to reduce the 
+  // overhead on memory
+  if( getRank()==2 ) {
+      if( !hasDeriv && !alwaysstore && !istimeseries ) return;
+  }
 
-  if( (hasDeriv || storedata || istimeseries || created_in_plumedmain) && shape.size()>0 ) {
-     data.resize(getSize()); unsigned fsize=1; 
-     for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-     inputForces.resize(fsize); 
+  if( (hasDeriv || storedata || istimeseries) && shape.size()>0 ) {
+     unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+     unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+     if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
+     if( hasDeriv ) {
+         ngrid_der = shape.size();
+         if( action ) ngrid_der = action->getNumberOfDerivatives();
+     } 
   } else if( hasDeriv ) {
      data.resize( 1 +  action->getNumberOfDerivatives() ); inputForces.resize(1);
   } else if( shape.size()==0 ) { data.resize(1); inputForces.resize(1); }
@@ -115,26 +142,15 @@ void Value::buildDataStore( const std::string& actlabel ) {
     if( actlabel==store_data_for[i].first ) found=true;
   }
   if( !found ) store_data_for.push_back( std::pair<std::string,int>(actlabel,-1) );
-  storedata=true;
-  if( getRank()>0 && !hasDeriv ) {
-      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
-      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-      if( fsize!=inputForces.size() ) inputForces.resize(fsize);
-  }
+  storedata=true; setShape( shape );
 }
 
 void Value::alwaysStoreValues() {
-  plumed_assert( !neverstore); alwaysstore=true; storedata=true;
-  if( getRank()>0 && !hasDeriv ) {
-      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
-      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-      if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
-  }
+  plumed_assert( !neverstore); alwaysstore=true; storedata=true; setShape( shape );
 }
 
 void Value::makeTimeSeries() {
-  istimeseries=true;
-  unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
+  istimeseries=true; setShape( shape );
 }
 
 void Value::neverStoreValues() {
@@ -176,12 +192,6 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
   if( getIndex(indices)>=getNumberOfValues(aname) ) action->error("action does not have this many components");
   userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
-
-// void Value::addStreamIndex( const int& newi ){
-//   plumed_dbg_assert( shape.size()>0 );
-//   if( indices_in_stream.size()>0 ) plumed_assert( indices_in_stream[0]!=-1 );
-//   indices_in_stream.push_back( newi );
-// }
 
 bool Value::isPeriodic()const {
   plumed_massert(periodicity!=unset,"periodicity should be set");
@@ -277,14 +287,14 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
-  if( created_in_plumedmain ) return NULL;
   plumed_assert( action!=NULL );
   return action;
 }
 
 unsigned Value::getSize() const {
   unsigned size=getNumberOfValues( name );
-  if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );
+  if( shape.size()>0 && hasDeriv && action ) return size*( 1 + action->getNumberOfDerivatives() ); 
+  else if( shape.size()>0 && hasDeriv ) return size*( 1 + shape.size() );
   return size;
 }
 
@@ -297,23 +307,43 @@ unsigned Value::getNumberOfValues( const std::string& alab ) const {
   }
 }
 
-double Value::get(const unsigned& ival) const {
-  if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
+double Value::get(const unsigned& ival, const bool trueind) const {
+  if( hasDeriv ) return data[ival*(1+ngrid_der)] / norm;
 #ifdef DNDEBUG 
   if( action ) plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
 #endif
+  if( shape.size()==2 && getNumberOfColumns()<shape[1] && trueind ) {
+      unsigned irow = std::floor( ival / shape[0] ), jcol = ival%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) return data[irow*getNumberOfColumns()+i] / norm;
+      }
+      return 0.0;
+  }
+  plumed_assert( ival<data.size() );
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 }
 
+void Value::addForce(const unsigned& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && getNumberOfColumns()<shape[1] && trueind ) { 
+      unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) { inputForces[irow*getNumberOfColumns()+i]+=f; return; }
+      }
+      plumed_assert( fabs(f)<epsilon ); return;
+  } 
+  inputForces[iforce]+=f;
+}
+
 double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
-  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
-  return data[n*(1+action->getNumberOfDerivatives()) + 1 + j] / norm;
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  return data[n*(1+ngrid_der) + 1 + j] / norm;
 }
 
 void Value::setGridDerivative(const unsigned& n, const unsigned& j, const double& val ) {
-  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
-  data[n*(1+action->getNumberOfDerivatives()) + 1 + j] = val;
+  plumed_dbg_assert( hasDeriv && n*(1+shape.size()) + 1 + j < data.size() );
+  data[n*(1+shape.size()) + 1 + j] = val;
 }
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {
@@ -352,15 +382,39 @@ unsigned Value::getPositionInMatrixStash() const {
   return matpos;
 }
 
+unsigned Value::getNumberOfColumns() const {
+  plumed_assert( shape.size()==2 && !hasDeriv );
+  if( alwaysstore ) return shape[1];
+  return action->getNumberOfColumns();
+}
+
+unsigned Value::getRowLength( const unsigned& irow ) const {
+  if( !alwaysstore ) return matindexes[(1+getNumberOfColumns())*irow];
+  return shape[1];
+}
+ 
+unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+  if( !alwaysstore ) return matindexes[(1+getNumberOfColumns())*irow+1+jind];
+  return jind;
+}
+
+void Value::reshapeMatrixStore() {
+  plumed_assert( shape.size()==2 && !hasDeriv && storedata && action );
+  unsigned size = shape[0]*getNumberOfColumns();
+  if( matindexes.size()==(size+shape[0]) ) return;
+  data.resize( size ); inputForces.resize( size ); 
+  matindexes.resize( size + shape[0] );
+}
+
 const std::vector<unsigned>& Value::getShape() const {
   return shape;
 }
 
 void Value::set(const unsigned& n, const double& v ) {
-  value_set=true;
+  value_set=true; 
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
-  else if( !hasDeriv ) { data[n]=v; applyPeriodicity(n); }
-  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+  else if( !hasDeriv ) { plumed_dbg_assert( n<data.size() ); data[n]=v; applyPeriodicity(n); }
+  else { data[n*(1+ngrid_der)] = v; }
 }
 
 bool Value::usingAllVals( const std::string& alabel ) const {
@@ -423,6 +477,18 @@ void Value::setSymmetric( const bool& sym ) {
 
 bool Value::isSymmetric() const {
   return symmetric;
+}
+
+void Value::writeBinary(std::ostream&o) const {
+  o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
+}
+
+void Value::readBinary(std::istream&i) {
+  i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
+}
+
+unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
+  return OpenMP::getGoodNumThreads( &data[j], (k-j) );
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){

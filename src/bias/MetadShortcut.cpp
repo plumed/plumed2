@@ -94,7 +94,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID ARG=" + lab + "_grid " + truncflag2 );
   } else {
       // Square root the variance to get sigma
-      act->readInputLine( lab + "_sigma: CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={MATHEVAL ARG1=" + lab + "_ref.variance FUNC=sqrt(x) PERIODIC=NO}");
+      act->readInputLine( lab + "_sigma: CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={MATHEVAL ARG1=variance FUNC=sqrt(x) PERIODIC=NO}");
       std::string store_args; for(unsigned i=0;i<args.size();++i) { std::string num; Tools::convert( i+1, num ); store_args += " ARG" + num + "=" + args[i]; }
       // Create a store to hold the list of Gaussians
       act->readInputLine( lab + "_store: COLLECT_FRAMES STRIDE=" + pacestr + store_args + " LOGWEIGHTS=" + weight_str );

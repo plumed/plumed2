@@ -71,7 +71,7 @@ class Matrix:
   template <typename U> friend int pseudoInvert( const Matrix<U>&, Matrix<double>& );
   /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
   template <typename U> friend int logdet( const Matrix<U>&, double& );
-  /// Invert a matrix (works for both symmetric and assymetric matrices) - returns zero if sucesfull
+  /// Invert a matrix (works for both symmetric and asymmetric matrices) - returns zero if sucesfull
   template <typename U> friend int Invert( const Matrix<U>&, Matrix<double>& );
   /// Do a cholesky decomposition of a matrix
   template <typename U> friend void cholesky( const Matrix<U>&, Matrix<U>& );
@@ -100,7 +100,7 @@ public:
   /// Set the matrix from a vector input
   inline void setFromVector( const std::vector<T>& vecin ) { plumed_assert( vecin.size()==sz ); for(unsigned i=0; i<sz; ++i) data[i]=vecin[i]; }
   /// Return element i,j of the matrix
-  inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
+  inline const T& operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
   /// Return a referenre to element i,j of the matrix
   inline T& operator () (const unsigned& i, const unsigned& j)      { return data[j+i*cl]; }
   /// Set all elements of the matrix equal to the value of v

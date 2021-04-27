@@ -41,7 +41,6 @@ class PDB;
 class ActionAtomistic :
   virtual public Action
 {
-
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique;
@@ -49,17 +48,18 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
+  std::vector<Value*>   pos_values;
+  Value*                massValue;
+  Value*                chargeValue;
+  Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
   Pbc&                  pbc=*pbc_fwd;
   Tensor                virial;
   std::vector<double>   masses;
-  bool                  chargesWereSet;
   std::vector<double>   charges;
 
   std::vector<Vector>   forces;          // forces on the needed atoms
-  double                forceOnEnergy;
 
-  double                forceOnExtraCV;
 
   std::string           extraCV;
 
@@ -69,9 +69,8 @@ class ActionAtomistic :
   bool                  donotforce;
 
 protected:
+  bool                  chargesWereSet;
   Atoms&                atoms;
-
-  void setExtraCV(const std::string &name);
 
 public:
 /// Request an array of atoms.
@@ -87,11 +86,11 @@ public:
 /// With direct access to the global atom array.
 /// \warning Should be only used by actions that need to read the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  const Vector & getGlobalPosition(AtomNumber)const;
-/// Get modifiable position of i-th atom (access by absolute AtomNumber).
+  Vector getGlobalPosition(AtomNumber)const;
+/// Modify position of i-th atom (access by absolute AtomNumber).
 /// \warning Should be only used by actions that need to modify the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  Vector & modifyGlobalPosition(AtomNumber);
+  void setGlobalPosition(AtomNumber, const Vector& pos);
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
@@ -102,10 +101,11 @@ public:
 ///           if an action require this, one should during constructor
 ///           call allowToAccessGlobalForces().
 ///           Notice that for efficiency reason plumed does not check if this is done!
-  Vector & modifyGlobalForce(AtomNumber);
+//  Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
+  Tensor & modifyVirial();
 /// Should be used by action that need to modify the stored virial
-  Tensor & modifyGlobalVirial();
+//  Tensor & modifyGlobalVirial();
 /// Get modifiable PBC
 /// Should be used by action that need to modify the stored box
   Pbc & modifyGlobalPbc();
@@ -113,8 +113,6 @@ public:
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
-/// Get energy
-  const double & getEnergy()const;
 /// Get mass of i-th atom
   double getMass(int i)const;
 /// Get charge of i-th atom
@@ -122,11 +120,7 @@ public:
 /// Get a reference to forces array
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
-  Tensor & modifyVirial();
-/// Get a reference to force on energy
-  double & modifyForceOnEnergy();
-/// Get a reference to force on extraCV
-  double & modifyForceOnExtraCV();
+  void addVirial( const Tensor& v );
 /// Get number of available atoms
   unsigned getNumberOfAtoms()const {return indexes.size();}
 /// Compute the pbc distance between two positions
@@ -164,7 +158,7 @@ public:
 /// If start and end are set to particular indices then do a subset
   void makeWhole( const unsigned start=0, const unsigned end=0 );
 /// Allow calls to modifyGlobalForce()
-  void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
+//   void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
 /// updates local unique atoms
   void updateUniqueLocal();
 public:
@@ -209,28 +203,20 @@ const Vector & ActionAtomistic::getPosition(int i)const {
   return positions[i];
 }
 
-inline
-const Vector & ActionAtomistic::getGlobalPosition(AtomNumber i)const {
-  return atoms.positions[i.index()];
-}
 
-inline
-Vector & ActionAtomistic::modifyGlobalPosition(AtomNumber i) {
-  return atoms.positions[i.index()];
-}
+// inline
+// Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
+//   return atoms.forces[i.index()];
+// }
 
-inline
-Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
-  return atoms.forces[i.index()];
-}
-
-inline
-Tensor & ActionAtomistic::modifyGlobalVirial() {
-  return atoms.virial;
-}
+// inline
+// Tensor & ActionAtomistic::modifyGlobalVirial() {
+//   return atoms.virial;
+// }
 
 inline
 double ActionAtomistic::getMass(int i)const {
+  plumed_assert( i<masses.size() );
   return masses[i];
 }
 
@@ -256,11 +242,6 @@ const std::vector<Vector> & ActionAtomistic::getPositions()const {
 }
 
 inline
-const double & ActionAtomistic::getEnergy()const {
-  return energy;
-}
-
-inline
 const Tensor & ActionAtomistic::getBox()const {
   return pbc.getBox();
 }
@@ -273,16 +254,6 @@ std::vector<Vector> & ActionAtomistic::modifyForces() {
 inline
 Tensor & ActionAtomistic::modifyVirial() {
   return virial;
-}
-
-inline
-double & ActionAtomistic::modifyForceOnEnergy() {
-  return forceOnEnergy;
-}
-
-inline
-double & ActionAtomistic::modifyForceOnExtraCV() {
-  return forceOnExtraCV;
 }
 
 inline
@@ -311,20 +282,9 @@ const std::set<AtomNumber> & ActionAtomistic::getUniqueLocal()const {
 }
 
 inline
-unsigned ActionAtomistic::getTotAtoms()const {
-  return atoms.positions.size();
-}
-
-inline
 Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
 }
-
-inline
-void ActionAtomistic::setExtraCV(const std::string &name) {
-  extraCV=name;
-}
-
 
 
 }

@@ -231,6 +231,21 @@ PLUMED_CONFIG_ENABLE([doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
+AC_ARG_ENABLE([cxx],
+  AS_HELP_STRING([--enable-cxx], [11 or 14. To link libraries with headers that need this C++ level. Use --enable-cxx=none to remove -std=c++ flag]),
+  [
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) AC_MSG_ERROR([cxx level not supported])
+    esac
+    AC_MSG_NOTICE([Selected C++ level: $cxx_level])
+  ],
+  [
+    cxx_level="11"
+  ]
+)
 PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
@@ -265,9 +280,10 @@ PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
-PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
-PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
-PLUMED_CONFIG_ENABLE([af_cpu],[arrayfire_cpu],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
+PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
+PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
+PLUMED_CONFIG_ENABLE([rascal],[search for rascal],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -341,7 +357,11 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-std=c++11])
+fi
+
+if test -n "$cxx_level"
+then
+  PLUMED_CHECK_CXXFLAG([-std=c++$cxx_level])
 fi
 
 if test $debug == true
@@ -845,10 +865,25 @@ if test "$debug" == false ; then
   AC_DEFINE([NDEBUG])
 fi
 
+AC_SUBST(use_debug_glibcxx)
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
   AC_DEFINE([_GLIBCXX_DEBUG])
+  use_debug_glibcxx=yes
+fi
+
+# check for librascal
+if test $rascal == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([rascal],[
+#include <rascal/utils/utils.hh>
+int main() {
+   std::string etest=rascal::internal::get_filename_extension("file.dat"); 
+   return 0;
+}
+  ], [__PLUMED_HAS_RASCAL])
 fi
 
 # this is necessary in many MPI implementations

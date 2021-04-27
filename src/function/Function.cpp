@@ -23,11 +23,11 @@
 #include "core/CollectFrames.h"
 #include "core/ActionSetup.h"
 #include "core/PlumedMain.h"
+#include "core/ActionToPutData.h"
 #include "core/Atoms.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
 
-using namespace std;
 namespace PLMD {
 namespace function {
 
@@ -123,6 +123,10 @@ Function::Function(const ActionOptions&ao):
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
     } else {
       createTasksFromArguments();
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          ActionToPutData* ap=dynamic_cast<ActionToPutData*>( getPntrToArgument(i)->getPntrToAction() );
+          if( ap ) { distinct_arguments.resize(0); break; }
+      }
       // Now create the stream of jobs to work through      
       if( distinct_arguments.size()>0 && getName()!="PROJECT_ON_VECTOR" ) {  // This is for if we have a function that needs to store - needs though GAT
         // Create the chain of actions that will calculate the function
@@ -294,6 +298,11 @@ void Function::fixTimeSeries() {
   }
 }
 
+unsigned Function::getNumberOfColumns() const {
+  plumed_assert( getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
+  return getPntrToArgument(0)->getNumberOfColumns();
+}
+
 void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
@@ -422,7 +431,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
           for(unsigned i=0; i<nderivatives; ++i) myvals.updateIndex( ostrn, i );
           return;
-        } 
+        }
       }
   } else if( myvals.inVectorCall() ) {
       plumed_dbg_assert( getNumberOfArguments()==1 && getPntrToArgument(0)->getRank()==2 );

@@ -69,21 +69,23 @@ ActionShortcut(ao)
       else if(sss=="false") { multivariate=false;}
   }
   if( multivariate ) {
-      std::string num, col_string;
+      std::string inum, jnum, col_string;
       readInputLine( getShortcutLabel() + "_zero: CONSTANT VALUES=0.0");
       for(unsigned i=0; i<values.size(); i++) {
+          Tools::convert( i+1, inum ); 
           for(unsigned j=0;j<=i;++j) {
+              Tools::convert( j+1, jnum );
               readInputLine( getShortcutLabel() + "_sigma_" + values[i] + "_" + values[j] + ": READ IGNORE_FORCES FILE=" + hillsfile +  
                              " VALUES=sigma_" + values[i] + "_" + values[j]  );
+              if( i!=j ) col_string += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[j];
           }
-          Tools::convert( i+1, num ); col_string += " ARG" + num + "=" + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[0];
-          for(unsigned j=1; j<values.size(); ++j) {
-              if( j<=i ) col_string += "," + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[j];
-              else col_string += "," + getShortcutLabel() + "_zero"; 
+          col_string += " MATRIX" + inum + inum + "=" + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[i];
+          for(unsigned j=i+1;j<values.size();++j) {
+              Tools::convert( j+1, jnum ); col_string += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_zero";
           }
       }
       // This is cholesky decomposition of matrix    
-      readInputLine( getShortcutLabel() + "_chol: COMPOSE_MATRIX " + col_string );
+      readInputLine( getShortcutLabel() + "_chol: COMBINE_MATRICES " + col_string );
       // Transpose
       readInputLine( getShortcutLabel() + "_cholT: TRANSPOSE ARG=" + getShortcutLabel() + "_chol");
       // Recompose sigma matrix

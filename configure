@@ -636,6 +636,7 @@ dot
 doxygen
 make_doc
 readelf
+use_debug_glibcxx
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -708,6 +709,7 @@ enable_doc
 enable_pdfdoc
 enable_debug
 enable_gcov
+enable_cxx
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
@@ -745,6 +747,7 @@ enable_python
 enable_af_ocl
 enable_af_cuda
 enable_af_cpu
+enable_rascal
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -1389,6 +1392,9 @@ Optional Features:
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-gcov           enable gcov to estimate code coverage, default: no
+  --enable-cxx            11 or 14. To link libraries with headers that need
+                          this C++ level. Use --enable-cxx=none to remove
+                          -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
@@ -1441,10 +1447,10 @@ Optional Features:
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
-  --enable-af_ocl         enable arrayfire_opencl, default: search for
-                          arrayfire
-  --enable-af_cuda        enable arrayfire_cuda, default: search for arrayfire
-  --enable-af_cpu         enable arrayfire_cpu, default: search for arrayfire
+  --enable-af_ocl         enable search for arrayfire_ocl, default: no
+  --enable-af_cuda        enable search for arrayfire_cuda, default: no
+  --enable-af_cpu         enable search for arrayfire_cpu, default: no
+  --enable-rascal         enable search for rascal, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -2605,6 +2611,25 @@ else
 fi
 
 
+# Check whether --enable-cxx was given.
+if test "${enable_cxx+set}" = set; then :
+  enableval=$enable_cxx;
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) as_fn_error $? "cxx level not supported" "$LINENO" 5
+    esac
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Selected C++ level: $cxx_level" >&5
+$as_echo "$as_me: Selected C++ level: $cxx_level" >&6;}
+
+else
+
+    cxx_level="11"
+
+
+fi
+
 
 basic_warnings=
 # Check whether --enable-basic-warnings was given.
@@ -3227,7 +3252,7 @@ if test "${enable_af_ocl+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_ocl" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_ocl=true ;;
              (no)  af_ocl=false ;;
   esac
@@ -3245,7 +3270,7 @@ if test "${enable_af_cuda+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cuda" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cuda=true ;;
              (no)  af_cuda=false ;;
   esac
@@ -3263,9 +3288,27 @@ if test "${enable_af_cpu+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-af_cpu" "$LINENO" 5 ;;
   esac
 else
-  case "search for arrayfire" in
+  case "no" in
              (yes) af_cpu=true ;;
              (no)  af_cpu=false ;;
+  esac
+
+fi
+
+
+
+rascal=
+# Check whether --enable-rascal was given.
+if test "${enable_rascal+set}" = set; then :
+  enableval=$enable_rascal; case "${enableval}" in
+             (yes) rascal=true ;;
+             (no)  rascal=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-rascal" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) rascal=true ;;
+             (no)  rascal=false ;;
   esac
 
 fi
@@ -4615,11 +4658,15 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test -n "$cxx_level"
+then
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++11"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9451,11 +9498,74 @@ $as_echo "$as_me: Release mode, adding -DNDEBUG" >&6;}
 
 fi
 
+
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
 $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
+
+  use_debug_glibcxx=yes
+fi
+
+# check for librascal
+if test $rascal == true ; then
+
+    found=ko
+    __PLUMED_HAS_RASCAL=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking rascal with -l$testlib" >&5
+$as_echo_n "checking rascal with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking rascal without extra libs" >&5
+$as_echo_n "checking rascal without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <rascal/utils/utils.hh>
+int main() {
+   std::string etest=rascal::internal::get_filename_extension("file.dat");
+   return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_RASCAL 1" >>confdefs.h
+
+      __PLUMED_HAS_RASCAL=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_RASCAL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RASCAL" >&2;}
+      LIBS="$save_LIBS"
+    fi
 
 fi
 

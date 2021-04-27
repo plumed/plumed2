@@ -30,8 +30,6 @@
 #include <vector>
 #include <memory>
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
@@ -77,7 +75,7 @@ plumed simplemd --help
 class SimpleMD:
   public PLMD::CLTool
 {
-  string description()const override {
+  std::string description()const override {
     return "run lj code";
   }
 
@@ -127,10 +125,10 @@ private:
              int&    nconfig,
              int&    nstat,
              bool&   wrapatoms,
-             string& inputfile,
-             string& outputfile,
-             string& trajfile,
-             string& statfile,
+             std::string& inputfile,
+             std::string& outputfile,
+             std::string& trajfile,
+             std::string& statfile,
              int&    maxneighbours,
              int&    ndim,
              int&    idum)
@@ -188,7 +186,7 @@ private:
     if(w.length()>0 && (w[0]=='T' || w[0]=='t')) wrapatoms=true;
   }
 
-  void read_natoms(const string & inputfile,int & natoms) {
+  void read_natoms(const std::string & inputfile,int & natoms) {
 // read the number of atoms in file "input.xyz"
     FILE* fp=fopen(inputfile.c_str(),"r");
     if(!fp) {
@@ -204,7 +202,7 @@ private:
     if(ret==0) plumed_error() <<"Error reading number of atoms from file "<<inputfile;
   }
 
-  void read_positions(const string& inputfile,int natoms,vector<Vector>& positions,double cell[3]) {
+  void read_positions(const std::string& inputfile,int natoms,std::vector<Vector>& positions,double cell[3]) {
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
     FILE* fp=fopen(inputfile.c_str(),"r");
@@ -229,20 +227,20 @@ private:
     }
   }
 
-  void randomize_velocities(const int natoms,const int ndim,const double temperature,const vector<double>&masses,vector<Vector>& velocities,Random&random) {
+  void randomize_velocities(const int natoms,const int ndim,const double temperature,const std::vector<double>&masses,std::vector<Vector>& velocities,Random&random) {
 // randomize the velocities according to the temperature
     for(int iatom=0; iatom<natoms; iatom++) for(int i=0; i<ndim; i++)
-        velocities[iatom][i]=sqrt(temperature/masses[iatom])*random.Gaussian();
+        velocities[iatom][i]=std::sqrt(temperature/masses[iatom])*random.Gaussian();
   }
 
   void pbc(const double cell[3],const Vector & vin,Vector & vout) {
 // apply periodic boundary condition to a vector
     for(int i=0; i<3; i++) {
-      vout[i]=vin[i]-floor(vin[i]/cell[i]+0.5)*cell[i];
+      vout[i]=vin[i]-std::floor(vin[i]/cell[i]+0.5)*cell[i];
     }
   }
 
-  void check_list(const int natoms,const vector<Vector>& positions,const vector<Vector>&positions0,const double listcutoff,
+  void check_list(const int natoms,const std::vector<Vector>& positions,const std::vector<Vector>&positions0,const double listcutoff,
                   const double forcecutoff,bool & recompute)
   {
 // check if the neighbour list have to be recomputed
@@ -260,8 +258,8 @@ private:
   }
 
 
-  void compute_list(const int natoms,const int listsize,const vector<Vector>& positions,const double cell[3],const double listcutoff,
-                    vector<int>& point,vector<int>& list) {
+  void compute_list(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
+                    std::vector<int>& point,std::vector<int>& list) {
 // see Allen-Tildesey for a definition of point and list
     Vector distance;     // distance of the two atoms
     Vector distance_pbc; // minimum-image distance of the two atoms
@@ -288,8 +286,8 @@ private:
     }
   }
 
-  void compute_forces(const int natoms,const int listsize,const vector<Vector>& positions,const double cell[3],
-                      double forcecutoff,const vector<int>& point,const vector<int>& list,vector<Vector>& forces,double & engconf)
+  void compute_forces(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],
+                      double forcecutoff,const std::vector<int>& point,const std::vector<int>& list,std::vector<Vector>& forces,double & engconf)
   {
     Vector distance;        // distance of the two atoms
     Vector distance_pbc;    // minimum-image distance of the two atoms
@@ -301,7 +299,7 @@ private:
     forcecutoff2=forcecutoff*forcecutoff;
     engconf=0.0;
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
-    engcorrection=4.0*(1.0/pow(forcecutoff2,6.0)-1.0/pow(forcecutoff2,3));
+    engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3));
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jlist=point[iatom]; jlist<point[iatom+1]; jlist++) {
         int jatom=list[jlist];
@@ -323,7 +321,7 @@ private:
     }
   }
 
-  void compute_engkin(const int natoms,const vector<double>& masses,const vector<Vector>& velocities,double & engkin)
+  void compute_engkin(const int natoms,const std::vector<double>& masses,const std::vector<Vector>& velocities,double & engkin)
   {
 // calculate the kinetic energy from the velocities
     engkin=0.0;
@@ -333,14 +331,14 @@ private:
   }
 
 
-  void thermostat(const int natoms,const int ndim,const vector<double>& masses,const double dt,const double friction,
-                  const double temperature,vector<Vector>& velocities,double & engint,Random & random) {
-// Langevin thermostat, implemented as decribed in Bussi and Parrinello, Phys. Rev. E (2007)
+  void thermostat(const int natoms,const int ndim,const std::vector<double>& masses,const double dt,const double friction,
+                  const double temperature,std::vector<Vector>& velocities,double & engint,Random & random) {
+// Langevin thermostat, implemented as described in Bussi and Parrinello, Phys. Rev. E (2007)
 // it is a linear combination of old velocities and new, randomly chosen, velocity,
 // with proper coefficients
-    double c1=exp(-friction*dt);
+    double c1=std::exp(-friction*dt);
     for(int iatom=0; iatom<natoms; iatom++) {
-      double c2=sqrt((1.0-c1*c1)*temperature/masses[iatom]);
+      double c2=std::sqrt((1.0-c1*c1)*temperature/masses[iatom]);
       for(int i=0; i<ndim; i++) {
         engint+=0.5*masses[iatom]*velocities[iatom][i]*velocities[iatom][i];
         velocities[iatom][i]=c1*velocities[iatom][i]+c2*random.Gaussian();
@@ -349,7 +347,7 @@ private:
     }
   }
 
-  void write_positions(const string& trajfile,int natoms,const vector<Vector>& positions,const double cell[3],const bool wrapatoms)
+  void write_positions(const std::string& trajfile,int natoms,const std::vector<Vector>& positions,const double cell[3],const bool wrapatoms)
   {
 // write positions on file trajfile
 // positions are appended at the end of the file
@@ -373,7 +371,7 @@ private:
     fclose(fp);
   }
 
-  void write_final_positions(const string& outputfile,int natoms,const vector<Vector>& positions,const double cell[3],const bool wrapatoms)
+  void write_final_positions(const std::string& outputfile,int natoms,const std::vector<Vector>& positions,const double cell[3],const bool wrapatoms)
   {
 // write positions on file outputfile
     Vector pos;
@@ -392,7 +390,7 @@ private:
   }
 
 
-  void write_statistics(const string & statfile,const int istep,const double tstep,
+  void write_statistics(const std::string & statfile,const int istep,const double tstep,
                         const int natoms,const int ndim,const double engkin,const double engconf,const double engint) {
 // write statistics on file statfile
     if(write_statistics_first) {
@@ -413,19 +411,19 @@ private:
 
   int main(FILE* in,FILE*out,PLMD::Communicator& pc) override {
     int            natoms;       // number of atoms
-    vector<Vector> positions;    // atomic positions
-    vector<Vector> velocities;   // velocities
-    vector<double> masses;       // masses
-    vector<Vector> forces;       // forces
+    std::vector<Vector> positions;    // atomic positions
+    std::vector<Vector> velocities;   // velocities
+    std::vector<double> masses;       // masses
+    std::vector<Vector> forces;       // forces
     double         cell[3];      // cell size
     double         cell9[3][3];  // cell size
 
 // neighbour list variables
 // see Allen and Tildesey book for details
     int            listsize;     // size of the list array
-    vector<int>    list;         // neighbour list
-    vector<int>    point;        // pointer to neighbour list
-    vector<Vector> positions0;   // reference atomic positions, i.e. positions when the neighbour list
+    std::vector<int>    list;         // neighbour list
+    std::vector<int>    point;        // pointer to neighbour list
+    std::vector<Vector> positions0;   // reference atomic positions, i.e. positions when the neighbour list
 
 // input parameters
 // all of them have a reasonable default value, set in read_input()
@@ -442,10 +440,10 @@ private:
     int         idum;              // seed
     int         plumedWantsToStop; // stop flag
     bool        wrapatoms;         // if true, atomic coordinates are written wrapped in minimal cell
-    string      inputfile;         // name of file with starting configuration (xyz)
-    string      outputfile;        // name of file with final configuration (xyz)
-    string      trajfile;          // name of the trajectory file (xyz)
-    string      statfile;          // name of the file with statistics
+    std::string inputfile;         // name of file with starting configuration (xyz)
+    std::string outputfile;        // name of file with final configuration (xyz)
+    std::string trajfile;          // name of the trajectory file (xyz)
+    std::string statfile;          // name of the file with statistics
 
     double engkin;                 // kinetic energy
     double engconf;                // configurational energy
@@ -458,7 +456,7 @@ private:
     std::unique_ptr<PlumedMain> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed.reset(new PLMD::PlumedMain);
+    plumed=Tools::make_unique<PLMD::PlumedMain>();
 
     if(plumed) {
       int s=sizeof(double);

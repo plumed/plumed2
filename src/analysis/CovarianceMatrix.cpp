@@ -44,7 +44,8 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit CovarianceMatrix(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() const { return 0; }
+  unsigned getNumberOfDerivatives() const override { return 0; }
+  unsigned getNumberOfColumns() const override;
   void performTask( const unsigned& current, MultiValue& myvals ) const {}
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -82,6 +83,10 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   buildTaskList(); std::vector<unsigned> shape(2); 
   shape[0]=shape[1]=ndata; addValue(shape); setNotPeriodic();
   getPntrToComponent(0)->alwaysStoreValues();
+}
+
+unsigned CovarianceMatrix::getNumberOfColumns() const {
+  return arg_ends.size()-1;
 }
 
 void CovarianceMatrix::buildTaskList() {

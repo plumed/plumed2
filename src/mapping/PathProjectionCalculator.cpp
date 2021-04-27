@@ -63,20 +63,10 @@ mypath_obj(NULL)
   int nat=2*natoms; metric.cmd("setNatoms",&nat);
   positions.resize(nat); masses.resize(nat); forces.resize(nat); charges.resize(nat);
   if( nargs>0 ) {
-      std::vector<int> size(2); size[0]=1; size[1]=nargs;
-      metric.cmd("createValue arg1",&size[0]);
-      metric.cmd("createValue arg2",&size[0]);
-      if( !mypath_obj ) {
-          metric.cmd("setValueNotPeriodic arg1"); metric.cmd("setValueNotPeriodic arg2");
-      } else if( !mypath_obj->isPeriodic() ) {
-          metric.cmd("setValueNotPeriodic arg1"); metric.cmd("setValueNotPeriodic arg2");
-      } else {
-          std::string min, max; mypath_obj->getDomain( min, max );
-          std::string dom( min + " " + max ); unsigned doml = dom.length();
-          char domain[doml+1]; strcpy( domain, dom.c_str());
-          metric.cmd("setValueDomain arg1", domain );
-          metric.cmd("setValueDomain arg2", domain );
-      }
+      std::string str_nargs; Tools::convert( nargs, str_nargs ); std::string period_str=" PERIODIC=NO";
+      if( mypath_obj && mypath_obj->isPeriodic() ) { std::string min, max; mypath_obj->getDomain( min, max ); period_str=" PERIODIC=" + min + "," + max; }
+      metric.cmd("createValue arg1: PUT SHAPE=" + str_nargs + period_str);
+      metric.cmd("createValue arg2: PUT SHAPE=" + str_nargs + period_str);
   }
   double tstep=1.0; metric.cmd("setTimestep",&tstep);
   std::string inp; act->parse("METRIC",inp); const char* cinp=inp.c_str();
@@ -102,22 +92,25 @@ unsigned PathProjectionCalculator::getNumberOfFrames() const {
 }
 
 void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box ) {
-  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata;
+  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata1, valdata2;
   if( reference_frames[ifrom]->getNumberOfComponents()>0 ) {
       Value* myval1 = reference_frames[ifrom]->copyOutput(0); unsigned nvals = myval1->getSize();
-      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval1->get(i);
-      metric.cmd("setValue arg1", &valdata[0] );
+      valdata1.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata1[i] = myval1->get(i);
+      metric.cmd("setValue arg1", &valdata1[0] );
   }
   reference_frames[ifrom]->getAtomsFromReference( 0, masses, charges, positions );
   if( reference_frames[ito]->getNumberOfComponents()>0 ) {
       Value* myval2 = reference_frames[ito]->copyOutput(0); unsigned nvals = myval2->getSize();
-      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval2->get(i); 
-      metric.cmd("setValue arg2", &valdata[0] );
+      valdata2.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata2[i] = myval2->get(i); 
+      metric.cmd("setValue arg2", &valdata2[0] );
   }
   reference_frames[ito]->getAtomsFromReference( positions.size()/2, masses, charges, positions );
-  metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
-  metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
-  metric.cmd("setBox",&box[0][0]); metric.cmd("calc");
+  if( positions.size()>0 ) {
+      metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
+      metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
+      metric.cmd("setBox",&box[0][0]); 
+  }
+  metric.cmd("calc");
 }
 
 void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace ) {

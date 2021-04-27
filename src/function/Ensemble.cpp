@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
@@ -157,7 +155,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
 
   // calculate the weights either from BIAS
   if(do_reweight) {
-    vector<double> bias;
+    std::vector<double> bias;
     bias.resize(ens_dim);
     if(master) {
       bias[my_repl] = args[narg];
@@ -178,8 +176,8 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
 
   const double fact_kbt = fact/kbt;
 
-  vector<double> mean(narg);
-  vector<double> dmean(narg,fact);
+  std::vector<double> mean(narg);
+  std::vector<double> dmean(narg,fact);
   // calculate the mean
   if(master) {
     for(unsigned i=0; i<narg; ++i) mean[i] = fact*args[i];
@@ -187,7 +185,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
   }
   comm.Sum(&mean[0], narg);
 
-  vector<double> v_moment, dv_moment;
+  std::vector<double> v_moment, dv_moment;
   // calculate other moments
   if(do_moments) {
     v_moment.resize(narg);
@@ -229,11 +227,11 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
   // calculate powers of moments
   if(do_powers) {
     for(unsigned i=0; i<narg; ++i) {
-      const double tmp1 = pow(mean[i],power-1);
+      const double tmp1 = std::pow(mean[i],power-1);
       mean[i]          *= tmp1;
       dmean[i]         *= power*tmp1;
       if(do_moments) {
-        const double tmp2 = pow(v_moment[i],power-1);
+        const double tmp2 = std::pow(v_moment[i],power-1);
         v_moment[i]      *= tmp2;
         dv_moment[i]     *= power*tmp2;
       }

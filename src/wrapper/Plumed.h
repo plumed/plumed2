@@ -1020,6 +1020,18 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
 
+/**
+  Retrieve PLUMED_EXCEPTIONS_DEBUG (internal utility).
+
+  This function should not be used by external programs. It is defined
+  as inline static so that it can store a static variable (for quicker access)
+  without adding a unique global symbol to a library including this header file.
+*/
+inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
+  return res;
+}
+
 /* Optionally, it is further hidden in an anonymous namespace */
 
 __PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
@@ -1087,9 +1099,7 @@ class Plumed {
         options+=2;
       }
 
-    static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
-
-    if(debug) {
+    if(PlumedGetenvExceptionsDebug()) {
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_EXCEPTIONS_DEBUG\n");
       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ code: %d error_code: %d message:\n%s\n",h->code,h->error_code,what);
       if(__PLUMED_WRAPPER_STD strlen(what) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
@@ -1247,8 +1257,11 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Exception() throw() {}
+#endif
   };
 
   /**
@@ -1259,8 +1272,11 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionError() throw() {}
+#endif
   };
 
   /**
@@ -1271,8 +1287,11 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionDebug() throw() {}
+#endif
   };
 
   /**
@@ -1283,8 +1302,11 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Invalid() throw() {}
+#endif
   };
 
   /**
@@ -1298,8 +1320,11 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~LeptonException() throw() {}
+#endif
   };
 
 private:
@@ -1320,8 +1345,7 @@ private:
     __PLUMED_WRAPPER_CXX_EXPLICIT std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       this->msg[0]='\0'; \
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG"); \
-      if(debug && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
+      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
     } \
     std_ ## name(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       msg[0]='\0'; \
@@ -1892,7 +1916,7 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #endif
 
 /*
-  With internal interface, it does not make sence to emit kernel register or fortran interfaces
+  With internal interface, it does not make sense to emit kernel register or fortran interfaces
 */
 
 #if ! __PLUMED_WRAPPER_EXTERN /*{*/
@@ -1912,12 +1936,14 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #include <cassert> /* assert */
 #include <cstdlib> /* getenv malloc free abort exit */
 #include <climits> /* CHAR_BIT */
+#include <cstddef> /* size_t */
 #else
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stddef.h>
 #endif
 
 /**
@@ -2032,7 +2058,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   char* pathcopy;
   void* p;
   char* pc;
-  size_t strlenpath;
+  __PLUMED_WRAPPER_STD size_t strlenpath;
   FILE* fp;
   pathcopy=NULL;
   p=NULL;
@@ -2667,6 +2693,11 @@ plumed plumed_f2c(const char*c) {
   assert(sizeof(p.p)<=16);
 
   assert(c);
+
+  /*
+     needed to avoid cppcheck warning on uninitialized p
+  */
+  p.p=NULL;
   cc=(unsigned char*)&p.p;
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);

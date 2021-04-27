@@ -24,8 +24,6 @@
 #include "tools/Vector.h"
 #include "tools/Exception.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace vatom {
 
@@ -110,13 +108,13 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=0) error("ATOMS should be empty");
 
   parseFlag("SCALED_COMPONENTS",scaled_components);
 
-  vector<double> at;
+  std::vector<double> at;
   parseVector("AT",at);
   if(at.size()!=3) error("AT should be a list of three real numbers");
 
@@ -133,7 +131,7 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
 }
 
 void FixedAtom::calculate() {
-  vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Tensor> deriv(getNumberOfAtoms());
   if(scaled_components) {
     setPosition(getPbc().scaledToReal(coord));
   } else {

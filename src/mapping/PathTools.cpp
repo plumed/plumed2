@@ -34,8 +34,6 @@
 #include <vector>
 #include <iostream>
 
-using namespace std;
-
 namespace PLMD {
 namespace mapping {
 
@@ -113,7 +111,7 @@ public:
   explicit PathTools(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
   void printLambda( const std::string& mtype, const std::string& argstr, const std::string& ofile );
-  string description()const {
+  std::string description()const {
     return "print out a description of the keywords for an action in html";
   }
 };
@@ -148,13 +146,15 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setNoVirial"); 
   plmd.cmd("setMDEngine","pathtools");
-  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  int natoms = 1; plmd.cmd("setNatoms",&natoms);
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);
   std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
   std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
- 
+  std::vector<Vector> pos(1); plmd.cmd("setPositions",&pos[0][0]); 
+  std::vector<Vector> forces(1); plmd.cmd("setForces",&forces[0][0]);
+
   std::string mtype; parse("--metric",mtype);
   std::string ifilename; parse("--path",ifilename);
   std::string ofmt; parse("--arg-fmt",ofmt);
@@ -248,7 +248,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
   nbetween++;
   fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
-  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the intial and final structures "
+  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
           "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
 // Read initial frame
@@ -339,12 +339,14 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setNoVirial");
   plmd.cmd("setMDEngine","pathtools");
-  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  int natoms = 1; plmd.cmd("setNatoms",&natoms);
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);
   std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
   std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
+  std::vector<Vector> pos(1); plmd.cmd("setPositions",&pos[0][0]);
+  std::vector<Vector> forces(1); plmd.cmd("setForces",&forces[0][0]);
 
   FILE* fp=fopen(ofile.c_str(),"r");
   bool do_read=true; unsigned nfram=0;

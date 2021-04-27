@@ -40,6 +40,8 @@ class MultiColvarBase :
 private:
 /// Use periodic boundary conditions
   bool usepbc;
+/// Do not create virtual atoms for atom locations
+  bool nolocation;
 /// The atoms indices of the centers of the group
   std::vector<AtomNumber> mygroup;
 /// Vector of forces

@@ -31,7 +31,7 @@ namespace volumes {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing a new way of definining a particular region of the simulation
+This is the abstract base class to use for implementing a new way of defining a particular region of the simulation
 box. You can use this to calculate the number of atoms inside that part or the average value of a quantity like the
 coordination number inside that part of the cell.
 */

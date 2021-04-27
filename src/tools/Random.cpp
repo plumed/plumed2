@@ -46,7 +46,7 @@ Random::Random(const std::string & name):
   name(&name!=&noname?name:"noname")
 {
   iy=0;
-  iv[0]=0;
+  for(unsigned i=0; i<NTAB; i++) iv[i]=0;
   setSeed(0);
 }
 

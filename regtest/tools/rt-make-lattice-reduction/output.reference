@@ -1,0 +1,15 @@
+testReduce2
+1 2 -1
+3 0 1
+-2 2 2
+testReduceSlow
+1 2 -1
+3 0 1
+2 -2 -2
+testReduceFast
+1 2 -1
+3 0 1
+-2 2 2
+testIsReduced
+0
+1

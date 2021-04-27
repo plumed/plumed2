@@ -24,8 +24,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 

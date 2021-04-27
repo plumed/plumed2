@@ -1,0 +1,33 @@
+# vim:ft=plumed
+RESTART
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#ene: ENERGY #cannot get the energy in driver!
+ene: CUSTOM PERIODIC=NO ARG=phi FUNC=50*x+100 #random stuff instead of energy
+#vol: VOLUME #volume is constant, so using something else
+vol: CUSTOM PERIODIC=NO ARG=psi FUNC=50*x+100 #random stuff instead of volume
+
+ecv: ECV_MULTITHERMAL_MULTIBARIC ...
+  ARG=ene,vol
+  TEMP=300
+  SET_ALL_TEMPS=200,300,400,500
+  PRESSURE=0.01
+  SET_ALL_PRESSURES=0,1,2,3,4,5
+  CUT_CORNER=200,0.01,400,3
+...
+opes: OPES_EXPANDED ...
+  FMT={% f}
+  ARG=ecv.*
+  PACE=2
+  OBSERVATION_STEPS=10
+  PRINT_STRIDE=10
+  RESTART=NO
+  STATE_WFILE=State.data
+  STATE_WSTRIDE=2*15
+...
+
+PRINT FMT=%g STRIDE=10 FILE=Colvar.data ARG=*
+
+ENDPLUMED
+

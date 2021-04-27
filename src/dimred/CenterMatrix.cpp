@@ -19,8 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
+#include "matrixtools/ActionWithInputMatrices.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC DIMRED CENTER_MATRIX
@@ -36,71 +35,54 @@ Create a low-dimensional projection of a trajectory using the classical multidim
 namespace PLMD {
 namespace dimred {
 
-class CenterMatrix : 
-public ActionWithValue,
-public ActionWithArguments {
+class CenterMatrix : public matrixtools::ActionWithInputMatrices {
 private:
   bool wasupdated;
 public:
   static void registerKeywords( Keywords& keys );
   explicit CenterMatrix( const ActionOptions& ao );
-  unsigned getNumberOfDerivatives() const { return 0; }
-  void calculate(){}
-  void apply(){}
-  void update();
-  void runFinalJobs();
+  void completeMatrixOperations() override;
+  void apply() override {}
+  double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(CenterMatrix,"CENTER_MATRIX")
 
 void CenterMatrix::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.use("ARG"); 
+  matrixtools::ActionWithInputMatrices::registerKeywords( keys ); 
 }
 
 CenterMatrix::CenterMatrix( const ActionOptions& ao):
   Action(ao),
-  ActionWithValue(ao),
-  ActionWithArguments(ao),
+  matrixtools::ActionWithInputMatrices(ao),
   wasupdated(false)
 {
   if( getNumberOfArguments()!=1 ) error("should only input one argument to CENTER_MATRIX");
-  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input to CENTER_MATRIX should be a matrix"); 
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input to CENTER_MATRIX should be a square matrix");
 
   // Re-request the arguments as we do in diagonalize for similar reasons
-  std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(1); 
-  requestArguments(args, false ); std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0];
-  addValue(shape); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
-  if( getPntrToArgument(0)->isTimeSeries() ) getPntrToOutput(0)->makeTimeSeries();
+  std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0]; addValue(shape); 
 }
 
-void CenterMatrix::update() {
-  if( skipUpdate() || getPntrToOutput(0)->getShape()[0]==0 ) return;
-  plumed_dbg_assert( !actionInChain() ); Value* arg0=getPntrToArgument(0); Value* val0=getPntrToOutput(0);
+void CenterMatrix::completeMatrixOperations() {
+  plumed_dbg_assert( !actionInChain() ); Value* val0=getPntrToOutput(0);
 
   // Apply centering transtion
-  unsigned n=arg0->getShape()[0]; 
+  unsigned n=val0->getShape()[0]; 
   if( n==0 ) return ;
+  Matrix<double> mymatrix( n, n ); retrieveFullMatrix( 0, mymatrix );
 
   // First HM
   double sum; wasupdated=true;
   for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=-0.5*arg0->get( i*n+j );             
-    sum /= n; for(unsigned j=0; j<n; ++j) val0->set( i*n+j, -0.5*arg0->get( i*n+j ) - sum );  
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=-0.5*mymatrix(i,j);             
+    sum /= n; for(unsigned j=0; j<n; ++j) val0->set( i*n+j, -0.5*mymatrix(i,j) - sum );  
   }
   // Now (HM)H
   for(unsigned i=0; i<n; ++i) {
     sum=0; for(unsigned j=0; j<n; ++j) sum+=val0->get( j*n+i );    
     sum /= n; for(unsigned j=0; j<n; ++j) val0->set( j*n+i, val0->get( j*n+i ) - sum ); 
   }
-
-}
-
-void CenterMatrix::runFinalJobs() {
-  if( skipUpdate() || wasupdated ) return;
-  plumed_dbg_assert( !actionInChain() && getPntrToOutput(0)->getShape()[0]==0 );
-  resizeForFinalTasks(); update();
 }
 
 }

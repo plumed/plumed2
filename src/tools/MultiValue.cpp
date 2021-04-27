@@ -24,7 +24,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols, const unsigned nmat, const unsigned nfder ):
+MultiValue::MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t ncols, const std::size_t nmat, const std::size_t nfder ):
   task_index(0),
   values(nvals),
   nderivatives(nder),
@@ -53,7 +53,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
 }
 
-void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsigned& ncols, const unsigned& nmat ) {
+void MultiValue::resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& ncols, const std::size_t& nmat ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
   nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat);

@@ -74,7 +74,7 @@ ReferenceValue::ReferenceValue(const ActionOptions&ao):
     dissimilarities.push_back( tmpdis );
   }
   mfile.close(); shape[0] = dissimilarities.size(); 
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
+  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->alwaysStoreValues();
   for(unsigned i=0;i<shape[0];++i) {
       for(unsigned j=0;j<shape[1];++j) getPntrToComponent(0)->set( i*shape[1] + j, dissimilarities[i][j] );
   }

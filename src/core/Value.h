@@ -45,12 +45,10 @@ class ActionWithValue;
 /// objects.  However, if you find a use for a tempory PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
-  friend class PlumedMain;
+  friend class Atoms;
   friend class ActionWithValue;
   friend class ActionWithArguments;
 private:
-/// Is this value created by plumedmain
-  bool created_in_plumedmain;
 /// The action in which this quantity is calculated
   ActionWithValue* action;
 /// Had the value been set
@@ -72,6 +70,8 @@ private:
   std::string name;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// The number of derivatives for the grid
+  unsigned ngrid_der;
 /// Is this value a time series
   bool istimeseries;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
@@ -85,6 +85,8 @@ private:
   bool columnsums;
 /// Some variables for dealing with matrices
   bool symmetric;
+/// These variables are used to hold the matrix rows that are non-zero
+  std::vector<unsigned> matindexes;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value
@@ -103,6 +105,8 @@ private:
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
+/// A constructor that can be used to make Vectors of named values
+  explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
 /// Add information on who is using this action
@@ -120,7 +124,7 @@ public:
 /// Get the value of the function
   double get() const;
 /// Get the value of a particular function
-  double get( const unsigned& ival ) const ;
+  double get( const unsigned& ival, const bool trueind=true ) const ;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -158,7 +162,7 @@ public:
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
-  void  addForce(const unsigned& iforce, double f);
+  void  addForce(const unsigned& iforce, double f, const bool trueind=true);
 /// Get the value of the force on this colvar
   double getForce( const unsigned& iforce ) const ;
 /// Check if forces have been added on this value
@@ -198,6 +202,14 @@ public:
 ///
   unsigned getPositionInMatrixStash() const ;
 ///
+  void reshapeMatrixStore();
+/// Get the number of columns in the matrix
+  unsigned getNumberOfColumns() const ;
+///
+  unsigned getRowLength( const unsigned& irow ) const ;
+///
+  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
+///
   std::size_t getIndex(const std::vector<unsigned> & indices) const ;
 ///
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
@@ -223,6 +235,11 @@ public:
   bool dataAlwaysStored() const ;
 ///
   bool storingData() const ;
+///
+  void writeBinary(std::ostream&o) const ;
+  void readBinary(std::istream&i);
+/// This gets the number of threads to use for setting the value
+  unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
 };
 
 inline
@@ -311,13 +328,6 @@ void Value::clearInputForce() {
 inline
 void Value::clearDerivatives() {
   value_set=false; if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
-}
-
-inline
-void Value::addForce(const unsigned& iforce, double f) {
-  plumed_dbg_assert( iforce<inputForces.size() );
-  hasForce=true;
-  inputForces[iforce]+=f;
 }
 
 inline

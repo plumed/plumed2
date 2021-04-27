@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionVolume.h"
+#include "core/ActionToPutData.h"
 #include "core/PlumedMain.h"
 #include "multicolvar/MultiColvarBase.h"
 
@@ -51,6 +52,8 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   if( getDependencies().size()>0 ) {
     std::vector<ActionWithValue*> f_actions;
     for(unsigned i=0; i<getDependencies().size(); ++i) {
+      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( getDependencies()[i] );
+      if( ap ) continue;
       ActionWithValue* av = dynamic_cast<ActionWithValue*>( getDependencies()[i] );
       if( av ) f_actions.push_back( av );
     }
