@@ -309,6 +309,8 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ADAPTIVE_WALL","the force constant of the wall applied outside the GMM");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
+  keys.add("compulsory","THETA_FILE","THETA","print a file containing the kernel values with this name");
+  keys.add("compulsory","LOWD_CVS_FILE","LOWD_CVS","print a file containing the values of the low dimensional CVs");
 }
 
 Atlas::Atlas(const ActionOptions& ao):
@@ -336,7 +338,7 @@ ActionShortcut(ao)
      if( meig>0 ) {
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
          readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_kernel-" + num + "_ref" +
-                          " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_ref.covariance VECTORS=" + seig + "}");
+                          " INPUT={DIAGONALIZE ARG=covariance VECTORS=" + seig + "}");
      }
      // Store the weights as we will use these when constructing the bias later in the input
      weights.push_back(h); ifile.scanField();
@@ -399,13 +401,14 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_wtfact: REWEIGHT_WELLTEMPERED HEIGHT=" + height + " BIASFACTOR=" + biasfactor + tempstr);
 
   // And sum the kernels
-  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1", pwrs=" POWERS=1";
-  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; pwrs += ",1"; }
-  readInputLine( cinput + pwrs ); readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=x"+ " PERIODIC=NO");
+  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1"; // pwrs=" POWERS=2";
+  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; } // pwrs += ",1"; }
+  readInputLine( cinput ) ; // + pwrs ); 
+  // readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=x"+ " PERIODIC=NO");
 
   // Add a small number to regularize the sum
   std::string regparam; parse("REGULARISE",regparam);
-  readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=x+" + regparam + " PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=x+" + regparam + " PERIODIC=NO");
 
   // Normalize the weights for each of the kernels
   for(unsigned k=0;k<weights.size();++k) {
@@ -416,7 +419,7 @@ ActionShortcut(ao)
   }
 
   // And compute the wkernel outside the GMM
-  readInputLine( getShortcutLabel() + "_ext_wkernel: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=" + regparam + "/(x+" + regparam + ") PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_ext_wkernel: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=" + regparam + "/(x+" + regparam + ") PERIODIC=NO");
 
   // And sum the wkernels for the renormalization
   std::string ccinput = getShortcutLabel() + "_wksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_wkernel-1", ppwrs=" POWERS=2";
@@ -497,9 +500,11 @@ ActionShortcut(ao)
 
   // And the final bias
   readInputLine( combstr ); readInputLine("BIASVALUE ARG=" + getShortcutLabel() );
+  readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_wtfact" + " FUNC=exp(x)");
 
   // Print the theta values to the THETA file
-  std::string theta_str = "PRINT FILE=THETA FMT=%.8e STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_wkernel-1" ;
+  std::string theta_file; parse("THETA_FILE",theta_file);
+  std::string theta_str = "PRINT FILE=" + theta_file + " STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_wkernel-1" ;
   for(unsigned k=1;k<weights.size();++k) {
     std::string num; Tools::convert( k+1, num );
     theta_str += "," + getShortcutLabel() + "_wkernel-" + num;
@@ -508,7 +513,8 @@ ActionShortcut(ao)
   readInputLine( theta_str );
 
   // Print the reduced CVs to a file
-  std::string cvs_str = "PRINT FILE=LOWD_CVS FMT=%.8e STRIDE="+pacestr+" ARG=";
+  std::string lowd_cvs_f; parse("LOWD_CVS_FILE",lowd_cvs_f);
+  std::string cvs_str = "PRINT FILE=" + lowd_cvs_f + " STRIDE="+pacestr+" ARG=";
 
   for(unsigned k=0;k<weights.size();++k) {
     std::string num; Tools::convert( k+1, num );
@@ -524,11 +530,8 @@ ActionShortcut(ao)
       }
     }
   }
-
-
-  readInputLine( getShortcutLabel() + "_wtheight: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_wtfact" + " FUNC=exp(x)");
   cvs_str += getShortcutLabel() + "_wtheight";
-  readInputLine( cvs_str );
+  readInputLine( cvs_str ); 
 
   // Complete setup of the well tempered weights
   std::vector<std::string> args(1); args[0] = getShortcutLabel();
