@@ -401,10 +401,9 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_wtfact: REWEIGHT_WELLTEMPERED HEIGHT=" + height + " BIASFACTOR=" + biasfactor + tempstr);
 
   // And sum the kernels
-  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1"; // pwrs=" POWERS=2";
-  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; } // pwrs += ",1"; }
-  readInputLine( cinput ) ; // + pwrs ); 
-  // readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=x"+ " PERIODIC=NO");
+  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1"; 
+  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; } 
+  readInputLine( cinput ) ; 
 
   // Add a small number to regularize the sum
   std::string regparam; parse("REGULARISE",regparam);
@@ -537,8 +536,6 @@ ActionShortcut(ao)
   std::vector<std::string> args(1); args[0] = getShortcutLabel();
   ReweightBase* rwb = plumed.getActionSet().selectWithLabel<ReweightBase*>( getShortcutLabel() + "_wtfact" );
   plumed_assert( rwb ); rwb->setArguments( args );
-
-
 }
 
 }
