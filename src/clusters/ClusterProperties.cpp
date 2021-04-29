@@ -79,7 +79,7 @@ ActionShortcut(ao)
   // Read in the shortcut keywords
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
   // Create a cluster weights object
-  readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS FROM_PROPERTIES=true " + convertInputLineToString() );
+  readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS " + convertInputLineToString() );
   // Now do the multicolvar bit
   multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), argstr, getShortcutLabel(), keymap, this );
 }

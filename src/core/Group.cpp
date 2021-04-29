@@ -19,18 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-#include "core/ActionRegister.h"
-#include "core/ActionAtomistic.h"
-#include "core/Atoms.h"
+#include "Group.h"
+#include "ActionRegister.h"
+#include "Atoms.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
+#include "PlumedMain.h"
 #include <string>
 #include <vector>
 #include <algorithm>
 
 namespace PLMD {
-namespace generic {
 
 //+PLUMEDOC GENERIC GROUP
 /*
@@ -128,25 +127,12 @@ DUMPATOMS ATOMS=hy FILE=hy.gro
 */
 //+ENDPLUMEDOC
 
-class Group:
-  public ActionAtomistic
-{
-
-public:
-  explicit Group(const ActionOptions&ao);
-  ~Group();
-  static void registerKeywords( Keywords& keys );
-  void calculate() override {}
-  void apply() override {}
-};
-
 PLUMED_REGISTER_ACTION(Group,"GROUP")
 
 Group::Group(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
-  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);
@@ -217,7 +203,7 @@ Group::Group(const ActionOptions&ao):
     Tools::removeDuplicates(atoms);
   }
 
-  this->atoms.insertGroup(getLabel(),atoms);
+  this->plumed.getAtoms().insertGroup(getLabel(),atoms);
   log.printf("  list of atoms:");
   for(unsigned i=0; i<atoms.size(); i++) {
     if(i%25==0) log<<"\n";
@@ -238,9 +224,22 @@ void Group::registerKeywords( Keywords& keys ) {
 }
 
 Group::~Group() {
-  atoms.removeGroup(getLabel());
+  plumed.getAtoms().removeGroup(getLabel());
 }
 
+unsigned Group::getNumberOfAtoms() const {
+  return atoms.size();
 }
+
+AtomNumber Group::getAtomIndex( const unsigned& ind ) const {
+  plumed_assert( ind<atoms.size() ); return atoms[ind];
+}
+
+void Group::duplicate( const std::string& lab ) const {
+  std::string num; Tools::convert( atoms[0].serial(), num ); std::string grp_comm = lab + ": GROUP ATOMS=" + num;
+  for(unsigned i=1; i<atoms.size(); ++i) { Tools::convert( atoms[i].serial(), num ); grp_comm += "," + num; } 
+  plumed.readInputLine( grp_comm );
+}
+
 }
 

@@ -10,4 +10,4 @@ hex2_denom: COORDINATIONNUMBER WEIGHT=neigh
 hex2_rmn: CUSTOM ARG1=harm.rm ARG2=hex2_denom FUNC=x/y PERIODIC=NO
 hex2_imn: CUSTOM ARG1=harm.im ARG2=hex2_denom FUNC=x/y PERIODIC=NO
 
-PRINT ATOMS=dmat ARG1=hex2_rmn ARG2=hex2_imn ARG3=hex2_denom FMT=%8.4f FILE=hexparam.xyz
+PRINT ATOMS=1-400 ARG1=hex2_rmn ARG2=hex2_imn ARG3=hex2_denom FMT=%8.4f FILE=hexparam.xyz

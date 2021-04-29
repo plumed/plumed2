@@ -51,11 +51,11 @@ ActionShortcut(ao)
   ifile.allowIgnoredFields(); ifile.open(hillsfile); std::vector<std::string> fields; ifile.scanFieldList(fields);
   bool before_sigma=true;
   for(unsigned i=0; i<fields.size(); i++) {
-    size_t pos, founds=fields[i].find("sigma_", pos);
-    size_t foundm=fields[i].find("min_", pos);
-    size_t foundp=fields[i].find("max_", pos);
-    if (founds!=std::string::npos || foundm!=std::string::npos ||  foundp!=std::string::npos )before_sigma=false;
-    size_t found=fields[i].find("time", pos);
+    size_t founds=fields[i].find("sigma_");
+    size_t foundm=fields[i].find("min_");
+    size_t foundp=fields[i].find("max_");
+    if ( founds!=std::string::npos || foundm!=std::string::npos ||  foundp!=std::string::npos )before_sigma=false;
+    size_t found=fields[i].find("time");
     if( found==std::string::npos && before_sigma) {
         readInputLine( fields[i] + ": READ IGNORE_FORCES FILE=" + hillsfile + " VALUES=" + fields[i]  );
         values.push_back( fields[i] );

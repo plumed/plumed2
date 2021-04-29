@@ -36,18 +36,21 @@ PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
 void ClusterWithSurface::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
   keys.add("optional","RCUT_SURF",""); 
+  keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
 }
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
+  // Read atoms for contact matrix
+  std::string atdata; parse("ATOMS",atdata);
   // Read rcut input
   std::string rcut_surf_str; parse("RCUT_SURF",rcut_surf_str);
   // Create a cluster weights object
   readInputLine( getShortcutLabel() + "_wnosurf: CLUSTER_WEIGHTS " + convertInputLineToString() );
   // Now create a contact matrix
-  readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUP=" + getShortcutLabel() + "_wnosurf SWITCH={" + rcut_surf_str +"}" );
+  readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUP=" + atdata + " SWITCH={" + rcut_surf_str +"}" );
   // Now create a custom matrix
   readInputLine( getShortcutLabel() + "_cwmat: CUSTOM_MATRIX GROUP1=" + getShortcutLabel() + "_wnosurf FUNC=max");
   // Product of matrices

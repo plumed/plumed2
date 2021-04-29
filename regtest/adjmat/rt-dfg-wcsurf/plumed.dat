@@ -1,7 +1,5 @@
-# Calculate contact matrix
-c1_mat: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Calculate coordination numbers
-c1: COORDINATIONNUMBER WEIGHT=c1_mat.w 
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} 
 # Select coordination numbers that are more than 2.0
 cf: MORE_THAN ARG1=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} 
 # Build a dot product matrix

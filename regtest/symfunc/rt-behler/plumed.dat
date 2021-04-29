@@ -12,7 +12,7 @@ g3m: COMBINE ARG=beh2.g3 NORMALIZE PERIODIC=NO
  
 RESTRAINT ARG=g1m,g2m,g3m AT=1.5,1.4,-1.5 KAPPA=10,10,10
 
-PRINT ATOMS=beh2 ARG1=beh2.g1 ARG2=beh2.g2 ARG3=beh2.g3 FILE=symmetry-functions.xyz FMT=%8.4f 
+PRINT ATOMS=1-64 ARG1=beh2.g1 ARG2=beh2.g2 ARG3=beh2.g3 FILE=symmetry-functions.xyz FMT=%8.4f 
 
 beh3: GSYMFUNC_THREEBODY ...
     WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z 
@@ -22,7 +22,7 @@ beh3: GSYMFUNC_THREEBODY ...
     FUNCTION4={FUNC=sin(3.0*(ajik-1)) LABEL=g7}
 ...
 
-PRINT ATOMS=beh3 ARG1=beh3.g4 ARG2=beh3.g5 ARG3=beh3.g6 ARG4=beh3.g7 FILE=threebody-symmetry-functions.xyz FMT=%8.4f
+PRINT ATOMS=1-64 ARG1=beh3.g4 ARG2=beh3.g5 ARG3=beh3.g6 ARG4=beh3.g7 FILE=threebody-symmetry-functions.xyz FMT=%8.4f
 
 g4m: COMBINE ARG=beh3.g4 PERIODIC=NO
 BIASVALUE ARG=g4m 
@@ -46,5 +46,5 @@ beh2s: GSYMFUNC_TWOBODY ...
 
 g2sm: COMBINE ARG=beh2s.g2 NORMALIZE PERIODIC=NO
 
-PRINT ATOMS=beh2s ARG1=beh2s.g1 ARG2=beh2s.g2 ARG3=beh2s.g3 FILE=symmetry-functions-oneshot.xyz FMT=%8.4f
+PRINT ATOMS=1-64 ARG1=beh2s.g1 ARG2=beh2s.g2 ARG3=beh2s.g3 FILE=symmetry-functions-oneshot.xyz FMT=%8.4f
 DUMPDERIVATIVES ARG=g2m,g2sm FILE=deriv FMT=%8.4f

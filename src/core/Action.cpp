@@ -259,7 +259,7 @@ void Action::error( const std::string & msg ) const {
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 
-void Action::warning( const std::string & msg ) {
+void Action::warning( const std::string & msg ) const {
   log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() );
 }
 

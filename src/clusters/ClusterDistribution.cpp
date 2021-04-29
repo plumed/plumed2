@@ -127,9 +127,6 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   addValue( shape ); setNotPeriodic();
   // And the tasks
   for(unsigned i=0; i<shape[0]; ++i) addTaskToList(i);
-  // Create a group for this action so we can associate atoms to these weights easily
-  const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
-  plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
 void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

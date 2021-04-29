@@ -223,6 +223,12 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
         t.insert(t.end(),m->second.begin(),m->second.end());
         ok=true;
       }
+      // These are groups created by shortcuts to maintain old syntax
+      if(!ok && atoms.groups.count(strings[i]+"_grp")) {
+        const auto m=atoms.groups.find(strings[i]+"_grp");
+        t.insert(t.end(),m->second.begin(),m->second.end());
+        ok=true;
+      }
     }
 // here we check if the atom name is the name of an added virtual atom
     if(!ok) {

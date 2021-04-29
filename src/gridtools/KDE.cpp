@@ -518,7 +518,10 @@ void KDE::addKernelToGrid( const double& height, const std::vector<double>& args
       buffer[ bufstart + gridobject.getIndex( newargs )*(1+args.size()) ] += height;
       return;
   }
-  if( ignore_out_of_bounds && !gridobject.inbounds( args ) ) return ;
+  if( ignore_out_of_bounds && !gridobject.inbounds( args ) ) {
+      if( fabs(height)>epsilon ) warning("bounds are possibly set too small as hills with substantial heights are being ignored");
+      return ;
+  }
 
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );

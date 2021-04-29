@@ -334,18 +334,24 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
       for(int i=0; i<ablocks[0].size(); ++i) mygroup.push_back( atoms.addVirtualAtom( this ) );
     }
   }
-  std::vector<AtomNumber> atoms_for_request(all_atoms); atoms.insertGroup( getLabel(), mygroup );
+  std::vector<AtomNumber> atoms_for_request(all_atoms); // atoms.insertGroup( getLabel(), mygroup );
   if( catoms.size()>0 ) atoms_for_request.insert( atoms_for_request.end(),catoms.begin(),catoms.end() );
   requestAtoms(atoms_for_request); forcesToApply.resize( getNumberOfDerivatives() );
   if( all_atoms.size()>0 ) {
     for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
   if( catom_indices.size()==0 && !nolocation ) vatom_forces.resize( getNumberOfAtoms() );
+  // Create a useful group to hold these atoms
+  if( !nolocation ) {
+      std::string num; Tools::convert( mygroup[0].serial(), num ); std::string grp_str = getLabel() + "_grp: GROUP ATOMS=" + num;
+      for(unsigned i=1;i<mygroup.size();++i) { Tools::convert( mygroup[i].serial(), num ); grp_str += "," + num; }
+      plumed.readInputLine( grp_str );
+  }
 }
 
 MultiColvarBase::~MultiColvarBase() {
   if(catom_indices.size()==0 && !nolocation) atoms.removeVirtualAtom( this );
-  atoms.removeGroup( getLabel() );
+  // atoms.removeGroup( getLabel() );
 }
 
 void MultiColvarBase::addValueWithDerivatives() {

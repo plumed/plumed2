@@ -22,7 +22,8 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "core/ActionSet.h"
+#include "core/Group.h"
 #include "MultiColvarBase.h"
 #include <string>
 #include <cmath>
@@ -63,12 +64,19 @@ ActionShortcut(ao)
       // Parse atoms
       std::vector<std::string> afstr, astr; parseVector("ATOMS",astr); Tools::interpretRanges(astr);
       for(unsigned i=0;i<astr.size();++i) {
-          if( plumed.getAtoms().getAllGroups().count(astr[i]) ){
-              const auto m=plumed.getAtoms().getAllGroups().find(astr[i]);
-              for(unsigned j=0;j<m->second.size();++j) {
-                  std::string num; Tools::convert( m->second[j].serial(), num ); afstr.push_back( num );
+          Group* mygr=plumed.getActionSet().selectWithLabel<Group*>(astr[i]);
+          if( mygr ) {
+              for(unsigned j=0;j<mygr->getNumberOfAtoms();++j) {
+                  std::string num; Tools::convert( mygr->getAtomIndex(j).serial(), num ); afstr.push_back( num );
               }
-          } else afstr.push_back(astr[i]);
+          } else {
+              Group* mygr2=plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
+              if( mygr2 ) {
+                  for(unsigned j=0;j<mygr2->getNumberOfAtoms();++j) {
+                      std::string num; Tools::convert( mygr2->getAtomIndex(j).serial(), num ); afstr.push_back( num );
+                  }
+              } else afstr.push_back(astr[i]);
+          }
       }
       for(unsigned i=0;i<afstr.size();++i) { Tools::convert( i+1, num ); dline += " ATOMS" + num + "=" + ostr + "," + afstr[i]; }
   } else {

@@ -110,7 +110,9 @@ SetupReferenceBase(ao)
                  atoms.setVatomCharge( index, pdb.getBeta()[i] );
                  atoms.setVatomPosition( index, pdb.getPositions()[i] - center );
              }
-             atoms.insertGroup( getLabel(), mygroup );
+             std::string num; Tools::convert( mygroup[0].serial(), num ); std::string grp_str = getLabel() + "_grp: GROUP ATOMS=" + num;
+             for(unsigned i=1;i<mygroup.size();++i) { Tools::convert( mygroup[i].serial(), num ); grp_str += "," + num; }
+             plumed.readInputLine( grp_str );
              // Get the block extents 
              nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
              if( nblocks==1 ) { 

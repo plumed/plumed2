@@ -71,6 +71,7 @@ PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")
 void ClusterDiameter::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","ARG","calculate ths radius of the cluster that are in this particular cluster");
+  keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
 }
 
 ClusterDiameter::ClusterDiameter(const ActionOptions& ao):
@@ -78,9 +79,9 @@ Action(ao),
 ActionShortcut(ao)
 {
   // Read in the argument
-  std::string arg_str; parse("ARG",arg_str);
+  std::string arg_str, atdata; parse("ARG",arg_str); parse("ATOMS",atdata);
   // Distance matrix
-  readInputLine( getShortcutLabel() + "_dmat: DISTANCE_MATRIX GROUP=" + arg_str );
+  readInputLine( getShortcutLabel() + "_dmat: DISTANCE_MATRIX GROUP=" + atdata );
   // Matrix of bonds in cluster
   readInputLine( getShortcutLabel() + "_bmat: DOTPRODUCT_MATRIX GROUP1=" + arg_str );
   // Product of matrices

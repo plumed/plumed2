@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace clusters {
@@ -45,9 +44,6 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   addValue( shape ); 
   // Resize local variables
   which_cluster.resize( getPntrToArgument(0)->getShape()[0] ); cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
-  // Create a group for this action
-  const auto m=plumed.getAtoms().getAllGroups().find(getPntrToArgument(0)->getPntrToAction()->getLabel());
-  plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {

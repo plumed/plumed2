@@ -38,6 +38,7 @@ template <const char* v>
 void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
+  keys.add("optional","ATOMS","the atoms to use for the positions of the multicolvars");
   keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
   keys.addOutputComponent("lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
   keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
@@ -58,9 +59,10 @@ ActionShortcut(ao)
   std::string voltype(v), mc_lab; parse("DATA",mc_lab); bool dosum; parseFlag("SUM",dosum);
   if( mc_lab.length()>0 ) {
     bool domean; parseFlag("MEAN",domean); std::string lt_input, mt_input, bt_input; 
-    parse("LESS_THAN",lt_input); parse("MORE_THAN",mt_input); parse("BETWEEN",bt_input);
+    parse("LESS_THAN",lt_input); parse("MORE_THAN",mt_input); parse("BETWEEN",bt_input); 
+    std::string atomsd; parse("ATOMS",atomsd); if( atomsd.length()==0 ) atomsd=mc_lab;
     // Create the apprpriate volume object
-    readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() + " ATOMS=" + mc_lab );
+    readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() + " ATOMS=" + atomsd );
     // Now create input for sums
     if( dosum || domean ) {
       readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + mc_lab + " ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 

@@ -137,28 +137,6 @@ Function::Function(const ActionOptions&ao):
     }
   }
 
-  // This creates a group of atoms that have these weights -- not entirely foolproof and could be improved GAT
-  bool checkforrank=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->hasDerivatives() ) { checkforrank=true; break; }
-  }
-  if( checkforrank ) {
-    std::string myat_group="none";
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->hasDerivatives() ) {
-        Action* act = getPntrToArgument(i)->getPntrToAction();
-        if( act ) {
-          if( plumed.getAtoms().getAllGroups().count(act->getLabel()) ) {
-             myat_group = getPntrToArgument(i)->getPntrToAction()->getLabel(); break;
-          }
-        }
-      }
-    }
-    if( myat_group!="none" ) {
-      const auto m=plumed.getAtoms().getAllGroups().find(myat_group );
-      plumed.getAtoms().insertGroup( getLabel(), m->second );
-    }
-  }
   if( getPntrToArgument(0)->usingAllVals( getLabel() ) ) matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
   if( matinp ) {
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {

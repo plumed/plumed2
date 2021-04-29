@@ -65,8 +65,6 @@ class ClusterWeights :
   public ActionWithArguments,
   public ActionWithValue {
 private:
-/// Is this created from properties
-  bool properties;
 /// The cluster we are looking for
   unsigned clustr;
 /// The forces
@@ -95,18 +93,14 @@ void ClusterWeights::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
+  // keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
 }
 
 ClusterWeights::ClusterWeights(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
-  ActionWithValue(ao),
-  properties(false)
+  ActionWithValue(ao)
 {
-  // Check if created by cluster properties
-  std::string from_p; parse("FROM_PROPERTIES",from_p);
-  if( from_p.length()>0 ) properties=true;
   // Read in the clustering object
   std::vector<Value*> clusters; parseArgumentList("CLUSTERS",clusters);
   if( clusters.size()!=1 ) error("should pass only one matrix to clustering base");
@@ -124,9 +118,6 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
   if( clustr>clusters[0]->getShape()[0] ) error("cluster selected is invalid - too few atoms in system");
   log.printf("  atoms in %dth largest cluster calculated by %s are equal to one \n",clustr, cc->getLabel().c_str() );
-  // Create a group for this action so we can associate atoms to these weights easily
-  const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
-  plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
 void ClusterWeights::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

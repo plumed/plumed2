@@ -160,7 +160,7 @@ public:
   void error( const std::string & msg ) const;
 
 /// Issue a warning
-  void warning( const std::string & msg );
+  void warning( const std::string & msg ) const ;
 
 /// Exit with error code c
   void exit(int c=0);

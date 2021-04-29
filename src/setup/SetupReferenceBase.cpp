@@ -43,7 +43,7 @@ hasatoms(false)
 }
 
 SetupReferenceBase::~SetupReferenceBase() {
-  if( hasatoms ) { atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() ); }
+  if( hasatoms ) { atoms.removeVirtualAtom( this ); } // atoms.removeGroup( getLabel() ); }
 }
 
 void SetupReferenceBase::lockRequests() {

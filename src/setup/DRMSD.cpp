@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
+#include "core/Group.h"
 #include "SetupReferenceBase.h"
 
 using namespace std;
@@ -98,7 +99,9 @@ std::string DRMSD::getDistancesString( PlumedMain& pp, const std::string& reflab
   double ucut=std::numeric_limits<double>::max(); Tools::parse( drmsd_words, "UPPER_CUTOFF", ucut );
   std::string drmsd_type="DRMSD"; Tools::parse( drmsd_words, "TYPE", drmsd_type );
   setup::SetupReferenceBase * myref=pp.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( reflab ); plumed_assert( myref );
-  std::vector<AtomNumber> atoms( myref->myindices ), vatoms( pp.getAtoms().getAllGroups().find(reflab)->second ); 
+  Group* mygrp=pp.getActionSet().selectWithLabel<Group*>( reflab + "_grp" ); plumed_assert( mygrp );
+  std::vector<AtomNumber> atoms( myref->myindices ), vatoms( mygrp->getNumberOfAtoms() );
+  for(unsigned i=0;i<vatoms.size();++i) vatoms[i] = mygrp->getAtomIndex(i); 
   plumed_assert( vatoms.size()==atoms.size() ); std::vector<Vector> pos( atoms.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i] = pp.getAtoms().getVatomPosition( vatoms[i] );
   std::string dist_str, num, istr, jstr; unsigned nn=1;

@@ -70,15 +70,11 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
       ablocks[i]=ta.size()+n; t.push_back(tb[i]); n++;
     }
     log.printf("\n"); shape[0]=ta.size(); shape[1]=tb.size();
-    // Create a group of the atoms in the rows
-    atoms.insertGroup( getLabel(), ta );
   } else {
     // Create list of tasks
     log.printf("  atoms in GROUP "); ablocks.resize( t.size() );
     for(unsigned i=0; i<t.size(); ++i) { log.printf("%d ", t[i].serial()); addTaskToList( i ); ablocks[i]=i; }
-    log.printf("\n"); shape[0]=shape[1]=t.size();
-    // Create a group of the atoms in the rows
-    atoms.insertGroup( getLabel(), t ); read_one_group=true;
+    log.printf("\n"); shape[0]=shape[1]=t.size(); read_one_group=true;
   }
   if( keywords.exists("GROUPC") ) {
     std::vector<AtomNumber> tc; parseAtomList("GROUPC",tc);

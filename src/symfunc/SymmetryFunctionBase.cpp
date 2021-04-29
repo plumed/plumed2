@@ -56,8 +56,13 @@ void SymmetryFunctionBase::expandMatrix( const bool& components, const std::stri
   if( sp_str.length()==0 && spa_str.length()==0 ) return;
 
   std::string matinp = lab  + "_mat: CONTACT_MATRIX";
-  if( sp_str.length()>0 ) matinp += " GROUP=" + sp_str;
-  else if( spa_str.length()>0 ) matinp += " GROUPA=" + spa_str + " GROUPB=" + spb_str;
+  if( sp_str.length()>0 ) { 
+      matinp += " GROUP=" + sp_str; 
+      action->readInputLine( lab + "_grp: GROUP ATOMS=" + sp_str );
+  } else if( spa_str.length()>0 ) {
+      matinp += " GROUPA=" + spa_str + " GROUPB=" + spb_str;
+      action->readInputLine( lab + "_grp: GROUP ATOMS=" + spa_str ); 
+  }
 
   std::string sw_str; action->parse("SWITCH",sw_str); 
   if( sw_str.length()>0 ) {
@@ -180,12 +185,6 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   requestArguments(wval,true); forcesToApply.resize( nderivatives );
   if( getPntrToArgument(0)->getRank()==2 ) {
     for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) addTaskToList(i);
-  }
-  if( !usecols && wval[0]->getPntrToAction() ) {
-    if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ) {
-        const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
-        plumed.getAtoms().insertGroup( getLabel(), m->second );
-    }
   }
 }
 
