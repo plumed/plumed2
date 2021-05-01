@@ -140,6 +140,11 @@ boundaries. Note that:
 - If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
   be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
 
+For systems with multiple CVs that share identical properties, PBMetaD with partitioned families can be used
+to group them under one bias potential that each contributes to \cite Prakash2018PF. This is done with a list
+of PF keywords, where each PF* argument contains the list of CVs from ARG to be placed in that family. Once
+invoked, each CV in ARG must be placed in exactly one PF, even if it results in families containing only one CV.
+
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 \par Examples
@@ -164,6 +169,23 @@ DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 PBMETAD ...
 ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3
+PACE=500 BIASFACTOR=8 LABEL=pb
+FILE=HILLS_d1,HILLS_d2
+... PBMETAD
+PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+\endplumedfile
+
+\par
+Using partitioned families, each CV in ARG must be in exactly one family. Here,
+the distance between atoms 1,2 is degenerate with 2,4, but not with the
+distance between 3,5.
+\plumedfile
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+DISTANCE ATOMS=1,2 LABEL=d3
+PBMETAD ...
+ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3
+PF0=d1 PF1=d2,d3
 PACE=500 BIASFACTOR=8 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
@@ -331,8 +353,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.add("optional","PF_N", "number of partitioned families"); // read in number of PF CF
-  keys.add("numbered","PF", "List of CVs in PF"); // List of CVs in a family CF
+  keys.add("numbered","PF", "List of CVs in PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
@@ -390,16 +411,16 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   parse("FMT",fmt_);
 
-  // Partitioned Families
+  // Partitioned Families - fill with -1 to mark as invalid
   pfs_.assign(getNumberOfArguments(), -1);
   pfhold_.resize(getNumberOfArguments());
   std::vector<Value*> familyargs;
   for(int i = 0;; i++) {
-    parseArgumentList("PF", i + 1, familyargs);
+    parseArgumentList("PF", i, familyargs);
     if (familyargs.empty()) break;
 
     do_pf_ = true;
-    log << "  Identified Partitioned Family " << i + 1 << ":";
+    log << "  Identified Partitioned Family " << i << ":";
     for (unsigned j = 0; j < familyargs.size(); j++) {
       log << " " << familyargs[j]->getName();
       // loop through the argument list to make sure it exists and assign it
@@ -410,7 +431,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           if (pfs_[argnum] != -1) {
             error(familyargs[j]->getName() + " already present in PF" + std::to_string(pfs_[argnum]));
           }
-          pfs_[argnum] = i + 1;  // store the pf# for each cv
+          pfs_[argnum] = i;  // store the pf# for each cv
           if (pfhold_[i] == nullptr) {
             // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
             pfhold_[i] = getPntrToArgument(argnum);
@@ -418,7 +439,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
       }
       if (!foundArg) {
-        error(familyargs[j]->getName() + " in PF" + std::to_string(i+1) + " not found in ARG");
+        error(familyargs[j]->getName() + " in PF" + std::to_string(i) + " not found in ARG");
       }
     }
     log << "\n";
@@ -430,7 +451,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     pf_n_ = getNumberOfArguments();
     for(unsigned i=0; i < pf_n_; i++) {
       pfhold_[i] = getPntrToArgument(i);
-      pfs_[i] = i + 1;
+      pfs_[i] = i;
     }
   } else {
     // If we are doing PF, make sure each argument got assigned to a family.
@@ -492,7 +513,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parseVector("FILE",hillsfname_);
   if(hillsfname_.size()==0) {
     for(unsigned i=0; i< pf_n_; i++) {
-      std::string name = do_pf_ ? "HILLS.PF"+std::to_string(i + 1) : "HILLS."+getPntrToArgument(i)->getName();
+      std::string name = do_pf_ ? "HILLS.PF"+std::to_string(i) : "HILLS."+getPntrToArgument(i)->getName();
       hillsfname_.push_back(name);
     }
   }
@@ -542,7 +563,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   if(gridfilenames_.size()==0 && wgridstride_ > 0) {
     for(unsigned i=0; i<pf_n_; i++) {
-      std::string name = do_pf_ ? "GRID.PF"+std::to_string(i + 1) : "GRID."+getPntrToArgument(i)->getName();
+      std::string name = do_pf_ ? "GRID.PF"+std::to_string(i) : "GRID."+getPntrToArgument(i)->getName();
       gridfilenames_.push_back(name);
     }
   }
@@ -710,7 +731,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     // check for mesh and sigma size
     for(unsigned i=0; i<pf_n_; i++) {
       double a,b;
-      int family = pfs_[i] - 1; // point to families instead of arguments IL
+      int family = pfs_[i]; // point to families instead of arguments
       Tools::convert(gmin[family],a);
       Tools::convert(gmax[family],b);
       double mesh=(b-a)/((double)gbin[family]);
@@ -723,7 +744,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     std::string funcl=getLabel() + ".bias";
     for(unsigned i=0; i<pf_n_; ++i) {
       std::vector<Value*> args(1);
-      args[0] = pfhold_[i];  //Use the arguments in pf_hold as the dummy pointer to interacting with gridfiles. CF
+      args[0] = pfhold_[i];  //Use first argument in family for interactions.
       std::vector<std::string> gmin_t(1);
       std::vector<std::string> gmax_t(1);
       std::vector<unsigned>    gbin_t(1);
@@ -769,7 +790,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 // creating vector of ifile* for hills reading
 // open all files at the beginning and read Gaussians if restarting
 
-// Not sure if this will work, but I think it should. IL
   for(int j=0; j<mw_n_; ++j) {
     for(unsigned i=0; i<hillsfname_.size(); ++i) {
       unsigned k=j*hillsfname_.size()+i;
@@ -887,7 +907,7 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
   double height;
   int nhills=0;
   bool multivariate=false;
-  int family=pfs_[iarg] - 1;
+  int family=pfs_[iarg];
 
   std::vector<Value> tmpvalues;
   tmpvalues.push_back( Value( this, pfhold_[family]->getName(), false ) );
@@ -903,12 +923,12 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
 
 void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
 {
-  int family=pfs_[iarg] - 1;
+  int family=pfs_[iarg];
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(pfhold_[family],hill.center[0]);
 
   ofile->printField("kerneltype","stretched-gaussian");
-  if(hill.multivariate) {     // LEFT OUT OF PF IL
+  if(hill.multivariate) {
     ofile->printField("multivariate","true");
     double lower = std::sqrt(1./hill.sigma[0]);
     ofile->printField("sigma_"+pfhold_[family]->getName()+"_"+
@@ -991,7 +1011,7 @@ std::vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian&
 double PBMetaD::getBiasAndDerivatives(unsigned iarg, const std::vector<double>& cv, double* der)
 {
   double bias=0.0;
-  int family = pfs_[iarg] - 1;
+  int family = pfs_[iarg];
   if(!grid_) {
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
@@ -1128,8 +1148,8 @@ void PBMetaD::update()
     double norm = 0.0;
     double bmin = 1.0e+19;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      int family=pfs_[i] - 1;
-      // get flex/sigmas for each family and assign them to this args sigma IL
+      int family=pfs_[i];
+      // get flex/sigmas for each family and assign them to this args sigma
       if(adaptive_!=FlexibleBin::none) thissigma[i]=flexbin_[family].getInverseMatrix(i)[0];
       else thissigma[i]=sigma0_[family];
       cv[i]     = getArgument(i);
@@ -1175,8 +1195,8 @@ void PBMetaD::update()
       // now add hills one by one
       for(unsigned j=0; j<mpi_nw_; ++j) {
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          // Add CVs of same family together and write to same file IL
-          int family = pfs_[i] - 1;
+          // Add CVs of same family together and write to same file
+          int family = pfs_[i];
           cv_tmp[0]    = all_cv[j*cv.size()+i];
           double height_tmp = all_height[j*cv.size()+i];
           sigma_tmp[0] = all_sigma[j*cv.size()+i];
@@ -1188,8 +1208,8 @@ void PBMetaD::update()
       // just add your own hills
     } else {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        // Add CVs of same family together and write to same file IL
-        int family = pfs_[i] - 1;
+        // Add CVs of same family together and write to same file
+        int family = pfs_[i];
         cv_tmp[0] = cv[i];
         if(adaptive_!=FlexibleBin::none) sigma_tmp[0]=thissigma[i];
         else sigma_tmp[0] = sigma0_[family];
@@ -1247,7 +1267,7 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, std::vector<Value> &tmpva
 {
   double dummy;
   multivariate=false;
-  Value* argPtr = pfhold_[pfs_[iarg] - 1];
+  Value* argPtr = pfhold_[pfs_[iarg]];
   if(ifile->scanField("time",dummy)) {
     ifile->scanField( &tmpvalues[0] );
     if( tmpvalues[0].isPeriodic() && ! argPtr->isPeriodic() ) {
