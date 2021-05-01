@@ -144,6 +144,8 @@ For systems with multiple CVs that share identical properties, PBMetaD with part
 to group them under one bias potential that each contributes to \cite Prakash2018PF. This is done with a list
 of PF keywords, where each PF* argument contains the list of CVs from ARG to be placed in that family. Once
 invoked, each CV in ARG must be placed in exactly one PF, even if it results in families containing only one CV.
+Additionally, in cases where each of SIGMA or GRID entry would correspond to each ARG entry, they now correspond to
+each PF and must be adjusted accordingly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
@@ -178,7 +180,7 @@ PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 \par
 Using partitioned families, each CV in ARG must be in exactly one family. Here,
 the distance between atoms 1,2 is degenerate with 2,4, but not with the
-distance between 3,5.
+distance between 3,5. Note that two SIGMA are provided to match the two PF.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -189,7 +191,7 @@ PF0=d1 PF1=d2,d3
 PACE=500 BIASFACTOR=8 LABEL=pb
 FILE=HILLS_d1,HILLS_d2
 ... PBMETAD
-PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
+PRINT ARG=d1,d2,d3,pb.bias STRIDE=100 FILE=COLVAR
 \endplumedfile
 
 \par
@@ -353,7 +355,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.add("numbered","PF", "List of CVs in PF");
+  keys.add("numbered","PF", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF”");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
