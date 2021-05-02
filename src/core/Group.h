@@ -30,7 +30,6 @@ private:
   std::vector<AtomNumber> atoms;
 public:
   explicit Group(const ActionOptions&ao);
-  ~Group();
   static void registerKeywords( Keywords& keys );
   void duplicate( const std::string& lab ) const ;
   unsigned getNumberOfAtoms() const ;

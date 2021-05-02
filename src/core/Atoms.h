@@ -205,9 +205,6 @@ public:
   void removeVirtualAtom(ActionAtomistic*);
   ActionAtomistic* getVirtualAtomsAction(AtomNumber)const;
   bool isVirtualAtom(AtomNumber)const;
-  const std::map<std::string,std::vector<AtomNumber> >& getAllGroups() const ;
-  void insertGroup(const std::string&name,const std::vector<AtomNumber>&a);
-  void removeGroup(const std::string&name);
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);
   double getKBoltzmann()const;
@@ -290,11 +287,6 @@ double Atoms::getVatomMass( const AtomNumber& ind ) const {
 inline
 double Atoms::getVatomCharge( const AtomNumber& ind ) const {
   return charges[ind.index()];
-}
-
-inline
-const std::map<std::string,std::vector<AtomNumber> >& Atoms::getAllGroups() const {
-  return groups;
 }
 
 

@@ -562,16 +562,6 @@ void Atoms::removeVirtualAtom(ActionAtomistic*a) {
   resizeVectors(n-1); virtualAtomsActions.pop_back();
 }
 
-void Atoms::insertGroup(const std::string&name,const std::vector<AtomNumber>&a) {
-  plumed_massert(groups.count(name)==0,"group named "+name+" already exists");
-  groups[name]=a;
-}
-
-void Atoms::removeGroup(const std::string&name) {
-  plumed_massert(groups.count(name)==1,"cannot remove group named "+name);
-  groups.erase(name);
-}
-
 void Atoms::writeBinary(std::ostream&o)const {
   std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions()); 
   for(const auto & ip : inputs) ip.second->writeBinary(o);

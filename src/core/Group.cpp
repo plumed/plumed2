@@ -203,7 +203,6 @@ Group::Group(const ActionOptions&ao):
     Tools::removeDuplicates(atoms);
   }
 
-  this->plumed.getAtoms().insertGroup(getLabel(),atoms);
   log.printf("  list of atoms:");
   for(unsigned i=0; i<atoms.size(); i++) {
     if(i%25==0) log<<"\n";
@@ -221,10 +220,6 @@ void Group::registerKeywords( Keywords& keys ) {
   keys.addFlag("UNIQUE",false,"sort atoms and remove duplicated ones");
   keys.add("optional", "NDX_FILE", "the name of index file (gromacs syntax)");
   keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
-}
-
-Group::~Group() {
-  plumed.getAtoms().removeGroup(getLabel());
 }
 
 unsigned Group::getNumberOfAtoms() const {

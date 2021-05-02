@@ -34,6 +34,7 @@
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 #include "ActionToPutData.h"
+#include "Group.h"
 
 namespace PLMD {
 
@@ -218,16 +219,18 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
     }
 // here we check if the atom name is the name of a group
     if(!ok) {
-      if(atoms.groups.count(strings[i])) {
-        const auto m=atoms.groups.find(strings[i]);
-        t.insert(t.end(),m->second.begin(),m->second.end());
+      Group* mygrp=plumed.getActionSet().selectWithLabel<Group*>(strings[i]);
+      if(mygrp) {
+        unsigned ngroup=mygrp->getNumberOfAtoms();
+        for(unsigned i=0; i<ngroup; ++i) t.push_back( mygrp->getAtomIndex(i) );
         ok=true;
-      }
-      // These are groups created by shortcuts to maintain old syntax
-      if(!ok && atoms.groups.count(strings[i]+"_grp")) {
-        const auto m=atoms.groups.find(strings[i]+"_grp");
-        t.insert(t.end(),m->second.begin(),m->second.end());
-        ok=true;
+      } else {
+        Group* mygrp2=plumed.getActionSet().selectWithLabel<Group*>(strings[i]+"_grp");
+        if(mygrp2) {
+           unsigned ngroup=mygrp2->getNumberOfAtoms();
+           for(unsigned i=0; i<ngroup; ++i) t.push_back( mygrp2->getAtomIndex(i) );
+           ok=true;
+        }
       }
     }
 // here we check if the atom name is the name of an added virtual atom
