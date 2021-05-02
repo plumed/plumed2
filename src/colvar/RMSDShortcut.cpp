@@ -53,7 +53,7 @@ ActionShortcut(ao)
   // Read the reference pdb file
   PDB pdb; if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) plumed_merror("missing file " + reference );
   // Create the input reference position
-  readInputLine( getShortcutLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
+  readInputLine( getShortcutLabel() + "_ref: READ_CONFIG CHECKATOMS REFERENCE=" + reference );
   // Create the input for the RMSD_CALC object
   std::vector<AtomNumber> anum( pdb.getAtomNumbers() ); std::string num; Tools::convert( anum[0].serial(), num ); 
   std::string rmsd_line = getShortcutLabel() + ": RMSD_CALC REFERENCE_ATOMS=" + getShortcutLabel() + "_ref ATOMS=" + num;

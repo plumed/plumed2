@@ -45,6 +45,7 @@ void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NUMBER","1","if there are multiple frames in the input file which structure would you like to read in here");
   keys.addFlag("NOALIGN",false,"when this flag is NOT present the geometric center of the molecule is calculated using the align column as weights.  This geometric center is then placed at the origin.");
   keys.add("hidden","READ_ARG","this is used by pathtool to get the arguments that must be read in");
+  keys.addFlag("CHECKATOMS",false,"check that there are valid atoms with the numbers in the input file");
 }
 
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
@@ -52,13 +53,13 @@ Action(ao),
 SetupReferenceBase(ao)
 {
   if( getNumberOfArguments()==0 ) parseVector("READ_ARG",read_args);
-  std::string reference; parse("REFERENCE",reference); 
+  std::string reference; parse("REFERENCE",reference); bool check_atoms; parseFlag("CHECKATOMS",check_atoms);
   FILE* fp=fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
   unsigned number; parse("NUMBER",number); Vector center; center.zero();
   bool noalign=false; parseFlag("NOALIGN",noalign);
   for(unsigned i=0;i<number;++i) {
-      PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); fclose(fp);
+      PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength());
       if(i==number-1) {
          if( pdb.getPositions().size()==0 && getNumberOfArguments()==0 && read_args.size()==0 ) { 
              error("found no atoms in input and names of arguments to read in were not specified in input.  Use ARG");
@@ -70,7 +71,7 @@ SetupReferenceBase(ao)
          if( pdb.getPositions().size()>0 ) {
              log.printf("  indices of atoms are : ");
              for(unsigned i=0;i<pdb.getPositions().size();++i) {
-                 if( pdb.getAtomNumbers()[i].index()>=plumed.getAtoms().getNatoms() ) error("index of input atom is out of range");
+                 if( check_atoms && pdb.getAtomNumbers()[i].index()>=plumed.getAtoms().getNatoms() ) error("index of input atom is out of range");
                  log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
              }
              log.printf("\n"); 
@@ -166,6 +167,7 @@ SetupReferenceBase(ao)
       }
       if( !do_read ) error("not enough frames input input file " + reference );
   }
+  fclose(fp);
 }
 
 std::string ReadReferenceConfiguration::getArgName( const unsigned& k ) const {

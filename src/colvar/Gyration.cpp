@@ -83,7 +83,7 @@ ActionShortcut(ao)
     std::string pbcstr; if(nopbc) pbcstr = " NOPBC"; 
     std::string gtype; parse("TYPE",gtype);
     if(    gtype!="RADIUS" && gtype!="TRACE" && gtype!="GTPC_1" && gtype!="GTPC_2" && gtype!="GTPC_3" && gtype!="ASPHERICITY" && gtype!="ACYLINDRICITY"
-        && gtype!= "KAPPA2" && gtype!="GYRATION_1" && gtype!="GYRATION_2" && gtype!="GYRATION_3" ) error("type " + gtype + " is invalid");
+        && gtype!= "KAPPA2" && gtype!="RGYR_1" && gtype!="RGYR_2" && gtype!="RGYR_3" ) error("type " + gtype + " is invalid");
     // Create the geometric center of the molecule
     readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atoms + pbcstr );
     std::string unormstr; if( gtype=="TRACE" || gtype=="KAPPA2" ) unormstr = " UNORMALIZED"; 
