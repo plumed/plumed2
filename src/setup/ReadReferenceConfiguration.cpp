@@ -58,7 +58,7 @@ SetupReferenceBase(ao)
   unsigned number; parse("NUMBER",number); Vector center; center.zero();
   bool noalign=false; parseFlag("NOALIGN",noalign);
   for(unsigned i=0;i<number;++i) {
-      PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); 
+      PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); fclose(fp);
       if(i==number-1) {
          if( pdb.getPositions().size()==0 && getNumberOfArguments()==0 && read_args.size()==0 ) { 
              error("found no atoms in input and names of arguments to read in were not specified in input.  Use ARG");
@@ -69,7 +69,10 @@ SetupReferenceBase(ao)
          else log.printf(" %d arguments \n", getNumberOfArguments() );
          if( pdb.getPositions().size()>0 ) {
              log.printf("  indices of atoms are : ");
-             for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
+             for(unsigned i=0;i<pdb.getPositions().size();++i) {
+                 if( pdb.getAtomNumbers()[i].index()>=plumed.getAtoms().getNatoms() ) error("index of input atom is out of range");
+                 log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
+             }
              log.printf("\n"); 
 
              // Compute position of center of molecule
@@ -96,7 +99,6 @@ SetupReferenceBase(ao)
              for(unsigned i=0;i<read_args.size();++i) log.printf("%s ", read_args[i].c_str() );
              log.printf("\n");
          }
-         fclose(fp);
          
          // Now make virtual atoms for all these positions and set them to the pdb positions
          unsigned natoms=pdb.getPositions().size(); 

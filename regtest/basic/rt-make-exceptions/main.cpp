@@ -96,7 +96,7 @@ int main(){
   test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail
-  plumed.cmd("readInputLine","d: DISTANCE ATOMS=1,2");
+  plumed.cmd("readInputLine","d: DISTANCE NOLOCATION ATOMS=1,2");
   plumed.cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed.cmd("readInputLine","t: TORSION ATOMS=1,2,3,4");
   plumed.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
