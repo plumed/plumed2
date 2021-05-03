@@ -102,7 +102,9 @@ public:
 PLUMED_REGISTER_ACTION(PlaneShortcut,"PLANES")
 
 void PlaneShortcut::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys ); 
+  keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
+  keys.reset_style("LOCATION","atoms");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
@@ -113,8 +115,23 @@ PlaneShortcut::PlaneShortcut(const ActionOptions&ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  bool vmean, vsum; parseFlag("VMEAN",vmean); parseFlag("VSUM",vsum);
-  readInputLine( getShortcutLabel() + ": PLANE " + convertInputLineToString() );
+  bool vmean, vsum; parseFlag("VMEAN",vmean); parseFlag("VSUM",vsum); std::string dline;
+  std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
+  for(unsigned i=1;;++i) {
+      std::string atstring; parseNumbered("ATOMS",i,atstring);
+      if( atstring.length()==0 ) break;
+      std::string locstr; parseNumbered("LOCATION",i,locstr);
+      if( locstr.length()==0 ) { 
+          std::string num; Tools::convert( i, num );
+          readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
+          if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
+      } else {
+          if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+      }
+      std::string num; Tools::convert( i, num );
+      dline += " ATOMS" + num + "=" + atstring;
+  }
+  readInputLine( grpstr ); readInputLine( getShortcutLabel() + ": PLANE " + dline + " " + convertInputLineToString() );
   if( vmean ) {
     readInputLine( getShortcutLabel() + "_xs: COMBINE ARG=" + getShortcutLabel() + ".x NORMALIZE PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_ys: COMBINE ARG=" + getShortcutLabel() + ".y NORMALIZE PERIODIC=NO");

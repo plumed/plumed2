@@ -48,22 +48,6 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) { log.printf(" %d", atoms[i].serial() );  addTaskToList( i ); }
   log.printf("\n"); ActionAtomistic::requestAtoms( atoms );
 
-  // Check if we have any dependencies on ActionWithValue objects
-  if( getDependencies().size()>0 ) {
-    std::vector<ActionWithValue*> f_actions;
-    for(unsigned i=0; i<getDependencies().size(); ++i) {
-      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( getDependencies()[i] );
-      if( ap ) continue;
-      ActionWithValue* av = dynamic_cast<ActionWithValue*>( getDependencies()[i] );
-      if( av ) f_actions.push_back( av );
-    }
-    plumed_assert( f_actions.size()<2 );
-    if( f_actions.size()==1 ) {
-      std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-      f_actions[0]->addActionToChain( empty, this );
-    }
-  }
-
   parseFlag("OUTSIDE",not_in); sigma=0.0;
   if( keywords.exists("SIGMA") ) parse("SIGMA",sigma);
   if( keywords.exists("KERNEL") ) parse("KERNEL",kerneltype);

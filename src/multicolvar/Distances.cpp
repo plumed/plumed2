@@ -45,8 +45,10 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
-  keys.reset_style("ATOMS","atoms"); MultiColvarBase::shortcutKeywords( keys );
+  keys.reset_style("ATOMS","atoms"); MultiColvarBase::shortcutKeywords( keys ); 
   keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");
+  keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
+  keys.reset_style("LOCATION","atoms");
 }
 
 Distances::Distances(const ActionOptions& ao):
@@ -80,12 +82,22 @@ ActionShortcut(ao)
       }
       for(unsigned i=0;i<afstr.size();++i) { Tools::convert( i+1, num ); dline += " ATOMS" + num + "=" + ostr + "," + afstr[i]; }
   } else {
+      std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
       for(unsigned i=1;;++i) {
           std::string atstring; parseNumbered("ATOMS",i,atstring);
           if( atstring.length()==0 ) break;
+          std::string locstr; parseNumbered("LOCATION",i,locstr);
+          if( locstr.length()==0 ) { 
+              std::string num; Tools::convert( i, num ); 
+              readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
+              if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
+          } else {
+              if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+          }
           std::string num; Tools::convert( i, num );
           dline += " ATOMS" + num + "=" + atstring;
       }
+      readInputLine( grpstr );
   }
   readInputLine( dline );
   // Add shortcuts to label

@@ -238,17 +238,14 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
   keys.add("numbered","ATOMS","the atoms involved in each of the colvars you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one or more scalars will be "
            "calculated for each ATOM keyword you specify");
-  keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
-  keys.addFlag("NOLOCATION",false,"do not create a virtual atom for this location");
-  keys.reset_style("ATOMS","atoms"); keys.reset_style("LOCATION","atoms");
+  keys.reset_style("ATOMS","atoms"); 
 }
 
 MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  usepbc(true),
-  nolocation(false)
+  usepbc(true)
 {
   if( keywords.exists("NOPBC") ) {
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
@@ -256,9 +253,8 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   }
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
-  parseFlag("NOLOCATION",nolocation);
 
-  std::vector<AtomNumber> catoms, all_atoms; parseAtomList( "ATOMS", all_atoms );
+  std::vector<AtomNumber> all_atoms; parseAtomList( "ATOMS", all_atoms );
   if( getName()=="TORSION" ) {
       std::vector<AtomNumber> v1, v2, axis; parseAtomList("VECTORA", v1 ); parseAtomList("VECTORB", v2 ); parseAtomList("AXIS", axis );
       if( v1.size()>0 ) {
@@ -273,16 +269,7 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
     ablocks.resize(all_atoms.size());
     log.printf("  Colvar is calculated from atoms : ");
     for(unsigned j=0; j<ablocks.size(); ++j) { ablocks[j].push_back(j); log.printf("%d ",all_atoms[j].serial() ); }
-    log.printf("\n"); parseAtomList("LOCATION",catoms);
-    if( catoms.size()>0 ) {
-      if( catoms.size()!=1 ) error("should provide position of one atom only for location");
-      log.printf("  CV is located on position of atom : %d \n", catoms[0].serial() );
-      catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
-    } else if( !nolocation ) {
-      log.printf("  CV is located at center of mass for atoms : ");
-      for(unsigned j=0; j<ablocks.size(); ++j) log.printf("%d ", all_atoms[j].serial() );
-      log.printf("\n"); mygroup.push_back( atoms.addVirtualAtom( this ) );
-    }
+    log.printf("\n"); 
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
@@ -317,41 +304,12 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
       }
       t.resize(0);
     }
-    parseAtomList("LOCATION", 1, catoms );
-    if( catoms.size()>0 ) {
-      if( catoms.size()!=1 ) error("should provide position of one atom only for location");
-      log.printf("  CV 1 is located on position of atom : %d \n", catoms[0].serial() );
-      catom_indices.push_back( all_atoms.size() ); mygroup.push_back( catoms[0] );
-
-      for(int i=2; i<=ablocks[0].size(); ++i) {
-        std::vector<AtomNumber> cc; parseAtomList("LOCATION", i, cc );
-        if( cc.empty() ) error("LOCATION should be specified for all or none of the atoms in your CV");
-
-        log.printf("  CV %d is located on position of atom : %d \n", i, cc[0].serial() );
-        catom_indices.push_back( all_atoms.size() + i ); catoms.push_back( cc[0] ); mygroup.push_back( cc[0] );
-      }
-    } else if( !nolocation) {
-      for(int i=0; i<ablocks[0].size(); ++i) mygroup.push_back( atoms.addVirtualAtom( this ) );
-    }
   }
-  std::vector<AtomNumber> atoms_for_request(all_atoms); // atoms.insertGroup( getLabel(), mygroup );
-  if( catoms.size()>0 ) atoms_for_request.insert( atoms_for_request.end(),catoms.begin(),catoms.end() );
+  std::vector<AtomNumber> atoms_for_request(all_atoms); 
   requestAtoms(atoms_for_request); forcesToApply.resize( getNumberOfDerivatives() );
   if( all_atoms.size()>0 ) {
     for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
   }
-  if( catom_indices.size()==0 && !nolocation ) vatom_forces.resize( getNumberOfAtoms() );
-  // Create a useful group to hold these atoms
-  if( !nolocation ) {
-      std::string num; Tools::convert( mygroup[0].serial(), num ); std::string grp_str = getLabel() + "_grp: GROUP ATOMS=" + num;
-      for(unsigned i=1;i<mygroup.size();++i) { Tools::convert( mygroup[i].serial(), num ); grp_str += "," + num; }
-      plumed.readInputLine( grp_str );
-  }
-}
-
-MultiColvarBase::~MultiColvarBase() {
-  if(catom_indices.size()==0 && !nolocation) atoms.removeVirtualAtom( this );
-  // atoms.removeGroup( getLabel() );
 }
 
 void MultiColvarBase::addValueWithDerivatives() {
@@ -394,27 +352,6 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
 }
 
 void MultiColvarBase::calculate() {
-  // Set positions of all virtual atoms
-  if( catom_indices.size()==0 && !nolocation ) {
-    unsigned stride=comm.Get_size();
-    unsigned rank=comm.Get_rank();
-    if( runInSerial() ) { stride=1; rank=0; }
-    std::vector<Vector> catomp( getFullNumberOfTasks() );
-    for(unsigned i=rank; i<getFullNumberOfTasks(); i+=stride) {
-      catomp[i].zero(); double wsum = 0.0;
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        bool newi=true;
-        for(unsigned k=0; k<j; ++k) {
-          if( ablocks[j][i]==ablocks[k][i] ) { newi=false; break; }
-        }
-        if( !newi ) continue;
-        wsum += 1.0; catomp[i] += getPosition( ablocks[j][i] );
-      }
-      double normaliz = 1 / wsum; catomp[i] *= normaliz;
-    }
-    if( !runInSerial() ) comm.Sum( catomp );
-    for(unsigned i=0; i<getFullNumberOfTasks(); ++i) atoms.setVatomPosition( mygroup[i], catomp[i] );
-  }
   runAllTasks();
 }
 
@@ -476,43 +413,6 @@ void MultiColvarBase::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
   if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
-
-  // Virtual atom forces
-  if( catom_indices.size()==0 && !nolocation ) {
-    unsigned stride=comm.Get_size();
-    unsigned rank=comm.Get_rank();
-    if( runInSerial() ) { stride=1; rank=0; }
-    // Clear the forces
-    for(unsigned i=0; i<getNumberOfAtoms(); ++i) vatom_forces[i].zero();
-    // Accumulate the force on each virtual atom
-    for(unsigned i=rank; i<getFullNumberOfTasks(); i+=stride) {
-      Vector & f(atoms.getVatomForces(mygroup[i]));
-      //printf("FORCES %s %d %f %f %f \n",getLabel().c_str(), i,f[0],f[1],f[2]);
-      double wsum=0.0;
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        bool newi=true;
-        for(unsigned k=0; k<j; ++k) {
-          if( ablocks[j][i]==ablocks[k][i] ) { newi=false; break; }
-        }
-        if( !newi ) continue;
-        wsum += 1.0;
-      }
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        bool newi=true;
-        for(unsigned k=0; k<j; ++k) {
-          if( ablocks[j][i]==ablocks[k][i] ) { newi=false; break; }
-        }
-        if( !newi ) continue;
-        vatom_forces[ablocks[j][i]] += matmul( (1./wsum)*Tensor::identity(), f );
-      }
-    }
-    if( !runInSerial() ) comm.Sum( vatom_forces );
-    // Add the final forces to the atoms
-    std::vector<Vector>& final_forces(modifyForces());
-    for(unsigned i=0; i<final_forces.size(); ++i) final_forces[i] += vatom_forces[i];
-    // Clear the forces on the virtual atoms
-    for(unsigned i=0; i<getFullNumberOfTasks(); ++i) atoms.getVatomForces(mygroup[i]).zero();
-  }
 }
 
 }
