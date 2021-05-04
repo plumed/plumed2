@@ -12,7 +12,7 @@ version_=${version//./_}
 
 echo $version $version_
 
-wget https://dl.bintray.com/boostorg/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+wget https://boostorg.jfrog.io/artifactory/main/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
 tar xzf boost_${version_}.tar.gz
 
 cd boost_${version_}
