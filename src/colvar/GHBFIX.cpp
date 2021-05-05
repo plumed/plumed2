@@ -60,11 +60,11 @@ PRINT ARG=gh
 class GHBFIX : public CoordinationBase {
 
   double dmax;
+  double dmax_squared;
   double d0;
   double c;
 
   std::vector<unsigned> typesTable;
-  std::map<std::string,unsigned> MapTypesTable;
 
   std::vector<double> etas;
 
@@ -103,14 +103,15 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   std::string types;
   std::string params;
   std::string energy_units ="plumed" ;
+
   parse("D_MAX",dmax);
+  dmax_squared = dmax*dmax;
   parse("D_0",d0);
   parse("C",c);
   parse("TYPES",types);
   parse("PARAMS",params);
   parse("ENERGY_UNITS",energy_units);
 
-  //const calculated once
   dmax2 = dmax-d0;
 
   A = (-c*dmax2*dmax2)/((1-c)*dmax2*dmax2);
@@ -118,7 +119,9 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   C = -1/((1-c)*dmax2*dmax2);
   D = 1/(c*dmax2*dmax2);
 
-  //setup typesTable
+  std::map<std::string,unsigned> MapTypesTable;
+
+  //typesTable
   IFile typesfile;
   typesfile.link(*this);
   typesfile.open(types);
@@ -178,16 +181,14 @@ double GHBFIX::pairing(double distance2,double&dfunc,unsigned i,unsigned j)const
 
   const double scale=etas[n*t1+t2];
 
-  double distance=std::sqrt(distance2);
   double result;
-
-  const double rdist = (distance-d0);
-
-  if(distance>dmax) {
+  if(distance2>dmax_squared) {
     result=0.;
     dfunc=0.0;
     return result;
   }
+  double distance=std::sqrt(distance2);
+  const double rdist = (distance-d0);
 
   if(rdist<=0.) {
     result=-1.;
