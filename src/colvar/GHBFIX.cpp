@@ -35,11 +35,11 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR GHBFIX
 /*
-Calculate ghbfix interaction energy among GROUPA and GROUPB.
+Calculate GHBFIX interaction energy among GROUPA and GROUPB.
 
-This variable calculates the ghbfix interaction among GROUPA and GROUPB
-using a potential defined in Kührová et al.(2016): Computer Folding of RNA Tetraloops: Identification of Key Force
-Field Deficiencies. JCTC
+This variable calculates the GHBFIX interaction among GROUPA and GROUPB
+using a potential defined in Kührová et al., Computer Folding of RNA Tetraloops: Identification of Key Force
+Field Deficiencies, JCTC, 2016.
 
 Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
 
