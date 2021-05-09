@@ -180,7 +180,6 @@ private:
   bool calc_work_;
   double work_;
   double old_KDEnorm_;
-  double old_Zed_;
   std::vector<kernel> delta_kernels_;
 
   OFile stateOfile_;
@@ -232,7 +231,7 @@ void OPESmetad::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
+  keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
@@ -244,7 +243,7 @@ void OPESmetad::registerKeywords(Keywords& keys)
   keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
-  keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
+  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
   keys.addOutputComponent("nlker","NLIST","number of kernels in the neighbor list");
   keys.addOutputComponent("nlsteps","NLIST","number of steps from last neighbor list update");
 }
@@ -700,7 +699,6 @@ OPESmetad::OPESmetad(const ActionOptions& ao)
 //set initial old values
   KDEnorm_=sum_weights_;
   old_KDEnorm_=KDEnorm_;
-  old_Zed_=Zed_;
 
 //add and set output components
   addComponent("rct");
@@ -842,16 +840,6 @@ void OPESmetad::calculate()
   for(unsigned i=0; i<ncv_; i++)
     setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
-//calculate work
-  if(calc_work_)
-  {
-    double tot_delta=0;
-    for(unsigned d=0; d<delta_kernels_.size(); d++)
-      tot_delta+=evaluateKernel(delta_kernels_[d],cv);
-    const double old_prob=(prob*KDEnorm_-tot_delta)/old_KDEnorm_;
-    work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zed_+epsilon_);
-  }
-
   afterCalculate_=true;
 }
 
@@ -887,14 +875,6 @@ void OPESmetad::update()
     plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
     afterCalculate_=false; //if needed implementation can be changed to avoid this
 
-    //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
-    if(calc_work_)
-    {
-      const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
-      getPntrToComponent("work")->set(work_-stride_*min_shift);
-      work_=0;
-    }
-    old_Zed_=Zed_;
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
@@ -1122,6 +1102,16 @@ void OPESmetad::update()
       }
       Zed_=sum_uprob/KDEnorm_/kernels_.size();
       getPntrToComponent("zed")->set(Zed_);
+    }
+
+  //calculate work if requested
+    if(calc_work_)
+    {
+      std::vector<double> dummy(ncv_); //derivatives are not actually needed
+      const double prob=getProbAndDerivatives(center,dummy);
+      const double new_bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
+      work_+=new_bias-current_bias_;
+      getPntrToComponent("work")->set(work_);
     }
   }
 
