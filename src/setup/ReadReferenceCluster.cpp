@@ -52,7 +52,9 @@ SetupReferenceBase(ao)
   if( reference.length()==0 ) {
       // Read in the position of the center
       std::vector<double> center; parseVector("CENTER",center); std::vector<unsigned> shape( 1 ); shape[0] = getNumberOfArguments();
-      if( getNumberOfArguments()==0 ) { 
+      if( getNumberOfArguments()==0 && read_args.size()==0 ) { 
+          shape[0]=center.size();
+      } else if( getNumberOfArguments()==0 ) { 
           shape[0]=read_args.size(); 
       } else if( !numberedkeys ) {
           shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );

@@ -89,7 +89,7 @@ ActionShortcut(ao)
       // Transpose
       readInputLine( getShortcutLabel() + "_cholT: TRANSPOSE ARG=" + getShortcutLabel() + "_chol");
       // Recompose sigma matrix
-      readInputLine( getShortcutLabel() + "_sigma: MULTIPLY_MATRICES ARG1=" + getShortcutLabel() + "_chol ARG2=" + getShortcutLabel() + "_cholT"); 
+      readInputLine( getShortcutLabel() + "_sigma: DOT ARG1=" + getShortcutLabel() + "_chol ARG2=" + getShortcutLabel() + "_cholT"); 
       // And compute final metric matrix
       readInputLine( getShortcutLabel() + "_icov: INVERT_MATRIX ARG=" + getShortcutLabel() + "_sigma");
   } else {

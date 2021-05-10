@@ -694,7 +694,7 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
     unsigned vindex = bufstart + code*values[valindex]->getNumberOfColumns();
     // Only matrix elements that are definitely non-zero are stored here
     // This is used with contact matrices to reduce the ammount of memory required
-    if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[0] ) {
+    if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[1] ) {
         values[valindex]->matindexes[rstart]=0; 
         for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
           unsigned jind = myvals.getStashedMatrixIndex(matind,j); 

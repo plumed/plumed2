@@ -48,7 +48,7 @@ private:
   void evaluateAllFunctions();
   void fixTimeSeries();
 protected:
-  bool getPeriodFromArg;
+  int getPeriodFromArg;
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
   void addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;

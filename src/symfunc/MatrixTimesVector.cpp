@@ -114,11 +114,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   SymmetryFunctionBase(ao),
   fixed_matrix(false)
 {
-  if( getPntrToArgument(0)->getPntrToAction() ) {
-      adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
-      if( !ab || getPntrToArgument(0)->dataAlwaysStored() ) fixed_matrix=true;
-  } else fixed_matrix=true;
-
+  if( getPntrToArgument(0)->dataAlwaysStored() ) fixed_matrix=true;
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
   if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
 

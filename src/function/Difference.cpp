@@ -76,6 +76,7 @@ Difference::Difference(const ActionOptions&ao):
               if( min0!=min0 || max0!=max1 ) error("domain for input variables should be the same");
           }
       }
+      getPeriodFromArg=0;
   } else if( getPntrToArgument(1)->isPeriodic() ) {
       ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
       if( !as ) {
@@ -84,10 +85,9 @@ Difference::Difference(const ActionOptions&ao):
           std::string min0, max0; getPntrToArgument(1)->getDomain( min0, max0 );
           getPntrToArgument(0)->setDomain( min0, max0 );
       }
+      getPeriodFromArg=1;
   }
-
-  getPeriodFromArg=true; addValueWithDerivatives();
-  checkRead();
+  addValueWithDerivatives(); checkRead();
 }
 
 void Difference::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {

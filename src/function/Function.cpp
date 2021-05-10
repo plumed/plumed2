@@ -47,7 +47,7 @@ Function::Function(const ActionOptions&ao):
   matout(false),
   nderivatives(getNumberOfScalarArguments()),
   forcesToApply(getNumberOfScalarArguments()),
-  getPeriodFromArg(false)
+  getPeriodFromArg(-1)
 {
   plumed_dbg_assert( getNumberOfArguments()>0 );
   std::vector<double> gspacing; std::vector<unsigned> nbin; std::vector<bool> pbc;
@@ -188,8 +188,8 @@ void Function::addValueWithDerivatives() {
     if( period.size()==1 ) {
       if( period[0]!="NO") error("input to PERIODIC keyword does not make sense");
     } else if( period.size()!=2 ) error("input to PERIODIC keyword does not make sense");
-  } else if( getPeriodFromArg ) {
-      if( getPntrToArgument(0)->isPeriodic() ) { period.resize(2); getPntrToArgument(0)->getDomain( period[0], period[1] ); }
+  } else if( getPeriodFromArg>=0 ) {
+      if( getPntrToArgument(getPeriodFromArg)->isPeriodic() ) { period.resize(2); getPntrToArgument(getPeriodFromArg)->getDomain( period[0], period[1] ); }
       else { period.resize(1); period[0]="NO"; }
   } else { period.resize(1); period[0]="NO"; }
 
