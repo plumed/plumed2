@@ -258,36 +258,28 @@ private:
   }
 
 
-  void compute_list(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
-                    std::vector<int>& point,std::vector<int>& list) {
+  void compute_list(const int natoms,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
+                    std::vector<std::vector<int> >& list) {
 // see Allen-Tildesey for a definition of point and list
     Vector distance;     // distance of the two atoms
     Vector distance_pbc; // minimum-image distance of the two atoms
     double listcutoff2;  // squared list cutoff
     listcutoff2=listcutoff*listcutoff;
-    point[0]=0;
+    list.assign(natoms,std::vector<int>());
     for(int iatom=0; iatom<natoms-1; iatom++) {
-      point[iatom+1]=point[iatom];
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
         for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
         pbc(cell,distance,distance_pbc);
 // if the interparticle distance is larger than the cutoff, skip
         double d2=0; for(int k=0; k<3; k++) d2+=distance_pbc[k]*distance_pbc[k];
         if(d2>listcutoff2)continue;
-        if(point[iatom+1]>listsize) {
-// too many neighbours
-          std::fprintf(stderr,"%s","Verlet list size exceeded\n");
-          std::fprintf(stderr,"%s","Increase maxneighbours\n");
-          exit(1);
-        }
-        list[point[iatom+1]]=jatom;
-        point[iatom+1]++;
+        list[iatom].push_back(jatom);
       }
     }
   }
 
-  void compute_forces(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],
-                      double forcecutoff,const std::vector<int>& point,const std::vector<int>& list,std::vector<Vector>& forces,double & engconf)
+  void compute_forces(const int natoms,const std::vector<Vector>& positions,const double cell[3],
+                      double forcecutoff,const std::vector<std::vector<int> >& list,std::vector<Vector>& forces,double & engconf)
   {
     Vector distance;        // distance of the two atoms
     Vector distance_pbc;    // minimum-image distance of the two atoms
@@ -301,8 +293,8 @@ private:
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
     engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3));
     for(int iatom=0; iatom<natoms-1; iatom++) {
-      for(int jlist=point[iatom]; jlist<point[iatom+1]; jlist++) {
-        int jatom=list[jlist];
+      for(int jlist=0;jlist<list[iatom].size();jlist++){
+        int jatom=list[iatom][jlist];
         for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
         pbc(cell,distance,distance_pbc);
         distance_pbc2=0.0; for(int k=0; k<3; k++) distance_pbc2+=distance_pbc[k]*distance_pbc[k];
@@ -420,9 +412,7 @@ private:
 
 // neighbour list variables
 // see Allen and Tildesey book for details
-    int            listsize;     // size of the list array
-    std::vector<int>    list;         // neighbour list
-    std::vector<int>    point;        // pointer to neighbour list
+    std::vector< std::vector<int> >  list; // neighbour list
     std::vector<Vector> positions0;   // reference atomic positions, i.e. positions when the neighbour list
 
 // input parameters
@@ -493,18 +483,13 @@ private:
 // Setting the seed
     random.setSeed(idum);
 
-// Since each atom pair is counted once, the total number of pairs
-// will be half of the number of neighbours times the number of atoms
-    listsize=maxneighbour*natoms/2;
-
 // allocation of dynamical arrays
     positions.resize(natoms);
     positions0.resize(natoms);
     velocities.resize(natoms);
     forces.resize(natoms);
     masses.resize(natoms);
-    point.resize(natoms);
-    list.resize(listsize);
+    list.resize(natoms);
 
 // masses are hard-coded to 1
     for(int i=0; i<natoms; ++i) masses[i]=1.0;
@@ -536,13 +521,15 @@ private:
     }
 
 // neighbour list are computed, and reference positions are saved
-    compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
+    compute_list(natoms,positions,cell,listcutoff,list);
 
-    std::fprintf(out,"List size: %d\n",point[natoms-1]);
+    int list_size=0;
+    for(int i=0;i<list.size();i++) list_size+=list[i].size();
+    std::fprintf(out,"List size: %d\n",list_size);
     for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
 
 // forces are computed before starting md
-    compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
+    compute_forces(natoms,positions,cell,forcecutoff,list,forces,engconf);
 
 // remove forces if ndim<3
     if(ndim<3)
@@ -571,13 +558,14 @@ private:
 // a check is performed to decide whether to recalculate the neighbour list
       check_list(natoms,positions,positions0,listcutoff,forcecutoff,recompute_list);
       if(recompute_list) {
-        compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
+        compute_list(natoms,positions,cell,listcutoff,list);
         for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
-        std::fprintf(out,"Neighbour list recomputed at step %d\n",istep);
-        std::fprintf(out,"List size: %d\n",point[natoms-1]);
+        int list_size=0;
+        for(int i=0;i<list.size();i++) list_size+=list[i].size();
+        std::fprintf(out,"List size: %d\n",list_size);
       }
 
-      compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
+      compute_forces(natoms,positions,cell,forcecutoff,list,forces,engconf);
 
       if(plumed) {
         int istepplusone=istep+1;
