@@ -244,35 +244,26 @@ private:
                   const double forcecutoff,bool & recompute)
   {
 // check if the neighbour list have to be recomputed
-    Vector displacement;  // displacement from positions0 to positions
-    double delta2;        // square of the 'skin' thickness
     recompute=false;
-    delta2=(0.5*(listcutoff-forcecutoff))*(0.5*(listcutoff-forcecutoff));
+    auto delta2=(0.5*(listcutoff-forcecutoff))*(0.5*(listcutoff-forcecutoff));
 // if ANY atom moved more than half of the skin thickness, recompute is set to .true.
     for(int iatom=0; iatom<natoms; iatom++) {
-      for(int k=0; k<3; k++) displacement[k]=positions[iatom][k]-positions0[iatom][k];
-      double s=0.0;
-      for(int k=0; k<3; k++) s+=displacement[k]*displacement[k];
-      if(s>delta2) recompute=true;
+      if(modulo2(positions[iatom]-positions0[iatom])>delta2) recompute=true;
     }
   }
 
 
   void compute_list(const int natoms,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
                     std::vector<std::vector<int> >& list) {
-// see Allen-Tildesey for a definition of point and list
-    Vector distance;     // distance of the two atoms
-    Vector distance_pbc; // minimum-image distance of the two atoms
-    double listcutoff2;  // squared list cutoff
-    listcutoff2=listcutoff*listcutoff;
+    double listcutoff2=listcutoff*listcutoff; // squared list cutoff
     list.assign(natoms,std::vector<int>());
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
-        for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
+        auto distance=positions[iatom]-positions[jatom];
+        Vector distance_pbc; // minimum-image distance of the two atoms
         pbc(cell,distance,distance_pbc);
 // if the interparticle distance is larger than the cutoff, skip
-        double d2=0; for(int k=0; k<3; k++) d2+=distance_pbc[k]*distance_pbc[k];
-        if(d2>listcutoff2)continue;
+        if(modulo2(distance_pbc)>listcutoff2)continue;
         list[iatom].push_back(jatom);
       }
     }
@@ -281,34 +272,28 @@ private:
   void compute_forces(const int natoms,const std::vector<Vector>& positions,const double cell[3],
                       double forcecutoff,const std::vector<std::vector<int> >& list,std::vector<Vector>& forces,double & engconf)
   {
-    Vector distance;        // distance of the two atoms
-    Vector distance_pbc;    // minimum-image distance of the two atoms
-    double distance_pbc2;   // squared minimum-image distance
-    double forcecutoff2;    // squared force cutoff
-    Vector f;               // force
-    double engcorrection;   // energy necessary shift the potential avoiding discontinuities
-
-    forcecutoff2=forcecutoff*forcecutoff;
+    double forcecutoff2=forcecutoff*forcecutoff; // squared force cutoff
     engconf=0.0;
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
-    engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3));
+    double engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3)); // energy necessary shift the potential avoiding discontinuities
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jlist=0;jlist<list[iatom].size();jlist++){
-        int jatom=list[iatom][jlist];
-        for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
+        const int jatom=list[iatom][jlist];
+        auto distance=positions[iatom]-positions[jatom];
+        Vector distance_pbc;    // minimum-image distance of the two atoms
         pbc(cell,distance,distance_pbc);
-        distance_pbc2=0.0; for(int k=0; k<3; k++) distance_pbc2+=distance_pbc[k]*distance_pbc[k];
+        auto distance_pbc2=modulo2(distance_pbc);   // squared minimum-image distance
 // if the interparticle distance is larger than the cutoff, skip
         if(distance_pbc2>forcecutoff2) continue;
-        double distance_pbc6=distance_pbc2*distance_pbc2*distance_pbc2;
-        double distance_pbc8=distance_pbc6*distance_pbc2;
-        double distance_pbc12=distance_pbc6*distance_pbc6;
-        double distance_pbc14=distance_pbc12*distance_pbc2;
+        auto distance_pbc6=distance_pbc2*distance_pbc2*distance_pbc2;
+        auto distance_pbc8=distance_pbc6*distance_pbc2;
+        auto distance_pbc12=distance_pbc6*distance_pbc6;
+        auto distance_pbc14=distance_pbc12*distance_pbc2;
         engconf+=4.0*(1.0/distance_pbc12 - 1.0/distance_pbc6) - engcorrection;
-        for(int k=0; k<3; k++) f[k]=2.0*distance_pbc[k]*4.0*(6.0/distance_pbc14-3.0/distance_pbc8);
+        auto f=2.0*distance_pbc*4.0*(6.0/distance_pbc14-3.0/distance_pbc8);
 // same force on the two atoms, with opposite sign:
-        for(int k=0; k<3; k++) forces[iatom][k]+=f[k];
-        for(int k=0; k<3; k++) forces[jatom][k]-=f[k];
+        forces[iatom]+=f;
+        forces[jatom]-=f;
       }
     }
   }
@@ -317,8 +302,8 @@ private:
   {
 // calculate the kinetic energy from the velocities
     engkin=0.0;
-    for(int iatom=0; iatom<natoms; iatom++)for(int k=0; k<3; k++) {
-        engkin+=0.5*masses[iatom]*velocities[iatom][k]*velocities[iatom][k];
+    for(int iatom=0; iatom<natoms; iatom++) {
+        engkin+=0.5*masses[iatom]*modulo2(velocities[iatom]);
       }
   }
 
@@ -357,7 +342,7 @@ private:
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
-      else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
+      else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
     fclose(fp);
@@ -375,7 +360,7 @@ private:
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
-      else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
+      else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
     fclose(fp);
@@ -526,7 +511,7 @@ private:
     int list_size=0;
     for(int i=0;i<list.size();i++) list_size+=list[i].size();
     std::fprintf(out,"List size: %d\n",list_size);
-    for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
+    for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
 
 // forces are computed before starting md
     compute_forces(natoms,positions,cell,forcecutoff,list,forces,engconf);
@@ -549,17 +534,17 @@ private:
     for(int istep=0; istep<nstep; istep++) {
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
+      for(int iatom=0; iatom<natoms; iatom++)
+          velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          positions[iatom][k]+=velocities[iatom][k]*tstep;
+      for(int iatom=0; iatom<natoms; iatom++)
+          positions[iatom]+=velocities[iatom]*tstep;
 
 // a check is performed to decide whether to recalculate the neighbour list
       check_list(natoms,positions,positions0,listcutoff,forcecutoff,recompute_list);
       if(recompute_list) {
         compute_list(natoms,positions,cell,listcutoff,list);
-        for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
+        for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
         int list_size=0;
         for(int i=0;i<list.size();i++) list_size+=list[i].size();
         std::fprintf(out,"List size: %d\n",list_size);
@@ -586,8 +571,8 @@ private:
       if(ndim<3)
         for(int iatom=0; iatom<natoms; ++iatom) for(int k=ndim; k<3; ++k) forces[iatom][k]=0.0;
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
+      for(int iatom=0; iatom<natoms; iatom++)
+          velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
