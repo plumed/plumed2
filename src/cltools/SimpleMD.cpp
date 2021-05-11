@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
+#include "tools/OpenMP.h"
 #include <string>
 #include <cstdio>
 #include <cmath>
@@ -91,6 +92,8 @@ public:
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
+    keys.add("compulsory","epsilon","1.0","LJ parameter");
+    keys.add("compulsory","sigma","1.0","LJ parameter");
     keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");
     keys.add("compulsory","forcecutoff","2.5","");
     keys.add("compulsory","listcutoff","3.0","");
@@ -131,7 +134,9 @@ private:
              std::string& statfile,
              int&    maxneighbours,
              int&    ndim,
-             int&    idum)
+             int&    idum,
+             double& epsilon,
+             double& sigma)
   {
 
     // Read everything from input file
@@ -149,6 +154,8 @@ private:
     parse("nstep",nstep);
     parse("maxneighbours",maxneighbours);
     parse("idum",idum);
+    parse("epsilon",epsilon);
+    parse("sigma",sigma);
 
     // Read in stuff with sanity checks
     parse("inputfile",inputfile);
@@ -257,6 +264,7 @@ private:
                     std::vector<std::vector<int> >& list) {
     double listcutoff2=listcutoff*listcutoff; // squared list cutoff
     list.assign(natoms,std::vector<int>());
+#   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
         auto distance=positions[iatom]-positions[jatom];
@@ -269,33 +277,41 @@ private:
     }
   }
 
-  void compute_forces(const int natoms,const std::vector<Vector>& positions,const double cell[3],
+  void compute_forces(const int natoms,double epsilon, double sigma,const std::vector<Vector>& positions,const double cell[3],
                       double forcecutoff,const std::vector<std::vector<int> >& list,std::vector<Vector>& forces,double & engconf)
   {
     double forcecutoff2=forcecutoff*forcecutoff; // squared force cutoff
     engconf=0.0;
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
-    double engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3)); // energy necessary shift the potential avoiding discontinuities
-    for(int iatom=0; iatom<natoms-1; iatom++) {
-      for(int jlist=0;jlist<list[iatom].size();jlist++){
-        const int jatom=list[iatom][jlist];
-        auto distance=positions[iatom]-positions[jatom];
-        Vector distance_pbc;    // minimum-image distance of the two atoms
-        pbc(cell,distance,distance_pbc);
-        auto distance_pbc2=modulo2(distance_pbc);   // squared minimum-image distance
+    double engcorrection=4.0*epsilon*(1.0/std::pow(forcecutoff2/(sigma*sigma),6.0)-1.0/std::pow(forcecutoff2/(sigma*sigma),3)); // energy necessary shift the potential avoiding discontinuities
+#   pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      std::vector<Vector> omp_forces(forces.size());
+      #pragma omp for reduction(+:engconf) schedule(static,1) nowait
+      for(int iatom=0; iatom<natoms-1; iatom++) {
+        for(int jlist=0;jlist<list[iatom].size();jlist++){
+          const int jatom=list[iatom][jlist];
+          auto distance=positions[iatom]-positions[jatom];
+          Vector distance_pbc;    // minimum-image distance of the two atoms
+          pbc(cell,distance,distance_pbc);
+          auto distance_pbc2=modulo2(distance_pbc);   // squared minimum-image distance
 // if the interparticle distance is larger than the cutoff, skip
-        if(distance_pbc2>forcecutoff2) continue;
-        auto distance_pbc6=distance_pbc2*distance_pbc2*distance_pbc2;
-        auto distance_pbc8=distance_pbc6*distance_pbc2;
-        auto distance_pbc12=distance_pbc6*distance_pbc6;
-        auto distance_pbc14=distance_pbc12*distance_pbc2;
-        engconf+=4.0*(1.0/distance_pbc12 - 1.0/distance_pbc6) - engcorrection;
-        auto f=2.0*distance_pbc*4.0*(6.0/distance_pbc14-3.0/distance_pbc8);
-// same force on the two atoms, with opposite sign:
-        forces[iatom]+=f;
-        forces[jatom]-=f;
+          if(distance_pbc2>forcecutoff2) continue;
+          auto distance_pbcm2=sigma*sigma/distance_pbc2;
+          auto distance_pbcm6=distance_pbcm2*distance_pbcm2*distance_pbcm2;
+          auto distance_pbcm8=distance_pbcm6*distance_pbcm2;
+          auto distance_pbcm12=distance_pbcm6*distance_pbcm6;
+          auto distance_pbcm14=distance_pbcm12*distance_pbcm2;
+          engconf+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
+          auto f=24.0*distance_pbc*(2.0*distance_pbcm14-distance_pbcm8)*epsilon/sigma;
+          omp_forces[iatom]+=f;
+          omp_forces[jatom]-=f;
+        }
       }
+#     pragma omp critical
+      for(unsigned i=0; i<omp_forces.size(); i++) forces[i]+=omp_forces[i];
     }
+
   }
 
   void compute_engkin(const int natoms,const std::vector<double>& masses,const std::vector<Vector>& velocities,double & engkin)
@@ -420,6 +436,8 @@ private:
     std::string trajfile;          // name of the trajectory file (xyz)
     std::string statfile;          // name of the file with statistics
 
+    double      epsilon, sigma;    // LJ parameters
+
     double engkin;                 // kinetic energy
     double engconf;                // configurational energy
     double engint;                 // integral for conserved energy in Langevin dynamics
@@ -441,7 +459,7 @@ private:
     read_input(temperature,tstep,friction,forcecutoff,
                listcutoff,nstep,nconfig,nstat,
                wrapatoms,inputfile,outputfile,trajfile,statfile,
-               maxneighbour,ndim,idum);
+               maxneighbour,ndim,idum,epsilon,sigma);
 
 // number of atoms is read from file inputfile
     read_natoms(inputfile,natoms);
@@ -464,6 +482,8 @@ private:
     std::fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
     std::fprintf(out,"%s %d\n","Seed                             :",idum);
     std::fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
+    std::fprintf(out,"%s %f\n","Epsilon                          :",epsilon);
+    std::fprintf(out,"%s %f\n","Sigma                            :",sigma);
 
 // Setting the seed
     random.setSeed(idum);
@@ -514,7 +534,7 @@ private:
     for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
 
 // forces are computed before starting md
-    compute_forces(natoms,positions,cell,forcecutoff,list,forces,engconf);
+    compute_forces(natoms,epsilon,sigma,positions,cell,forcecutoff,list,forces,engconf);
 
 // remove forces if ndim<3
     if(ndim<3)
@@ -550,7 +570,7 @@ private:
         std::fprintf(out,"List size: %d\n",list_size);
       }
 
-      compute_forces(natoms,positions,cell,forcecutoff,list,forces,engconf);
+      compute_forces(natoms,epsilon,sigma,positions,cell,forcecutoff,list,forces,engconf);
 
       if(plumed) {
         int istepplusone=istep+1;
