@@ -430,9 +430,11 @@ void VesLinearExpansion::calculate() {
     bf_values[0]=1.0;
   }
   double totalForce2 = 0.0;
-  for(unsigned int k=0; k<nargs_; k++) {
-    setOutputForce(k,forces[k]);
-    totalForce2 += forces[k]*forces[k];
+  if(all_values_inside) {
+    for(unsigned int k=0; k<nargs_; k++) {
+      setOutputForce(k,forces[k]);
+      totalForce2 += forces[k]*forces[k];
+    }
   }
 
   setBias(bias);
