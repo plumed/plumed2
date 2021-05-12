@@ -362,27 +362,24 @@ ActionShortcut(ao)
             Tools::convert( i+2, anum ); argstr += " ARG" + anum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num + " ";
             // Multiply difference in CVs by eigenvector - returns a vector
 	    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" ); plumed_assert( av ); //////
-	    std::string per_str;
 	    // By default, we set the low dimensional CVs to be non-periodic. As at this stage periodic CVs has a diagonal covariance matrix, this affect in a
 	    // minimum way the projection of periodic variable
-	    per_str = "NO";
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
-               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC="+per_str);
+               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
             // Sum the components of the vector
-            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC="+per_str);
+            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
             // Divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
 	    // However, since it seems quite complex to normalize the periodic boundary too, we do not normalize the non-periodic boundaries for the sqrt(eigval)
 	    // As a matter of fact, for periodic CVs this procedure is basically a selection of the most important modes in the basins
 	    if( av->copyOutput(0)->isPeriodic()) {
 		    // Periodic CVs -> not normalized
 	            std::string min, max; av->copyOutput(0)->getDomain(min,max);
-	            per_str = min+","+max;
 	            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
-	        		    +  " FUNC=x PERIODIC="+per_str);
+	        		    +  " FUNC=x PERIODIC="+min+","+max );
 	    } else {
 		    // Non periodic CVs -> normalized
 	            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
-	        		    + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC="+per_str);
+	        		    + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC=NO");
 	    } ////
         }
         // Add this command to compute the residual distance
@@ -430,8 +427,6 @@ ActionShortcut(ao)
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
   std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
-  if( gmax.size()>0 && grid_nbins.size()==0 ) error("you must set GRID_BIN if you set GRID_MAX");
-  if( grid_nbins.size()>0 && gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
   // Build the histograms for the bias potential
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
@@ -444,7 +439,8 @@ ActionShortcut(ao)
           targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
           // Convert the bandwidth to something constant actions
           gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
-          if( gmax.size()>0 ) {
+          if( grid_nbins.size()>0 ) {
+              if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
               tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins );
           } else {
               readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
@@ -458,11 +454,22 @@ ActionShortcut(ao)
               std::string eignum; Tools::convert( i+1, eignum );
               if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );
               else targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
-              if( gmax.size()>0 ) { tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins ); }
+              if( grid_nbins.size()>0 ) { 
+                  ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" );
+                  if( av->copyOutput(0)->isPeriodic() ) {
+                      std::string min, max; av->copyOutput(0)->getDomain(min,max);
+                      tgmin.push_back( min ); tgmax.push_back( max );
+                  } else { 
+                      if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
+                      tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); 
+                  }
+                  tgbins.push_back( grid_nbins ); 
+              }
           }
           if( resid[k] ) {
               targs.push_back( getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
-              if( gmax.size()>0 ) {
+              if( grid_nbins.size()>0 ) {
+                  if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
                   tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins );
               } else {
                   readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
