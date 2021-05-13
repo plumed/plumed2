@@ -94,7 +94,6 @@ Required software:
 * C/c++ compiler (c++11 support is required as of version 2.4).
 * A modern version of the `patch` command line tool.
 * Support for POSIX library `dirent.h`.
-* `xxd` (present in most UNIX distributions).
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
 

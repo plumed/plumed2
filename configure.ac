@@ -1002,13 +1002,6 @@ else
   make_pdfdoc=no
 fi
 
-### Look for xxd
-AC_CHECK_PROG([xxd],[xxd],[found])
-if test "$xxd" != found
-then
-  AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
-fi
-
 AC_SUBST(program_can_run)
 program_can_run=""
 AC_MSG_CHECKING([whether a program can be run on this machine])
