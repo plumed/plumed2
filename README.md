@@ -111,7 +111,7 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 Quick compilation instructions
 ------------------------------
 
-Extensive installation instructions are in the [user documentation](http://www.plumed.org/documentation).
+Extensive installation instructions are in the [user documentation](http://www.plumed.org/doc).
 Quick instructions:
 
     ./configure --prefix=$HOME/opt
@@ -121,7 +121,7 @@ Quick instructions:
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
-[Pre-compiled documentation](http://www.plumed.org/documentation) is available online, so this is only required
+[Pre-compiled documentation](http://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
