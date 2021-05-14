@@ -957,7 +957,9 @@ void gmx::LegacySimulator::do_md()
         gmx_bool bHREX = bDoReplEx && plumed_hrex;
 
         if (plumedswitch && bHREX) {
-          gmx_enerdata_t *hrex_enerd;
+          // gmx_enerdata_t *hrex_enerd;
+          int nlambda = enerd->enerpart_lambda.end() - enerd->enerpart_lambda.begin();
+          gmx_enerdata_t hrex_enerd(enerd->grpp.nener, nlambda == 0 ? 0 : nlambda - 1);
           int repl  = -1;
           int nrepl = -1;
           if (MASTER(cr)){
@@ -992,7 +994,7 @@ void gmx::LegacySimulator::do_md()
           }
           do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation, imdSession, pull_work, step,
                    nrnb, wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                   f.arrayRefWithPadding(), force_vir, mdatoms, hrex_enerd, fcd, state->lambda, graph,
+                   f.arrayRefWithPadding(), force_vir, mdatoms, &hrex_enerd, fcd, state->lambda, graph,
                    fr, runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                    GMX_FORCE_STATECHANGED |
                    GMX_FORCE_DYNAMICBOX |
@@ -1003,7 +1005,7 @@ void gmx::LegacySimulator::do_md()
                    GMX_FORCE_NS,
                    ddBalanceRegionHandler);
 
-          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
+          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&(&hrex_enerd)->term[F_EPOT]);
 
           /* exchange back */
           if (DOMAINDECOMP(cr)) {
