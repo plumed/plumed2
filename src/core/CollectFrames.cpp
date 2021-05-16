@@ -267,7 +267,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
   }
 
   if( clearstride>0 ) {
-      plumed_dbg_assert( dir.size()==nvals ); Value* bval = getPntrToOutput( getNumberOfComponents()-1 ); Vector thispos;
+      Value* bval = getPntrToOutput( getNumberOfComponents()-1 ); Vector thispos;
       for(unsigned i=0;i<nvals;++i) {
           if( bval->getRank()==2 ) bval->set( ndata*bval->getShape()[0] + ndata, frame_weights[i] );
           else bval->set( ndata, frame_weights[i] );      

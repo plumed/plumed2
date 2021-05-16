@@ -720,7 +720,7 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
       buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
     } 
  // This looks after storing in all other cases
-  } else {
+  } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues(getLabel()) ) {
     unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );
     unsigned vindex = bufstart + code*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
     buffer[vindex] += myvals.get(sind);

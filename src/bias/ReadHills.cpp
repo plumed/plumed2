@@ -85,7 +85,7 @@ ActionShortcut(ao)
           }
       }
       // This is cholesky decomposition of matrix    
-      readInputLine( getShortcutLabel() + "_chol: COMBINE_MATRICES " + col_string );
+      readInputLine( getShortcutLabel() + "_chol: CONCATENATE " + col_string );
       // Transpose
       readInputLine( getShortcutLabel() + "_cholT: TRANSPOSE ARG=" + getShortcutLabel() + "_chol");
       // Recompose sigma matrix

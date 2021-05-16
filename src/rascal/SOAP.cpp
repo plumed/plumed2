@@ -67,7 +67,8 @@ Here is an example input file:
 \plumedfile
 r: SOAP ...
   SPECIES=1-3
-  HYPERPARAMS={ "max_radial": 3,
+  HYPERPARAMS={ 
+                "max_radial": 3,
                 "max_angular": 2,
                 "compute_gradients": true,
                 "soap_type": "PowerSpectrum",
@@ -92,12 +93,17 @@ private:
 /// These are typedefs for RASCAL stuff
   typedef AdaptorStrict<AdaptorCenterContribution<AdaptorNeighbourList<StructureManagerCenters>>> Manager_t;
   typedef CalculatorSphericalInvariants::Property_t<Manager_t> Prop_t;
+  typedef CalculatorSphericalInvariants::PropertyGradient_t<Manager_t> PropGrad_t ;
 /// These are the adaptors to use within rascal
   json adaptors;
 /// This is the structure object that is passed between PLUMED and librascal
   json structure;
+/// This is a vector containing the forces that act on the system
+  std::vector<double> forcesToApply;
 /// This is the representation that is being computed using librascal
   std::unique_ptr<CalculatorSphericalInvariants> representation;
+/// This generates the json input for RASCAL
+  void structureToJson();
 public:
   static void registerKeywords(Keywords& keys);
   explicit Soap(const ActionOptions&);
@@ -113,6 +119,7 @@ void Soap::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionAtomistic::registerKeywords(keys); ActionWithValue::registerKeywords(keys);
   keys.add("numbered","SPECIES","the atoms in each species type"); keys.reset_style("SPECIES","atoms");
   keys.add("compulsory","HYPERPARAMS","the json input for the librascal hyperparameters");
+  keys.add("compulsory","NFEATURES","the number of features that are being calculated with rascal");
 }
 
 Soap::Soap(const ActionOptions&ao):
@@ -124,7 +131,6 @@ Soap::Soap(const ActionOptions&ao):
   std::string adapt, hypers; parse("HYPERPARAMS",hypers);
   json hyper_params=json::parse( "{" + hypers + "}" );
   log<<"   hyper parameters : \n"<<std::setw(4)<<hyper_params<<"\n";
-  // Get cutoff from hyper parameteters
   double cutoff = hyper_params["cutoff_function"]["cutoff"]["value"];
   // Check that we have gradients being computed
   if( !hyper_params["compute_gradients"] ) { 
@@ -173,34 +179,38 @@ Soap::Soap(const ActionOptions&ao):
       }
   }
   // Request the atoms and check we have read in everything
-  requestAtoms(all_atoms); checkRead(); 
+  requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size() + 9 ); 
   // Setup a matrix to hold the soap vectors
-  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); shape[1]=7; 
+  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); parse("NFEATURES",shape[1]); 
   addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
+  checkRead();
 }
 
 unsigned Soap::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms()+9;
 }
 
-
-// calculator
-void Soap::calculate() {
+void Soap::structureToJson() {
   // Set the atoms from the atomic positions
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
       for(unsigned k=0;k<3;++k) structure["positions"][i][k]=getPosition(i)[k];
   }
   // Set the box and the pbc from the cell 
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { structure["cell"][i][j]=getBox()(i,j); }
+}
+
+// calculator
+void Soap::calculate() {
+  // tranfer strcutre to json input
+  structureToJson();
   // Now lets setup the stuff for librascal
   auto manager = make_structure_manager_stack<StructureManagerCenters, AdaptorNeighbourList, AdaptorCenterContribution, AdaptorStrict>( structure, adaptors );
   // And compute everything with librascal
   representation->compute(manager); 
 
-  // Print the mcguffins
+  // Retrieve the properties that are required
   auto && property{ *manager->template get_property<Prop_t>(representation->get_name())}; auto features = property.get_features();
-
-  unsigned center_count=0; Value* valout=getPntrToOutput(0); std::vector<unsigned> shape( valout->getShape() );
+  Value* valout=getPntrToOutput(0); std::vector<unsigned> shape( valout->getShape() );
   if( shape[0]!=features.rows() || shape[1]!=features.cols() ) {
      shape[0]=features.rows(); shape[1]=features.cols(); valout->setShape( shape );
   }
@@ -211,7 +221,31 @@ void Soap::calculate() {
 }
 
 void Soap::apply() {
+  // Do nothing if no forces were added
+  if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
+  // Clear the forces from last time
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
 
+  // Recalculate SOAPS if forces were added
+  structureToJson();
+  // Now lets setup the stuff for librascal
+  auto manager = make_structure_manager_stack<StructureManagerCenters, AdaptorNeighbourList, AdaptorCenterContribution, AdaptorStrict>( structure, adaptors );
+  // And compute everything with librascal
+  representation->compute(manager); 
+
+  // Now lets get the gradients
+  auto && soap_vector_gradients{*manager->template get_property<PropGrad_t>(representation->get_gradient_name())};
+  auto keys = soap_vector_gradients.get_keys(); math::Matrix_t gradients = soap_vector_gradients.get_features_gradient(keys);
+
+  // Apply the forces on the atoms
+  Value* outval=getPntrToOutput(0); std::vector<unsigned> shape( outval->getShape() );
+  for(unsigned i=0; i<shape[0]; ++i) {
+      for(unsigned j=0; j<shape[1];++j) {
+          double ff = outval->getForce( i*shape[1] + j );
+          for(unsigned k=0; k<3; ++k) forcesToApply[3*i+k] += ff*gradients(3*i+k,j);
+      }
+  }
+  unsigned start=0; setForcesOnAtoms( forcesToApply, start );
 }
 
 }

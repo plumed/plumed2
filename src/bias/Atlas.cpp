@@ -458,6 +458,7 @@ ActionShortcut(ao)
                   ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" );
                   if( av->copyOutput(0)->isPeriodic() ) {
                       std::string min, max; av->copyOutput(0)->getDomain(min,max);
+                      if( gmax.size()==0 ) warning("ignoring specified GRID_MAX and using domain of periodic variable instead");
                       tgmin.push_back( min ); tgmax.push_back( max );
                   } else { 
                       if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");

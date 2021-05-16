@@ -340,7 +340,7 @@ Vector ActionAtomistic::getGlobalPosition(AtomNumber i) const {
 }
 
 void ActionAtomistic::setGlobalPosition(AtomNumber i, const Vector& pos ) {
-  if( i.index()>getTotAtoms() ) { atoms.positions[i.index()]=pos; return; } 
+  if( i.index()>=getTotAtoms() ) { atoms.positions[i.index()]=pos; return; } 
   for(unsigned k=0;k<3;++k) pos_values[k]->set(i.index(),pos[k]);
 }
 

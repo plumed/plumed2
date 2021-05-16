@@ -37,8 +37,6 @@ class MatrixProductBase :
 private:
   void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 protected:
-  unsigned nspAa,nspAb;
-  unsigned narg_derivatives;
   std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );

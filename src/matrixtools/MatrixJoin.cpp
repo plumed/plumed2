@@ -41,7 +41,7 @@ public:
   double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const override;
 };
 
-PLUMED_REGISTER_ACTION(MatrixJoin,"COMBINE_MATRICES")
+PLUMED_REGISTER_ACTION(MatrixJoin,"CONCATENATE")
 
 void MatrixJoin::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrices::registerKeywords( keys ); keys.remove("ARG");

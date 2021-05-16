@@ -118,7 +118,7 @@ ActionShortcut(ao)
         readInputLine( getShortcutLabel() + "_mat" + num +  jnum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_mat" + jnum + num + ".w");
     }
   }
-  std::string join_matrices = getShortcutLabel() + "_jmat: COMBINE_MATRICES"; 
+  std::string join_matrices = getShortcutLabel() + "_jmat: CONCATENATE"; 
   for(unsigned i=0; i<grp_str.size(); ++i) {
     std::string inum; Tools::convert(i+1,inum);
     for(unsigned j=0; j<grp_str.size(); ++j) {

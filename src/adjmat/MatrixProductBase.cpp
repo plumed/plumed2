@@ -39,13 +39,20 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao)
 {
+  if( getNumberOfArguments()!=2 ) error("should only have two arguments");
+  if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
+  for(unsigned i=0; i<2; ++i) {
+      if( getPntrToArgument(i)->getRank()!=2 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices");
+  }
+  std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
   std::vector<unsigned> shape(2); 
   shape[0]=getPntrToArgument(0)->getShape()[0];
   shape[1]=getPntrToArgument(1)->getShape()[1];
+
   for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
   // And create the matrix to hold the dot products
-  addValue( shape ); narg_derivatives = (shape[0] + shape[1])*getPntrToArgument(0)->getShape()[1];
+  addValue( shape ); 
 
   // Now do some stuff for time series
   bool timeseries=getPntrToArgument(0)->isTimeSeries();
@@ -62,8 +69,9 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
 }
 
 unsigned MatrixProductBase::getNumberOfDerivatives() const {
-  if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + narg_derivatives;
-  return narg_derivatives;
+  unsigned numargs = ( getPntrToArgument(0)->getShape()[0] + getPntrToArgument(1)->getShape()[1])*getPntrToArgument(0)->getShape()[1];
+  if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + numargs;
+  return numargs;
 }
 
 bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
@@ -144,12 +152,13 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, MultiValu
   unsigned mat1size = getPntrToOutput(0)->getShape()[0]*nmat_ind;
 
   unsigned nargs = getPntrToOutput(0)->getShape()[1];
-  for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = ind + i*invals; nmat_ind++; }
+  for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
   if( getNumberOfAtoms()>0 ) {
-    matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind+0;
-    matrix_indices[nmat_ind+1]=narg_derivatives + 3*ind+1;
-    matrix_indices[nmat_ind+2]=narg_derivatives + 3*ind+2;
-    nmat_ind+=3; unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
+    unsigned numargs = ( getPntrToArgument(0)->getShape()[0] + getPntrToArgument(1)->getShape()[1])*getPntrToArgument(0)->getShape()[1];
+    matrix_indices[nmat_ind+0]=numargs + 3*ind+0;
+    matrix_indices[nmat_ind+1]=numargs + 3*ind+1;
+    matrix_indices[nmat_ind+2]=numargs + 3*ind+2;
+    nmat_ind+=3; unsigned virbase = numargs + 3*getNumberOfAtoms();
     for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
     nmat_ind+=9;
   }
@@ -202,18 +211,20 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   unsigned jind_start = getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1];
   for(unsigned i=0; i<nargs; ++i) {
-    plumed_dbg_assert( index1 + i*invals<getNumberOfDerivatives() );
+    plumed_dbg_assert( nargs*index1 + i<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, nargs*index1 + i, der1[i] );
     myvals.updateIndex( ostrn, nargs*index1 + i );
+    plumed_dbg_assert( jind_start + i*nargs + ind2<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, jind_start + i*nargs + ind2, der2[i] );
     myvals.updateIndex( ostrn, jind_start + i*nargs + ind2 );
     matrix_indices[nmat_ind] = jind_start + i*nargs + ind2;
     nmat_ind++;
   }
   if( getNumberOfAtoms()>0 ) {
-    matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind2+0;
-    matrix_indices[nmat_ind+1]=narg_derivatives + 3*ind2+1;
-    matrix_indices[nmat_ind+2]=narg_derivatives + 3*ind2+2;
+    unsigned numargs = ( getPntrToArgument(0)->getShape()[0] + getPntrToArgument(1)->getShape()[1])*getPntrToArgument(0)->getShape()[1];
+    matrix_indices[nmat_ind+0]=numargs + 3*ind2+0;
+    matrix_indices[nmat_ind+1]=numargs + 3*ind2+1;
+    matrix_indices[nmat_ind+2]=numargs + 3*ind2+2;
     nmat_ind+=3;
   }
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
