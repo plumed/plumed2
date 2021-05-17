@@ -1091,7 +1091,10 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 
   // calculate rotation matrix derivatives and components distances needed for components only when align!=displacement
   if(!alEqDis)ddist_drotation.zero();
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);
@@ -1155,7 +1158,10 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
 
   Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for (unsigned iat=0; iat<natoms; iat++) {
     d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
   }
