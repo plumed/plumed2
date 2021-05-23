@@ -41,7 +41,7 @@
  * Biological Structures at Stanford, funded under the NIH Roadmap for        *
  * Medical Research, grant U54 GM072970. See https://simtk.org.               *
  *                                                                            *
- * Portions copyright (c) 2009-2015 Stanford University and the Authors.      *
+ * Portions copyright (c) 2009-2019 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
@@ -97,9 +97,9 @@ public:
      * can be used when processing or analyzing parsed expressions.
      */
     enum Id {CONSTANT, VARIABLE, CUSTOM, ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, NEGATE, SQRT, EXP, LOG,
-             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, NANDELTA, SQUARE, CUBE, RECIPROCAL,
+             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, ATAN2, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, NANDELTA, SQUARE, CUBE, RECIPROCAL,
              ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT,
-             ACOT, ASEC, ACSC, COTH, SECH, CSCH, ASINH, ACOSH, ATANH, ACOTH, ASECH, ACSCH, ATAN2};
+             ACOT, ASEC, ACSC, COTH, SECH, CSCH, ASINH, ACOSH, ATANH, ACOTH, ASECH, ACSCH};
     /**
      * Get the name of this Operation.
      */
@@ -172,6 +172,7 @@ public:
     class Asin;
     class Acos;
     class Atan;
+    class Atan2;
     class Sinh;
     class Cosh;
     class Tanh;
@@ -204,7 +205,6 @@ public:
     class Acoth;
     class Asech;
     class Acsch;
-    class Atan2;
 };
 
 class LEPTON_EXPORT Operation::Constant : public Operation {
@@ -274,6 +274,11 @@ private:
 class LEPTON_EXPORT Operation::Custom : public Operation {
 public:
     Custom(const std::string& name, CustomFunction* function) : name(name), function(function), isDerivative(false), derivOrder(function->getNumArguments(), 0) {
+    }
+    Custom(const std::string& name, CustomFunction* function, const std::vector<int>& derivOrder) : name(name), function(function), isDerivative(false), derivOrder(derivOrder) {
+        for (int order : derivOrder)
+            if (order != 0)
+                isDerivative = true;
     }
     Custom(const Custom& base, int derivIndex) : name(base.name), function(base.function->clone()), isDerivative(true), derivOrder(base.derivOrder) {
         derivOrder[derivIndex]++;
@@ -729,6 +734,28 @@ public:
     }
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
         return std::atan(args[0]);
+    }
+    ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
+};
+
+class LEPTON_EXPORT Operation::Atan2 : public Operation {
+public:
+    Atan2() {
+    }
+    std::string getName() const {
+        return "atan2";
+    }
+    Id getId() const {
+        return ATAN2;
+    }
+    int getNumArguments() const {
+        return 2;
+    }
+    Operation* clone() const {
+        return new Atan2();
+    }
+    double evaluate(double* args, const std::map<std::string, double>& variables) const {
+        return std::atan2(args[0], args[1]);
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
 };
@@ -1268,8 +1295,6 @@ LEPTON_CLASS_OPERATION(Atanh,atanh,ATANH,1,std::atanh(args[0]));
 LEPTON_CLASS_OPERATION(Acoth,acoth,ACOTH,1,0.5*std::log((args[0]+1.0)/(args[0]-1.0)));
 LEPTON_CLASS_OPERATION(Asech,asech,ASECH,1,std::log(std::sqrt(1.0/args[0]-1.0)*std::sqrt(1.0/args[0]+1.0)+1.0/args[0]));
 LEPTON_CLASS_OPERATION(Acsch,acsch,ACSCH,1,std::log(1.0/args[0]+std::sqrt(1.0/(args[0]*args[0])+1.0)));
-
-LEPTON_CLASS_OPERATION(Atan2,atan2,ATAN2,2,std::atan2(args[0],args[1]));
 
 } // namespace lepton
 } // namespace PLMD
