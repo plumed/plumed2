@@ -9,18 +9,21 @@ norm_q1: NORMALIZE ...
   ARG6=q1.im-[1]
 ...
 
-con: CONTACT_MATRIX GROUP=q1 SWITCH={RATIONAL R_0=4}
-
-dd: DOTPRODUCT_MATRIX ...
-     GROUP1=norm_q1.rm-[-1] 
-     GROUP2=norm_q1.im-[-1] 
-     GROUP3=norm_q1.rm-[0]  
-     GROUP4=norm_q1.im-[0]  
-     GROUP5=norm_q1.rm-[1]  
-     GROUP6=norm_q1.im-[1]  
+dd: VSTACK ...
+     ARG1=norm_q1.rm-[-1]
+     ARG2=norm_q1.im-[-1]
+     ARG3=norm_q1.rm-[0]
+     ARG4=norm_q1.im-[0]
+     ARG5=norm_q1.rm-[1]
+     ARG6=norm_q1.im-[1]
 ...
 
-mm: MATHEVAL ARG1=con.w ARG2=dd FUNC=x*y PERIODIC=NO
+ddT: TRANSPOSE ARG=dd
+
+con: CONTACT_MATRIX GROUP=q1 SWITCH={RATIONAL R_0=4}
+dot: DOT ARG1=dd ARG2=ddT
+
+mm: MATHEVAL ARG1=con.w ARG2=dot FUNC=x*y PERIODIC=NO
 
 cc: COORDINATIONNUMBER WEIGHT=mm
 ff: COMBINE ARG=cc PERIODIC=NO

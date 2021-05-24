@@ -149,9 +149,8 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, MultiValu
 
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
-  unsigned mat1size = getPntrToOutput(0)->getShape()[0]*nmat_ind;
 
-  unsigned nargs = getPntrToOutput(0)->getShape()[1];
+  unsigned nargs = getPntrToArgument(0)->getShape()[1];
   for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
   if( getNumberOfAtoms()>0 ) {
     unsigned numargs = ( getPntrToArgument(0)->getShape()[0] + getPntrToArgument(1)->getShape()[1])*getPntrToArgument(0)->getShape()[1];
@@ -172,7 +171,7 @@ unsigned MatrixProductBase::getNumberOfColumns() const {
 
 void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( actionInChain() ) {
-    updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
+    if( myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
     return ;
   }
 
@@ -191,15 +190,14 @@ void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals
 }
 
 bool MatrixProductBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ind2 = index2 - getFullNumberOfTasks();
-  unsigned nargs = getPntrToArgument(0)->getShape()[1];
+  unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+  unsigned sss = getPntrToArgument(1)->getShape()[1], nargs = getPntrToArgument(0)->getShape()[1];
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
   for(unsigned i=0; i<nargs; ++i) {
     args1[i] = getPntrToArgument(0)->get( index1*nargs + i );
-    args2[i] = getPntrToArgument(1)->get( i*nargs + ind2 ); 
+    args2[i] = getPntrToArgument(1)->get( i*sss + ind2 ); 
   }
   double val = computeVectorProduct( index1, ind2, args1, args2, der1, der2, myvals );
-
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.setValue( ostrn, val );
   // Return after calculation of value if we do not need derivatives
@@ -214,10 +212,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
     plumed_dbg_assert( nargs*index1 + i<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, nargs*index1 + i, der1[i] );
     myvals.updateIndex( ostrn, nargs*index1 + i );
-    plumed_dbg_assert( jind_start + i*nargs + ind2<myvals.getNumberOfDerivatives() );
-    myvals.addDerivative( ostrn, jind_start + i*nargs + ind2, der2[i] );
-    myvals.updateIndex( ostrn, jind_start + i*nargs + ind2 );
-    matrix_indices[nmat_ind] = jind_start + i*nargs + ind2;
+    plumed_dbg_assert( jind_start + i*sss + ind2<myvals.getNumberOfDerivatives() );
+    myvals.addDerivative( ostrn, jind_start + i*sss + ind2, der2[i] );
+    myvals.updateIndex( ostrn, jind_start + i*sss + ind2 );
+    matrix_indices[nmat_ind] = jind_start + i*sss + ind2;
     nmat_ind++;
   }
   if( getNumberOfAtoms()>0 ) {

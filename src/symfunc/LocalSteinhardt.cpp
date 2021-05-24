@@ -54,10 +54,10 @@ ActionShortcut(ao)
 { 
   // Create the matrices
   std::string cmap_input = getShortcutLabel() + "_cmap: CONTACT_MATRIX"; 
-  std::string dpmat_input = getShortcutLabel() + "_dpmat: DOTPRODUCT_MATRIX"; 
   std::string sp_str; parse("SPECIES",sp_str);
   std::string spa_str; parse("SPECIESA",spa_str);
   if( sp_str.length()>0 ) {
+    std::string data_mat = getShortcutLabel() + "_vecs: VSTACK";
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
     cmap_input += " GROUP=" + sp_str;
     for(unsigned j=0;j<sp_lab.size();++j) {
@@ -67,24 +67,31 @@ ActionShortcut(ao)
           k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
           norm_input += " ARG" + numstr + "=" + sp_lab[j] + ".rm-[" + numstr2 + "]";
           if( j==0 ) {
-              dpmat_input +=" GROUP" + numstr + "=normalized_" + sp_lab[0] + ".rm-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_lab.size();++j) dpmat_input += ",normalized_" + sp_lab[j] + ".rm-[" + numstr2 + "]";
+              data_mat +=" ARG" + numstr + "=normalized_" + sp_lab[0] + ".rm-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_lab.size();++j) data_mat += ",normalized_" + sp_lab[j] + ".rm-[" + numstr2 + "]";
           } 
           k++; Tools::convert( k, numstr );
           norm_input += " ARG" + numstr + "=" + sp_lab[j] + ".im-[" + numstr2 + "]";
           if( j==0 ) {
-              dpmat_input += " GROUP" + numstr + "=normalized_" + sp_lab[0] + ".im-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_lab.size();++j) dpmat_input += ",normalized_" + sp_lab[j] + ".im-[" + numstr2 + "]";
+              data_mat += " ARG" + numstr + "=normalized_" + sp_lab[0] + ".im-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_lab.size();++j) data_mat += ",normalized_" + sp_lab[j] + ".im-[" + numstr2 + "]";
           }
         }
         readInputLine( norm_input );
     }
+    readInputLine( data_mat );
+    // And transpose the matrix 
+    readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
+    std::string sw_str; parse("SWITCH",sw_str); readInputLine( cmap_input + " SWITCH={" + sw_str + "}"); 
+    // And the matrix of dot products
+    readInputLine( getShortcutLabel() + "_dpmat: DOT ARG1=" + getShortcutLabel() + "_vecs ARG2=" + getShortcutLabel() + "_vecsT" );
   } else if( spa_str.length()>0 ) {
     std::string spb_str; parse("SPECIESB",spb_str);
     if( spb_str.length()==0 ) plumed_merror("need both SPECIESA and SPECIESB in input");
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
     std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
-    cmap_input += " GROUPA=" + spa_str; cmap_input += " GROUPB=" + spb_str;
+    cmap_input += " GROUPA=" + spa_str; cmap_input += " GROUPB=" + spb_str; 
+    std::string data_mat = getShortcutLabel() + "_vecsA: VSTACK";
     for(unsigned j=0;j<sp_laba.size();++j) {
         std::string norm_input1 = "normalized_" + sp_laba[j] + ": NORMALIZE"; 
         unsigned k=0; int num; Tools::convert( getName().substr(7), num ); std::string numstr, numstr2; 
@@ -92,18 +99,19 @@ ActionShortcut(ao)
           k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
           norm_input1 += " ARG" + numstr + "=" + sp_laba[j] + ".rm-[" + numstr2 + "]";
           if( j==0 ) {
-              dpmat_input +=  " GROUPA" + numstr + "=normalized_" + sp_laba[0] + ".rm-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_laba.size();++j) dpmat_input += ",normalized_" + sp_laba[j] + ".rm-[" + numstr2 + "]";
+              data_mat +=  " ARG" + numstr + "=normalized_" + sp_laba[0] + ".rm-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_laba.size();++j) data_mat += ",normalized_" + sp_laba[j] + ".rm-[" + numstr2 + "]";
           }
           k++; Tools::convert( k, numstr );
           norm_input1 += " ARG" + numstr + "=" + sp_laba[j] + ".im-[" + numstr2 + "]";
           if( j==0 ) {
-              dpmat_input += " GROUPA" + numstr + "=normalized_" + sp_laba[0] + ".im-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_laba.size();++j) dpmat_input += ",normalized_" + sp_laba[j] + ".im-[" + numstr2 + "]";
+              data_mat += " ARG" + numstr + "=normalized_" + sp_laba[0] + ".im-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_laba.size();++j) data_mat += ",normalized_" + sp_laba[j] + ".im-[" + numstr2 + "]";
           }
         }
-        readInputLine( norm_input1 );
+        readInputLine( norm_input1 ); readInputLine( data_mat );
     }
+    std::string data_mat2 = getShortcutLabel() + "_vecsB: HSTACK";
     for(unsigned j=0;j<sp_labb.size();++j) {
         bool done_for_spa = false;
         for(unsigned k=0;k<sp_laba.size();++k) {
@@ -116,21 +124,23 @@ ActionShortcut(ao)
           k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
           if( !done_for_spa ) norm_input2 += " ARG" + numstr + "=" + sp_labb[j] + ".rm-[" + numstr2 + "]"; 
           if( j==0 ) {
-              dpmat_input += " GROUPB" + numstr + "=normalized_" + sp_labb[0] + ".rm-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_labb.size();++j) dpmat_input += ",normalized_" + sp_labb[j] + ".rm-[" + numstr2 + "]";
+              data_mat2 += " ARG" + numstr + "=normalized_" + sp_labb[0] + ".rm-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_labb.size();++j) data_mat2 += ",normalized_" + sp_labb[j] + ".rm-[" + numstr2 + "]";
           }
           k++; Tools::convert( k, numstr );
           if( !done_for_spa ) norm_input2 += " ARG" + numstr + "=" + sp_labb[j] + ".im-[" + numstr2 + "]"; 
           if( j==0 ) {
-              dpmat_input += " GROUPB" + numstr + "=normalized_" + sp_labb[0] + ".im-[" + numstr2 + "]";
-              for(unsigned j=1;j<sp_labb.size();++j) dpmat_input += ",normalized_" + sp_labb[j] + ".im-[" + numstr2 + "]";
+              data_mat2 += " ARG" + numstr + "=normalized_" + sp_labb[0] + ".im-[" + numstr2 + "]";
+              for(unsigned j=1;j<sp_labb.size();++j) data_mat2 += ",normalized_" + sp_labb[j] + ".im-[" + numstr2 + "]";
           }
         }
         if( !done_for_spa ) readInputLine( norm_input2 ); 
     }
+    readInputLine( data_mat2 ); 
+    std::string sw_str; parse("SWITCH",sw_str); readInputLine( cmap_input + " SWITCH={" + sw_str + "}");
+    readInputLine( getShortcutLabel() + "_dpmat: DOT ARG1=" + getShortcutLabel() + "_vecsA ARG2=" + getShortcutLabel() + "_vecsB" );
   }
-  std::string sw_str; parse("SWITCH",sw_str);
-  readInputLine( cmap_input + " SWITCH={" + sw_str + "}"); readInputLine( dpmat_input );
+
   // Now create the product matrix
   readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + getShortcutLabel() + "_cmap.w ARG2=" + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
   // Now the sum of coordination numbers times the switching functions

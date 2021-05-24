@@ -37,8 +37,10 @@ BIASVALUE ARG=s2.*
 nn: NORMALIZE ARG1=m3.x ARG2=m3.y ARG3=m3.z
 
 # Compute required function of matrices
+data: VSTACK ARG1=nn.x ARG2=nn.y ARG3=nn.z
+dataT: TRANSPOSE ARG=data
 con: CONTACT_MATRIX GROUP=m3 SWITCH={RATIONAL R_0=0.6}
-dd: DOTPRODUCT_MATRIX GROUP1=nn.x GROUP2=nn.y GROUP3=nn.z
+dd: DOT ARG1=data ARG2=dataT 
 prod: MATHEVAL ARG1=con.w ARG2=dd FUNC=x*(3*y-1)/2 PERIODIC=NO
 # Calculate row sums of matrix
 coord: COORDINATIONNUMBER WEIGHT=prod

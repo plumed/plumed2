@@ -1,13 +1,16 @@
 q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
 
-dd: DOTPRODUCT_MATRIX ...
-     GROUP1=q1.rm-[-1] 
-     GROUP2=q1.im-[-1] 
-     GROUP3=q1.rm-[0]  
-     GROUP4=q1.im-[0]  
-     GROUP5=q1.rm-[1]  
-     GROUP6=q1.im-[1]  
+dda: VSTACK ...
+     ARG1=q1.rm-[-1] 
+     ARG2=q1.im-[-1] 
+     ARG3=q1.rm-[0]  
+     ARG4=q1.im-[0]  
+     ARG5=q1.rm-[1]  
+     ARG6=q1.im-[1]  
 ...
+
+ddT: TRANSPOSE ARG=dda
+dd: DOT ARG1=dda ARG2=ddT
 
 cc: COORDINATIONNUMBER WEIGHT=dd 
 ff: COMBINE ARG=cc PERIODIC=NO

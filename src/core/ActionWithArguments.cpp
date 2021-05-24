@@ -568,7 +568,7 @@ void ActionWithArguments::createTasksFromArguments() {
                //  (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
           } else nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
-      plumed_assert( nt==1 || nt==ntasks );
+      plumed_massert( nt==1 || nt==ntasks, "problem in " + getLabel() );
     }
   } else if( getNumberOfArguments()==1 && arguments[0]->usingAllVals( getLabel() ) ) {
     arg_ends.push_back(0); arg_ends.push_back(1);

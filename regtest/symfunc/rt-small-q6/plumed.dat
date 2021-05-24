@@ -1,15 +1,25 @@
 q1a: Q1 SPECIESA=1 SPECIESB=2-64 D_0=3.0 R_0=1.5 NN=12 SUM
 q1b: Q1 SPECIESA=2 SPECIESB=1,3-64 D_0=3.0 R_0=1.5 NN=12 SUM
 
-dd: DOTPRODUCT_MATRIX ...
-     GROUPA1=q1a.rm-[-1] GROUPB1=q1b.rm-[-1]
-     GROUPA2=q1a.im-[-1] GROUPB2=q1b.im-[-1]
-     GROUPA3=q1a.rm-[0]  GROUPB3=q1b.rm-[0] 
-     GROUPA4=q1a.im-[0]  GROUPB4=q1b.im-[0]
-     GROUPA5=q1a.rm-[1]  GROUPB5=q1b.rm-[1]
-     GROUPA6=q1a.im-[1]  GROUPB6=q1b.im-[1]
+ddA: VSTACK ...
+     ARG1=q1a.rm-[-1] 
+     ARG2=q1a.im-[-1] 
+     ARG3=q1a.rm-[0]  
+     ARG4=q1a.im-[0]  
+     ARG5=q1a.rm-[1]  
+     ARG6=q1a.im-[1]  
 ...
 
+ddB: HSTACK ...
+     ARG1=q1b.rm-[-1]
+     ARG2=q1b.im-[-1]
+     ARG3=q1b.rm-[0]
+     ARG4=q1b.im-[0]
+     ARG5=q1b.rm-[1]
+     ARG6=q1b.im-[1]
+...
+
+dd: DOT ARG1=ddA ARG2=ddB
 cc: COORDINATIONNUMBER WEIGHT=dd 
 ff: COMBINE ARG=cc PERIODIC=NO
 BIASVALUE ARG=ff #AT=-0.3 KAPPA=10

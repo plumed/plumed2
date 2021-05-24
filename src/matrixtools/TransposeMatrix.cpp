@@ -69,13 +69,12 @@ void TransposeMatrix::completeMatrixOperations() {
 }
 
 void TransposeMatrix::apply() {
-  if( doNotCalculateDerivatives() ) return;
   // Apply force on the matrix
   if( getPntrToOutput(0)->forcesWereAdded() ) applyForceOnMatrix(0);
 }
 
 double TransposeMatrix::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {
-  return getPntrToOutput(0)->getForce(kcol*getPntrToOutput(0)->getShape()[0]+jrow);
+  return getPntrToOutput(0)->getForce(kcol*getPntrToOutput(0)->getShape()[1]+jrow);
 }
 
 
