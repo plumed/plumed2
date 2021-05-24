@@ -49,12 +49,15 @@ homepage            http://www.plumed.org/
 # --disable-mpi:          Do not search for MPI compiler (replaced when enabling mpi, see below)
 # --disable-python:       Python wrappers will be installed with a separate python port
 configure.args-append \
-                    --enable-asmjit \
                     --disable-doc \
                     --disable-libsearch \
                     --disable-static-patch \
                     --disable-mpi \
                     --disable-python
+
+if {${configure.build_arch} eq "x86_64"} {
+    configure.args-append --enable-asmjit
+}
 
 # install bash completions
 configure.args-append BASH_COMPLETION_DIR=${prefix}/share/bash-completion/completions
@@ -91,7 +94,8 @@ configure.cxxflags-replace -Os -O3
 # only requested packages are linked.
 configure.ldflags-append \
                     -lxdrfile -lz -lgsl
-depends_lib-append  port:gawk \
+depends_lib-append  port:fftw-3 \
+                    port:gawk \
                     port:gsl \
                     port:xdrfile \
                     port:zlib
@@ -99,7 +103,7 @@ depends_lib-append  port:gawk \
 # C++ library
 # Required in order to use clang with gcc library on old OSX versions.
 # See https://github.com/macports/macports-ports/pull/1254
-if [string match *clang* ${configure.compiler}] {
+if {[string match *clang* ${configure.compiler}]} {
     configure.ldflags-append -stdlib=${configure.cxx_stdlib}
 }
 
