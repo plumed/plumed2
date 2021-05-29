@@ -99,7 +99,7 @@ ActionShortcut(ao)
           readInputLine( getShortcutLabel() + "_icov_" + values[i] + ": MATHEVAL ARG1=" + getShortcutLabel() + "_sigma_" + values[i] + " FUNC=1/(x*x) PERIODIC=NO" );
           if( i>0 ) col_string += "," + getShortcutLabel() + "_icov_" + values[i];
       }
-      readInputLine( getShortcutLabel() + "_icov: COMPOSE_VECTOR " + col_string );
+      readInputLine( getShortcutLabel() + "_icov: CONCATENATE " + col_string );
   }
   readInputLine( getShortcutLabel() + "_height: READ IGNORE_FORCES FILE=" + hillsfile + " VALUES=height");
   // And sum the hills

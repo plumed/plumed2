@@ -33,8 +33,10 @@ ActionWithInputMatrices::ActionWithInputMatrices(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao)
 {
-  for(unsigned i=0; i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()!=2 ) error("input argument for this action should be a matrix");
+  if( getName()!="CONCATENATE" ) {
+      for(unsigned i=0; i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getRank()!=2 ) error("input argument for this action should be a matrix");
+      }
   }
   // Now request the arguments to make sure we store things we need
   std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(args.size()); 

@@ -181,7 +181,7 @@ Kernel::Kernel(const ActionOptions&ao):
           if( ktype=="von-misses" ) {
              std::string num, argnames="det.vals-1"; for(unsigned i=1;i<nvals;++i) { Tools::convert( i+1, num ); argnames += ",det.vals-" + num; }
              det_inp = "det: DIAGONALIZE ARG=covariance VECTORS=all ; ";
-             det_inp += "comp: COMPOSE_VECTOR ARG=" + argnames + " ; vec: MATHEVAL ARG1=comp FUNC=1/x PERIODIC=NO ; ";
+             det_inp += "comp: CONCATENATE ARG=" + argnames + " ; vec: MATHEVAL ARG1=comp FUNC=1/x PERIODIC=NO ; ";
           } else {
              det_inp = "det: DETERMINANT ARG=covariance ; ";
           }

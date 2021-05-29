@@ -67,7 +67,7 @@ ActionShortcut(ao)
    // And compose a vector containing the values of all the pair entropies
    std::string num, argstr = "ARG=" + getShortcutLabel() + "1"; 
    for(unsigned i=1;i<awords.size();++i){ Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + num; }
-   readInputLine( getShortcutLabel() + ": COMPOSE_VECTOR " + argstr ); 
+   readInputLine( getShortcutLabel() + ": CONCATENATE " + argstr ); 
 }
 
 }
