@@ -32,12 +32,14 @@ class Stack :
 {
 private: 
   std::vector<double> forcesToApply;
+  std::vector<std::string> actionsLabelsInChain;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Stack(const ActionOptions&);
   unsigned getNumberOfDerivatives() const override;
   unsigned getNumberOfColumns() const override;
   void calculate() override; 
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const override {}
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override;
@@ -92,6 +94,11 @@ unsigned Stack::getNumberOfDerivatives() const {
 
 unsigned Stack::getNumberOfColumns() const {
   return getPntrToOutput(0)->getShape()[1];
+}
+
+void Stack::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+  bool ignore = checkUsedOutsideOfChain( actionsLabelsInChain, parent, actionsThatSelectTasks, tflags );
 }
 
 void Stack::calculate() {

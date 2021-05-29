@@ -62,6 +62,7 @@ public:
   virtual void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) = 0;
   virtual double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const = 0;
   virtual void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override {}
   void calculate();
   void update();
   void runFinalJobs();

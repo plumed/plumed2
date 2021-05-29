@@ -655,6 +655,14 @@ double ActionWithArguments::retrieveRequiredArgument( const unsigned& iarg, cons
   }
 }
 
+void ActionWithArguments::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+   if( !thisAsActionWithValue ) return; bool found=false;
+   for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
+       if( actionsThatSelectTasks[i]==parent ) { found=true; break; }
+   }
+   if( found ) error("do not use values calculated by " + parent + " in input for " + getLabel() + " as calculation will not be optimised"); 
+}
+
 void ActionWithArguments::setForceOnScalarArgument(const unsigned n, const double& ff) {
   unsigned nt = 0, nn = 0, j=0;
   for(unsigned i=0; i<arguments.size(); ++i) {

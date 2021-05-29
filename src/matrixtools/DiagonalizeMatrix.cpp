@@ -37,6 +37,8 @@ public:
   explicit DiagonalizeMatrix(const ActionOptions&);
 /// This is required to set the number of derivatives for the eigenvalues
   unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
+///
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
@@ -90,6 +92,11 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
   mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); 
+}
+
+void DiagonalizeMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( (getPntrToArgument(0)->getPntrToAction())->getName()=="COVARIANCE_MATRIX" ) return;
+  ActionWithArguments::getTasksForParent( parent, actionsThatSelectTasks, tflags );
 }
 
 void DiagonalizeMatrix::completeMatrixOperations() {

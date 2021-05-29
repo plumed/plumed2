@@ -131,7 +131,6 @@ private:
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
   void setupVirtualAtomStashes( unsigned& nquants );
-  void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
   unsigned getGridArgumentIndex( const ActionWithArguments* aa ) const ;
 public:
 
@@ -149,12 +148,17 @@ public:
 protected:
 /// Get a pointer to the default value
   Value* getPntrToValue();
+///
+  void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// Set the default value (the one without name)
   void setValue(const double& d);
 // -------- The action has multiple components ---------- //
 
 ///
   unsigned getTaskCode( const unsigned& ii ) const ;
+///
+  bool checkUsedOutsideOfChain( const std::vector<std::string>& actionLabelsInChain, const std::string& parent, 
+                                std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
 ///
   unsigned setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList );
 /// Run all the tasks in the list

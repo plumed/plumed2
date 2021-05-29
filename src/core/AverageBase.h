@@ -68,6 +68,8 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
+/// We override this here so as not to get errors  
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override {}
   void apply() {}
   void update();
   virtual void setReferenceConfig();

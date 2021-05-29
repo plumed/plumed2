@@ -26,12 +26,16 @@ namespace PLMD {
 namespace matrixtools {
 
 class TransposeMatrix : public ActionWithInputMatrices {
+private:
+  std::vector<std::string> aLabelsInChain;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit TransposeMatrix(const ActionOptions&);
 ///
   unsigned getNumberOfColumns() const override;
+///
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
@@ -56,6 +60,11 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   shape[0]=getPntrToArgument(0)->getShape()[1]; 
   shape[1]=getPntrToArgument(0)->getShape()[0];
   addValue( shape ); 
+}
+
+void TransposeMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) { 
+  if( aLabelsInChain.size()==0 ) getAllActionLabelsInChain( aLabelsInChain );
+  bool ignore = checkUsedOutsideOfChain( aLabelsInChain, parent, actionsThatSelectTasks, tflags );
 }
 
 unsigned TransposeMatrix::getNumberOfColumns() const {

@@ -74,20 +74,14 @@ unsigned MatrixProductBase::getNumberOfDerivatives() const {
   return numargs;
 }
 
-bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
-  AdjacencyMatrixBase* vp = dynamic_cast<AdjacencyMatrixBase*>( av );
-  // if( vp ) {
-  //     if( vp->getFullNumberOfTasks()<(vp->getNumberOfAtoms()-vp->threeblocks.size()) && ncol_args==0 ) {
-  //         error("cannot mix GROUPA/GROUPB actions with GROUP actions");
-  //     } else if( ncol_args>0 && vp->getFullNumberOfTasks()==(vp->getNumberOfAtoms()-vp->threeblocks.size()) ) {
-  //         error("cannot mix GROUPA/GROUPB actions with GROUP actions");
-  //     }
-  // }
-  return true;
-}
-
 void MatrixProductBase::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   if( tflags.size()!=getFullNumberOfTasks() ) return;
+  // Check if parent has already been added
+  bool found=false;
+  for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
+      if( actionsThatSelectTasks[i]==parent ) { found=true; break; }
+  }
+  if( found ) return;
   // Get the flags for this chain
   std::vector<unsigned> lflags( tflags.size(), 0 ); std::vector<unsigned> pTaskList, pIndexList;
   unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );

@@ -422,26 +422,34 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
-void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
-                                         std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
-  // Check which actions are using the values calculated by this action
+bool ActionWithValue::checkUsedOutsideOfChain( const std::vector<std::string>& actionLabelsInChain, const std::string& parent, 
+                                               std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   bool usedOutsideOfChain=false;
   for(unsigned i=0;i<values.size();++i) {
+      if( values[i]->getRank()==0 ) continue;
+      // Check for users of full list of values 
       for(const auto & p : values[i]->userdata) {
           // Check if the action is only being used within the chain
           bool inchain=false;
           for(unsigned j=0;j<actionLabelsInChain.size();++j) {
-              if( p.first==actionLabelsInChain[j] ){ inchain=true; break; } 
+              if( p.first==actionLabelsInChain[j] ){ inchain=true; break; }
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
           if( !inchain ) {
               ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p.first );
-              if( user ) user->getTasksForParent( getLabel(), actionsThatSelectTasks, tflags ); 
-              usedOutsideOfChain=true; 
+              if( user ) user->getTasksForParent( parent, actionsThatSelectTasks, tflags );
+              usedOutsideOfChain=true;
           }
       }
-  }
+  } 
+  return usedOutsideOfChain;
+}
+
+void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
+                                         std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
+  // Check which actions are using the values calculated by this action
+  bool usedOutsideOfChain=checkUsedOutsideOfChain( actionLabelsInChain, getLabel(), actionsThatSelectTasks, tflags );
   // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
   // allows deactivated tasks
   if( usedOutsideOfChain ) {

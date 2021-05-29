@@ -43,7 +43,6 @@ public:
   explicit MatrixProductBase(const ActionOptions&);
   unsigned getNumberOfDerivatives() const override;
   unsigned getNumberOfColumns() const override;
-  bool canBeAfterInChain( ActionWithValue* av ) const ;
   bool mustBeTreatedAsDistinctArguments() const ;
   void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void lockRequests();
