@@ -19,14 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VectorProductMatrix.h"
+#include "MatrixProductBase.h"
 #include "core/ActionRegister.h"
 #include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class CustomProductMatrix : public VectorProductMatrix {
+class CustomProductMatrix : public MatrixProductBase {
 private:
   bool domax, domin;
 public:
@@ -40,13 +40,13 @@ public:
 PLUMED_REGISTER_ACTION(CustomProductMatrix,"CUSTOM_MATRIX")
 
 void CustomProductMatrix::registerKeywords( Keywords& keys ) {
-  VectorProductMatrix::registerKeywords( keys );
+  MatrixProductBase::registerKeywords( keys );
   keys.add("compulsory","FUNC","the function to apply to the input vectors.   Currently can be min/max");
 }
 
 CustomProductMatrix::CustomProductMatrix(const ActionOptions& ao):
   Action(ao),
-  VectorProductMatrix(ao),
+  MatrixProductBase(ao),
   domax(false),domin(false)
 {
   std::string fstring; parse("FUNC",fstring);

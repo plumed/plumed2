@@ -35,6 +35,7 @@ class MatrixProductBase :
   public ActionWithValue
 {
 private:
+  bool skip_ieqj;
   void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 protected:
   std::vector<double> forcesToApply;

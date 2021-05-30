@@ -4,7 +4,7 @@ c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MORE_THAN ARG1=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} 
 # Build a dot product matrix
 c1_mat2: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
-dp_mat: DOTPRODUCT_MATRIX GROUP1=cf 
+dp_mat: DOT ARG1=cf ARG2=cf
 # Build the final matrix
 mat: MATHEVAL ARG1=c1_mat2.w ARG2=dp_mat FUNC=x*y PERIODIC=NO
 # Find largest cluster

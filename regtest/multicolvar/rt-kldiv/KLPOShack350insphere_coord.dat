@@ -33,13 +33,13 @@ LABEL=dd_ON
 ... CONTACT_MATRIX
 
 # Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
-spmat_1: DOTPRODUCT_MATRIX GROUP1=sp
-spmat_2: DOTPRODUCT_MATRIX GROUPA1=sp GROUPB1=sp
-spmat_3: DOTPRODUCT_MATRIX GROUPA1=sp GROUPB1=sp
+spmat_1: DOT ARG1=sp ARG2=sp
+spmat_2: DOT ARG1=sp ARG2=sp
+spmat_3: DOT ARG1=sp ARG2=sp
 # Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
-coordmat_1: DOTPRODUCT_MATRIX GROUP1=coord_morethan
-coordmat_2: DOTPRODUCT_MATRIX GROUPA1=coord_morethan GROUPB1=coord_morethan
-coordmat_3: DOTPRODUCT_MATRIX GROUPA1=coord_morethan GROUPB1=coord_morethan
+coordmat_1: DOT ARG1=coord_morethan ARG2=coord_morethan
+coordmat_2: DOT ARG1=coord_morethan ARG2=coord_morethan
+coordmat_3: DOT ARG1=coord_morethan ARG2=coord_morethan
 
 # Now normalize the vectors
 bonds_ON: NORMALIZE ARG1=dd_ON.x ARG2=dd_ON.y ARG3=dd_ON.z

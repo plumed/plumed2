@@ -82,7 +82,9 @@ COMPONENTS
 vv: NORMALIZE ARG1=dd.x ARG2=dd.y ARG3=dd.z
 
 # And calculate matrix of dot products between orientation vectors
-dp_mat: DOTPRODUCT_MATRIX GROUP1=vv.x GROUP2=vv.y GROUP3=vv.z
+stack: VSTACK ARG1=vv.x ARG2=vv.y ARG3=vv.z
+stackT: TRANSPOSE ARG=stack
+dp_mat: DOT ARG1=stack ARG2=stackT
 
 # Convert dot products to angles 
 ang_mat: MATHEVAL ARG1=dp_mat FUNC=acos(x) PERIODIC=NO
@@ -102,4 +104,5 @@ value: MATHEVAL ARG=integral FUNC=-log(x) PERIODIC=NO
 BIASVALUE ARG=value
 
 # And print this to a file
+PRINT ARG=ang_mat FILE=angles.matx FMT=%8.4f
 PRINT ARG=integral,value FILE=colvar FMT=%8.4f 

@@ -89,7 +89,7 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // And normalise the vector of weights using this sum
   readInputLine( wvec + "_normed: CUSTOM ARG1=" + wvec + "_sum ARG2=" + wvec + " FUNC=y/x PERIODIC=NO");
   // And now create the matrix of weights
-  readInputLine( wvec + "_mat: DOTPRODUCT_MATRIX GROUP1=" + wvec + "_normed");
+  readInputLine( wvec + "_mat: DOT ARG1=" + wvec + "_normed ARG2=" + wvec + "_normed");
   // Run the arrange points object
   std::string ldfunc, cgtol, maxiter; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol); parse("MAXITER",maxiter); unsigned ncycles; parse("NCYCLES",ncycles);
   std::string num, argstr, lname=getShortcutLabel(); if( ncycles>0 ) lname = getShortcutLabel() + "_cg";
