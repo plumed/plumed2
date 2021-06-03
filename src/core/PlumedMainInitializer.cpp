@@ -63,7 +63,7 @@ extern "C" void*plumed_plumedmain_create() {
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   auto p=static_cast<PLMD::PlumedMain*>(plumed);
-  p->cmd(key,val);
+  p->cmd(key,PLMD::TypesafePtr::unchecked(val));
 }
 
 extern "C" {

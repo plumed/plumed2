@@ -31,6 +31,7 @@
 #include <mutex>
 #include <cstdio>
 #include <array>
+#include <cstring>
 
 namespace PLMD {
 
@@ -62,11 +63,7 @@ Class to deal with propoagation of typesafe pointers.
 
 */
 class TypesafePtr {
-  TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, unsigned long int flags):
-    ptr(ptr),
-    nelem(nelem),
-    flags(flags)
-  {
+  inline void init_shape(const std::size_t* shape) {
     this->shape[0]=0;
     if(shape) {
       std::size_t nelem_=1;
@@ -85,19 +82,99 @@ class TypesafePtr {
 
 public:
 
+  TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, unsigned long int flags):
+    ptr(ptr),
+    nelem(nelem),
+    flags(flags)
+  {
+    buffer[0]='\0';
+    init_shape(shape);
+  }
+
   static const unsigned maxrank=4;
   static TypesafePtr fromSafePtr(void* safe);
+  static TypesafePtr setNelemAndShape(const TypesafePtr &other, std::size_t nelem, const std::size_t* shape) {
+    return TypesafePtr(other.ptr,nelem,shape,other.flags);
+  }
+  static TypesafePtr unchecked(const void* ptr) {
+    return TypesafePtr(const_cast<void*>(ptr),0,nullptr,0);
+  }
   static constexpr unsigned short is_integral=3;
   static constexpr unsigned short is_floating_point=4;
   static constexpr unsigned short is_file=5;
 
   TypesafePtr() {
     shape[0]=0;
+    buffer[0]='\0';
   }
 
-  TypesafePtr(const void*ptr) :
-    ptr(const_cast<void*>(ptr))
-  {}
+  TypesafePtr(std::nullptr_t)
+  {
+    shape[0]=0;
+    buffer[0]='\0';
+  }
+
+/// Macro that generate a constructor with given type and flags
+#define __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type_,flags_) \
+  TypesafePtr(type_*ptr, std::size_t nelem=0, const std::size_t* shape=nullptr) : \
+    ptr((void*)const_cast<type_*>(ptr)), \
+    nelem(nelem), \
+    flags(flags_) \
+  { \
+    init_shape(shape); \
+    buffer[0]='\0'; \
+  }
+
+/// Macro that uses __PLUMED_WRAPPER_TYPESAFEPTR_INNER to generate constructors with
+/// all possible pointer-const combinations
+#define __PLUMED_WRAPPER_TYPESAFEPTR(type,code,size) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type,             size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const,       size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,            size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*const,       size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const*,      size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const*const, size | (0x10000*(code)) | (0x2000000*7))
+
+/// Macro that generates the constructors from empy types (those of which sizeof cannot be computed)
+#define __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_TYPESAFEPTR(type,code,0)
+
+/// Macro that generates the constructors from sized types (those of which sizeof can be computed).
+/// In addition to generating constructors with all pointer types, it generates a constructor to
+/// allow pass-by-value
+#define __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(type,code) \
+  __PLUMED_WRAPPER_TYPESAFEPTR(type,code,sizeof(type)) \
+  TypesafePtr(type val, std::size_t nelem=0, const std::size_t* shape=nullptr): \
+      nelem(1), \
+      flags(sizeof(type) | (0x10000*(code)) | (0x2000000*1)) \
+    { \
+    plumed_assert(sizeof(type)<=32); \
+    ptr=&buffer[0]; \
+    flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    std::memcpy(&buffer[0],&val,sizeof(type)); \
+    init_shape(shape); \
+  }
+
+/// Here we create all the required instances
+/// 1: void
+/// 3: integral
+/// 4: floating
+/// 5: FILE
+/// 0x100: unsigned
+  __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(void,1)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(char,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned char,0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(short,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned short,0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(int,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned int,0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(long,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned long,0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(long long,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned long long,0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(float,4)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(double,4)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(long double,4)
+  __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(FILE,5)
 
   ~TypesafePtr() {
   }
@@ -108,7 +185,8 @@ public:
   TypesafePtr & operator=(const TypesafePtr & other) = delete;
 
   TypesafePtr(TypesafePtr&&other):
-    ptr(other.ptr),
+    buffer(other.buffer),
+    ptr(other.ptr==&other.buffer[0] ? &buffer[0] : other.ptr),
     nelem(other.nelem),
     shape(other.shape),
     flags(other.flags)
@@ -119,10 +197,11 @@ public:
   TypesafePtr copy() const;
 
   TypesafePtr & operator=(TypesafePtr && other) {
-    ptr=other.ptr;
+    ptr=(other.ptr==&other.buffer[0] ? &buffer[0] : other.ptr);
     flags=other.flags;
     nelem=other.nelem;
     shape=other.shape;
+    buffer=other.buffer;
     other.ptr=nullptr;
     return *this;
   }
@@ -262,9 +341,10 @@ public:
   }
 
 private:
+  std::array<char,32> buffer;
   void* ptr=nullptr;
   std::size_t nelem=0;
-  std::array<std::size_t,maxrank+1> shape;
+  std::array<std::size_t,maxrank+1> shape; // make sure to initialize this!
   unsigned long int flags=0;
 };
 

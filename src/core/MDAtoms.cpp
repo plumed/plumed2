@@ -58,9 +58,12 @@ template <class T>
 class MDAtomsTyped:
   public MDAtomsBase
 {
-  T scalep,scalef;
-  T scaleb,scalev;
-  T scalec,scalem; // factor to scale charges and masses
+  T scalep=1.0; // factor to scale positions
+  T scalef=1.0; // factor to scale forces
+  T scaleb=1.0; // factor to scale box
+  T scalev=1.0; // factor to scale virial
+  T scalec=1.0; // factor to scale charges
+  T scalem=1.0; // factor to scale masses
   TypesafePtr m;
   TypesafePtr c;
   TypesafePtr p;
@@ -72,7 +75,6 @@ class MDAtomsTyped:
   std::map<std::string,TypesafePtr> extraCV;
   std::map<std::string,TypesafePtr> extraCVForce;
 public:
-  MDAtomsTyped();
   void setm(const TypesafePtr & m) override;
   void setc(const TypesafePtr & m) override;
   void setBox(const TypesafePtr & ) override;
@@ -362,26 +364,6 @@ void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
   this->c=c.copy();
 }
 
-template <class T>
-MDAtomsTyped<T>::MDAtomsTyped():
-  scalep(1.0),
-  scalef(1.0),
-  scaleb(1.0),
-  scalev(1.0),
-  scalec(1.0),
-  scalem(1.0),
-  m(NULL),
-  c(NULL),
-  px(NULL),
-  py(NULL),
-  pz(NULL),
-  fx(NULL),
-  fy(NULL),
-  fz(NULL),
-  box(NULL),
-  virial(NULL)
-{}
-
 std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
     return Tools::make_unique<MDAtomsTyped<double>>();
@@ -391,7 +373,7 @@ std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   std::string pp;
   Tools::convert(p,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
-  return NULL;
+  return nullptr;
 }
 
 }

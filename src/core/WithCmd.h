@@ -33,6 +33,12 @@ namespace PLMD {
 class WithCmd {
 public:
   virtual void cmd(const std::string& key,const TypesafePtr & val=nullptr)=0;
+  void cmd(const std::string& key,const TypesafePtr & val,const std::size_t* shape) {
+    cmd(key,TypesafePtr::setNelemAndShape(val,0,shape));
+  }
+  void cmd(const std::string& key,const TypesafePtr & val,std::size_t nelem, const std::size_t* shape=nullptr) {
+    cmd(key,TypesafePtr::setNelemAndShape(val,nelem,shape));
+  }
   virtual ~WithCmd();
 };
 
