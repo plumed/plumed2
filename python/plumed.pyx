@@ -285,7 +285,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
        If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader
        that can be iterated in order to read a file in chunks. Every iteration returns an object
        equivalent to the one that would have been returned with a call to
-       read_pandas with chunksize=None (that is: either a pandas.DataFrame
+       read_as_pandas with chunksize=None (that is: either a pandas.DataFrame
        or a subclass of it).
 
        Comments

@@ -1,0 +1,7 @@
+#! FIELDS itype jtype eta
+type0 type1 4.0
+type0 type2 2.0
+type0 type3 3.0
+type1 type2 1.0
+type1 type3 5.0
+type2 type3 6.0

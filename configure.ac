@@ -231,6 +231,21 @@ PLUMED_CONFIG_ENABLE([doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
+AC_ARG_ENABLE([cxx],
+  AS_HELP_STRING([--enable-cxx], [11 or 14. To link libraries with headers that need this C++ level. Use --enable-cxx=none to remove -std=c++ flag]),
+  [
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) AC_MSG_ERROR([cxx level not supported])
+    esac
+    AC_MSG_NOTICE([Selected C++ level: $cxx_level])
+  ],
+  [
+    cxx_level="11"
+  ]
+)
 PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
@@ -341,7 +356,11 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-std=c++11])
+fi
+
+if test -n "$cxx_level"
+then
+  PLUMED_CHECK_CXXFLAG([-std=c++$cxx_level])
 fi
 
 if test $debug == true
@@ -981,13 +1000,6 @@ then
 else
   AC_MSG_NOTICE([A PDF version of the manual will not be generated])
   make_pdfdoc=no
-fi
-
-### Look for xxd
-AC_CHECK_PROG([xxd],[xxd],[found])
-if test "$xxd" != found
-then
-  AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
 fi
 
 AC_SUBST(program_can_run)

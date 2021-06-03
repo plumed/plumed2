@@ -438,7 +438,6 @@ private:
   int mw_rstride_;
   bool walkers_mpi_;
   unsigned mpi_nw_;
-  unsigned mpi_mw_;
   // flying gaussians
   bool flying_;
   // kinetics from metadynamics
@@ -601,7 +600,7 @@ MetaD::MetaD(const ActionOptions& ao):
   grid_(false),
   wgridstride_(0),
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
-  walkers_mpi_(false), mpi_nw_(0), mpi_mw_(0),
+  walkers_mpi_(false), mpi_nw_(0),
   flying_(false),
   acceleration_(false), acc_(0.0), acc_restart_mean_(0.0),
   calc_max_bias_(false), max_bias_(0.0),
@@ -1013,12 +1012,10 @@ MetaD::MetaD(const ActionOptions& ao):
       if(comm.Get_rank()==0) {
         // Only root of group can communicate with other walkers
         mpi_nw_=multi_sim_comm.Get_size();
-        mpi_mw_=multi_sim_comm.Get_rank();
       }
       // Communicate to the other members of the same group
       // info abount number of walkers and walker index
       comm.Bcast(mpi_nw_,0);
-      comm.Bcast(mpi_mw_,0);
     }
   }
 
