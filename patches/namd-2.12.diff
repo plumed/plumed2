@@ -95,7 +95,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  }
 +
 +  void share(){
-+    int* p;
++    const int* p;
 +    int n;
 +    bool redo=false;
 +    cmd("prepareDependencies");

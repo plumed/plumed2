@@ -126,7 +126,7 @@ void Debug::apply() {
   };
   if(logRequestedAtoms) {
     ofile<<"requested atoms at step "<<getStep()<<": ";
-    int* l;
+    const int* l;
     int n;
     plumed.cmd("createFullList",&n);
     plumed.cmd("getFullList",&l);

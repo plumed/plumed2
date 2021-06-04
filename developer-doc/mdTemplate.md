@@ -275,7 +275,7 @@ plumed_cmd(plumedmain,"shareData",NULL);                     // Request all the 
 
 // Some extra calls that might come in handy
 plumed_cmd(plumedmain,"createFullList",&n);                  // Create a list containing of all the atoms plumed is using to do calculations (return the number of atoms in n)
-plumed_cmd(plumedmain,"getFullList",&list);                  // Return a list (in list) containing all the indices plumed is using to do calculations
+plumed_cmd(plumedmain,"getFullList",&list);                  // Return a list (in list) containing all the indices plumed is using to do calculations. list should be `const int*`
 plumed_cmd(plumedmain,"clearFullList",NULL);                 // Clear the list of all the atoms that plumed is using to do calculations
 plumed_cmd(plumedmain,"clear",clear);                        // Clear and delete all the pointers inside plumed.
 \endverbatim
