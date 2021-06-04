@@ -219,10 +219,10 @@ public:
     plumed->cmd("setStep",&istep);
     plumed->cmd("setMasses",&masses[0]);
     for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
-    plumed->cmd("setForces",&forces[0]);
+    plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&zero);
     if( lperiod ) plumed->cmd("setBox",&box[0]);
-    plumed->cmd("setPositions",&positions[0]);
+    plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
 
 
@@ -259,10 +259,10 @@ public:
       plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
       for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
-      plumed->cmd("setForces",&forces[0]);
+      plumed->cmd("setForces",&forces[0][0]);
       double fenergy=0.0;
       plumed->cmd("setEnergy",&fenergy);
-      plumed->cmd("setPositions",&positions[0]);
+      plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
       // if(istep%2000==0) plumed->cmd("writeCheckPointFile");

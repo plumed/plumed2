@@ -590,9 +590,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     int step_tmp = 0;
     plumed->cmd("setStep",&step_tmp);
     plumed->cmd("setMasses",&masses[0]);
-    plumed->cmd("setForces",&forces[0]);
+    plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&potential);
-    plumed->cmd("setPositions",&positions[0]);
+    plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
   }
 
@@ -635,9 +635,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       plumedWantsToStop=0;
       plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
-      plumed->cmd("setForces",&forces[0]);
+      plumed->cmd("setForces",&forces[0][0]);
       plumed->cmd("setEnergy",&potential);
-      plumed->cmd("setPositions",&positions[0]);
+      plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
       //if(istep%2000==0) plumed->cmd("writeCheckPointFile");

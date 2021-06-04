@@ -318,7 +318,7 @@ void Plumed::prepare() {
   if(ene) plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
   int n=0;
   if(root) p.cmd("createFullList",&n);
-  int *pointer=nullptr;
+  const int *pointer=nullptr;
   if(root) p.cmd("getFullList",&pointer);
   bool redo=(index.size()!=n);
   if(first) redo=true;
