@@ -586,10 +586,10 @@ private:
         for(int i=0; i<3; i++) cell9[i][i]=cell[i];
         plumed->cmd("setStep",&istepplusone);
         plumed->cmd("setMasses",&masses[0]);
-        plumed->cmd("setForces",&forces[0]);
+        plumed->cmd("setForces",&forces[0][0]);
         plumed->cmd("setEnergy",&engconf);
-        plumed->cmd("setPositions",&positions[0]);
-        plumed->cmd("setBox",cell9);
+        plumed->cmd("setPositions",&positions[0][0]);
+        plumed->cmd("setBox",&cell9[0][0]);
         plumed->cmd("setStopFlag",&plumedWantsToStop);
         plumed->cmd("calc");
         if(plumedWantsToStop) nstep=istep;
