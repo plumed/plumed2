@@ -40,7 +40,7 @@ int main(){
 
   for(int step=0;step<10;step++){
   for(unsigned i=0;i<3*natoms;i++) all_positions[i]=i+step;
-    int* p=nullptr;
+    const int* p=nullptr;
     int n=0;
     plumed->cmd("setStep",&step);
     plumed->cmd("prepareDependencies");
