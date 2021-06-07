@@ -305,8 +305,8 @@
 
 \section ReferencePlumedH-typesafe Typesafe interface
 
-  Starting with PLUMED 2.7, the `cmd` function of the C++ interface, and the similar function `gcmd`, can be called
-  with several interfaces and can perform a typechecking on the passer argument. In particular, the following
+  Starting with PLUMED 2.8, the `cmd` function of the C++ interface, and the similar function `gcmd`, can be called
+  with several interfaces and can perform a typechecking on the passed argument. In particular, the following
   forms are now possible:
 \verbatim
   cmd("string",value);        // by value
@@ -319,8 +319,14 @@
   is passed a more thorough check is performed controlling each of the dimensions of the array.
   In addition to this, the type of the pointer (or of the value) is checked at runtime.
 
-  All these checks are only implemented if the PLUMED library is recent (>=2.8). In addition,
-  they can be disabled in two ways:
+  All these checks are only implemented if the PLUMED library is recent (>=2.8). However, it will still be
+  possible to load at runtime an older PLUMED library (<=2.7). For this reason, it is still compulsory
+  to pass the correct types to the `cmd` function, also when the argument is passed by value.
+  Type conversions are only performed between pointers and only in ways compatible with
+  what is allowed in C++ (e.g., `const void*` cannot be converted to `void*`, but `void*` can
+  be converted to `const void*`).
+
+  Type checkes can be disabled in two ways:
   - By compiling `Plumed.h` with `-D__PLUMED_WRAPPER_CXX_TYPESAFE=0`
   - By setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
 
