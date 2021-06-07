@@ -81,7 +81,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims.template get<long>()[0]=1;
+    dims.template get<long*>()[0]=1;
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -102,7 +102,7 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims.template get<long>()[0]=1;
+    dims.template get<long*>()[0]=1;
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -124,7 +124,7 @@ void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::str
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
   plumed_massert( !data.count(key + " " + type), "already collecting this data elsewhere");
   // Add the space to store the data to the data map
-  T* f=outval.get<T>();
+  T* f=outval.get<T*>();
   data.insert(std::pair<std::string,TypesafePtr>(key + " " + type,f));
 
   // Find the appropriate action and store value containing quantity of interest
@@ -145,7 +145,7 @@ void DataFetchingObjectTyped<T>::finishDataGrab() {
   for(const auto & p : myvalues ) {
     auto val=data.find(p->getName() + " ");
     if( data.find(p->getName() + " ")!=data.end() ) {
-      *val->second.template get<T>() = static_cast<T>( p->get() );
+      *val->second.template get<T*>() = static_cast<T>( p->get() );
     }
     if( data.find(p->getName() + " derivatives")!=data.end() ) {
       plumed_merror("not implemented yet");

@@ -33,15 +33,15 @@ namespace PLMD {
 template<typename T>
 static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const TypesafePtr & py,const TypesafePtr & pz,unsigned maxel,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
   if(p) {
-    auto p_=p.get<T>({maxel,3});
+    auto p_=p.get<T*>({maxel,3});
     ppx=p_;
     ppy=p_+1;
     ppz=p_+2;
     stride=3;
   } else if(px && py && pz) {
-    ppx=px.get<T>(maxel);
-    ppy=py.get<T>(maxel);
-    ppz=pz.get<T>(maxel);
+    ppx=px.get<T*>(maxel);
+    ppy=py.get<T*>(maxel);
+    ppz=pz.get<T*>(maxel);
     stride=1;
   } else {
     ppx=nullptr;
@@ -93,19 +93,19 @@ public:
   double getExtraCV(const std::string &name) override {
     auto search=extraCV.find(name);
     if(search != extraCV.end()) {
-      return static_cast<double>(search->second.template getVal<T>());
+      return static_cast<double>(search->second.template get<T>());
     } else {
       plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
     }
   }
   void updateExtraCVForce(const std::string &name,double f) override {
-    *extraCVForce[name].template get<T>()+=static_cast<T>(f);
+    *extraCVForce[name].template get<T*>()+=static_cast<T>(f);
   }
   void MD2double(const TypesafePtr & m,double&d)const override {
-    d=double(m.template getVal<T>());
+    d=double(m.template get<T>());
   }
   void double2MD(const double&d,const TypesafePtr & m)const override {
-    *m.get<T>()=T(d);
+    *m.get<T*>()=T(d);
   }
   Vector getMDforces(const unsigned index)const override {
     unsigned stride;
@@ -149,7 +149,7 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits) {
 
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const {
-  auto b=this->box.template get<const T>({3,3});
+  auto b=this->box.template get<const T*>({3,3});
   if(b) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=b[3*i+j]*scaleb;
   else box.zero();
 }
@@ -230,21 +230,21 @@ void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const std::vector<int>&index,std::vector<double>&masses)const {
-  auto mm=m.get<const T>(index.size());
+  auto mm=m.get<const T*>(index.size());
   if(mm) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*mm[i];
   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double>&charges)const {
-  auto cc=c.get<const T>(index.size());
+  auto cc=c.get<const T*>(index.size());
   if(cc) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*cc[i];
   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
-  auto v=this->virial.template get<T>({3,3});
+  auto v=this->virial.template get<T*>({3,3});
   if(v) for(int i=0; i<3; i++)for(int j=0; j<3; j++) v[3*i+j]+=T(virial(i,j)*scalev);
 }
 
@@ -295,7 +295,7 @@ void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) 
   T* ffz;
   getPointers(f,fx,fy,fz,index.size(),ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
-  auto v=virial.get<T>({3,3});
+  auto v=virial.get<T*>({3,3});
   if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
@@ -342,7 +342,7 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
 
 template <class T>
 void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
-  virial=pp.get<T>({3,3});
+  virial=pp.get<T*>({3,3});
 }
 
 

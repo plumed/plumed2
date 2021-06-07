@@ -268,20 +268,20 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setStep:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=val.getVal<int>();
+        step=val.get<int>();
         atoms.startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=val.getVal<long int>();
+        step=val.get<long int>();
         atoms.startStep();
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(val.getVal<int>());
+        atoms.setAtomsNlocal(val.get<int>());
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
@@ -294,7 +294,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(val.getVal<int>());
+        atoms.setAtomsContiguous(val.get<int>());
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
@@ -331,24 +331,24 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
-        if(val) error_handler=*static_cast<const plumed_error_handler*>(val.get<const void>());
+        if(val) error_handler=*static_cast<const plumed_error_handler*>(val.get<const void*>());
         else error_handler.handler=NULL;
       }
       break;
       case cmd_read:
         CHECK_INIT(initialized,word);
-        if(val)readInputFile(val.get<const char>());
+        if(val)readInputFile(val.get<const char*>());
         else   readInputFile("plumed.dat");
         break;
       case cmd_readInputLine:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLine(val.get<const char>());
+        readInputLine(val.get<const char*>());
         break;
       case cmd_readInputLines:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLines(val.get<const char>());
+        readInputLines(val.get<const char*>());
         break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
@@ -356,7 +356,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *val.get<int>()=8;
+        *val.get<int*>()=8;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -366,8 +366,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(val.getVal<int>());
-        mydatafetcher=DataFetchingObject::create(val.getVal<int>(),*this);
+        atoms.setRealPrecision(val.get<int>());
+        mydatafetcher=DataFetchingObject::create(val.get<int>(),*this);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -413,7 +413,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        plumedDat=val.get<const char>();
+        plumedDat=val.get<const char*>();
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
@@ -432,7 +432,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setNatoms(val.getVal<int>());
+        atoms.setNatoms(val.get<int>());
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -449,20 +449,20 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(val.getVal<int>()!=0) restart=true;
+        if(val.get<int>()!=0) restart=true;
         break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         doCheckPoint = false;
-        if(val.getVal<int>()!=0) doCheckPoint = true;
+        if(val.get<int>()!=0) doCheckPoint = true;
         break;
       /* ADDED WITH API==6 */
       case cmd_setNumOMPthreads:
         CHECK_NOTNULL(val,word);
         {
-          auto nt=val.getVal<unsigned>();
+          auto nt=val.get<unsigned>();
           if(nt==0) nt=1;
           OpenMP::setNumThreads(nt);
         }
@@ -471,21 +471,21 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
-        testThrow(val.get<const char>());
+        testThrow(val.get<const char*>());
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        MDEngine=val.get<const char>();
+        MDEngine=val.get<const char*>();
         break;
       case cmd_setLog:
         CHECK_NOTINIT(initialized,word);
-        log.link(val.get<FILE>());
+        log.link(val.get<FILE*>());
         break;
       case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        log.open(val.get<const char>());
+        log.open(val.get<const char*>());
         break;
       // other commands that should be used after initialization:
       case cmd_setStopFlag:
@@ -496,22 +496,22 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getFlag(*val.get<int>()); // note: getFlag changes the value of the reference!
+        exchangePatterns.getFlag(*val.get<int*>()); // note: getFlag changes the value of the reference!
         break;
       case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setSeed(val.getVal<int>());
+        exchangePatterns.setSeed(val.get<int>());
         break;
       case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setNofR(val.getVal<int>());
+        exchangePatterns.setNofR(val.get<int>());
         break;
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getList(val.get<int>());
+        exchangePatterns.getList(val.get<int*>());
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
@@ -520,8 +520,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) *val.get<int>()=1;
-        else                       *val.get<int>()=0;
+        if(atoms.isEnergyNeeded()) *val.get<int*>()=1;
+        else                       *val.get<int*>()=0;
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
@@ -531,7 +531,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        *val.get<int>()=(actionRegister().check(words[1]) ? 1:0);
+        *val.get<int*>()=(actionRegister().check(words[1]) ? 1:0);
         break;
       case cmd_setExtraCV:
         CHECK_NOTNULL(val,word);
@@ -909,7 +909,7 @@ void PlumedMain::update() {
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow) {
-    if(stopFlag) (*stopFlag.get<int>())=1;
+    if(stopFlag) (*stopFlag.get<int*>())=1;
     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }
 

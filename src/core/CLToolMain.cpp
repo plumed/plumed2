@@ -75,25 +75,25 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);
-      argc=val.getVal<int>();
+      argc=val.get<int>();
       break;
     case cmd_setArgv:
       CHECK_NULL(val,word);
-      v=val.get<const char*const>(argc);
+      v=val.get<const char*const*>(argc);
       for(int i=0; i<argc; ++i) argv.push_back(std::string(v[i]));
       break;
     case cmd_setArgvLine:
       CHECK_NULL(val,word);
-      vv=val.get<const char>();
+      vv=val.get<const char*>();
       argv=Tools::getWords(vv);
       break;
     case cmd_setIn:
       CHECK_NULL(val,word);
-      in=val.get<FILE>();
+      in=val.get<FILE*>();
       break;
     case cmd_setOut:
       CHECK_NULL(val,word);
-      out=val.get<FILE>();
+      out=val.get<FILE*>();
       break;
     case cmd_setMPIComm:
       comm.Set_comm(val);
@@ -117,7 +117,7 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
           *ptr=0; ptr++;
         }
         int ret=run(argc,&vvv[0],in,out,comm);
-        *val.get<int>()=ret;
+        *val.get<int*>()=ret;
       }
       break;
     default:

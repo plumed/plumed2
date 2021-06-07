@@ -73,25 +73,25 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
     switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);
-      *val.get<int>()=initialized;
+      *val.get<int*>()=initialized;
       break;
     case cmd_setMPIIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_comm(val.get<const void>());
+      intracomm.Set_comm(val.get<const void*>());
       break;
     case cmd_setMPIIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_comm(val.get<const void>());
-      plumedMain.multi_sim_comm.Set_comm(val.get<const void>());
+      intercomm.Set_comm(val.get<const void*>());
+      plumedMain.multi_sim_comm.Set_comm(val.get<const void*>());
       break;
     case cmd_setMPIFIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_fcomm(val.get<const void>());
+      intracomm.Set_fcomm(val.get<const void*>());
       break;
     case cmd_setMPIFIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_fcomm(val.get<const void>());
-      plumedMain.multi_sim_comm.Set_fcomm(val.get<const void>());
+      intercomm.Set_fcomm(val.get<const void*>());
+      plumedMain.multi_sim_comm.Set_fcomm(val.get<const void*>());
       break;
     case cmd_init:
       CHECK_NOTINIT(initialized,key);
@@ -113,7 +113,7 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       break;
     case cmd_setPartner:
       CHECK_INIT(initialized,key);
-      partner=val.getVal<int>();
+      partner=val.get<int>();
       break;
     case cmd_savePositions:
       CHECK_INIT(initialized,key);

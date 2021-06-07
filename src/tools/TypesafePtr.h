@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <array>
 #include <cstring>
+#include <type_traits>
 
 namespace PLMD {
 
@@ -314,26 +315,36 @@ public:
   }
 
   template<typename T>
-  T* get(std::size_t nelem=0) const {
-    return get_priv<T>(nelem,nullptr,false);
+  typename std::enable_if<std::is_pointer<T>::value,T>::type get() const {
+    typedef typename std::remove_pointer<T>::type T_noptr;
+    return get_priv<T_noptr>(0,nullptr,false);
   }
 
   template<typename T>
-  T* get(std::initializer_list<std::size_t> shape) const {
+  typename std::enable_if<!std::is_pointer<T>::value,T>::type get() const {
+    return *get_priv<const T>(1,nullptr,true);
+  }
+
+  template<typename T>
+  T get(std::size_t nelem) const {
+    static_assert(std::is_pointer<T>::value,"only pointer types allowed here");
+    typedef typename std::remove_pointer<T>::type T_noptr;
+    return get_priv<T_noptr>(nelem,nullptr,false);
+  }
+
+  template<typename T>
+  T get(std::initializer_list<std::size_t> shape) const {
+    static_assert(std::is_pointer<T>::value,"only pointer types allowed here");
     plumed_assert(shape.size()<=maxrank);
     std::array<std::size_t,maxrank+1> shape_;
+    typedef typename std::remove_pointer<T>::type T_noptr;
     unsigned j=0;
     for(auto i : shape) {
       shape_[j]=i;
       j++;
     }
     shape_[j]=0;
-    return get_priv<T>(0,&shape_[0],false);
-  }
-
-  template<typename T>
-  T getVal() const {
-    return *get_priv<const T>(1,nullptr,true);
+    return get_priv<T_noptr>(0,&shape_[0],false);
   }
 
   operator bool() const noexcept {
