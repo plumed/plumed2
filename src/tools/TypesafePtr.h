@@ -218,6 +218,8 @@ public:
     return "unknown";
   }
 
+private:
+
   template<typename T>
   T* get_priv(std::size_t nelem, const std::size_t* shape, bool byvalue) const {
 
@@ -313,6 +315,8 @@ public:
       }
     return (T*) ptr;
   }
+
+public:
 
   template<typename T>
   typename std::enable_if<std::is_pointer<T>::value,T>::type get() const {
