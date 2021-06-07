@@ -40,6 +40,14 @@ TypesafePtr TypesafePtr::copy() const {
   return ret;
 }
 
+std::string TypesafePtr::extra_msg() {
+  const char *text = "\n"
+                     "If you are sure your code is correct you can disable this check with export PLUMED_TYPESAFE_IGNORE=yes\n"
+                     "In case this is necessary, please report an issue to developers of PLUMED and of the MD code\n"
+                     "See also https://github.com/plumed/plumed2/pull/653";
+  return std::string(text);
+}
+
 }
 
 

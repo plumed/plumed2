@@ -81,6 +81,8 @@ class TypesafePtr {
     }
   }
 
+  static std::string extra_msg();
+
 public:
 
   TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, unsigned long int flags):
@@ -236,54 +238,54 @@ private:
     // type>5: undefined yet
     if(type!=0 && type<=5) {
       if(std::is_integral<T_noptr>::value && (type!=is_integral)) {
-        throw ExceptionTypeError() <<"This command expects an integer type. Received a " << type_str() << " instead";
+        throw ExceptionTypeError() <<"This command expects an integer type. Received a " << type_str() << " instead"<<extra_msg();
       }
       if(std::is_floating_point<T_noptr>::value && (type!=is_floating_point)) {
-        throw ExceptionTypeError() <<"This command expects a floating point type. Received a " << type_str() << " instead";
+        throw ExceptionTypeError() <<"This command expects a floating point type. Received a " << type_str() << " instead"<<extra_msg();
       }
       if(std::is_same<std::remove_const<FILE>,T_noconst>::value && (type!=is_file)) {
-        throw ExceptionTypeError() <<"This command expects a FILE. Received a " << type_str() << " instead";
+        throw ExceptionTypeError() <<"This command expects a FILE. Received a " << type_str() << " instead"<<extra_msg();
       }
     }
 
     if(size>0 && typesafePtrSizeof<T_noptr>() >0 && typesafePtrSizeof<T_noptr>()!=size) {
-      throw ExceptionTypeError() << "This command expects a type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead";
+      throw ExceptionTypeError() << "This command expects a type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead"<<extra_msg();
     }
 
     if(!byvalue) if(cons==1) {
-        throw ExceptionTypeError() << "This command is trying to take the address of an argument that was passed by value";
+        throw ExceptionTypeError() << "This command is trying to take the address of an argument that was passed by value"<<extra_msg();
       }
 
     // cons==1 (by value) is here treated as cons==3 (const type*)
     if(!std::is_pointer<T>::value) {
       if(std::is_void<T>::value) {
         if(cons==1) {
-          throw ExceptionTypeError() << "This command expects a void pointer. It received a value instead";
+          throw ExceptionTypeError() << "This command expects a void pointer. It received a value instead"<<extra_msg();
         }
       } else {
         if(cons!=1 && cons!=2 && cons!=3) {
-          throw ExceptionTypeError() << "This command expects a pointer or a value. It received a pointer-to-pointer instead";
+          throw ExceptionTypeError() << "This command expects a pointer or a value. It received a pointer-to-pointer instead"<<extra_msg();
         }
       }
       if(!std::is_const<T>::value) {
         if(cons==3) {
-          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a non modifiable pointer instead (const T*)";
+          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a non modifiable pointer instead (const T*)"<<extra_msg();
         } else if(cons==1) {
-          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a value instead (T)";
+          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a value instead (T)"<<extra_msg();
         }
       }
     } else {
       if(!std::is_const<T>::value) {
-        if(cons==1) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead";
-        if(cons==2 || cons==3) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead";
+        if(cons==1) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead"<<extra_msg();
+        if(cons==2 || cons==3) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead"<<extra_msg();
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=4) throw ExceptionTypeError() << "This command expects a modifiable pointer-to-pointer (T**)";
+          if(cons!=4) throw ExceptionTypeError() << "This command expects a modifiable pointer-to-pointer (T**)"<<extra_msg();
         } else {
-          if(cons!=6) throw ExceptionTypeError() << "This command expects a modifiable pointer to unmodifiable pointer (const T**)";
+          if(cons!=6) throw ExceptionTypeError() << "This command expects a modifiable pointer to unmodifiable pointer (const T**)"<<extra_msg();
         }
       } else {
         if(!std::is_const<T_noptr>::value) {
-          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "This command expects T*const* pointer, and can only receive T**  or T*const* pointers";
+          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "This command expects T*const* pointer, and can only receive T**  or T*const* pointers"<<extra_msg();
         }
       }
     }
@@ -291,14 +293,14 @@ private:
     if(shape && shape[0] && this->shape[0]) {
       for(unsigned i=0; i<this->shape.size(); i++) {
         if(shape[i]==0 && this->shape[i]!=0) {
-          throw ExceptionTypeError() << "Incorrect number of axis (passed greater than requested)";
+          throw ExceptionTypeError() << "Incorrect number of axis (passed greater than requested)"<<extra_msg();
         }
         if(shape[i]!=0 && this->shape[i]==0) {
-          throw ExceptionTypeError() << "Incorrect number of axis (requested greater than passed)";
+          throw ExceptionTypeError() << "Incorrect number of axis (requested greater than passed)"<<extra_msg();
         }
         if(shape[i]==0) break;
         if(!(shape[i]<=this->shape[i])) {
-          throw ExceptionTypeError() << "This command wants to access " << shape[i] << " on axis " << i <<" of this pointer, but only " << this->shape[i] << " have been passed";
+          throw ExceptionTypeError() << "This command wants to access " << shape[i] << " on axis " << i <<" of this pointer, but only " << this->shape[i] << " have been passed"<<extra_msg();
         }
       }
     }
@@ -311,7 +313,7 @@ private:
     }
     // check number of elements
     if(nelem>0 && this->nelem>0) if(!(nelem<=this->nelem)) {
-        throw ExceptionTypeError() << "This command wants to access " << nelem << " from this pointer, but only " << this->nelem << " have been passed";
+        throw ExceptionTypeError() << "This command wants to access " << nelem << " from this pointer, but only " << this->nelem << " have been passed"<<extra_msg();
       }
     return (T*) ptr;
   }
