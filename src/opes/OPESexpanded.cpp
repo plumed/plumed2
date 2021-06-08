@@ -55,6 +55,7 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 \par Examples
 
 \plumedfile
+# simulate multiple temperatures, as in parallel tempering
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
@@ -65,6 +66,7 @@ You can easily combine multiple ECVs.
 The OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
 
 \plumedfile
+# simulate multiple temperatures while biasing a CV
 ene: ENERGY
 dst: DISTANCE ATOMS=1,2
 
@@ -76,12 +78,13 @@ PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
 \endplumedfile
 
 If an ECV is based on more than one CV you must provide all the output component, in the proper order.
-You can use regex for that, like in the following example.
+You can use \ref Regex for that, like in the following example.
 
 \plumedfile
+# simulate multiple temperatures and pressures while biasing a two-CVs linear path
 ene: ENERGY
 vol: VOLUME
-mtp: ECV_MULTITHERMAL_MULTIBARIC ...
+ecv_mtp: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=300
   MIN_TEMP=200
@@ -93,9 +96,9 @@ mtp: ECV_MULTITHERMAL_MULTIBARIC ...
 
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
-umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
+ecv_umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
 
-opes: OPES_EXPANDED ARG=mtp.*,umb.* PACE=500 WALKERS_MPI PRINT_STRIDE=1000
+opes: OPES_EXPANDED ARG=(ecv_.*) PACE=500 WALKERS_MPI PRINT_STRIDE=1000
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
 \endplumedfile
