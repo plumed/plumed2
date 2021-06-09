@@ -3099,6 +3099,7 @@ void plumed_gcmd(const char*key,const void*val) {
   plumed_cmd(plumed_gmain,key,val);
 }
 
+/* cppcheck-suppress passedByValue */
 void plumed_gcmd_safe(const char*key,plumed_safeptr safe) {
   plumed_cmd_safe(plumed_gmain,key,safe);
 }
