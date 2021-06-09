@@ -882,6 +882,10 @@ __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr,plumed_nothrow_handler nothrow);
 __PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr);
+__PLUMED_WRAPPER_C_END
+
 /** \relates plumed
     \brief Destructor.
 
@@ -1075,6 +1079,17 @@ void plumed_gcreate(void);
 */
 extern
 void plumed_gcmd(const char* key,const void* val);
+
+/** \relates plumed
+    \brief Tells to the global interface to execute a command.
+
+    \param key The name of the command to be executed
+    \param safe A safe pointer
+
+    `plumed_gcmd_safe(a,b);` is equivalent to `plumed_cmd_safe(plumed_global(),a,b);`.
+*/
+extern
+void plumed_gcmd_safe(const char* key,plumed_safeptr);
 
 /** \relates plumed
     \brief Destructor for the global interface.
@@ -2973,6 +2988,25 @@ void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_ha
 }
 __PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr safe) {
+  plumed_implementation* pimpl;
+  /* obtain pimpl */
+  pimpl=(plumed_implementation*) p.p;
+  assert(plumed_check_pimpl(pimpl));
+  if(!pimpl->p) {
+    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
+    if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    __PLUMED_WRAPPER_STD exit(1);
+  }
+  assert(pimpl->functions.create);
+  assert(pimpl->functions.cmd);
+  assert(pimpl->functions.finalize);
+  /* execute */
+  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe))(pimpl->p,key,safe);
+  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+}
+__PLUMED_WRAPPER_C_END
 
 
 __PLUMED_WRAPPER_C_BEGIN
@@ -3063,6 +3097,10 @@ void plumed_gcreate(void) {
 
 void plumed_gcmd(const char*key,const void*val) {
   plumed_cmd(plumed_gmain,key,val);
+}
+
+void plumed_gcmd_safe(const char*key,plumed_safeptr safe) {
+  plumed_cmd_safe(plumed_gmain,key,safe);
 }
 
 void plumed_gfinalize(void) {
