@@ -1,0 +1,140 @@
+! vim:ft=fortran
+module plumed_module
+  use iso_c_binding
+  implicit none
+
+  private
+  public :: plumed, plumed_eos
+  public :: plumed_f03_create, plumed_f03_create_dlopen, plumed_f03_create_reference, plumed_f03_create_invalid
+  public :: plumed_f03_cmd
+  public :: plumed_f03_finalize
+  public :: plumed_f03_installed
+  public :: plumed_f03_valid, plumed_f03_use_count
+  public :: plumed_f03_global
+  public :: plumed_f03_ginitialized
+  public :: plumed_f03_gcreate
+  public :: plumed_f03_gcmd
+  public :: plumed_f03_gfinalize
+  public :: plumed_f03_gvalid
+
+  type :: plumed
+    character(32) :: ptr
+  end type plumed
+  character, parameter :: plumed_eos=achar(0)
+
+__INTERFACE__
+
+  contains
+
+    function plumed_f03_create() result(p)
+      type(plumed) :: p
+      call plumed_f_create(p%ptr)
+    end function plumed_f03_create
+
+    function plumed_f03_create_dlopen(path) result(p)
+      character(len=*), intent(in) :: path
+      type(plumed)                 :: p
+      call plumed_f_create_dlopen(trim(path)//plumed_eos,p%ptr)
+    end function plumed_f03_create_dlopen
+
+    function plumed_f03_create_reference(ref) result(p)
+      type(plumed), intent(in):: ref
+      type(plumed):: p
+      call plumed_f_create_reference(ref%ptr,p%ptr)
+    end function plumed_f03_create_reference
+
+    function plumed_f03_create_invalid() result(p)
+      type(plumed):: p
+      call plumed_f_create_invalid(p%ptr)
+    end function plumed_f03_create_invalid
+
+    subroutine plumed_f03_cmd_null(p,key)
+      type(plumed)                  :: p
+      character(len=*),  intent(in) :: key
+      call plumed_f_cmd_safe_null(p%ptr,trim(key)//plumed_eos)
+    end subroutine plumed_f03_cmd_null
+
+    subroutine plumed_f03_finalize(p)
+      type(plumed), intent(in) :: p
+      call plumed_f_finalize(p%ptr)
+    end subroutine plumed_f03_finalize
+
+    function plumed_f03_installed() result(installed)
+      logical :: installed
+      integer :: i
+      i=0
+      call plumed_f_installed(i)
+      installed = i>0
+    end function plumed_f03_installed
+
+    function plumed_f03_valid(p) result(valid)
+      type(plumed) :: p
+      logical      :: valid
+      integer      :: i
+      i=0
+      call plumed_f_valid(p%ptr,i)
+      valid = i>0
+    end function plumed_f03_valid
+
+    function plumed_f03_use_count(p) result(count)
+      type(plumed) :: p
+      integer      :: count
+      count=0
+      call plumed_f_use_count(p%ptr,count)
+    end function plumed_f03_use_count
+
+    function plumed_f03_global() result(p)
+      type(plumed) :: p
+      call plumed_f_global(p%ptr)
+    end function plumed_f03_global
+
+    function plumed_f03_ginitialized() result(initialized)
+      logical :: initialized
+      integer :: i
+      call plumed_f_ginitialized(i)
+    end function plumed_f03_ginitialized
+
+    subroutine plumed_f03_gcreate()
+      call plumed_f_gcreate()
+    end subroutine plumed_f03_gcreate
+
+    subroutine plumed_f03_gcmd_null(key)
+      character(len=*),  intent(in)    :: key
+      call plumed_f_gcmd_safe_null(trim(key)//plumed_eos)
+    end subroutine plumed_f03_gcmd_null
+
+    subroutine plumed_f03_gfinalize()
+      call plumed_f_gfinalize()
+    end subroutine plumed_f03_gfinalize
+
+    function plumed_f03_gvalid() result(valid)
+      logical :: valid
+      integer :: i
+      i=0
+      call plumed_f_gvalid(i)
+      valid=i>0
+    end function plumed_f03_gvalid
+
+    subroutine plumed_f03_cmd_char(p,key,val)
+      type(plumed)                     :: p
+      character(len=*),  intent(in)    :: key
+      character(len=*)                 :: val
+      integer(kind=C_SIZE_T) :: pass_shape(1)
+      integer(kind=C_SIZE_T) :: pass_nelem
+      pass_shape=(/0/)
+      pass_nelem=0
+      call plumed_f_cmd_safe_char(p%ptr,trim(key)//plumed_eos,val//plumed_eos,pass_shape(1))
+    end subroutine plumed_f03_cmd_char
+
+    subroutine plumed_f03_gcmd_char(key,val)
+      character(len=*),  intent(in)    :: key
+      character(len=*)                 :: val
+      integer(kind=C_SIZE_T) :: pass_shape(1)
+      integer(kind=C_SIZE_T) :: pass_nelem
+      pass_shape=(/0/)
+      pass_nelem=0
+      call plumed_f_gcmd_safe_char(trim(key)//plumed_eos,val//plumed_eos,pass_shape(1))
+    end subroutine plumed_f03_gcmd_char
+
+__IMPLEMENTATION__
+end module plumed_module
