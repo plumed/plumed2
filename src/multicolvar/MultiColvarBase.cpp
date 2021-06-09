@@ -432,7 +432,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
       for(unsigned i=0; i<nat1; ++i) addTaskToList(i);
       ablocks[0].resize( nat2 );
       for(unsigned i=0; i<nat2; ++i) {
-        bool found=false; unsigned inum;
+        bool found=false; unsigned inum=0;
         for(unsigned j=0; j<nat1; ++j) {
           if( atom_lab[nat1+i].first>0 && atom_lab[j].first>0 ) {
             if( atom_lab[nat1+i].first==atom_lab[j].first &&

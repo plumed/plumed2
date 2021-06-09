@@ -111,7 +111,7 @@ void OutputColvarFile::performAnalysis() {
   OFile gfile; gfile.link(*this);
   gfile.setBackupString("analysis");
   gfile.fmtField(fmt+" ");
-  gfile.open( filename.c_str() );
+  gfile.open( filename );
 
   // Print embedding coordinates
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {

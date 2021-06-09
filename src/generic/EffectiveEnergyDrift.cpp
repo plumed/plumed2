@@ -153,7 +153,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   parse("FILE",fileName);
   if(fileName.length()==0) error("name out output file was not specified\n");
   output.link(*this);
-  output.open(fileName.c_str());
+  output.open(fileName);
 
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
