@@ -66,7 +66,7 @@ PlumedHandle::PlumedHandle(const char* kernel)
   return DlHandle(h);
 // once the DlHandle has been constructed we know that later exceptions will also call dlclose().
 }()),
-symbol_((plumed_symbol_table_type*) dlsym(handle,"plumed_symbol_table")),
+symbol_((plumed_symbol_table_type_x*) dlsym(handle,"plumed_symbol_table")),
 create_([&]() {
   if(symbol_) {
     plumed_assert(symbol_->functions.create);
@@ -76,7 +76,7 @@ create_([&]() {
   if(!c) c=dlsym(handle,"plumedmain_create");
   if(!c) c=dlsym(handle,"plumed_plumedmain_create");
   plumed_assert(c) << "in kernel "<<kernel<<" I could not find (plumed_)plumedmain_create";
-  plumed_create_pointer cc;
+  plumed_create_pointer_x cc;
   *(void **)(&cc)=c;
   return cc;
 }()),
@@ -89,7 +89,7 @@ cmd_([&]() {
   if(!c) c=dlsym(handle,"plumedmain_cmd");
   if(!c) c=dlsym(handle,"plumed_plumedmain_cmd");
   plumed_assert(c) << "in kernel "<<kernel<<" I could not find (plumed_)plumedmain_cmd";
-  plumed_cmd_pointer cc;
+  plumed_cmd_pointer_x cc;
   *(void **)(&cc)=c;
   return cc;
 }()),
@@ -102,7 +102,7 @@ finalize_([&]() {
   if(!f) f=dlsym(handle,"plumedmain_finalize");
   if(!f) f=dlsym(handle,"plumed_plumedmain_finalize");
   plumed_assert(f) << "in kernel "<<kernel<<" I could not find (plumed_)plumedmain_finalize";
-  plumed_finalize_pointer ff;
+  plumed_finalize_pointer_x ff;
   *(void **)(&ff)=f;
   return ff;
 }()),
@@ -126,9 +126,9 @@ PlumedHandle PlumedHandle::dlopen(const char* path) {
   return PlumedHandle(path);
 }
 
-void PlumedHandle::cmd(const char*key,const void*ptr) {
+void PlumedHandle::cmd(const char*key,TypesafePtr ptr) {
   if(local) local->cmd(key,ptr);
-  else if(p && cmd_) cmd_(p,key,ptr);
+  else if(p && cmd_) cmd_(p,key,ptr.get<void*>()); // <- fix void
   else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,29 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ExchangePatterns_h
-#define __PLUMED_core_ExchangePatterns_h
+#include "TypesafePtr.h"
+#include "core/PlumedMainInitializer.h"
 
-#include "tools/ForwardDecl.h"
-#include "tools/TypesafePtr.h"
+#include <iostream>
 
 namespace PLMD {
-class Random;
 
-class ExchangePatterns {
-  int    PatternFlag;
-  int    NumberOfReplicas;
-  ForwardDecl<Random> random_fwd;
-  Random& random=*random_fwd;
-public:
-  ExchangePatterns();
-  ~ExchangePatterns();
-  enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
-  void setNofR(const int);
-  void setSeed(const int);
-  void setFlag(const int);
-  void getList(const TypesafePtr & ind);
-  void getFlag(int&);
-};
+TypesafePtr TypesafePtr::fromSafePtr(void* safe) {
+  auto s=(plumed_safeptr_x*)safe;
+  return TypesafePtr(const_cast<void*>(s->ptr), s->nelem, s->shape, s->flags);
 }
-#endif
+
+TypesafePtr TypesafePtr::copy() const {
+  TypesafePtr ret;
+  ret.ptr=ptr;
+  ret.flags=flags;
+  ret.nelem=nelem;
+  ret.shape=shape;
+  return ret;
+}
+
+std::string TypesafePtr::extra_msg() {
+  const char *text = "\n"
+                     "If you are sure your code is correct you can disable this check with export PLUMED_TYPESAFE_IGNORE=yes\n"
+                     "In case this is necessary, please report an issue to developers of PLUMED and of the MD code\n"
+                     "See also https://github.com/plumed/plumed2/pull/653";
+  return std::string(text);
+}
+
+}
+
+

@@ -64,6 +64,7 @@ class Citations;
 class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
+class TypesafePtr;
 
 /**
 Main plumed object.
@@ -191,8 +192,12 @@ private:
   bool doCheckPoint;
 
 
+private:
+/// Forward declaration.
+  ForwardDecl<TypesafePtr> stopFlag_fwd;
+public:
 /// Stuff to make plumed stop the MD code cleanly
-  int* stopFlag;
+  TypesafePtr& stopFlag=*stopFlag_fwd;
   bool stopNow;
 
 /// Stack for update flags.
@@ -238,7 +243,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL) override;
+  void cmd(const std::string&key,const TypesafePtr & val=nullptr) override;
   ~PlumedMain();
   /**
     Read an input file.

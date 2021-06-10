@@ -503,16 +503,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
   PlumedMain p;
-  int rr=sizeof(real);
-  p.cmd("setRealPrecision",&rr);
+  p.cmd("setRealPrecision",(int)sizeof(real));
   int checknatoms=-1;
   long int step=0;
   parse("--initial-step",step);
 
-  if(restart) {
-    int irestart=1;
-    p.cmd("setRestart",&irestart);
-  }
+  if(restart) p.cmd("setRestart",1);
 
   if(Communicator::initialized()) {
     if(multi) {
@@ -522,11 +518,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  p.cmd("setMDLengthUnits",&units.getLength());
-  p.cmd("setMDChargeUnits",&units.getCharge());
-  p.cmd("setMDMassUnits",&units.getMass());
+  p.cmd("setMDLengthUnits",units.getLength());
+  p.cmd("setMDChargeUnits",units.getCharge());
+  p.cmd("setMDMassUnits",units.getMass());
   p.cmd("setMDEngine","driver");
-  p.cmd("setTimestep",&timestep);
+  p.cmd("setTimestep",timestep);
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
@@ -658,9 +654,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int xb,xc,xd;
         double t;
         sscanf(line.c_str(),"%8s %ld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
-        timestep = real(t);
         if (lstep) {
-          p.cmd("setTimestep",&timestep);
+          p.cmd("setTimestep",real(t));
           lstep = false;
         }
       }
@@ -695,10 +690,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     if( checknatoms<0 ) {
       if(kt>=0) {
-        p.cmd("setKbT",&kt);
+        p.cmd("setKbT",kt);
       }
       checknatoms=natoms;
-      p.cmd("setNatoms",&natoms);
+      p.cmd("setNatoms",natoms);
       p.cmd("init");
       if(parseOnly) break;
     }
@@ -733,8 +728,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) fprintf(out,"%d ",loc[i]); printf("\n");
           fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) fprintf(out,"%d ",start[i]); printf("\n");
         }
-        p.cmd("setAtomsNlocal",&pd_nlocal);
-        p.cmd("setAtomsContiguous",&pd_start);
+        p.cmd("setAtomsNlocal",pd_nlocal);
+        p.cmd("setAtomsContiguous",pd_start);
       } else if(debug_dd) {
         int npe=intracomm.Get_size();
         int rank=intracomm.Get_rank();
@@ -760,8 +755,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(intracomm.Get_rank()==0) {
           fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
-        p.cmd("setAtomsNlocal",&dd_nlocal);
-        p.cmd("setAtomsGatindex",&dd_gatindex[0]);
+        p.cmd("setAtomsNlocal",dd_nlocal);
+        p.cmd("setAtomsGatindex",&dd_gatindex[0],dd_nlocal);
       }
     }
 
@@ -924,7 +919,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
       }
 
-      p.cmd("setStepLong",&step);
+      p.cmd("setStepLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
 
       if(debug_dd) {
@@ -934,24 +929,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           dd_coordinates[3*i+1]=coordinates[3*kk+1];
           dd_coordinates[3*i+2]=coordinates[3*kk+2];
         }
-        p.cmd("setForces",&dd_forces[0]);
-        p.cmd("setPositions",&dd_coordinates[0]);
-        p.cmd("setMasses",&dd_masses[0]);
-        p.cmd("setCharges",&dd_charges[0]);
+        p.cmd("setForces",&dd_forces[0],3*dd_nlocal);
+        p.cmd("setPositions",&dd_coordinates[0],3*dd_nlocal);
+        p.cmd("setMasses",&dd_masses[0],dd_nlocal);
+        p.cmd("setCharges",&dd_charges[0],dd_nlocal);
       } else {
 // this is required to avoid troubles when the last domain
 // contains zero atoms
 // Basically, for empty domains we pass null pointers
 #define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
-        p.cmd("setForces",fix_pd(forces[3*pd_start]));
-        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
-        p.cmd("setMasses",fix_pd(masses[pd_start]));
-        p.cmd("setCharges",fix_pd(charges[pd_start]));
+        p.cmd("setForces",fix_pd(forces[3*pd_start]),3*pd_nlocal);
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]),3*pd_nlocal);
+        p.cmd("setMasses",fix_pd(masses[pd_start]),pd_nlocal);
+        p.cmd("setCharges",fix_pd(charges[pd_start]),pd_nlocal);
       }
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&virial[0]);
+      p.cmd("setBox",cell.data(),9);
+      p.cmd("setVirial",virial.data(),9);
     } else {
-      p.cmd("setStepLong",&step);
+      p.cmd("setStepLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
     }
     p.cmd("calc");
@@ -984,7 +979,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int partner=r+(2*((r+step/grex_stride)%2))-1;
         if(partner<0)partner=0;
         if(partner>=n) partner=n-1;
-        p.cmd("GREX setPartner",&partner);
+        p.cmd("GREX setPartner",partner);
         p.cmd("GREX calculate");
         p.cmd("GREX shareAllDeltaBias");
         for(int i=0; i<n; i++) {
@@ -1069,13 +1064,13 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
   for(int i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j) {
       pos[i][j]=pos[i][j]+delta;
-      p.cmd("setStepLong",&step);
-      p.cmd("setPositions",&pos[0][0]);
-      p.cmd("setForces",&fake_forces[0]);
-      p.cmd("setMasses",&masses[0]);
-      p.cmd("setCharges",&charges[0]);
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&fake_virial[0]);
+      p.cmd("setStepLong",step);
+      p.cmd("setPositions",&pos[0][0],3*natoms);
+      p.cmd("setForces",&fake_forces[0],3*natoms);
+      p.cmd("setMasses",&masses[0],natoms);
+      p.cmd("setCharges",&charges[0],natoms);
+      p.cmd("setBox",&cell[0],9);
+      p.cmd("setVirial",&fake_virial[0],9);
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);
@@ -1093,13 +1088,13 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
       for(int j=0; j<natoms; ++j) pos[j]=pbc.realToScaled( pos[j] );
       cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box);
       for(int j=0; j<natoms; j++) pos[j]=pbc.scaledToReal( pos[j] );
-      p.cmd("setStepLong",&step);
-      p.cmd("setPositions",&pos[0][0]);
-      p.cmd("setForces",&fake_forces[0]);
-      p.cmd("setMasses",&masses[0]);
-      p.cmd("setCharges",&charges[0]);
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&fake_virial[0]);
+      p.cmd("setStepLong",step);
+      p.cmd("setPositions",&pos[0][0],3*natoms);
+      p.cmd("setForces",&fake_forces[0],3*natoms);
+      p.cmd("setMasses",&masses[0],natoms);
+      p.cmd("setCharges",&charges[0],natoms);
+      p.cmd("setBox",&cell[0],9);
+      p.cmd("setVirial",&fake_virial[0],9);
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);

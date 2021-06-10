@@ -40,6 +40,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataFetchingObject.h"
 #include <cstdlib>
@@ -135,7 +136,6 @@ PlumedMain::PlumedMain():
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
-  stopFlag(NULL),
   stopNow(false),
   novirial(false),
   detailedTimers(false)
@@ -156,7 +156,7 @@ PlumedMain::~PlumedMain() {
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
 
-void PlumedMain::cmd(const std::string & word,void*val) {
+void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -268,43 +268,43 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setStep:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=(*static_cast<int*>(val));
+        step=val.get<int>();
         atoms.startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=(*static_cast<long int*>(val));
+        step=val.get<long int>();
         atoms.startStep();
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(*static_cast<int*>(val));
+        atoms.setAtomsNlocal(val.get<int>());
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),false);
+        atoms.setAtomsGatindex(val,false);
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),true);
+        atoms.setAtomsGatindex(val,true);
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(*static_cast<int*>(val));
+        atoms.setAtomsContiguous(val.get<int>());
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.createFullList(static_cast<int*>(val));
+        atoms.createFullList(val);
         break;
       case cmd_getFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.getFullList(static_cast<int**>(val));
+        atoms.getFullList(val);
         break;
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
@@ -313,14 +313,14 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", val);
+        else DataFetchingObject::get_rank( actionSet, words[1], words[2], val);
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", val );
+        else DataFetchingObject::get_shape( actionSet, words[1], words[2], val );
         break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
@@ -331,24 +331,24 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
-        if(val) error_handler=*static_cast<plumed_error_handler*>(val);
+        if(val) error_handler=*static_cast<const plumed_error_handler*>(val.get<const void*>());
         else error_handler.handler=NULL;
       }
       break;
       case cmd_read:
         CHECK_INIT(initialized,word);
-        if(val)readInputFile(static_cast<char*>(val));
+        if(val)readInputFile(val.get<const char*>());
         else   readInputFile("plumed.dat");
         break;
       case cmd_readInputLine:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLine(static_cast<char*>(val));
+        readInputLine(val.get<const char*>());
         break;
       case cmd_readInputLines:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLines(static_cast<char*>(val));
+        readInputLines(val.get<const char*>());
         break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
@@ -356,7 +356,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=8;
+        *val.get<int*>()=8;
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -366,8 +366,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(*static_cast<int*>(val));
-        mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
+        atoms.setRealPrecision(val.get<int>());
+        mydatafetcher=DataFetchingObject::create(val.get<int>(),*this);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -413,7 +413,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        plumedDat=static_cast<char*>(val);
+        plumedDat=val.get<const char*>();
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
@@ -432,7 +432,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setNatoms(*static_cast<int*>(val));
+        atoms.setNatoms(val.get<int>());
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -449,65 +449,69 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(*static_cast<int*>(val)!=0) restart=true;
+        if(val.get<int>()!=0) restart=true;
         break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         doCheckPoint = false;
-        if(*static_cast<int*>(val)!=0) doCheckPoint = true;
+        if(val.get<int>()!=0) doCheckPoint = true;
         break;
       /* ADDED WITH API==6 */
       case cmd_setNumOMPthreads:
         CHECK_NOTNULL(val,word);
-        OpenMP::setNumThreads(*static_cast<int*>(val)>0?*static_cast<int*>(val):1);
+        {
+          auto nt=val.get<unsigned>();
+          if(nt==0) nt=1;
+          OpenMP::setNumThreads(nt);
+        }
         break;
       /* ADDED WITH API==6 */
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
-        testThrow((const char*) val);
+        testThrow(val.get<const char*>());
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        MDEngine=static_cast<char*>(val);
+        MDEngine=val.get<const char*>();
         break;
       case cmd_setLog:
         CHECK_NOTINIT(initialized,word);
-        log.link(static_cast<FILE*>(val));
+        log.link(val.get<FILE*>());
         break;
       case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        log.open(static_cast<char*>(val));
+        log.open(val.get<const char*>());
         break;
       // other commands that should be used after initialization:
       case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        stopFlag=static_cast<int*>(val);
+        stopFlag=val.copy();
         break;
       case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getFlag((*static_cast<int*>(val)));
+        exchangePatterns.getFlag(*val.get<int*>()); // note: getFlag changes the value of the reference!
         break;
       case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setSeed((*static_cast<int*>(val)));
+        exchangePatterns.setSeed(val.get<int>());
         break;
       case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setNofR((*static_cast<int*>(val)));
+        exchangePatterns.setNofR(val.get<int>());
         break;
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getList((static_cast<int*>(val)));
+        exchangePatterns.getList(val.get<int*>());
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
@@ -516,8 +520,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
-        else                       *(static_cast<int*>(val))=0;
+        if(atoms.isEnergyNeeded()) *val.get<int*>()=1;
+        else                       *val.get<int*>()=0;
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
@@ -527,7 +531,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
+        *val.get<int*>()=(actionRegister().check(words[1]) ? 1:0);
         break;
       case cmd_setExtraCV:
         CHECK_NOTNULL(val,word);
@@ -905,7 +909,7 @@ void PlumedMain::update() {
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow) {
-    if(stopFlag) (*stopFlag)=1;
+    if(stopFlag) (*stopFlag.get<int*>())=1;
     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }
 

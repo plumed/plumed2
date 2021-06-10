@@ -35,7 +35,7 @@ void test_convert() {
   Plumed plumed;
   int size=sizeof(T);
   T t=0.0;
-  plumed.cmd("setRealPrecision",&size);
+  plumed.cmd("setRealPrecision",size);
   plumed.cmd("convert cos(0.0)",&t);
   plumed_assert(t==1.0);
 }
@@ -80,6 +80,44 @@ void test_cl() {
   }
 }
 
+void test_xyz() {
+  Plumed p;
+  auto natoms=4;
+  std::vector<double> posx(natoms),posy(natoms),posz(natoms);
+  std::vector<double> forx(natoms,0.0),fory(natoms,0.0),forz(natoms,0.0);
+  std::vector<double> masses(natoms);
+  for(auto i=0; i<posx.size(); i++) masses[i]=i+1;
+  for(auto i=0; i<posx.size(); i++) posx[i]=10*i+0;
+  for(auto i=0; i<posy.size(); i++) posy[i]=10*i+1;
+  for(auto i=0; i<posz.size(); i++) posz[i]=10*i+2;
+  double cell[9];
+  double virial[9];
+  for(auto i=0; i<9; i++) cell[i]=0.0;
+  for(auto i=0; i<9; i++) virial[i]=0.0;
+  cell[0]=100.0;
+  cell[4]=100.0;
+  cell[8]=100.0;
+  p.cmd("setNatoms",natoms);
+  p.cmd("init");
+  p.cmd("readInputLine","DUMPATOMS ATOMS=@mdatoms FILE=test_xyz.xyz");
+  p.cmd("readInputLine","c: COM ATOMS=@mdatoms");
+  p.cmd("readInputLine","p: POSITION ATOM=c");
+  p.cmd("readInputLine","RESTRAINT ARG=p.x,p.y,p.z AT=0.0,0.0,0.0 KAPPA=0.0,0.0,0.0 SLOPE=1.0,2.0,3.0");
+  p.cmd("setBox",cell);
+  p.cmd("setStep",0);
+  p.cmd("setVirial",virial);
+  p.cmd("setMasses",masses.data());
+  p.cmd("setPositionsX",posx.data());
+  p.cmd("setPositionsY",posy.data());
+  p.cmd("setPositionsZ",posz.data());
+  p.cmd("setForcesX",forx.data());
+  p.cmd("setForcesY",fory.data());
+  p.cmd("setForcesZ",forz.data());
+  p.cmd("calc");
+  std::ofstream ofs("test_xyz.forces");
+  for(auto i=0; i<natoms; i++) ofs<<forx[i]<<" "<<fory[i]<<" "<<forz[i]<<"\n";
+}
+
 int main(){
 
   small_test_mpi();
@@ -100,7 +138,13 @@ int main(){
   std::vector<double> box(9,0.0);
   std::vector<double> virial(9,0.0);
 
-  plumed->cmd("setNatoms",&natoms);
+  try {
+    double dnatoms=natoms;
+    plumed->cmd("setNatoms",dnatoms);
+    plumed_error() << "should have failed with a typecheck error";
+  } catch(PLMD::Plumed::ExceptionTypeError & e) {
+  }
+  plumed->cmd("setNatoms",natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
   plumed->cmd("readInputLine","UNITS LENGTH=A");
@@ -120,28 +164,33 @@ int main(){
 
   for(int step=0;step<10;step++){
     plumed->cmd("setStep",&step);
-    plumed->cmd("setPositions",&positions[0]);
-    plumed->cmd("setBox",&box[0]);
-    plumed->cmd("setForces",&forces[0]);
-    plumed->cmd("setVirial",&virial[0]);
-    plumed->cmd("setMasses",&masses[0]);
+    plumed->cmd("setPositions",&positions[0],3*positions.size());
+    plumed->cmd("setBox",&box[0],9);
+    plumed->cmd("setForces",&forces[0],3*forces.size());
+    plumed->cmd("setVirial",&virial[0],9);
+    plumed->cmd("setMasses",&masses[0],masses.size());
 // first compute using modified positions:
     positions[0]=0.05;
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;
     double bias=0;
-    plumed->cmd("getBias",&bias);
+    plumed->cmd("getBias",&bias,1);
     ofs<<bias<<"\n";
 // first compute using regular positions:
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
-    plumed->cmd("getBias",&bias);
+    plumed->cmd("getBias",&bias,1);
     ofs<<bias<<"\n";
 // hills should only be added at regular positions:
     plumed->cmd("update");
   }
 
+  test_checkAction();
+
   delete plumed;
+
+  test_xyz();
+
   return 0;
 }

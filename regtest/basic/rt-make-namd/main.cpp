@@ -8,7 +8,7 @@ using namespace PLMD;
 int main(){
   Plumed* plumed=new Plumed;
 
-  int natoms=100;
+  const int natoms=100;
 
   std::vector<double> all_positions(3*natoms,0.0);
   for(unsigned i=0;i<natoms;i++) all_positions[i]=i;
