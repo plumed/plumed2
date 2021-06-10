@@ -40,7 +40,7 @@ private:
 
 public:
 /// constructor
-  Tree(GenericMolInfo* moldat);
+  explicit Tree(GenericMolInfo* moldat);
 /// build a tree
   std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);
 /// get root
