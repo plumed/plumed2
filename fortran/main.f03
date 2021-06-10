@@ -2,6 +2,7 @@ PROGRAM main
   USE PLUMED_MODULE
   IMPLICIT NONE
   TYPE(PLUMED) :: p
+  TYPE(PLUMED_ERROR) :: error
   INTEGER :: i
   INTEGER :: natoms
   REAL(8), ALLOCATABLE :: positions(:,:)
@@ -48,7 +49,14 @@ PROGRAM main
   call plumed_f03_cmd(p,"init")
   call plumed_f03_cmd(p,"readInputLine","p: POSITION ATOM=2")
   call plumed_f03_cmd(p,"readInputLine","PRINT ARG=p.*")
-  call plumed_f03_cmd(p,"setStep",1)
+  call plumed_f03_cmd(p,"setStep",1.0,error=error)
+  if(error%code /= 0) then
+    print * , "ERROR:",error%code,error%what
+    call plumed_f03_cmd(p,"setStep",1,error=error)
+    if(error%code /= 0) then
+      stop "should never arrive here"
+    endif
+  endif
   call plumed_f03_cmd(p,"setPositions",positions)
   call plumed_f03_cmd(p,"setForces",forces)
   call plumed_f03_cmd(p,"setMasses",masses)
