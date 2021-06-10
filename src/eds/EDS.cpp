@@ -487,6 +487,7 @@ EDS::EDS(const ActionOptions&ao):
       auto a = dynamic_cast<ActionAtomistic*>(getPntrToArgument(i)->getPntrToAction());
       if(!a)
         error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. Offending action: " + getPntrToArgument(i)->getPntrToAction()->getName());
+      // cppcheck-suppress nullPointerRedundantCheck
       if(!(a->getPbc().isOrthorombic()))
         log.printf("  WARNING: EDS Virial should have a orthorombic cell\n");
     }
