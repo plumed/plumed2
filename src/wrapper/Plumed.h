@@ -3318,8 +3318,8 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_nothrow_null,PLUMED_F_CMD_SAFE_NOTH
   plumed_cmd_safe_nothrow(plumed_f2c(c),key,safe,handler); \
 }
 
-#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(type,type_,code) \
-__PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_ ## type_,PLUMED_F_CMD_SAFE_ ## type_,(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape),(c,key,val,shape)) { \
+#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(type,type_,TYPE_,code) \
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_ ## type_,PLUMED_F_CMD_SAFE_ ## TYPE_,(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape),(c,key,val,shape)) { \
   plumed_safeptr safe; \
   safe.ptr=val; \
   safe.nelem=0; \
@@ -3328,7 +3328,7 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_ ## type_,PLUMED_F_CMD_SAFE_ ## typ
   safe.opt=NULL; \
   plumed_cmd_safe(plumed_f2c(c),key,safe); \
 } \
-__PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_nothrow_ ## type_,PLUMED_F_CMD_SAFE_NOTHROW_ ## type_,(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape,void*ptr,void(*funcptr)(void*,int*,const char*,int*)),(c,key,val,shape,ptr,funcptr)) { \
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_nothrow_ ## type_,PLUMED_F_CMD_SAFE_NOTHROW_ ## TYPE_,(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape,void*ptr,void(*funcptr)(void*,int*,const char*,int*)),(c,key,val,shape,ptr,funcptr)) { \
   plumed_f_cmd_safe_nothrow_null_callback_t callback; \
   plumed_nothrow_handler handler; \
   plumed_safeptr safe; \
@@ -3344,13 +3344,13 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_nothrow_ ## type_,PLUMED_F_CMD_SAFE
   plumed_cmd_safe_nothrow(plumed_f2c(c),key,safe,handler); \
 }
 
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(float,float,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(double,double,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long double,long_double,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(int,int,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(short,short,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long,long,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(char,char,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(float,float,FLOAT,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(double,double,DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long double,long_double,LONG_DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(int,int,INT,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(short,short,SHORT,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long,long,LONG,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(char,char,CHAR,3)
 
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
