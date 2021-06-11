@@ -3107,6 +3107,7 @@ void plumed_gcmd_safe(const char*key,plumed_safeptr safe) {
   plumed_cmd_safe(plumed_gmain,key,safe);
 }
 
+/* cppcheck-suppress passedByValue */
 void plumed_gcmd_safe_nothrow(const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
   plumed_cmd_safe_nothrow(plumed_gmain,key,safe,nothrow);
 }
