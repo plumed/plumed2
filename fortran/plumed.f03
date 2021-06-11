@@ -269,7 +269,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -295,7 +295,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -321,7 +321,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -347,7 +347,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -399,7 +399,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -425,7 +425,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -451,7 +451,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -477,7 +477,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -529,7 +529,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -555,7 +555,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -581,7 +581,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -607,7 +607,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -659,7 +659,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -685,7 +685,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -711,7 +711,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -737,7 +737,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -789,7 +789,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -815,7 +815,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -841,7 +841,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -867,7 +867,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -919,7 +919,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(2) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -945,7 +945,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(3) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -971,7 +971,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(4) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0
@@ -997,7 +997,7 @@ module plumed_module
       integer(kind=C_SIZE_T) :: pass_shape(5) ! fix this
       integer(kind=C_SIZE_T) :: pass_nelem
       integer(kind=C_LONG)   :: flags
-      pass_shape=[ shape(val), (/0/)]
+      pass_shape=[(/size(val,4),size(val,3),size(val,2),size(val,1)/),(/0/)]
       pass_nelem=0
       if(present(ERROR)) then
         ERROR%code=0

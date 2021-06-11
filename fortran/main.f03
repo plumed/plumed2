@@ -30,7 +30,14 @@ PROGRAM main
 
 ! global interface
   call plumed_f03_gcreate()
-  call plumed_f03_gcmd("setNatoms",10)
+  call plumed_f03_gcmd("setNatoms",10,error=error)
+  if(error%code /= 0) then
+    stop "should never arrive here"
+  endif
+  call plumed_f03_gcmd("initx",error=error)
+  if(error%code == 0) then
+    stop "should never arrive here"
+  endif
   call plumed_f03_gcmd("init")
   call plumed_f03_gcmd("readInputLine","p: POSITION ATOM=2")
   call plumed_f03_gcmd("readInputLine","PRINT ARG=p.*")

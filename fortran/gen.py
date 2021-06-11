@@ -57,7 +57,12 @@ for t in types:
       compute_shape="pass_shape=(/1,0/)"
       cname=k.replace("c_","")
       if r>0:
-        compute_shape="pass_shape=[ shape(val), (/0/)]"
+        compute_shape="pass_shape=[(/"
+        for i in range(r):
+           if i>0:
+               compute_shape+=","
+           compute_shape+="size(val,{})".format(r-i)
+        compute_shape+="/),(/0/)]"
       implementation+="""
     subroutine plumed_f03_cmd_{}_{}_{}(P,KEY,VAL,ERROR)
       type(plumed)                     :: P
