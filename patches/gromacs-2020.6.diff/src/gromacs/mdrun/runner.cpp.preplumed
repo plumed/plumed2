@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,16 +159,6 @@
 #include "isimulator.h"
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
-
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain; 
-/* END PLUMED */
-
-/* PLUMED HREX */
-extern int plumed_hrex;
-/* END PLUMED HREX */
 
 namespace gmx
 {
@@ -884,7 +874,7 @@ int Mdrunner::mdrunner()
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
     const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed) && (plumedswitch==0);
+            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
     const bool useModularSimulator = inputIsCompatibleWithModularSimulator
                                      && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
@@ -1531,6 +1521,11 @@ int Mdrunner::mdrunner()
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
                              inputrec->fepvals->n_lambda);
 
+        // cos acceleration is only supported by md, but older tpr
+        // files might still combine it with other integrators
+        GMX_RELEASE_ASSERT(inputrec->cos_accel == 0.0 || inputrec->eI == eiMD,
+                           "cos_acceleration is only supported by integrator=md");
+
         /* Kinetic energy data */
         gmx_ekindata_t ekind;
         init_ekindata(fplog, &mtop, &(inputrec->opts), &ekind, inputrec->cos_accel);
@@ -1588,19 +1583,6 @@ int Mdrunner::mdrunner()
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
-
-        /* PLUMED */
-        if(plumedswitch){
-          if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
-          /* detect plumed API version */
-          int pversion=0;
-          plumed_cmd(plumedmain,"getApiVersion",&pversion);
-          if(pversion>5) {
-             int nth = gmx_omp_nthreads_get(emntDefault);
-             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
-          }
-        }
-        /* END PLUMED */
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
@@ -1675,12 +1657,6 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
-
-    /* PLUMED */
-    if(plumedswitch){
-      plumed_finalize(plumedmain);
-    }
-    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)

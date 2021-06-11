@@ -239,7 +239,7 @@ unsigned GridVessel::getFibonacciIndex( const std::vector<double>& p ) const {
   B(1,0) = -2*F0/npoints; B(1,1) = -2*F1/npoints; Invert( B, invB );
   std::vector<double> vv(2), rc(2); vv[0]=-phi; vv[1] = p[1] - fib_shift;
   mult( invB, vv, rc ); std::vector<int> c(2); c[0]=std::floor(rc[0]); c[1]=std::floor(rc[1]);
-  unsigned outind; double mindist = 10000000.;
+  unsigned outind=0; double mindist = 10000000.;
   for(int s=0; s<4; ++s) {
     double ttt, costheta = B(1,0)*( c[0] + s%2 ) + B(1,1)*( c[1] + s/2 ) + fib_shift;
     if( costheta>1 ) ttt=1; else if( costheta<-1 ) ttt=-1; else ttt=costheta;

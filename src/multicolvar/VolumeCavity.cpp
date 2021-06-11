@@ -166,7 +166,7 @@ VolumeCavity::VolumeCavity(const ActionOptions& ao):
       unitname="nm";
     }
     boxfile.link(*this);
-    boxfile.open( boxfname.c_str() );
+    boxfile.open( boxfname );
     log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }
 

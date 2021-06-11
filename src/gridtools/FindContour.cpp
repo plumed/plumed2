@@ -100,6 +100,8 @@ private:
   double lenunit;
   std::string fmt_xyz;
 /// The data is stored in a grid
+// NOTE: this suppression should be double checked:
+// cppcheck-suppress duplInheritedMember
   vesselbase::StoreDataVessel* mydata;
 public:
   static void registerKeywords( Keywords& keys );
