@@ -510,6 +510,17 @@
 #endif
 
 /*
+  1: Define macros plumed_cmd and plumed_gcmd to use the C++ interface.
+  0: Don't define macros plumed_cmd and plumed_gcmd (temporarily, this is the default).
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_BIND_C
+#define __PLUMED_WRAPPER_CXX_BIND_C 0
+#endif
+
+/*
   1: Enable passing long long int
   0: Disable passing long long int
 
@@ -2249,6 +2260,44 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 
 }
 
+#if __PLUMED_WRAPPER_CXX_BIND_C /*{*/
+
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
+
+/**
+  \related Plumed
+  This function can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+  namely implement typechecks and rethrowing exception.
+  To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+  Available as of PLUMED 2.8.
+*/
+template<typename T>
+void plumed_cmd_cxx(plumed p,const char*key,T val) {
+  PLMD::Plumed(p).cmd(key,val);
+}
+
+#define __PLUMED_WRAPPER_REDEFINE_CMD plumed_cmd_cxx
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+/**
+  \related Plumed
+  This function can be used to make plumed_gcmd behave as the C++ wrapper PLMD::Plumed::gcmd,
+  namely implement typechecks and rethrowing exception.
+  To be used through the macro plumed_gcmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+  Available as of PLUMED 2.8.
+*/
+template<typename T>
+void plumed_gcmd_cxx(const char*key,T val) {
+  PLMD::Plumed::gcmd(key,val);
+}
+
+#define __PLUMED_WRAPPER_REDEFINE_GCMD plumed_gcmd_cxx
+#endif /*}*/
+
+__PLUMED_WRAPPER_ANONYMOUS_END /*}*/
+
+#endif /*}*/
+
 #endif /*}*/
 
 #endif /*}*/
@@ -3317,4 +3366,20 @@ __PLUMED_WRAPPER_EXTERN_C_END
 /* reset variable to allow it to be redefined upon re-inclusion */
 
 #undef __PLUMED_WRAPPER_IMPLEMENTATION_
+
+/* this macro is set in declarations */
+#ifdef __PLUMED_WRAPPER_REDEFINE_CMD
+#if defined(plumed_cmd)
+#undef plumed_cmd
+#endif
+#define plumed_cmd __PLUMED_WRAPPER_REDEFINE_CMD
+#endif
+
+/* this macro is set in declarations */
+#ifdef __PLUMED_WRAPPER_REDEFINE_GCMD
+#if defined(plumed_gcmd)
+#undef plumed_gcmd
+#endif
+#define plumed_gcmd __PLUMED_WRAPPER_REDEFINE_GCMD
+#endif
 
