@@ -3322,6 +3322,27 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_use_count,PLUMED_F_USE_COUNT,(char*c,int*i),
   *i=plumed_use_count(plumed_f2c(c));
 }
 
+/* New in PLUMED 2.8 */
+
+#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(type,type_,TYPE_,code) \
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_cmd_safe_ ## type_,PLUMED_F_CMD_SAFE_ ## TYPE_,(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape),(c,key,val,shape)) { \
+  plumed_safeptr safe; \
+  safe.ptr=val; \
+  safe.nelem=0; \
+  safe.shape=shape; \
+  safe.flags= 0x2000000*2 + 0x10000*code + sizeof(type); \
+  safe.opt=NULL; \
+  plumed_cmd_safe(plumed_f2c(c),key,safe); \
+}
+
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(float,float,FLOAT,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(double,double,DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long double,long_double,LONG_DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(int,int,INT,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(short,short,SHORT,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long,long,LONG,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(char,char,CHAR,3)
+
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
 __PLUMED_IMPLEMENT_FORTRAN(plumed_f_global,PLUMED_F_GLOBAL,(char*c),(c)) {
@@ -3350,6 +3371,27 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_gvalid,PLUMED_F_GVALID,(int*i),(i)) {
   assert(i);
   *i=plumed_gvalid();
 }
+
+/* New in PLUMED 2.8 */
+
+#define __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(type,type_,TYPE_,code) \
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_gcmd_safe_ ## type_,PLUMED_F_GCMD_SAFE_ ## TYPE_,(char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape),(key,val,shape)) { \
+  plumed_safeptr safe; \
+  safe.ptr=val; \
+  safe.nelem=0; \
+  safe.shape=shape; \
+  safe.flags= 0x2000000*2 + 0x10000*code + sizeof(type); \
+  safe.opt=NULL; \
+  plumed_gcmd_safe(key,safe); \
+}
+
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(float,float,FLOAT,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(double,double,DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long double,long_double,LONG_DOUBLE,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(int,int,INT,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(short,short,SHORT,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long,long,LONG,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(char,char,CHAR,3)
 
 #endif /*}*/
 
