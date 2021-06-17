@@ -174,24 +174,29 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string arg; parse("ARG",arg); unsigned anum=1, natoms3=0; std::string argstr; 
+  std::string arg; parse("ARG",arg); unsigned anum=1, natoms3=0;
   AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg); bool isatoms=true;
   if( !mydata ) error("input to PCA should be a COLLECT_FRAMES or COLLECT_REPLICAS object");
+  std::string stack_inp = getShortcutLabel() + "_data: VSTACK";
   for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
       std::string thislab = mydata->copyOutput(i)->getName();
       if( thislab.find(".logweights")==std::string::npos ) {
           std::string num; Tools::convert( anum, num );
-          argstr += " GROUP" + num + "=" + thislab; anum++;
+          stack_inp += " ARG" + num + "=" + thislab; anum++;
           if( thislab.find(".pos")!=std::string::npos ) natoms3++;
           else isatoms=false;
       }
   }
+  // Create the matrix of stored data values
+  readInputLine( stack_inp );
+  // Transpose matrix of stored data values
+  readInputLine( getShortcutLabel() + "_dataT: TRANSPOSE ARG=" + getShortcutLabel() + "_data");
   // Calculate the dissimilarity matrix
   if( isatoms ) {
       std::string nat_str;
-      readInputLine( getShortcutLabel() + "_matful: DISSIMILARITIES SQUARED " + argstr ); Tools::convert( natoms3/3, nat_str );
-      readInputLine( getShortcutLabel() + "_mat: MATHEVAL PERIODIC=NO ARG1=" + getShortcutLabel() + "_matful FUNC=x/" + nat_str ); 
-  } else readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr ); 
+      readInputLine( getShortcutLabel() + "_matful: DISSIMILARITIES SQUARED ARG1=" + getShortcutLabel() + "_data ARG2=" + getShortcutLabel() + "_dataT"); 
+      Tools::convert( natoms3/3, nat_str ); readInputLine( getShortcutLabel() + "_mat: MATHEVAL PERIODIC=NO ARG1=" + getShortcutLabel() + "_matful FUNC=x/" + nat_str ); 
+  } else readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG1=" + getShortcutLabel() + "_data ARG2=" + getShortcutLabel() + "_dataT"); 
   // And generate the multidimensional scaling projection 
   unsigned ndim; parse("NLOW_DIM",ndim); createMDSProjection( getShortcutLabel(), getShortcutLabel() + "_mat", ndim, this ); 
 }

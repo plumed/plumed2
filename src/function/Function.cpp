@@ -386,6 +386,20 @@ void Function::update() {
   if( getFullNumberOfTasks()>0 ) evaluateAllFunctions();
 }
 
+unsigned Function::getNumberOfFinalTasks() {
+  unsigned nscalars=0, nvalues=0;
+  for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+    unsigned tnval = 0;
+    for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+        if( getPntrToArgument(j)->getNumberOfValues( getLabel() )==1 ) nscalars++;
+        else tnval += getPntrToArgument(j)->getShape()[0];
+    }
+    if( tnval>0 && (nvalues==0 || tnval<nvalues) ) nvalues = tnval; 
+  }
+  if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
+  return nvalues;
+}
+
 void Function::runFinalJobs() {
   if( skipUpdate() || actionInChain() ) return;
   resizeForFinalTasks(); evaluateAllFunctions();

@@ -44,7 +44,11 @@ ActionWithInputMatrices::ActionWithInputMatrices(const ActionOptions& ao):
 }
 
 void ActionWithInputMatrices::addValue( const std::vector<unsigned>& shape ) {
-  ActionWithValue::addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
+  ActionWithValue::addValue( shape ); 
+  if( getName()=="TRANSPOSE" && getPntrToArgument(0)->isPeriodic() ) { 
+      std::string smin, smax; getPntrToArgument(0)->getDomain( smin, smax ); setPeriodic( smin, smax );
+  } else setNotPeriodic();
+  getPntrToOutput(0)->alwaysStoreValues();
   bool istimeseries=false;
   for(unsigned i=0; i<getNumberOfArguments();++i) {
       if( getPntrToArgument(0)->isTimeSeries() ) { istimeseries=true; break; }

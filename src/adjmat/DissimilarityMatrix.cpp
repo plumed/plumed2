@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VectorProductMatrix.h"
+#include "MatrixProductBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 
@@ -35,7 +35,7 @@ Calculate the matrix of dissimilarities between a trajectory of atomic configura
 namespace PLMD {
 namespace adjmat {
 
-class DissimilarityMatrix : public VectorProductMatrix { 
+class DissimilarityMatrix : public MatrixProductBase { 
 private:
   bool squared;
 public:
@@ -49,14 +49,20 @@ public:
 PLUMED_REGISTER_ACTION(DissimilarityMatrix,"DISSIMILARITIES")
 
 void DissimilarityMatrix::registerKeywords( Keywords& keys ) {
-  VectorProductMatrix::registerKeywords( keys );
+  MatrixProductBase::registerKeywords( keys );
   keys.addFlag("SQUARED",false,"calculate the square of the dissimilarity matrix");
 }
 
 DissimilarityMatrix::DissimilarityMatrix( const ActionOptions& ao ):
   Action(ao),
-  VectorProductMatrix(ao)
+  MatrixProductBase(ao)
 {
+  if( getPntrToArgument(0)->isPeriodic() ) {
+      std::string smin, smax; getPntrToArgument(0)->getDomain( smin, smax );
+      std::string tmin, tmax; getPntrToArgument(1)->getDomain( tmin, tmax );
+      if( tmin!=smin || tmax!=smax ) error("cannot mix arguments with different domains");
+  } else if( getPntrToArgument(1)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
+
   parseFlag("SQUARED",squared);
   if( squared ) log.printf("  computing the square of the dissimilarity matrix\n");
   forcesToApply.resize( getNumberOfDerivatives() );
@@ -68,7 +74,7 @@ double DissimilarityMatrix::computeVectorProduct( const unsigned& index1, const 
     std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const {
   double dist = 0; 
   for(unsigned i=0;i<vec1.size();++i) {
-       double tmp = getPntrToArgument(arg_ends[i])->difference(vec2[i], vec1[i]); dist += tmp*tmp;
+       double tmp = getPntrToArgument(0)->difference(vec2[i], vec1[i]); dist += tmp*tmp;
        dvec1[i] = 2*tmp; dvec2[i] = -2*tmp;
   }
   if( squared ) return dist ;

@@ -39,6 +39,8 @@ public:
   unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
 ///
   void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+/// 
+  unsigned getNumberOfFinalTasks() override { return getPntrToArgument(0)->getShape()[0]; }
 /// Do the calculation
   void completeMatrixOperations() override;
 ///

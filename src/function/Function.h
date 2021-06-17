@@ -65,6 +65,7 @@ public:
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply() override;
   void update() override;
+  unsigned getNumberOfFinalTasks() override;
   void runFinalJobs();
   unsigned getNumberOfDerivatives() const override;
   unsigned getNumberOfColumns() const override;

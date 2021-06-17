@@ -766,31 +766,27 @@ unsigned ActionWithArguments::getArgumentPositionInStream( const unsigned& jder,
   return arguments[jder]->getPositionInStream();
 }
 
-void ActionWithArguments::resizeForFinalTasks() {
-  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
-  if( av->getFullNumberOfTasks()==0 ) { 
-      unsigned nscalars=0, nvalues=0;
-      for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-        unsigned tnval = 0;
-        for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-            if( arguments[j]->getNumberOfValues( getLabel() )==1 ) nscalars++;
-            else tnval += arguments[j]->getShape()[0];
-        }
-        if( tnval>0 && (nvalues==0 || tnval<nvalues) ) nvalues = tnval; 
-      }
-      if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
-      for(unsigned i=0;i<nvalues;++i) av->addTaskToList( i );
-  }
-  // Find the shape that we should use for the output values
-  std::vector<unsigned> r1shape(1), r2shape(2); r1shape[0]=av->getFullNumberOfTasks();
-  bool argmat=false;
+std::vector<unsigned> ActionWithArguments::getMatrixShapeForFinalTasks() {
+  std::vector<unsigned> r2shape(2); bool argmat=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
-      if( arguments[i]->getRank()==2 ) { 
+      if( arguments[i]->getRank()==2 ) {
           argmat=true; r2shape[0]=arguments[i]->getShape()[0];
           r2shape[1]=arguments[i]->getShape()[1]; break;
       }
   }
-  if( !argmat ) r2shape[0]=r2shape[1]=r1shape[0];
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
+  if( !argmat ) r2shape[0]=r2shape[1]=av->getFullNumberOfTasks();
+  return r2shape;
+}
+
+void ActionWithArguments::resizeForFinalTasks() {
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
+  if( av->getFullNumberOfTasks()==0 ) { 
+      unsigned nvalues = getNumberOfFinalTasks(); 
+      for(unsigned i=0;i<nvalues;++i) av->addTaskToList( i );
+  }
+  // Find the shape that we should use for the output values
+  std::vector<unsigned> r1shape(1), r2shape( getMatrixShapeForFinalTasks() ); r1shape[0]=av->getFullNumberOfTasks();
   // Resize everything for the analysis
   for(unsigned i=0;i<av->getNumberOfComponents();++i) {
       Value* myval = av->getPntrToOutput(i);

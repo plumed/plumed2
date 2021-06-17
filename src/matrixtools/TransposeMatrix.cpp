@@ -41,6 +41,8 @@ public:
 ///
   void apply() override;
 ///
+  std::vector<unsigned> getMatrixShapeForFinalTasks() override;
+///
   double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const override;
 };
 
@@ -56,10 +58,14 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->isSymmetric() ) error("input matrix is symmetric.  Transposing will achieve nothing!");
-  std::vector<unsigned> shape(2); 
+  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); addValue( shape ); 
+}
+
+std::vector<unsigned> TransposeMatrix::getMatrixShapeForFinalTasks() {
+  std::vector<unsigned> shape(2);
   shape[0]=getPntrToArgument(0)->getShape()[1]; 
   shape[1]=getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); 
+  return shape;
 }
 
 void TransposeMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) { 

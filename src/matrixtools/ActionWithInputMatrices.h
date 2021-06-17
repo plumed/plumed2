@@ -53,6 +53,8 @@ public:
 /// Get the number of columns in the output matrix
   unsigned getNumberOfColumns() const ;
 ///
+  unsigned getNumberOfFinalTasks() { return 0; }
+///
   void calculate() override;
 ///
   void update() override;

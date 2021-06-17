@@ -44,22 +44,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   for(unsigned i=0; i<2; ++i) {
       if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
   }
-  std::vector<unsigned> shape(2); 
-  if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(1)->getRank()==1 ) {
-      shape[0]=getPntrToArgument(1)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[0];
-  } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==2 ) {
-      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
-      shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
-
-      // Check if we are multiplying a matrix by its transpose (if we are doing this we know the diagonal elements are all 1 or something similarly boring)
-      if( (getPntrToArgument(0)->getPntrToAction())->getName()=="TRANSPOSE" ) {
-           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
-           if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(1)->getName() && (getPntrToArgument(1)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true;
-      } else if( (getPntrToArgument(1)->getPntrToAction())->getName()=="TRANSPOSE" ) {
-           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(1)->getPntrToAction() );
-           if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(0)->getName() && (getPntrToArgument(0)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true; 
-      }
-  } else error("cannot do product of matrix and vector");
+  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); 
   // Rerequest arguments 
   std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
@@ -148,7 +133,32 @@ void MatrixProductBase::update() {
 void MatrixProductBase::runFinalJobs() {
   if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
-  resizeForFinalTasks(); runAllTasks();
+  resizeForFinalTasks();
+  runAllTasks();
+}
+
+unsigned MatrixProductBase::getNumberOfFinalTasks() {
+  return getMatrixShapeForFinalTasks()[0];
+}
+
+std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
+  std::vector<unsigned> shape(2);
+  if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(1)->getRank()==1 ) {
+      shape[0]=getPntrToArgument(1)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[0];
+  } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==2 ) {
+      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
+      shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
+
+      // Check if we are multiplying a matrix by its transpose (if we are doing this we know the diagonal elements are all 1 or something similarly boring)
+      if( (getPntrToArgument(0)->getPntrToAction())->getName()=="TRANSPOSE" ) {
+           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
+           if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(1)->getName() && (getPntrToArgument(1)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true;
+      } else if( (getPntrToArgument(1)->getPntrToAction())->getName()=="TRANSPOSE" ) {
+           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(1)->getPntrToAction() );
+           if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(0)->getName() && (getPntrToArgument(0)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true;
+      }
+  } else error("cannot do product of matrix and vector");
+  return shape;
 }
 
 void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {

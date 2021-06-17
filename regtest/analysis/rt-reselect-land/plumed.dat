@@ -1,16 +1,18 @@
 dist: DISTANCE ATOMS=1,2 
 
 ff1: COLLECT_FRAMES ATOMS=1-5 STRIDE=1 
-ss1: DISSIMILARITIES ...
-   GROUP1=ff1.posx-1 GROUP2=ff1.posy-1 GROUP3=ff1.posz-1
-   GROUP4=ff1.posx-2 GROUP5=ff1.posy-2 GROUP6=ff1.posz-2
-   GROUP7=ff1.posx-3 GROUP8=ff1.posy-3 GROUP9=ff1.posz-3
-   GROUP10=ff1.posx-4 GROUP11=ff1.posy-4 GROUP12=ff1.posz-4
-   GROUP13=ff1.posx-5 GROUP14=ff1.posy-5 GROUP15=ff1.posz-5
+data: VSTACK ...
+   ARG1=ff1.posx-1 ARG2=ff1.posy-1 ARG3=ff1.posz-1
+   ARG4=ff1.posx-2 ARG5=ff1.posy-2 ARG6=ff1.posz-2
+   ARG7=ff1.posx-3 ARG8=ff1.posy-3 ARG9=ff1.posz-3
+   ARG10=ff1.posx-4 ARG11=ff1.posy-4 ARG12=ff1.posz-4
+   ARG13=ff1.posx-5 ARG14=ff1.posy-5 ARG15=ff1.posz-5
 ... 
 
+dataT: TRANSPOSE ARG=data
+ss1: DISSIMILARITIES ARG1=data ARG2=dataT
 ff2: COLLECT_FRAMES ARG=dist STRIDE=1 
-ss2: DISSIMILARITIES GROUP1=ff2.dist 
+ss2: DISSIMILARITIES ARG1=ff2.dist ARG2=ff2.dist 
 
 l1: LANDMARK_SELECT_STRIDE ARG1=ss1 ARG2=ss2 ARG3=ff2.dist ARG4=ff2.logweights NLANDMARKS=2
 

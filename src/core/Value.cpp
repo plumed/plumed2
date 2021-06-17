@@ -413,7 +413,7 @@ const std::vector<unsigned>& Value::getShape() const {
 void Value::set(const unsigned& n, const double& v ) {
   value_set=true; 
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
-  else if( !hasDeriv ) { plumed_dbg_assert( n<data.size() ); data[n]=v; applyPeriodicity(n); }
+  else if( !hasDeriv ) { plumed_dbg_massert( n<data.size(), "failing in " + getName() ); data[n]=v; applyPeriodicity(n); }
   else { data[n*(1+ngrid_der)] = v; }
 }
 

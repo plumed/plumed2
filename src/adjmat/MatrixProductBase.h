@@ -52,6 +52,8 @@ public:
   void calculate();
   void update();
   void runFinalJobs();
+  unsigned getNumberOfFinalTasks() override;
+  std::vector<unsigned> getMatrixShapeForFinalTasks() override;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2,

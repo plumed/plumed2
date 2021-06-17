@@ -87,6 +87,10 @@ public:
   void setForceOnScalarArgument(const unsigned n, const double& ff);
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
+/// Returns the sizes of output matrices 
+  virtual std::vector<unsigned> getMatrixShapeForFinalTasks();
+/// Get the number of tasks to create if this is called at end
+  virtual unsigned getNumberOfFinalTasks() { plumed_merror("Number of final tasks function not defined for this type of object"); }
 /// Get the number of arguments in each task
   unsigned getNumberOfArgumentsPerTask() const ;
 /// Takes the difference taking into account pbc for arg i
