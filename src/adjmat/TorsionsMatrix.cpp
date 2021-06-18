@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VectorProductMatrix.h"
+#include "MatrixProductBase.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace adjmat {
 
-class TorsionsMatrix : public VectorProductMatrix {
+class TorsionsMatrix : public MatrixProductBase {
 private:
 public:
   static void registerKeywords( Keywords& keys );
@@ -40,44 +40,31 @@ public:
 PLUMED_REGISTER_ACTION(TorsionsMatrix,"TORSIONS_MATRIX")
 
 void TorsionsMatrix::registerKeywords( Keywords& keys ) {
-  VectorProductMatrix::registerKeywords( keys );
-  keys.add("atoms","POSITIONS","the positions to use for the molecules");
-  keys.add("atoms-1","POSITIONSA","the positions to use for the molecules specified using GROUPA");
-  keys.add("atoms-1","POSITIONSB","the positions to use for the molecules specified using GROUPB");
+  MatrixProductBase::registerKeywords( keys );
+  keys.add("atoms","POSITIONS1","the positions to use for the molecules specified using ARG1");
+  keys.add("atoms","POSITIONS2","the positions to use for the molecules specified using ARG2");
 }
 
 TorsionsMatrix::TorsionsMatrix(const ActionOptions& ao):
   Action(ao),
-  VectorProductMatrix(ao)
+  MatrixProductBase(ao)
 {
   setPeriodic( "-pi", "pi" );  // Make sure that the periodicity of the value is set
-  unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
-  if( ncol_args>0 ) {
-    std::vector<AtomNumber> atoms_a; parseAtomList("POSITIONSA", atoms_a );
-    if( atoms_a.size()!=getPntrToArgument(0)->getShape()[0] ) error("mismatch between number of atoms specified using POSITIONSA and number of arguments in vector input");
-    log.printf("  using positions of these atoms for vectors in rows of matrix \n");
-    for(unsigned int i=0; i<atoms_a.size(); ++i) {
-      if ( (i+1) % 25 == 0 ) log.printf("  \n");
-      log.printf("  %d", atoms_a[i].serial());
-    }
-    log.printf("\n"); std::vector<AtomNumber> atoms_b; parseAtomList("POSITIONSB", atoms_b );
-    if( atoms_b.size()!=getPntrToArgument(ncol_args)->getShape()[0] ) error("mismatch between number of atoms specified using POSITIONSB and number of arguments in vector input");
-    log.printf("  using positions of these atoms for vectors in columns of matrix \n");
-    for(unsigned i=0; i<atoms_b.size(); ++i) {
-      if ( (i+1) % 25 == 0 ) log.printf("  \n");
-      log.printf("  %d", atoms_b[i].serial()); atoms_a.push_back( atoms_b[i] );
-    }
-    log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms_a ); requestArguments( args, false );
-  } else {
-    std::vector<AtomNumber> atoms; parseAtomList("POSITIONS", atoms );
-    if( atoms.size()!=getPntrToArgument(0)->getShape()[0] ) error("mismatch between number of atoms specified and number of arguments in vector");
-    log.printf("  using positions of these atoms when calculating torsions \n");
-    for(unsigned int i=0; i<atoms.size(); ++i) {
-      if ( (i+1) % 25 == 0 ) log.printf("  \n");
-      log.printf("  %d", atoms[i].serial());
-    }
-    log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false );
+  std::vector<AtomNumber> atoms_a; parseAtomList("POSITIONS1", atoms_a );
+  if( atoms_a.size()!=getPntrToArgument(0)->getShape()[0] ) error("mismatch between number of atoms specified using POSITIONS1 and number of arguments in vector input");
+  log.printf("  using positions of these atoms for vectors in first matrix \n");
+  for(unsigned int i=0; i<atoms_a.size(); ++i) {
+    if ( (i+1) % 25 == 0 ) log.printf("  \n");
+    log.printf("  %d", atoms_a[i].serial());
   }
+  log.printf("\n"); std::vector<AtomNumber> atoms_b; parseAtomList("POSITIONS2", atoms_b );
+  if( atoms_b.size()!=getPntrToArgument(1)->getShape()[1] ) error("mismatch between number of atoms specified using POSITIONS2 and number of arguments in vector input");
+  log.printf("  using positions of these atoms for vectors in second matrix \n");
+  for(unsigned i=0; i<atoms_b.size(); ++i) {
+    if ( (i+1) % 25 == 0 ) log.printf("  \n");
+    log.printf("  %d", atoms_b[i].serial()); atoms_a.push_back( atoms_b[i] );
+  }
+  log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms_a ); requestArguments( args, false );
   forcesToApply.resize( getNumberOfDerivatives() );
 }
 
@@ -94,6 +81,7 @@ double TorsionsMatrix::computeVectorProduct( const unsigned& index1, const unsig
   if( !doNotCalculateDerivatives() ) {
     unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
     for(unsigned i=0; i<3; ++i) { dvec1[i]=dv1[i]; dvec2[i]=dv2[i]; }
+    unsigned narg_derivatives = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
     myvals.addDerivative( ostrn, narg_derivatives + 3*index1+0, -dconn[0] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+0, dconn[0] );
     myvals.updateIndex( ostrn, narg_derivatives + 3*index1+0 ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+0 );
     myvals.addDerivative( ostrn, narg_derivatives + 3*index1+1, -dconn[1] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+1, dconn[1] );

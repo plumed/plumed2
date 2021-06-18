@@ -34,7 +34,6 @@ class AdjacencyMatrixBase :
   public ActionAtomistic,
   public ActionWithValue
 {
-friend class VectorProductMatrix;
 private:
   bool nopbc, components, read_one_group;
   LinkCells linkcells, threecells;

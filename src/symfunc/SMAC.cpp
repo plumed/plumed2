@@ -58,12 +58,15 @@ ActionShortcut(ao)
   std::string tpmat_input = getShortcutLabel() + "_tpmat: TORSIONS_MATRIX"; 
   if( sp_lab.length()>0 ) { 
     cmap_input += " GROUP=" + sp_lab;
-    tpmat_input += " GROUP1=" + sp_lab + ".x GROUP2=" + sp_lab + ".y GROUP3=" + sp_lab + ".z POSITIONS=" + sp_lab;  
+    readInputLine( getShortcutLabel() + "_vecs: VSTACK ARG1=" + sp_lab + ".x ARG2=" + sp_lab + ".y ARG3=" + sp_lab + ".z" );
+    readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
+    tpmat_input += " ARG1=" + getShortcutLabel() + "_vecs ARG2=" + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab;  
   } else if( sp_laba.length()>0 ) {
     std::string sp_labb; parse("SPECIESB",sp_labb); 
     cmap_input += " GROUPA=" + sp_laba + " GROUPB=" + sp_labb;
-    tpmat_input += " GROUPA1=" + sp_laba + ".x GROUPB1=" + sp_labb + ".x GROUPA2=" + sp_laba + ".y GROUPB2=" + sp_labb + ".y GROUPA3=" + sp_laba 
-                + ".z GROUPB3=" + sp_labb + ".z POSITIONSA=" + sp_laba + " POSITIONSB=" + sp_labb;  
+    readInputLine( getShortcutLabel() + "_vecsa: VSTACK ARG1=" + sp_laba + ".x ARG2=" + sp_laba + ".y ARG3=" + sp_laba + ".z" );
+    readInputLine( getShortcutLabel() + "_vecsb: HSTACK ARG1=" + sp_labb + ".x ARG2=" + sp_labb + ".y ARG3=" + sp_labb + ".z" ); 
+    tpmat_input += " ARG1=" + getShortcutLabel() + "_vecsa ARG2=" + getShortcutLabel() + "_vecsb POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb;  
   }
   std::string sw_input; parse("SWITCH",sw_input); readInputLine( cmap_input + " SWITCH={" + sw_input + "}"); readInputLine( tpmat_input );
 // Now need the Gaussians

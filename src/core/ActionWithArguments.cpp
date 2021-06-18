@@ -500,7 +500,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
         }
         arg_ends.push_back( arg.size() ); log.printf("\n");
         if( i==1 ) narg = nargt;
-        else if( narg!=nargt && getName()!="MATHEVAL" && getName()!="CUSTOM" && getName()!="DIFFERENCE" && getName()!="DOT" ) {
+        else if( narg!=nargt && getName()!="MATHEVAL" && getName()!="CUSTOM" && getName()!="DIFFERENCE" && getName()!="DOT" && getName()!="TORSIONS_MATRIX" ) {
            error("mismatch between number of arguments specified for different numbered ARG values");
         }
       }

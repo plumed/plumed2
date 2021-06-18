@@ -319,7 +319,7 @@ double Value::get(const unsigned& ival, const bool trueind) const {
       }
       return 0.0;
   }
-  plumed_massert( ival<data.size(), "cannot vet value from " + name );
+  plumed_massert( ival<data.size(), "cannot get value from " + name );
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 }

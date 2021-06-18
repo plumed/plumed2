@@ -217,7 +217,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
     args1[i] = getPntrToArgument(0)->get( index1*nargs + i );
     args2[i] = getPntrToArgument(1)->get( i*sss + ind2 ); 
   }
-  double val = computeVectorProduct( index1, ind2, args1, args2, der1, der2, myvals );
+  double val = computeVectorProduct( index1, index2, args1, args2, der1, der2, myvals );
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.setValue( ostrn, val );
   // Return after calculation of value if we do not need derivatives
@@ -240,9 +240,9 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   }
   if( getNumberOfAtoms()>0 ) {
     unsigned numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
-    matrix_indices[nmat_ind+0]=numargs + 3*ind2+0;
-    matrix_indices[nmat_ind+1]=numargs + 3*ind2+1;
-    matrix_indices[nmat_ind+2]=numargs + 3*ind2+2;
+    matrix_indices[nmat_ind+0]=numargs + 3*index2+0;
+    matrix_indices[nmat_ind+1]=numargs + 3*index2+1;
+    matrix_indices[nmat_ind+2]=numargs + 3*index2+2;
     nmat_ind+=3;
   }
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind );

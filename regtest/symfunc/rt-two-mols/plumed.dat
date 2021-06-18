@@ -4,11 +4,10 @@ DISTANCES ...
   COMPONENTS LABEL=mols 
 ...
 
-dd: TORSIONS_MATRIX ...
-     GROUP1=mols.x POSITIONS=mols 
-     GROUP2=mols.y 
-     GROUP3=mols.z 
-...
+vecs: VSTACK ARG1=mols.x ARG2=mols.y ARG3=mols.z
+vecsT: TRANSPOSE ARG=vecs
+
+dd: TORSIONS_MATRIX ARG1=vecs ARG2=vecsT POSITIONS1=mols POSITIONS2=mols
 
 cc: COORDINATIONNUMBER WEIGHT=dd 
 ff: COMBINE ARG=cc PERIODIC=NO
