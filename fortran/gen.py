@@ -1,3 +1,4 @@
+# usage: python3 gen.py < plumed.f03.template > plumed.f03
 #types=["char","int","real"]
 maxrank=4
 kinds={
