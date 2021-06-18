@@ -327,7 +327,7 @@ ifdef BASH_COMPLETION_DIR
 	cp bash.completion "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
 endif
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/fortran"
-	cp ../../fortran/plumed.f03 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
+	cp ../../fortran/plumed.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -520,7 +520,7 @@ ifeq ($(make_static_archive),yes)
 	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/lib$(program_name).a\"" >> $@
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
-	@echo "PLUMED_FORTRAN= \"$(libdir)/$(program_name)/fortran/plumed.f03\"" >> $@
+	@echo "PLUMED_FORTRAN= \"$(libdir)/$(program_name)/fortran/plumed.f90\"" >> $@
 else
 Plumed.inc:
 	@echo Building Plumed.inc
@@ -534,7 +534,7 @@ endif
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
 	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
-	@echo "PLUMED_FORTRAN= "$(realpath .)/../../fortran/plumed.f03 >> $@
+	@echo "PLUMED_FORTRAN= "$(realpath .)/../../fortran/plumed.f90 >> $@
 endif
 
 $(PLUMED_LIBDIR)Plumed.cmake: $(PLUMED_LIBDIR)Plumed.inc

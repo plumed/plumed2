@@ -1,4 +1,4 @@
-# usage: python3 gen.py < plumed.f03.template > plumed.f03
+# usage: python3 gen.py < plumed.f90.template > plumed.f90
 #types=["char","int","real"]
 maxrank=4
 kinds={
@@ -86,7 +86,7 @@ for t in types:
 """.format(t,ik,r,t,k,shapestr[r],max(r+1,2),compute_shape,cname,shapestr1[r],t,ik,r)
     ik+=1
 
-with open("plumed.f03.template") as f:
+with open("plumed.f90.template") as f:
   for l in f:
     if l=="__INTERFACE__\n":
       print(interface)
