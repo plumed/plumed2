@@ -55,6 +55,8 @@ for t in types:
     for r in range(maxrank+1):
       compute_shape="pass_shape=(/1,0/)"
       cname=k.replace("c_","")
+      if r==0:
+        cname+="_scalar"
       if r>0:
         compute_shape="pass_shape=[(/"
         for i in range(r):

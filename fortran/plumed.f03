@@ -205,7 +205,7 @@ module plumed_module
       integer(KIND=c_int)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_int(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_int_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_0_0
 
     subroutine plumed_f_gcmd_integer_0_0(key,val)
@@ -213,7 +213,7 @@ module plumed_module
       integer(kind=c_int)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_int(key,val,pass_shape)
+      call plumed_f_gcmd_safe_int_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_integer_0_0
 
     subroutine plumed_f_cmd_integer_0_1(p,key,val)
@@ -290,7 +290,7 @@ module plumed_module
       integer(KIND=c_short)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_short(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_short_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_1_0
 
     subroutine plumed_f_gcmd_integer_1_0(key,val)
@@ -298,7 +298,7 @@ module plumed_module
       integer(kind=c_short)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_short(key,val,pass_shape)
+      call plumed_f_gcmd_safe_short_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_integer_1_0
 
     subroutine plumed_f_cmd_integer_1_1(p,key,val)
@@ -375,7 +375,7 @@ module plumed_module
       integer(KIND=c_long)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_long(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_long_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_2_0
 
     subroutine plumed_f_gcmd_integer_2_0(key,val)
@@ -383,7 +383,7 @@ module plumed_module
       integer(kind=c_long)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_long(key,val,pass_shape)
+      call plumed_f_gcmd_safe_long_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_integer_2_0
 
     subroutine plumed_f_cmd_integer_2_1(p,key,val)
@@ -460,7 +460,7 @@ module plumed_module
       real(KIND=c_float)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_float(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_float_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_0_0
 
     subroutine plumed_f_gcmd_real_0_0(key,val)
@@ -468,7 +468,7 @@ module plumed_module
       real(kind=c_float)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_float(key,val,pass_shape)
+      call plumed_f_gcmd_safe_float_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_real_0_0
 
     subroutine plumed_f_cmd_real_0_1(p,key,val)
@@ -545,7 +545,7 @@ module plumed_module
       real(KIND=c_double)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_double(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_double_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_1_0
 
     subroutine plumed_f_gcmd_real_1_0(key,val)
@@ -553,7 +553,7 @@ module plumed_module
       real(kind=c_double)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_double(key,val,pass_shape)
+      call plumed_f_gcmd_safe_double_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_real_1_0
 
     subroutine plumed_f_cmd_real_1_1(p,key,val)
@@ -630,7 +630,7 @@ module plumed_module
       real(KIND=c_long_double)                      :: val
       integer(kind=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_long_double(p,key,val,pass_shape)
+      call plumed_f_cmd_safe_long_double_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_2_0
 
     subroutine plumed_f_gcmd_real_2_0(key,val)
@@ -638,7 +638,7 @@ module plumed_module
       real(kind=c_long_double)                      :: val
       integer(kIND=c_size_t) :: pass_shape(2) ! fix this
       pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_long_double(key,val,pass_shape)
+      call plumed_f_gcmd_safe_long_double_scalar(key,val,pass_shape)
     end subroutine plumed_f_gcmd_real_2_0
 
     subroutine plumed_f_cmd_real_2_1(p,key,val)
