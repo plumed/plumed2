@@ -1,29 +1,27 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+Copyright (c) 2021, Andrea Arsiccio
 
-   See http://www.plumed.org for more information.
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
 
-   This file is part of plumed, version 2.
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
 
-   plumed is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Lesser General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   plumed is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Sasa.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include <cstdio>
 #include <iostream>
@@ -237,13 +235,13 @@ void split(const std::string& str, Container& cont)
 //reads input PDB file provided with MOLINFO, and assigns atom and residue names to each atom involved in the CV
 
 void SASA_LCPO::readPDB(){
- vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+ auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
  AtomResidueName[0].clear(); 
  AtomResidueName[1].clear(); 
 
  for(unsigned i=0; i<natoms; i++) { 
-   string Aname = moldat[0]->getAtomName(atoms[i]);
-   string Rname = moldat[0]->getResidueName(atoms[i]);
+   string Aname = moldat->getAtomName(atoms[i]);
+   string Rname = moldat->getResidueName(atoms[i]);
    AtomResidueName[0].push_back (Aname);
    AtomResidueName[1].push_back (Rname);
 }
