@@ -36,14 +36,14 @@ freely, subject to the following restrictions:
 using namespace std;
 
 namespace PLMD {
-namespace Sasa {
+namespace sasa {
 
 //+PLUMEDOC COLVAR SASA_LCPO
 /*
 Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The LCPO algorithm is used for the calculation (please, read and cite Weiser J, Shenkin PS and Still WC. J. Comput. Chem. 1999 (20), 217-230). The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of the SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
-the total SASA (TOTAL); 
+the total SASA (TOTAL);
 the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used to compute the transfer of a protein to different temperatures, as detailed in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021).
 
 
@@ -76,7 +76,7 @@ BACKBONE	1.00066920000002
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
 
-If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper: Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3. 
+If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper: Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
 
 The SASA usually makes sense when atoms used for the calculation are all part of the same molecule. When running with periodic boundary conditions, the atoms should be in the proper periodic image. This is done automatically since PLUMED 2.2, by considering the ordered list of atoms and rebuilding the broken entities using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. Notice that rebuilding is local to this action. This is different from \ref WHOLEMOLECULES which actually modifies the coordinates stored in PLUMED.
 
@@ -99,7 +99,7 @@ PRINT ARG=sasa STRIDE=1 FILE=colvar
 The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are read from a file called DeltaG.dat.
 
 \plumedfile
-SASA_LCPO TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 DELTAGFILE=DeltaG.dat LABEL=sasa 
+SASA_LCPO TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 DELTAGFILE=DeltaG.dat LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
@@ -109,7 +109,7 @@ PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
 The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to "Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021", and take into account the effect of temperature using approach 2 as described in the paper.
 
 \plumedfile
-SASA_LCPO TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa 
+SASA_LCPO TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
@@ -142,6 +142,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit SASA_LCPO(const ActionOptions&);
   void readPDB();
+  map<string, vector<double> > setupLCPOparam();
   void readLCPOparam();
   void calcNlist();
   map<string, vector<double> > setupMaxSurfMap();
@@ -178,7 +179,7 @@ SASA_LCPO::SASA_LCPO(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("no atoms specified");
   std::string Type;
-  parse("TYPE",Type); 
+  parse("TYPE",Type);
   parse("NL_STRIDE", stride);
   parseFlag("NOPBC",nopbc);
   checkRead();
@@ -205,99 +206,1439 @@ SASA_LCPO::SASA_LCPO(const ActionOptions&ao):
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
-         
+
 
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
 
   natoms = getNumberOfAtoms();
   AtomResidueName.resize(2);
-  LCPOparam.resize(natoms); 
-  MaxSurf.resize(natoms); 
-  DeltaG.resize(natoms+1);    
-  Nlist.resize(natoms);         
+  LCPOparam.resize(natoms);
+  MaxSurf.resize(natoms);
+  DeltaG.resize(natoms+1);
+  Nlist.resize(natoms);
 
 
 }
 
 
-//splits strings into tokens. Used to read into LCPO parameters file and into reference pdb file 
+//splits strings into tokens. Used to read into LCPO parameters file and into reference pdb file
 template <class Container>
 void split(const std::string& str, Container& cont)
 {
-    std::istringstream iss(str);
-    std::copy(std::istream_iterator<std::string>(iss),
-         std::istream_iterator<std::string>(),
-         std::back_inserter(cont));
+  std::istringstream iss(str);
+  std::copy(std::istream_iterator<std::string>(iss),
+            std::istream_iterator<std::string>(),
+            std::back_inserter(cont));
 }
 
 
 //reads input PDB file provided with MOLINFO, and assigns atom and residue names to each atom involved in the CV
 
-void SASA_LCPO::readPDB(){
- auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
- AtomResidueName[0].clear(); 
- AtomResidueName[1].clear(); 
+void SASA_LCPO::readPDB() {
+  auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  AtomResidueName[0].clear();
+  AtomResidueName[1].clear();
 
- for(unsigned i=0; i<natoms; i++) { 
-   string Aname = moldat->getAtomName(atoms[i]);
-   string Rname = moldat->getResidueName(atoms[i]);
-   AtomResidueName[0].push_back (Aname);
-   AtomResidueName[1].push_back (Rname);
+  for(unsigned i=0; i<natoms; i++) {
+    string Aname = moldat->getAtomName(atoms[i]);
+    string Rname = moldat->getResidueName(atoms[i]);
+    AtomResidueName[0].push_back (Aname);
+    AtomResidueName[1].push_back (Rname);
+  }
+
 }
 
+//LCPO parameters database
+map<string, vector<double> > SASA_LCPO::setupLCPOparam() {
+  map<string, vector<double> > lcpomap;
+  lcpomap = {
+    { "ALA_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ALA_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ALA_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ALA_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ALA_CB", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "ASP_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ASP_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ASP_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ASP_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ASP_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ASP_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ASP_OD1", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "ASP_OD2", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "ASN_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ASN_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ASN_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ASN_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ASN_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ASN_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ASN_OD1", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ASN_ND2", {
+        1.65,
+        0.73511,
+        -0.22116,
+        -0.00089148,
+        0.0002523
+      }
+    },
+    { "ARG_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ARG_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ARG_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ARG_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ARG_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ARG_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ARG_CD", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ARG_NE", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ARG_NH1", {
+        1.65,
+        0.73511,
+        -0.22116,
+        -0.00089148,
+        0.0002523
+      }
+    },
+    { "ARG_NH2", {
+        1.65,
+        0.73511,
+        -0.22116,
+        -0.00089148,
+        0.0002523
+      }
+    },
+    { "ARG_CZ", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "CYS_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "CYS_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "CYS_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "CYS_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "CYS_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "CYS_SG", {
+        1.9,
+        0.54581,
+        -0.19477,
+        -0.0012873,
+        0.00029247
+      }
+    },
+    { "GLU_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "GLU_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "GLU_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "GLU_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "GLU_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "GLU_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "GLU_CD", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "GLU_OE1", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "GLU_OE2", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "GLN_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "GLN_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "GLN_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "GLN_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "GLN_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "GLN_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "GLN_CD", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "GLN_OE1", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "GLN_NE2", {
+        1.65,
+        0.73511,
+        -0.22116,
+        -0.00089148,
+        0.0002523
+      }
+    },
+    { "GLY_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "GLY_CA", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "GLY_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "GLY_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "HIS_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "HIS_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "HIS_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "HIS_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "HIS_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "HIS_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "HIS_ND1", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "HIS_CE1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "HIS_NE2", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "HIS_CD2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "ILE_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "ILE_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ILE_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "ILE_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "ILE_CB", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "ILE_CG2", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "ILE_CG1", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "ILE_CD1", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "LEU_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "LEU_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "LEU_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "LEU_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "LEU_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "LEU_CG", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "LEU_CD1", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "LEU_CD2", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "LYS_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "LYS_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "LYS_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "LYS_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "LYS_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "LYS_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "LYS_CD", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "LYS_CE", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "LYS_NZ", {
+        1.65,
+        0.73511,
+        -0.22116,
+        -0.00089148,
+        0.0002523
+      }
+    },
+    { "MET_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "MET_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "MET_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "MET_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "MET_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "MET_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "MET_SD", {
+        1.9,
+        0.54581,
+        -0.19477,
+        -0.0012873,
+        0.00029247
+      }
+    },
+    { "MET_CE", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "PHE_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "PHE_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "PHE_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "PHE_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "PHE_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "PHE_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "PHE_CD1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "PHE_CE1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "PHE_CZ", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "PHE_CE2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "PHE_CD2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "PRO_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "PRO_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "PRO_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "PRO_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "PRO_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "PRO_CG", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "PRO_CD", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "SER_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "SER_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "SER_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "SER_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "SER_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "SER_OG", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "THR_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "THR_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "THR_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "THR_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "THR_CB", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "THR_CG2", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "THR_OG1", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "TRP_N", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "TRP_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "TRP_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TRP_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "TRP_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "TRP_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TRP_CD1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TRP_NE1", {
+        1.65,
+        0.41102,
+        -0.12254,
+        -7.5448e-05,
+        0.00011804
+      }
+    },
+    { "TRP_CE2", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TRP_CZ2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TRP_CH2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TRP_CZ3", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TRP_CE3", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TRP_CD2", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TYR_N", {
+        1.65,
+        0.062577,
+        -0.017874,
+        -8.312e-05,
+        1.9849e-05
+      }
+    },
+    { "TYR_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "TYR_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TYR_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "TYR_CB", {
+        1.7,
+        0.56482,
+        -0.19608,
+        -0.0010219,
+        0.0002658
+      }
+    },
+    { "TYR_CG", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TYR_CD1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TYR_CE1", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TYR_CZ", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "TYR_OH", {
+        1.6,
+        0.77914,
+        -0.25262,
+        -0.0016056,
+        0.00035071
+      }
+    },
+    { "TYR_CE2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "TYR_CD2", {
+        1.7,
+        0.51245,
+        -0.15966,
+        -0.00019781,
+        0.00016392
+      }
+    },
+    { "VAL_N", {
+        1.65,
+        0.062577,
+        -0.017874,
+        -8.312e-05,
+        1.9849e-05
+      }
+    },
+    { "VAL_CA", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "VAL_C", {
+        1.7,
+        0.070344,
+        -0.019015,
+        -2.2009e-05,
+        1.6875e-05
+      }
+    },
+    { "VAL_O", {
+        1.6,
+        0.68563,
+        -0.1868,
+        -0.00135573,
+        0.00023743
+      }
+    },
+    { "VAL_CB", {
+        1.7,
+        0.23348,
+        -0.072627,
+        -0.00020079,
+        7.967e-05
+      }
+    },
+    { "VAL_CG1", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    },
+    { "VAL_CG2", {
+        1.7,
+        0.77887,
+        -0.28063,
+        -0.0012968,
+        0.00039328
+      }
+    }
+  };
+  return lcpomap;
 }
 
+//assigns LCPO parameters to each atom reading from database
+void SASA_LCPO::readLCPOparam() {
+
+  for(unsigned i=0; i<natoms; i++) {
+    LCPOparam[i].clear();
+  }
+
+  map<string, vector<double> > lcpomap;
+  lcpomap = setupLCPOparam();
+  vector<double> LCPOparamVector;
+  string identifier;
+  for(unsigned i=0; i<natoms; i++) {
+    if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
+      identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
+      LCPOparamVector = lcpomap.at(identifier);
+      LCPOparam[i].push_back (LCPOparamVector[0]+rs*10);
+      LCPOparam[i].push_back (LCPOparamVector[1]);
+      LCPOparam[i].push_back (LCPOparamVector[2]);
+      LCPOparam[i].push_back (LCPOparamVector[3]);
+      LCPOparam[i].push_back (LCPOparamVector[4]);
+    }
+  }
 
 
-//assigns LCPO parameters to each atom reading from LCPO parameter file (lcpo.dat, in LCPO folder)
-	void SASA_LCPO::readLCPOparam() {  
-
-                                     for(unsigned i=0; i<natoms; i++) {  
-                                      LCPOparam[i].clear();     }      
-               
-                    fstream LCPOFile;
-                    string LCPOline; 
-                    string path;
-                    path = PLMD::config::getPlumedRoot();    
-                    LCPOFile.open(path+"src/sasa/LCPO/lcpo.dat");
-                    if (LCPOFile){
-                    while(getline(LCPOFile, LCPOline)) {
-                         if (!LCPOline.empty()) {
-                           	   std::vector<std::string> LCPOtoken;
-                                   split(LCPOline, LCPOtoken);
-                                 if(LCPOtoken.size() > 1) {
-                                      for(unsigned i=0; i<natoms; i++) {              
-                                      if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')){                    
-                                      if(LCPOtoken[0].compare(AtomResidueName[1][i])==0 && LCPOtoken[1].compare(AtomResidueName[0][i])==0) {                           
-                                LCPOparam[i].push_back (std::atof(LCPOtoken[3].c_str())+rs*10);
-				LCPOparam[i].push_back (std::atof(LCPOtoken[4].c_str()));
-                                LCPOparam[i].push_back (std::atof(LCPOtoken[5].c_str()));
-                                LCPOparam[i].push_back (std::atof(LCPOtoken[6].c_str()));
-                                LCPOparam[i].push_back (std::atof(LCPOtoken[7].c_str()));
-                                }}}
-                      }
-                     }
-}}
-             else error ("Unable to open LCPO parameters file\n");
-
-for(unsigned i=0; i<natoms; i++) {
-    if (LCPOparam[i].size()==0 ){
+  for(unsigned i=0; i<natoms; i++) {
+    if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
-          cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
-          error ("missing LCPO parameters\n");}}}
+        cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
+        error ("missing LCPO parameters\n");
+      }
+    }
+  }
 
-if (AtomResidueName[0][0] == "N"){
+  if (AtomResidueName[0][0] == "N") {
     LCPOparam[0][1] = 7.3511e-01;
     LCPOparam[0][2] = -2.2116e-01;
     LCPOparam[0][3] = -8.9148e-04;
-    LCPOparam[0][4] = 2.5230e-04;}
+    LCPOparam[0][4] = 2.5230e-04;
+  }
 
-if (AtomResidueName[0][natoms-1] == "O"){
+  if (AtomResidueName[0][natoms-1] == "O") {
     LCPOparam[natoms-1][1] = 8.8857e-01;
     LCPOparam[natoms-1][2] = -3.3421e-01;
     LCPOparam[natoms-1][3] = -1.8683e-03;
-    LCPOparam[natoms-1][4] = 4.9372e-04;}
+    LCPOparam[natoms-1][4] = 4.9372e-04;
+  }
 }
 
 
@@ -406,197 +1747,250 @@ map<string, vector<double> > SASA_LCPO::setupMaxSurfMap() {
         0.928685,
       }
     }
-   };
-return valuemap;
+  };
+  return valuemap;
 }
 
 
 
 //reads maximum surface values per residue type and assigns values to each atom, only used if sasa_type = TRANSFER
 
- void SASA_LCPO::readMaxSurf(){
- map<string, vector<double> > valuemap;
- valuemap = setupMaxSurfMap();
- vector<double> MaxSurfVector;
+void SASA_LCPO::readMaxSurf() {
+  map<string, vector<double> > valuemap;
+  valuemap = setupMaxSurfMap();
+  vector<double> MaxSurfVector;
 
- for(unsigned i=0; i<natoms; i++) {  
-                    MaxSurf[i].clear();                       
-                    MaxSurfVector = valuemap.at(AtomResidueName[1][i]);                    
-                    MaxSurf[i].push_back (MaxSurfVector[0]*100);
-                    MaxSurf[i].push_back (MaxSurfVector[1]*100);
-                               }
+  for(unsigned i=0; i<natoms; i++) {
+    MaxSurf[i].clear();
+    MaxSurfVector = valuemap.at(AtomResidueName[1][i]);
+    MaxSurf[i].push_back (MaxSurfVector[0]*100);
+    MaxSurf[i].push_back (MaxSurfVector[1]*100);
+  }
 }
 
 //reads file with free energy values for sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER
 
-void SASA_LCPO::readDeltaG(){
- 
-      for(unsigned i=0; i<natoms; i++) { 
-              DeltaG[i].clear();   }
- 
- string DeltaGline;
- fstream DeltaGFile;
-                DeltaGFile.open(DeltaGValues);
-                if (DeltaGFile){                
-                int backboneflag = 0;
-                    while(getline(DeltaGFile, DeltaGline)) {
-                             if(!DeltaGline.empty()) { 
-                           	std::vector<std::string> DeltaGtoken;
-                                split(DeltaGline, DeltaGtoken);  
-                                for(unsigned i=0; i<natoms; i++) {                  
-                                      if (DeltaGtoken[0].compare(AtomResidueName[1][i])==0 ) {                           
-                                         DeltaG[i].push_back (std::atof(DeltaGtoken[1].c_str()));
-                                           }}
-                                if (DeltaGtoken[0].compare("BACKBONE")==0 ) { 
-                                         backboneflag = 1;                                
-                                         DeltaG[natoms].push_back (std::atof(DeltaGtoken[1].c_str()));
-                                           }}}
-                                        if ( backboneflag == 0) error("Cannot find backbone value in Delta G parameters file\n");}
-                                 else error("Cannot open DeltaG file");
+void SASA_LCPO::readDeltaG() {
 
-for(unsigned i=0; i<natoms; i++) {
-    if (DeltaG[i].size()==0 ){
-          cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
-          error ("missing Delta G parameter\n");}}
+  for(unsigned i=0; i<natoms; i++) {
+    DeltaG[i].clear();
+  }
+
+  string DeltaGline;
+  fstream DeltaGFile;
+  DeltaGFile.open(DeltaGValues);
+  if (DeltaGFile) {
+    int backboneflag = 0;
+    while(getline(DeltaGFile, DeltaGline)) {
+      if(!DeltaGline.empty()) {
+        std::vector<std::string> DeltaGtoken;
+        split(DeltaGline, DeltaGtoken);
+        for(unsigned i=0; i<natoms; i++) {
+          if (DeltaGtoken[0].compare(AtomResidueName[1][i])==0 ) {
+            DeltaG[i].push_back (std::atof(DeltaGtoken[1].c_str()));
+          }
+        }
+        if (DeltaGtoken[0].compare("BACKBONE")==0 ) {
+          backboneflag = 1;
+          DeltaG[natoms].push_back (std::atof(DeltaGtoken[1].c_str()));
+        }
+      }
+    }
+    if ( backboneflag == 0) error("Cannot find backbone value in Delta G parameters file\n");
+  }
+  else error("Cannot open DeltaG file");
+
+  for(unsigned i=0; i<natoms; i++) {
+    if (DeltaG[i].size()==0 ) {
+      cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
+      error ("missing Delta G parameter\n");
+    }
+  }
 
 }
 
 //computes free energy values for the sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER, and if no DELTAGFILE is provided. In this case, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, JPCB, 2021) needs to be used to compute them.
 
-void SASA_LCPO::computeDeltaG(){
- 
-      for(unsigned i=0; i<natoms; i++) { 
-              DeltaG[i].clear();   }
+void SASA_LCPO::computeDeltaG() {
 
-double T;
-T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
+  for(unsigned i=0; i<natoms; i++) {
+    DeltaG[i].clear();
+  }
 
-if (T != Ti) {
-for(unsigned i=0; i<natoms; i++) { 
-   if (approach==2) {
-      if (AtomResidueName[1][i].compare("ALA")==0) {
-         DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.895);}
-      if (AtomResidueName[1][i].compare("ARG")==0) {
-         DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-282.032);}   
-      if (AtomResidueName[1][i].compare("ASN")==0) {
-         DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-87.846);} 
-      if (AtomResidueName[1][i].compare("ASP")==0) {
-         DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-16.526);}         
-      if (AtomResidueName[1][i].compare("CYS")==0) {
-         DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-272.26);}  
-      if (AtomResidueName[1][i].compare("GLN")==0) {
-         DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-199.707);}  
-      if (AtomResidueName[1][i].compare("GLU")==0) {
-         DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-131.168);}
-      if (AtomResidueName[1][i].compare("GLY")==0) {
-         DeltaG[i].push_back (0);} 
-      if (AtomResidueName[1][i].compare("HIS")==0) {
-         DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-311.694);}
-      if (AtomResidueName[1][i].compare("ILE")==0) {
-         DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-567.444);}
-      if (AtomResidueName[1][i].compare("LEU")==0) {
-         DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-653.394);}  
-      if (AtomResidueName[1][i].compare("LYS")==0) {
-         DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-185.549);}  
-      if (AtomResidueName[1][i].compare("MET")==0) {
-         DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.007);}  
-      if (AtomResidueName[1][i].compare("PHE")==0) {
-         DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-688.874);} 
-      if (AtomResidueName[1][i].compare("PRO")==0) {
-         DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-212.059);} 
-      if (AtomResidueName[1][i].compare("SER")==0) {
-         DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+151.957);}  
-      if (AtomResidueName[1][i].compare("THR")==0) {
-         DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-239.516);}  
-      if (AtomResidueName[1][i].compare("TRP")==0) {
-         DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1025.293);}  
-      if (AtomResidueName[1][i].compare("TYR")==0) {
-         DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-667.261);} 
-      if (AtomResidueName[1][i].compare("VAL")==0) {
-         DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-435.309);} 
-         DeltaG[natoms].push_back (-0.6962/1000*std::pow(T,2)+0.4426*T-70.015);      
-         }
-    if (approach==3) {
-      if (AtomResidueName[1][i].compare("ALA")==0) {
-         DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.105);}
-      if (AtomResidueName[1][i].compare("ARG")==0) {
-         DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-284.086);}   
-      if (AtomResidueName[1][i].compare("ASN")==0) {
-         DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-90.597);} 
-      if (AtomResidueName[1][i].compare("ASP")==0) {
-         DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-19.143);}         
-      if (AtomResidueName[1][i].compare("CYS")==0) {
-         DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-268.527);}  
-      if (AtomResidueName[1][i].compare("GLN")==0) {
-         DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-201.559);}  
-      if (AtomResidueName[1][i].compare("GLU")==0) {
-         DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-133.543);}
-      if (AtomResidueName[1][i].compare("GLY")==0) {
-         DeltaG[i].push_back (0);} 
-      if (AtomResidueName[1][i].compare("HIS")==0) {
-         DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-315.398);}
-      if (AtomResidueName[1][i].compare("ILE")==0) {
-         DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-564.825);}
-      if (AtomResidueName[1][i].compare("LEU")==0) {
-         DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-651.483);}  
-      if (AtomResidueName[1][i].compare("LYS")==0) {
-         DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-187.485);}  
-      if (AtomResidueName[1][i].compare("MET")==0) {
-         DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.242);}  
-      if (AtomResidueName[1][i].compare("PHE")==0) {
-         DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-687.134);} 
-      if (AtomResidueName[1][i].compare("PRO")==0) {
-         DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-214.211);} 
-      if (AtomResidueName[1][i].compare("SER")==0) {
-         DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+150.289);}  
-      if (AtomResidueName[1][i].compare("THR")==0) {
-         DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-240.267);}  
-      if (AtomResidueName[1][i].compare("TRP")==0) {
-         DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1024.284);}  
-      if (AtomResidueName[1][i].compare("TYR")==0) {
-         DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-666.484);} 
-      if (AtomResidueName[1][i].compare("VAL")==0) {
-         DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-433.013);} 
-         DeltaG[natoms].push_back (-0.6927/1000*std::pow(T,2)+0.4404*T-68.724);      
-         }        
-         }
-}
+  double T;
+  T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
 
-Ti = T;
+  if (T != Ti) {
+    for(unsigned i=0; i<natoms; i++) {
+      if (approach==2) {
+        if (AtomResidueName[1][i].compare("ALA")==0) {
+          DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.895);
+        }
+        if (AtomResidueName[1][i].compare("ARG")==0) {
+          DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-282.032);
+        }
+        if (AtomResidueName[1][i].compare("ASN")==0) {
+          DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-87.846);
+        }
+        if (AtomResidueName[1][i].compare("ASP")==0) {
+          DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-16.526);
+        }
+        if (AtomResidueName[1][i].compare("CYS")==0) {
+          DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-272.26);
+        }
+        if (AtomResidueName[1][i].compare("GLN")==0) {
+          DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-199.707);
+        }
+        if (AtomResidueName[1][i].compare("GLU")==0) {
+          DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-131.168);
+        }
+        if (AtomResidueName[1][i].compare("GLY")==0) {
+          DeltaG[i].push_back (0);
+        }
+        if (AtomResidueName[1][i].compare("HIS")==0) {
+          DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-311.694);
+        }
+        if (AtomResidueName[1][i].compare("ILE")==0) {
+          DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-567.444);
+        }
+        if (AtomResidueName[1][i].compare("LEU")==0) {
+          DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-653.394);
+        }
+        if (AtomResidueName[1][i].compare("LYS")==0) {
+          DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-185.549);
+        }
+        if (AtomResidueName[1][i].compare("MET")==0) {
+          DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.007);
+        }
+        if (AtomResidueName[1][i].compare("PHE")==0) {
+          DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-688.874);
+        }
+        if (AtomResidueName[1][i].compare("PRO")==0) {
+          DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-212.059);
+        }
+        if (AtomResidueName[1][i].compare("SER")==0) {
+          DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+151.957);
+        }
+        if (AtomResidueName[1][i].compare("THR")==0) {
+          DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-239.516);
+        }
+        if (AtomResidueName[1][i].compare("TRP")==0) {
+          DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1025.293);
+        }
+        if (AtomResidueName[1][i].compare("TYR")==0) {
+          DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-667.261);
+        }
+        if (AtomResidueName[1][i].compare("VAL")==0) {
+          DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-435.309);
+        }
+        DeltaG[natoms].push_back (-0.6962/1000*std::pow(T,2)+0.4426*T-70.015);
+      }
+      if (approach==3) {
+        if (AtomResidueName[1][i].compare("ALA")==0) {
+          DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.105);
+        }
+        if (AtomResidueName[1][i].compare("ARG")==0) {
+          DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-284.086);
+        }
+        if (AtomResidueName[1][i].compare("ASN")==0) {
+          DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-90.597);
+        }
+        if (AtomResidueName[1][i].compare("ASP")==0) {
+          DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-19.143);
+        }
+        if (AtomResidueName[1][i].compare("CYS")==0) {
+          DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-268.527);
+        }
+        if (AtomResidueName[1][i].compare("GLN")==0) {
+          DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-201.559);
+        }
+        if (AtomResidueName[1][i].compare("GLU")==0) {
+          DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-133.543);
+        }
+        if (AtomResidueName[1][i].compare("GLY")==0) {
+          DeltaG[i].push_back (0);
+        }
+        if (AtomResidueName[1][i].compare("HIS")==0) {
+          DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-315.398);
+        }
+        if (AtomResidueName[1][i].compare("ILE")==0) {
+          DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-564.825);
+        }
+        if (AtomResidueName[1][i].compare("LEU")==0) {
+          DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-651.483);
+        }
+        if (AtomResidueName[1][i].compare("LYS")==0) {
+          DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-187.485);
+        }
+        if (AtomResidueName[1][i].compare("MET")==0) {
+          DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.242);
+        }
+        if (AtomResidueName[1][i].compare("PHE")==0) {
+          DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-687.134);
+        }
+        if (AtomResidueName[1][i].compare("PRO")==0) {
+          DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-214.211);
+        }
+        if (AtomResidueName[1][i].compare("SER")==0) {
+          DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+150.289);
+        }
+        if (AtomResidueName[1][i].compare("THR")==0) {
+          DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-240.267);
+        }
+        if (AtomResidueName[1][i].compare("TRP")==0) {
+          DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1024.284);
+        }
+        if (AtomResidueName[1][i].compare("TYR")==0) {
+          DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-666.484);
+        }
+        if (AtomResidueName[1][i].compare("VAL")==0) {
+          DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-433.013);
+        }
+        DeltaG[natoms].push_back (-0.6927/1000*std::pow(T,2)+0.4404*T-68.724);
+      }
+    }
+  }
 
- if (firstStepFlag ==0) { 
- if (approach!=2 && approach!=3){
-         cout << "Unknown approach " << approach << endl;}
-for(unsigned i=0; i<natoms; i++) {
-    if (DeltaG[i].size()==0 ){
-          cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
-          error ("missing Delta G parameter\n");}}}
+  Ti = T;
+
+  if (firstStepFlag ==0) {
+    if (approach!=2 && approach!=3) {
+      cout << "Unknown approach " << approach << endl;
+    }
+    for(unsigned i=0; i<natoms; i++) {
+      if (DeltaG[i].size()==0 ) {
+        cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
+        error ("missing Delta G parameter\n");
+      }
+    }
+  }
 }
 
 
 //calculates neighbor list
-void SASA_LCPO::calcNlist(){
+void SASA_LCPO::calcNlist() {
   if(!nopbc) makeWhole();
 
   for(unsigned i = 0; i < natoms; i++) {
-    Nlist[i].clear();}
+    Nlist[i].clear();
+  }
 
   for(unsigned i = 0; i < natoms; i++) {
-      if (LCPOparam[i].size()>0){
-        for (unsigned j = 0; j < i; j++) {
-              if (LCPOparam[j].size()>0){
-       const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
-       double Delta_ij_mod = Delta_ij_vec.modulo()*10;
-       double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
-           if (Delta_ij_mod < overlapD) { 
-                           Nlist.at(i).push_back (j);
-                           Nlist.at(j).push_back (i);
-                             }
-                   }
-                }
-              }
-     }
+    if (LCPOparam[i].size()>0) {
+      for (unsigned j = 0; j < i; j++) {
+        if (LCPOparam[j].size()>0) {
+          const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
+          double Delta_ij_mod = Delta_ij_vec.modulo()*10;
+          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
+          if (Delta_ij_mod < overlapD) {
+            Nlist.at(i).push_back (j);
+            Nlist.at(j).push_back (i);
+          }
+        }
+      }
     }
+  }
+}
 
 
 //calculates SASA according to LCPO algorithm
@@ -605,13 +1999,14 @@ void SASA_LCPO::calculate() {
 
   if(getExchangeStep()) nl_update = 0;
   if (firstStepFlag ==0) {
-     readPDB(); 
-     readLCPOparam();
-     }
+    readPDB();
+    readLCPOparam();
+  }
   if (nl_update == 0) {
-    calcNlist();    }
+    calcNlist();
+  }
 
-  
+
 
   double S1, Aij, Ajk, Aijk, Aijt, Ajkt, Aikt;
   double dAdd;
@@ -625,301 +2020,305 @@ void SASA_LCPO::calculate() {
 
   if( sasa_type==TOTAL ) {
     for(unsigned i = 0; i < natoms; i++) {
-         derivatives[i][0] = 0.;
-         derivatives[i][1] = 0.;
-         derivatives[i][2] = 0.;
-      if ( LCPOparam[i].size()>0){
-         if (LCPOparam[i][1]>0.0){
-         Aij = 0.0;
-         Aijk = 0.0;
-         Ajk = 0.0;
-         double ri = LCPOparam[i][0];
-         S1 = 4*M_PI*ri*ri;
-         vector <double> dAijdc_2(3, 0);
-         vector <double> dAijdc_4(3, 0);
- 
+      derivatives[i][0] = 0.;
+      derivatives[i][1] = 0.;
+      derivatives[i][2] = 0.;
+      if ( LCPOparam[i].size()>0) {
+        if (LCPOparam[i][1]>0.0) {
+          Aij = 0.0;
+          Aijk = 0.0;
+          Ajk = 0.0;
+          double ri = LCPOparam[i][0];
+          S1 = 4*M_PI*ri*ri;
+          vector <double> dAijdc_2(3, 0);
+          vector <double> dAijdc_4(3, 0);
 
-         for (unsigned j = 0; j < Nlist[i].size(); j++) {
-             const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-             double d_ij = d_ij_vec.modulo()*10; 
 
-             double rj = LCPOparam[Nlist[i][j]][0];     
-             Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-             double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+          for (unsigned j = 0; j < Nlist[i].size(); j++) {
+            const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
+            double d_ij = d_ij_vec.modulo()*10;
 
-             dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            double rj = LCPOparam[Nlist[i][j]][0];
+            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
 
-             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
-             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
-             Ajkt = 0.0;
-             Aikt = 0.0;
+            ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
+            ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
+            ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
 
-             vector <double> dSASA_3_neigh_dc(3, 0.0);
-             vector <double> dSASA_4_neigh_dc(3, 0.0);
-             vector <double> dSASA_3_neigh_dc2(3, 0.0);
-             vector <double> dSASA_4_neigh_dc2(3, 0.0);
-           
-             dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
-             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
-             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
+            Ajkt = 0.0;
+            Aikt = 0.0;
+
+            vector <double> dSASA_3_neigh_dc(3, 0.0);
+            vector <double> dSASA_4_neigh_dc(3, 0.0);
+            vector <double> dSASA_3_neigh_dc2(3, 0.0);
+            vector <double> dSASA_4_neigh_dc2(3, 0.0);
+
+            dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
+            dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
+            dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
             dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
 
-	     dAijdc_2t[0] = dAdd * ddij_di[0];
-	     dAijdc_2t[1] = dAdd * ddij_di[1];
-	     dAijdc_2t[2] = dAdd * ddij_di[2];            
+            dAijdc_2t[0] = dAdd * ddij_di[0];
+            dAijdc_2t[1] = dAdd * ddij_di[1];
+            dAijdc_2t[2] = dAdd * ddij_di[2];
 
-             for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); k++) {
-             if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()){
-                   const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
-                   const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
+            for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); k++) {
+              if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+                const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
+                const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
 
-                   double d_jk = d_jk_vec.modulo()*10; 
-                   double d_ik = d_ik_vec.modulo()*10; 
+                double d_jk = d_jk_vec.modulo()*10;
+                double d_ik = d_ik_vec.modulo()*10;
 
-                   double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0]; 
-                   double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));         
-                   Ajkt += sjk;
-                   Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
+                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                Ajkt += sjk;
+                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                   dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
-                   ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
-                   ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
-                   ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
-
-
-                   dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
-                   dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
-                   dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
-            
-                   dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
-
-                   dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
-                   dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
-                   dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
-
-                   dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
-                   dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
-                   dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
-                   
-                   }
-                }
-                dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
-                dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
-                dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
-
-                dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
-                dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
-                dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
-
-		dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
-	        dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
-		dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
-
-                
-                derivatives[i][0] += (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
-                derivatives[i][1] += (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
-                derivatives[i][2] += (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
+                ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
+                ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
+                ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
 
 
-             Aijk += (Aijt * Ajkt);
-             Aij += Aijt;
-             Ajk += Ajkt;
+                dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
+                dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
+                dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-             dAijdc_2[0] += dAijdc_2t[0];
-             dAijdc_2[1] += dAijdc_2t[1];
-             dAijdc_2[2] += dAijdc_2t[2];
+                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+
+                dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
+                dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
+                dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
+
+                dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
+                dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
+                dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
+
+              }
+            }
+            dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
+            dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
+            dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
+
+            dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
+            dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
+            dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
+
+            dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
+            dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
+            dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
 
-             dAijdc_4[0] += Ajkt*dAijdc_2t[0];
-             dAijdc_4[1] += Ajkt*dAijdc_2t[1];
-             dAijdc_4[2] += Ajkt*dAijdc_2t[2];
+            derivatives[i][0] += (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
+            derivatives[i][1] += (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
+            derivatives[i][2] += (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
 
 
-             }
-         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
-         if (sasai > 0 ) sasa += sasai/100;
-         derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
-         derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
-         derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;      
+            Aijk += (Aijt * Ajkt);
+            Aij += Aijt;
+            Ajk += Ajkt;
+
+            dAijdc_2[0] += dAijdc_2t[0];
+            dAijdc_2[1] += dAijdc_2t[1];
+            dAijdc_2[2] += dAijdc_2t[2];
+
+
+            dAijdc_4[0] += Ajkt*dAijdc_2t[0];
+            dAijdc_4[1] += Ajkt*dAijdc_2t[1];
+            dAijdc_4[2] += Ajkt*dAijdc_2t[2];
+
+
+          }
+          double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+          if (sasai > 0 ) sasa += sasai/100;
+          derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
+          derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
+          derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;
+        }
+      }
+      virial -= Tensor(getPosition(i),derivatives[i]);
     }
-    }
-    virial -= Tensor(getPosition(i),derivatives[i]);
-   }
-}
+  }
 
 
 
-  if( sasa_type==TRANSFER ) { 
+  if( sasa_type==TRANSFER ) {
 
     if (firstStepFlag ==0) {
-     readMaxSurf();
-     }
+      readMaxSurf();
+    }
 
     if (firstStepFlag ==0 && DeltaGValues != "absent") {
-     readDeltaG(); 
-     }
+      readDeltaG();
+    }
 
     if (DeltaGValues == "absent") {
-     computeDeltaG(); 
-     }
+      computeDeltaG();
+    }
 
 
-  for(unsigned i = 0; i < natoms; i++) {
+    for(unsigned i = 0; i < natoms; i++) {
 
-            
-  
-         derivatives[i][0] = 0.;
-         derivatives[i][1] = 0.;
-         derivatives[i][2] = 0.;  
-   
-      if ( LCPOparam[i].size()>0){
-         if (LCPOparam[i][1]>0.0){
-         Aij = 0.0;
-         Aijk = 0.0;
-         Ajk = 0.0;
-         double ri = LCPOparam[i][0];
-         S1 = 4*M_PI*ri*ri;
-         vector <double> dAijdc_2(3, 0);
-         vector <double> dAijdc_4(3, 0);
- 
 
-         for (unsigned j = 0; j < Nlist[i].size(); j++) {
-             const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-             double d_ij = d_ij_vec.modulo()*10; 
 
-             double rj = LCPOparam[Nlist[i][j]][0];     
-             Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-             double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+      derivatives[i][0] = 0.;
+      derivatives[i][1] = 0.;
+      derivatives[i][2] = 0.;
 
-             dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
-             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
-             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+      if ( LCPOparam[i].size()>0) {
+        if (LCPOparam[i][1]>0.0) {
+          Aij = 0.0;
+          Aijk = 0.0;
+          Ajk = 0.0;
+          double ri = LCPOparam[i][0];
+          S1 = 4*M_PI*ri*ri;
+          vector <double> dAijdc_2(3, 0);
+          vector <double> dAijdc_4(3, 0);
 
-             Ajkt = 0.0;
-             Aikt = 0.0;
 
-             vector <double> dSASA_3_neigh_dc(3, 0.0);
-             vector <double> dSASA_4_neigh_dc(3, 0.0);
-             vector <double> dSASA_3_neigh_dc2(3, 0.0);
-             vector <double> dSASA_4_neigh_dc2(3, 0.0);
-           
-             dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
-             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
-             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
+          for (unsigned j = 0; j < Nlist[i].size(); j++) {
+            const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
+            double d_ij = d_ij_vec.modulo()*10;
+
+            double rj = LCPOparam[Nlist[i][j]][0];
+            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+
+            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
+            ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
+            ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+
+            Ajkt = 0.0;
+            Aikt = 0.0;
+
+            vector <double> dSASA_3_neigh_dc(3, 0.0);
+            vector <double> dSASA_4_neigh_dc(3, 0.0);
+            vector <double> dSASA_3_neigh_dc2(3, 0.0);
+            vector <double> dSASA_4_neigh_dc2(3, 0.0);
+
+            dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
+            dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
+            dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
             dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
-	     dAijdc_2t[0] = dAdd * ddij_di[0];
-	     dAijdc_2t[1] = dAdd * ddij_di[1];
-	     dAijdc_2t[2] = dAdd * ddij_di[2];            
+            dAijdc_2t[0] = dAdd * ddij_di[0];
+            dAijdc_2t[1] = dAdd * ddij_di[1];
+            dAijdc_2t[2] = dAdd * ddij_di[2];
 
-             for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); k++) {
-             if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()){
-                   const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
-                   const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
+            for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); k++) {
+              if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+                const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
+                const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
 
-                   double d_jk = d_jk_vec.modulo()*10; 
-                   double d_ik = d_ik_vec.modulo()*10; 
+                double d_jk = d_jk_vec.modulo()*10;
+                double d_ik = d_ik_vec.modulo()*10;
 
-                   double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0]; 
-                   double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));         
-                   Ajkt += sjk;
-                   Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
+                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                Ajkt += sjk;
+                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                   dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
-                   ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
-                   ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
-                   ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
+                ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
+                ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
+                ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
 
 
-                   dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
-                   dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
-                   dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
-            
-                   dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
+                dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
+                dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-                   dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
-                   dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
-                   dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
+                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
-                   dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
-                   dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
-                   dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
-                   
-                   }
-                }
-                dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
-                dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
-                dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
+                dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
+                dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
+                dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
 
-                dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
-                dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
-                dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
+                dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
+                dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
+                dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
 
-		dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
-	        dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
-		dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
+              }
+            }
+            dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
+            dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
+            dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
 
-         if (AtomResidueName[0][Nlist[i][j]] == "N" || AtomResidueName[0][Nlist[i][j]] == "CA"  || AtomResidueName[0][Nlist[i][j]] == "C" || AtomResidueName[0][Nlist[i][j]] == "O"){             
-                derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-                derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-                derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;}
+            dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
+            dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
+            dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
 
-          if (AtomResidueName[0][Nlist[i][j]] != "N" && AtomResidueName[0][Nlist[i][j]] != "CA"  && AtomResidueName[0][Nlist[i][j]] != "C" && AtomResidueName[0][Nlist[i][j]] != "O"){            
-                derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-                derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-                derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;}
+            dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
+            dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
+            dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
-             Aijk += (Aijt * Ajkt);
-             Aij += Aijt;
-             Ajk += Ajkt;
+            if (AtomResidueName[0][Nlist[i][j]] == "N" || AtomResidueName[0][Nlist[i][j]] == "CA"  || AtomResidueName[0][Nlist[i][j]] == "C" || AtomResidueName[0][Nlist[i][j]] == "O") {
+              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+            }
 
-             dAijdc_2[0] += dAijdc_2t[0];
-             dAijdc_2[1] += dAijdc_2t[1];
-             dAijdc_2[2] += dAijdc_2t[2];
+            if (AtomResidueName[0][Nlist[i][j]] != "N" && AtomResidueName[0][Nlist[i][j]] != "CA"  && AtomResidueName[0][Nlist[i][j]] != "C" && AtomResidueName[0][Nlist[i][j]] != "O") {
+              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+            }
 
-             dAijdc_4[0] += Ajkt*dAijdc_2t[0];
-             dAijdc_4[1] += Ajkt*dAijdc_2t[1];
-             dAijdc_4[2] += Ajkt*dAijdc_2t[2];
+            Aijk += (Aijt * Ajkt);
+            Aij += Aijt;
+            Ajk += Ajkt;
 
-             }
-         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
- 
-         if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O"){
-         if (sasai > 0 ) sasa += (sasai/MaxSurf[i][0]*DeltaG[natoms][0]); 
-         derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-         derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-         derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;}  
-  
-         if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O"){  
-         if (sasai > 0. ) sasa += (sasai/MaxSurf[i][1]*DeltaG[i][0]);  
-         derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-         derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-         derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;}                                         
+            dAijdc_2[0] += dAijdc_2t[0];
+            dAijdc_2[1] += dAijdc_2t[1];
+            dAijdc_2[2] += dAijdc_2t[2];
+
+            dAijdc_4[0] += Ajkt*dAijdc_2t[0];
+            dAijdc_4[1] += Ajkt*dAijdc_2t[1];
+            dAijdc_4[2] += Ajkt*dAijdc_2t[2];
+
+          }
+          double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+
+          if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O") {
+            if (sasai > 0 ) sasa += (sasai/MaxSurf[i][0]*DeltaG[natoms][0]);
+            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+          }
+
+          if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O") {
+            if (sasai > 0. ) sasa += (sasai/MaxSurf[i][1]*DeltaG[i][0]);
+            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+          }
+        }
+      }
+      virial -= Tensor(getPosition(i),derivatives[i]);
     }
-   }
-    virial -= Tensor(getPosition(i),derivatives[i]);
   }
-   }
 
 
-  for(unsigned i=0;i<natoms;i++){ setAtomsDerivatives(i,derivatives[i]);}
+  for(unsigned i=0; i<natoms; i++) { setAtomsDerivatives(i,derivatives[i]);}
   setBoxDerivatives(virial);
-  setValue(sasa);    
-  firstStepFlag = 1; 
+  setValue(sasa);
+  firstStepFlag = 1;
   ++nl_update;
   if (nl_update == stride) {
     nl_update = 0;
   }
- // setBoxDerivativesNoPbc();
+// setBoxDerivativesNoPbc();
 }
 
 }//namespace PLMD
-}//namespace Sasa
+}//namespace sasa

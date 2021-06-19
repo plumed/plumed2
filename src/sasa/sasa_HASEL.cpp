@@ -36,15 +36,15 @@ freely, subject to the following restrictions:
 using namespace std;
 
 namespace PLMD {
-namespace Sasa {
+namespace sasa {
 
 //+PLUMEDOC COLVAR SASA_HASEL
 /*
 Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The algorithm described in (Hasel et al., Tetrahedron Computer Methodology Vol. 1, No. 2, pp. 103-116, 1988) is used for the calculation. The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
-the total SASA (TOTAL); 
-the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021). 
+the total SASA (TOTAL);
+the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021).
 
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
@@ -76,7 +76,7 @@ BACKBONE	1.00066920000002
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
 
-If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper: Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3. 
+If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper: Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
 
 The SASA usually makes sense when atoms used for the calculation are all part of the same molecule. When running with periodic boundary conditions, the atoms should be in the proper periodic image. This is done automatically since PLUMED 2.2, by considering the ordered list of atoms and rebuilding the broken entities using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. Notice that rebuilding is local to this action. This is different from \ref WHOLEMOLECULES which actually modifies the coordinates stored in PLUMED.
 
@@ -98,7 +98,7 @@ PRINT ARG=sasa STRIDE=1 FILE=colvar
 The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are read from a file called DeltaG.dat.
 
 \plumedfile
-SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 DELTAGFILE=DeltaG.dat LABEL=sasa 
+SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 DELTAGFILE=DeltaG.dat LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
@@ -108,7 +108,7 @@ PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
 The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to "Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021", and take into account the effect of temperature using approach 2 as described in the paper.
 
 \plumedfile
-SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa 
+SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa
 
 bias: BIASVALUE ARG=sasa
 
@@ -142,6 +142,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit SASA_HASEL(const ActionOptions&);
   void readPDB();
+  map<string, vector<std::string> > setupHASELparam();
   void readSASAparam();
   void calcNlist();
   map<string, vector<double> > setupMaxSurfMap();
@@ -178,7 +179,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("no atoms specified");
   std::string Type;
-  parse("TYPE",Type); 
+  parse("TYPE",Type);
   parse("NL_STRIDE", stride);
   parseFlag("NOPBC",nopbc);
   checkRead();
@@ -205,7 +206,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
-         
+
 
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
@@ -213,80 +214,1923 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   natoms = getNumberOfAtoms();
   AtomResidueName.resize(2);
   SASAparam.resize(natoms);
-  CONNECTparam.resize(natoms); 
-  MaxSurf.resize(natoms); 
-  DeltaG.resize(natoms+1);    
-  Nlist.resize(natoms);         
+  CONNECTparam.resize(natoms);
+  MaxSurf.resize(natoms);
+  DeltaG.resize(natoms+1);
+  Nlist.resize(natoms);
 
 
 }
 
 
-//splits strings into tokens. Used to read into SASA parameters file and into reference pdb file 
+//splits strings into tokens. Used to read into SASA parameters file and into reference pdb file
 template <class Container>
 void split(const std::string& str, Container& cont)
 {
-    std::istringstream iss(str);
-    std::copy(std::istream_iterator<std::string>(iss),
-         std::istream_iterator<std::string>(),
-         std::back_inserter(cont));
+  std::istringstream iss(str);
+  std::copy(std::istream_iterator<std::string>(iss),
+            std::istream_iterator<std::string>(),
+            std::back_inserter(cont));
 }
 
 
 //reads input PDB file provided with MOLINFO, and assigns atom and residue names to each atom involved in the CV
 
-void SASA_HASEL::readPDB(){
- auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
- AtomResidueName[0].clear(); 
- AtomResidueName[1].clear();
+void SASA_HASEL::readPDB() {
+  auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  AtomResidueName[0].clear();
+  AtomResidueName[1].clear();
 
- for(unsigned i=0; i<natoms; i++) { 
-   string Aname = moldat->getAtomName(atoms[i]);
-   string Rname = moldat->getResidueName(atoms[i]);
-   AtomResidueName[0].push_back (Aname);
-   AtomResidueName[1].push_back (Rname);
+  for(unsigned i=0; i<natoms; i++) {
+    string Aname = moldat->getAtomName(atoms[i]);
+    string Rname = moldat->getResidueName(atoms[i]);
+    AtomResidueName[0].push_back (Aname);
+    AtomResidueName[1].push_back (Rname);
+  }
+
 }
 
+
+//Hasel et al. parameters database
+map<string, vector<std::string> > SASA_HASEL::setupHASELparam() {
+  map<string, vector<std::string> > haselmap;
+  haselmap = {
+    { "ALA_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "ALA_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "ALA_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "ALA_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ALA_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ALA_CB", {
+        "2.0",
+        "0.88",
+        "CA",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "ASP_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_CG", {
+        "1.72",
+        "1.554",
+        "CB",
+        "OD1",
+        "OD2",
+        "Z",
+      }
+    },
+    { "ASP_OD1", {
+        "1.5",
+        "0.926",
+        "CG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASP_OD2", {
+        "1.7",
+        "0.922",
+        "CG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "ASN_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_CG", {
+        "1.7",
+        "2.149",
+        "CB",
+        "OD1",
+        "ND2",
+        "Z",
+      }
+    },
+    { "ASN_OD1", {
+        "1.5",
+        "0.926",
+        "CG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_ND2", {
+        "1.6",
+        "1.215",
+        "CG",
+        "1HD2",
+        "1HD2",
+        "Z",
+      }
+    },
+    { "ASN_1HD2", {
+        "1.1",
+        "1.128",
+        "ND2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ASN_2HD2", {
+        "1.1",
+        "1.128",
+        "ND2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "ARG_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_CD", {
+        "1.9",
+        "1.045",
+        "CG",
+        "NE",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_NE", {
+        "1.55",
+        "1.028",
+        "CD",
+        "HE",
+        "CZ",
+        "Z",
+      }
+    },
+    { "ARG_NH1", {
+        "1.55",
+        "1.028",
+        "CZ",
+        "1HH1",
+        "2HH1",
+        "Z",
+      }
+    },
+    { "ARG_NH2", {
+        "1.55",
+        "1.028",
+        "CZ",
+        "1HH2",
+        "2HH2",
+        "Z",
+      }
+    },
+    { "ARG_CZ", {
+        "1.72",
+        "1.554",
+        "NE",
+        "NH1",
+        "NH2",
+        "Z",
+      }
+    },
+    { "ARG_HE", {
+        "1.1",
+        "1.128",
+        "NE",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_1HH2", {
+        "1.1",
+        "1.128",
+        "NH2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_2HH2", {
+        "1.1",
+        "1.128",
+        "NH2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_2HH1", {
+        "1.1",
+        "1.128",
+        "NH1",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ARG_1HH1", {
+        "1.1",
+        "1.128",
+        "NH1",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "CYS_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "SG",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_SG", {
+        "1.8",
+        "1.121",
+        "CB",
+        "HG",
+        "Z",
+        "Z",
+      }
+    },
+    { "CYS_HG", {
+        "1.2",
+        "0.928",
+        "SG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "GLU_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_CD", {
+        "1.72",
+        "1.554",
+        "CG",
+        "OE1",
+        "OE2",
+        "Z",
+      }
+    },
+    { "GLU_OE1", {
+        "1.5",
+        "0.926",
+        "CD",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLU_OE2", {
+        "1.7",
+        "0.922",
+        "CD",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "GLN_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_CD", {
+        "1.72",
+        "1.554",
+        "CG",
+        "OE1",
+        "NE2",
+        "Z",
+      }
+    },
+    { "GLN_OE1", {
+        "1.5",
+        "0.926",
+        "CD",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_NE2", {
+        "1.6",
+        "1.215",
+        "CD",
+        "2HE2",
+        "1HE2",
+        "Z",
+      }
+    },
+    { "GLN_2HE2", {
+        "1.1",
+        "1.128",
+        "NE2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLN_1HE2", {
+        "1.1",
+        "1.128",
+        "NE2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLY_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLY_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLY_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLY_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "GLY_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "HIS_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_CG", {
+        "1.72",
+        "1.554",
+        "CB",
+        "CD2",
+        "ND1",
+        "Z",
+      }
+    },
+    { "HIS_ND1", {
+        "1.55",
+        "1.028",
+        "CG",
+        "CE1",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_CE1", {
+        "1.8",
+        "1.073",
+        "ND1",
+        "NE2",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_NE2", {
+        "1.55",
+        "1.413",
+        "CE1",
+        "2HE",
+        "CD2",
+        "Z",
+      }
+    },
+    { "HIS_CD2", {
+        "1.8",
+        "1.073",
+        "NE2",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "HIS_2HE", {
+        "1.1",
+        "1.128",
+        "NE2",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "ILE_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_CB", {
+        "1.8",
+        "1.276",
+        "CA",
+        "CG2",
+        "CG1",
+        "Z",
+      }
+    },
+    { "ILE_CG2", {
+        "2.0",
+        "0.88",
+        "CB",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_CG1", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD1",
+        "Z",
+        "Z",
+      }
+    },
+    { "ILE_CD1", {
+        "2.0",
+        "0.88",
+        "CG1",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "LEU_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_CG", {
+        "1.8",
+        "1.276",
+        "CB",
+        "CD1",
+        "CD2",
+        "Z",
+      }
+    },
+    { "LEU_CD1", {
+        "2.0",
+        "0.88",
+        "CG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LEU_CD2", {
+        "2.0",
+        "0.88",
+        "CG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "LYS_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_CD", {
+        "1.9",
+        "1.045",
+        "CG",
+        "CE",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_CE", {
+        "1.9",
+        "1.045",
+        "CD",
+        "NZ",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_NZ", {
+        "1.6",
+        "1.215",
+        "CE",
+        "1HZ",
+        "2HZ",
+        "3HZ",
+      }
+    },
+    { "LYS_1HZ", {
+        "1.1",
+        "1.128",
+        "NZ",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_2HZ", {
+        "1.1",
+        "1.128",
+        "NZ",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "LYS_3HZ", {
+        "1.1",
+        "1.128",
+        "NZ",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "MET_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "SD",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_SD", {
+        "1.8",
+        "1.121",
+        "CG",
+        "CE",
+        "Z",
+        "Z",
+      }
+    },
+    { "MET_CE", {
+        "2.0",
+        "0.88",
+        "SD",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "PHE_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CG", {
+        "1.72",
+        "1.554",
+        "CB",
+        "CD1",
+        "CD2",
+        "Z",
+      }
+    },
+    { "PHE_CD1", {
+        "1.8",
+        "1.073",
+        "CG",
+        "CE1",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CE1", {
+        "1.8",
+        "1.073",
+        "CD1",
+        "CZ",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CZ", {
+        "1.8",
+        "1.073",
+        "CE1",
+        "CE2",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CE2", {
+        "1.8",
+        "1.073",
+        "CZ",
+        "CD2",
+        "Z",
+        "Z",
+      }
+    },
+    { "PHE_CD2", {
+        "1.8",
+        "1.073",
+        "CE2",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_N", {
+        "1.55",
+        "1.028",
+        "CD",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "PRO_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_CG", {
+        "1.9",
+        "1.045",
+        "CB",
+        "CD",
+        "Z",
+        "Z",
+      }
+    },
+    { "PRO_CD", {
+        "1.9",
+        "1.045",
+        "CG",
+        "N",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "SER_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "OG",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_OG", {
+        "1.52",
+        "1.08",
+        "CB",
+        "HG",
+        "Z",
+        "Z",
+      }
+    },
+    { "SER_HG", {
+        "1.0",
+        "0.944",
+        "OG",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "THR_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_CB", {
+        "1.8",
+        "1.276",
+        "CA",
+        "CG2",
+        "OG1",
+        "Z",
+      }
+    },
+    { "THR_CG2", {
+        "2.0",
+        "0.88",
+        "CB",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_OG1", {
+        "1.52",
+        "1.08",
+        "1HG",
+        "CB",
+        "Z",
+        "Z",
+      }
+    },
+    { "THR_1HG", {
+        "1.0",
+        "0.944",
+        "OG1",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "TRP_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CG", {
+        "1.72",
+        "1.554",
+        "CB",
+        "CD2",
+        "CD1",
+        "Z",
+      }
+    },
+    { "TRP_CD1", {
+        "1.8",
+        "1.073",
+        "CG",
+        "NE1",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_NE1", {
+        "1.55",
+        "1.413",
+        "CD1",
+        "CE2",
+        "1HE",
+        "Z",
+      }
+    },
+    { "TRP_CE2", {
+        "1.72",
+        "1.554",
+        "NE1",
+        "CD2",
+        "CZ2",
+        "Z",
+      }
+    },
+    { "TRP_CZ2", {
+        "1.8",
+        "1.073",
+        "CE2",
+        "CH2",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CH2", {
+        "1.8",
+        "1.073",
+        "CZ2",
+        "CZ3",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CZ3", {
+        "1.8",
+        "1.073",
+        "CH2",
+        "CE3",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CE3", {
+        "1.8",
+        "1.073",
+        "CZ3",
+        "CD2",
+        "Z",
+        "Z",
+      }
+    },
+    { "TRP_CD2", {
+        "1.72",
+        "1.554",
+        "CE3",
+        "CE2",
+        "CG",
+        "Z",
+      }
+    },
+    { "TRP_1HE", {
+        "1.1",
+        "1.128",
+        "NE1",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "TYR_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CB", {
+        "1.9",
+        "1.045",
+        "CA",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CG", {
+        "1.72",
+        "1.554",
+        "CB",
+        "CD1",
+        "CD2",
+        "Z",
+      }
+    },
+    { "TYR_CD1", {
+        "1.8",
+        "1.073",
+        "CG",
+        "CE1",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CE1", {
+        "1.8",
+        "1.073",
+        "CD1",
+        "CZ",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CZ", {
+        "1.72",
+        "1.554",
+        "CE1",
+        "OH",
+        "CE2",
+        "Z",
+      }
+    },
+    { "TYR_OH", {
+        "1.52",
+        "1.08",
+        "CZ",
+        "HH",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_HH", {
+        "1.0",
+        "0.944",
+        "OH",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CE2", {
+        "1.8",
+        "1.073",
+        "CZ",
+        "CD2",
+        "Z",
+        "Z",
+      }
+    },
+    { "TYR_CD2", {
+        "1.8",
+        "1.073",
+        "CE2",
+        "CG",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_N", {
+        "1.55",
+        "1.028",
+        "H",
+        "CA",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_CA", {
+        "1.7",
+        "2.149",
+        "N",
+        "C",
+        "CB",
+        "Z",
+      }
+    },
+    { "VAL_C", {
+        "1.72",
+        "1.554",
+        "CA",
+        "O",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_O", {
+        "1.5",
+        "0.926",
+        "C",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_H", {
+        "1.1",
+        "1.128",
+        "N",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_CB", {
+        "1.8",
+        "1.276",
+        "CA",
+        "CG1",
+        "CG2",
+        "Z",
+      }
+    },
+    { "VAL_CG1", {
+        "2.0",
+        "0.88",
+        "CB",
+        "Z",
+        "Z",
+        "Z",
+      }
+    },
+    { "VAL_CG2", {
+        "2.0",
+        "0.88",
+        "CB",
+        "Z",
+        "Z",
+        "Z",
+      }
+    }
+  };
+  return haselmap;
 }
 
+//assigns SASA parameters to each atom reading from HASEL parameter database
+void SASA_HASEL::readSASAparam() {
 
-//assigns SASA parameters to each atom reading from SASA_HASEL parameter file (hasel.dat, in HASEL folder)
-	void SASA_HASEL::readSASAparam() {  
+  for(unsigned i=0; i<natoms; i++) {
+    SASAparam[i].clear();
+    CONNECTparam[i].clear();
+  }
 
-                                     for(unsigned i=0; i<natoms; i++) {  
-                                      SASAparam[i].clear(); 
-                                      CONNECTparam[i].clear();    }      
-               
-                    fstream SASAFile;
-                    string SASAline; 
-                    string path;
-                    path = PLMD::config::getPlumedRoot();
-                    SASAFile.open(path+"src/sasa/HASEL/hasel.dat");
-                    if (SASAFile){
-                    while(getline(SASAFile, SASAline)) {
-                         if (!SASAline.empty()) {
-                           	   std::vector<std::string> SASAtoken;
-                                   split(SASAline, SASAtoken);
-                                 if(SASAtoken.size() > 1) {
-                                      for(unsigned i=0; i<natoms; i++) {              
-                                     
-                                      if(SASAtoken[0].compare(AtomResidueName[1][i])==0 && SASAtoken[1].compare(AtomResidueName[0][i])==0) {                           
-                                SASAparam[i].push_back (std::atof(SASAtoken[3].c_str())+rs*10);
-				 SASAparam[i].push_back (std::atof(SASAtoken[4].c_str()));
-				 CONNECTparam[i].push_back (SASAtoken[5].c_str());
-				 CONNECTparam[i].push_back (SASAtoken[6].c_str());
-				 CONNECTparam[i].push_back (SASAtoken[7].c_str());
-				 CONNECTparam[i].push_back (SASAtoken[8].c_str());
-                                }}}
-                      }
-}}
-             else error ("Unable to open SASA parameters file\n");
+  map<string, vector<std::string> > haselmap;
+  haselmap = setupHASELparam();
+  vector<std::string> HASELparamVector;
+  string identifier;
 
-for(unsigned i=0; i<natoms; i++) {
-      if (SASAparam[i].size()==0 ){
+
+  for(unsigned i=0; i<natoms; i++) {
+    identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
+    if (haselmap.find(identifier)!=haselmap.end()) {
+      HASELparamVector = haselmap.at(identifier);
+      SASAparam[i].push_back (std::atof(HASELparamVector[0].c_str())+rs*10);
+      SASAparam[i].push_back (std::atof(HASELparamVector[1].c_str()));
+      CONNECTparam[i].push_back (HASELparamVector[2].c_str());
+      CONNECTparam[i].push_back (HASELparamVector[3].c_str());
+      CONNECTparam[i].push_back (HASELparamVector[4].c_str());
+      CONNECTparam[i].push_back (HASELparamVector[5].c_str());
+    }
+  }
+
+
+  for(unsigned i=0; i<natoms; i++) {
+    if (SASAparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
-          cout << "Could not find SASA paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
-          error ("missing SASA parameters\n");}}}
+        cout << "Could not find SASA paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
+        error ("missing SASA parameters\n");
+      }
+    }
+  }
 
 
 }
@@ -398,197 +2242,250 @@ map<string, vector<double> > SASA_HASEL::setupMaxSurfMap() {
         1.149101,
       }
     }
-   };
-return valuemap;
+  };
+  return valuemap;
 }
 
 
 
 //reads maximum surface values per residue type and assigns values to each atom, only used if sasa_type = TRANSFER
 
- void SASA_HASEL::readMaxSurf(){
- map<string, vector<double> > valuemap;
- valuemap = setupMaxSurfMap();
- vector<double> MaxSurfVector;
+void SASA_HASEL::readMaxSurf() {
+  map<string, vector<double> > valuemap;
+  valuemap = setupMaxSurfMap();
+  vector<double> MaxSurfVector;
 
- for(unsigned i=0; i<natoms; i++) {  
-                    MaxSurf[i].clear();                       
-                    MaxSurfVector = valuemap.at(AtomResidueName[1][i]);                    
-                    MaxSurf[i].push_back (MaxSurfVector[0]*100);
-                    MaxSurf[i].push_back (MaxSurfVector[1]*100);
-                               }
+  for(unsigned i=0; i<natoms; i++) {
+    MaxSurf[i].clear();
+    MaxSurfVector = valuemap.at(AtomResidueName[1][i]);
+    MaxSurf[i].push_back (MaxSurfVector[0]*100);
+    MaxSurf[i].push_back (MaxSurfVector[1]*100);
+  }
 }
 
 //reads file with free energy values for sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER
 
-void SASA_HASEL::readDeltaG(){
- 
-      for(unsigned i=0; i<natoms; i++) { 
-              DeltaG[i].clear();   }
- 
- string DeltaGline;
- fstream DeltaGFile;
-                DeltaGFile.open(DeltaGValues);
-                if (DeltaGFile){                
-                int backboneflag = 0;
-                    while(getline(DeltaGFile, DeltaGline)) {
-                             if(!DeltaGline.empty()) { 
-                           	std::vector<std::string> DeltaGtoken;
-                                split(DeltaGline, DeltaGtoken);  
-                                for(unsigned i=0; i<natoms; i++) {                  
-                                      if (DeltaGtoken[0].compare(AtomResidueName[1][i])==0 ) {                           
-                                         DeltaG[i].push_back (std::atof(DeltaGtoken[1].c_str()));
-                                           }}
-                                if (DeltaGtoken[0].compare("BACKBONE")==0 ) { 
-                                         backboneflag = 1;                                
-                                         DeltaG[natoms].push_back (std::atof(DeltaGtoken[1].c_str()));
-                                           }}}
-                                        if ( backboneflag == 0) error("Cannot find backbone value in Delta G parameters file\n");}
-                                 else error("Cannot open DeltaG file");
+void SASA_HASEL::readDeltaG() {
 
-for(unsigned i=0; i<natoms; i++) {
-    if (DeltaG[i].size()==0 ){
-          cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
-          error ("missing Delta G parameter\n");}}
+  for(unsigned i=0; i<natoms; i++) {
+    DeltaG[i].clear();
+  }
+
+  string DeltaGline;
+  fstream DeltaGFile;
+  DeltaGFile.open(DeltaGValues);
+  if (DeltaGFile) {
+    int backboneflag = 0;
+    while(getline(DeltaGFile, DeltaGline)) {
+      if(!DeltaGline.empty()) {
+        std::vector<std::string> DeltaGtoken;
+        split(DeltaGline, DeltaGtoken);
+        for(unsigned i=0; i<natoms; i++) {
+          if (DeltaGtoken[0].compare(AtomResidueName[1][i])==0 ) {
+            DeltaG[i].push_back (std::atof(DeltaGtoken[1].c_str()));
+          }
+        }
+        if (DeltaGtoken[0].compare("BACKBONE")==0 ) {
+          backboneflag = 1;
+          DeltaG[natoms].push_back (std::atof(DeltaGtoken[1].c_str()));
+        }
+      }
+    }
+    if ( backboneflag == 0) error("Cannot find backbone value in Delta G parameters file\n");
+  }
+  else error("Cannot open DeltaG file");
+
+  for(unsigned i=0; i<natoms; i++) {
+    if (DeltaG[i].size()==0 ) {
+      cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
+      error ("missing Delta G parameter\n");
+    }
+  }
 
 }
 
 //computes free energy values for the sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER, and if no DELTAGFILE is provided. In this case, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, JPCB, 2021) needs to be used to compute them.
 
-void SASA_HASEL::computeDeltaG(){
- 
-      for(unsigned i=0; i<natoms; i++) { 
-              DeltaG[i].clear();   }
+void SASA_HASEL::computeDeltaG() {
 
-double T;
-T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
+  for(unsigned i=0; i<natoms; i++) {
+    DeltaG[i].clear();
+  }
 
-if (T != Ti) {
-for(unsigned i=0; i<natoms; i++) { 
-   if (approach==2) {
-      if (AtomResidueName[1][i].compare("ALA")==0) {
-         DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.895);}
-      if (AtomResidueName[1][i].compare("ARG")==0) {
-         DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-282.032);}   
-      if (AtomResidueName[1][i].compare("ASN")==0) {
-         DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-87.846);} 
-      if (AtomResidueName[1][i].compare("ASP")==0) {
-         DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-16.526);}         
-      if (AtomResidueName[1][i].compare("CYS")==0) {
-         DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-272.26);}  
-      if (AtomResidueName[1][i].compare("GLN")==0) {
-         DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-199.707);}  
-      if (AtomResidueName[1][i].compare("GLU")==0) {
-         DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-131.168);}
-      if (AtomResidueName[1][i].compare("GLY")==0) {
-         DeltaG[i].push_back (0);} 
-      if (AtomResidueName[1][i].compare("HIS")==0) {
-         DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-311.694);}
-      if (AtomResidueName[1][i].compare("ILE")==0) {
-         DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-567.444);}
-      if (AtomResidueName[1][i].compare("LEU")==0) {
-         DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-653.394);}  
-      if (AtomResidueName[1][i].compare("LYS")==0) {
-         DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-185.549);}  
-      if (AtomResidueName[1][i].compare("MET")==0) {
-         DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.007);}  
-      if (AtomResidueName[1][i].compare("PHE")==0) {
-         DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-688.874);} 
-      if (AtomResidueName[1][i].compare("PRO")==0) {
-         DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-212.059);} 
-      if (AtomResidueName[1][i].compare("SER")==0) {
-         DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+151.957);}  
-      if (AtomResidueName[1][i].compare("THR")==0) {
-         DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-239.516);}  
-      if (AtomResidueName[1][i].compare("TRP")==0) {
-         DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1025.293);}  
-      if (AtomResidueName[1][i].compare("TYR")==0) {
-         DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-667.261);} 
-      if (AtomResidueName[1][i].compare("VAL")==0) {
-         DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-435.309);} 
-         DeltaG[natoms].push_back (-0.6962/1000*std::pow(T,2)+0.4426*T-70.015);      
-         }
-    if (approach==3) {
-      if (AtomResidueName[1][i].compare("ALA")==0) {
-         DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.105);}
-      if (AtomResidueName[1][i].compare("ARG")==0) {
-         DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-284.086);}   
-      if (AtomResidueName[1][i].compare("ASN")==0) {
-         DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-90.597);} 
-      if (AtomResidueName[1][i].compare("ASP")==0) {
-         DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-19.143);}         
-      if (AtomResidueName[1][i].compare("CYS")==0) {
-         DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-268.527);}  
-      if (AtomResidueName[1][i].compare("GLN")==0) {
-         DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-201.559);}  
-      if (AtomResidueName[1][i].compare("GLU")==0) {
-         DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-133.543);}
-      if (AtomResidueName[1][i].compare("GLY")==0) {
-         DeltaG[i].push_back (0);} 
-      if (AtomResidueName[1][i].compare("HIS")==0) {
-         DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-315.398);}
-      if (AtomResidueName[1][i].compare("ILE")==0) {
-         DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-564.825);}
-      if (AtomResidueName[1][i].compare("LEU")==0) {
-         DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-651.483);}  
-      if (AtomResidueName[1][i].compare("LYS")==0) {
-         DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-187.485);}  
-      if (AtomResidueName[1][i].compare("MET")==0) {
-         DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.242);}  
-      if (AtomResidueName[1][i].compare("PHE")==0) {
-         DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-687.134);} 
-      if (AtomResidueName[1][i].compare("PRO")==0) {
-         DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-214.211);} 
-      if (AtomResidueName[1][i].compare("SER")==0) {
-         DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+150.289);}  
-      if (AtomResidueName[1][i].compare("THR")==0) {
-         DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-240.267);}  
-      if (AtomResidueName[1][i].compare("TRP")==0) {
-         DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1024.284);}  
-      if (AtomResidueName[1][i].compare("TYR")==0) {
-         DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-666.484);} 
-      if (AtomResidueName[1][i].compare("VAL")==0) {
-         DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-433.013);} 
-         DeltaG[natoms].push_back (-0.6927/1000*std::pow(T,2)+0.4404*T-68.724);      
-         }        
-         }
-}
+  double T;
+  T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
 
-Ti = T;
+  if (T != Ti) {
+    for(unsigned i=0; i<natoms; i++) {
+      if (approach==2) {
+        if (AtomResidueName[1][i].compare("ALA")==0) {
+          DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.895);
+        }
+        if (AtomResidueName[1][i].compare("ARG")==0) {
+          DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-282.032);
+        }
+        if (AtomResidueName[1][i].compare("ASN")==0) {
+          DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-87.846);
+        }
+        if (AtomResidueName[1][i].compare("ASP")==0) {
+          DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-16.526);
+        }
+        if (AtomResidueName[1][i].compare("CYS")==0) {
+          DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-272.26);
+        }
+        if (AtomResidueName[1][i].compare("GLN")==0) {
+          DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-199.707);
+        }
+        if (AtomResidueName[1][i].compare("GLU")==0) {
+          DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-131.168);
+        }
+        if (AtomResidueName[1][i].compare("GLY")==0) {
+          DeltaG[i].push_back (0);
+        }
+        if (AtomResidueName[1][i].compare("HIS")==0) {
+          DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-311.694);
+        }
+        if (AtomResidueName[1][i].compare("ILE")==0) {
+          DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-567.444);
+        }
+        if (AtomResidueName[1][i].compare("LEU")==0) {
+          DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-653.394);
+        }
+        if (AtomResidueName[1][i].compare("LYS")==0) {
+          DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-185.549);
+        }
+        if (AtomResidueName[1][i].compare("MET")==0) {
+          DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.007);
+        }
+        if (AtomResidueName[1][i].compare("PHE")==0) {
+          DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-688.874);
+        }
+        if (AtomResidueName[1][i].compare("PRO")==0) {
+          DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-212.059);
+        }
+        if (AtomResidueName[1][i].compare("SER")==0) {
+          DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+151.957);
+        }
+        if (AtomResidueName[1][i].compare("THR")==0) {
+          DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-239.516);
+        }
+        if (AtomResidueName[1][i].compare("TRP")==0) {
+          DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1025.293);
+        }
+        if (AtomResidueName[1][i].compare("TYR")==0) {
+          DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-667.261);
+        }
+        if (AtomResidueName[1][i].compare("VAL")==0) {
+          DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-435.309);
+        }
+        DeltaG[natoms].push_back (-0.6962/1000*std::pow(T,2)+0.4426*T-70.015);
+      }
+      if (approach==3) {
+        if (AtomResidueName[1][i].compare("ALA")==0) {
+          DeltaG[i].push_back (-2.995/1000*std::pow(T,2)+1.808*T-272.105);
+        }
+        if (AtomResidueName[1][i].compare("ARG")==0) {
+          DeltaG[i].push_back (-3.182/1000*std::pow(T,2)+1.894*T-284.086);
+        }
+        if (AtomResidueName[1][i].compare("ASN")==0) {
+          DeltaG[i].push_back (-1.047/1000*std::pow(T,2)+0.6068*T-90.597);
+        }
+        if (AtomResidueName[1][i].compare("ASP")==0) {
+          DeltaG[i].push_back (-0.1794/1000*std::pow(T,2)+0.1091*T-19.143);
+        }
+        if (AtomResidueName[1][i].compare("CYS")==0) {
+          DeltaG[i].push_back (-3.09/1000*std::pow(T,2)+1.835*T-268.527);
+        }
+        if (AtomResidueName[1][i].compare("GLN")==0) {
+          DeltaG[i].push_back (-2.23/1000*std::pow(T,2)+1.335*T-201.559);
+        }
+        if (AtomResidueName[1][i].compare("GLU")==0) {
+          DeltaG[i].push_back (-1.511/1000*std::pow(T,2)+0.8904*T-133.543);
+        }
+        if (AtomResidueName[1][i].compare("GLY")==0) {
+          DeltaG[i].push_back (0);
+        }
+        if (AtomResidueName[1][i].compare("HIS")==0) {
+          DeltaG[i].push_back (-3.482/1000*std::pow(T,2)+2.084*T-315.398);
+        }
+        if (AtomResidueName[1][i].compare("ILE")==0) {
+          DeltaG[i].push_back (-6.364/1000*std::pow(T,2)+3.8*T-564.825);
+        }
+        if (AtomResidueName[1][i].compare("LEU")==0) {
+          DeltaG[i].push_back (-7.466/1000*std::pow(T,2)+4.417*T-651.483);
+        }
+        if (AtomResidueName[1][i].compare("LYS")==0) {
+          DeltaG[i].push_back (-2.091/1000*std::pow(T,2)+1.2458*T-187.485);
+        }
+        if (AtomResidueName[1][i].compare("MET")==0) {
+          DeltaG[i].push_back (-3.807/1000*std::pow(T,2)+2.272*T-339.242);
+        }
+        if (AtomResidueName[1][i].compare("PHE")==0) {
+          DeltaG[i].push_back (-7.828/1000*std::pow(T,2)+4.644*T-687.134);
+        }
+        if (AtomResidueName[1][i].compare("PRO")==0) {
+          DeltaG[i].push_back (-2.347/1000*std::pow(T,2)+1.411*T-214.211);
+        }
+        if (AtomResidueName[1][i].compare("SER")==0) {
+          DeltaG[i].push_back (1.813/1000*std::pow(T,2)-1.05*T+150.289);
+        }
+        if (AtomResidueName[1][i].compare("THR")==0) {
+          DeltaG[i].push_back (-2.64/1000*std::pow(T,2)+1.591*T-240.267);
+        }
+        if (AtomResidueName[1][i].compare("TRP")==0) {
+          DeltaG[i].push_back (-11.66/1000*std::pow(T,2)+6.916*T-1024.284);
+        }
+        if (AtomResidueName[1][i].compare("TYR")==0) {
+          DeltaG[i].push_back (-7.513/1000*std::pow(T,2)+4.478*T-666.484);
+        }
+        if (AtomResidueName[1][i].compare("VAL")==0) {
+          DeltaG[i].push_back (-4.902/1000*std::pow(T,2)+2.921*T-433.013);
+        }
+        DeltaG[natoms].push_back (-0.6927/1000*std::pow(T,2)+0.4404*T-68.724);
+      }
+    }
+  }
 
- if (firstStepFlag ==0) { 
- if (approach!=2 && approach!=3){
-         cout << "Unknown approach " << approach << endl;}
-for(unsigned i=0; i<natoms; i++) {
-    if (DeltaG[i].size()==0 ){
-          cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
-          error ("missing Delta G parameter\n");}}}
+  Ti = T;
+
+  if (firstStepFlag ==0) {
+    if (approach!=2 && approach!=3) {
+      cout << "Unknown approach " << approach << endl;
+    }
+    for(unsigned i=0; i<natoms; i++) {
+      if (DeltaG[i].size()==0 ) {
+        cout << "Delta G value for residue " << AtomResidueName[1][i] << " not found " << endl;
+        error ("missing Delta G parameter\n");
+      }
+    }
+  }
 }
 
 
 //calculates neighbor list
-void SASA_HASEL::calcNlist(){
+void SASA_HASEL::calcNlist() {
   if(!nopbc) makeWhole();
 
   for(unsigned i = 0; i < natoms; i++) {
-    Nlist[i].clear();}
+    Nlist[i].clear();
+  }
 
   for(unsigned i = 0; i < natoms; i++) {
-      if (SASAparam[i].size()>0){
-        for (unsigned j = 0; j < i; j++) {
-              if (SASAparam[j].size()>0){
-       const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
-       double Delta_ij_mod = Delta_ij_vec.modulo()*10;
-       double overlapD = SASAparam[i][0]+SASAparam[j][0];
-           if (Delta_ij_mod < overlapD) { 
-                           Nlist.at(i).push_back (j);
-                           Nlist.at(j).push_back (i);
-                             }
-                   }
-                }
-              }
-     }
+    if (SASAparam[i].size()>0) {
+      for (unsigned j = 0; j < i; j++) {
+        if (SASAparam[j].size()>0) {
+          const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
+          double Delta_ij_mod = Delta_ij_vec.modulo()*10;
+          double overlapD = SASAparam[i][0]+SASAparam[j][0];
+          if (Delta_ij_mod < overlapD) {
+            Nlist.at(i).push_back (j);
+            Nlist.at(j).push_back (i);
+          }
+        }
+      }
     }
+  }
+}
 
 
 //calculates SASA according to Hasel et al., Tetrahedron Computer Methodology Vol. 1, No. 2, pp. 103-116, 1988
@@ -597,13 +2494,14 @@ void SASA_HASEL::calculate() {
 
   if(getExchangeStep()) nl_update = 0;
   if (firstStepFlag ==0) {
-     readPDB(); 
-     readSASAparam();
-     }
+    readPDB();
+    readSASAparam();
+  }
   if (nl_update == 0) {
-    calcNlist();    }
+    calcNlist();
+  }
 
-  
+
   auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   double Si, sasai, bij;
   double sasa = 0;
@@ -611,7 +2509,8 @@ void SASA_HASEL::calculate() {
   for(unsigned i = 0; i < natoms; i++) {
     derivatives[i][0] = 0.;
     derivatives[i][1] = 0.;
-    derivatives[i][2] = 0.;}
+    derivatives[i][2] = 0.;
+  }
 
   Tensor virial;
   vector <double> ddij_di(3);
@@ -620,187 +2519,198 @@ void SASA_HASEL::calculate() {
 
   if( sasa_type==TOTAL ) {
     for(unsigned i = 0; i < natoms; i++) {
-        if(SASAparam[i].size() > 0){
-         double ri = SASAparam[i][0];
-         Si = 4*M_PI*ri*ri;
-         sasai = 1.0;
-         
-         vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
-         
-         dAijt_di[0] = 0; 
-         dAijt_di[1] = 0; 
-         dAijt_di[2] = 0;        
-         int NumRes_i = moldat->getResidueNumber(atoms[i]);
-            
-         for (unsigned j = 0; j < Nlist[i].size(); j++) {
-             double pij = 0.3516;
- 
-             int NumRes_j = moldat->getResidueNumber(atoms[Nlist[i][j]]);
-             if (NumRes_i==NumRes_j){
-                 if (CONNECTparam[i][0].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][1].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][2].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][3].compare(AtomResidueName[0][Nlist[i][j]])==0) {
-                     pij = 0.8875;}}
-             if ( abs(NumRes_i-NumRes_j) == 1 ){
-                if ((AtomResidueName[0][i] == "N"  && AtomResidueName[0][Nlist[i][j]]== "CA") || (AtomResidueName[0][Nlist[i][j]] == "N"  && AtomResidueName[0][i]== "CA")) {
-                  pij = 0.8875;
-                  }} 
-                                           
-             const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-             double d_ij = d_ij_vec.modulo()*10; 
+      if(SASAparam[i].size() > 0) {
+        double ri = SASAparam[i][0];
+        Si = 4*M_PI*ri*ri;
+        sasai = 1.0;
 
-             double rj = SASAparam[Nlist[i][j]][0];     
-             bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
-  
-             sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
+        vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
 
-             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij; //nondimensional
-             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
-             
-             dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
-             dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
-             dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));  
-             
-             dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
-             dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1]; 
-             dAijt_di[2] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];  
-             
-             derTerm[j][0] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
-             derTerm[j][1] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1]; 
-             derTerm[j][2] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];         
-             
-             }
-             
-             sasa += Si*sasai/100; //nm2
-             
-             derivatives[i][0] += Si*sasai/10*dAijt_di[0]; //nm
-             derivatives[i][1] += Si*sasai/10*dAijt_di[1]; 
-             derivatives[i][2] += Si*sasai/10*dAijt_di[2];
-       
-       for (unsigned j = 0; j < Nlist[i].size(); j++) {          
-             derivatives[Nlist[i][j]][0] += Si*sasai/10*derTerm[j][0]; //nm
-             derivatives[Nlist[i][j]][1] += Si*sasai/10*derTerm[j][1]; 
-             derivatives[Nlist[i][j]][2] += Si*sasai/10*derTerm[j][2];
-             }                        
-   }
-}
-}
+        dAijt_di[0] = 0;
+        dAijt_di[1] = 0;
+        dAijt_di[2] = 0;
+        int NumRes_i = moldat->getResidueNumber(atoms[i]);
+
+        for (unsigned j = 0; j < Nlist[i].size(); j++) {
+          double pij = 0.3516;
+
+          int NumRes_j = moldat->getResidueNumber(atoms[Nlist[i][j]]);
+          if (NumRes_i==NumRes_j) {
+            if (CONNECTparam[i][0].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][1].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][2].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][3].compare(AtomResidueName[0][Nlist[i][j]])==0) {
+              pij = 0.8875;
+            }
+          }
+          if ( abs(NumRes_i-NumRes_j) == 1 ) {
+            if ((AtomResidueName[0][i] == "N"  && AtomResidueName[0][Nlist[i][j]]== "CA") || (AtomResidueName[0][Nlist[i][j]] == "N"  && AtomResidueName[0][i]== "CA")) {
+              pij = 0.8875;
+            }
+          }
+
+          const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
+          double d_ij = d_ij_vec.modulo()*10;
+
+          double rj = SASAparam[Nlist[i][j]][0];
+          bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
+
+          sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
+
+          ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij; //nondimensional
+          ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
+          ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+
+          dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
+          dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+
+          dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
+          dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];
+          dAijt_di[2] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];
+
+          derTerm[j][0] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
+          derTerm[j][1] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];
+          derTerm[j][2] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];
+
+        }
+
+        sasa += Si*sasai/100; //nm2
+
+        derivatives[i][0] += Si*sasai/10*dAijt_di[0]; //nm
+        derivatives[i][1] += Si*sasai/10*dAijt_di[1];
+        derivatives[i][2] += Si*sasai/10*dAijt_di[2];
+
+        for (unsigned j = 0; j < Nlist[i].size(); j++) {
+          derivatives[Nlist[i][j]][0] += Si*sasai/10*derTerm[j][0]; //nm
+          derivatives[Nlist[i][j]][1] += Si*sasai/10*derTerm[j][1];
+          derivatives[Nlist[i][j]][2] += Si*sasai/10*derTerm[j][2];
+        }
+      }
+    }
+  }
 
 
   if( sasa_type==TRANSFER ) {
-  
-      if (firstStepFlag ==0) {
-     readMaxSurf();
-     }
 
-      if (firstStepFlag ==0 && DeltaGValues != "absent") {
-     readDeltaG(); 
-     }
+    if (firstStepFlag ==0) {
+      readMaxSurf();
+    }
 
-      if (DeltaGValues == "absent") {
-     computeDeltaG(); 
-     }
+    if (firstStepFlag ==0 && DeltaGValues != "absent") {
+      readDeltaG();
+    }
 
-
-      for(unsigned i = 0; i < natoms; i++) {
-         
-            
-            
-        if(SASAparam[i].size() > 0){
-         double ri = SASAparam[i][0];
-         Si = 4*M_PI*ri*ri;
-         sasai = 1.0;
-         
-         vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
-
-         dAijt_di[0] = 0; 
-         dAijt_di[1] = 0; 
-         dAijt_di[2] = 0;        
-         int NumRes_i = moldat->getResidueNumber(atoms[i]);
-         
-         for (unsigned j = 0; j < Nlist[i].size(); j++) {
-             double pij = 0.3516;
- 
-             int NumRes_j = moldat->getResidueNumber(atoms[Nlist[i][j]]);
-             if (NumRes_i==NumRes_j){
-                 if (CONNECTparam[i][0].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][1].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][2].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][3].compare(AtomResidueName[0][Nlist[i][j]])==0) {
-                     pij = 0.8875;}}
-             if ( abs(NumRes_i-NumRes_j) == 1 ){
-                if ((AtomResidueName[0][i] == "N"  && AtomResidueName[0][Nlist[i][j]]== "CA") || (AtomResidueName[0][Nlist[i][j]] == "N"  && AtomResidueName[0][i]== "CA")) {
-                  pij = 0.8875;
-                  }} 
-
-             const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-             double d_ij = d_ij_vec.modulo()*10; 
-
-             double rj = SASAparam[Nlist[i][j]][0];     
-             bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
-  
-             sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
-
-             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij; //nondimensional
-             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
-             
-             dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
-             dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
-             dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));  
-             
-             dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
-             dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1]; 
-             dAijt_di[2] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];  
-             
-             derTerm[j][0] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
-             derTerm[j][1] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1]; 
-             derTerm[j][2] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];   
-             
-             }
-             
-             if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O" || AtomResidueName[0][i] == "H"){
-             
-             sasa += Si*sasai/MaxSurf[i][0]*DeltaG[natoms][0]; //kJ/mol
-                         
-
-             derivatives[i][0] += Si*sasai*dAijt_di[0]/MaxSurf[i][0]*DeltaG[natoms][0]*10; //kJ/mol/nm
-             derivatives[i][1] += Si*sasai*dAijt_di[1]/MaxSurf[i][0]*DeltaG[natoms][0]*10; 
-             derivatives[i][2] += Si*sasai*dAijt_di[2]/MaxSurf[i][0]*DeltaG[natoms][0]*10;}
-             
-             if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O" && AtomResidueName[0][i] != "H"){
-             sasa += Si*sasai/MaxSurf[i][1]*DeltaG[i][0]; //kJ/mol            
-
-             derivatives[i][0] += Si*sasai*dAijt_di[0]/MaxSurf[i][1]*DeltaG[i][0]*10; //kJ/mol/nm
-             derivatives[i][1] += Si*sasai*dAijt_di[1]/MaxSurf[i][1]*DeltaG[i][0]*10; 
-             derivatives[i][2] += Si*sasai*dAijt_di[2]/MaxSurf[i][1]*DeltaG[i][0]*10;}
-            
-       
-       for (unsigned j = 0; j < Nlist[i].size(); j++) {
-             if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O" || AtomResidueName[0][i] == "H"){          
-             derivatives[Nlist[i][j]][0] += Si*sasai*10*derTerm[j][0]/MaxSurf[i][0]*DeltaG[natoms][0]; //kJ/mol/nm
-             derivatives[Nlist[i][j]][1] += Si*sasai*10*derTerm[j][1]/MaxSurf[i][0]*DeltaG[natoms][0]; 
-             derivatives[Nlist[i][j]][2] += Si*sasai*10*derTerm[j][2]/MaxSurf[i][0]*DeltaG[natoms][0];}
-             
-             if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O" && AtomResidueName[0][i] != "H"){          
-             derivatives[Nlist[i][j]][0] += Si*sasai*10*derTerm[j][0]/MaxSurf[i][1]*DeltaG[i][0]; //kJ/mol/nm
-             derivatives[Nlist[i][j]][1] += Si*sasai*10*derTerm[j][1]/MaxSurf[i][1]*DeltaG[i][0]; 
-             derivatives[Nlist[i][j]][2] += Si*sasai*10*derTerm[j][2]/MaxSurf[i][1]*DeltaG[i][0];}
-             }                        
-}
-}
-}
+    if (DeltaGValues == "absent") {
+      computeDeltaG();
+    }
 
 
-  for(unsigned i=0;i<natoms;i++){ 
-   setAtomsDerivatives(i,derivatives[i]);
-   virial -= Tensor(getPosition(i),derivatives[i]);   }
-   
+    for(unsigned i = 0; i < natoms; i++) {
+
+
+
+      if(SASAparam[i].size() > 0) {
+        double ri = SASAparam[i][0];
+        Si = 4*M_PI*ri*ri;
+        sasai = 1.0;
+
+        vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
+
+        dAijt_di[0] = 0;
+        dAijt_di[1] = 0;
+        dAijt_di[2] = 0;
+        int NumRes_i = moldat->getResidueNumber(atoms[i]);
+
+        for (unsigned j = 0; j < Nlist[i].size(); j++) {
+          double pij = 0.3516;
+
+          int NumRes_j = moldat->getResidueNumber(atoms[Nlist[i][j]]);
+          if (NumRes_i==NumRes_j) {
+            if (CONNECTparam[i][0].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][1].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][2].compare(AtomResidueName[0][Nlist[i][j]])==0 || CONNECTparam[i][3].compare(AtomResidueName[0][Nlist[i][j]])==0) {
+              pij = 0.8875;
+            }
+          }
+          if ( abs(NumRes_i-NumRes_j) == 1 ) {
+            if ((AtomResidueName[0][i] == "N"  && AtomResidueName[0][Nlist[i][j]]== "CA") || (AtomResidueName[0][Nlist[i][j]] == "N"  && AtomResidueName[0][i]== "CA")) {
+              pij = 0.8875;
+            }
+          }
+
+          const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
+          double d_ij = d_ij_vec.modulo()*10;
+
+          double rj = SASAparam[Nlist[i][j]][0];
+          bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
+
+          sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
+
+          ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij; //nondimensional
+          ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
+          ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+
+          dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
+          dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+
+          dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
+          dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];
+          dAijt_di[2] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];
+
+          derTerm[j][0] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
+          derTerm[j][1] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];
+          derTerm[j][2] = 1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[2];
+
+        }
+
+        if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O" || AtomResidueName[0][i] == "H") {
+
+          sasa += Si*sasai/MaxSurf[i][0]*DeltaG[natoms][0]; //kJ/mol
+
+
+          derivatives[i][0] += Si*sasai*dAijt_di[0]/MaxSurf[i][0]*DeltaG[natoms][0]*10; //kJ/mol/nm
+          derivatives[i][1] += Si*sasai*dAijt_di[1]/MaxSurf[i][0]*DeltaG[natoms][0]*10;
+          derivatives[i][2] += Si*sasai*dAijt_di[2]/MaxSurf[i][0]*DeltaG[natoms][0]*10;
+        }
+
+        if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O" && AtomResidueName[0][i] != "H") {
+          sasa += Si*sasai/MaxSurf[i][1]*DeltaG[i][0]; //kJ/mol
+
+          derivatives[i][0] += Si*sasai*dAijt_di[0]/MaxSurf[i][1]*DeltaG[i][0]*10; //kJ/mol/nm
+          derivatives[i][1] += Si*sasai*dAijt_di[1]/MaxSurf[i][1]*DeltaG[i][0]*10;
+          derivatives[i][2] += Si*sasai*dAijt_di[2]/MaxSurf[i][1]*DeltaG[i][0]*10;
+        }
+
+
+        for (unsigned j = 0; j < Nlist[i].size(); j++) {
+          if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O" || AtomResidueName[0][i] == "H") {
+            derivatives[Nlist[i][j]][0] += Si*sasai*10*derTerm[j][0]/MaxSurf[i][0]*DeltaG[natoms][0]; //kJ/mol/nm
+            derivatives[Nlist[i][j]][1] += Si*sasai*10*derTerm[j][1]/MaxSurf[i][0]*DeltaG[natoms][0];
+            derivatives[Nlist[i][j]][2] += Si*sasai*10*derTerm[j][2]/MaxSurf[i][0]*DeltaG[natoms][0];
+          }
+
+          if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O" && AtomResidueName[0][i] != "H") {
+            derivatives[Nlist[i][j]][0] += Si*sasai*10*derTerm[j][0]/MaxSurf[i][1]*DeltaG[i][0]; //kJ/mol/nm
+            derivatives[Nlist[i][j]][1] += Si*sasai*10*derTerm[j][1]/MaxSurf[i][1]*DeltaG[i][0];
+            derivatives[Nlist[i][j]][2] += Si*sasai*10*derTerm[j][2]/MaxSurf[i][1]*DeltaG[i][0];
+          }
+        }
+      }
+    }
+  }
+
+
+  for(unsigned i=0; i<natoms; i++) {
+    setAtomsDerivatives(i,derivatives[i]);
+    virial -= Tensor(getPosition(i),derivatives[i]);
+  }
+
   setBoxDerivatives(virial);
-  setValue(sasa);    
-  firstStepFlag = 1; 
+  setValue(sasa);
+  firstStepFlag = 1;
   ++nl_update;
   if (nl_update == stride) {
     nl_update = 0;
   }
- // setBoxDerivativesNoPbc();
+// setBoxDerivativesNoPbc();
 }
 
 }//namespace PLMD
-}//namespace Sasa
+}//namespace sasa

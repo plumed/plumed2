@@ -23,7 +23,7 @@ freely, subject to the following restrictions:
 #include "config/Config.h"
 
 namespace PLMD {
-namespace Sasa {
+namespace sasa {
 // Ideally core/Colvar.h should be moved to this directory and Colvar should stay in namespace PLMD::Sasa
 // With this trick, PLMD::Colvar is visible as PLMD::Sasa::Colvar
 using PLMD::Colvar;
