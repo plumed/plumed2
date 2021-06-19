@@ -237,6 +237,7 @@ void split(const std::string& str, Container& cont)
 
 void SASA_LCPO::readPDB() {
   auto* moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( ! moldat ) error("Unable to find MOLINFO in input");
   AtomResidueName[0].clear();
   AtomResidueName[1].clear();
 
@@ -2320,5 +2321,5 @@ void SASA_LCPO::calculate() {
 // setBoxDerivativesNoPbc();
 }
 
-}//namespace PLMD
 }//namespace sasa
+}//namespace PLMD
