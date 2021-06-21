@@ -69,8 +69,8 @@ class ECVumbrellasFile :
   public ExpansionCVs
 {
 private:
-  unsigned P0_contribution_;
   double barrier_;
+  unsigned P0_contribution_;
 
   std::vector< std::vector<double> > centers_;
   std::vector< std::vector<double> > sigmas_;
@@ -97,8 +97,8 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys)
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
+  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
