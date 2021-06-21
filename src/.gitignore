@@ -50,7 +50,7 @@
 !/astyle.sh
 !/funnel
 !/fisst
-
+!/sasa
 
 # And just ignore these files
 *.xxd
