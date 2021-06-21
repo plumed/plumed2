@@ -98,8 +98,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponent( "w", shape ); componentIsNotPeriodic("w");
   // Stuff for neighbor list
-  parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut;
-  parse("NL_STRIDE",nl_stride); nlist.resize( getFullNumberOfTasks()*( 2 + ablocks.size() ) );
+  parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut; parse("NL_STRIDE",nl_stride); 
   if( nl_cut==0 && nl_stride>1 ) error("NL_CUTOFF must be set if NL_STRIDE is set greater than 1");
   if( nl_cut>0 ) log.printf("  using neighbor list with cutoff %f.  List is updated every %u steps.\n",nl_cut,nl_stride);
 
@@ -146,7 +145,11 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
       std::vector<Vector> ltmp_pos( ablocks.size() );
       for(unsigned i=0; i<ablocks.size(); ++i) ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
       linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
-      // Set the number of neighbors to zero for all ranks
+      // This ensures the link cell does not get too big.  We find the cell that contains the maximum number of atoms and multiply this by 27.
+      // In this way we ensure that the neighbour list doesn't get too big.  Also this number should always be large enough
+      natoms_per_list = 27*linkcells.getMaxInCell();
+      nlist.resize( getFullNumberOfTasks()*( 2 + natoms_per_list ) );
+      // Set the number of neighbors to zero for all ranks 
       nlist.assign(nlist.size(),0);
       // Now get stuff to do parallel implementation
       unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
@@ -176,7 +179,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
             linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
             if( nl_stride==1 ) {
                 if( nt>1 ) omp_nlist[indices[0]]=0; else nlist[indices[0]] = 0;
-                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+ablocks.size());
+                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+natoms_per_list);
                 for(unsigned j=0;j<natoms;++j) { 
                     if( nt>1 ) { omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j]; omp_nlist[indices[0]]++; }
                     else { nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++; }
@@ -187,7 +190,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
                 if( !nopbc ) pbcApply( t_atoms, natoms );
                 // Now construct the neighbor list
                 if( nt>1 ) omp_nlist[indices[0]] = 0; else nlist[indices[0]] = 0;
-                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+ablocks.size());
+                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+natoms_per_list);
                 for(unsigned j=0;j<natoms;++j) {
                     double d2; 
                     if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
@@ -205,7 +208,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
         if(nt>1) {
            for(unsigned i=0; i<ntasks; ++i) nlist[pTaskList[i]]+=omp_nlist[pTaskList[i]]; 
            for(unsigned i=0; i<ntasks; ++i) {
-               unsigned lstart = getFullNumberOfTasks() + pTaskList[i]*(1+ablocks.size()); 
+               unsigned lstart = getFullNumberOfTasks() + pTaskList[i]*(1+natoms_per_list); 
                for(unsigned j=0;j<omp_nlist[pTaskList[i]];++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ]; 
            }
         } 
@@ -253,7 +256,7 @@ void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1,
 
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
   unsigned natoms=nlist[current]; indices[0]=current;
-  unsigned lstart = getFullNumberOfTasks() + current*(1+ablocks.size()); plumed_dbg_assert( nlist[lstart]==current );
+  unsigned lstart = getFullNumberOfTasks() + current*(1+natoms_per_list); plumed_dbg_assert( nlist[lstart]==current );
   for(unsigned i=1;i<nlist[current];++i){ indices[i] = nlist[ lstart + i ]; }
   return natoms;
 }

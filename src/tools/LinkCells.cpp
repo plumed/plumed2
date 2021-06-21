@@ -171,5 +171,13 @@ unsigned LinkCells::findCell( const Vector& pos ) const {
   return convertIndicesToIndex( celn[0], celn[1], celn[2] );
 }
 
+unsigned LinkCells::getMaxInCell() const {
+  unsigned maxn = lcell_tots[0];
+  for(unsigned i=1;i<lcell_tots.size();++i) { 
+      if( lcell_tots[i]>maxn ) { maxn=lcell_tots[i]; }
+  }
+  return maxn;
+}
+
 
 }
