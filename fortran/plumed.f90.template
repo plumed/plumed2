@@ -21,94 +21,113 @@ module plumed_module
   public :: plumed_f_gvalid
 
   interface
-    subroutine plumed_f_create(c)
+    subroutine plumed_f_create(c) bind(C)
       import
-      character(kind=c_char,len=32), intent(out) :: c
+      character(kind=c_char), intent(out) :: c(32)
     end subroutine plumed_f_create
   end interface
 
   interface
-    subroutine plumed_f_create_dlopen(path,c)
+    subroutine plumed_f_create_dlopen(path,c) bind(C)
       import
-      character(kind=c_char),        intent(in)  :: path(*)
-      character(kind=c_char,len=32), intent(out) :: c
+      character(kind=c_char), intent(in)  :: path(*)
+      character(kind=c_char), intent(out) :: c(32)
     end subroutine plumed_f_create_dlopen
   end interface
 
   interface
-    subroutine plumed_f_create_reference(r,c)
+    subroutine plumed_f_create_reference(r,c) bind(C)
       import
-      character(kind=c_char,len=32), intent(in)  :: r
-      character(kind=c_char,len=32), intent(out) :: c
+      character(kind=c_char), intent(in)  :: r(32)
+      character(kind=c_char), intent(out) :: c(32)
     end subroutine plumed_f_create_reference
   end interface
 
   interface
-    subroutine plumed_f_create_invalid(c)
+    subroutine plumed_f_create_invalid(c) bind(C)
       import
-      character(kind=c_char,len=32), intent(out) :: c
+      character(kind=c_char), intent(out) :: c(32)
     end subroutine plumed_f_create_invalid
   end interface
 
   interface
-    subroutine plumed_f_finalize(c)
+    subroutine plumed_f_finalize(c) bind(C)
       import
-      character(kind=c_char,len=32), intent(in) :: c
+      character(kind=c_char), intent(in) :: c(32)
     end subroutine plumed_f_finalize
   end interface
 
   interface
-    subroutine plumed_f_installed(i)
+    subroutine plumed_f_installed(i) bind(C)
       import
       integer(kind=c_int), intent(out) :: i
     end subroutine plumed_f_installed
   end interface
 
   interface
-    subroutine plumed_f_valid(c,i)
+    subroutine plumed_f_valid(c,i) bind(C)
       import
-      character(kind=c_char,len=32), intent(in) :: c
-      integer(kind=c_int),           intent(out) :: i
+      character(kind=c_char), intent(in) :: c(32)
+      integer(kind=c_int),    intent(out) :: i
     end subroutine plumed_f_valid
   end interface
 
   interface
-    subroutine plumed_f_use_count(c,i)
+    subroutine plumed_f_use_count(c,i) bind(C)
       import
-      character(kind=c_char,len=32), intent(in) :: c
-      integer(kind=c_int),           intent(out) :: i
+      character(kind=c_char), intent(in)  :: c(32)
+      integer(kind=c_int),    intent(out) :: i
     end subroutine plumed_f_use_count
   end interface
 
   interface
-    subroutine plumed_f_global(c)
+    subroutine plumed_f_global(c) bind(C)
       import
-      character(kind=c_char,len=32), intent(out) :: c
+      character(kind=c_char), intent(out) :: c(32)
     end subroutine plumed_f_global
   end interface 
 
   interface
-    subroutine plumed_f_ginitialized(i)
+    subroutine plumed_f_ginitialized(i) bind(C)
       import
       integer(kind=c_int), intent(out) :: i
     end subroutine plumed_f_ginitialized
   end interface
 
   interface
-    subroutine plumed_f_gcreate()
+    subroutine plumed_f_gcreate() bind(C)
     end subroutine plumed_f_gcreate
   end interface
   
   interface
-    subroutine plumed_f_gfinalize()
+    subroutine plumed_f_gfinalize() bind(C)
     end subroutine plumed_f_gfinalize
   end interface
 
   interface
-    subroutine plumed_f_gvalid(i)
+    subroutine plumed_f_gvalid(i) bind(C)
       import
       integer(kind=c_int),    intent(out) :: i
     end subroutine plumed_f_gvalid
+  end interface
+
+  interface
+    subroutine plumed_f_cmd_safe_char(p,key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: p(32)
+      character(kind=c_char), intent(in)    :: key(*)
+      character(kind=c_char)                :: val(*)
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_cmd_safe_char
+  end interface
+
+  interface
+    subroutine plumed_f_gcmd_safe_char(key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: key(*)
+      character(kind=c_char)                :: val(*)
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_gcmd_safe_char
   end interface
 
 __INTERFACE__
@@ -116,19 +135,19 @@ __INTERFACE__
   contains
 
      subroutine plumed_f_cmd_char(p,key,val)
-       character(len=32), intent(in)    :: p
-       character(len=*),  intent(in)    :: key
-       character(len=*)                 :: val
-       integer(kind=c_size_t) :: pass_shape(1)
-       pass_shape=(/0/)
+       character(kind=c_char,len=32), intent(in)    :: p
+       character(kind=c_char,len=*),  intent(in)    :: key
+       character(kind=c_char,len=*)                 :: val
+       integer(kind=c_size_t) :: pass_shape(2)
+       pass_shape=(/len(val),0/)
        call plumed_f_cmd_safe_char(p,key,val,pass_shape)
      end subroutine plumed_f_cmd_char
 
      subroutine plumed_f_gcmd_char(key,val)
-       character(len=*),  intent(in)    :: key
-       character(len=*)                 :: val
-       integer(kind=c_size_t) :: pass_shape(1)
-       pass_shape=(/0/)
+       character(kind=c_char,len=*),  intent(in)    :: key
+       character(kind=c_char,len=*)                 :: val
+       integer(kind=c_size_t) :: pass_shape(2)
+       pass_shape=(/len(val),0/)
        call plumed_f_gcmd_safe_char(key,val,pass_shape)
      end subroutine plumed_f_gcmd_char
 
