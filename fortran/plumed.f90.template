@@ -1,4 +1,17 @@
 ! vim:ft=fortran
+#! Process this file with `fypp plumed.f90.template > plumed.f90`
+#: set types = ["integer","real"]
+#: set kinds = { "integer":["c_int","c_short","c_long"], "real":["c_float","c_double","c_long_double"] }
+#: set maxrank = 4
+
+#:def ranksuffix(RANK)
+$:'' if RANK == 0 else '(' + ':' + ',:' * (RANK - 1) + ')'
+#:enddef ranksuffix
+
+#:def cname(name)
+$:name.replace("c_","")
+#:enddef cname
+
 module plumed_module
   use iso_c_binding
   implicit none
@@ -130,7 +143,66 @@ module plumed_module
     end subroutine plumed_f_gcmd_safe_char
   end interface
 
-__INTERFACE__
+  interface plumed_f_cmd
+    module procedure plumed_f_cmd_char
+#: for t in types
+#: for ik in range(len(kinds[t]))
+#: for r in range(maxrank+1)
+    module procedure plumed_f_cmd_${t}$_${ik}$_${r}$
+#: endfor
+#: endfor
+#: endfor
+  end interface plumed_f_cmd
+
+  interface plumed_f_gcmd
+    module procedure plumed_f_gcmd_char
+#: for t in types
+#: for ik in range(len(kinds[t]))
+#: for r in range(maxrank+1)
+    module procedure plumed_f_gcmd_${t}$_${ik}$_${r}$
+#: endfor
+#: endfor
+#: endfor
+  end interface plumed_f_gcmd
+
+#: for t in types
+#: for k in kinds[t]
+  interface
+    subroutine plumed_f_cmd_safe_${cname(k)}$_scalar(p,key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: p(32)
+      character(kind=c_char), intent(in)    :: key(*)
+      ${t}$(kind=${k}$)                           :: val
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_cmd_safe_${cname(k)}$_scalar
+  end interface
+  interface
+    subroutine plumed_f_cmd_safe_${cname(k)}$(p,key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: p(32)
+      character(kind=c_char), intent(in)    :: key(*)
+      ${t}$(kind=${k}$)                           :: val(*)
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_cmd_safe_${cname(k)}$
+  end interface
+  interface
+    subroutine plumed_f_gcmd_safe_${cname(k)}$_scalar(key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: key(*)
+      ${t}$(kind=${k}$)                           :: val
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_gcmd_safe_${cname(k)}$_scalar
+  end interface
+  interface
+    subroutine plumed_f_gcmd_safe_${cname(k)}$(key,val,pass_shape) bind(C)
+      import
+      character(kind=c_char), intent(in)    :: key(*)
+      ${t}$(kind=${k}$)                           :: val(*)
+      integer(kind=c_size_t) :: pass_shape(*)
+    end subroutine plumed_f_gcmd_safe_${cname(k)}$
+  end interface
+#: endfor
+#: endfor
 
   contains
 
@@ -151,6 +223,46 @@ __INTERFACE__
        call plumed_f_gcmd_safe_char(key,val,pass_shape)
      end subroutine plumed_f_gcmd_char
 
-__IMPLEMENTATION__
+#: for t in types
+#: for ik in range(len(kinds[t]))
+#: set k = kinds[t][ik]
+#: for r in range(maxrank+1)
+    subroutine plumed_f_cmd_${t}$_${ik}$_${r}$(p,key,val)
+      character(kind=c_char,len=32), intent(in)    :: p
+      character(kind=c_char,len=*),  intent(in)    :: key
+      ${t}$(KIND=${k}$)                      :: val${ranksuffix(r)}$
+#: if r==0
+      integer(kind=c_size_t) :: pass_shape(2)
+      pass_shape=(/1,0/)
+      call plumed_f_cmd_safe_${cname(k)}$_scalar(p,key,val,pass_shape)
+#: else
+      integer(kind=c_size_t) :: pass_shape(${r+1}$)
+#: for rr in range(r)
+      pass_shape(${rr+1}$)=size(val,${r-rr}$)
+#: endfor
+      pass_shape(${r+1}$)=0
+      call plumed_f_cmd_safe_${cname(k)}$(p,key,val,pass_shape)
+#: endif
+    end subroutine plumed_f_cmd_${t}$_${ik}$_${r}$
+    subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$(key,val)
+      character(kind=c_char,len=*),  intent(in)    :: key
+      ${t}$(kind=${k}$)                      :: val${ranksuffix(r)}$
+#: if r==0
+      integer(kind=c_size_t) :: pass_shape(2)
+      pass_shape=(/1,0/)
+      call plumed_f_gcmd_safe_${cname(k)}$_scalar(key,val,pass_shape)
+#: else
+      integer(kind=c_size_t) :: pass_shape(${r+1}$)
+#: for rr in range(r)
+      pass_shape(${rr+1}$)=size(val,${r-rr}$)
+#: endfor
+      pass_shape(${r+1}$)=0
+      call plumed_f_gcmd_safe_${cname(k)}$(key,val,pass_shape)
+#: endif
+    end subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$
+#: endfor
+#: endfor
+#: endfor
+
 end module plumed_module
 
