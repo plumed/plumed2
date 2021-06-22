@@ -3324,7 +3324,7 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_use_count,PLUMED_F_USE_COUNT,(char*c,int*i),
 
 /* New in PLUMED 2.8 */
 
-#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,TYPE_,code,suffix,SUFFIX) \
+#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,code,suffix) \
 void plumed_f_cmd_safe_ ## type_ ## suffix(char*c,char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape) { \
   plumed_safeptr safe; \
   safe.ptr=val; \
@@ -3335,17 +3335,17 @@ void plumed_f_cmd_safe_ ## type_ ## suffix(char*c,char*key,type*val,__PLUMED_WRA
   plumed_cmd_safe(plumed_f2c(c),key,safe); \
 }
 
-#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(type,type_,TYPE_,code) \
-  __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,TYPE_,code,,) \
-  __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,TYPE_,code,_scalar,_SCALAR)
+#define __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(type,type_,code) \
+  __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,code,) \
+  __PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE_INNER(type,type_,code,_scalar)
 
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(float,float,FLOAT,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(double,double,DOUBLE,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long double,long_double,LONG_DOUBLE,4)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(int,int,INT,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(short,short,SHORT,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long,long,LONG,3)
-__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(char,char,CHAR,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(float,float,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(double,double,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long double,long_double,4)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(int,int,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(short,short,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(long,long,3)
+__PLUMED_IMPLEMENT_FORTRAN_CMD_SAFE(char,char,3)
 
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
@@ -3378,7 +3378,7 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_gvalid,PLUMED_F_GVALID,(int*i),(i)) {
 
 /* New in PLUMED 2.8 */
 
-#define __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,TYPE_,code, suffix, SUFFIX) \
+#define __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,code, suffix) \
 void plumed_f_gcmd_safe_ ## type_ ## suffix(char*key,type*val,__PLUMED_WRAPPER_STD size_t*shape) { \
   plumed_safeptr safe; \
   safe.ptr=val; \
@@ -3389,17 +3389,17 @@ void plumed_f_gcmd_safe_ ## type_ ## suffix(char*key,type*val,__PLUMED_WRAPPER_S
   plumed_gcmd_safe(key,safe); \
 }
 
-#define __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(type,type_,TYPE_,code) \
-  __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,TYPE_,code,,) \
-  __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,TYPE_,code,_scalar,_SCALAR)
+#define __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(type,type_,code) \
+  __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,code,) \
+  __PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE_INNER(type,type_,code,_scalar)
 
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(float,float,FLOAT,4)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(double,double,DOUBLE,4)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long double,long_double,LONG_DOUBLE,4)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(int,int,INT,3)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(short,short,SHORT,3)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long,long,LONG,3)
-__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(char,char,CHAR,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(float,float,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(double,double,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long double,long_double,4)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(int,int,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(short,short,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(long,long,3)
+__PLUMED_IMPLEMENT_FORTRAN_GCMD_SAFE(char,char,3)
 
 #endif /*}*/
 
