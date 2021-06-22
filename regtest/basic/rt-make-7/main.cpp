@@ -98,7 +98,7 @@ void test_xyz() {
   cell[4]=100.0;
   cell[8]=100.0;
   p.cmd("setNatoms",natoms);
-  p.cmd("init");
+  p.cmd("init",nullptr); // Test this: https://github.com/plumed/plumed2/issues/705
   p.cmd("readInputLine","DUMPATOMS ATOMS=@mdatoms FILE=test_xyz.xyz");
   p.cmd("readInputLine","c: COM ATOMS=@mdatoms");
   p.cmd("readInputLine","p: POSITION ATOM=c");
