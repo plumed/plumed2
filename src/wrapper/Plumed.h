@@ -1563,13 +1563,15 @@ private:
 
 #if __cplusplus > 199711L
     /// Construct from null
-    SafePtr(std::nullptr_t) noexcept {
+    SafePtr(__PLUMED_WRAPPER_STD nullptr_t,__PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) noexcept {
       safe.ptr=nullptr;
       safe.nelem=0;
       safe.shape=nullptr;
       safe.flags=0x10000*2;
       safe.opt=nullptr;
       buffer[0]='\0';
+      (void) nelem;
+      (void) shape;
     }
 #endif
 
