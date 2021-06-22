@@ -209,7 +209,7 @@ module plumed_module
      subroutine plumed_f_cmd_char(p,key,val)
        character(kind=c_char,len=32), intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*)                 :: val
+       character(kind=c_char,len=*), asynchronous   :: val
        integer(kind=c_size_t) :: pass_shape(2)
        pass_shape=(/len(val),0/)
        call plumed_f_cmd_safe_char(p,key,val,pass_shape)
@@ -217,7 +217,7 @@ module plumed_module
 
      subroutine plumed_f_gcmd_char(key,val)
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*)                 :: val
+       character(kind=c_char,len=*), asynchronous   :: val
        integer(kind=c_size_t) :: pass_shape(2)
        pass_shape=(/len(val),0/)
        call plumed_f_gcmd_safe_char(key,val,pass_shape)
@@ -230,7 +230,7 @@ module plumed_module
     subroutine plumed_f_cmd_${t}$_${ik}$_${r}$(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$)                      :: val${ranksuffix(r)}$
+      ${t}$(KIND=${k}$), asynchronous              :: val${ranksuffix(r)}$
 #: if r==0
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
@@ -246,7 +246,7 @@ module plumed_module
     end subroutine plumed_f_cmd_${t}$_${ik}$_${r}$
     subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(kind=${k}$)                      :: val${ranksuffix(r)}$
+      ${t}$(kind=${k}$), asynchronous              :: val${ranksuffix(r)}$
 #: if r==0
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)

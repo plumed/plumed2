@@ -411,7 +411,7 @@ module plumed_module
      subroutine plumed_f_cmd_char(p,key,val)
        character(kind=c_char,len=32), intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*)                 :: val
+       character(kind=c_char,len=*), asynchronous   :: val
        integer(kind=c_size_t) :: pass_shape(2)
        pass_shape=(/len(val),0/)
        call plumed_f_cmd_safe_char(p,key,val,pass_shape)
@@ -419,7 +419,7 @@ module plumed_module
 
      subroutine plumed_f_gcmd_char(key,val)
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*)                 :: val
+       character(kind=c_char,len=*), asynchronous   :: val
        integer(kind=c_size_t) :: pass_shape(2)
        pass_shape=(/len(val),0/)
        call plumed_f_gcmd_safe_char(key,val,pass_shape)
@@ -428,14 +428,14 @@ module plumed_module
     subroutine plumed_f_cmd_integer_0_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                      :: val
+      integer(KIND=c_int), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_int_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_0_0
     subroutine plumed_f_gcmd_integer_0_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_int)                      :: val
+      integer(kind=c_int), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_int_scalar(key,val,pass_shape)
@@ -443,7 +443,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_0_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                      :: val(:)
+      integer(KIND=c_int), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -451,7 +451,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_0_1
     subroutine plumed_f_gcmd_integer_0_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_int)                      :: val(:)
+      integer(kind=c_int), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -460,7 +460,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_0_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                      :: val(:,:)
+      integer(KIND=c_int), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -469,7 +469,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_0_2
     subroutine plumed_f_gcmd_integer_0_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_int)                      :: val(:,:)
+      integer(kind=c_int), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -479,7 +479,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_0_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                      :: val(:,:,:)
+      integer(KIND=c_int), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -489,7 +489,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_0_3
     subroutine plumed_f_gcmd_integer_0_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_int)                      :: val(:,:,:)
+      integer(kind=c_int), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -500,7 +500,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_0_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                      :: val(:,:,:,:)
+      integer(KIND=c_int), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -511,7 +511,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_0_4
     subroutine plumed_f_gcmd_integer_0_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_int)                      :: val(:,:,:,:)
+      integer(kind=c_int), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -523,14 +523,14 @@ module plumed_module
     subroutine plumed_f_cmd_integer_1_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                      :: val
+      integer(KIND=c_short), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_short_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_1_0
     subroutine plumed_f_gcmd_integer_1_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_short)                      :: val
+      integer(kind=c_short), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_short_scalar(key,val,pass_shape)
@@ -538,7 +538,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_1_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                      :: val(:)
+      integer(KIND=c_short), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -546,7 +546,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_1_1
     subroutine plumed_f_gcmd_integer_1_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_short)                      :: val(:)
+      integer(kind=c_short), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -555,7 +555,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_1_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                      :: val(:,:)
+      integer(KIND=c_short), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -564,7 +564,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_1_2
     subroutine plumed_f_gcmd_integer_1_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_short)                      :: val(:,:)
+      integer(kind=c_short), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -574,7 +574,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_1_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                      :: val(:,:,:)
+      integer(KIND=c_short), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -584,7 +584,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_1_3
     subroutine plumed_f_gcmd_integer_1_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_short)                      :: val(:,:,:)
+      integer(kind=c_short), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -595,7 +595,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_1_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                      :: val(:,:,:,:)
+      integer(KIND=c_short), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -606,7 +606,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_1_4
     subroutine plumed_f_gcmd_integer_1_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_short)                      :: val(:,:,:,:)
+      integer(kind=c_short), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -618,14 +618,14 @@ module plumed_module
     subroutine plumed_f_cmd_integer_2_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                      :: val
+      integer(KIND=c_long), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_long_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_integer_2_0
     subroutine plumed_f_gcmd_integer_2_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_long)                      :: val
+      integer(kind=c_long), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_long_scalar(key,val,pass_shape)
@@ -633,7 +633,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_2_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                      :: val(:)
+      integer(KIND=c_long), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -641,7 +641,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_2_1
     subroutine plumed_f_gcmd_integer_2_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_long)                      :: val(:)
+      integer(kind=c_long), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -650,7 +650,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_2_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                      :: val(:,:)
+      integer(KIND=c_long), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -659,7 +659,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_2_2
     subroutine plumed_f_gcmd_integer_2_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_long)                      :: val(:,:)
+      integer(kind=c_long), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -669,7 +669,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_2_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                      :: val(:,:,:)
+      integer(KIND=c_long), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -679,7 +679,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_2_3
     subroutine plumed_f_gcmd_integer_2_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_long)                      :: val(:,:,:)
+      integer(kind=c_long), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -690,7 +690,7 @@ module plumed_module
     subroutine plumed_f_cmd_integer_2_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                      :: val(:,:,:,:)
+      integer(KIND=c_long), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -701,7 +701,7 @@ module plumed_module
     end subroutine plumed_f_cmd_integer_2_4
     subroutine plumed_f_gcmd_integer_2_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(kind=c_long)                      :: val(:,:,:,:)
+      integer(kind=c_long), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -713,14 +713,14 @@ module plumed_module
     subroutine plumed_f_cmd_real_0_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                      :: val
+      real(KIND=c_float), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_float_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_0_0
     subroutine plumed_f_gcmd_real_0_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_float)                      :: val
+      real(kind=c_float), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_float_scalar(key,val,pass_shape)
@@ -728,7 +728,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_0_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                      :: val(:)
+      real(KIND=c_float), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -736,7 +736,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_0_1
     subroutine plumed_f_gcmd_real_0_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_float)                      :: val(:)
+      real(kind=c_float), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -745,7 +745,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_0_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                      :: val(:,:)
+      real(KIND=c_float), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -754,7 +754,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_0_2
     subroutine plumed_f_gcmd_real_0_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_float)                      :: val(:,:)
+      real(kind=c_float), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -764,7 +764,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_0_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                      :: val(:,:,:)
+      real(KIND=c_float), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -774,7 +774,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_0_3
     subroutine plumed_f_gcmd_real_0_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_float)                      :: val(:,:,:)
+      real(kind=c_float), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -785,7 +785,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_0_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                      :: val(:,:,:,:)
+      real(KIND=c_float), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -796,7 +796,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_0_4
     subroutine plumed_f_gcmd_real_0_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_float)                      :: val(:,:,:,:)
+      real(kind=c_float), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -808,14 +808,14 @@ module plumed_module
     subroutine plumed_f_cmd_real_1_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                      :: val
+      real(KIND=c_double), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_double_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_1_0
     subroutine plumed_f_gcmd_real_1_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_double)                      :: val
+      real(kind=c_double), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_double_scalar(key,val,pass_shape)
@@ -823,7 +823,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_1_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                      :: val(:)
+      real(KIND=c_double), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -831,7 +831,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_1_1
     subroutine plumed_f_gcmd_real_1_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_double)                      :: val(:)
+      real(kind=c_double), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -840,7 +840,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_1_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                      :: val(:,:)
+      real(KIND=c_double), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -849,7 +849,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_1_2
     subroutine plumed_f_gcmd_real_1_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_double)                      :: val(:,:)
+      real(kind=c_double), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -859,7 +859,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_1_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                      :: val(:,:,:)
+      real(KIND=c_double), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -869,7 +869,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_1_3
     subroutine plumed_f_gcmd_real_1_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_double)                      :: val(:,:,:)
+      real(kind=c_double), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -880,7 +880,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_1_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                      :: val(:,:,:,:)
+      real(KIND=c_double), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -891,7 +891,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_1_4
     subroutine plumed_f_gcmd_real_1_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_double)                      :: val(:,:,:,:)
+      real(kind=c_double), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -903,14 +903,14 @@ module plumed_module
     subroutine plumed_f_cmd_real_2_0(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                      :: val
+      real(KIND=c_long_double), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_cmd_safe_long_double_scalar(p,key,val,pass_shape)
     end subroutine plumed_f_cmd_real_2_0
     subroutine plumed_f_gcmd_real_2_0(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                      :: val
+      real(kind=c_long_double), asynchronous              :: val
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
       call plumed_f_gcmd_safe_long_double_scalar(key,val,pass_shape)
@@ -918,7 +918,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_2_1(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                      :: val(:)
+      real(KIND=c_long_double), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -926,7 +926,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_2_1
     subroutine plumed_f_gcmd_real_2_1(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                      :: val(:)
+      real(kind=c_long_double), asynchronous              :: val(:)
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape(1)=size(val,1)
       pass_shape(2)=0
@@ -935,7 +935,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_2_2(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                      :: val(:,:)
+      real(KIND=c_long_double), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -944,7 +944,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_2_2
     subroutine plumed_f_gcmd_real_2_2(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                      :: val(:,:)
+      real(kind=c_long_double), asynchronous              :: val(:,:)
       integer(kind=c_size_t) :: pass_shape(3)
       pass_shape(1)=size(val,2)
       pass_shape(2)=size(val,1)
@@ -954,7 +954,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_2_3(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                      :: val(:,:,:)
+      real(KIND=c_long_double), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -964,7 +964,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_2_3
     subroutine plumed_f_gcmd_real_2_3(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                      :: val(:,:,:)
+      real(kind=c_long_double), asynchronous              :: val(:,:,:)
       integer(kind=c_size_t) :: pass_shape(4)
       pass_shape(1)=size(val,3)
       pass_shape(2)=size(val,2)
@@ -975,7 +975,7 @@ module plumed_module
     subroutine plumed_f_cmd_real_2_4(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                      :: val(:,:,:,:)
+      real(KIND=c_long_double), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
@@ -986,7 +986,7 @@ module plumed_module
     end subroutine plumed_f_cmd_real_2_4
     subroutine plumed_f_gcmd_real_2_4(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                      :: val(:,:,:,:)
+      real(kind=c_long_double), asynchronous              :: val(:,:,:,:)
       integer(kind=c_size_t) :: pass_shape(5)
       pass_shape(1)=size(val,4)
       pass_shape(2)=size(val,3)
