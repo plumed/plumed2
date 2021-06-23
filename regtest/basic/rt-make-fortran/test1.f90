@@ -1,18 +1,19 @@
 SUBROUTINE TEST1(testdat,testme)
   USE PLUMED_MODULE
+  USE ISO_C_BINDING
   IMPLICIT NONE
-  CHARACTER(*) :: testdat,testme
-  CHARACTER(len=32) :: p
+  CHARACTER(kind=C_CHAR,len=*) :: testdat,testme
+  CHARACTER(kind=C_CHAR,len=32) :: p
   INTEGER :: i
-  INTEGER :: natoms
-  REAL(8), ALLOCATABLE :: positions(:,:)
-  REAL(8), ALLOCATABLE :: forces(:,:)
-  REAL(8), ALLOCATABLE :: masses(:)
-  REAL(8) :: box(3,3)
-  REAL(8) :: virial(3,3)
-  REAL(8) :: testconvert
-  INTEGER(4) :: stopflag,ene
-  REAL(8) :: bias
+  INTEGER(C_INT) :: natoms
+  REAL(C_DOUBLE), ALLOCATABLE :: positions(:,:)
+  REAL(C_DOUBLE), ALLOCATABLE :: forces(:,:)
+  REAL(C_DOUBLE), ALLOCATABLE :: masses(:)
+  REAL(C_DOUBLE) :: box(3,3)
+  REAL(C_DOUBLE) :: virial(3,3)
+  REAL(C_DOUBLE) :: testconvert
+  INTEGER(C_INT) :: stopflag,ene
+  REAL(C_DOUBLE) :: bias
   call plumed_f_create(p)
   call plumed_f_cmd(p,"CLTool setArgvLine"//char(0),"plumed --help"//char(0))
   call plumed_f_cmd(p,"CLTool run"//char(0),i)
