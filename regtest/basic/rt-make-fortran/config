@@ -1,2 +1,7 @@
 type=make
 plumed_language=fortran
+
+function plumed_regtest_before(){
+grep -v "USE PLUMED_MODULE" test1.f90 | sed "s/TEST1/TEST2/" > test2.f90
+}
+
