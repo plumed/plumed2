@@ -40,14 +40,17 @@ namespace sasa {
 
 //+PLUMEDOC COLVAR SASA_HASEL
 /*
-Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The algorithm described in (Hasel et al., Tetrahedron Computer Methodology Vol. 1, No. 2, pp. 103-116, 1988) is used for the calculation. The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of SASA is updated (the default is every 10 steps).
+Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The algorithm described in \cite Hasel1988 is used for the calculation. The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
 the total SASA (TOTAL);
-the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021).
+
+the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used, for instance, to compute the transfer of a protein to different temperatures, as detailed in \cite Arsiccio-SASA-2021).
 
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
+
+\verbatim
 
 ----------------Sample DeltaG.dat file---------------------
 ALA	0.711019999999962
@@ -72,18 +75,19 @@ TYR	0.775547999999958
 VAL	2.12779200000011
 BACKBONE	1.00066920000002
 -----------------------------------------------------------
+\endverbatim
 
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
 
-If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper: Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
+If the DELTAGFILE is not provided, the program computes the free energy of transfer values as if they had to take into account the effect of temperature according to approaches 2 or 3 in the paper \cite Arsiccio-SASA-2021. Please read and cite this paper if using the transfer model for computing the effect of temperature in implicit solvent simulations. For this purpose, the keyword APPROACH should be added, and set to either 2 or 3.
 
 The SASA usually makes sense when atoms used for the calculation are all part of the same molecule. When running with periodic boundary conditions, the atoms should be in the proper periodic image. This is done automatically since PLUMED 2.2, by considering the ordered list of atoms and rebuilding the broken entities using a procedure that is equivalent to that done in \ref WHOLEMOLECULES. Notice that rebuilding is local to this action. This is different from \ref WHOLEMOLECULES which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct periodic image.
 
-The SASA may also be computed using the SASA_LCPO collective variable, which makes use of the LCPO algorithm (Weiser J, Shenkin PS and Still WC. J. Comput. Chem. 1999 (20), 217-230). SASA_LCPO is more accurate then SASA_HASEL, but the computation is slower.
+The SASA may also be computed using the SASA_LCPO collective variable, which makes use of the LCPO algorithm \cite Weiser1999. SASA_LCPO is more accurate then SASA_HASEL, but the computation is slower.
 
 
 \par Examples
@@ -105,7 +109,7 @@ bias: BIASVALUE ARG=sasa
 PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
 \endplumedfile
 
-The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to "Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021", and take into account the effect of temperature using approach 2 as described in the paper.
+The following input tells plumed to compute the transfer free energy for the protein chain containing atoms 10 to 20. Such transfer free energy is then used as a bias in the simulation (e.g., implicit solvent simulations). The free energy of transfer values are computed according to \cite Arsiccio-SASA-2021, and take into account the effect of temperature using approach 2 as described in the paper.
 
 \plumedfile
 SASA_HASEL TYPE=TRANSFER ATOMS=10-20 NL_STRIDE=10 APPROACH=2 LABEL=sasa
