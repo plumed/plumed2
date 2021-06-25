@@ -22,6 +22,7 @@
 #include "LatticeReduction.h"
 #include "Exception.h"
 #include <cstdio>
+#include <cmath>
 
 namespace PLMD {
 
@@ -49,6 +50,10 @@ void LatticeReduction::reduce(Vector&a,Vector&b) {
     ma=modulo2(a);
     if(mb<=ma*onePlusEpsilon) break;
     counter++;
+    if(counter%100==0) { // only test rarely since this might be expensive
+      plumed_assert(!std::isnan(ma));
+      plumed_assert(!std::isnan(mb));
+    }
     if(counter%10000==0) fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
   }
 
