@@ -20,6 +20,7 @@ WORKDIR /home/plumed
 COPY plumed2.tgz /home/plumed
 
 # build and test plumed (no install)
+# FC is needed on gfortran 10 to pass regression tests
 RUN . /etc/bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
@@ -29,6 +30,7 @@ RUN . /etc/bashrc \
  && export INCLUDE=$HOME/opt/include:$INCLUDE \
  && export LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH \
  && export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH \
+ && export FC="gfortran -fallow-argument-mismatch" \
  && tar xzf plumed2.tgz \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
