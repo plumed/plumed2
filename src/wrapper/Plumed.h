@@ -121,6 +121,15 @@
   (FORTRAN)  PLUMED_F_CREATE_DLOPEN
 \endverbatim
 
+  As of PLUMED 2.8, you can also initialize a plumed object using the following function,
+  that loads a kernel from an already loaded shared library. It accepts a handler
+  returned by `dlopen`:
+\verbatim
+  (C)        plumed_create_dlsym
+  (C++)      PLMD::Plumed::dlsym
+  (FORTRAN not allowed)
+\endverbatim
+
   To finalize a plumed object, use
 \verbatim
   (C)        plumed_finalize
@@ -776,6 +785,18 @@ __PLUMED_WRAPPER_C_END
 */
 __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_dlopen2(const char*path,int mode);
+__PLUMED_WRAPPER_C_END
+
+/**
+  \brief Constructor from dlopen handle. Available as of PLUMED 2.8
+
+  Same as  \ref plumed_create_dlopen, but it acts on an already loaded library.
+  This allows to separate the library loading from the construction of the
+  plumed object. By using this function, the caller takes the responsibility
+  to later use dlclose on this handle.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlsym(void* dlhandle);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -1937,6 +1958,17 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
 // use decref to remove the extra reference
     return Plumed(plumed_create_dlopen2(path,mode)).decref();
   }
+  /**
+    Create a PLUMED object loading from an already opened shared library. Available as of PLUMED 2.8.
+
+    Same as \ref dlopen(const char* path), but searches functions in an already loaded library.
+    See \ref plumed_create_dlsym.
+  */
+  static Plumed dlsym(void* dlhandle)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
+// use decref to remove the extra reference
+    return Plumed(plumed_create_dlsym(dlhandle)).decref();
+  }
+
   /** Invalid constructor. Available as of PLUMED 2.5.
 
     Can be used to initialize an invalid object. It might be useful to postpone
@@ -2929,7 +2961,7 @@ plumed plumed_create_dlopen(const char*path) {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
-plumed plumed_create_dlopen2(const char*path,int mode) {
+plumed plumed_create_dlsym(void* dlhandle) {
   /* returned object */
   plumed p;
   /* pointer to implementation */
@@ -2937,10 +2969,8 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
   pimpl=plumed_malloc_pimpl();
 #ifdef __PLUMED_HAS_DLOPEN
-  if(path) pimpl->dlhandle=plumed_attempt_dlopen(path,mode);
-  /* mark this library to be dlclosed when the object is finalized */
-  pimpl->dlclose=1;
-  if(pimpl->dlhandle) plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
+  pimpl->dlhandle=dlhandle;
+  plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
 #endif
   if(!pimpl->functions.create) {
     p.p=pimpl;
@@ -2955,6 +2985,34 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   /* store pimpl in returned object */
   p.p=pimpl;
   return p;
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlopen2(const char*path,int mode) {
+#ifdef __PLUMED_HAS_DLOPEN
+  /* returned object */
+  plumed p;
+  /* pointer to implementation */
+  plumed_implementation* pimpl;
+  /* handler */
+  void* dlhandle;
+  dlhandle=NULL;
+  if(path) dlhandle=plumed_attempt_dlopen(path,mode);
+  /* a NULL handle implies the file could not be loaded */
+  if(dlhandle) {
+    p=plumed_create_dlsym(dlhandle);
+    /* obtain pimpl */
+    pimpl=(plumed_implementation*) p.p;
+    /* make sure the handler is closed when plumed is finalized */
+    pimpl->dlclose=1;
+    return p;
+  }
+#else
+  (void) path;
+  (void) mode;
+#endif
+  return plumed_create_invalid();
 }
 __PLUMED_WRAPPER_C_END
 
