@@ -360,6 +360,7 @@ gyromagnetic
 GSL
 CRYST
 piv
+sasa
 namespaces
 OSX
 libplumedKernel
@@ -906,6 +907,7 @@ AFED
 LogPD
 LOGMFDMOD
 PIVMOD
+SASAMOD
 logmfd
 MFD
 adiabatically
