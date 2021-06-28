@@ -192,7 +192,7 @@
   since, when compiling with debug options, it will check if the void pointer actually points to a plumed object.
 
   As of PLUMED 2.5, we added a reference count. It is in practice possible
-  to create multiple `plumed` object that refer to the same environment.
+  to create multiple `plumed` objects that refer to the same environment.
   This is done using the following functions
 \verbatim
   (C)        plumed_create_reference     (from a C object)
@@ -266,7 +266,7 @@
 
   First of all, notice that access to PLUMED goes through three functions:
   - plumed_create: this, as of PLUMED 2.5, is guaranteed not to throw any exception. If there is a problem, it will
-    just return a NULL pointer
+    just return a plumed object containing a NULL pointer
   - plumed_cmd: this function might throw exceptions.
   - plumed_finalize: this is a destructor and is guaranteed not to throw any exception.
 
