@@ -46,7 +46,7 @@
   The interface is almost perfectly backward compatible, although it implements
   a few additional functions. See more details below.
 
-  A further improvement has been made in PLUMED 2.7, where the C++ interface has
+  A further improvement has been made in PLUMED 2.8, where the C++ interface has
   been modified to allow dynamic type checking. See more details below.
 
   Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
