@@ -20,7 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_CUSTOM
+//+PLUMEDOC OPES_EXPANSION_CV ECV_CUSTOM
 /*
 Use some given CVs as a set of expansion collective variables (ECVs).
 

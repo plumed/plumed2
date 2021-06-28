@@ -21,7 +21,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_FILE
+//+PLUMEDOC OPES_EXPANSION_CV ECV_UMBRELLAS_FILE
 /*
 Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 

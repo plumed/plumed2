@@ -22,7 +22,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL
+//+PLUMEDOC OPES_EXPANSION_CV ECV_MULTITHERMAL
 /*
 Expand a simulation to sample multiple temperatures simultaneously.
 

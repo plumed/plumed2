@@ -47,7 +47,7 @@ ECVs take as argument some underlying colvar and have as output components the s
 
 The following list contains the expansion CVs available in the OPES module.
 
-@EXPANSION_CV@
+@OPES_EXPANSION_CV@
 
 \page OPES_tutorial Tutorials
 
