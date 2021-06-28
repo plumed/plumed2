@@ -113,9 +113,10 @@
 \endverbatim
 
   As of PLUMED 2.5, you can also initialize a plumed object using the following functions,
-  that load a specific kernel:
+  that load a specific kernel. The function plumed_create_dlopen2 allows to specify options
+  for dlopen. The C++ version accepts an optional argument to this aim.
 \verbatim
-  (C)        plumed_create_dlopen
+  (C)        plumed_create_dlopen or plumed_create_dlopen2
   (C++)      PLMD::Plumed::dlopen
   (FORTRAN)  PLUMED_F_CREATE_DLOPEN
 \endverbatim
