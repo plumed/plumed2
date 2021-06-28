@@ -1139,10 +1139,10 @@ class Plumed {
       if(h.code>=10230 && h.code<10240) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 // These cases are probably useless as it looks like this should always be std::iostream_category
-        if(h.code==10230) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::generic_category()));
-        if(h.code==10231) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::system_category()));
-        if(h.code==10232) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::iostream_category()));
-        if(h.code==10233) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::future_category()));
+        if(h.code==10230) throw ::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::generic_category()));
+        if(h.code==10231) throw ::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::system_category()));
+        if(h.code==10232) throw ::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::iostream_category()));
+        if(h.code==10233) throw ::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::future_category()));
 #endif
         throw ::std::ios_base::failure(msg);
       }
