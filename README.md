@@ -140,3 +140,4 @@ If you compiled your own documentation, paths to the installed documentation can
 A sample modulefile with environment variable will be placed in
 `$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
 install multiple PLUMED versions side by side and select them with env modules.
+
