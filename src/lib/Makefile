@@ -521,6 +521,7 @@ ifeq ($(make_static_archive),yes)
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 	@echo "PLUMED_FORTRAN= \"$(libdir)/$(program_name)/fortran/plumed.f90\"" >> $@
+	@echo "PLUMED_FORTRAN08= \"$(libdir)/$(program_name)/fortran/plumed_f08.f90\"" >> $@
 else
 Plumed.inc:
 	@echo Building Plumed.inc
@@ -535,6 +536,7 @@ endif
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
 	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
 	@echo "PLUMED_FORTRAN= "$(realpath .)/../../fortran/plumed.f90 >> $@
+	@echo "PLUMED_FORTRAN08= "$(realpath .)/../../fortran/plumed_f08.f90 >> $@
 endif
 
 $(PLUMED_LIBDIR)Plumed.cmake: $(PLUMED_LIBDIR)Plumed.inc

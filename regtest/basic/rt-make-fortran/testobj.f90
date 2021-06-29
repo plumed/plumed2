@@ -1,12 +1,12 @@
 function create_a_new_instance() result(pp)
-  use plumed_module
+  use plumed_module_f08
   IMPLICIT NONE
   type(plumed) :: pp
   call pp%create()
 end function create_a_new_instance
 
 SUBROUTINE TEST3A()
-  USE PLUMED_MODULE
+  USE PLUMED_MODULE_F08
   IMPLICIT NONE
   TYPE(PLUMED) :: pl1
   TYPE(PLUMED) :: pl2
@@ -16,7 +16,7 @@ SUBROUTINE TEST3A()
 END SUBROUTINE TEST3A
 
 SUBROUTINE TEST3B()
-  USE PLUMED_MODULE
+  USE PLUMED_MODULE_F08
   IMPLICIT NONE
   TYPE(PLUMED), allocatable :: all(:)
   allocate(all(1))
@@ -26,7 +26,7 @@ SUBROUTINE TEST3B()
 END SUBROUTINE TEST3B
 
 SUBROUTINE TEST3C()
-  USE PLUMED_MODULE
+  USE PLUMED_MODULE_F08
   IMPLICIT NONE
   TYPE(PLUMED), pointer :: all(:)
   allocate(all(1))
@@ -37,7 +37,7 @@ SUBROUTINE TEST3C()
 END SUBROUTINE TEST3C
 
 SUBROUTINE TEST3D()
-  USE PLUMED_MODULE
+  USE PLUMED_MODULE_F08
   IMPLICIT NONE
   TYPE(PLUMED) :: create_a_new_instance
   TYPE(PLUMED) :: p
