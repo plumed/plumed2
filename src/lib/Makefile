@@ -328,6 +328,7 @@ ifdef BASH_COMPLETION_DIR
 endif
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/fortran"
 	cp ../../fortran/plumed.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
+	cp ../../fortran/plumed_f08.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
