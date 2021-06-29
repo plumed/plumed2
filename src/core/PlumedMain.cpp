@@ -53,6 +53,8 @@
 #include <ios>
 #include <new>
 #include <typeinfo>
+#include <iostream>
+#include <algorithm>
 #ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
@@ -121,6 +123,30 @@ namespace PLMD {
   plumed_error() << "unknown exception " << what;
 }
 
+namespace {
+class Register {
+  std::vector<PlumedMain*> instances;
+public:
+  void add(PlumedMain* instance) {
+    instances.push_back(instance);
+  }
+  void remove(PlumedMain* instance) {
+    auto it = std::find(instances.begin(), instances.end(), instance);
+    if(it==instances.end()) {
+      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances\n";
+    } else {
+      instances.erase(it);
+    }
+  }
+  ~Register() {
+    if(instances.size()>0) std::cerr<<"PLUMED instances was not properly deallocated in your code: "<<instances.size()<<"\n";
+  }
+};
+
+static Register myregister;
+
+}
+
 PlumedMain::PlumedMain():
   initialized(false),
 // automatically write on log in destructor
@@ -142,10 +168,12 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  myregister.add(this);
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
+  myregister.remove(this);
 }
 
 /////////////////////////////////////////////////////////////
