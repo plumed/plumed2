@@ -41,6 +41,8 @@ module plumed_module_f08
     procedure, public :: create_dlopen => pl_create_dlopen
     procedure, public :: create_invalid => pl_create_invalid
     procedure, public :: finalize => pl_finalize
+    procedure, public :: incref => pl_incref
+    procedure, public :: decref => pl_decref
     generic,   public :: assignment(=) => pl_assign
     final     :: pl_destructor
     procedure, public :: valid => pl_valid
@@ -85,6 +87,30 @@ module plumed_module_f08
          this%initialized=.false.
        endif
      end subroutine pl_finalize
+
+     subroutine pl_incref(this)
+       class(plumed), intent(inout) :: this
+       character(kind=c_char,len=32) :: that
+       if(.not.this%initialized) then
+         call this%create()
+       endif
+       call plumed_f_create_reference(this%handle,that)
+     end subroutine pl_incref
+
+     subroutine pl_decref(this,to)
+       class(plumed),     intent(inout) :: this
+       integer, optional, intent(in)    :: to
+       if(.not.this%initialized) then
+         call this%create()
+       endif
+       if(present(to)) then
+         do while(this%use_count()>to)
+           call plumed_f_finalize(this%handle)
+         end do
+       else
+         call plumed_f_finalize(this%handle)
+       endif
+     end subroutine pl_decref
 
      ! "impure elemental" needed for the destructor to work on arrays
      impure elemental subroutine pl_destructor(this)

@@ -41,10 +41,13 @@ SUBROUTINE TEST3D()
   IMPLICIT NONE
   TYPE(PLUMED) :: create_a_new_instance
   TYPE(PLUMED) :: p
-  p=create_a_new_instance()
-  call p%cmd("init")
   ! here, the temporary object returned by create_a_new_instance() is not destroyed correctly
   ! therefore, there is a leak
+  p=create_a_new_instance()
+  call p%cmd("init")
+  ! this is the recommended workaround: it will decrease the number of references until there is just one
+  ! it should work with all compilers (those with the bug, and those without)
+  call p%decref(1)
 END SUBROUTINE TEST3D
 
 SUBROUTINE TEST3()
