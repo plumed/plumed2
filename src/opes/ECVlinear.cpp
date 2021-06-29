@@ -20,7 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_LINEAR
+//+PLUMEDOC OPES_EXPANSION_CV ECV_LINEAR
 /*
 Linear expansion, according to a parameter lambda.
 
