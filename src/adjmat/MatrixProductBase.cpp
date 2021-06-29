@@ -40,36 +40,44 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithValue(ao),
   skip_ieqj(false)
 {
-  if( getNumberOfArguments()!=2 ) error("should only have two arguments");
-  for(unsigned i=0; i<2; ++i) {
-      if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
-  }
-  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); 
-  // Rerequest arguments 
-  std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
-  // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-  for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
-  // And create the matrix to hold the dot products
-  addValue( shape ); 
-
-  // Now do some stuff for time series
-  bool timeseries=getPntrToArgument(0)->isTimeSeries();
-  if( timeseries ) {
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( !getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+  if( getNumberOfArguments()>0 ) {
+      if( getNumberOfArguments()!=2 ) error("should only have two arguments");
+      for(unsigned i=0; i<2; ++i) {
+          if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
       }
-      getPntrToOutput(0)->makeTimeSeries();
-  } else {
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+      std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); 
+      // Rerequest arguments 
+      std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
+      // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
+      for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
+      // And create the matrix to hold the dot products
+      addValue( shape ); 
+
+      // Now do some stuff for time series
+      bool timeseries=getPntrToArgument(0)->isTimeSeries();
+      if( timeseries ) {
+          for(unsigned i=1;i<getNumberOfArguments();++i) {
+              if( !getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+          }
+          getPntrToOutput(0)->makeTimeSeries();
+      } else {
+          for(unsigned i=1;i<getNumberOfArguments();++i) {
+              if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+          }
       }
   }
 }
 
 unsigned MatrixProductBase::getNumberOfDerivatives() const {
-  unsigned numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize(); 
+  unsigned numargs = 0; if( getNumberOfArguments()>0 ) numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize(); 
   if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + numargs;
   return numargs;
+}
+
+bool MatrixProductBase::mustBeTreatedAsDistinctArguments() const {
+  const AdjacencyMatrixBase* ab=dynamic_cast<const AdjacencyMatrixBase*>(this);
+  if( ab ) return ActionWithArguments::mustBeTreatedAsDistinctArguments();
+  return true;
 }
 
 void MatrixProductBase::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

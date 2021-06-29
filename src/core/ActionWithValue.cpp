@@ -625,7 +625,7 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
   // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( thisAsActionWithArguments ) {
-    if( actionInChain() ) {
+    if( actionInChain() && thisAsActionWithArguments->getNumberOfArguments()>0 ) {
       // Now check if the task takes a matrix as input - if it does do it
       bool do_this_task = ((thisAsActionWithArguments->getPntrToArgument(0))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
 #ifdef DNDEBUG

@@ -23,21 +23,16 @@
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
 #include <vector>
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithValue.h"
+#include "MatrixProductBase.h" 
 #include "tools/LinkCells.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class AdjacencyMatrixBase :
-  public ActionAtomistic,
-  public ActionWithValue
-{
+class AdjacencyMatrixBase : public MatrixProductBase {
 private:
   bool nopbc, components, read_one_group;
   LinkCells linkcells, threecells;
-  std::vector<double> forcesToApply;
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
   unsigned nl_stride;
@@ -57,22 +52,17 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
   bool canBeAfterInChain( ActionWithValue* av ) const ;
-  unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfColumns() const override;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
-  void calculate();
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  double computeVectorProduct( const unsigned& index1, const unsigned& index2,
+                               const std::vector<double>& vec1, const std::vector<double>& vec2,
+                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const override {}
   virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
-  void apply();
 };
-
-inline
-unsigned AdjacencyMatrixBase::getNumberOfDerivatives() const  {
-  return 3*getNumberOfAtoms() + 9;
-}
 
 inline
 Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, const MultiValue& myvals ) const {

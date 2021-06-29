@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
-#include "MatrixProductBase.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/OpenMP.h"
@@ -29,9 +28,7 @@ namespace PLMD {
 namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
+  MatrixProductBase::registerKeywords( keys ); keys.remove("ARG");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");
@@ -48,8 +45,7 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
-  ActionAtomistic(ao),
-  ActionWithValue(ao),
+  MatrixProductBase(ao),
   read_one_group(false),
   linkcells(comm),
   threecells(comm)
@@ -233,12 +229,6 @@ unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
   return maxcol;
 }
 
-void AdjacencyMatrixBase::calculate() {
-  if( actionInChain() ) return;
-  // Now run all the tasks
-  runAllTasks();
-}
-
 void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
   // Update dynamic list indices for central atom
@@ -381,12 +371,6 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
   // Update derivatives
   if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( index1, index2, myvals );
   return true;
-}
-
-void AdjacencyMatrixBase::apply() {
-  if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
 }
 
 }
