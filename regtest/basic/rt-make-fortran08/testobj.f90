@@ -2,7 +2,7 @@ function create_a_new_instance() result(pp)
   use plumed_module_f08
   IMPLICIT NONE
   type(plumed) :: pp
-  call pp%create()
+  call plumed_create(pp)
 end function create_a_new_instance
 
 SUBROUTINE TEST3A()
@@ -57,7 +57,7 @@ SUBROUTINE TEST3E()
   INTEGER :: i
   allocate(p(10))
   call p%cmd("init")
-  call p%finalize()
+  call plumed_finalize(p)
 end SUBROUTINE TEST3E
 
 SUBROUTINE TEST3()
@@ -88,7 +88,6 @@ SUBROUTINE TEST4()
   USE TEST_DERIVED
   TYPE(PLUMEDX) :: px
   open(10,file="log",position='append')
-  call px%create()
   call px%cmd("init")
   write(10,*) "4",px%i
   close(10)

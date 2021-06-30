@@ -9,7 +9,7 @@ module plumed_module_f08
 
   private
 
-  public :: plumed
+  public :: plumed, plumed_create, plumed_finalize
 
   type plumed
     character(kind=c_char,len=32), private :: handle
@@ -83,8 +83,6 @@ module plumed_module_f08
     procedure :: pl_cmd
     procedure :: pl_cmd_char
 
-    procedure, public :: create => pl_create
-    procedure, public :: finalize => pl_finalize
     procedure, public :: incref => pl_incref
     procedure, public :: decref => pl_decref
     generic,   public :: assignment(=) => pl_assign
@@ -96,8 +94,8 @@ module plumed_module_f08
 
   contains
 
-     impure elemental subroutine pl_create(this,kernel)
-       class(plumed),    intent(out)          :: this
+     impure elemental subroutine plumed_create(this,kernel)
+       type(plumed),    intent(out)          :: this
        character(len=*), intent(in), optional :: kernel
        if(present(kernel)) then
          call plumed_f_create_dlopen(kernel // c_null_char,this%handle)
@@ -105,21 +103,21 @@ module plumed_module_f08
          call plumed_f_create(this%handle)
        endif
        this%initialized=.true.
-     end subroutine pl_create
+     end subroutine plumed_create
 
-     impure elemental subroutine pl_finalize(this)
-       class(plumed), intent(inout) :: this
+     impure elemental subroutine plumed_finalize(this)
+       type(plumed), intent(inout) :: this
        if(this%initialized) then
          call plumed_f_finalize(this%handle)
          this%initialized=.false.
        endif
-     end subroutine pl_finalize
+     end subroutine plumed_finalize
 
      impure elemental subroutine pl_incref(this)
        class(plumed), intent(inout) :: this
        character(kind=c_char,len=32) :: that
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_create_reference(this%handle,that)
      end subroutine pl_incref
@@ -128,7 +126,7 @@ module plumed_module_f08
        class(plumed),     intent(inout) :: this
        integer, optional, intent(in)    :: to
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        if(present(to)) then
          do while(this%use_count()>to)
@@ -142,7 +140,7 @@ module plumed_module_f08
      ! "impure elemental" needed for the destructor to work on arrays
      impure elemental subroutine pl_destructor(this)
        type(plumed), intent(inout) :: this
-       call this%finalize()
+       call plumed_finalize(this)
      end subroutine pl_destructor
 
      impure elemental function pl_valid(this) result(valid)
@@ -150,7 +148,7 @@ module plumed_module_f08
        logical :: valid
        integer(c_int) :: i
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_valid(this%handle,i)
        valid=i>0
@@ -160,7 +158,7 @@ module plumed_module_f08
        class(plumed), intent(inout) :: this
        integer(c_int) :: use_count
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_use_count(this%handle,use_count)
      end function pl_use_count
@@ -178,7 +176,7 @@ module plumed_module_f08
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,0) ! FIX: replace this to send NULL
      end subroutine pl_cmd
@@ -188,7 +186,7 @@ module plumed_module_f08
        character(kind=c_char,len=*),  intent(in)    :: key
        character(kind=c_char,len=*), asynchronous   :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val // c_null_char)
      end subroutine pl_cmd_char
@@ -198,7 +196,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_0_0
@@ -207,7 +205,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_0_1
@@ -216,7 +214,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_0_2
@@ -225,7 +223,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_0_3
@@ -234,7 +232,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_0_4
@@ -243,7 +241,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_1_0
@@ -252,7 +250,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_1_1
@@ -261,7 +259,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_1_2
@@ -270,7 +268,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_1_3
@@ -279,7 +277,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_1_4
@@ -288,7 +286,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_2_0
@@ -297,7 +295,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_2_1
@@ -306,7 +304,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_2_2
@@ -315,7 +313,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_2_3
@@ -324,7 +322,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_integer_2_4
@@ -333,7 +331,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_0_0
@@ -342,7 +340,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_0_1
@@ -351,7 +349,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_0_2
@@ -360,7 +358,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_0_3
@@ -369,7 +367,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_0_4
@@ -378,7 +376,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_1_0
@@ -387,7 +385,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_1_1
@@ -396,7 +394,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_1_2
@@ -405,7 +403,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_1_3
@@ -414,7 +412,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_1_4
@@ -423,7 +421,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), asynchronous              :: val
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_2_0
@@ -432,7 +430,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), asynchronous              :: val(:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_2_1
@@ -441,7 +439,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), asynchronous              :: val(:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_2_2
@@ -450,7 +448,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), asynchronous              :: val(:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_2_3
@@ -459,7 +457,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), asynchronous              :: val(:,:,:,:)
        if(.not.this%initialized) then
-         call this%create()
+         call plumed_create(this)
        endif
        call plumed_f_cmd(this%handle,key // c_null_char,val)
     end subroutine pl_cmd_real_2_4
