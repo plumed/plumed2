@@ -8,7 +8,10 @@ module plumed_module_f08
 
   private
 
-  public :: plumed, plumed_create, plumed_finalize
+  public :: plumed
+  public :: plumed_create
+  public :: plumed_finalize
+  public :: plumed_installed
 
   type plumed
     character(kind=c_char,len=32), private :: handle
@@ -46,6 +49,13 @@ module plumed_module_f08
   end type plumed
 
   contains
+
+     function plumed_installed() result(res)
+       logical             :: res
+       integer(kind=c_int) :: i
+       call plumed_f_installed(i)
+       res=i>0
+     end function plumed_installed
 
      impure elemental subroutine plumed_create(this,kernel)
        type(plumed),    intent(out)          :: this
