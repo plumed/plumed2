@@ -75,3 +75,21 @@ SUBROUTINE TEST3()
   write(10,*) "3E"
   close(10)
 END SUBROUTINE
+
+MODULE TEST_DERIVED
+  USE PLUMED_MODULE_F08
+  IMPLICIT NONE
+  TYPE, EXTENDS(PLUMED) :: PLUMEDX
+    INTEGER :: i=77
+  END TYPE PLUMEDX
+END MODULE TEST_DERIVED
+
+SUBROUTINE TEST4()
+  USE TEST_DERIVED
+  TYPE(PLUMEDX) :: px
+  open(10,file="log",position='append')
+  call px%create()
+  call px%cmd("init")
+  write(10,*) "4",px%i
+  close(10)
+END SUBROUTINE TEST4
