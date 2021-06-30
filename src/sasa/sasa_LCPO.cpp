@@ -38,14 +38,15 @@ using namespace std;
 namespace PLMD {
 namespace sasa {
 
-//+PLUMEDOC COLVAR SASA_LCPO
+//+PLUMEDOC SASAMOD_COLVAR SASA_LCPO
 /*
 Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The LCPO algorithm is used for the calculation (please, read and cite \cite Weiser1999). The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of the SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
-the total SASA (TOTAL);
 
-the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used to compute the transfer of a protein to different temperatures, as detailed in \cite Arsiccio-SASA-2021).
+1) the total SASA (TOTAL);
+
+2) the free energy of transfer for the protein according to the transfer model (TRANSFER. This keyword can be used to compute the transfer of a protein to different temperatures, as detailed in \cite Arsiccio-SASA-2021).
 
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
