@@ -62,9 +62,16 @@ end SUBROUTINE TEST3E
 
 SUBROUTINE TEST3()
   IMPLICIT NONE
+  open(10,file="log")
   CALL TEST3A()
+  write(10,*) "3A"
   CALL TEST3B()
+  write(10,*) "3B"
   CALL TEST3C()
+  write(10,*) "3C"
   CALL TEST3D()
+  write(10,*) "3D"
   CALL TEST3E()
+  write(10,*) "3E"
+  close(10)
 END SUBROUTINE
