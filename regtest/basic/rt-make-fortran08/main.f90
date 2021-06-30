@@ -7,6 +7,7 @@ PROGRAM main
   endif
   CALL TEST3()
   CALL TEST4()
+  CALL TEST5()
   call p%cmd("init")
   call plumed_finalize(p)
 END PROGRAM main

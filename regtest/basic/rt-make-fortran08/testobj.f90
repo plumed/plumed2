@@ -92,3 +92,20 @@ SUBROUTINE TEST4()
   write(10,*) "4",px%i
   close(10)
 END SUBROUTINE TEST4
+
+SUBROUTINE TEST5()
+  USE PLUMED_MODULE_F08
+  TYPE(PLUMED), ALLOCATABLE :: b(:)
+  TYPE(PLUMED), ALLOCATABLE :: c(:)
+  ALLOCATE(b(10))
+  ALLOCATE(c(10))
+  open(10,file="log",position='append')
+  write(10,*)"B",b%use_count()
+  write(10,*)"C",c%use_count()
+  c=b
+  write(10,*)"B",b%use_count()
+  write(10,*)"C",c%use_count()
+  deallocate(b)
+  write(10,*)"C",c%use_count()
+  close(10)
+END SUBROUTINE TEST5
