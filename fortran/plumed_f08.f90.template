@@ -37,9 +37,6 @@ module plumed_module_f08
     procedure :: pl_cmd_char
 
     procedure, public :: create => pl_create
-    procedure, public :: create_reference => pl_create_reference
-    procedure, public :: create_dlopen => pl_create_dlopen
-    procedure, public :: create_invalid => pl_create_invalid
     procedure, public :: finalize => pl_finalize
     procedure, public :: incref => pl_incref
     procedure, public :: decref => pl_decref
@@ -52,35 +49,18 @@ module plumed_module_f08
 
   contains
 
-     subroutine pl_create(this)
-       class(plumed), intent(out) :: this
-       call plumed_f_create(this%handle)
+     impure elemental subroutine pl_create(this,kernel)
+       class(plumed),    intent(out)          :: this
+       character(len=*), intent(in), optional :: kernel
+       if(present(kernel)) then
+         call plumed_f_create_dlopen(kernel // c_null_char,this%handle)
+       else
+         call plumed_f_create(this%handle)
+       endif
        this%initialized=.true.
      end subroutine pl_create
 
-     subroutine pl_create_reference(this,that)
-       class(plumed),                intent(out) :: this
-       class(plumed),                intent(in)  :: that
-       if(that%initialized) then
-         call plumed_f_create_reference(that%handle,this%handle)
-         this%initialized=.true.
-       endif
-     end subroutine pl_create_reference
-
-     subroutine pl_create_dlopen(this,path)
-       class(plumed),                intent(out) :: this
-       character(kind=c_char,len=*), intent(in)  :: path
-       call plumed_f_create_dlopen(path // c_null_char,this%handle)
-       this%initialized=.true.
-     end subroutine pl_create_dlopen
-
-     subroutine pl_create_invalid(this)
-       class(plumed), intent(out) :: this
-       call plumed_f_create_invalid(this%handle)
-       this%initialized=.true.
-     end subroutine pl_create_invalid
-
-     subroutine pl_finalize(this)
+     impure elemental subroutine pl_finalize(this)
        class(plumed), intent(inout) :: this
        if(this%initialized) then
          call plumed_f_finalize(this%handle)
@@ -88,7 +68,7 @@ module plumed_module_f08
        endif
      end subroutine pl_finalize
 
-     subroutine pl_incref(this)
+     impure elemental subroutine pl_incref(this)
        class(plumed), intent(inout) :: this
        character(kind=c_char,len=32) :: that
        if(.not.this%initialized) then
@@ -97,7 +77,7 @@ module plumed_module_f08
        call plumed_f_create_reference(this%handle,that)
      end subroutine pl_incref
 
-     subroutine pl_decref(this,to)
+     impure elemental subroutine pl_decref(this,to)
        class(plumed),     intent(inout) :: this
        integer, optional, intent(in)    :: to
        if(.not.this%initialized) then
@@ -118,7 +98,7 @@ module plumed_module_f08
        call this%finalize()
      end subroutine pl_destructor
 
-     function pl_valid(this) result(valid)
+     impure elemental function pl_valid(this) result(valid)
        class(plumed), intent(inout) :: this
        logical :: valid
        integer(c_int) :: i
@@ -129,7 +109,7 @@ module plumed_module_f08
        valid=i>0
      end function pl_valid
 
-     function pl_use_count(this) result(use_count)
+     impure elemental function pl_use_count(this) result(use_count)
        class(plumed), intent(inout) :: this
        integer(c_int) :: use_count
        if(.not.this%initialized) then
@@ -139,12 +119,15 @@ module plumed_module_f08
      end function pl_use_count
 
      subroutine pl_assign(this,that)
-       class(plumed),intent(inout) :: this
-       class(plumed),intent(in)    :: that
-       call this%create_reference(that)
+       class(plumed),intent(out) :: this
+       class(plumed),intent(in)  :: that
+       if(that%initialized) then
+         call plumed_f_create_reference(that%handle,this%handle)
+         this%initialized=.true.
+       endif
      end subroutine pl_assign
 
-     subroutine pl_cmd(this,key)
+     impure elemental subroutine pl_cmd(this,key)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        if(.not.this%initialized) then
