@@ -126,7 +126,7 @@ module plumed_module_f08
        call plumed_f_use_count(this%handle,use_count)
      end function pl_use_count
 
-     subroutine pl_assign(this,that)
+     impure elemental subroutine pl_assign(this,that)
        class(plumed),intent(out) :: this
        class(plumed),intent(in)  :: that
        if(that%initialized) then
