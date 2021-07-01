@@ -97,8 +97,15 @@ void test_xyz() {
   cell[0]=100.0;
   cell[4]=100.0;
   cell[8]=100.0;
+  int stopflag=0;
   p.cmd("setNatoms",natoms);
   p.cmd("init",nullptr); // Test this: https://github.com/plumed/plumed2/issues/705
+  try {
+    p.cmd("setStopFlag",stopflag);
+    plumed_error()<<"should have crashed";
+  } catch (PLMD::Plumed::ExceptionTypeError & e) {
+  }
+  p.cmd("setStopFlag",&stopflag);
   p.cmd("readInputLine","DUMPATOMS ATOMS=@mdatoms FILE=test_xyz.xyz");
   p.cmd("readInputLine","c: COM ATOMS=@mdatoms");
   p.cmd("readInputLine","p: POSITION ATOM=c");

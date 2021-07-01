@@ -695,14 +695,15 @@ typedef struct {
     0x1000000  * 1 for unsigned (ignored)
     0x2000000  * pointer/const type, up to 8
                0 not typechecked
-               1 T
+               1 T (pass-by-value)
                2 T       *
                3 T const *
                4 T       *       *
                5 T       * const *
                6 T const *       *
                7 T const * const *
-    0x10000000 and higher bits are ignored, reserved for future extensions
+    0x10000000 * 1 to forbid pointer copy (pointer copy is also forbidden for pass-by-value)
+    0x20000000 and higher bits are ignored, reserved for future extensions
   */
   unsigned long int flags;
   /** Optional information, not used yet  */
