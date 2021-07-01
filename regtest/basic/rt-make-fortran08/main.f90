@@ -9,5 +9,5 @@ PROGRAM main
   CALL TEST4()
   CALL TEST5()
   call p%cmd("init")
-  call plumed_finalize(p)
+  call p%finalize()
 END PROGRAM main

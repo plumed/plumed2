@@ -11,7 +11,6 @@ module plumed_module_f08
 
   public :: plumed
   public :: plumed_create
-  public :: plumed_finalize
   public :: plumed_installed
 
   type plumed
@@ -86,6 +85,7 @@ module plumed_module_f08
     procedure :: pl_cmd
     procedure :: pl_cmd_char
 
+    procedure, public :: finalize => pl_finalize
     procedure, public :: incref => pl_incref
     procedure, public :: decref => pl_decref
     generic,   public :: assignment(=) => pl_assign
@@ -115,13 +115,13 @@ module plumed_module_f08
        this%initialized=.true.
      end subroutine plumed_create
 
-     impure elemental subroutine plumed_finalize(this)
-       type(plumed), intent(inout) :: this
+     impure elemental subroutine pl_finalize(this)
+       class(plumed), intent(inout) :: this
        if(this%initialized) then
          call plumed_f_finalize(this%handle)
          this%initialized=.false.
        endif
-     end subroutine plumed_finalize
+     end subroutine pl_finalize
 
      impure elemental subroutine pl_incref(this)
        class(plumed), intent(inout) :: this
@@ -150,7 +150,7 @@ module plumed_module_f08
      ! "impure elemental" needed for the destructor to work on arrays
      impure elemental subroutine pl_destructor(this)
        type(plumed), intent(inout) :: this
-       call plumed_finalize(this)
+       call this%finalize()
      end subroutine pl_destructor
 
      impure elemental function pl_valid(this) result(valid)

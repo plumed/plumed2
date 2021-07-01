@@ -57,7 +57,7 @@ SUBROUTINE TEST3E()
   INTEGER :: i
   allocate(p(10))
   call p%cmd("init")
-  call plumed_finalize(p)
+  call p%finalize()
 end SUBROUTINE TEST3E
 
 SUBROUTINE TEST3()
