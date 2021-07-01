@@ -8,7 +8,7 @@ exe-fortran:
 	$(FC) *.o -o exe $(PLUMED_LOAD)
 
 exe-fortran08:
-	$(FC) -c $(PLUMED_FORTRAN) $(PLUMED_FORTRAN08) *.f90
+	$(FC) -c $(PLUMED_FORTRAN08) *.f90
 	$(FC) *.o -o exe $(PLUMED_LOAD)
 
 test-fortran08:
