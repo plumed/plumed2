@@ -216,7 +216,7 @@ EOF
         if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
           make exe-fortran08 1>out 2>err
         else
-          echo "NOT_APPLICABLE (FC does not support final)"
+          echo "NOT_APPLICABLE (FC does not support f2008)"
           exit 0
         fi
       else
