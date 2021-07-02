@@ -5,7 +5,7 @@
 
 The aim of this tutorial is to briefly present an example of an \ref OPES_METAD simulation, together with some useful post-processing tools for obtaining an estimate of the free energy surface.
 This tutorial does not contain theory explanations.
-The opes method is presented in detail in Ref. \cite Invernizzi2020rethinking and in its supporting information.
+The OPES method is presented in detail in Ref. \cite Invernizzi2020rethinking and in its supporting information.
 
 \section opes-metad-resources Resources
 
@@ -40,7 +40,7 @@ We also print a COLVAR file containing the system coordinates and the instantane
 Here is the time evolution of the \f$x\f$ coordinate.
 
 \anchor opes-metad-ColvarOPES
-\image html opes-metad-ColvarOPES.png "Fig. 2: Time evolution of the opes simulation"
+\image html opes-metad-ColvarOPES.png "Fig. 2: Time evolution of the OPES simulation"
 
 From this simulation we can estimate via reweighting the free energy surface (FES) along \f$x\f$.
 We use a weighted kernel density estimation with bandwidth `sigma`, and use block average for uncertainty estimation.
@@ -55,7 +55,7 @@ Notice that a similar FES estimate could have been obtained using \ref REWEIGHT_
 For this simple system we can compare the result with the true FES (black dashed line):
 
 \anchor opes-metad-fesOPES
-\image html opes-metad-fesOPES.png "Fig. 3: Free energy estimate obtained by reweighting the opes simulation"
+\image html opes-metad-fesOPES.png "Fig. 3: Free energy estimate obtained by reweighting the OPES simulation"
 
 \note
 If the COLVAR file is not available one can use instead the KERNELS file, choosing the `logweight` column as bias
@@ -95,7 +95,7 @@ Unfortunately, these out-of-equilibrium transitions cannot be efficiently reweig
 
 To avoid these systematic errors, one must remove the part of the metadynamics simulation where the bias is not quasi-static.
 You can do so using the option `--skiprows` in the `FES_from_Reweighting.py` script.
-Removing an initial transient might be useful also for opes simulations, in particular when the chosen `BARRIER` is much higher than the real one.
+Removing an initial transient might be useful also for OPES simulations, in particular when the chosen `BARRIER` is much higher than the real one.
 
 \note
 Several different reweighting schemes have been proposed for metadynamics. The one we report here is among the most commonly used, but it is not guaranteed to be the most efficient.
@@ -103,9 +103,9 @@ Several different reweighting schemes have been proposed for metadynamics. The o
 
 \section opes-metad-fesbias Free energy estimate from the bias
 
-A quick way to get a FES estimate along the biased CVs in opes, is to directly look at the instantaneous bias, since \f$F(x)=-(1-1/\gamma)^{-1}V(x)\f$.
+A quick way to get a FES estimate along the biased CVs in OPES, is to directly look at the instantaneous bias \f$V_t(x)\f$, since at convergence \f$F(x)=-(1-1/\gamma)^{-1}V(x)\f$.
 For metadynamics simulations one should use the `rbias` instead, which is the bias shifted by the \f$c(t)\f$ factor.
-In Fig. 6 we plot the COLVAR file using on the x-axis the CV \f$x\f$ and on the y-axis this instantaneous FES estimate.
+In Fig. 6 we plot the COLVAR file using on the x-axis the CV \f$x\f$ and on the y-axis this instantaneous FES estimate, \f$F_t(x)\f$.
 Points are colored according to the simulation time.
 
 \anchor opes-metad-biasFES
@@ -113,17 +113,17 @@ Points are colored according to the simulation time.
 
 We can see that the running estimate from metadynamics has much broader oscillations.
 This can be seen also in Fig. 3 of Ref. \cite Invernizzi2020rethinking, where only the free energy difference between the basins is plotted.
-It is also clearly visible that the opes simulation does not explore free energy regions much higher than the given `BARRIER` parameter.
+It is also clearly visible that the OPES simulation does not explore free energy regions much higher than the given `BARRIER` parameter.
 
-A more clear picture of this type of FES estimate is usually obtained in metadynamics via the \ref sum_hills tool, e.g. with the following command:
+Another more common way of obtaining this direct FES estimate from the metadynamics bias is via the \ref sum_hills tool, e.g. with the following command:
 
 \verbatim
-plumed sum_hills --hills HILLS --mintozero --stride 1000 
+plumed sum_hills --hills HILLS --mintozero --stride 1000
 \endverbatim
 
-A similar thing can be done also with opes, but requires the STATE file to be printed. 
+An analogous procedure can be done also with OPES, starting from the STATE file printed during the simulation.
 This file contains the compressed kernels that are used internally to define the bias, together with all the information needed for a smooth restart.
-The syntax to print it is similar to the one used to print the bias grid in \ref METAD:
+The syntax to print it is similar to the one used to print the bias grid in \ref METAD :
 
 \plumedfile
 UNITS NATURAL
@@ -150,7 +150,7 @@ If the STATE file is available, one can run the provided script with the followi
 
 For \ref OPES_METAD the resulting FES estimate will be very similar to the one obtained from reweighting.
 
-In this tutorial a single simulation is presented for opes and metadynamics, but you can check Fig. S2 and S3 in the supporting information of Ref. \cite Invernizzi2020rethinking to see the results obtained by averaging 100 independent realizations.
+In this tutorial a single simulation is presented for OPES and metadynamics, but you can check Fig. S2 and S3 in the supporting information of Ref. \cite Invernizzi2020rethinking to see the results obtained by averaging 100 independent realizations.
 
 \section opes-metad-misc Some other considerations
 

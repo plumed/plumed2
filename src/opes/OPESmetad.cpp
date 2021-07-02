@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
@@ -78,8 +80,8 @@ The following is a minimal working example:
 
 \plumedfile
 cv: DISTANCE ATOMS=1,2
-opes: OPES_METAD ARG=cv PACE=100 BARRIER=40
-PRINT STRIDE=100 FILE=COLVAR ARG=*
+opes: OPES_METAD ARG=cv PACE=200 BARRIER=40
+PRINT STRIDE=200 FILE=COLVAR ARG=*
 \endplumedfile
 
 Another more articulated one:
@@ -98,9 +100,10 @@ opes: OPES_METAD ...
   BIASFACTOR=inf
   STATE_RFILE=Restart.data
   STATE_WFILE=State.data
-  STATE_WSTRIDE=50000
+  STATE_WSTRIDE=500*100
   STORE_STATES
   WALKERS_MPI
+  NLIST
 ...
 
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
@@ -176,7 +179,6 @@ private:
   bool calc_work_;
   double work_;
   double old_KDEnorm_;
-  double old_Zed_;
   std::vector<kernel> delta_kernels_;
 
   OFile stateOfile_;
@@ -276,7 +278,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
+  keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
@@ -288,7 +290,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat as no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
-  keys.addOutputComponent("work","CALC_WORK","work done by the last kernel deposited");
+  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
   keys.addOutputComponent("nlker","NLIST","number of kernels in the neighbor list");
   keys.addOutputComponent("nlsteps","NLIST","number of steps from last neighbor list update");
 }
@@ -468,7 +470,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
   if(wStateStride_>0)
-    plumed_massert(wStateStride_>stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
+    plumed_massert(wStateStride_>=stride_,"STATE_WSTRIDE is in units of MD steps, thus it is suggested to use a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -748,7 +750,6 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //set initial old values
   KDEnorm_=mode::explore?counter_:sum_weights_;
   old_KDEnorm_=KDEnorm_;
-  old_Zed_=Zed_;
 
 //add and set output components
   addComponent("rct");
@@ -891,16 +892,6 @@ void OPESmetad<mode>::calculate()
   for(unsigned i=0; i<ncv_; i++)
     setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
-//calculate work
-  if(calc_work_)
-  {
-    double tot_delta=0;
-    for(unsigned d=0; d<delta_kernels_.size(); d++)
-      tot_delta+=evaluateKernel(delta_kernels_[d],cv);
-    const double old_prob=(prob*KDEnorm_-tot_delta)/old_KDEnorm_;
-    work_+=current_bias_-kbt_*bias_prefactor_*std::log(old_prob/old_Zed_+epsilon_);
-  }
-
   afterCalculate_=true;
 }
 
@@ -937,14 +928,6 @@ void OPESmetad<mode>::update()
     plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
     afterCalculate_=false; //if needed implementation can be changed to avoid this
 
-    //work done by the bias in one iteration uses as zero reference a point at inf, so that the work is always positive
-    if(calc_work_)
-    {
-      const double min_shift=kbt_*bias_prefactor_*std::log(old_Zed_/Zed_*old_KDEnorm_/KDEnorm_);
-      getPntrToComponent("work")->set(work_-stride_*min_shift);
-      work_=0;
-    }
-    old_Zed_=Zed_;
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
@@ -1178,6 +1161,16 @@ void OPESmetad<mode>::update()
       }
       Zed_=sum_uprob/KDEnorm_/kernels_.size();
       getPntrToComponent("zed")->set(Zed_);
+    }
+
+    //calculate work if requested
+    if(calc_work_)
+    {
+      std::vector<double> dummy(ncv_); //derivatives are not actually needed
+      const double prob=getProbAndDerivatives(center,dummy);
+      const double new_bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
+      work_+=new_bias-current_bias_;
+      getPntrToComponent("work")->set(work_);
     }
   }
 
