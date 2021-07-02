@@ -45,7 +45,7 @@ See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It has a fast initial exploration phase, and then becomes extremely conservative and does not significantly change the shape of the deposited bias any more, reaching a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
-At <a href="https://github.com/invemichele/opes/tree/master/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting.
+At <a href="https://github.com/invemichele/opes/tree/master/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting (see \ref opes-metad).
 The estimated \f$c(t)\f$ is printed for reference only, since it should converge to a fixed value as the bias converges.
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
@@ -75,6 +75,9 @@ By default this file is overwritten, but you can instead append to it using the 
 Multiple walkers are supported only with MPI communication, via the keyword WALKERS_MPI.
 
 \par Examples
+
+Several examples can be found on the <a href="https://www.plumed-nest.org/browse.html">PLUMED-NEST website</a>, by searching for the OPES keyword.
+The following \ref opes-metad can also be useful to get started with the method.
 
 The following is a minimal working example:
 
@@ -264,7 +267,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
-  keys.add("optional","NLIST_PARAMETERS","( default=3.,0.5 ) the two cutoff parameters for the kernels neighbor list");
+  keys.add("optional","NLIST_PARAMETERS","( default=3.0,0.5 ) the two cutoff parameters for the kernels neighbor list");
   keys.addFlag("NLIST",false,"use neighbor list for kernels summation, faster but experimental");
   keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
