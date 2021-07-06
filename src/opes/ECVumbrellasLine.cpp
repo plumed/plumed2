@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
@@ -36,6 +38,10 @@ The umbrellas can be multidimensional, but you should rescale the dimensions so 
 The keyword BARRIER can be helpful to avoid breaking your system due to a too strong initial bias.
 If you think the placed umbrellas will not cover the whole unbiased probability distribution you should add it explicitly to the target, with the flag ADD_P0, for more robust convergence.
 See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
+
+The flag LOWER_HALF_ONLY modifies the ECVs so that they are set to zero when \f$\mathbf{s}>\mathbf{s}_i\f$, as in \ref LOWER_WALLS.
+This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat target distribution.
+By pushing only from below one can avoid too extreme forces that could crash the simulation.
 
 \par Examples
 
@@ -65,8 +71,9 @@ class ECVumbrellasLine :
   public ExpansionCVs
 {
 private:
-  unsigned P0_contribution_;
   double barrier_;
+  unsigned P0_contribution_;
+  bool lower_only_;
 
   std::vector< std::vector<double> > centers_;
   double sigma_;
@@ -96,8 +103,9 @@ void ECVumbrellasLine::registerKeywords(Keywords& keys)
   keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","SPACING","1","the distance between umbrellas, in units of SIGMA");
-  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
+  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.addFlag("LOWER_HALF_ONLY",false,"use only the lower half of each umbrella potentials");
 }
 
 ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
@@ -115,6 +123,7 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
 //set barrier_
   barrier_=std::numeric_limits<double>::infinity();
   parse("BARRIER",barrier_);
+  parseFlag("LOWER_HALF_ONLY",lower_only_);
 
 //set umbrellas
   parse("SIGMA",sigma_);
@@ -130,13 +139,34 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   for(unsigned j=0; j<getNumberOfArguments(); j++)
     length+=std::pow(max_cv[j]-min_cv[j],2);
   length=std::sqrt(length);
-  const unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
+  unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
   centers_.resize(getNumberOfArguments()); //centers_[cv][umbrellas]
+  unsigned full_period=0;
   for(unsigned j=0; j<getNumberOfArguments(); j++)
   {
     centers_[j].resize(sizeUmbrellas);
-    for(unsigned k=0; k<sizeUmbrellas; k++)
-      centers_[j][k]=min_cv[j]+k*(max_cv[j]-min_cv[j])/(sizeUmbrellas-1);
+    if(sizeUmbrellas>1)
+      for(unsigned k=0; k<sizeUmbrellas; k++)
+        centers_[j][k]=min_cv[j]+k*(max_cv[j]-min_cv[j])/(sizeUmbrellas-1);
+    else
+      centers_[j][0]=(min_cv[j]+max_cv[j])/2.;
+    if(getPntrToArgument(j)->isPeriodic())
+    {
+      double min,max;
+      std::string min_str,max_str;
+      getPntrToArgument(j)->getDomain(min,max);
+      getPntrToArgument(j)->getDomain(min_str,max_str);
+      plumed_massert(min_cv[j]>=min,"ARG "+std::to_string(j)+": MIN_CV cannot be smaller than the periodic bound "+min_str);
+      plumed_massert(max_cv[j]<=max,"ARG "+std::to_string(j)+": MAX_CV cannot be greater than the periodic bound "+max_str);
+      if(min_cv[j]==min && max_cv[j]==max)
+        full_period++;
+    }
+  }
+  if(full_period==getNumberOfArguments() && sizeUmbrellas>1) //first and last are the same point
+  {
+    sizeUmbrellas--;
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+      centers_[j].pop_back();
   }
 
   checkRead();
@@ -154,6 +184,8 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
+  if(lower_only_)
+    log.printf(" -- LOWER_HALF_ONLY: the ECVs are set to zero for values of the CV above the respective center\n");
 }
 
 void ECVumbrellasLine::calculateECVs(const double * cv)
@@ -164,8 +196,16 @@ void ECVumbrellasLine::calculateECVs(const double * cv)
     {
       const unsigned kk=k-P0_contribution_;
       const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
-      ECVs_[j][k]=0.5*std::pow(dist_jk,2);
-      derECVs_[j][k]=dist_jk/sigma_;
+      if(lower_only_ && dist_jk>=0)
+      {
+        ECVs_[j][k]=0;
+        derECVs_[j][k]=0;
+      }
+      else
+      {
+        ECVs_[j][k]=0.5*std::pow(dist_jk,2);
+        derECVs_[j][k]=dist_jk/sigma_;
+      }
     }
   }
 }

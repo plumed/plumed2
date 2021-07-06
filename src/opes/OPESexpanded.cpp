@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
@@ -55,6 +57,7 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 \par Examples
 
 \plumedfile
+# simulate multiple temperatures, as in parallel tempering
 ene: ENERGY
 ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
@@ -65,6 +68,7 @@ You can easily combine multiple ECVs.
 The OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
 
 \plumedfile
+# simulate multiple temperatures while biasing a CV
 ene: ENERGY
 dst: DISTANCE ATOMS=1,2
 
@@ -76,12 +80,13 @@ PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
 \endplumedfile
 
 If an ECV is based on more than one CV you must provide all the output component, in the proper order.
-You can use regex for that, like in the following example.
+You can use \ref Regex for that, like in the following example.
 
 \plumedfile
+# simulate multiple temperatures and pressures while biasing a two-CVs linear path
 ene: ENERGY
 vol: VOLUME
-mtp: ECV_MULTITHERMAL_MULTIBARIC ...
+ecv_mtp: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=300
   MIN_TEMP=200
@@ -93,9 +98,9 @@ mtp: ECV_MULTITHERMAL_MULTIBARIC ...
 
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
-umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
+ecv_umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
 
-opes: OPES_EXPANDED ARG=mtp.*,umb.* PACE=500 WALKERS_MPI PRINT_STRIDE=1000
+opes: OPES_EXPANDED ARG=(ecv_.*) PACE=500 WALKERS_MPI PRINT_STRIDE=1000
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,vol,cv1,cv2,opes.bias
 \endplumedfile
@@ -146,7 +151,6 @@ private:
 
   bool calc_work_;
   double work_;
-  std::vector<double> old_deltaF_;
 
   unsigned print_stride_;
   OFile deltaFsOfile_;
@@ -190,7 +194,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
+  keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
   keys.use("RESTART");
@@ -199,7 +203,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("work","CALC_WORK","work done by the bias between each update");
+  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
 }
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
@@ -388,8 +392,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           for(unsigned i=start; i<start+deltaF_.size(); i++)
             deltaF_[iter++]=all_deltaF_[i];
         }
-        if(calc_work_)
-          old_deltaF_=deltaF_;
       }
       else //read each step
       {
@@ -401,8 +403,6 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
         {
           unsigned restart_stride;
           ifile.scanField("print_stride",restart_stride);
-          if(calc_work_)
-            old_deltaF_=deltaF_;
           ifile.scanField("rct",rct_);
           if(NumParallel_==1)
           {
@@ -524,7 +524,7 @@ void OPESexpanded::calculate()
   if(deltaF_size_==0) //no bias before initialization
     return;
 
-//get diffMax, to avoid over/underflow without long double
+//get diffMax, to avoid over/underflow
   double diffMax=-std::numeric_limits<double>::max();
   #pragma omp parallel num_threads(NumOMP_)
   {
@@ -584,21 +584,6 @@ void OPESexpanded::calculate()
   for(unsigned j=0; j<ncv_; j++)
     setOutputForce(j,kbt_*der_sum_cv[j]/sum);
 
-//calculate work
-  if(calc_work_)
-  {
-    double old_sum=0;
-    #pragma omp parallel num_threads(NumOMP_)
-    {
-      #pragma omp for reduction(+:old_sum)
-      for(unsigned i=0; i<deltaF_.size(); i++)
-        old_sum+=std::exp(diff_[i]-diffMax+(old_deltaF_[i]-deltaF_[i])/kbt_);
-    }
-    if(NumParallel_>1)
-      comm.Sum(old_sum);
-    work_+=-kbt_*std::log(sum/old_sum);
-  }
-
   afterCalculate_=true;
 }
 
@@ -626,14 +611,6 @@ void OPESexpanded::update()
         obs_steps_=0; //no more observation
       }
       return;
-    }
-
-    //work done by the bias in one iteration
-    if(calc_work_)
-    {
-      getPntrToComponent("work")->set(work_);
-      work_=0;
-      old_deltaF_=deltaF_;
     }
 
     //update averages
@@ -668,9 +645,43 @@ void OPESexpanded::update()
         updateDeltaF(all_bias[w]);
       }
     }
+
     //write DeltaFs to file
     if((counter_/NumWalkers_-1)%print_stride_==0)
       printDeltaF();
+
+    //calculate work if requested
+    if(calc_work_)
+    { //some copy and paste from calculate()
+      //get diffMax, to avoid over/underflow
+      double diffMax=-std::numeric_limits<double>::max();
+      #pragma omp parallel num_threads(NumOMP_)
+      {
+        #pragma omp for reduction(max:diffMax)
+        for(unsigned i=0; i<deltaF_.size(); i++)
+        {
+          diff_[i]=(-getExpansion(i)+deltaF_[i]/kbt_);
+          if(diff_[i]>diffMax)
+            diffMax=diff_[i];
+        }
+      }
+      if(NumParallel_>1)
+        comm.Max(diffMax);
+      //calculate the bias
+      double sum=0;
+      #pragma omp parallel num_threads(NumOMP_)
+      {
+        #pragma omp for reduction(+:sum) nowait
+        for(unsigned i=0; i<deltaF_.size(); i++)
+          sum+=std::exp(diff_[i]-diffMax);
+      }
+      if(NumParallel_>1)
+        comm.Sum(sum);
+      const double new_bias=-kbt_*(diffMax+std::log(sum/deltaF_size_));
+      //accumulate work
+      work_+=new_bias-current_bias_;
+      getPntrToComponent("work")->set(work_);
+    }
   }
 
 //dump state if requested
@@ -814,8 +825,6 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
     }
   }
   obs_cvs_.clear();
-  if(calc_work_)
-    old_deltaF_=deltaF_;
 
 //set deltaF_name_
   deltaF_name_.resize(deltaF_size_,"DeltaF");
