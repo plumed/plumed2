@@ -21,7 +21,7 @@ The bias quickly becomes quasi-static and the desired properties, such as the fr
 Depending on the kind of target distribution one wishes to sample, different \ref OPES_BIAS "OPES biases" can be used.
 
 ## Installation 
-This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features.
+This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features. See also \ref mymodules.
 
 ## Usage
 The OPES module is composed by two bias actions, \ref OPES_METAD that samples metadynamics-like target distributions (e.g. the well-tempered one),

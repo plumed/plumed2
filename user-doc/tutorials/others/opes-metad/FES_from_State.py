@@ -54,7 +54,7 @@ if all_stored:
   else:
     prefix=outfile[:outfile.rfind('/')]
     if prefix+'/'==outfile:
-      outfile+='fes_rew.dat'
+      outfile+='fes.dat'
     outfile_n=outfile[outfile.rfind('/'):]
   if outfile_n.rfind('.')==-1:
     suffix=''

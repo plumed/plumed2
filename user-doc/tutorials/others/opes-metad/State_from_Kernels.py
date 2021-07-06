@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
-### Generate an OPES state file from a kernels file ###
-# For post-processing only, do not use for restarting a simulation
+### Generate an OPES STATE file from a KERNELS file ###
+# For postprocessing only, do not use for restarting a simulation
 # (the idea is to fake a restart with the plumed driver and dump the OPES state)
 
 import sys
