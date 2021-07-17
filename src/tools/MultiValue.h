@@ -110,6 +110,8 @@ public:
   double get( const unsigned& ) const ;
 /// Return a derivative value
   double getDerivative( const unsigned&, const unsigned& ) const ;
+/// Clear bookeeping arrays for matrix stuff
+  void clearMatrixBookeepingArrays();
 /// Clear all values
   void clearAll();
 /// Clear a value

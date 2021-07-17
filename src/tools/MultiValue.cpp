@@ -62,11 +62,15 @@ void MultiValue::resize( const std::size_t& nvals, const std::size_t& nder, cons
   symfunc_tmp_derivs.resize( nvals ); atLeastOneSet=false;
 }
 
+void MultiValue::clearMatrixBookeepingArrays() {
+  for(unsigned i=0; i<mat_nindices.size(); ++i) mat_nindices[i]=0;
+  for(unsigned i=0; i<matrix_element_nind.size(); ++i) matrix_element_nind[i]=0;
+}
+
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix indices
-  for(unsigned i=0; i<mat_nindices.size(); ++i) mat_nindices[i]=0;
-  for(unsigned i=0; i<matrix_element_nind.size(); ++i) matrix_element_nind[i]=0;
+  clearMatrixBookeepingArrays();
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clear(i);
   atLeastOneSet=false;
