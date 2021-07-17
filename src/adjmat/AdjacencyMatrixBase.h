@@ -40,7 +40,6 @@ private:
   std::vector<unsigned> nlist;
   void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
-  void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
   void updateMatrixIndices( const std::vector<unsigned> & indices, MultiValue& myvals ) const ;
 protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
@@ -53,6 +52,7 @@ public:
   explicit AdjacencyMatrixBase(const ActionOptions&);
   bool canBeAfterInChain( ActionWithValue* av ) const ;
   unsigned getNumberOfColumns() const override;
+  void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const override;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;

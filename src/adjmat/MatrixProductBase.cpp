@@ -169,24 +169,34 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
   return shape;
 }
 
-void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return;
+void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
+  for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
+      unsigned nmat = getPntrToOutput(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
 
-  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
-
-  unsigned nargs = 1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
-  for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
-  if( getNumberOfAtoms()>0 ) {
-    unsigned numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize(); 
-    matrix_indices[nmat_ind+0]=numargs + 3*ind+0;
-    matrix_indices[nmat_ind+1]=numargs + 3*ind+1;
-    matrix_indices[nmat_ind+2]=numargs + 3*ind+2;
-    nmat_ind+=3; unsigned virbase = numargs + 3*getNumberOfAtoms();
-    for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
-    nmat_ind+=9;
+      unsigned numargs = 0;
+      if( getNumberOfArguments()>0 ) {
+          unsigned nargs = 1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
+          for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
+          numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
+      }
+      if( getNumberOfAtoms()>0 ) {
+        matrix_indices[nmat_ind+0]=numargs + 3*ind+0;
+        matrix_indices[nmat_ind+1]=numargs + 3*ind+1;
+        matrix_indices[nmat_ind+2]=numargs + 3*ind+2;
+        nmat_ind+=3; 
+        for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) { 
+            matrix_indices[nmat_ind+0]=numargs + 3*indices[i]+0;
+            matrix_indices[nmat_ind+1]=numargs + 3*indices[i]+1;
+            matrix_indices[nmat_ind+2]=numargs + 3*indices[i]+2;
+            nmat_ind+=3;
+        }
+        unsigned virbase = numargs + 3*getNumberOfAtoms();
+        for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
+        nmat_ind+=9; 
+      }
+      myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
   }
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
 }
 
 unsigned MatrixProductBase::getNumberOfColumns() const { 
@@ -194,26 +204,39 @@ unsigned MatrixProductBase::getNumberOfColumns() const {
   return getPntrToOutput(0)->getShape()[1];
 }
 
+void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
+  unsigned size_v = getPntrToOutput(0)->getShape()[1]; 
+  if( skip_ieqj ) {
+      if( indices.size()!=size_v ) indices.resize( size_v ); 
+  } else if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+  unsigned k=1; indices[0]=current; unsigned start_n = getFullNumberOfTasks();
+  for(unsigned i=0; i<size_v; ++i) {
+      if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
+      indices[k]=start_n + i; k++;
+  }
+  myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() );
+}
+
 void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals ) const {
+  std::vector<unsigned> & indices( myvals.getIndices() );
   if( actionInChain() ) {
-    if( myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
+    if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
     return ;
   }
+  std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
+  setupForTask( current, myvals, indices, atoms );
+   
 
   // Now loop over all atoms in coordination sphere
-  unsigned start_n = getFullNumberOfTasks();
-  myvals.setNumberOfIndicesInFirstBlock( start_n );
-  unsigned size_v = getPntrToOutput(0)->getShape()[1];
-  for(unsigned i=0; i<size_v; ++i) {
-    // Don't do i==j
-    if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
+  unsigned ntwo_atoms = myvals.getSplitIndex();
+  for(unsigned i=1; i<ntwo_atoms; ++i) {
     // This does everything in the stream that is done with single matrix elements
-    runTask( getLabel(), myvals.getTaskIndex(), current, start_n + i, myvals );
+    runTask( getLabel(), myvals.getTaskIndex(), current, indices[i], myvals );
     // Now clear only elements that are not accumulated over whole row
     clearMatrixElements( myvals );
   }
   // Update the matrix index for the central atom
-  updateCentralMatrixIndex( myvals.getTaskIndex(), myvals );
+  if( !doNotCalculateDerivatives() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
 }
 
 bool MatrixProductBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {

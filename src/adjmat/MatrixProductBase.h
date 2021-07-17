@@ -36,7 +36,7 @@ class MatrixProductBase :
 {
 private:
   bool skip_ieqj;
-  void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
+  void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
 protected:
   std::vector<double> forcesToApply;
 public:
@@ -54,6 +54,7 @@ public:
   void runFinalJobs() override;
   unsigned getNumberOfFinalTasks() override;
   std::vector<unsigned> getMatrixShapeForFinalTasks() override;
+  virtual void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
   virtual void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2,
