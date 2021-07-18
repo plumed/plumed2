@@ -92,8 +92,20 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
   npoints=1; bounds_set=true;
   for(unsigned i=0; i<dimension; ++i) {
     str_min[i]=smin[i]; str_max[i]=smax[i];
-    Tools::convert( str_min[i], min[i] );
-    Tools::convert( str_max[i], max[i] );
+    try {
+      Tools::convert( str_min[i], min[i] );
+    } catch(ExceptionConversionError& exc) {
+      // GB: I allow this failure not to break test multicolvar/rt-dens-average
+      // where these functions were called with str_min[i] and str_max[i] as empty string
+      // To be checked.
+    }
+    try {
+      Tools::convert( str_max[i], max[i] );
+    } catch(ExceptionConversionError& exc) {
+      // GB: I allow this failure not to break test multicolvar/rt-dens-average
+      // where these functions were called with str_min[i] and str_max[i] as empty string
+      // To be checked.
+    }
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       if( spacing[i]==0 ) nbin[i] = binsin[i];
       else {

@@ -321,7 +321,13 @@ void Action::parse(const std::string&key,T&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,t) ) {
+      if( def.length()==0) {
+        log.printf("ERROR in action %s with label %s : keyword %s has empty default value",name.c_str(),label.c_str(),key.c_str() );
+        this->exit(1);
+      }
+      try {
+        Tools::convert(def,t);
+      } catch(ExceptionConversionError& exc) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       }
@@ -371,13 +377,18 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
+      if( def.length()==0) {
+        log.printf("ERROR in action %s with label %s : keyword %s has empty default value",name.c_str(),label.c_str(),key.c_str() );
+        this->exit(1);
+      }
+      try {
+        Tools::convert(def,val);
+      } catch(ExceptionConversionError& exc) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
-      } else {
-        if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
-        else t.push_back(val);
       }
+      if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+      else t.push_back(val);
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
     }

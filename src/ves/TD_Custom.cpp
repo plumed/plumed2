@@ -190,9 +190,13 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   for(auto &p: expression.getVariables()) {
     std::string curr_var = p;
     unsigned int cv_idx;
-    if(curr_var.substr(0,cv_var_prefix_str_.size())==cv_var_prefix_str_ && Tools::convert(curr_var.substr(cv_var_prefix_str_.size()),cv_idx) && cv_idx>0) {
-      cv_var_idx_.push_back(cv_idx-1);
-    }
+    bool ok=false;
+    if(curr_var.substr(0,cv_var_prefix_str_.size())==cv_var_prefix_str_) try {
+        Tools::convert(curr_var.substr(cv_var_prefix_str_.size()),cv_idx);
+        if(cv_idx>0) ok=true;
+      } catch(ExceptionConversionError& exc) {
+      }
+    if(ok) cv_var_idx_.push_back(cv_idx-1);
     else if(curr_var==fes_var_str_) {
       use_fes_=true;
       setDynamic();

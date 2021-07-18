@@ -292,6 +292,18 @@ public:
   }
 };
 
+/// Class representing a conversion error
+class ExceptionConversionError :
+  public Exception {
+public:
+  using Exception::Exception;
+  template<typename T>
+  ExceptionConversionError& operator<<(const T & x) {
+    *((Exception*) this) <<x;
+    return *this;
+  }
+};
+
 #ifdef __GNUG__
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
 #define __PLUMED_FUNCNAME __PRETTY_FUNCTION__

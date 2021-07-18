@@ -55,14 +55,14 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 class Tools {
 /// class to convert a string to a generic type T
   template<class T>
-  static bool convertToAny(const std::string & str,T &t);
+  static void convertToAny(const std::string & str,T &t);
 /// class to convert a string to a real type T.
 /// T should be either float, double, or long double
   template<class T>
-  static bool convertToReal(const std::string & str,T &t);
+  static void convertToReal(const std::string & str,T &t);
 /// class to convert a string to a int type T
   template<class T>
-  static bool convertToInt(const std::string & str,T &t);
+  static void convertToInt(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -79,23 +79,23 @@ public:
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it
-  static bool convert(const std::string & str,double & t);
+  static void convert(const std::string & str,double & t);
 /// Convert a string to a long double, reading it
-  static bool convert(const std::string & str,long double & t);
+  static void convert(const std::string & str,long double & t);
 /// Convert a string to a float, reading it
-  static bool convert(const std::string & str,float & t);
+  static void convert(const std::string & str,float & t);
 /// Convert a string to a int, reading it
-  static bool convert(const std::string & str,int & t);
+  static void convert(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
-  static bool convert(const std::string & str,long int & t);
+  static void convert(const std::string & str,long int & t);
 /// Convert a string to an unsigned int, reading it
-  static bool convert(const std::string & str,unsigned & t);
+  static void convert(const std::string & str,unsigned & t);
 /// Convert a string to a long unsigned int, reading it
-  static bool convert(const std::string & str,long unsigned & t);
+  static void convert(const std::string & str,long unsigned & t);
 /// Convert a string to a atom number, reading it
-  static bool convert(const std::string & str,AtomNumber & t);
+  static void convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
-  static bool convert(const std::string & str,std::string & t);
+  static void convert(const std::string & str,std::string & t);
 /// Convert anything into a string
   template<typename T>
   static void convert(T i,std::string & str);
@@ -221,7 +221,11 @@ template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) return false;
-  if(s.length()>0 && !convert(s,val))return false;
+  if(s.length()>0) try {
+      convert(s,val);
+    } catch(ExceptionConversionError& exc) {
+      return false;
+    }
   return true;
 }
 
@@ -241,7 +245,11 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
-    if(!convert(s,v))return false;
+    try {
+      convert(s,v);
+    } catch(ExceptionConversionError& exc) {
+      return false;
+    }
     val.push_back(v);
   }
   return true;

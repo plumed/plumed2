@@ -92,10 +92,14 @@ BasisFunctions::BasisFunctions(const ActionOptions&ao):
   }
   interval_min_str_ = str_imin;
   interval_max_str_ = str_imax;
-  if(!Tools::convert(str_imin,interval_min_)) {
+  try {
+    Tools::convert(str_imin,interval_min_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror(getName()+": cannot convert the value given in MINIMUM to a double");
   }
-  if(!Tools::convert(str_imax,interval_max_)) {
+  try {
+    Tools::convert(str_imax,interval_max_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror(getName()+": cannot convert the value given in MAXIMUM to a double");
   }
   if(interval_min_>interval_max_) {plumed_merror(getName()+": MINIMUM and MAXIMUM are not correctly defined");}
@@ -124,10 +128,14 @@ void BasisFunctions::setIntrinsicInterval(const double interval_intrinsic_min_in
 void BasisFunctions::setIntrinsicInterval(const std::string& interval_intrinsic_min_str_in, const std::string& interval_intrinsic_max_str_in) {
   interval_intrinsic_min_str_ = interval_intrinsic_min_str_in;
   interval_intrinsic_max_str_ = interval_intrinsic_max_str_in;
-  if(!Tools::convert(interval_intrinsic_min_str_,interval_intrinsic_min_)) {
+  try {
+    Tools::convert(interval_intrinsic_min_str_,interval_intrinsic_min_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror("setIntrinsicInterval: cannot convert string value given for the minimum of the intrinsic interval to a double");
   }
-  if(!Tools::convert(interval_intrinsic_max_str_,interval_intrinsic_max_)) {
+  try {
+    Tools::convert(interval_intrinsic_max_str_,interval_intrinsic_max_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror("setIntrinsicInterval: cannot convert string value given for the maximum of the intrinsic interval to a double");
   }
   plumed_massert(interval_intrinsic_min_<interval_intrinsic_max_,"setIntrinsicInterval: intrinsic intervals are not defined correctly");
@@ -146,10 +154,14 @@ void BasisFunctions::setInterval(const double interval_min_in, const double inte
 void BasisFunctions::setInterval(const std::string& interval_min_str_in, const std::string& interval_max_str_in) {
   interval_min_str_ = interval_min_str_in;
   interval_max_str_ = interval_max_str_in;
-  if(!Tools::convert(interval_min_str_,interval_min_)) {
+  try {
+    Tools::convert(interval_min_str_,interval_min_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror("setInterval: cannot convert string value given for the minimum of the interval to a double");
   }
-  if(!Tools::convert(interval_max_str_,interval_max_)) {
+  try {
+    Tools::convert(interval_max_str_,interval_max_);
+  } catch(ExceptionConversionError& exc) {
     plumed_merror("setInterval: cannot convert string value given for the maximum of the interval to a double");
   }
   plumed_massert(interval_min_<interval_max_,"setInterval: intervals are not defined correctly");

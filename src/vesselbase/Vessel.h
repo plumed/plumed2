@@ -161,7 +161,12 @@ void Vessel::parse(const std::string&key, T&t ) {
   bool found=Tools::parse(line,key,t); std::string def;
   if ( !found && keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,def) ) {
-      plumed_massert( def.length()!=0 && Tools::convert(def,t), "default value is dubious");
+      plumed_massert( def.length()!=0, "default value is dubious");
+      try {
+        Tools::convert(def,t);
+      } catch(ExceptionConversionError& exc) {
+        plumed_error() << "default value is dubious";
+      }
     } else {
       error("keyword " + key + " is comulsory for this vessel");
     }
@@ -187,11 +192,15 @@ void Vessel::parseVector(const std::string&key,std::vector<T>&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
+      if( def.length()==0 ) {
         plumed_merror("weird default value for keyword " + key );
-      } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
       }
+      try {
+        Tools::convert(def,val);
+      } catch(ExceptionConversionError& exc) {
+        plumed_merror("weird default value for keyword " + key );
+      }
+      for(unsigned i=0; i<t.size(); ++i) t[i]=val;
     } else {
       error("keyword " + key + " is compulsory");
     }
