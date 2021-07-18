@@ -40,7 +40,6 @@ private:
   std::vector<unsigned> nlist;
   void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
-  void updateMatrixIndices( const std::vector<unsigned> & indices, MultiValue& myvals ) const ;
 protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
   void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
@@ -56,7 +55,6 @@ public:
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,

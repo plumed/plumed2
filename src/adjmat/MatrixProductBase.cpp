@@ -220,12 +220,15 @@ void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myval
 void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<unsigned> & indices( myvals.getIndices() );
   if( actionInChain() ) {
-    if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
-    return ;
+    // If this is not an adjacency matrix then have done the relevant calculations during the first pass through the loop 
+    const AdjacencyMatrixBase* myadj = dynamic_cast<const AdjacencyMatrixBase*>( this );
+    if( !myadj ) {
+        if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
+        return ;
+    }
   }
   std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
   setupForTask( current, myvals, indices, atoms );
-   
 
   // Now loop over all atoms in coordination sphere
   unsigned ntwo_atoms = myvals.getSplitIndex();
@@ -266,10 +269,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
     plumed_dbg_assert( jind_start + i*sss + ind2<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, jind_start + i*sss + ind2, der2[i] );
     myvals.updateIndex( ostrn, jind_start + i*sss + ind2 );
-    matrix_indices[nmat_ind] = jind_start + i*sss + ind2;
+    if( !myvals.inMatrixRerun() ) matrix_indices[nmat_ind] = jind_start + i*sss + ind2;
     nmat_ind++;
   }
-  if( getNumberOfAtoms()>0 ) {
+  if( !myvals.inMatrixRerun() && getNumberOfAtoms()>0 ) {
     unsigned numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
     matrix_indices[nmat_ind+0]=numargs + 3*index2+0;
     matrix_indices[nmat_ind+1]=numargs + 3*index2+1;

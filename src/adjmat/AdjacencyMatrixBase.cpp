@@ -242,6 +242,13 @@ void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1,
   }
   // Update dynamic list indices for virial
   unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) myvals.updateIndex( w_ind, base+j );
+  // Matrix indices
+  if( !myvals.inMatrixRerun() ) {
+      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+      matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
+      nmat_ind+=3; myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+  }
 }
 
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
@@ -278,40 +285,6 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, MultiValue& myv
   // And collect atom position data
   if( atoms.size()<getNumberOfAtoms() ) atoms.resize( getNumberOfAtoms() );
   for(unsigned i=0; i<natoms; ++i) atoms[ indices[i] ] = t_atoms[i];
-}
-
-void AdjacencyMatrixBase::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // And collect atom position data
-  std::vector<unsigned> & indices( myvals.getIndices() );
-  std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
-  setupForTask( current, myvals, indices, atoms );
-
-  // Now loop over all atoms in coordination sphere
-  unsigned natoms = myvals.getNumberOfIndices();
-  unsigned ntwo_atoms = myvals.getSplitIndex();
-  for(unsigned i=1; i<ntwo_atoms; ++i) {
-    // This does everything in the stream that is done with single matrix elements
-    runTask( getLabel(), myvals.getTaskIndex(), current, indices[i], myvals );
-    // Now clear only elements that are not accumulated over whole row
-    clearMatrixElements( myvals );
-  }
-  // Now update the matrix indices
-  if( !doNotCalculateDerivatives() ) updateMatrixIndices( indices, myvals );
-}
-
-void AdjacencyMatrixBase::updateMatrixIndices( const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  plumed_assert( !doNotCalculateDerivatives() );
-  unsigned natoms = myvals.getNumberOfIndices(); 
-  for(unsigned i=0; i<getNumberOfComponents(); ++i ) {
-      unsigned nmat = getPntrToOutput(i)->getPositionInMatrixStash();
-      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) );
-      plumed_dbg_assert( mat_indices.size()>=(3*getNumberOfAtoms()+9) ); myvals.setNumberOfMatrixIndices( nmat, 3*natoms+9 );
-      for(unsigned i=0; i<natoms; ++i) {
-        mat_indices[3*i+0] = 3*indices[i]; mat_indices[3*i+1] = 3*indices[i]+1; mat_indices[3*i+2]=3*indices[i]+2;
-      }
-      unsigned nbase=3*natoms, vbase=3*getNumberOfAtoms();
-      for(unsigned i=0; i<9; ++i) mat_indices[nbase+i] = vbase + i;
-  }
 }
 
 bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
@@ -366,6 +339,15 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
       myvals.addDerivative( z_index, base+1, 0 ); myvals.addDerivative( z_index, base+4, 0 ); myvals.addDerivative( z_index, base+7, 0 );
       myvals.addDerivative( z_index, base+2, -atom[0] ); myvals.addDerivative( z_index, base+5, -atom[1] ); myvals.addDerivative( z_index, base+8, -atom[2] );
       for(unsigned k=0;k<9;++k) { myvals.updateIndex( x_index, base+k ); myvals.updateIndex( y_index, base+k ); myvals.updateIndex( z_index, base+k ); }
+      // Store matrix index information
+      if( !myvals.inMatrixRerun() ) {
+            for(unsigned k=1; k<4;++k) {
+                unsigned nmat = getPntrToOutput(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+                std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+                matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
+                nmat_ind+=3; myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+            }
+      }
     }
   }
   // Update derivatives
