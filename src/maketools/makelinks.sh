@@ -21,7 +21,9 @@ do
   name="${file##*/}"
   text="#include \"../../$dir/$name\""
 # files are replaces only if changed
-  cmp -s <(echo "$text") $dir/$name > /dev/null  2> /dev/null || echo "$text" > $dir/$name
+  if ! test -f $dir/$name || [[ "$text" != "$(<$dir/$name)" ]] ; then
+    echo "$text" > $dir/$name
+  fi
 done
 
 # then erase not existent files
