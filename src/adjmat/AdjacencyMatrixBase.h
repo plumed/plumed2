@@ -38,7 +38,6 @@ private:
   unsigned nl_stride;
   unsigned natoms_per_list;
   std::vector<unsigned> nlist;
-  void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
 protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
@@ -55,10 +54,9 @@ public:
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
-  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
-                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const override {}
+                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const override ;
   virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
 };
 

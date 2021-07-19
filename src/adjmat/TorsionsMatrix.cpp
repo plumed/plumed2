@@ -83,16 +83,12 @@ double TorsionsMatrix::computeVectorProduct( const unsigned& index1, const unsig
     for(unsigned i=0; i<3; ++i) { dvec1[i]=dv1[i]; dvec2[i]=dv2[i]; }
     unsigned narg_derivatives = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
     myvals.addDerivative( ostrn, narg_derivatives + 3*index1+0, -dconn[0] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+0, dconn[0] );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+0 ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+0 );
     myvals.addDerivative( ostrn, narg_derivatives + 3*index1+1, -dconn[1] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+1, dconn[1] );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+1 ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+1 );
     myvals.addDerivative( ostrn, narg_derivatives + 3*index1+2, -dconn[2] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+2, dconn[2] );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+2 ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+2 );
     //And virial
     Tensor vir( -extProduct( conn, dconn ) ); unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
-    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j ) {
-        myvals.addDerivative( ostrn, virbase+3*i+j, vir(i,j) ); myvals.updateIndex( ostrn, virbase+3*i+j );
-      }
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j ) myvals.addDerivative( ostrn, virbase+3*i+j, vir(i,j) ); 
+      
   }
   return angle;
 }

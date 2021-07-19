@@ -37,7 +37,9 @@ class MatrixProductBase :
 private:
   bool skip_ieqj;
   void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
+  void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
+  bool isAdjacencyMatrix;
   std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );

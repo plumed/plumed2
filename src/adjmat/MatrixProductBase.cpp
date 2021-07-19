@@ -38,7 +38,8 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   ActionWithValue(ao),
-  skip_ieqj(false)
+  skip_ieqj(false),
+  isAdjacencyMatrix(false)
 {
   if( getNumberOfArguments()>0 ) {
       if( getNumberOfArguments()!=2 ) error("should only have two arguments");
@@ -219,13 +220,10 @@ void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myval
 
 void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<unsigned> & indices( myvals.getIndices() );
-  if( actionInChain() ) {
+  if( !isAdjacencyMatrix && actionInChain() ) {
     // If this is not an adjacency matrix then have done the relevant calculations during the first pass through the loop 
-    const AdjacencyMatrixBase* myadj = dynamic_cast<const AdjacencyMatrixBase*>( this );
-    if( !myadj ) {
-        if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
-        return ;
-    }
+    if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
+    return ;
   }
   std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
   setupForTask( current, myvals, indices, atoms );
@@ -242,16 +240,51 @@ void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals
   if( !doNotCalculateDerivatives() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
 }
 
+void MatrixProductBase::updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  unsigned narg_derivatives = 0; if( getNumberOfArguments()>0 ) narg_derivatives = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
+  unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
+  // Update dynamic list indices for central atom
+  myvals.updateIndex( w_ind, narg_derivatives + 3*index1+0 ); myvals.updateIndex( w_ind, narg_derivatives + 3*index1+1 ); myvals.updateIndex( w_ind, narg_derivatives + 3*index1+2 );
+  // Update dynamic list indices for atom forming this bond
+  myvals.updateIndex( w_ind, narg_derivatives + 3*index2+0 ); myvals.updateIndex( w_ind, narg_derivatives + 3*index2+1 ); myvals.updateIndex( w_ind, narg_derivatives + 3*index2+2 );
+  // Now look after all the atoms in the third block
+  std::vector<unsigned> & indices( myvals.getIndices() );
+  for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
+    myvals.updateIndex( w_ind, narg_derivatives + 3*indices[i]+0 ); myvals.updateIndex( w_ind, narg_derivatives + 3*indices[i]+1 ); myvals.updateIndex( w_ind, narg_derivatives + 3*indices[i]+2 );
+  }
+  // Update dynamic list indices for virial
+  unsigned base = narg_derivatives + 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) myvals.updateIndex( w_ind, base+j );
+  // Matrix indices
+  if( !myvals.inMatrixRerun() ) {
+      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+      matrix_indices[nmat_ind+0]=narg_derivatives + 3*index2+0; matrix_indices[nmat_ind+1]=narg_derivatives + 3*index2+1; matrix_indices[nmat_ind+2]=narg_derivatives + 3*index2+2;
+      nmat_ind+=3; myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+  }
+}
+
 bool MatrixProductBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
-  unsigned sss=1; if( getPntrToArgument(1)->getRank()==2 ) sss=getPntrToArgument(1)->getShape()[1];
-  unsigned nargs=1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
+  // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
+  if( isAdjacencyMatrix && controller!=getLabel() ) return false; 
+  // Now do the calculation
+  unsigned sss=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+  if( getNumberOfArguments()>0 ) {
+      sss=1; if( getPntrToArgument(1)->getRank()==2 ) sss=getPntrToArgument(1)->getShape()[1];
+      nargs=1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
+  }
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
   for(unsigned i=0; i<nargs; ++i) {
     args1[i] = getPntrToArgument(0)->get( index1*nargs + i );
     args2[i] = getPntrToArgument(1)->get( i*sss + ind2 ); 
   }
   double val = computeVectorProduct( index1, index2, args1, args2, der1, der2, myvals );
+  if( abs(val)<epsilon ) {
+      if( !doNotCalculateDerivatives() ) {
+          if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
+          clearMatrixElements( myvals );
+      }
+      return false;       
+  }
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.setValue( ostrn, val );
   // Return after calculation of value if we do not need derivatives
@@ -261,7 +294,8 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
   plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  unsigned jind_start = getPntrToArgument(0)->getSize(); 
+  unsigned jind_start = 0; 
+  if( getNumberOfArguments()>0 ) jind_start = getPntrToArgument(0)->getSize(); 
   for(unsigned i=0; i<nargs; ++i) {
     plumed_dbg_assert( nargs*index1 + i<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, nargs*index1 + i, der1[i] );
@@ -269,17 +303,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
     plumed_dbg_assert( jind_start + i*sss + ind2<myvals.getNumberOfDerivatives() );
     myvals.addDerivative( ostrn, jind_start + i*sss + ind2, der2[i] );
     myvals.updateIndex( ostrn, jind_start + i*sss + ind2 );
-    if( !myvals.inMatrixRerun() ) matrix_indices[nmat_ind] = jind_start + i*sss + ind2;
-    nmat_ind++;
-  }
-  if( !myvals.inMatrixRerun() && getNumberOfAtoms()>0 ) {
-    unsigned numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
-    matrix_indices[nmat_ind+0]=numargs + 3*index2+0;
-    matrix_indices[nmat_ind+1]=numargs + 3*index2+1;
-    matrix_indices[nmat_ind+2]=numargs + 3*index2+2;
-    nmat_ind+=3;
+    if( !myvals.inMatrixRerun() ) { matrix_indices[nmat_ind] = jind_start + i*sss + ind2; nmat_ind++; }
   }
   myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+  if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
   return true;
 }
 

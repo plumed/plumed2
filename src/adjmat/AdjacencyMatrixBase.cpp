@@ -50,7 +50,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   linkcells(comm),
   threecells(comm)
 {
-  std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
+  isAdjacencyMatrix = true; std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
     std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);
@@ -229,28 +229,6 @@ unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
   return maxcol;
 }
 
-void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
-  // Update dynamic list indices for central atom
-  myvals.updateIndex( w_ind, 3*index1+0 ); myvals.updateIndex( w_ind, 3*index1+1 ); myvals.updateIndex( w_ind, 3*index1+2 );
-  // Update dynamic list indices for atom forming this bond
-  myvals.updateIndex( w_ind, 3*index2+0 ); myvals.updateIndex( w_ind, 3*index2+1 ); myvals.updateIndex( w_ind, 3*index2+2 );
-  // Now look after all the atoms in the third block
-  std::vector<unsigned> & indices( myvals.getIndices() );
-  for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
-    myvals.updateIndex( w_ind, 3*indices[i]+0 ); myvals.updateIndex( w_ind, 3*indices[i]+1 ); myvals.updateIndex( w_ind, 3*indices[i]+2 );
-  }
-  // Update dynamic list indices for virial
-  unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) myvals.updateIndex( w_ind, base+j );
-  // Matrix indices
-  if( !myvals.inMatrixRerun() ) {
-      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-      matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
-      nmat_ind+=3; myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
-  }
-}
-
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
   unsigned natoms=nlist[current]; indices[0]=current;
   unsigned lstart = getFullNumberOfTasks() + current*(1+natoms_per_list); plumed_dbg_assert( nlist[lstart]==current );
@@ -287,21 +265,12 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, MultiValue& myv
   for(unsigned i=0; i<natoms; ++i) atoms[ indices[i] ] = t_atoms[i];
 }
 
-bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
-  if( controller!=getLabel() ) return false;
-
+double AdjacencyMatrixBase::computeVectorProduct( const unsigned& index1, const unsigned& index2,
+                                                const std::vector<double>& vec1, const std::vector<double>& vec2,
+                                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const {
   Vector zero; zero.zero(); plumed_dbg_assert( index2<myvals.getAtomVector().size() );
   double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
-  if( weight<epsilon ) {
-    if( !doNotCalculateDerivatives() ) {
-      updateWeightDerivativeIndices( index1, index2, myvals );
-      clearMatrixElements( myvals );
-    }
-    return false;
-  }
-  // Now set the matrix weight and the vector if required
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), weight );
+  // Calculate the components if we need them
   if( components ) {
     unsigned x_index = getPntrToOutput(1)->getPositionInStream();
     unsigned y_index = getPntrToOutput(2)->getPositionInStream();
@@ -350,9 +319,7 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
       }
     }
   }
-  // Update derivatives
-  if( !doNotCalculateDerivatives() ) updateWeightDerivativeIndices( index1, index2, myvals );
-  return true;
+  return weight;
 }
 
 }
