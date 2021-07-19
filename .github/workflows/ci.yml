@@ -111,9 +111,6 @@ jobs:
         echo "CXX=icpc" >> $GITHUB_ENV
         echo "CC=icc" >> $GITHUB_ENV
         echo "FC=ifort" >> $GITHUB_ENV
-        # disabling SASA module, which cannot be compiled with intel compiler due to some compiler bug
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-modules=all-sasa" >> $GITHUB_ENV
-        echo "PLUMED_ALL_TESTS=" >> $GITHUB_ENV
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
