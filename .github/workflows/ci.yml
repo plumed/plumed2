@@ -105,11 +105,7 @@ jobs:
         rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
         echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
         sudo apt-get update
-        sudo apt list -a intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic
-        sudo apt list -a intel-oneapi-mkl
-        sudo apt list -a intel-oneapi-mkl-devel
-        sudo apt list -a intel-oneapi-compiler-fortran
-        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic=2021.2.0-610 intel-oneapi-mkl=2021.2.0-296 intel-oneapi-mkl-devel=2021.2.0-296 intel-oneapi-compiler-fortran=2021.2.0-610
+        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CXX=icpc" >> $GITHUB_ENV
