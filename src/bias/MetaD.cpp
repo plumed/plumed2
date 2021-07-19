@@ -1069,14 +1069,17 @@ MetaD::MetaD(const ActionOptions& ao):
         error("The ACCELERATION_RFILE file you want to read: " + acc_rfilename + ", cannot be found!");
       }
       // Read the file to find the restart acceleration.
-      double acc_rmean;
-      double acc_rtime;
+      double acc_rmean=0.0;
+      double acc_rtime=0.0;
+      bool found=false;
       std::string acclabel = getLabel() + ".acc";
       acc_rfile.allowIgnoredFields();
       while(acc_rfile.scanField("time", acc_rtime)) {
         acc_rfile.scanField(acclabel, acc_rmean);
         acc_rfile.scanField();
+        found=true;
       }
+      if(!found) error("The ACCELERATION_RFILE file you want to read: " + acc_rfilename + ", does not contain a time field!");
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);

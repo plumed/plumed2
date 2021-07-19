@@ -35,6 +35,8 @@
 
 #include "GridProjWeights.h"
 
+#include <limits>
+
 namespace PLMD {
 namespace ves {
 
@@ -620,6 +622,7 @@ double LinearBasisSetExpansion::calculateReweightFactor() const {
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     sum += integration_weights[l] * targetdist_grid_pntr_->getValue(l) * exp(+beta_*bias_grid_pntr_->getValue(l));
   }
+  if(sum==0.0) sum=std::numeric_limits<double>::min();
   return (1.0/beta_)*std::log(sum);
 }
 

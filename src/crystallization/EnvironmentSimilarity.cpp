@@ -29,6 +29,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"
+#include <limits>
 
 using namespace std;
 
@@ -297,6 +298,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
         }
       }
     }
+    if(sum==0) sum=std::numeric_limits<double>::min();
     return std::log(sum)/lambda_;
   }
 }

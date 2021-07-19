@@ -387,6 +387,7 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ) {
       else error("found more than one " + mynam + " object in action");
     }
   }
+  plumed_assert(target>=0);
   return functions[target].get();
 }
 

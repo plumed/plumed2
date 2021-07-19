@@ -23,6 +23,7 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/IFile.h"
+#include <limits>
 
 namespace PLMD {
 namespace function {
@@ -274,6 +275,8 @@ void FuncPathGeneral::calculate() {
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
   }
+
+  if(partition==0.0) partition=std::numeric_limits<double>::min();
 
   s_path /= partition;
   val_s_path->set(s_path);
