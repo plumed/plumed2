@@ -190,7 +190,7 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   for(auto &p: expression.getVariables()) {
     std::string curr_var = p;
     unsigned int cv_idx;
-    if(curr_var.substr(0,cv_var_prefix_str_.size())==cv_var_prefix_str_ && Tools::convert(curr_var.substr(cv_var_prefix_str_.size()),cv_idx) && cv_idx>0) {
+    if(curr_var.substr(0,cv_var_prefix_str_.size())==cv_var_prefix_str_ && Tools::convertNoexcept(curr_var.substr(cv_var_prefix_str_.size()),cv_idx) && cv_idx>0) {
       cv_var_idx_.push_back(cv_idx-1);
     }
     else if(curr_var==fes_var_str_) {

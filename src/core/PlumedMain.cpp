@@ -594,7 +594,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       {
         double v;
         plumed_assert(words.size()==2);
-        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+        if(Tools::convertNoexcept(words[1],v)) atoms.double2MD(v,val);
       }
       break;
       default:
