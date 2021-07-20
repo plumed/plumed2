@@ -46,23 +46,23 @@ bool Tools::convertToAny(const std::string & str,T & t) {
   return remaining.length()==0;
 }
 
-bool Tools::convert(const std::string & str,int & t) {
+bool Tools::convertNoexcept(const std::string & str,int & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const std::string & str,long int & t) {
+bool Tools::convertNoexcept(const std::string & str,long int & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const std::string & str,unsigned & t) {
+bool Tools::convertNoexcept(const std::string & str,unsigned & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const std::string & str,long unsigned & t) {
+bool Tools::convertNoexcept(const std::string & str,long unsigned & t) {
   return convertToInt(str,t);
 }
 
-bool Tools::convert(const std::string & str,AtomNumber &a) {
+bool Tools::convertNoexcept(const std::string & str,AtomNumber &a) {
   // Note: AtomNumber's are NOT converted as int, so as to
   // avoid using lepton conversions.
   unsigned i;
@@ -145,19 +145,19 @@ bool Tools::convertToReal(const std::string & str,T & t) {
   return false;
 }
 
-bool Tools::convert(const std::string & str,float & t) {
+bool Tools::convertNoexcept(const std::string & str,float & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const std::string & str,double & t) {
+bool Tools::convertNoexcept(const std::string & str,double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const std::string & str,long double & t) {
+bool Tools::convertNoexcept(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const std::string & str,std::string & t) {
+bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   t=str;
   return true;
 }
