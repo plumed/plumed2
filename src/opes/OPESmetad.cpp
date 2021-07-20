@@ -342,11 +342,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   else
   {
     if(biasfactor_str.length()>0)
-      try {
-        Tools::convert(biasfactor_str,biasfactor_);
-      } catch(ExceptionConversionError& exc) {
-        plumed_error() << error_in_input1+"BIASFACTOR"+error_in_input2;
-      }
+      plumed_massert(Tools::convert(biasfactor_str,biasfactor_),error_in_input1+"BIASFACTOR"+error_in_input2);
     plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor_;
   }
@@ -363,13 +359,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseVector("SIGMA",sigma_str);
   sigma0_.resize(ncv_);
   double dummy;
-  bool ok=false;
-  if(sigma_str.size()==1) try {
-      Tools::convert(sigma_str[0],dummy);
-    } catch(ExceptionConversionError& exc) {
-      ok=true;
-    }
-  if(ok)
+  if(sigma_str.size()==1 && !Tools::convert(sigma_str[0],dummy))
   {
     plumed_massert(sigma_str[0]=="ADAPTIVE" || sigma_str[0]=="adaptive",error_in_input1+"SIGMA"+error_in_input2);
     plumed_massert(!std::isinf(biasfactor_),"cannot use BIASFACTOR=inf with adaptive SIGMA");
@@ -387,11 +377,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is not ADAPTIVE you cannot set an ADAPTIVE_SIGMA_STRIDE");
     for(unsigned i=0; i<ncv_; i++)
     {
-      try {
-        Tools::convert(sigma_str[i],sigma0_[i]);
-      } catch(ExceptionConversionError& exc) {
-        plumed_error()<<error_in_input1+"SIGMA"+error_in_input2;
-      }
+      plumed_massert(Tools::convert(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
       if(mode::explore)
         sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
     }

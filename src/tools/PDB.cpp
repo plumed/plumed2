@@ -338,8 +338,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
-      AtomNumber a;
-      unsigned resno=0; // GB: when resnum string is not present, we set res number to zero
+      AtomNumber a; unsigned resno;
       double o,b;
       Vector p;
       {
@@ -355,11 +354,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         a.setSerial(result);
       }
 
-      {
-        auto trimmed=resnum;
-        Tools::trim(trimmed);
-        if(trimmed.length()>0) Tools::convert(trimmed,resno);
-      }
+      Tools::convert(resnum,resno);
       Tools::convert(occ,o);
       Tools::convert(bet,b);
       Tools::convert(x,p[0]);

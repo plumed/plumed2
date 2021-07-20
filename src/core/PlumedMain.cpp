@@ -591,14 +591,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       /* ADDED WITH API==7 */
       case cmd_convert:
+      {
+        double v;
         plumed_assert(words.size()==2);
-        try {
-          double v;
-          Tools::convert(words[1],v);
-          atoms.double2MD(v,val);
-        } catch(ExceptionConversionError& exc) {
-        }
-        break;
+        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+      }
+      break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;

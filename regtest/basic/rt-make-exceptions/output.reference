@@ -74,8 +74,6 @@ readInputLine COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1
 +++ catched
 readInputLine COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4
 +++ catched
-readInputLine METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100
-+++ catched
 something random here NULL
 +++ catched
 setStep NULL

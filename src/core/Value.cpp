@@ -107,17 +107,9 @@ void Value::setNotPeriodic() {
 
 void Value::setDomain(const std::string& pmin,const std::string& pmax) {
   str_min=pmin;
-  try {
-    Tools::convert(str_min,min);
-  } catch(ExceptionConversionError& exc) {
-    action->error("could not convert period string " + str_min + " to real");
-  }
+  if( !Tools::convert(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
   str_max=pmax;
-  try {
-    Tools::convert(str_max,max);
-  } catch(ExceptionConversionError& exc) {
-    action->error("could not convert period string " + str_max + " to real");
-  }
+  if( !Tools::convert(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
   setupPeriodicity();
 }
 

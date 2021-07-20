@@ -121,7 +121,6 @@ int main(){
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
-  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100");
 
 // these should not fail
   plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");

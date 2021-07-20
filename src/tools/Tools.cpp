@@ -37,49 +37,44 @@
 namespace PLMD {
 
 template<class T>
-void Tools::convertToAny(const std::string & str,T & t) {
+bool Tools::convertToAny(const std::string & str,T & t) {
   std::istringstream istr(str.c_str());
   bool ok=static_cast<bool>(istr>>t);
-  if(!ok) throw ExceptionConversionError() <<"trying to convert " << str;
+  if(!ok) return false;
   std::string remaining;
   istr>>remaining;
-  if(remaining.length()>0) {
-    throw ExceptionConversionError() <<"trying to convert " << str << " remaining: "<<remaining.length();
-  }
+  return remaining.length()==0;
 }
 
-void Tools::convert(const std::string & str,int & t) {
-  convertToInt(str,t);
+bool Tools::convert(const std::string & str,int & t) {
+  return convertToInt(str,t);
 }
 
-void Tools::convert(const std::string & str,long int & t) {
-  convertToInt(str,t);
+bool Tools::convert(const std::string & str,long int & t) {
+  return convertToInt(str,t);
 }
 
-void Tools::convert(const std::string & str,unsigned & t) {
-  convertToInt(str,t);
+bool Tools::convert(const std::string & str,unsigned & t) {
+  return convertToInt(str,t);
 }
 
-void Tools::convert(const std::string & str,long unsigned & t) {
-  convertToInt(str,t);
+bool Tools::convert(const std::string & str,long unsigned & t) {
+  return convertToInt(str,t);
 }
 
-void Tools::convert(const std::string & str,AtomNumber &a) {
+bool Tools::convert(const std::string & str,AtomNumber &a) {
   // Note: AtomNumber's are NOT converted as int, so as to
   // avoid using lepton conversions.
   unsigned i;
-  convertToAny(str,i);
-  a.setSerial(i);
+  bool r=convertToAny(str,i);
+  if(r) a.setSerial(i);
+  return r;
 }
 
 template<class T>
-void Tools::convertToInt(const std::string & str,T & t) {
+bool Tools::convertToInt(const std::string & str,T & t) {
   // First try standard conversion
-  try {
-    convertToAny(str,t);
-    return;
-  } catch(ExceptionConversionError& exc) {
-  }
+  if(convertToAny(str,t)) return true;
   // Then use lepton
   try {
     double r=lepton::Parser::parse(str).evaluate(lepton::Constants());
@@ -88,88 +83,83 @@ void Tools::convertToInt(const std::string & str,T & t) {
 
     // it should not overflow the requested int type:
     // (see https://stackoverflow.com/a/526092)
-    if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) throw ExceptionConversionError() <<"overflow converting "<<str;
-    if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) throw ExceptionConversionError() <<"underflow converting "<<str;
+    if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) return false;
+    if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) return false;
 
     // do the actual conversion
     auto tmp=static_cast<T>(std::round(r));
 
     // it should be *very close* to itself if converted back to double
     double diff= r-static_cast<double>(tmp);
-    if(diff*diff > 1e-20) throw ExceptionConversionError() <<"non integer converting "<<str;
+    if(diff*diff > 1e-20) return false;
     // this is to accomodate small numerical errors and allow e.g. exp(log(7)) to be integer
 
     // it should be change if incremented or decremented by one (see https://stackoverflow.com/a/43656140)
-    if(r == static_cast<double>(tmp-1)) throw ExceptionConversionError() <<"non integer converting "<<str;
-    if(r == static_cast<double>(tmp+1)) throw ExceptionConversionError() <<"non integer converting "<<str;
+    if(r == static_cast<double>(tmp-1)) return false;
+    if(r == static_cast<double>(tmp+1)) return false;
 
     // everything is fine, then store in t
     t=tmp;
-    return;
+    return true;
   } catch(PLMD::lepton::Exception& exc) {
   }
-  throw ExceptionConversionError() <<"converting "<<str;
+  return false;
 }
 
 
 template<class T>
-void Tools::convertToReal(const std::string & str,T & t) {
-  try {
-    convertToAny(str,t);
-    return;
-  } catch(ExceptionConversionError& exc) {
-  }
+bool Tools::convertToReal(const std::string & str,T & t) {
+  if(convertToAny(str,t)) return true;
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
-    t=pi; return;
+    t=pi; return true;
   } else if(str=="-PI" || str=="-pi") {
-    t=-pi; return;
+    t=-pi; return true;
   }
   try {
     t=lepton::Parser::parse(str).evaluate(lepton::Constants());
-    return;
+    return true;
   } catch(const PLMD::lepton::Exception& exc) {
   }
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
-    if(str.substr(pi_start)!="PI") throw ExceptionConversionError() <<"converting " <<str;
+    if(str.substr(pi_start)!="PI") return false;
     std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-    if(!ok) throw ExceptionConversionError() <<"converting "<<str;
+    if(!ok) return false;
     t=ff*pi;
     std::string remains; nstr>>remains;
-    if(remains.length()>0) throw ExceptionConversionError() <<"trying to convert " << str << " remaining: "<<remains.length();
-    return;
+    return remains.length()==0;
   } else if( str.find("pi")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("pi");
-    if(str.substr(pi_start)!="pi") throw ExceptionConversionError() <<"converting " <<str;
+    if(str.substr(pi_start)!="pi") return false;
     std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
-    if(!ok) throw ExceptionConversionError() <<"converting "<<str;
+    if(!ok) return false;
     t=ff*pi;
     std::string remains; nstr>>remains;
-    if(remains.length()>0) throw ExceptionConversionError() <<"trying to convert " << str << " remaining: "<<remains.length();
-    return;
+    return remains.length()==0;
   } else if(str=="NAN") {
     t=std::numeric_limits<double>::quiet_NaN();
-    return;
+    return true;
   }
-  throw ExceptionConversionError() <<"converting "<<str;
+  return false;
 }
 
-void Tools::convert(const std::string & str,float & t) {
-  convertToReal(str,t);
+bool Tools::convert(const std::string & str,float & t) {
+  return convertToReal(str,t);
 }
 
-void Tools::convert(const std::string & str,double & t) {
-  convertToReal(str,t);
+bool Tools::convert(const std::string & str,double & t) {
+  return convertToReal(str,t);
 }
 
-void Tools::convert(const std::string & str,long double & t) {
-  convertToReal(str,t);
+bool Tools::convert(const std::string & str,long double & t) {
+  return convertToReal(str,t);
 }
 
-void Tools::convert(const std::string & str,std::string & t) {
+bool Tools::convert(const std::string & str,std::string & t) {
   t=str;
+  return true;
 }
 
 std::vector<std::string> Tools::getWords(const std::string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
@@ -317,27 +307,15 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
     size_t dash=p.find("-");
     if(dash==std::string::npos) continue;
     int first;
-    try {
-      Tools::convertToAny(p.substr(0,dash),first);
-    } catch(ExceptionConversionError& exc) {
-      continue;
-    }
+    if(!Tools::convertToAny(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
     size_t colon=p.substr(dash+1).find(":");
     if(colon!=std::string::npos) {
-      try {
-        Tools::convertToAny(p.substr(dash+1).substr(0,colon),second);
-        Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride);
-      } catch(ExceptionConversionError& exc) {
-        continue;
-      }
+      if(!Tools::convertToAny(p.substr(dash+1).substr(0,colon),second) ||
+          !Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      try {
-        Tools::convertToAny(p.substr(dash+1),second);
-      } catch(ExceptionConversionError& exc) {
-        continue;
-      }
+      if(!Tools::convertToAny(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second) {

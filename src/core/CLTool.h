@@ -104,12 +104,7 @@ bool CLTool::parse(const std::string&key,T&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if(keywords.style(key,"compulsory") ) {
     if(inputData.count(key)==0) error("missing data for keyword " + key);
-    bool check=false;
-    try {
-      Tools::convert(inputData[key],t);
-      check=true;
-    } catch(ExceptionConversionError& exc) {
-    }
+    bool check=Tools::convert(inputData[key],t);
     if(!check) error("data input for keyword " + key + " has wrong type");
     return true;
   }
@@ -148,15 +143,11 @@ bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
   T val;
   if ( keywords.style(key,"compulsory") && t.size()==0 ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0) {
-        plumed_merror("ERROR in keyword "+key+ " has  empty default value" );
-      }
-      try {
-        Tools::convert(def,val);
-      } catch(ExceptionConversionError& exc) {
+      if( def.length()==0 || !Tools::convert(def,val) ) {
         plumed_merror("ERROR in keyword "+key+ " has weird default value" );
+      } else {
+        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
       }
-      for(unsigned i=0; i<t.size(); ++i) t[i]=val;
     } else {
       plumed_merror("keyword " + key + " is compulsory for this action");
     }
