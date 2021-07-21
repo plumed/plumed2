@@ -28,6 +28,18 @@ echo "#define PLUMED_VERSION_GIT \"$(
   fi
 )\""
 
+echo "#define PLUMED_VERSION_MAJOR $(
+  grep -v "#" ../../VERSION | sed  's/^\([0-9][0-9]*\).*/\1/'
+)"
+
+echo "#define PLUMED_VERSION_MINOR $(
+  grep -v "#" ../../VERSION | sed  's/^[0-9][0-9]*\.\([0-9][0-9]*\).*/\1/'
+)"
+
+echo "#define PLUMED_VERSION_PATCH $(
+  grep -v "#" ../../VERSION | sed  's/^[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\).*/\1/'
+)"
+
 echo "#endif"
 
 } > $1~
