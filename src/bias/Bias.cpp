@@ -44,7 +44,7 @@ Bias::Bias(const ActionOptions&ao):
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 
-  turnOnDerivatives();
+  ActionWithValue::turnOnDerivatives();
 }
 
 void Bias::registerKeywords( Keywords& keys ) {

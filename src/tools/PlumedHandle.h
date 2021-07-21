@@ -127,7 +127,7 @@ public:
 /// Move constructor.
   PlumedHandle(PlumedHandle &&) = default;
 /// Execute cmd.
-  void cmd(const char*key,TypesafePtr ptr=nullptr);
+  void cmd(const char*key,const TypesafePtr & ptr=nullptr);
 };
 
 }
