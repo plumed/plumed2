@@ -755,13 +755,13 @@ void CoeffsVector::writeDataToFile(OFile& ofile, const std::vector<CoeffsVector*
   for(size_t i=0; i<numcoeffs; i++) {
     indices=coeffsvecSet[0]->getIndices(i);
     for(unsigned int k=0; k<numdim; k++) {
-      sprintf(s1,int_fmt.c_str(),indices[k]);
+      std::sprintf(s1,int_fmt.c_str(),indices[k]);
       ofile.printField(ilabels[k],s1);
     }
     for(unsigned int l=0; l<numvec; l++) {
       ofile.fmtField(" "+output_fmt).printField(coeffs_datalabels[l],coeffsvecSet[l]->getValue(i));
     }
-    sprintf(s1,int_fmt.c_str(),i); ofile.printField(field_index,s1);
+    std::sprintf(s1,int_fmt.c_str(),i); ofile.printField(field_index,s1);
     if(print_coeffs_descriptions) { ofile.printField(field_description,"  "+coeffs_descriptions[i]);}
     ofile.printField();
   }

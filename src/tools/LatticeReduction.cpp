@@ -54,7 +54,7 @@ void LatticeReduction::reduce(Vector&a,Vector&b) {
       plumed_assert(!std::isnan(ma));
       plumed_assert(!std::isnan(mb));
     }
-    if(counter%10000==0) fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
+    if(counter%10000==0) std::fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
   }
 
   Vector t(a); a=b; b=t;
@@ -143,7 +143,7 @@ void LatticeReduction::reduceFast(Tensor&t) {
       }
     if(modulo2(best)*onePlusEpsilon>=modulo2(v[2])) break;
     counter++;
-    if(counter%10000==0) fprintf(stderr,"WARNING: LatticeReduction::reduceFast stuck after %u iterations\n",counter);
+    if(counter%10000==0) std::fprintf(stderr,"WARNING: LatticeReduction::reduceFast stuck after %u iterations\n",counter);
     v[2]=best;
   }
   sort(v);

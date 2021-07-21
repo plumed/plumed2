@@ -2738,7 +2738,7 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   /*
     When dlopen is not available, we hard code them to NULL
   */
-  fprintf(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
+  __PLUMED_FPRINTF(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
   plumed_plumedmain_function_holder g= {NULL,NULL,NULL};
   if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=NULL;
   if(handle) *handle=NULL;
@@ -2776,8 +2776,8 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   if(! (path && (*path) )) path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
 #endif
   if(path && (*path)) {
-    fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
-    fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
+    __PLUMED_FPRINTF(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
+    __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
     if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     dlopenmode=RTLD_NOW;
     if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"LOCAL")) {
@@ -2840,7 +2840,7 @@ plumed_implementation* plumed_malloc_pimpl() {
   __PLUMED_WRAPPER_STD memcpy(pimpl->magic,"pLuMEd",6);
   pimpl->refcount=1;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: new at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",(void*)pimpl);
 #endif
   pimpl->dlhandle=NULL;
   pimpl->dlclose=0;
@@ -2958,7 +2958,7 @@ plumed plumed_create_reference(plumed p) {
   /* increase reference count */
   pimpl->refcount++;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: increase at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: increase at %p\n",(void*)pimpl);
 #endif
   return p;
 }
@@ -3071,7 +3071,7 @@ void plumed_finalize(plumed p) {
   /* decrease reference count */
   pimpl->refcount--;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: decrease at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: decrease at %p\n",(void*)pimpl);
 #endif
   if(pimpl->refcount>0) return;
   /* to allow finalizing an invalid plumed object, we only call
@@ -3086,12 +3086,12 @@ void plumed_finalize(plumed p) {
 #ifdef __PLUMED_HAS_DLOPEN
   /* dlclose library */
   if(pimpl->dlhandle && pimpl->dlclose) {
-    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) fprintf(stderr,"+++ Unloading library\n");
+    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) __PLUMED_FPRINTF(stderr,"+++ Unloading library\n");
     dlclose(pimpl->dlhandle);
   }
 #endif
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: delete at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: delete at %p\n",(void*)pimpl);
 #endif
   /* free pimpl space */
   __PLUMED_FREE(pimpl);

@@ -364,7 +364,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    printf("Only generating a template coefficient file - Should stop now.");
+    std::printf("Only generating a template coefficient file - Should stop now.");
     return 0;
   }
 
@@ -481,28 +481,28 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_coeffsout.close();
 
   if(pc.Get_rank() == 0) {
-    fprintf(out,"Replicas                              %zu\n",replicas);
-    fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
-    fprintf(out,"Number of steps                       %u\n",nsteps);
-    fprintf(out,"Timestep                              %f\n",tstep);
-    fprintf(out,"Temperature                           %f",temps_vec[0]);
-    for(unsigned int i=1; i<temps_vec.size(); i++) {fprintf(out,",%f",temps_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Friction                              %f",frictions_vec[0]);
-    for(unsigned int i=1; i<frictions_vec.size(); i++) {fprintf(out,",%f",frictions_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Random seed                           %d",seeds_vec[0]);
-    for(unsigned int i=1; i<seeds_vec.size(); i++) {fprintf(out,",%d",seeds_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Dimensions                            %zu\n",dim);
+    std::fprintf(out,"Replicas                              %zu\n",replicas);
+    std::fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
+    std::fprintf(out,"Number of steps                       %u\n",nsteps);
+    std::fprintf(out,"Timestep                              %f\n",tstep);
+    std::fprintf(out,"Temperature                           %f",temps_vec[0]);
+    for(unsigned int i=1; i<temps_vec.size(); i++) {std::fprintf(out,",%f",temps_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Friction                              %f",frictions_vec[0]);
+    for(unsigned int i=1; i<frictions_vec.size(); i++) {std::fprintf(out,",%f",frictions_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Random seed                           %d",seeds_vec[0]);
+    for(unsigned int i=1; i<seeds_vec.size(); i++) {std::fprintf(out,",%d",seeds_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Dimensions                            %zu\n",dim);
     for(unsigned int i=0; i<dim; i++) {
-      fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
+      std::fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
     }
-    fprintf(out,"PLUMED input                          %s",plumed_inputfiles[0].c_str());
-    for(unsigned int i=1; i<plumed_inputfiles.size(); i++) {fprintf(out,",%s",plumed_inputfiles[i].c_str());}
-    fprintf(out,"\n");
-    fprintf(out,"kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
-    if(diff_input_coeffs) {fprintf(out,"using different coefficients for each replica\n");}
+    std::fprintf(out,"PLUMED input                          %s",plumed_inputfiles[0].c_str());
+    for(unsigned int i=1; i<plumed_inputfiles.size(); i++) {std::fprintf(out,",%s",plumed_inputfiles[i].c_str());}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
+    if(diff_input_coeffs) {std::fprintf(out,"using different coefficients for each replica\n");}
   }
 
 
@@ -581,9 +581,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
 
   FILE* fp=fopen(stats_filename.c_str(),"w+");
   double conserved = potential+1.5*ttt+therm_eng;
-  //fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+  //std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   if( intra.Get_rank()==0 ) {
-    fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+    std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   }
 
   if(plumed) {
@@ -662,7 +662,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ttt = calc_temp( velocities );
     conserved = potential+1.5*ttt+therm_eng;
     if( (intra.Get_rank()==0) && ((istep % stepWrite)==0) ) {
-      fprintf(fp,"%u %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+      std::fprintf(fp,"%u %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
     }
   }
 

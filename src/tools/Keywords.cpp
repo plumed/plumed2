@@ -267,7 +267,7 @@ bool Keywords::reserved( const std::string & k ) const {
 
 void Keywords::print_template(const std::string& actionname, bool include_optional) const {
   unsigned nkeys=0;
-  printf("%s",actionname.c_str());
+  std::printf("%s",actionname.c_str());
   for(unsigned i=0; i<keys.size(); ++i) {
     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
@@ -277,8 +277,8 @@ void Keywords::print_template(const std::string& actionname, bool include_option
       if( (types.find(keys[i])->second).isAtomList() ) {
         plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
         if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) break;
-        if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) printf(" %s=<residue selection>", keys[i].c_str() );
-        else printf(" %s=<atom selection>", keys[i].c_str() );
+        if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) std::printf(" %s=<residue selection>", keys[i].c_str() );
+        else std::printf(" %s=<atom selection>", keys[i].c_str() );
         prevtag=atomtags.find(keys[i])->second;
       }
     }
@@ -293,29 +293,29 @@ void Keywords::print_template(const std::string& actionname, bool include_option
       if ( (types.find(keys[i])->second).isCompulsory() ) {
         std::string def;
         if( getDefaultValue( keys[i], def) ) {
-          printf(" %s=%s ", keys[i].c_str(), def.c_str() );
+          std::printf(" %s=%s ", keys[i].c_str(), def.c_str() );
         } else {
-          printf(" %s=    ", keys[i].c_str() );
+          std::printf(" %s=    ", keys[i].c_str() );
         }
       } else if (include_optional) {
         // TG no defaults for optional keywords?
-        printf(" [%s]", keys[i].c_str() );
+        std::printf(" [%s]", keys[i].c_str() );
       }
     }
   }
-  printf("\n");
+  std::printf("\n");
 }
 
 void Keywords::print_vim() const {
   for(unsigned i=0; i<keys.size(); ++i) {
     if( (types.find(keys[i])->second).isFlag() ) {
-      printf( ",flag:%s", keys[i].c_str() );
+      std::printf( ",flag:%s", keys[i].c_str() );
     } else {
-      if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
-      else printf(",option:%s",keys[i].c_str() );
+      if( allowmultiple.find(keys[i])->second ) std::printf(",numbered:%s",keys[i].c_str() );
+      else std::printf(",option:%s",keys[i].c_str() );
     }
   }
-  fprintf(stdout,"\n");
+  std::fprintf(stdout,"\n");
   print(stdout);
 }
 
@@ -332,29 +332,29 @@ void Keywords::print_html() const {
       std::cout<<"\\par Description of components\n\n";
       std::cout<<cstring<<"\n\n";
       std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-      printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
+      std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
       for(unsigned i=0; i<cnames.size(); ++i) {
         //plumed_assert( ckey.find(cnames[i])->second=="default" );
         if( ckey.find(cnames[i])->second!="default" ) { nndef++; continue; }
-        printf("<tr>\n");
-        printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
-        printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-        printf("</tr>\n");
+        std::printf("<tr>\n");
+        std::printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
+        std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+        std::printf("</tr>\n");
       }
       std::cout<<"</table>\n\n";
       if( nndef>0 ) {
         std::cout<<"In addition the following quantities can be calculated by employing the keywords listed below"<<std::endl;
         std::cout<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-        printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+        std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
         for(unsigned i=0; i<cnames.size(); ++i) {
           if( ckey.find(cnames[i])->second!="default") {
-            printf("<tr>\n");
-            printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                   cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-            printf("</tr>\n");
+            std::printf("<tr>\n");
+            std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+            std::printf("</tr>\n");
           }
         }
         std::cout<<"</table>\n\n";
@@ -368,14 +368,14 @@ void Keywords::print_html() const {
         std::cout<<"\\par Description of components\n\n";
         std::cout<<cstring<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-        printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+        std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
         for(unsigned i=0; i<cnames.size(); ++i) {
           if( exists(ckey.find(cnames[i])->second) ) {
-            printf("<tr>\n");
-            printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                   cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-            printf("</tr>\n");
+            std::printf("<tr>\n");
+            std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+            std::printf("</tr>\n");
           }
         }
         std::cout<<"</table>\n\n";
@@ -448,8 +448,8 @@ void Keywords::print_html() const {
 }
 
 void Keywords::print_spelling() const {
-  for(unsigned i=0; i<keys.size(); ++i) printf("%s\n", keys[i].c_str() );
-  for(unsigned i=0; i<cnames.size(); ++i) printf("%s\n",cnames[i].c_str() );
+  for(unsigned i=0; i<keys.size(); ++i) std::printf("%s\n", keys[i].c_str() );
+  for(unsigned i=0; i<cnames.size(); ++i) std::printf("%s\n",cnames[i].c_str() );
 }
 
 void Keywords::print( FILE* out ) const {
@@ -458,7 +458,7 @@ void Keywords::print( FILE* out ) const {
     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ) {
-    fprintf(out,"The input trajectory can be in any of the following formats: \n\n");
+    std::fprintf(out,"The input trajectory can be in any of the following formats: \n\n");
     for(unsigned i=0; i<keys.size(); ++i) {
       if ( (types.find(keys[i])->second).isAtomList() ) printKeyword( keys[i], out );
     }
@@ -469,7 +469,7 @@ void Keywords::print( FILE* out ) const {
   }
   unsigned ncompulsory=nkeys;
   if( nkeys>0 ) {
-    fprintf(out,"\nThe following arguments are compulsory: \n\n");
+    std::fprintf(out,"\nThe following arguments are compulsory: \n\n");
     for(unsigned i=0; i<keys.size(); ++i) {
       if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
     }
@@ -479,8 +479,8 @@ void Keywords::print( FILE* out ) const {
     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
   }
   if( nkeys>0 ) {
-    if(ncompulsory>0) fprintf( out,"\nIn addition you may use the following options: \n\n");
-    else fprintf( out,"\nThe following options are available\n\n");
+    if(ncompulsory>0) std::fprintf( out,"\nIn addition you may use the following options: \n\n");
+    else std::fprintf( out,"\nThe following options are available\n\n");
     for(unsigned i=0; i<keys.size(); ++i) {
       if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
     }
@@ -493,25 +493,25 @@ void Keywords::print( FILE* out ) const {
     for(unsigned i=0; i<keys.size(); ++i) {
       if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
     }
-    fprintf(out,"\n");
+    std::fprintf(out,"\n");
   }
 }
 
 void Keywords::printKeyword( const std::string& key, FILE* out ) const {
   bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
   std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
-  fprintf(out,"%23s - ", key.c_str() );
+  std::fprintf(out,"%23s - ", key.c_str() );
   unsigned nl=0; std::string blank=" ";
   for(unsigned i=0; i<w.size(); ++i) {
     nl+=w[i].length() + 1;
     if( nl>60 ) {
-      fprintf(out,"\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
+      std::fprintf(out,"\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
     } else {
-      fprintf(out,"%s ", w[i].c_str() );
+      std::fprintf(out,"%s ", w[i].c_str() );
     }
     if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
   }
-  fprintf(out,"\n");
+  std::fprintf(out,"\n");
 }
 
 void Keywords::print( Log& log ) const {
@@ -597,10 +597,10 @@ std::string Keywords::getTooltip( const std::string& name ) const {
 }
 
 void Keywords::print_html_item( const std::string& key ) const {
-  printf("<tr>\n");
-  printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
-  printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
-  printf("</tr>\n");
+  std::printf("<tr>\n");
+  std::printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
+  std::printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
+  std::printf("</tr>\n");
 }
 
 std::string Keywords::get( const unsigned k ) const {

@@ -435,7 +435,7 @@ Tools::DirectoryChanger::~DirectoryChanger() {
   int ret=chdir(cwd);
 // we cannot put an assertion here (in a destructor) otherwise cppcheck complains
 // we thus just report the problem
-  if(ret!=0) fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
+  if(ret!=0) std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
 #endif
 }
 

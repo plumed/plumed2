@@ -201,7 +201,7 @@ void CenterOfMultiColvar::calculate() {
       double sderv = inv_weight*myvals.getDerivative(1+j,ider) - inv_weight*scom[j]*myvals.getDerivative(0,ider);
       double cderv = inv_weight*myvals.getDerivative(4+j,ider) - inv_weight*ccom[j]*myvals.getDerivative(0,ider);
       myvals.setDerivative( 1+j, ider, tander[j]*(sderv/ccom[j]  - scom[j]*cderv/(ccom[j]*ccom[j])) );
-      //if( j==2 ) printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
+      //if( j==2 ) std::printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
     }
   }
 

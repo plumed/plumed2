@@ -132,7 +132,7 @@ E.g., in an external c++ code using PLUMED as a library, one can type
   try{
     plumed.cmd("setPrecision",n);
   } catch (std::exception & e) {
-    printf("ee %s",e.what());
+    std::printf("ee %s",e.what());
     exit(1);
   }
 \endverbatim

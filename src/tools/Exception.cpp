@@ -66,7 +66,7 @@ Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
     char cline[1000];
-    sprintf(cline,"%u",loc.line);
+    std::sprintf(cline,"%u",loc.line);
     this->msg += "\n+++ at ";
     this->msg += loc.file;
     this->msg += ":";

@@ -139,7 +139,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
       Tools::convert(frictionstr,friction);
     }
     parse("plumed",plumedin); parse("dimension",dim);
@@ -231,7 +231,7 @@ public:
 
     for(int istep=0; istep<nsteps; ++istep) {
 
-      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %i\n",istep);
+      if( istep%20==0 && pc.Get_rank()==0 ) std::printf("Doing step %i\n",istep);
 
       // Langevin thermostat
       double lscale=std::exp(-0.5*tstep/friction);
@@ -298,7 +298,7 @@ public:
 
       // Print everything
       // conserved = potential+1.5*ttt+therm_eng;
-      if( pc.Get_rank()==0 ) fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      if( pc.Get_rank()==0 ) std::fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
     }
 
     fclose(fp);

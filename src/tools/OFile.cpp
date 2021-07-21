@@ -168,31 +168,31 @@ OFile& OFile::printField(const std::string&name,double v) {
 // The distinction between +nan and -nan is not well defined
 // Always printing nan simplifies some regtest (special functions computed our of range).
   if(std::isnan(v)) v=std::numeric_limits<double>::quiet_NaN();
-  sprintf(buffer_string.get(),fieldFmt.c_str(),v);
+  std::sprintf(buffer_string.get(),fieldFmt.c_str(),v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,int v) {
-  sprintf(buffer_string.get()," %d",v);
+  std::sprintf(buffer_string.get()," %d",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long int v) {
-  sprintf(buffer_string.get()," %ld",v);
+  std::sprintf(buffer_string.get()," %ld",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,unsigned v) {
-  sprintf(buffer_string.get()," %u",v);
+  std::sprintf(buffer_string.get()," %u",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long unsigned v) {
-  sprintf(buffer_string.get()," %lu",v);
+  std::sprintf(buffer_string.get()," %lu",v);
   printField(name,buffer_string.get());
   return *this;
 }
