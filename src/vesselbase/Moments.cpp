@@ -139,9 +139,9 @@ void Moments::finish( const std::vector<double>& buffer ) {
     for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {
       mystash->retrieveSequentialValue( i, false, myvalues );
       val=pfactor*( myvalues[mycomponent] - min );
-      sinsum+=sin(val); cossum+=cos(val);
+      sinsum+=std::sin(val); cossum+=std::cos(val);
     }
-    mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ), cossum / static_cast<double>( nvals ) ) / (2*pi);
+    mean = 0.5 + std::atan2( sinsum / static_cast<double>( nvals ), cossum / static_cast<double>( nvals ) ) / (2*pi);
     mean = min + (max-min)*mean;
   } else {
     for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {

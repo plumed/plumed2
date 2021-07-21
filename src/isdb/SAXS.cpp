@@ -484,8 +484,8 @@ void SAXS::calculate_cpu(std::vector<Vector> &deriv)
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
           double FFF = 2.*FF_value[atoi[i]][k]*FF_value[atoi[j]][k];
-          double tsq = sin(qdist)/qdist;
-          double tcq = cos(qdist);
+          double tsq = std::sin(qdist)/qdist;
+          double tcq = std::cos(qdist);
           double tmp = FFF*(tcq-tsq);
           Vector dd  = c_distances*tmp;
           if(nt>1) {

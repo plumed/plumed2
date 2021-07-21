@@ -324,10 +324,10 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
       BoxXYZ*=scale;
-      double cosA=cos(BoxABG[0]*pi/180.);
-      double cosB=cos(BoxABG[1]*pi/180.);
-      double cosG=cos(BoxABG[2]*pi/180.);
-      double sinG=sin(BoxABG[2]*pi/180.);
+      double cosA=std::cos(BoxABG[0]*pi/180.);
+      double cosB=std::cos(BoxABG[1]*pi/180.);
+      double cosG=std::cos(BoxABG[2]*pi/180.);
+      double sinG=std::sin(BoxABG[2]*pi/180.);
       for (unsigned i=0; i<3; i++) {Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;}
       Box[0][0]=BoxXYZ[0];
       Box[1][0]=BoxXYZ[1]*cosG;

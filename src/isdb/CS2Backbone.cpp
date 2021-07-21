@@ -1036,8 +1036,8 @@ void CS2Backbone::calculate()
         const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
         const double val1 = 3.*t_phi+PARS_DA[3];
         const double val2 = t_phi+PARS_DA[4];
-        shift += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-        const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+        shift += CO_DA[0]*(PARS_DA[0]*std::cos(val1)+PARS_DA[1]*std::cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*std::sin(val1)+PARS_DA[1]*std::sin(val2));
 
         cs_derivs[kdx+Cp+1] += fact*dd0;
         cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
@@ -1060,8 +1060,8 @@ void CS2Backbone::calculate()
         const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
         const double val1 = 3.*t_psi+PARS_DA[3];
         const double val2 = t_psi+PARS_DA[4];
-        shift += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-        const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+        shift += CO_DA[1]*(PARS_DA[0]*std::cos(val1)+PARS_DA[1]*std::cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*std::sin(val1)+PARS_DA[1]*std::sin(val2));
 
         cs_derivs[kdx+Nc+1] += fact*dd0;
         cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
@@ -1084,8 +1084,8 @@ void CS2Backbone::calculate()
         const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
         const double val1 = 3.*t_chi1+PARS_DA[3];
         const double val2 = t_chi1+PARS_DA[4];
-        shift += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-        const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+        shift += CO_DA[2]*(PARS_DA[0]*std::cos(val1)+PARS_DA[1]*std::cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*std::sin(val1)+PARS_DA[1]*std::sin(val2));
 
         cs_derivs[kdx+Nc+1] += fact*dd0;
         cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);

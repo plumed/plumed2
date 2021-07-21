@@ -140,7 +140,7 @@ void GridVessel::setupFibonacciGrid( const unsigned& np ) {
   }
   double final_cutoff;
   if( getFibonacciCutoff()<-1 ) final_cutoff=-1;
-  else final_cutoff = cos( acos( getFibonacciCutoff() ) + acos( min ) );
+  else final_cutoff = std::cos( std::acos( getFibonacciCutoff() ) + std::acos( min ) );
 
   // And now construct the neighbor list
   fib_nlist.resize( npoints );
@@ -225,7 +225,7 @@ unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
 unsigned GridVessel::getFibonacciIndex( const std::vector<double>& p ) const {
   plumed_dbg_assert( gtype==fibonacci );
   // Convert input point to coordinates on cylinder
-  int k=2; double phi = atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
+  int k=2; double phi = std::atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
   // Calculate power to raise golden ratio
   if( sinthet2<epsilon ) { k = 2; }
   else {
@@ -289,7 +289,7 @@ void GridVessel::getFlatGridCoordinates( const unsigned& ipoint, std::vector<uns
 void GridVessel::getFibonacciCoordinates( const unsigned& ipoint, std::vector<double>& x ) const {
   plumed_dbg_assert( gtype==fibonacci );
   x[1] = (ipoint*fib_offset) + fib_shift; double r = sqrt( 1 - x[1]*x[1] );
-  double phi = ipoint*fib_increment; x[0] = r*cos(phi); x[2] = r*sin(phi);
+  double phi = ipoint*fib_increment; x[0] = r*std::cos(phi); x[2] = r*std::sin(phi);
   double norm=0; for(unsigned j=0; j<3; ++j) norm+=x[j]*x[j];
   norm = sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
 }

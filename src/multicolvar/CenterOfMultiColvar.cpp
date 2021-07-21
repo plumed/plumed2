@@ -150,11 +150,11 @@ void CenterOfMultiColvar::calculate() {
     Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) ) );
     // Now accumulate Berry phase averages
     for(unsigned j=0; j<3; ++j) {
-      stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] );
+      stmp[j] = std::sin( 2*pi*fpos[j] ); ctmp[j] = std::cos( 2*pi*fpos[j] );
       scom[j] += cvals[0]*cvals[comp]*stmp[j]; ccom[j] += cvals[0]*cvals[comp]*ctmp[j];
       double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
-      sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*cos( 2*pi*fpos[j] );
-      cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*sin( 2*pi*fpos[j] );
+      sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*std::cos( 2*pi*fpos[j] );
+      cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*std::sin( 2*pi*fpos[j] );
     }
     // Now accumulate derivatives
     for(unsigned k=0; k<tvals.getNumberActive(); ++k) {
@@ -185,7 +185,7 @@ void CenterOfMultiColvar::calculate() {
 
   // And now finish Berry phase average
   scom /= norm; ccom /=norm; Vector cpos;
-  for(unsigned j=0; j<3; ++j) cpos[j] = atan2( scom[j], ccom[j] ) / (2*pi);
+  for(unsigned j=0; j<3; ++j) cpos[j] = std::atan2( scom[j], ccom[j] ) / (2*pi);
   Vector cart_pos = pbc.scaledToReal( cpos );
   setPosition(cart_pos); setMass(1.0);   // This could be much cleverer but not without changing many things in PLMED
 

@@ -768,10 +768,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(ts_in.A>0.0) { // this is negative if molfile does not provide box
             // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
             real cosBC=cos(real(ts_in.alpha)*pi/180.);
-            //double sinBC=sin(ts_in.alpha*pi/180.);
-            real cosAC=cos(real(ts_in.beta)*pi/180.);
-            real cosAB=cos(real(ts_in.gamma)*pi/180.);
-            real sinAB=sin(real(ts_in.gamma)*pi/180.);
+            //double sinBC=std::sin(ts_in.alpha*pi/180.);
+            real cosAC=std::cos(real(ts_in.beta)*pi/180.);
+            real cosAB=std::cos(real(ts_in.gamma)*pi/180.);
+            real sinAB=std::sin(real(ts_in.gamma)*pi/180.);
             real Ax=real(ts_in.A);
             real Bx=real(ts_in.B)*cosAB;
             real By=real(ts_in.B)*sinAB;
