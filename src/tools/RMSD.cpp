@@ -1101,11 +1101,10 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
   }
   // ddist_drotation if needed
-  if(!alEqDis or !only_rotation)
+  if(!alEqDis or !only_rotation) {
     for (unsigned iat=0; iat<n; iat++)
       ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
 
-  if(!alEqDis or !only_rotation) {
     ddist_drr01.zero();
     for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
   }
@@ -1170,9 +1169,6 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
       //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
       ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
     }
-  }
-
-  if (!alEqDis) {
     for(unsigned i=0; i<3; i++)
       for(unsigned j=0; j<3; j++)
         ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i][j];
