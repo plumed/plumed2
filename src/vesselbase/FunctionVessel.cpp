@@ -74,7 +74,7 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
 }
 
 double FunctionVessel::calcTransform( const double&, double& ) const {
-  plumed_error(); return 1.0;
+  plumed_error();
 }
 
 void FunctionVessel::finish( const std::vector<double>& buffer ) {

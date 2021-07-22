@@ -258,7 +258,6 @@ int DynamicList<T>::getIndexOfElement( const T& t ) const {
     if( t==all[i] ) {return i; }
   }
   plumed_merror("Could not find an element in the dynamic list");
-  return 0;
 }
 
 template <typename T>

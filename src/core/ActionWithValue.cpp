@@ -91,7 +91,6 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
     if (values[i]->name==name) return values[i].get();
   }
   plumed_merror("there is no pointer with name " + name);
-  return NULL;
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
@@ -173,7 +172,6 @@ int ActionWithValue::getComponent( const std::string& name ) const {
     if (values[i]->name==thename) return i;
   }
   plumed_merror("there is no component with name " + name);
-  return -1;
 }
 
 std::string ActionWithValue::getComponentsList( ) const {

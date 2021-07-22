@@ -89,8 +89,8 @@ public:
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
-  bool isPeriodic() override { plumed_error(); return false; }
-  unsigned getNumberOfDerivatives() override { plumed_error(); return 0; }
+  bool isPeriodic() override { plumed_error(); }
+  unsigned getNumberOfDerivatives() override { plumed_error(); }
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override { plumed_error(); }
 /// Calculate and apply do nothing all analysis is done during update step
   void calculate() override {}

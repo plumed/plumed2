@@ -255,7 +255,6 @@ std::string PDB::getAtomName(AtomNumber a)const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Name of atom " + num + " not found" );
-    return "";
   } else return atomsymb[p->second];
 }
 
@@ -264,7 +263,6 @@ unsigned PDB::getResidueNumber(AtomNumber a)const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-    return 0;
   } else return residue[p->second];
 }
 
@@ -273,7 +271,6 @@ std::string PDB::getResidueName(AtomNumber a) const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-    return "";
   } else return residuenames[p->second];
 }
 
@@ -435,7 +432,6 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found" );
-  return "";
 }
 
 std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
@@ -444,7 +440,6 @@ std::string PDB::getResidueName(const unsigned& resnum,const std::string& chaini
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found in chain " + chainid );
-  return "";
 }
 
 
@@ -454,7 +449,6 @@ AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigne
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
-  return numbers[0]; // This is to stop compiler errors
 }
 
 AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const {
@@ -463,7 +457,6 @@ AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
-  return numbers[0]; // This is to stop compiler errors
 }
 
 std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
@@ -501,8 +494,8 @@ std::string PDB::getChainID(AtomNumber a) const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Chain for atom " + num + " not found" );
-    return 0;
-  } else return chain[p->second];
+  }
+  return chain[p->second];
 }
 
 bool PDB::checkForResidue( const std::string& name ) const {

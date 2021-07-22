@@ -105,7 +105,7 @@ public:
   }
 /// Project the displacement on a vector
   virtual double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& eigv, ReferenceValuePack& mypack ) const {
-    plumed_error(); return 1;
+    plumed_error();
   }
 /// Get the vector of alignment weights
   const std::vector<double> & getAlign() const ;

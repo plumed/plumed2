@@ -208,7 +208,6 @@ inline
 const std::vector<double>& GridVessel::getGridSpacing() const {
   if( gtype==flat ) return dx;
   plumed_merror("dont understand what spacing means for spherical grids");
-  return dx;
 }
 
 inline

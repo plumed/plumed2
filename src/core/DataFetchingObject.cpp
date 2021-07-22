@@ -50,7 +50,6 @@ std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, Plume
   }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
-  return NULL;
 }
 
 DataFetchingObject::DataFetchingObject(PlumedMain&p):
