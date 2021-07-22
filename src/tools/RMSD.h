@@ -80,7 +80,7 @@ class RMSD
   bool positions_center_is_calculated;
   bool positions_center_is_removed;
 // calculates the center from the position provided
-  Vector calculateCenter(std::vector<Vector> &p,std::vector<double> &w) {
+  Vector calculateCenter(const std::vector<Vector> &p,const std::vector<double> &w) {
     plumed_massert(p.size()==w.size(),"mismatch in dimension of position/align arrays while calculating the center");
     unsigned n; n=p.size();
     Vector c; c.zero();
