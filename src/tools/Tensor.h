@@ -561,6 +561,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   }
 }
 
+static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 
 }
 

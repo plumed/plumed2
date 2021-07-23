@@ -333,6 +333,10 @@ typedef VectorGeneric<5> Vector5d;
 /// Alias for three dimensional vectors
 typedef Vector3d Vector;
 
+static_assert(sizeof(VectorGeneric<2>)==2*sizeof(double), "code cannot work if this is not satisfied");
+static_assert(sizeof(VectorGeneric<3>)==3*sizeof(double), "code cannot work if this is not satisfied");
+static_assert(sizeof(VectorGeneric<4>)==4*sizeof(double), "code cannot work if this is not satisfied");
+
 }
 
 #endif
