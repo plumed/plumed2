@@ -128,7 +128,7 @@ PlumedHandle PlumedHandle::dlopen(const char* path) {
 
 void PlumedHandle::cmd(const char*key,const TypesafePtr & ptr) {
   if(local) local->cmd(key,ptr);
-  else if(p && cmd_) cmd_(p,key,ptr.get<void*>()); // <- fix void
+  else if(p && cmd_) cmd_(p,key,ptr.get<const void*>()); // This could be improved to provide exception mapping and type checks
   else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 
