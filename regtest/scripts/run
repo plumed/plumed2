@@ -164,6 +164,11 @@ if type -t plumed_custom_skip 1>/dev/null ; then
   fi
 fi
 
+if $plumed --is-installed ; then
+  export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+else
+  export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+fi
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before
 fi
@@ -189,11 +194,6 @@ case "$type" in
     cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
   else
     cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
-  fi
-  if $plumed --is-installed ; then
-    export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
-  else
-    export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
   fi
   if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 ; then
     if make print-fortran | grep "FC=$" 1>/dev/null ; then
