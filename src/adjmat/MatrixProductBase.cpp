@@ -201,7 +201,6 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
 }
 
 unsigned MatrixProductBase::getNumberOfColumns() const { 
-  plumed_massert( !actionInChain(), "I am not sure how to do this so I am not allowing it GAT");  
   return getPntrToOutput(0)->getShape()[1];
 }
 

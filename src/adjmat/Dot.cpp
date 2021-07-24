@@ -29,6 +29,7 @@ class Dot : public MatrixProductBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Dot(const ActionOptions&);
+  void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const override;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
@@ -46,6 +47,23 @@ Dot::Dot(const ActionOptions& ao):
 {
   forcesToApply.resize( getNumberOfDerivatives() );
   setNotPeriodic();
+}
+
+void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
+  if( getPntrToArgument(1)->getRank()==1 ) {
+      unsigned nr = 0, nvals = getPntrToArgument(1)->getShape()[0]; 
+      for(unsigned i=0;i<nvals;++i) {
+          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) nr++;
+      }
+      if( indices.size()!=nr ) indices.resize( 1+nr );
+      indices[0]=current; unsigned k = 1;
+      for(unsigned i=0;i<nvals;++i) {
+          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) { indices[k]=i; k++; }
+      }
+      myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() ); 
+      return;
+  } 
+  MatrixProductBase::setupForTask( current, myvals, indices, atoms );
 }
 
 double Dot::computeVectorProduct( const unsigned& index1, const unsigned& index2,
