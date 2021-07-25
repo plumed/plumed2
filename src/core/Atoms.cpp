@@ -488,7 +488,7 @@ void Atoms::createFullList(const TypesafePtr & n) {
 }
 
 void Atoms::getFullList(const TypesafePtr & x) {
-  auto xx=x.template get<const int**>(fullList.size());
+  auto xx=x.template get<const int**>();
   if(!fullList.empty()) *xx=&fullList[0];
   else *xx=NULL;
 }
