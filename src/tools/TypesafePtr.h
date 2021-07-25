@@ -357,6 +357,22 @@ public:
     return ptr;
   }
 
+  void* getRaw() const noexcept {
+    return ptr;
+  }
+
+  std::size_t getNelem() const noexcept {
+    return nelem;
+  }
+
+  const std::size_t* getShape() const noexcept {
+    return shape.data();
+  }
+
+  unsigned long int getFlags() const noexcept {
+    return flags;
+  }
+
 private:
   std::array<char,32> buffer;
   void* ptr=nullptr;
