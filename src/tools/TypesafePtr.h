@@ -66,7 +66,7 @@ Class to deal with propoagation of typesafe pointers.
 class TypesafePtr {
   inline void init_shape(const std::size_t* shape) {
     this->shape[0]=0;
-    if(shape) {
+    if(shape && *shape>0) {
       std::size_t nelem_=1;
       unsigned i=0;
       for(i=0; i<this->shape.size(); i++) {
