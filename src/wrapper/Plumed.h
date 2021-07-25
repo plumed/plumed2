@@ -1563,6 +1563,13 @@ private:
       buffer[0]='\0';
     }
 
+    SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=NULL) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      this->safe=safe;
+      buffer[0]='\0';
+      if(nelem>0) this->safe.nelem=nelem;
+      if(shape) this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
+    }
+
 #if __cplusplus > 199711L
     /// Construct from null
     SafePtr(__PLUMED_WRAPPER_STD nullptr_t,__PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) noexcept {
