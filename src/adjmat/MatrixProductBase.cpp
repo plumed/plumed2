@@ -31,6 +31,7 @@ void MatrixProductBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES"); keys.use("ARG");
+  keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements equal to zero");
 }
 
 MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
@@ -46,7 +47,11 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
       for(unsigned i=0; i<2; ++i) {
           if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
       }
-      std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); 
+      std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
+      bool zero_diag; parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
+      if( zero_diag && shape[0]!=shape[1] ) error("cannot set diagonal elements of matrix to zero if matrix is not square");
+      else if( zero_diag ) skip_ieqj=true;
+      if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n"); 
       // Rerequest arguments 
       std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
       // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
@@ -67,6 +72,15 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
           }
       }
   }
+}
+
+bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
+  MatrixProductBase* mp = dynamic_cast<MatrixProductBase*>(av);
+  AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
+  if( !mp || ab ) return true;
+  const AdjacencyMatrixBase* ab2=dynamic_cast<const AdjacencyMatrixBase*>(this);
+  if( ab2 || mp->skip_ieqj!=skip_ieqj ) return false;
+  return true;
 }
 
 unsigned MatrixProductBase::getNumberOfDerivatives() const {

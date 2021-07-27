@@ -53,11 +53,13 @@ void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector
   if( getPntrToArgument(1)->getRank()==1 ) {
       unsigned nr = 0, nvals = getPntrToArgument(1)->getShape()[0]; 
       for(unsigned i=0;i<nvals;++i) {
+          if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
           if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) nr++;
       }
       if( indices.size()!=nr ) indices.resize( 1+nr );
       indices[0]=current; unsigned k = 1;
       for(unsigned i=0;i<nvals;++i) {
+          if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
           if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) { indices[k]=i; k++; }
       }
       myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() ); 

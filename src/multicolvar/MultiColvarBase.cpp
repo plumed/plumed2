@@ -80,6 +80,7 @@ void MultiColvarBase::readShortcutKeywords( std::map<std::string,std::string>& k
 
 void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, 
                                        const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
+  if( keymap.empty() ) return;
   // Parse LESS_THAN
   if( keymap.count("LESS_THAN") ) {
     std::string sum_arg = labout + "_lt", lt_string = keymap.find("LESS_THAN")->second;
@@ -124,7 +125,6 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
           action->readInputLine( labout + "_wmt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
       }
       action->readInputLine( labout + "_morethan" + istr + ": COMBINE ARG=" + sum_arg + " PERIODIC=NO");
-      if( !action->parseNumbered("MORE_THAN",i+1,mt_string1) ) { break; }
     }
   }
   // Parse ALT_MIN
@@ -178,7 +178,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   }
   // Parse MEAN
   if( keymap.count("MEAN") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
+    if( weights.length()>0 ) plumed_merror("cannot use MEAN with this shortcut");
     action->readInputLine( labout + "_mean: COMBINE ARG=" + argin + " NORMALIZE PERIODIC=NO");
   }
   // Parse BETWEEN

@@ -34,6 +34,7 @@ class MatrixProductBase :
   public ActionWithArguments,
   public ActionWithValue
 {
+friend class Dot;
 private:
   bool skip_ieqj;
   void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
@@ -45,6 +46,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);
   unsigned getNumberOfDerivatives() const override;
+  bool canBeAfterInChain( ActionWithValue* av ) const override;
   virtual unsigned getNumberOfColumns() const ;
   bool mustBeTreatedAsDistinctArguments() const override ;
   void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );

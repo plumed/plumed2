@@ -88,7 +88,7 @@ MoreThan::MoreThan(const ActionOptions&ao):
   }
   log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
   parseFlag("SQUARED",squared);
-  log<<"  taking square root of argument prior to applying switching function\n";
+  if( squared ) log<<"  input quantity is square of quantity that switching function acts upon\n";
 
   addValueWithDerivatives();
   checkRead();

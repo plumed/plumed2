@@ -112,14 +112,6 @@ void AdjacencyMatrixBase::setupThirdAtomBlock( const std::vector<AtomNumber>& tc
   log.printf("\n");
 }
 
-bool AdjacencyMatrixBase::canBeAfterInChain( ActionWithValue* av ) const {
-  MatrixProductBase* mp = dynamic_cast<MatrixProductBase*>( av );
-  if( !mp ) return true;
-  AdjacencyMatrixBase* vp = dynamic_cast<AdjacencyMatrixBase*>( av );
-  if( !vp ) return false;
-  return true;
-}
-
 void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut ) {
   if( read_one_group && symmetric ) getPntrToComponent(0)->setSymmetric( true );
   if( nl_cut>0 && lcut>nl_cut ) error("D_MAX for switching functions should be shorter than neighbor list cutoff");
