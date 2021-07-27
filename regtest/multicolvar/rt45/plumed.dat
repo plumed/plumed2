@@ -13,4 +13,5 @@ a2: COORD_ANGLES ...
 
 a2b: CUSTOM ARG1=a2_between1 ARG2=a2_denom FUNC=x/y PERIODIC=NO
 PRINT ARG=a1.*,a2.*,a2b FILE=colvar FMT=%8.5f
-# DUMPDERIVATIVES ARG=a2.* FILE=derivatives FMT=%8.5f
+BIASVALUE ARG=a1_mean
+BIASVALUE ARG=a2b
