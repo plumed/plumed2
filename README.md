@@ -126,7 +126,7 @@ Developer documentation can be found at `developer-doc/html/index.html`.
 if you are working with a modified version of the code!
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
-we recomment installing PLUMED. 
+we recommend installing PLUMED. 
 To install it in `$HOME/opt` (directory should be set during `./configure`):
 
     umask 022
