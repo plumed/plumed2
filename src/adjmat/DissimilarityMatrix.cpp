@@ -65,7 +65,6 @@ DissimilarityMatrix::DissimilarityMatrix( const ActionOptions& ao ):
 
   parseFlag("SQUARED",squared);
   if( squared ) log.printf("  computing the square of the dissimilarity matrix\n");
-  forcesToApply.resize( getNumberOfDerivatives() );
   setNotPeriodic();
 }
 

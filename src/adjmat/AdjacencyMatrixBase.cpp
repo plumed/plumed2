@@ -90,8 +90,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
     log.printf("  atoms for background density are "); setupThirdAtomBlock( tc, t );
   }
   // Request the atoms from the ActionAtomistic
-  requestAtoms( t ); forcesToApply.resize( getNumberOfDerivatives() );
-  parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
+  requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponent( "w", shape ); componentIsNotPeriodic("w");
   // Stuff for neighbor list
   parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut; parse("NL_STRIDE",nl_stride); 

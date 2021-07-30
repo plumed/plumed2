@@ -48,12 +48,10 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
           if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
       }
       std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
-      bool zero_diag; parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
+      bool zero_diag=false; if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(1)->getRank()==1 ) parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
       if( zero_diag && shape[0]!=shape[1] ) error("cannot set diagonal elements of matrix to zero if matrix is not square");
       else if( zero_diag ) skip_ieqj=true;
       if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n"); 
-      // Rerequest arguments 
-      std::vector<Value*> args( getArguments() ); requestArguments( args, false ); 
       // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
       for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
       // And create the matrix to hold the dot products
@@ -71,6 +69,16 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
               if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
           }
       }
+      // This sets up matrix times vector calculations
+      if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
+          // Chain off the action that computes the matrix
+          std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(0)->getPntrToAction())->getLabel();
+          (getPntrToArgument(0)->getPntrToAction())->addActionToChain( alabels, this ); 
+      } else getPntrToArgument(0)->buildDataStore( getLabel() );
+      // Store the vector
+      getPntrToArgument(1)->buildDataStore( getLabel() );
+      // Rerequest arguments 
+      std::vector<Value*> args( getArguments() ); requestArguments( args, true );
   }
 }
 
@@ -84,6 +92,7 @@ bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
 }
 
 unsigned MatrixProductBase::getNumberOfDerivatives() const {
+  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives() + getPntrToArgument(1)->getSize();
   unsigned numargs = 0; if( getNumberOfArguments()>0 ) numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize(); 
   if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + numargs;
   return numargs;
@@ -180,37 +189,59 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
            ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(1)->getPntrToAction() );
            if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(0)->getName() && (getPntrToArgument(0)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true;
       }
-  } else error("cannot do product of matrix and vector");
+  } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
+      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix is not equal to number of elements in vector");
+      shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[0];
+  } else error("cannot do product of row vector with matrix");
   return shape;
 }
 
 void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
-      unsigned nmat = getPntrToOutput(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
+  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
+      unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash(); 
+      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+      for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
+          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+              myvals.updateIndex( ostrn, mat_indices[i] );
+          }
+      }
+      unsigned vecder_start = (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
+      unsigned nderivatives = vecder_start + getPntrToArgument(1)->getSize();;
+      for(unsigned i=vecder_start; i<nderivatives; ++i ) {
+          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+              myvals.updateIndex( ostrn, i );
+          } 
+      }
+  } else {
+      for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
+          unsigned nmat = getPntrToOutput(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+          std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
 
-      unsigned numargs = 0;
-      if( getNumberOfArguments()>0 ) {
-          unsigned nargs = 1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
-          for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
-          numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
+          unsigned numargs = 0;
+          if( getNumberOfArguments()>0 ) {
+              unsigned nargs = 1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
+              for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = nargs*ind + i; nmat_ind++; }
+              numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
+          }
+          if( getNumberOfAtoms()>0 ) {
+            matrix_indices[nmat_ind+0]=numargs + 3*ind+0;
+            matrix_indices[nmat_ind+1]=numargs + 3*ind+1;
+            matrix_indices[nmat_ind+2]=numargs + 3*ind+2;
+            nmat_ind+=3; 
+            for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) { 
+                matrix_indices[nmat_ind+0]=numargs + 3*indices[i]+0;
+                matrix_indices[nmat_ind+1]=numargs + 3*indices[i]+1;
+                matrix_indices[nmat_ind+2]=numargs + 3*indices[i]+2;
+                nmat_ind+=3;
+            }
+            unsigned virbase = numargs + 3*getNumberOfAtoms();
+            for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
+            nmat_ind+=9; 
+          }
+          myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
       }
-      if( getNumberOfAtoms()>0 ) {
-        matrix_indices[nmat_ind+0]=numargs + 3*ind+0;
-        matrix_indices[nmat_ind+1]=numargs + 3*ind+1;
-        matrix_indices[nmat_ind+2]=numargs + 3*ind+2;
-        nmat_ind+=3; 
-        for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) { 
-            matrix_indices[nmat_ind+0]=numargs + 3*indices[i]+0;
-            matrix_indices[nmat_ind+1]=numargs + 3*indices[i]+1;
-            matrix_indices[nmat_ind+2]=numargs + 3*indices[i]+2;
-            nmat_ind+=3;
-        }
-        unsigned virbase = numargs + 3*getNumberOfAtoms();
-        for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
-        nmat_ind+=9; 
-      }
-      myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
   }
 }
 
@@ -280,15 +311,21 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
   if( isAdjacencyMatrix && controller!=getLabel() ) return false; 
   // Now do the calculation
-  unsigned sss=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+  unsigned ss0=0, ss1=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
   if( getNumberOfArguments()>0 ) {
-      sss=1; if( getPntrToArgument(1)->getRank()==2 ) sss=getPntrToArgument(1)->getShape()[1];
-      nargs=1; if( getPntrToArgument(0)->getRank()==2 ) nargs = getPntrToArgument(0)->getShape()[1];
+      ss0=1; if( getPntrToArgument(0)->getRank()==2 ) ss0=nargs=getPntrToArgument(0)->getShape()[1];
+      ss1=1; if( getPntrToArgument(1)->getRank()==2 ) ss1=getPntrToArgument(1)->getShape()[1];
+      nargs=ss0; if( getPntrToOutput(0)->getRank()==1 ) nargs=1;
   }
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
-  for(unsigned i=0; i<nargs; ++i) {
-    args1[i] = getPntrToArgument(0)->get( index1*nargs + i );
-    args2[i] = getPntrToArgument(1)->get( i*sss + ind2 ); 
+  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
+      args1[0] = myvals.get( getPntrToArgument(0)->getPositionInStream() );
+      args2[0] = getPntrToArgument(1)->get( ind2 );
+  } else {
+      for(unsigned i=0; i<nargs; ++i) {
+        args1[i] = getPntrToArgument(0)->get( index1*ss0 + i );
+        args2[i] = getPntrToArgument(1)->get( i*ss1 + ind2 );
+      }
   }
   double val = computeVectorProduct( index1, index2, args1, args2, der1, der2, myvals );
   if( abs(val)<epsilon ) {
@@ -299,32 +336,43 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
       return false;       
   }
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-  myvals.setValue( ostrn, val );
+  myvals.addValue( ostrn, val );
   // Return after calculation of value if we do not need derivatives
   if( doNotCalculateDerivatives() ) return true;
 
-  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
-  unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-  unsigned jind_start = 0; 
-  if( getNumberOfArguments()>0 ) jind_start = getPntrToArgument(0)->getSize(); 
-  for(unsigned i=0; i<nargs; ++i) {
-    plumed_dbg_assert( nargs*index1 + i<myvals.getNumberOfDerivatives() );
-    myvals.addDerivative( ostrn, nargs*index1 + i, der1[i] );
-    myvals.updateIndex( ostrn, nargs*index1 + i );
-    plumed_dbg_assert( jind_start + i*sss + ind2<myvals.getNumberOfDerivatives() );
-    myvals.addDerivative( ostrn, jind_start + i*sss + ind2, der2[i] );
-    myvals.updateIndex( ostrn, jind_start + i*sss + ind2 );
-    if( !myvals.inMatrixRerun() ) { matrix_indices[nmat_ind] = jind_start + i*sss + ind2; nmat_ind++; }
+  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
+      unsigned my_weight = getPntrToArgument(0)->getPositionInStream();
+      for(unsigned k=0; k<myvals.getNumberActive(my_weight); ++k) {
+          unsigned kind=myvals.getActiveIndex(my_weight,k);
+          myvals.addDerivative( ostrn, kind, der1[0]*myvals.getDerivative( my_weight, kind ) );
+      }
+      unsigned vstart = (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
+      myvals.addDerivative( ostrn, vstart + ind2, der2[0] );
+  } else {
+      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+      std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+      plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
+      unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+      unsigned jind_start = 0; 
+      if( getNumberOfArguments()>0 ) jind_start = getPntrToArgument(0)->getSize(); 
+      for(unsigned i=0; i<nargs; ++i) {
+        plumed_dbg_assert( ss0*index1 + i<myvals.getNumberOfDerivatives() );
+        myvals.addDerivative( ostrn, ss0*index1 + i, der1[i] );
+        myvals.updateIndex( ostrn, ss0*index1 + i );
+        plumed_dbg_assert( jind_start + i*ss1 + ind2<myvals.getNumberOfDerivatives() );
+        myvals.addDerivative( ostrn, jind_start + i*ss1 + ind2, der2[i] );
+        myvals.updateIndex( ostrn, jind_start + i*ss1 + ind2 );
+        if( !myvals.inMatrixRerun() ) { matrix_indices[nmat_ind] = jind_start + i*ss1 + ind2; nmat_ind++; }
+      }
+      myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+      if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
   }
-  myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
-  if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
   return true;
 }
 
 void MatrixProductBase::apply() {
   if( doNotCalculateDerivatives() ) return;
+  if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
   if( getForcesFromValues( forcesToApply ) ) {
     setForcesOnAtoms( forcesToApply, mm );

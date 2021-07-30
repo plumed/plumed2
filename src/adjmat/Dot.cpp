@@ -45,7 +45,6 @@ Dot::Dot(const ActionOptions& ao):
   Action(ao),
   MatrixProductBase(ao)
 {
-  forcesToApply.resize( getNumberOfDerivatives() );
   setNotPeriodic();
 }
 

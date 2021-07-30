@@ -65,7 +65,6 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions& ao):
     log.printf("  %d", atoms_b[i].serial()); atoms_a.push_back( atoms_b[i] );
   }
   log.printf("\n"); std::vector<Value*> args( getArguments() ); requestAtoms( atoms_a ); requestArguments( args, false );
-  forcesToApply.resize( getNumberOfDerivatives() );
 }
 
 double TorsionsMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

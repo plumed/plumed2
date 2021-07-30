@@ -37,11 +37,11 @@ class MatrixProductBase :
 friend class Dot;
 private:
   bool skip_ieqj;
+  std::vector<double> forcesToApply;
   void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
   bool isAdjacencyMatrix;
-  std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);

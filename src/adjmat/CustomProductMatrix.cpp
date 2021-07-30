@@ -56,7 +56,6 @@ CustomProductMatrix::CustomProductMatrix(const ActionOptions& ao):
   if( domin || domax ) {
     if( getNumberOfArguments()>2 ) error("should be at most only two arguments");
   }
-  forcesToApply.resize( getNumberOfDerivatives() );
   setNotPeriodic();
 }
 
