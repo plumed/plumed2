@@ -101,11 +101,11 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB); 
+  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
   readInputLine( getShortcutLabel() + "_coord: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
-  readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT WEIGHT=" + getShortcutLabel() + "_mat.w " + convertInputLineToString() );
+  readInputLine( getShortcutLabel() + "_prod: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + sp_str + " " + convertInputLineToString() );
   readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_prod ARG2=" + sp_str + " ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO");
   multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }

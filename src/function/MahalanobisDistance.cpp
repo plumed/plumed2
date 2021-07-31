@@ -84,14 +84,14 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + getShortcutLabel() + "_scaled ARG2=" + getShortcutLabel() + "_metoff.center FUNC=2*(1-cos(x))*y PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_diag: COMBINE ARG=" + getShortcutLabel() + "_prod PERIODIC=NO"); 
       // Compute the off diagonal elements
-      readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT WEIGHT=" + getShortcutLabel() + "_metoff.covariance VECTOR=" + getShortcutLabel() +"_sinediff");
+      readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + getShortcutLabel() + "_metoff.covariance ARG2=" + getShortcutLabel() +"_sinediff");
       readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_sinediff FUNC=x*y PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_offdiag: COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
       // Sum everything
       if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");
       else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");
   } else {
-      readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT WEIGHT=" + metstr + " VECTOR=" + getShortcutLabel() +"_diff");
+      readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diff");
       readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_diff FUNC=x*y PERIODIC=NO");
       if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
       else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");

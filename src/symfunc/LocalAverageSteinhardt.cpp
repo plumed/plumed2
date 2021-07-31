@@ -112,10 +112,10 @@ ActionShortcut(ao)
   int l; Tools::convert( getName().substr(15), l );
   for(int i=-l; i<=l; ++i) {
     std::string num; Tools::convert( i, num );
-    readInputLine( getShortcutLabel() + "_prod-rmn-[" + num + "]: MATRIX_VECTOR_PRODUCT WEIGHT=" + getShortcutLabel() + "_mat.w VECTOR=" + specB + "_rmn-[" + num + "]");
+    readInputLine( getShortcutLabel() + "_prod-rmn-[" + num + "]: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + specB + "_rmn-[" + num + "]");
     readInputLine( getShortcutLabel() + "_av-rmn-[" + num + "]: MATHEVAL ARG1=" + getShortcutLabel() + "_prod-rmn-[" + num + "] ARG2=" + specA + 
                    "_rmn-[" + num + "] ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_prod-imn-[" + num + "]: MATRIX_VECTOR_PRODUCT WEIGHT=" + getShortcutLabel() + "_mat.w VECTOR=" + specB + "_imn-[" + num + "]");
+    readInputLine( getShortcutLabel() + "_prod-imn-[" + num + "]: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + specB + "_imn-[" + num + "]");
     readInputLine( getShortcutLabel() + "_av-imn-[" + num + "]: MATHEVAL ARG1=" + getShortcutLabel() + "_prod-imn-[" + num + "] ARG2=" + specA + 
                    "_imn-[" + num + "] ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO"); 
   }

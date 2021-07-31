@@ -198,7 +198,8 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
 }
 
 void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
+  if( getPntrToOutput(0)->getRank()==1 ) {
+      if( !actionInChain() ) return ;
       unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash(); 
       std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
       for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
@@ -206,14 +207,6 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
               unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
               myvals.updateIndex( ostrn, mat_indices[i] );
           }
-      }
-      unsigned vecder_start = (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
-      unsigned nderivatives = vecder_start + getPntrToArgument(1)->getSize();;
-      for(unsigned i=vecder_start; i<nderivatives; ++i ) {
-          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-              myvals.updateIndex( ostrn, i );
-          } 
       }
   } else {
       for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
@@ -344,14 +337,17 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   // Return after calculation of value if we do not need derivatives
   if( doNotCalculateDerivatives() ) return true;
 
-  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
-      unsigned my_weight = getPntrToArgument(0)->getPositionInStream();
-      for(unsigned k=0; k<myvals.getNumberActive(my_weight); ++k) {
-          unsigned kind=myvals.getActiveIndex(my_weight,k);
-          myvals.addDerivative( ostrn, kind, der1[0]*myvals.getDerivative( my_weight, kind ) );
-      }
-      unsigned vstart = (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
-      myvals.addDerivative( ostrn, vstart + ind2, der2[0] );
+  if(  getPntrToOutput(0)->getRank()==1 ) {
+      unsigned vstart = getPntrToArgument(0)->getSize();
+      if( actionInChain() ) {
+          unsigned my_weight = getPntrToArgument(0)->getPositionInStream();
+          for(unsigned k=0; k<myvals.getNumberActive(my_weight); ++k) {
+              unsigned kind=myvals.getActiveIndex(my_weight,k);
+              myvals.addDerivative( ostrn, kind, der1[0]*myvals.getDerivative( my_weight, kind ) );
+          }
+          vstart = (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
+      } else { myvals.addDerivative( ostrn, index1*ss0 + ind2, der1[0] ); myvals.updateIndex( ostrn, index1*ss0 + ind2 ); }
+      myvals.addDerivative( ostrn, vstart + ind2, der2[0] ); myvals.updateIndex( ostrn, vstart + ind2 );
   } else {
       unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
       std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
