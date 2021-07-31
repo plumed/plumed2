@@ -69,13 +69,14 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
               if( getPntrToArgument(i)->isTimeSeries() ) error("all arguments should either be time series or not time series");
           }
       }
-      // This sets up matrix times vector calculations
-      if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
+      // This sets up matrix times vector calculations that are done without storing the input matrix
+      MatrixProductBase* mb=dynamic_cast<MatrixProductBase*>( getPntrToArgument(0)->getPntrToAction() );
+      if( mb && getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(0)->getPntrToAction())->getLabel();
           (getPntrToArgument(0)->getPntrToAction())->addActionToChain( alabels, this ); 
       } else getPntrToArgument(0)->buildDataStore( getLabel() );
-      // Store the vector
+      // Store the vector or second matrix
       getPntrToArgument(1)->buildDataStore( getLabel() );
       // Rerequest arguments 
       std::vector<Value*> args( getArguments() ); requestArguments( args, true );
@@ -157,13 +158,13 @@ void MatrixProductBase::calculate() {
 }
 
 void MatrixProductBase::update() {
-  if( skipUpdate() ) return;
+  if( actionInChain() || skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
   if( getFullNumberOfTasks()>0 ) runAllTasks();
 }
 
 void MatrixProductBase::runFinalJobs() {
-  if( skipUpdate() ) return;
+  if( actionInChain() || skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
   resizeForFinalTasks();
   runAllTasks();
@@ -250,7 +251,9 @@ unsigned MatrixProductBase::getNumberOfColumns() const {
 }
 
 void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
-  unsigned size_v = getPntrToOutput(0)->getShape()[1]; 
+  unsigned size_v;
+  if( getPntrToOutput(0)->getRank()==1 ) size_v = getPntrToArgument(0)->getShape()[1]; 
+  else size_v = getPntrToOutput(0)->getShape()[1]; 
   if( skip_ieqj ) {
       if( indices.size()!=size_v ) indices.resize( size_v ); 
   } else if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
@@ -313,13 +316,14 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   // Now do the calculation
   unsigned ss0=0, ss1=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
   if( getNumberOfArguments()>0 ) {
-      ss0=1; if( getPntrToArgument(0)->getRank()==2 ) ss0=nargs=getPntrToArgument(0)->getShape()[1];
+      ss0=1; if( getPntrToArgument(0)->getRank()==2 ) ss0=getPntrToArgument(0)->getShape()[1];
       ss1=1; if( getPntrToArgument(1)->getRank()==2 ) ss1=getPntrToArgument(1)->getShape()[1];
       nargs=ss0; if( getPntrToOutput(0)->getRank()==1 ) nargs=1;
   }
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
-  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) {
-      args1[0] = myvals.get( getPntrToArgument(0)->getPositionInStream() );
+  if( getPntrToOutput(0)->getRank()==1 ) {
+      if( actionInChain() ) args1[0] = myvals.get( getPntrToArgument(0)->getPositionInStream() );
+      else args1[0] = getPntrToArgument(0)->get( index1*ss0 + ind2 );
       args2[0] = getPntrToArgument(1)->get( ind2 );
   } else {
       for(unsigned i=0; i<nargs; ++i) {

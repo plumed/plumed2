@@ -348,7 +348,7 @@ unsigned ActionWithValue::getGridArgumentIndex( const ActionWithArguments* aa ) 
   unsigned ng=0; 
   for(unsigned i=0;i<aa->getNumberOfArguments();++i) {
       Value* myarg = aa->getPntrToArgument(i); if( myarg->getRank()==0 ) continue;
-      if( myarg->hasDerivatives() || myarg->isTimeSeries() ) ng=i;
+      if( myarg->hasDerivatives() || myarg->isTimeSeries() ) { ng=i; break; }
   }
   return ng;
 }

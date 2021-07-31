@@ -56,10 +56,10 @@ void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector
           if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) nr++;
       }
       if( indices.size()!=nr ) indices.resize( 1+nr );
-      indices[0]=current; unsigned k = 1;
+      indices[0]=current; unsigned k = 1, start_n = getFullNumberOfTasks();
       for(unsigned i=0;i<nvals;++i) {
           if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
-          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) { indices[k]=i; k++; }
+          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) { indices[k]=start_n + i; k++; }
       }
       myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() ); 
       return;

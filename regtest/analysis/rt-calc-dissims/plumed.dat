@@ -12,12 +12,12 @@ PRINT ARG=ss2 FILE=mymatrix2.matx FMT=%8.4f
 
 voro: VORONOI ARG=ll1.ss1_rect 
 fwe: CUSTOM ARG1=ff.logweights FUNC=exp(x) PERIODIC=NO
-lwe: MATRIX_VECTOR_PRODUCT WEIGHT=voro VECTOR=fwe 
+lwe: DOT ARG1=voro ARG2=fwe 
 PRINT ARG=ll1.d1,lwe FILE=output-stride.pdb
  
 ll2: LANDMARK_SELECT_FPS ARG1=ss1 ARG2=ff.d1 NLANDMARKS=3
 voro2: VORONOI ARG=ll2.ss1_rect
-lwe2: MATRIX_VECTOR_PRODUCT WEIGHT=voro2 VECTOR=fwe
+lwe2: DOT ARG1=voro2 ARG2=fwe
 PRINT ARG=ll2.d1,lwe2 FILE=output-fps.pdb
  
 ff2: COLLECT_FRAMES ARG=d1 CLEAR=6 STRIDE=1

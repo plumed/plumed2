@@ -18,7 +18,7 @@ l1: LANDMARK_SELECT_STRIDE ARG1=ss1 ARG2=ss2 ARG3=ff2.dist ARG4=ff2.logweights N
 
 voro: VORONOI ARG=l1.ss1_rect  
 fwe: CUSTOM ARG1=ff2.logweights FUNC=exp(x) PERIODIC=NO
-weights: MATRIX_VECTOR_PRODUCT WEIGHT=voro VECTOR=fwe 
+weights: DOT ARG1=voro ARG2=fwe 
 
 PRINT ARG1=l1.dist ARG2=weights FMT=%8.4f FILE=data
 PRINT ARG=l1.ss2_sqr FMT=%8.4f FILE=mymatrix.matx

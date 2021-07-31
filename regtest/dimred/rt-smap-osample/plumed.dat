@@ -12,7 +12,7 @@ ll: LANDMARK_SELECT_STRIDE DATA=ff ARG1=oo NLANDMARKS=250
 # Calculate the weights
 voro: VORONOI ARG=ll.oo_rect
 weights: CUSTOM ARG1=ff.logweights FUNC=exp(x) PERIODIC=NO
-lwe: MATRIX_VECTOR_PRODUCT WEIGHT=voro VECTOR=weights
+lwe: DOT ARG1=voro ARG2=weights
 
 smap: SKETCHMAP ...
   DISSIMILARITIES=ll.oo_sqr NLOW_DIM=2 PROJECT_ALL
