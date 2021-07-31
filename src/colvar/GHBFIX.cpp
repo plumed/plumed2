@@ -125,11 +125,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   typesfile.link(*this);
   typesfile.open(types);
   std::string itype;
-  std::vector<std::string> list;
-  typesfile.scanFieldList(list);
-  plumed_assert(list.size()==1)<<"unexpected size of custom fields in the file";
-
-  while(typesfile.scanField(list[0],itype).scanField()) {
+  while(typesfile.scanField("itype",itype).scanField()) {
     plumed_assert(itype.empty()==false)<<"itype is empty";
 
     if (MapTypesTable.empty()) {
@@ -157,11 +153,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   etafile.open(params);
   std::string it,jt;
   double eta;
-  etafile.scanFieldList(list);
-  plumed_assert(list.size()==3)<<"unexpected size of custom fields in the file";
-
-  while(etafile.scanField(list[0],it).scanField(list[1],jt).scanField(list[2],eta).scanField()) {
-    plumed_assert(list[0]!=list[1] && list[0]!=list[2] &&  list[1]!=list[2])<<"headers in inputfile are not unique";
+  while(etafile.scanField("itype",it).scanField("jtype",jt).scanField("eta",eta).scanField()) {
     plumed_assert(it.empty()==false)<<"itype is empty";
     plumed_assert(jt.empty()==false)<<"jtype is empty";
     etas[n*MapTypesTable[it]+MapTypesTable[jt]]=eta;

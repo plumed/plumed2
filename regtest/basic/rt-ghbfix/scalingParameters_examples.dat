@@ -1,4 +1,4 @@
-#! FIELDS custom_type_1 custom_type_2 scaling_param_eta
+#! FIELDS itype jtype eta
  type0 type1 0.5
  type0 type2 -1.0
  type1 type2 1.5
