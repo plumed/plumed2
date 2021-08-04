@@ -246,7 +246,10 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
     if( !allow_streams ) { storing=true; break; }
-    if( arguments[i]->alwaysstore || arguments[i]->columnsums ) { storing=true; break; }
+    if( arguments[i]->alwaysstore || arguments[i]->columnsums ) { 
+        ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
+        if( !as ) { storing=true; break; }
+    }
     if( !usingAllArgs[i] && arguments[i]->getNumberOfValues(getLabel())>1 ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }

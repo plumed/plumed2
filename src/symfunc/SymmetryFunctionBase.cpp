@@ -194,10 +194,8 @@ void SymmetryFunctionBase::addValueWithDerivatives() {
     shape.resize(1);
     if( usecols ) shape[0]=getPntrToArgument(0)->getShape()[1];
     else shape[0]=getPntrToArgument(0)->getShape()[0];
-    if( shape[0]==1 ) shape.resize(0);
   }
-  if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
-  else ActionWithValue::addValue( shape );
+  ActionWithValue::addValue( shape );
   setNotPeriodic();
   if( usecols ) getPntrToOutput( getNumberOfComponents()-1 )->buildColumnSums();
 }
@@ -208,10 +206,8 @@ void SymmetryFunctionBase::addComponentWithDerivatives( const std::string& name 
     shape.resize(1);
     if( usecols ) shape[0]=getPntrToArgument(0)->getShape()[1];
     else shape[0]=getPntrToArgument(0)->getShape()[0];
-    if( shape[0]==1 ) shape.resize(0);
   }
-  if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
-  else ActionWithValue::addComponent(name,shape);
+  ActionWithValue::addComponent(name,shape);
   componentIsNotPeriodic(name);
   if( usecols ) getPntrToOutput( getNumberOfComponents()-1 )->buildColumnSums();
 }

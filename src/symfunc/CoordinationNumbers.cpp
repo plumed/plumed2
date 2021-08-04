@@ -23,6 +23,8 @@
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include <string>
 #include <cmath>
 
@@ -78,47 +80,43 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 //+ENDPLUMEDOC
 
 
-class CoordinationNumbers : public SymmetryFunctionBase {
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit CoordinationNumbers(const ActionOptions&);
-  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
-};
-
-PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER_MATINP")
-
-void CoordinationNumbers::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys ); keys.remove("VECTORS");
-}
-
-CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
-  Action(ao),
-  SymmetryFunctionBase(ao)
-{
-  addValueWithDerivatives();
-}
-
-void CoordinationNumbers::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
-  addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals );
-}
-
-class CoordinationNumbersShortcut : public ActionShortcut {
+class CoordinationNumbers : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);
-  explicit CoordinationNumbersShortcut(const ActionOptions&);
+  explicit CoordinationNumbers(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(CoordinationNumbersShortcut,"COORDINATIONNUMBER")
+PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 
-void CoordinationNumbersShortcut::registerKeywords( Keywords& keys ) {
+void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
+  keys.add("compulsory","WEIGHT","the matrix whose rows are being summed to compute the coordination number");
 }
   
-CoordinationNumbersShortcut::CoordinationNumbersShortcut(const ActionOptions& ao):
+CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "COORDINATIONNUMBER", true, false, this );
+  // Setup the contract matrix if that is what is needed
+  std::string matlab, sp_str, specA, specB; 
+  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  if( sp_str.length()>0 || specA.length()>0 ) {
+      matlab = getShortcutLabel() + "_mat.w";
+      SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(),  sp_str, specA, specB, this );
+  } else parse("WEIGHT",matlab); 
+  std::size_t dot = matlab.find_first_of(".");
+  ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab.substr(0,dot) );
+  if( !mb ) error("could not find action with name " + matlab.substr(0,dot) );
+  Value* arg; if( matlab.find(".")!=std::string::npos ) arg=mb->copyOutput( matlab ); else arg=mb->copyOutput(0);
+  if( arg->getRank()!=2 || arg->hasDerivatives() ) error("the input to this action should be a matrix or scalar");
+  // Create vector of ones to multiply input matrix by
+  std::string ones=" CENTER=1"; for(unsigned i=1; i<arg->getShape()[1]; ++i ) ones += ",1";
+  readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones ); 
+  // Calcualte coordination numbers as matrix vector times vector of ones
+  readInputLine( getShortcutLabel() + ": DOT ARG1=" + matlab + " ARG2=" + getShortcutLabel() + "_ones");
+  // Read in all the shortcut stuff 
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 } 
 
 }

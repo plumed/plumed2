@@ -118,12 +118,12 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
 void HistogramBase::createTaskList() {
   bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
   if( hasrank ) {
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); }
     buildTasksFromBasedOnRankOfInputData();
   } else {
     one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
     if( !one_kernel_at_a_time ) for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
   }
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); }
 }
 
 void HistogramBase::setNumberOfKernels() {

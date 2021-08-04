@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MatrixProductBase.h"
 #include "AdjacencyMatrixBase.h"
+#include "core/ActionSetup.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -70,8 +71,8 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
           }
       }
       // This sets up matrix times vector calculations that are done without storing the input matrix
-      MatrixProductBase* mb=dynamic_cast<MatrixProductBase*>( getPntrToArgument(0)->getPntrToAction() );
-      if( mb && getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
+      ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
+      if( !as && !timeseries && getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(0)->getPntrToAction())->getLabel();
           (getPntrToArgument(0)->getPntrToAction())->addActionToChain( alabels, this ); 
@@ -84,9 +85,14 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
 }
 
 bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
+  // Input argument is the one that comes first in the order
+  // We can be after this if it is not a matrix product, or if we or if we are outputting a vector
   MatrixProductBase* mp = dynamic_cast<MatrixProductBase*>(av);
+  if( !mp || getPntrToOutput(0)->getRank()==1 || (av->copyOutput(0))->getRank()==1 ) return true;
+  // We can be after it if is an AdjacencyMatrix
   AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
-  if( !mp || ab ) return true;
+  if( ab ) return true;
+  // We can't be after it if we are an Adjacency matrix but it isn't
   const AdjacencyMatrixBase* ab2=dynamic_cast<const AdjacencyMatrixBase*>(this);
   if( ab2 || mp->skip_ieqj!=skip_ieqj ) return false;
   return true;
@@ -203,10 +209,8 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
       unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash(); 
       std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
       for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
-          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-              myvals.updateIndex( ostrn, mat_indices[i] );
-          }
+          unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+          myvals.updateIndex( ostrn, mat_indices[i] );
       }
   } else {
       for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
@@ -315,8 +319,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   }
   std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
   if( getPntrToOutput(0)->getRank()==1 ) {
-      if( actionInChain() ) args1[0] = myvals.get( getPntrToArgument(0)->getPositionInStream() );
-      else args1[0] = getPntrToArgument(0)->get( index1*ss0 + ind2 );
+      if( actionInChain() ) {
+          if( myvals.inMatrixRerun() ) return true;
+          args1[0] = myvals.get( getPntrToArgument(0)->getPositionInStream() );
+      } else args1[0] = getPntrToArgument(0)->get( index1*ss0 + ind2 );
       args2[0] = getPntrToArgument(1)->get( ind2 );
   } else {
       for(unsigned i=0; i<nargs; ++i) {

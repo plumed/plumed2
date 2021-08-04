@@ -10,6 +10,6 @@ PRINT ARG=cv_sum,cv_mean,acv_sum,acv_mean FILE=colvar FMT=%8.4f
 BIASVALUE ARG=cv_sum
 # # Add more forces so we actually have some
 cv1: TETRA_RADIAL SPECIESA=1 SPECIESB=1-64 SUM
-BIASVALUE ARG=cv1
+BIASVALUE ARG=cv1_sum
 # And forces on angular business
 BIASVALUE ARG=acv_sum
