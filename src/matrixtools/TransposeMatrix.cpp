@@ -57,7 +57,7 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  if( getPntrToArgument(0)->isSymmetric() ) error("input matrix is symmetric.  Transposing will achieve nothing!");
+  if( getPntrToArgument(0)->isSymmetric() ) warning("input matrix is symmetric.  Transposing will achieve nothing!");
   std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); addValue( shape ); 
 }
 
@@ -81,6 +81,9 @@ void TransposeMatrix::completeMatrixOperations() {
   // Retrieve the non-zero pairs
   unsigned nedge=0; retrieveEdgeList( 0, nedge ); std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
   for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] ); 
+  if( getPntrToArgument(0)->isSymmetric() ) {
+      for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].first*shape[1] + pairs[i].second, vals[i] );
+  }
 }
 
 void TransposeMatrix::apply() {

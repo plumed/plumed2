@@ -71,8 +71,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
           }
       }
       // This sets up matrix times vector calculations that are done without storing the input matrix
-      ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
-      if( !as && !timeseries && getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
+      if( !getPntrToArgument(0)->dataAlwaysStored() && !timeseries && getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(0)->getPntrToAction())->getLabel();
           (getPntrToArgument(0)->getPntrToAction())->addActionToChain( alabels, this ); 
@@ -199,7 +198,7 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(1)->getRank()==1 ) {
       if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix is not equal to number of elements in vector");
       shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  } else error("cannot do product of row vector with matrix");
+  } else error("cannot do product of row vector with matrix transpose matrix in ARG2 and do use DOT with matrix as ARG1 vector as ARG2");
   return shape;
 }
 
