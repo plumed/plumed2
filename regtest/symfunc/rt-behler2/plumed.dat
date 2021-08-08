@@ -1,16 +1,20 @@
 UNITS LENGTH=Bohr 
 
 cmat_hh: CONTACT_MATRIX GROUP=2,3,5,6 SWITCH={TANH3 R_0=10.0} COMPONENTS
-beh_hh: GSYMFUNC_TWOBODY WEIGHT=cmat_hh.w VECTORS1=cmat_hh.x VECTORS2=cmat_hh.y VECTORS3=cmat_hh.z FUNCTION1={FUNC=exp(-0.01*x*x) LABEL=g2}
+cmat_rh: CUSTOM ARG1=cmat_hh.x ARG2=cmat_hh.y ARG3=cmat_hh.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fh: CUSTOM ARG1=cmat_rh ARG2=cmat_hh.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+beh_hh: COORDINATIONNUMBER WEIGHT=cmat_fh
  
 cmat_oo: CONTACT_MATRIX GROUP=1,4 SWITCH={TANH3 R_0=10.0} COMPONENTS
-beh_oo: GSYMFUNC_TWOBODY WEIGHT=cmat_oo.w VECTORS1=cmat_oo.x VECTORS2=cmat_oo.y VECTORS3=cmat_oo.z FUNCTION1={FUNC=exp(-0.01*x*x) LABEL=g2}
+cmat_or: CUSTOM ARG1=cmat_oo.x ARG2=cmat_oo.y ARG3=cmat_oo.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fo: CUSTOM ARG1=cmat_or ARG2=cmat_oo.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+beh_oo: COORDINATIONNUMBER WEIGHT=cmat_fo
 
 cmat_oh: CONTACT_MATRIX GROUPA=1,4 GROUPB=2,3,5,6 SWITCH={TANH3 R_0=10.0} COMPONENTS
 beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w VECTORS1=cmat_oh.x VECTORS2=cmat_oh.y VECTORS3=cmat_oh.z FUNCTION1={FUNC=((tanh(1-sqrt(rjk)/10))^3)*exp(-0.001*(rij+rik+rjk))*(1+cos(ajik)) LABEL=g4} 
 
-PRINT ARG1=beh_hh.g2 ATOMS=2,3,5,6 FMT=%8.4f FILE=gfunc_h.xyz
-PRINT ARG1=beh_oo.g2 ARG2=beh_oh.g4 ATOMS=1,4 FMT=%8.4f FILE=gfunc_o.xyz
+PRINT ARG1=beh_hh ATOMS=2,3,5,6 FMT=%8.4f FILE=gfunc_h.xyz
+PRINT ARG1=beh_oo ARG2=beh_oh.g4 ATOMS=1,4 FMT=%8.4f FILE=gfunc_o.xyz
 
-comb_hh: COMBINE ARG=beh_hh.g2 PERIODIC=NO
+comb_hh: COMBINE ARG=beh_hh PERIODIC=NO
 BIASVALUE ARG=comb_hh

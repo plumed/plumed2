@@ -19,9 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
-#include "multicolvar/MultiColvarBase.h"
-#include "core/ActionShortcut.h"
+#include "function/Function.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -73,25 +71,25 @@ PRINT ARG=d.* FILE=colv
 //+ENDPLUMEDOC
 
 
-class Fccubic : public SymmetryFunctionBase {
+class Fccubic : public function::Function {
 private:
   double alpha, a1, b1;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Fccubic(const ActionOptions&);
-  void compute( const double& val, const Vector& dir, MultiValue& myvals ) const override;
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Fccubic,"FCCUBIC_MATINP")
+PLUMED_REGISTER_ACTION(Fccubic,"FCCCUBIC_FUNC")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys );
+  function::Function::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
 }
 
 Fccubic::Fccubic(const ActionOptions&ao):
   Action(ao),
-  SymmetryFunctionBase(ao)
+  Function(ao)
 {
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
@@ -101,17 +99,17 @@ Fccubic::Fccubic(const ActionOptions&ao):
   addValueWithDerivatives(); checkRead();
 }
 
-void Fccubic::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
-  double x2 = distance[0]*distance[0];
+void Fccubic::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+  double x2 = args[0]*args[0];
   double x4 = x2*x2;
 
-  double y2 = distance[1]*distance[1];
+  double y2 = args[1]*args[1];
   double y4 = y2*y2;
 
-  double z2 = distance[2]*distance[2];
+  double z2 = args[2]*args[2];
   double z4 = z2*z2;
 
-  double d2 = distance.modulo2();
+  double d2 = x2 + y2 + z2;
   double r8 = pow( d2, 4 );
   double r12 = pow( d2, 6 );
 
@@ -123,33 +121,13 @@ void Fccubic::compute( const double& val, const Vector& distance, MultiValue& my
   double t3 = (2*tmp-alpha*x4*y4*z4/r12)/d2;
 
   Vector myder;
-  myder[0]=4*a1*distance[0]*(t0-t3);
-  myder[1]=4*a1*distance[1]*(t1-t3);
-  myder[2]=4*a1*distance[2]*(t2-t3);
+  myder[0]=4*a1*args[0]*(t0-t3);
+  myder[1]=4*a1*args[1]*(t1-t3);
+  myder[2]=4*a1*args[2]*(t2-t3);
 
-  // Accumulate derivatives
-  addToValue( 0, val*(a1*tmp+b1), myvals );
-  addWeightDerivative( 0, a1*tmp+b1, myvals );
-  addVectorDerivatives( 0, val*myder, myvals );
-}
-
-class FccubicShortcut : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit FccubicShortcut(const ActionOptions&);
-};
-
-PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCUBIC")
-
-void FccubicShortcut::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
-}
-
-FccubicShortcut::FccubicShortcut(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{
-  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "FCCUBIC", false, true, this );
+  // Set the value and the derivatives
+  addValue( 0, (a1*tmp+b1), myvals );
+  for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative( 0, i, myder[i], myvals ); 
 }
 
 }

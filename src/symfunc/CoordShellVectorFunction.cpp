@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
-#include "tools/LeptonCall.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
@@ -112,72 +111,68 @@ PRINT ARG=tt.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-
-class CoordShellVectorFunction : public SymmetryFunctionBase {
-private: 
-  LeptonCall function; 
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit CoordShellVectorFunction(const ActionOptions&);
-  void compute( const double& val, const Vector& dir, MultiValue& myvals ) const override;
-};
-
-PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_FUNCTION")
-
-void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys );
-  keys.add("compulsory","FUNCTION","the function of the bond vectors you would like to compute");
-}
-
-CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions&ao):
-  Action(ao),
-  SymmetryFunctionBase(ao)
-{
-  std::string myfunc; parse("FUNCTION",myfunc); std::vector<std::string> argname(4);
-  argname[0]="x"; argname[1]="y"; argname[2]="z"; argname[3]="r"; function.set( myfunc, argname, this );
-  addValueWithDerivatives(); checkRead();
-}
-
-void CoordShellVectorFunction::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
-  std::vector<double> args(4); Vector myder; args[0]=distance[0]; args[1]=distance[1]; args[2]=distance[2]; args[3]=distance.modulo();
-  double tmp = function.evaluate( args ); addToValue( 0, val*tmp, myvals ); double rder = function.evaluateDeriv( 3, args );
-  for(unsigned i=0;i<3;++i) myder[i] = function.evaluateDeriv( i, args ) + rder*distance[i] / args[3];
-  addWeightDerivative( 0, tmp, myvals ); addVectorDerivatives( 0, val*myder, myvals );
-}
-
-class CoordShellVectorFunctionShortcut : public ActionShortcut {
+class CoordShellVectorFunction : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);
-  explicit CoordShellVectorFunctionShortcut(const ActionOptions&);
+  explicit CoordShellVectorFunction(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(CoordShellVectorFunctionShortcut,"TETRAHEDRAL")
-PLUMED_REGISTER_ACTION(CoordShellVectorFunctionShortcut,"SIMPLECUBIC")
-PLUMED_REGISTER_ACTION(CoordShellVectorFunctionShortcut,"COORDINATION_SHELL_AVERAGE")
+PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"FCCUBIC")
+PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"TETRAHEDRAL")
+PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"SIMPLECUBIC")
+PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_FUNCTION") 
+PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_AVERAGE")
 
-void CoordShellVectorFunctionShortcut::registerKeywords( Keywords& keys ) {
+void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
   keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate"); 
+  keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
 } 
 
-CoordShellVectorFunctionShortcut::CoordShellVectorFunctionShortcut(const ActionOptions& ao):
+CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  std::string myfunc;
-  if( getName()=="TETRAHEDRAL" ) myfunc = "((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3"; 
-  else if( getName()=="SIMPLECUBIC" ) myfunc = "(x^4+y^4+z^4)/(r^4)";
-  else parse("FUNCTION",myfunc);
-  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this ); 
-  if( sp_str.length()==0 && specA.length()==0 ) error("no atoms were specified in input"); 
-  SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
-  readInputLine( getShortcutLabel() + ": COORDINATION_SHELL_FUNCTION FUNCTION=" + myfunc + " WEIGHT=" + getShortcutLabel() + "_mat.w "
-                    + "VECTORS1=" + getShortcutLabel() + "_mat.x VECTORS2=" + getShortcutLabel() + "_mat.y VECTORS3=" + getShortcutLabel() + "_mat.z " +
-                    convertInputLineToString() );
-  readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
-  readInputLine( getShortcutLabel() + "_n: MATHEVAL ARG1=" + getShortcutLabel() + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_n", "", keymap, this );
+  std::string matlab, sp_str, specA, specB;
+  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  if( sp_str.length()>0 || specA.length()>0 ) {
+      matlab = getShortcutLabel() + "_mat";
+      SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
+  } else error("found no input atoms use SPECIES/SPECIESA");
+  // Calculate FCC cubic function from bond vectors
+  if( getName()=="FCCUBIC" ) {
+     std::string alpha; parse("ALPHA",alpha);
+     readInputLine( getShortcutLabel() + "_vfunc: FCCCUBIC_FUNC ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ALPHA=" + alpha);
+  } else if( getName()=="TETRAHEDRAL" ) {
+     readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+     readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r" 
+                                       + " VAR=x,y,z,r PERIODIC=NO FUNC=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3" );
+  } else if( getName()=="SIMPLECUBIC" ) {
+     readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+     readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r"
+                                       + " VAR=x,y,z,r PERIODIC=NO FUNC=(x^4+y^4+z^4)/(r^4)" );
+  } else {
+     std::string myfunc; parse("FUNCTION",myfunc);
+     if( myfunc.find("r")!=std::string::npos ) {
+         readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+         readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc ); 
+     } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=" + myfunc );
+  }
+  // Hadamard product of function above and weights
+  readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG1=" + getShortcutLabel() + "_vfunc ARG2=" + matlab + ".w FUNC=x*y PERIODIC=NO");
+  // And coordination numbers
+  readInputLine( getShortcutLabel() + ": COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_wvfunc ");
+  std::string olab=getShortcutLabel(); 
+  if( getName()!="COORDINATION_SHELL_FUNCTION" ) {
+      olab = getShortcutLabel() + "_n"; 
+      // Calculate coordination numbers for denominator
+      readInputLine( getShortcutLabel() + "_denom: DOT ARG1=" + matlab + ".w ARG2=" + getShortcutLabel() + "_ones");
+      // And normalise
+      readInputLine( getShortcutLabel() + "_n: CUSTOM ARG1=" + getShortcutLabel() + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  }
+  // And expand the functions
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), olab, "", keymap, this );
 } 
 
 }

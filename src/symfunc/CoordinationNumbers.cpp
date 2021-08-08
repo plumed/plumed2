@@ -87,10 +87,12 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
+PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATION_MOMENTS")
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
   keys.add("compulsory","WEIGHT","the matrix whose rows are being summed to compute the coordination number");
+  keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
 }
   
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
@@ -101,8 +103,9 @@ ActionShortcut(ao)
   std::string matlab, sp_str, specA, specB; 
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
-      matlab = getShortcutLabel() + "_mat.w";
-      SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(),  sp_str, specA, specB, this );
+      matlab = getShortcutLabel() + "_mat.w"; bool comp=false; 
+      if( getName()=="COORDINATION_MOMENTS" ) { comp=true; matlab = getShortcutLabel() + "_mat"; }
+      SymmetryFunctionBase::expandMatrix( comp, getShortcutLabel(),  sp_str, specA, specB, this );
   } else parse("WEIGHT",matlab); 
   std::size_t dot = matlab.find_first_of(".");
   ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab.substr(0,dot) );
@@ -112,6 +115,13 @@ ActionShortcut(ao)
   // Create vector of ones to multiply input matrix by
   std::string ones=" CENTER=1"; for(unsigned i=1; i<arg->getShape()[1]; ++i ) ones += ",1";
   readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones ); 
+  if( getName()=="COORDINATION_MOMENTS" ) {
+      // Calculate the lengths of the vectors
+      std::string r_power; parse("R_POWER",r_power); 
+      readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + matlab + ".w VAR=x,y,z,w " 
+                                        + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");  
+      matlab = getShortcutLabel() + "_pow"; 
+  }
   // Calcualte coordination numbers as matrix vector times vector of ones
   readInputLine( getShortcutLabel() + ": DOT ARG1=" + matlab + " ARG2=" + getShortcutLabel() + "_ones");
   // Read in all the shortcut stuff 
