@@ -35,23 +35,22 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR GHBFIX
 /*
-Calculate GHBFIX interaction energy among GROUPA and GROUPB.
-
-This variable calculates the GHBFIX interaction among GROUPA and GROUPB
+Calculate the GHBFIX interaction energy among GROUPA and GROUPB
 using a potential defined in Kührová et al., Computer Folding of RNA Tetraloops: Identification of Key Force
-Field Deficiencies, JCTC, 2016.
-
-Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
+Field Deficiencies, JCTC, 2016. Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
 
 This collective variable can be used to analyze hydrogen bond interactions, or to generate bias potentials.
 Notice that the value of the GHBFIX is returned in plumed units (see \ref UNITS), if not specified differently via ENERGY_UNITS.
 
 \par Examples
+This example prints the GHBFIX interaction in kcal/mol between two groups of atoms using D_0, D_MAX and C
+It is applied in the functional form introduced in the pioneering paper.
+The types of atoms 1-6 should be defined in typesTable_examples.dat while their interaction parameters should be defined in scalingParameters_examples.dat in kBT units.
 
 \plumedfile
-# this is printing the GHBFIX interaction in kcal/mol between two groups of atoms using D_0, D_MAX and C to already apply the functional form as suggested in the pioneering paper. The types of atoms 1-6 should be defined in types.dat while their interaction parameters should be defined in params.dat in kBT units.
-gh: GHBFIX PAIR GROUPA=1,2,3 GROUP=4,5,6 D_0=0.2 D_MAX=0.3 C=0.8 TYPES=types.dat PARAMS=params.dat ENERGY_UNITS=kcal/mol
-PRINT ARG=gh
+#SETTINGS AUXFOLDER=regtest/basic/rt-ghbfix
+gh: GHBFIX PAIR GROUPA=1,2,3 GROUP=4,5,6 D_0=0.2 D_MAX=0.3 C=0.8 TYPES=typesTable_examples.dat PARAMS=scalingParameters_examples.dat ENERGY_UNITS=kcal/mol
+PRINT FILE=output ARG=gh
 \endplumedfile
 
 */
