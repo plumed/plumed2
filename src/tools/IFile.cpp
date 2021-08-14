@@ -51,9 +51,9 @@ size_t IFile::llread(char*ptr,size_t s) {
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   } else {
-    r=fread(ptr,1,s,fp);
-    if(feof(fp))   eof=true;
-    if(ferror(fp)) err=true;
+    r=std::fread(ptr,1,s,fp);
+    if(std::feof(fp))   eof=true;
+    if(std::ferror(fp)) err=true;
   }
   return r;
 }

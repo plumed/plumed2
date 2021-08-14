@@ -55,7 +55,7 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     } else {
-      r=fwrite(ptr,1,s,fp);
+      r=std::fwrite(ptr,1,s,fp);
     }
   }
 //  This barrier is apparently useless since it comes
