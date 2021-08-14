@@ -116,6 +116,7 @@ int main(){
   test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=DIFF PACE=1.5 SIGMA=1 HEIGHT=5");
   test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MIN=3");
   test_line(ofs,plumed,"METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MAX=4");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1_nonewline RESTART=YES FMT=%9.5f");
   test_line(ofs,plumed,"PIECEWISE ARG=t POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5");
   test_line(ofs,plumed,"SORT ARG=t,d");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3");
@@ -123,7 +124,7 @@ int main(){
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
 
 // these should not fail
-  plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");
+  plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 RESTART=YES FMT=%9.5f");
   plumed.cmd("readInputLine","m2: METAD ARG=d PACE=2 SIGMA=5 HEIGHT=1 FILE=H2 FMT=%9.5f");
   plumed.cmd("readInputLine","PRINT ARG=d,d1,m1.bias FILE=COLVAR FMT=%9.5f");
 

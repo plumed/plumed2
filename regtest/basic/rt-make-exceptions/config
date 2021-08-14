@@ -1,2 +1,7 @@
 type=make
 plumed_needs="dlopen cregex"
+
+function plumed_regtest_before(){
+  awk  'BEGIN{N='$(wc -l H1 |awk '{print $1}')'}{printf($0);if(NR<N)print""}' H1 > H1_nonewline
+}
+
