@@ -237,6 +237,7 @@ IFile& IFile::getline(std::string &str) {
   if(eof && noEOL) {
     if(str.length()>0) eof=false;
   } else if(eof || err || tmp!='\n') {
+    if(str.length()>0) plumed_merror("file " + getPath() + " is not allowed to have a non-terminated line. Please add a newline at the end of the file");
     eof = true;
     str="";
     if(!err) fsetpos(fp,&pos);
