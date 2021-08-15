@@ -95,7 +95,7 @@ IFile& IFile::advanceField() {
         }
         done=true;
       } else if( !words.empty() ) {
-        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number");
+        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number\n this is the faulty line:\n"+line);
       }
     }
   }
