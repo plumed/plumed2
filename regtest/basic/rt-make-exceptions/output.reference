@@ -64,8 +64,6 @@ readInputLine METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MIN=3
 +++ catched
 readInputLine METAD ARG=d,d1 ADAPTIVE=GEOM PACE=1 SIGMA=1 HEIGHT=5 SIGMA_MAX=4
 +++ catched
-readInputLine METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1_nonewline RESTART=YES FMT=%9.5f
-+++ catched
 readInputLine PIECEWISE ARG=t POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5
 +++ catched
 readInputLine SORT ARG=t,d
