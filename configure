@@ -9942,7 +9942,7 @@ do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with $test_LD_RO" >&5
 $as_echo_n "checking whether C++ objects can be grouped with $test_LD_RO... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -9986,7 +9986,7 @@ do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static libraries can be created with $test_AR_CR" >&5
 $as_echo_n "checking whether static libraries can be created with $test_AR_CR... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);

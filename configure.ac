@@ -1104,7 +1104,7 @@ for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -
 do
   AC_MSG_CHECKING([whether C++ objects can be grouped with $test_LD_RO])
   
-  rm -f conftest-*
+  rm -f conftest*
   
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -1145,7 +1145,7 @@ for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
 do
   AC_MSG_CHECKING([whether static libraries can be created with $test_AR_CR])
   
-  rm -f conftest-*
+  rm -f conftest*
   
   cat << EOF > conftest-main.cpp
   void f(void);
