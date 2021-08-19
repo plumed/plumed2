@@ -263,7 +263,7 @@ public:
   using Exception::Exception;
   template<typename T>
   ExceptionError& operator<<(const T & x) {
-    *((Exception*) this) <<x;
+    *static_cast<Exception*>(this) <<x;
     return *this;
   }
 };
@@ -275,7 +275,7 @@ public:
   using Exception::Exception;
   template<typename T>
   ExceptionDebug& operator<<(const T & x) {
-    *((Exception*) this) <<x;
+    *static_cast<Exception*>(this) <<x;
     return *this;
   }
 };
@@ -287,7 +287,7 @@ public:
   using Exception::Exception;
   template<typename T>
   ExceptionTypeError& operator<<(const T & x) {
-    *((Exception*) this) <<x;
+    *static_cast<Exception*>(this) <<x;
     return *this;
   }
 };

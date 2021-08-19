@@ -1228,7 +1228,7 @@ class Plumed {
     Currently used to (optionally) pass error_code.
   */
   static void nothrow_handler(void*ptr,int code,const char*what,const void* opt) {
-    NothrowHandler* h=(NothrowHandler*) ptr;
+    NothrowHandler* h=static_cast<NothrowHandler*>(ptr);
     h->code=code;
     h->exception_buffer[0]='\0';
     h->what.clear();
