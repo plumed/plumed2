@@ -36,8 +36,8 @@ Exception::Exception()
   callstack.fill(nullptr);
 #ifdef __PLUMED_HAS_EXECINFO
   callstack_n = backtrace(&callstack[0], callstack.size()-1);
-  const char* env=getenv("PLUMED_STACK_TRACE");
-  if(env && !strcmp(env,"yes")) {
+  const char* env=std::getenv("PLUMED_STACK_TRACE");
+  if(env && !std::strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
     msg+=stack();
     msg+="\n********** END STACK DUMP **********\n";

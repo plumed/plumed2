@@ -163,7 +163,7 @@ bool Tools::convertNoexcept(const std::string & str,std::string & t) {
 }
 
 std::vector<std::string> Tools::getWords(const std::string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
-  plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
+  plumed_massert(std::strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
   if(!separators) separators=" \t\n";
@@ -252,7 +252,7 @@ bool Tools::getline(FILE* fp,std::string & line) {
   for(int i=0; i<bufferlength; i++) buffer[i]='\0';
   while((ret=fgets(buffer,bufferlength,fp))) {
     line.append(buffer);
-    unsigned ss=strlen(buffer);
+    unsigned ss=std::strlen(buffer);
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
@@ -431,7 +431,7 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path) {
 
 Tools::DirectoryChanger::~DirectoryChanger() {
 #ifdef __PLUMED_HAS_CHDIR
-  if(strlen(cwd)==0) return;
+  if(std::strlen(cwd)==0) return;
   int ret=chdir(cwd);
 // we cannot put an assertion here (in a destructor) otherwise cppcheck complains
 // we thus just report the problem

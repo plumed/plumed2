@@ -99,9 +99,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         for(unsigned j=0; j<all.size(); j++) {
           std::vector<std::string> ss=all[j]->getComponentsVector();
           for(unsigned  k=0; k<ss.size(); ++k) {
-            unsigned ll=strlen(ss[k].c_str())+1;
+            unsigned ll=std::strlen(ss[k].c_str())+1;
             std::vector<char> str(ll);
-            strcpy(&str[0],ss[k].c_str());
+            std::strcpy(&str[0],ss[k].c_str());
             const char *ppstr=&str[0];
             if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
               //log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
@@ -109,7 +109,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                 if (match.rm_so != -1) {	/* The regex is matching part of a string */
                   size_t matchlen = match.rm_eo - match.rm_so;
                   std::vector<char> submatch(matchlen+1);
-                  strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
+                  std::strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
                   submatch[matchlen]='\0';
                   //log.printf("  subpattern %s\n", submatch.data());
                   // this is the match: try to see if it is a valid action
