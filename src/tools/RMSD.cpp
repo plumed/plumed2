@@ -316,7 +316,7 @@ double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector>
   return ret;
 }
 
-double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
+double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
   double ret=0.;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -848,8 +848,8 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
     const std::vector<Vector> & positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
-    Tensor & rotationPosClose,
-    Tensor & rotationRefClose,
+    const Tensor & rotationPosClose,
+    const Tensor & rotationRefClose,
     std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
     bool squared) const {
   //initialize the data into the structure
@@ -1143,7 +1143,7 @@ double RMSDCoreData::getDistance( bool squared) {
   return dist;
 }
 
-void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
+void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
 
   unsigned natoms = reference.size();
   Tensor ddist_drxy;

@@ -232,17 +232,17 @@ private:
 // read data GMM file
   void get_GMM_d(std::string gmm_file);
 // check GMM data
-  void check_GMM_d(VectorGeneric<6> &cov, double w);
+  void check_GMM_d(const VectorGeneric<6> &cov, double w);
 // auxiliary method
   void calculate_useful_stuff(double reso);
 // get pref_fact and inv_cov_md
   double get_prefactor_inverse (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
-                                double &GMM_w_0, double &GMM_w_1,
+                                double GMM_w_0, double GMM_w_1,
                                 VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum);
 // calculate self overlaps between data GMM components - ovdd_
   double get_self_overlap(unsigned id);
 // calculate overlap between two Gaussians
-  double get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
+  double get_overlap(const Vector &m_m, const Vector &d_m, double pre_fact,
                      const VectorGeneric<6> &inv_cov_md, Vector &ov_der);
 // calculate exponent of overlap for neighbor list update
   double get_exp_overlap(const Vector &m_m, const Vector &d_m,
@@ -1055,7 +1055,7 @@ std::vector<double> EMMI::get_GMM_m(std::vector<AtomNumber> &atoms)
   return GMM_m_w;
 }
 
-void EMMI::check_GMM_d(VectorGeneric<6> &cov, double w)
+void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w)
 {
 
 // check if positive defined, by calculating the 3 leading principal minors
@@ -1194,7 +1194,7 @@ void EMMI::calculate_useful_stuff(double reso)
 // get prefactors
 double EMMI::get_prefactor_inverse
 (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
- double &GMM_w_0, double &GMM_w_1,
+ double GMM_w_0, double GMM_w_1,
  VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum)
 {
 // we need the sum of the covariance matrices
@@ -1238,7 +1238,7 @@ double EMMI::get_self_overlap(unsigned id)
 }
 
 // get overlap and derivatives
-double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
+double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double pre_fact,
                          const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   Vector md;
