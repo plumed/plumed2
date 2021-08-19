@@ -101,7 +101,7 @@ bool Tools::convertToInt(const std::string & str,T & t) {
     // everything is fine, then store in t
     t=tmp;
     return true;
-  } catch(PLMD::lepton::Exception& exc) {
+  } catch(const PLMD::lepton::Exception& exc) {
   }
   return false;
 }

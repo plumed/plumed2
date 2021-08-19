@@ -247,7 +247,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
           atoms.push_back(AtomNumber::serial(n));
         }
         ok=1;
-      } catch (Exception & e) {
+      } catch (const Exception & e) {
         error_msg=e.what();
       }
       comm.Bcast(ok,0);

@@ -367,7 +367,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
       // Lookup atomtype in table or throw exception if its not there
       try {
         parameter_temp[i] = valuemap.at(Atype);
-      } catch (std::exception &e) {
+      } catch (const std::exception &e) {
         log << "Type: " << Atype << "  Name: " << Aname << "  Residue: " << Rname << "\n";
         error("Invalid atom type!\n");
       }

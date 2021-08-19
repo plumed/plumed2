@@ -131,7 +131,7 @@ E.g., in an external c++ code using PLUMED as a library, one can type
 \verbatim
   try{
     plumed.cmd("setPrecision",n);
-  } catch (std::exception & e) {
+  } catch (const std::exception & e) {
     std::printf("ee %s",e.what());
     exit(1);
   }

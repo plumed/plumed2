@@ -603,7 +603,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
     }
 
-  } catch (std::exception &e) {
+  } catch (const std::exception &e) {
     if(log.isOpen()) {
       log<<"\n\n################################################################################\n\n";
       log<<e.what();
