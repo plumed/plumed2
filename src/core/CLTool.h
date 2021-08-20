@@ -146,7 +146,10 @@ bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_merror("ERROR in keyword "+key+ " has weird default value" );
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        // GB: before it was like this, but clearly if t.size()==0 this was not doing anything
+        // for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        t.resize(1);
+        t[0]=val;
       }
     } else {
       plumed_merror("keyword " + key + " is compulsory for this action");
