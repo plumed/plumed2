@@ -25,6 +25,7 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <array>
 
 namespace PLMD {
 
@@ -152,16 +153,20 @@ it later with a fixed size array placed on the stack.
 */
 class Exception : public std::exception
 {
-/// Reported message
+/// Reported message. Can be updated.
   std::string msg;
-/// Stack trace at exception
-  std::string stackString;
 /// Flag to remember if we have to write the `+++ message follows +++` string.
 /// Needed so that the string appears only at the beginning of the message.
-  bool note;
+  bool note=true;
 /// Stream used to insert objects.
 /// It is not copied when the Exception is copied.
   std::stringstream stream;
+/// Stack trace, computed at construction
+  std::array<void*,128> callstack;
+/// Number of frames in stack, computed at construction
+  int callstack_n=0;
+/// Parsed stack trace. Built at first use, thus mutable.
+  mutable std::string stackTrace;
 
 public:
 
@@ -204,8 +209,10 @@ public:
 /// Needed to make sure stream is not copied
   Exception(const Exception & e):
     msg(e.msg),
-    stackString(e.stackString),
-    note(e.note)
+    note(e.note),
+    callstack(e.callstack),
+    callstack_n(e.callstack_n),
+    stackTrace(e.stackTrace)
   {
   }
 
@@ -213,8 +220,10 @@ public:
 /// Needed to make sure stream is not copied
   Exception & operator=(const Exception & e) {
     msg=e.msg;
-    stackString=e.stackString;
     note=e.note;
+    callstack=e.callstack;
+    callstack_n=e.callstack_n;
+    stackTrace=e.stackTrace;
     stream.str("");
     return *this;
   }
@@ -225,9 +234,16 @@ public:
 /// the error message will contain the stack trace as well.
   const char* what() const noexcept override {return msg.c_str();}
 
-/// Returns the stack trace.
-/// Stack trace stored only if the required functions were found at configure time.
-  const char* stack() const noexcept {return stackString.c_str();}
+/// Returns the stack trace as a string.
+/// This function is slow as it requires building a parsed string.
+/// If storing the stack for later usage, you might prefer to use trace().
+  const char* stack() const;
+
+/// Returns the callstack.
+  const std::array<void*,128> & trace() const noexcept {return callstack;}
+
+/// Returns the number of elements in the trace array
+  int trace_n() const noexcept {return callstack_n;}
 
 /// Destructor should be defined and should not throw other exceptions
   ~Exception() noexcept override {}

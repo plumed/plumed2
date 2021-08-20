@@ -31,24 +31,18 @@
 
 namespace PLMD {
 
-Exception::Exception():
-  note(true)
+Exception::Exception()
 {
+  callstack.fill(nullptr);
 #ifdef __PLUMED_HAS_EXECINFO
-  {
-    void* callstack[128];
-    int frames = backtrace(callstack, 128);
-    char** strs = backtrace_symbols(callstack, frames);
-    for (int i = 0; i < frames; ++i) {stackString+=strs[i]; stackString+="\n";}
-    free(strs);
-  }
-#endif
+  callstack_n = backtrace(&callstack[0], callstack.size()-1);
   const char* env=getenv("PLUMED_STACK_TRACE");
-  if(stackString.length()>0 && env && !strcmp(env,"yes")) {
+  if(env && !strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
-    msg+=stackString;
+    msg+=stack();
     msg+="\n********** END STACK DUMP **********\n";
   }
+#endif
   msg+="\n+++ PLUMED error";
 }
 
@@ -88,6 +82,17 @@ Exception& Exception::operator<<(const Assertion&as)
   }
   note=true;
   return *this;
+}
+
+const char* Exception::stack() const {
+#ifdef __PLUMED_HAS_EXECINFO
+  if(stackTrace.length()==0) {
+    char** strs = backtrace_symbols(&callstack[0], callstack_n);
+    for (int i = 0; i < callstack_n; ++i) {stackTrace+=strs[i]; stackTrace+="\n";}
+    free(strs);
+  }
+#endif
+  return stackTrace.c_str();
 }
 
 }
