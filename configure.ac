@@ -158,12 +158,17 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
 ##################################################################
 
 AC_MSG_NOTICE([Optional modules are disabled by default])
-rm -f src/*.on src/*.off
+plumed_enabled_modules=""
+plumed_disabled_modules=""
+
+AC_SUBST(plumed_enabled_modules)
+AC_SUBST(plumed_disabled_modules)
 
 AC_ARG_ENABLE([modules],
   AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
   [
-   rm -f src/*.on src/*.off
+   plumed_enabled_modules=""
+   plumed_disabled_modules=""
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
@@ -175,38 +180,41 @@ AC_ARG_ENABLE([modules],
      case "$modules_mod" in
      (none)
        AC_MSG_NOTICE([Disabling all optional modules])
-       rm -f src/*.off src/*.on
-       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+       plumed_enabled_modules=""
+       plumed_disabled_modules=""
+       plumed_disabled_modules=$(grep default-on src/*/module.type | sed "s|/module.type:.*$|:|" | sed "s|^.*/|:|" | tr -d '\n') ;;
      (all)
        AC_MSG_NOTICE([Enabling all optional modules])
-       rm -f src/*.off src/*.off
-       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+       plumed_enabled_modules=""
+       plumed_disabled_modules=""
+       plumed_enabled_modules=$(grep default-off src/*/module.type | sed "s|/module.type:.*$|:|" | sed "s|^.*/|:|" | tr -d '\n') ;;
      (reset)
-        AC_MSG_NOTICE([Resetting modules to default])
-        rm -f src/*.on src/*.off ;;
+       AC_MSG_NOTICE([Resetting modules to default])
+       plumed_enabled_modules=""
+       plumed_disabled_modules="" ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
        if test ! -f src/$modules_mod/module.type ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
-       rm -f src/$modules_mod.on
-       touch src/$modules_mod.off ;;
+       plumed_enabled_modules=$(echo $plumed_enabled_modules | sed "s/:$modules_mod://g")
+       plumed_disabled_modules=${plumed_disabled_modules}:$modules_mod: ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
        if test ! -f src/$modules_mod/module.type ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_disabled_modules=$(echo $plumed_disabled_modules | sed "s/:$modules_mod://g")
+       plumed_enabled_modules=${plumed_enabled_modules}:$modules_mod: ;;
      (*)
        if test ! -f src/$modules_mod/module.type ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_disabled_modules=$(echo $plumed_disabled_modules | sed "s/:$modules_mod://g")
+       plumed_enabled_modules=${plumed_enabled_modules}:$modules_mod: ;;
      esac
    done
   ]

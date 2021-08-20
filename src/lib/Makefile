@@ -3,7 +3,7 @@
 VERSION = $(shell if test -f ../../VERSION ; then grep -v \\\# ../../VERSION ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
-KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
+KERNEL_MODULES := $(addprefix ../,$(shell plumed_enabled_modules=$(plumed_enabled_modules) plumed_disabled_modules=$(plumed_disabled_modules) ../maketools/find_modules.sh))
 
 # This adds modules which are built anyway and linked with some ad hoc procedure
 DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))

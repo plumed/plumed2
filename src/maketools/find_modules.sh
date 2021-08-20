@@ -8,8 +8,8 @@ do
   then
     case "$(cat "$dir/module.type")" in
     (always) echo $dir ;;
-    (default-on) test -f $dir.off || echo $dir ;;
-    (default-off) test -f $dir.on && echo $dir ;;
+    (default-on) echo "$plumed_disabled_modules" | grep :$dir: > /dev/null 2> /dev/null || echo $dir ;;
+    (default-off) echo "$plumed_enabled_modules" | grep :$dir: > /dev/null 2> /dev/null && echo $dir ;;
     esac
   fi
 done

@@ -11,7 +11,7 @@ then
   case "$(cat "$dir/module.type")" in
   (always) exit 0 ;;
   (default-on)
-    if  test -f $dir.off
+    if echo "$plumed_disabled_modules" | grep :$dir: > /dev/null 2> /dev/null
     then
       echo "$msg"
       exit 1
@@ -19,7 +19,7 @@ then
       exit 0
     fi ;;
   (default-off)
-    if  test -f $dir.on
+    if echo "$plumed_enabled_modules" | grep -q :$dir: > /dev/null 2> /dev/null
     then
       exit 0
     else 

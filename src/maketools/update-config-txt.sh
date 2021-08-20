@@ -79,13 +79,13 @@ do
     case "$mtype" in
     (always) is=on ;;
     (default-on)
-      if test -f $dir.off ; then
+      if echo "$plumed_disabled_modules" | grep :$dir: > /dev/null 2> /dev/null ; then
          is=off
       else
          is=on
       fi  ;;
     (default-off)
-      if test -f $dir.on ; then
+      if echo "$plumed_enabled_modules" | grep :$dir: > /dev/null 2> /dev/null ; then
          is=on
       else
          is=off

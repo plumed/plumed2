@@ -26,6 +26,8 @@ config.txt: ../../Makefile.conf
 	@makefile_conf="$(realpath ../../Makefile.conf)" \
          python_bin="$(python_bin)" \
          mpiexec="$(mpiexec)" \
+	plumed_enabled_modules=$(plumed_enabled_modules) \
+         plumed_disabled_modules=$(plumed_disabled_modules) \
          ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:

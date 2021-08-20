@@ -660,6 +660,8 @@ PYTHON_BIN
 LDSHARED
 STATIC_LIBS
 SOEXT
+plumed_disabled_modules
+plumed_enabled_modules
 target_alias
 host_alias
 build_alias
@@ -2425,12 +2427,17 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Optional modules are disabled by default" >&5
 $as_echo "$as_me: Optional modules are disabled by default" >&6;}
-rm -f src/*.on src/*.off
+plumed_enabled_modules=""
+plumed_disabled_modules=""
+
+
+
 
 # Check whether --enable-modules was given.
 if test "${enable_modules+set}" = set; then :
   enableval=$enable_modules;
-   rm -f src/*.on src/*.off
+   plumed_enabled_modules=""
+   plumed_disabled_modules=""
    if test "${enableval}" == yes ; then
      enableval=reset
    fi
@@ -2443,17 +2450,20 @@ if test "${enable_modules+set}" = set; then :
      (none)
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling all optional modules" >&5
 $as_echo "$as_me: Disabling all optional modules" >&6;}
-       rm -f src/*.off src/*.on
-       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+       plumed_enabled_modules=""
+       plumed_disabled_modules=""
+       plumed_disabled_modules=$(grep default-on src/*/module.type | sed "s|/module.type:.*$|:|" | sed "s|^.*/|:|" | tr -d '\n') ;;
      (all)
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling all optional modules" >&5
 $as_echo "$as_me: Enabling all optional modules" >&6;}
-       rm -f src/*.off src/*.off
-       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+       plumed_enabled_modules=""
+       plumed_disabled_modules=""
+       plumed_enabled_modules=$(grep default-off src/*/module.type | sed "s|/module.type:.*$|:|" | sed "s|^.*/|:|" | tr -d '\n') ;;
      (reset)
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
 $as_echo "$as_me: Resetting modules to default" >&6;}
-        rm -f src/*.on src/*.off ;;
+       plumed_enabled_modules=""
+       plumed_disabled_modules="" ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
        if test ! -f src/$modules_mod/module.type ; then
@@ -2461,8 +2471,8 @@ $as_echo "$as_me: Resetting modules to default" >&6;}
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
 $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.on
-       touch src/$modules_mod.off ;;
+       plumed_enabled_modules=$(echo $plumed_enabled_modules | sed "s/:$modules_mod://g")
+       plumed_disabled_modules=${plumed_disabled_modules}:$modules_mod: ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
        if test ! -f src/$modules_mod/module.type ; then
@@ -2470,16 +2480,16 @@ $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_disabled_modules=$(echo $plumed_disabled_modules | sed "s/:$modules_mod://g")
+       plumed_enabled_modules=${plumed_enabled_modules}:$modules_mod: ;;
      (*)
        if test ! -f src/$modules_mod/module.type ; then
          as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_disabled_modules=$(echo $plumed_disabled_modules | sed "s/:$modules_mod://g")
+       plumed_enabled_modules=${plumed_enabled_modules}:$modules_mod: ;;
      esac
    done
 

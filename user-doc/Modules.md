@@ -51,4 +51,5 @@ are available in plumed and tells you whether or not they are active by default.
 Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
 in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
 in this manner will be overwritten next time `./configure` is used.
+As of PLUMED 2.8, this is not possible anymore.
 
