@@ -337,9 +337,9 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
           else if( interpreted[0]=="GROUP" ) ofile<<" defines a group of atoms so that they can be referred to later in the input";
         }
         ofile<<"</span>"<<std::endl;
-      } else if( status!="working" ) {
+      } else {
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\"> You cannot view the components that are calculated by each action for this input file. Sorry </span>"<<std::endl;
-      } else ofile<<std::endl;
+      }
     }
     ofile.flush();
   }
