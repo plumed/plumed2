@@ -168,6 +168,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   {
     log<<"  Opening the eigenvectors file "<<f_eigenvectors.c_str()<<"\n";
     bool do_read=true;
+    unsigned nat=0;
     while (do_read) {
       PDB mypdb;
       // check the units for reading this file: how can they make sense?
@@ -175,7 +176,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
       if(do_read) {
         neigenvects++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat==0) nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) aaa=mypdb.getAtomNumbers();
         if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
