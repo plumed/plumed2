@@ -68,8 +68,8 @@ ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
-  std::string sph_input = getShortcutLabel() + ": SPHERICAL_HARMONIC WEIGHT=" + getShortcutLabel() + "_mat.w VECTORS1=" + getShortcutLabel() +
-                          "_mat.x VECTORS2=" + getShortcutLabel() + "_mat.y VECTORS3=" + getShortcutLabel() + "_mat.z";
+  std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.z ARG4=" + getShortcutLabel() + "_mat.w";
+
   if( getName()=="Q1" ) {
     sph_input +=" L=1"; l=1;
   } else if( getName()=="Q3" ) {
@@ -85,14 +85,21 @@ ActionShortcut(ao)
 
   // Input for denominator (coord)
   readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
-
+  std::string snum; Tools::convert( -l, snum ); std::string arg2=getShortcutLabel() + "_denom_ones," + getShortcutLabel() + "_denom_ones"; 
+  std::string arg1=getShortcutLabel() + "_sh.rm-[" + snum + "]," + getShortcutLabel() + "_sh.im-[" + snum + "]";
+  for(int i=-l+1; i<=l; ++i) { 
+      Tools::convert( i, snum ); arg1+= "," + getShortcutLabel() + "_sh.rm-[" + snum + "]," + getShortcutLabel() + "_sh.im-[" + snum + "]"; 
+      arg2 += "," + getShortcutLabel() + "_denom_ones," + getShortcutLabel() + "_denom_ones";
+  }
+  readInputLine( getShortcutLabel() + ": DOT ARG1=" + arg1 + " ARG2=" + arg2 );
+   
   // Divide all components by coordination numbers
   for(int i=-l; i<=l; ++i) {
-    std::string snum; Tools::convert( i, snum );
+    Tools::convert( i, snum );
     // Real part
-    readInputLine( getShortcutLabel() + "_rmn-[" + snum + "]: MATHEVAL ARG1=" + getShortcutLabel() + ".rm-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_rmn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".rm-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
     // Imaginary part
-    readInputLine( getShortcutLabel() + "_imn-[" + snum + "]: MATHEVAL ARG1=" + getShortcutLabel() + ".im-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_imn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".im-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
 
   // If we are doing VMEAN determine sum of vector components

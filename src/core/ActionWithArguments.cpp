@@ -693,12 +693,21 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
       if( distinct_arguments[i].second==0 ) {
         setForcesOnActionChain( forces, start, distinct_arguments[i].first ); 
       } else {
+        std::vector<std::string> added_force_on;
         for(unsigned j=argstart; j<arguments.size(); ++j) {
           bool hasstored=false;
           for(unsigned k=0; k<arguments[j]->store_data_for.size(); ++k) {
             if( arguments[j]->store_data_for[k].first==getLabel() ) { hasstored=true; break; }
           }
-          if( hasstored && arguments[j]->getPntrToAction()==distinct_arguments[i].first ) { 
+          if( hasstored && arguments[j]->getPntrToAction()==distinct_arguments[i].first ) {
+            // Check for repeatted arguments
+            bool already_done=false;
+            for(unsigned k=0; k<added_force_on.size(); ++k) {
+                if( arguments[j]->getName()==added_force_on[k] ) { already_done=true; break; }
+            } 
+            if( already_done ) continue;
+            // This makes sure we don't add to a vector of all ones multiple times when we do q6.  This is not very good programming Gareth
+            if( arguments[j]->getName().find("_ones")!=std::string::npos ) added_force_on.push_back( arguments[j]->getName() ); 
             unsigned narg_v = arguments[j]->getNumberOfValues( getLabel() ); if( distinct_arguments[i].second==2 ) narg_v = 1;
             for(unsigned k=0; k<narg_v; ++k) {
               plumed_dbg_assert( start<forces.size() );

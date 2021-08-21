@@ -42,6 +42,8 @@ private:
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
   bool isAdjacencyMatrix;
+  void setNotPeriodic();
+  void setPeriodic( const std::string& min, const std::string& max );
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);

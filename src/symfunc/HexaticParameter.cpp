@@ -70,19 +70,21 @@ ActionShortcut(ao)
   SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
   std::string myplane; parse("PLANE",myplane);
   if( myplane=="xy" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 WEIGHT=" + getShortcutLabel() + "_mat.w VECTORS1=" + getShortcutLabel() + "_mat.x VECTORS2=" + getShortcutLabel() + "_mat.y" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="xz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC ORDER=6 WEIGHT=" + getShortcutLabel() + "_mat.w VECTORS1=" + getShortcutLabel() + "_mat.x VECTORS2=" + getShortcutLabel() + "_mat.z" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="yz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC ORDER=6 WEIGHT=" + getShortcutLabel() + "_mat.w VECTORS1=" + getShortcutLabel() + "_mat.y VECTORS2=" + getShortcutLabel() + "_mat.z" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.y ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
   } else error("invalid input for plane -- should be xy, xz or yz");
-
+  // And coordination number  
+  readInputLine( getShortcutLabel() + "_rm: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + ".rm");
+  readInputLine( getShortcutLabel() + "_im: DOT ARG1=" + getShortcutLabel() + ".im ARG2=" + getShortcutLabel() + "_rm_ones");
   // Input for denominator (coord)
-  readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
+  readInputLine( getShortcutLabel() + "_denom: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + getShortcutLabel() + "_rm_ones");
   // Divide real part by coordination numbers
-  readInputLine( getShortcutLabel() + "_rmn: CUSTOM ARG1=" + getShortcutLabel() + ".rm ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rmn: CUSTOM ARG1=" + getShortcutLabel() + "_rm ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // Devide imaginary part by coordination number
-  readInputLine( getShortcutLabel() + "_imn: CUSTOM ARG1=" + getShortcutLabel() + ".im ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_imn: CUSTOM ARG1=" + getShortcutLabel() + "_im ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
 
   // If we are doing VMEAN determine sum of vector components
   bool do_vmean; parseFlag("VMEAN",do_vmean);

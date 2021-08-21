@@ -70,7 +70,10 @@ Normalize::Normalize(const ActionOptions&ao):
     if( getPntrToArgument(i)->isPeriodic() ) error("cannot normalize vectors that contain periodic components");
     std::string name, fullname = getPntrToArgument(i)->getName();
     std::size_t dot = fullname.find_first_of(".");
-    if( fullname.find(".")!=std::string::npos ) name = fullname.substr(dot+1); else name = fullname;
+    std::size_t und = fullname.find_first_of("_");
+    if( fullname.find(".")!=std::string::npos ) name = fullname.substr(dot+1); 
+    else if( fullname.find("_")!=std::string::npos ) name = fullname.substr(und+1);
+    else name = fullname;
     addComponentWithDerivatives( name ); componentIsNotPeriodic( name );
   }
   checkRead();

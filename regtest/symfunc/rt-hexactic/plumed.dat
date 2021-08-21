@@ -5,9 +5,13 @@ PRINT ARG=hex.mean,bb.* FILE=colvar FMT=%8.4f
 # This checks against what is done in LAMMPS
 dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=2.0 COMPONENTS
 neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
-harm: CYLINDRICAL_HARMONIC DEGREE=6 WEIGHT=neigh VECTORS1=dmat.x VECTORS2=dmat.y
+harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG1=dmat.x ARG2=dmat.y
+rprod: CUSTOM ARG1=neigh ARG2=harm.rm FUNC=x*y PERIODIC=NO
+iprod: CUSTOM ARG1=neigh ARG2=harm.im FUNC=x*y PERIODIC=NO
 hex2_denom: COORDINATIONNUMBER WEIGHT=neigh
-hex2_rmn: CUSTOM ARG1=harm.rm ARG2=hex2_denom FUNC=x/y PERIODIC=NO
-hex2_imn: CUSTOM ARG1=harm.im ARG2=hex2_denom FUNC=x/y PERIODIC=NO
+harm_rm: DOT ARG1=rprod ARG2=hex2_denom_ones
+harm_im: DOT ARG1=iprod ARG2=hex2_denom_ones
+hex2_rmn: CUSTOM ARG1=harm_rm ARG2=hex2_denom FUNC=x/y PERIODIC=NO
+hex2_imn: CUSTOM ARG1=harm_im ARG2=hex2_denom FUNC=x/y PERIODIC=NO
 
 PRINT ATOMS=1-400 ARG1=hex2_rmn ARG2=hex2_imn ARG3=hex2_denom FMT=%8.4f FILE=hexparam.xyz

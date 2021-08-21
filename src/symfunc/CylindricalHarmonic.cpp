@@ -19,8 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "function/Function.h"
 #include "core/ActionRegister.h"
 
 #include <complex>
@@ -40,19 +39,19 @@ namespace symfunc {
 //+ENDPLUMEDOC
 
 
-class CylindricalHarmonic : public SymmetryFunctionBase {
+class CylindricalHarmonic : public function::Function {
 private:
   int tmom;
 public:
   static void registerKeywords( Keywords& keys );
   explicit CylindricalHarmonic(const ActionOptions&);
-  void compute( const double& val, const Vector& dir, MultiValue& myvals ) const ;
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(CylindricalHarmonic,"CYLINDRICAL_HARMONIC")
 
 void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys );
+  function::Function::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","DEGREE","the value of the n parameter in the equation above");
   keys.addOutputComponent("rm","default","the real part of the cylindrical harmonic");
   keys.addOutputComponent("im","default","the imaginary part of the cylindrical harmonic");
@@ -60,30 +59,25 @@ void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
 
 CylindricalHarmonic::CylindricalHarmonic(const ActionOptions&ao):
   Action(ao),
-  SymmetryFunctionBase(ao)
+  Function(ao)
 {
   parse("DEGREE",tmom);
-  log.printf("  calculating %dth order cylindrical harmonic \n", tmom);
+  log.printf("  calculating %dth order cylindrical harmonic with %s and %s as input \n", tmom, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
+  if( getNumberOfArguments()==3 ) log.printf("  multiplying cylindrical harmonic by weight from %s \n", getPntrToArgument(2)->getName().c_str() );
   addComponentWithDerivatives( "rm" ); addComponentWithDerivatives( "im" );
+  componentIsNotPeriodic( "rm" ); componentIsNotPeriodic( "im" );
   checkRead();
 }
 
-void CylindricalHarmonic::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
-  double dlen2 = distance.modulo2(); double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen; 
-  std::complex<double> com1( distance[0]/dlen,distance[1]/dlen );
-  std::complex<double> ppp = pow( com1, tmom-1 ), ii( 0, 1 );
-  std::complex<double> dp_x = static_cast<double>(tmom)*ppp*( (1.0/dlen)-(distance[0]*distance[0])/dlen3-ii*(distance[0]*distance[1])/dlen3 );
-  std::complex<double> dp_y = static_cast<double>(tmom)*ppp*( ii*(1.0/dlen)-(distance[0]*distance[1])/dlen3-ii*(distance[1]*distance[1])/dlen3 );
-  double real_z = real( ppp*com1 ); double imag_z = imag( ppp*com1 );
-  Vector myrealvec, myimagvec; myrealvec.zero(); myimagvec.zero();
-  myrealvec[0] = real( dp_x ); myrealvec[1] = real( dp_y );
-  myimagvec[0] = imag( dp_x ); myimagvec[1] = imag( dp_y );
-  addToValue( 0, val*real_z, myvals ); 
-  addVectorDerivatives( 0, val*myrealvec, myvals );
-  addWeightDerivative( 0, real_z, myvals );
-  addToValue( 1, val*imag_z, myvals );  
-  addVectorDerivatives( 1, val*myimagvec, myvals );
-  addWeightDerivative( 1, imag_z, myvals );
+void CylindricalHarmonic::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+  double dlen2 = args[0]*args[0] + args[1]*args[1]; double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen; 
+  std::complex<double> com1( args[0]/dlen,args[1]/dlen ); double weight=1; if( args.size()==3 ) weight=args[2];
+  std::complex<double> ppp = pow( com1, tmom-1 ), ii( 0, 1 ); double real_z = real( ppp*com1 ), imag_z = imag( ppp*com1 );
+  std::complex<double> dp_x = static_cast<double>(tmom)*ppp*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
+  std::complex<double> dp_y = static_cast<double>(tmom)*ppp*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
+  addValue( 0, weight*real_z, myvals ); addDerivative( 0, 0, weight*real(dp_x), myvals ); addDerivative( 0, 1, weight*real(dp_y), myvals ); 
+  addValue( 1, weight*imag_z, myvals ); addDerivative( 1, 0, weight*imag(dp_x), myvals ); addDerivative( 1, 1, weight*imag(dp_y), myvals ); 
+  if( args.size()==3 ) { addDerivative( 0, 2, real_z, myvals ); addDerivative( 1, 2, imag_z, myvals ); }
 }
 
 }

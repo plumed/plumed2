@@ -1,33 +1,85 @@
 cm_grp: GROUP ATOMS=1-64
 cm: CONTACT_MATRIX GROUP=cm_grp SWITCH={RATIONAL D_0=3.0 R_0=1.5} COMPONENTS
 cc: COORDINATIONNUMBER WEIGHT=cm.w
-q6: SPHERICAL_HARMONIC WEIGHT=cm.w VECTORS1=cm.x VECTORS2=cm.y VECTORS3=cm.z L=6
-d1_rm[-6]: MATHEVAL ARG1=q6.rm-[-6] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-6]: MATHEVAL ARG1=q6.im-[-6] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[-5]: MATHEVAL ARG1=q6.rm-[-5] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-5]: MATHEVAL ARG1=q6.im-[-5] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[-4]: MATHEVAL ARG1=q6.rm-[-4] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-4]: MATHEVAL ARG1=q6.im-[-4] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[-3]: MATHEVAL ARG1=q6.rm-[-3] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-3]: MATHEVAL ARG1=q6.im-[-3] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[-2]: MATHEVAL ARG1=q6.rm-[-2] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-2]: MATHEVAL ARG1=q6.im-[-2] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[-1]: MATHEVAL ARG1=q6.rm-[-1] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[-1]: MATHEVAL ARG1=q6.im-[-1] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[0]: MATHEVAL ARG1=q6.rm-[0] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[0]: MATHEVAL ARG1=q6.im-[0] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[1]: MATHEVAL ARG1=q6.rm-[1] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[1]: MATHEVAL ARG1=q6.im-[1] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[2]: MATHEVAL ARG1=q6.rm-[2] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[2]: MATHEVAL ARG1=q6.im-[2] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[3]: MATHEVAL ARG1=q6.rm-[3] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[3]: MATHEVAL ARG1=q6.im-[3] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[4]: MATHEVAL ARG1=q6.rm-[4] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[4]: MATHEVAL ARG1=q6.im-[4] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[5]: MATHEVAL ARG1=q6.rm-[5] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[5]: MATHEVAL ARG1=q6.im-[5] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_rm[6]: MATHEVAL ARG1=q6.rm-[6] ARG2=cc FUNC=x/y PERIODIC=NO
-d1_im[6]: MATHEVAL ARG1=q6.im-[6] ARG2=cc FUNC=x/y PERIODIC=NO
+q6: SPHERICAL_HARMONIC ARG1=cm.x ARG2=cm.y ARG3=cm.z L=6
+q6w_rm[-6]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-6] FUNC=x*y PERIODIC=NO
+q6_rm-[-6]: DOT ARG1=q6w_rm[-6] ARG2=cc_ones
+d1_rm[-6]: MATHEVAL ARG1=q6_rm-[-6] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-6]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-6] FUNC=x*y PERIODIC=NO
+q6_im-[-6]: DOT ARG1=q6w_im[-6] ARG2=cc_ones
+d1_im[-6]: MATHEVAL ARG1=q6_im-[-6] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[-5]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-5] FUNC=x*y PERIODIC=NO
+q6_rm-[-5]: DOT ARG1=q6w_rm[-5] ARG2=cc_ones
+d1_rm[-5]: MATHEVAL ARG1=q6_rm-[-5] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-5]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-5] FUNC=x*y PERIODIC=NO
+q6_im-[-5]: DOT ARG1=q6w_im[-5] ARG2=cc_ones
+d1_im[-5]: MATHEVAL ARG1=q6_im-[-5] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[-4]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-4] FUNC=x*y PERIODIC=NO
+q6_rm-[-4]: DOT ARG1=q6w_rm[-4] ARG2=cc_ones
+d1_rm[-4]: MATHEVAL ARG1=q6_rm-[-4] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-4]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-4] FUNC=x*y PERIODIC=NO
+q6_im-[-4]: DOT ARG1=q6w_im[-4] ARG2=cc_ones
+d1_im[-4]: MATHEVAL ARG1=q6_im-[-4] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[-3]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-3] FUNC=x*y PERIODIC=NO
+q6_rm-[-3]: DOT ARG1=q6w_rm[-3] ARG2=cc_ones
+d1_rm[-3]: MATHEVAL ARG1=q6_rm-[-3] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-3]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-3] FUNC=x*y PERIODIC=NO
+q6_im-[-3]: DOT ARG1=q6w_im[-3] ARG2=cc_ones
+d1_im[-3]: MATHEVAL ARG1=q6_im-[-3] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[-2]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-2] FUNC=x*y PERIODIC=NO
+q6_rm-[-2]: DOT ARG1=q6w_rm[-2] ARG2=cc_ones
+d1_rm[-2]: MATHEVAL ARG1=q6_rm-[-2] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-2]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-2] FUNC=x*y PERIODIC=NO
+q6_im-[-2]: DOT ARG1=q6w_im[-2] ARG2=cc_ones
+d1_im[-2]: MATHEVAL ARG1=q6_im-[-2] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[-1]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[-1] FUNC=x*y PERIODIC=NO
+q6_rm-[-1]: DOT ARG1=q6w_rm[-1] ARG2=cc_ones
+d1_rm[-1]: MATHEVAL ARG1=q6_rm-[-1] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[-1]: MATHEVAL ARG1=cm.w ARG2=q6.im-[-1] FUNC=x*y PERIODIC=NO
+q6_im-[-1]: DOT ARG1=q6w_im[-1] ARG2=cc_ones
+d1_im[-1]: MATHEVAL ARG1=q6_im-[-1] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[0]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[0] FUNC=x*y PERIODIC=NO
+q6_rm-[0]: DOT ARG1=q6w_rm[0] ARG2=cc_ones
+d1_rm[0]: MATHEVAL ARG1=q6_rm-[0] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[0]: MATHEVAL ARG1=cm.w ARG2=q6.im-[0] FUNC=x*y PERIODIC=NO
+q6_im-[0]: DOT ARG1=q6w_im[0] ARG2=cc_ones
+d1_im[0]: MATHEVAL ARG1=q6_im-[0] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[1]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[1] FUNC=x*y PERIODIC=NO
+q6_rm-[1]: DOT ARG1=q6w_rm[1] ARG2=cc_ones
+d1_rm[1]: MATHEVAL ARG1=q6_rm-[1] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[1]: MATHEVAL ARG1=cm.w ARG2=q6.im-[1] FUNC=x*y PERIODIC=NO
+q6_im-[1]: DOT ARG1=q6w_im[1] ARG2=cc_ones
+d1_im[1]: MATHEVAL ARG1=q6_im-[1] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[2]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[2] FUNC=x*y PERIODIC=NO
+q6_rm-[2]: DOT ARG1=q6w_rm[2] ARG2=cc_ones
+d1_rm[2]: MATHEVAL ARG1=q6_rm-[2] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[2]: MATHEVAL ARG1=cm.w ARG2=q6.im-[2] FUNC=x*y PERIODIC=NO
+q6_im-[2]: DOT ARG1=q6w_im[2] ARG2=cc_ones
+d1_im[2]: MATHEVAL ARG1=q6_im-[2] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[3]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[3] FUNC=x*y PERIODIC=NO
+q6_rm-[3]: DOT ARG1=q6w_rm[3] ARG2=cc_ones
+d1_rm[3]: MATHEVAL ARG1=q6_rm-[3] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[3]: MATHEVAL ARG1=cm.w ARG2=q6.im-[3] FUNC=x*y PERIODIC=NO
+q6_im-[3]: DOT ARG1=q6w_im[3] ARG2=cc_ones
+d1_im[3]: MATHEVAL ARG1=q6_im-[3] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[4]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[4] FUNC=x*y PERIODIC=NO
+q6_rm-[4]: DOT ARG1=q6w_rm[4] ARG2=cc_ones
+d1_rm[4]: MATHEVAL ARG1=q6_rm-[4] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[4]: MATHEVAL ARG1=cm.w ARG2=q6.im-[4] FUNC=x*y PERIODIC=NO
+q6_im-[4]: DOT ARG1=q6w_im[4] ARG2=cc_ones
+d1_im[4]: MATHEVAL ARG1=q6_im-[4] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[5]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[5] FUNC=x*y PERIODIC=NO
+q6_rm-[5]: DOT ARG1=q6w_rm[5] ARG2=cc_ones
+d1_rm[5]: MATHEVAL ARG1=q6_rm-[5] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[5]: MATHEVAL ARG1=cm.w ARG2=q6.im-[5] FUNC=x*y PERIODIC=NO
+q6_im-[5]: DOT ARG1=q6w_im[5] ARG2=cc_ones
+d1_im[5]: MATHEVAL ARG1=q6_im-[5] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_rm[6]: MATHEVAL ARG1=cm.w ARG2=q6.rm-[6] FUNC=x*y PERIODIC=NO
+q6_rm-[6]: DOT ARG1=q6w_rm[6] ARG2=cc_ones
+d1_rm[6]: MATHEVAL ARG1=q6_rm-[6] ARG2=cc FUNC=x/y PERIODIC=NO
+q6w_im[6]: MATHEVAL ARG1=cm.w ARG2=q6.im-[6] FUNC=x*y PERIODIC=NO
+q6_im-[6]: DOT ARG1=q6w_im[6] ARG2=cc_ones
+d1_im[6]: MATHEVAL ARG1=q6_im-[6] ARG2=cc FUNC=x/y PERIODIC=NO 
 
 a1: AROUND ORIGIN=1 ATOMS=cm_grp SIGMA=0.2 XLOWER=-1.0 XUPPER=1.0 
 vrm[rm-6]: MATHEVAL ARG1=a1 ARG2=d1_rm[-6] FUNC=x*y PERIODIC=NO 

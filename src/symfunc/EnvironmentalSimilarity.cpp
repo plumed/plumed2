@@ -19,8 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -40,44 +39,38 @@ namespace symfunc {
 //+ENDPLUMEDOC
 
 
-class EnvironmentalSimilarity : public SymmetryFunctionBase {
-private:
-  double sig2;
-  std::vector<Vector> environment;
+class EnvironmentalSimilarity : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit EnvironmentalSimilarity(const ActionOptions&);
-  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(EnvironmentalSimilarity,"ENVIRONMENT")
 
 void EnvironmentalSimilarity::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","MATRIX","the input adjacency matrix that you would like to use for this calculation");
   keys.add("compulsory","SIGMA","the width to use for the gaussian kernels");
   keys.add("compulsory","REFERENCE","a list of vectors that describe the environment");
 }
 
 EnvironmentalSimilarity::EnvironmentalSimilarity(const ActionOptions&ao):
   Action(ao),
-  SymmetryFunctionBase(ao)
+  ActionShortcut(ao)
 {
-  double sig; parse("SIGMA",sig); sig2=sig*sig;
-  std::string reffile; parse("REFERENCE",reffile);
-  PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
-  unsigned natoms=pdb.getPositions().size(); environment.resize( natoms );
-  for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
-  log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
-  addValueWithDerivatives();
-}
-
-void EnvironmentalSimilarity::compute( const double& val, const Vector& distance, MultiValue& myvals ) const {
-  for(unsigned i=0; i<environment.size(); ++i) {
-    Vector diff = delta( distance, environment[i] );
-    double mod2 = diff.modulo2(); double expf = exp( -mod2 / (4*sig2) ) / environment.size();
-    addToValue( 0, val*expf, myvals ); addWeightDerivative( 0, expf, myvals );
-    addVectorDerivatives( 0, 0.5*(val/sig2)*expf*diff, myvals );
+  std::string matlab; parse("MATRIX",matlab); std::string reffile; parse("REFERENCE",reffile); PDB pdb; std::string argstr; 
+  pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+  unsigned natoms=pdb.getPositions().size(); std::string str_natoms; Tools::convert( natoms, str_natoms ); 
+  double sig; parse("SIGMA",sig); std::string sig2; Tools::convert( sig*sig, sig2 );
+  for(unsigned i=0;i<natoms;++i) {
+     std::string num, xpos, ypos, zpos; Tools::convert( i+1, num );
+     Tools::convert( pdb.getPositions()[i][0], xpos ); Tools::convert( pdb.getPositions()[i][1], ypos ); Tools::convert( pdb.getPositions()[i][2], zpos );
+     readInputLine( getShortcutLabel() + "_exp" + num + ": MATHEVAL ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + matlab + ".w VAR=x,y,z,w" + 
+                                                        " FUNC=w*exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/4*" + sig2 + ")/" + str_natoms + " PERIODIC=NO");
+     argstr += " ARG" + num + "=" + getShortcutLabel() + "_exp" + num;
   }
+  readInputLine( getShortcutLabel() + "_tot: COMBINE PERIODIC=NO" + argstr );
+  readInputLine( getShortcutLabel() + ": COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_tot");
 }
 
 }

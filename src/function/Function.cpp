@@ -473,17 +473,19 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           } 
       }
     } else if( (matinp && matout && myvals.inVectorCall()) ) {
-      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned der_start=0, ntot_mat=0;
-      if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
-      for(unsigned i=0; i<distinct_arguments.size(); ++i) {
-        Value* myval = distinct_arguments[i].first->copyOutput(0); if( myval->getRank()==0 ) continue;
-        unsigned istrn = myval->getPositionInMatrixStash();
-        std::vector<unsigned>& imat_indices( myvals.getMatrixIndices( istrn ) );
-        for(unsigned k=0; k<myvals.getNumberOfMatrixIndices( istrn ); ++k) mat_indices[ntot_mat + k] = der_start + imat_indices[k];
-        ntot_mat += myvals.getNumberOfMatrixIndices( istrn ); der_start += distinct_arguments[i].first->getNumberOfDerivatives();
+      for(unsigned vv=0; vv<getNumberOfComponents(); ++vv) { 
+          unsigned nmat = getPntrToOutput(vv)->getPositionInMatrixStash();
+          std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned der_start=0, ntot_mat=0;
+          if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
+          for(unsigned i=0; i<distinct_arguments.size(); ++i) {
+            Value* myval = distinct_arguments[i].first->copyOutput(0); if( myval->getRank()==0 ) continue;
+            unsigned istrn = myval->getPositionInMatrixStash();
+            std::vector<unsigned>& imat_indices( myvals.getMatrixIndices( istrn ) );
+            for(unsigned k=0; k<myvals.getNumberOfMatrixIndices( istrn ); ++k) mat_indices[ntot_mat + k] = der_start + imat_indices[k];
+            ntot_mat += myvals.getNumberOfMatrixIndices( istrn ); der_start += distinct_arguments[i].first->getNumberOfDerivatives();
+          }
+          myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
       }
-      myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
     } else if( myvals.inVectorCall() ) {
       for(unsigned i=0; i<distinct_arguments.size(); ++i) {
         unsigned der_start = 0;

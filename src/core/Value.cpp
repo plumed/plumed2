@@ -23,6 +23,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include "ActionSetup.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
@@ -168,7 +169,8 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
       if( this==args[i] ) { found=true; break; }
     }
   }
-  if( !found ) { args.push_back(this); }
+  ActionSetup* isset=dynamic_cast<ActionSetup*>( action );
+  if( !found || isset ) { args.push_back(this); }
 
   if( userdata.count(uselab) ) {
     if( values=="" ) { nargs++; return; }
