@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
@@ -124,7 +124,7 @@ PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_FUNCTION")
 PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_AVERAGE")
 
 void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate"); 
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
 } 
@@ -137,7 +137,7 @@ ActionShortcut(ao)
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
       matlab = getShortcutLabel() + "_mat";
-      SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
+      CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
   } else error("found no input atoms use SPECIES/SPECIESA");
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {

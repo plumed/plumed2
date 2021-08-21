@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
@@ -36,7 +36,7 @@ public:
 PLUMED_REGISTER_ACTION(RadialTetra,"TETRA_RADIAL")
 
 void RadialTetra::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys ); 
+  CoordinationNumbers::shortcutKeywords( keys ); 
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");

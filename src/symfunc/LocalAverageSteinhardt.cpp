@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h" 
 #include "multicolvar/MultiColvarBase.h"
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include <string>
 #include <cmath>
 
@@ -97,7 +97,7 @@ PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q4")
 PLUMED_REGISTER_ACTION(LocalAverageSteinhardt,"LOCAL_AVERAGE_Q6")
 
 void LocalAverageSteinhardt::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys ); 
+  CoordinationNumbers::shortcutKeywords( keys ); 
 }
 
 LocalAverageSteinhardt::LocalAverageSteinhardt(const ActionOptions&ao):
@@ -105,7 +105,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
+  CoordinationNumbers::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
   readInputLine( getShortcutLabel() + "_coord: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
   if( sp_str.length()>0 ) specA=specB=sp_str;
 

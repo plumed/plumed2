@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
@@ -54,7 +54,7 @@ public:
 PLUMED_REGISTER_ACTION(HexacticParameter,"HEXACTIC_PARAMETER")
 
 void HexacticParameter::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.add("compulsory","PLANE","the plane to use when calculating the value of the order parameter should be xy, xz or yz");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
@@ -67,7 +67,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
   std::string myplane; parse("PLANE",myplane);
   if( myplane=="xy" ) {
      readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.w" );

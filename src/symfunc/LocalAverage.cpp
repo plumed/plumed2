@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h" 
 #include "multicolvar/MultiColvarBase.h"
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include <string>
 #include <cmath>
 
@@ -94,7 +94,7 @@ public:
 PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 
 void LocalAverage::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys ); 
+  CoordinationNumbers::shortcutKeywords( keys ); 
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):
@@ -102,7 +102,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
+  CoordinationNumbers::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
   readInputLine( getShortcutLabel() + "_coord: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
   readInputLine( getShortcutLabel() + "_prod: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + sp_str + " " + convertInputLineToString() );

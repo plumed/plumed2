@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(Steinhardt,"Q4")
 PLUMED_REGISTER_ACTION(Steinhardt,"Q6")
 
 void Steinhardt::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
@@ -67,7 +67,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
   std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.z ARG4=" + getShortcutLabel() + "_mat.w";
 
   if( getName()=="Q1" ) {

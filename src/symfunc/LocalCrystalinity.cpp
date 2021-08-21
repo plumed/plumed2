@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "SymmetryFunctionBase.h"
+#include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarBase.h"
 
 #include <complex>
@@ -50,7 +50,7 @@ public:
 PLUMED_REGISTER_ACTION(LocalCrystallinity,"LOCAL_CRYSTALINITY")
 
 void LocalCrystallinity::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.add("numbered","GVECTOR","the coefficients of the linear combinations to compute for the CV");
 }
 
@@ -60,7 +60,7 @@ ActionShortcut(ao)
 {
   // This builds an adjacency matrix
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  SymmetryFunctionBase::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
   // Input for denominator (coord)
   readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
   // Input for numerator
