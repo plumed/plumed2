@@ -72,6 +72,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   {
     log<<"Opening reference file "<<reference.c_str()<<"\n";
     bool do_read=true;
+    unsigned nat=0;
     while (do_read) {
       PDB mypdb;
       RMSD mymsd;
@@ -79,7 +80,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
       if(do_read) {
         nframes++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat==0) nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) {
           aaa=mypdb.getAtomNumbers();
