@@ -81,8 +81,6 @@ private:
 /// Are we storing the data
   bool storedata, neverstore;
   std::vector<std::pair<std::string,int> > store_data_for;
-/// Are we taking column sums
-  bool columnsums;
 /// Some variables for dealing with matrices
   bool symmetric;
 /// These variables are used to hold the matrix rows that are non-zero
@@ -186,7 +184,6 @@ public:
   bool isTimeSeries() const ;
   void alwaysStoreValues();
   void neverStoreValues();
-  void buildColumnSums();
 ///
   unsigned getRank() const ;
 ///

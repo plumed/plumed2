@@ -604,8 +604,6 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
       values[i]->matpos=nmat; nmat++;
       // Matrices store is reshaped every step as we do a sparse storage of data to minimise memory requirements
       if( values[i]->storedata ) values[i]->reshapeMatrixStore();
-    } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
-      values[i]->matpos=nmat; nmat++;
     }
     values[i]->streampos=nquants; nquants++;
   }
@@ -719,13 +717,6 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
            plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );    
         } 
-    } 
-    // This looks after sums over columns of matrix
-  } else if ( values[valindex]->getRank()==1 && values[valindex]->columnsums ) {
-    unsigned vindex = bufstart; unsigned matind = values[valindex]->getPositionInMatrixStash();
-    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
     } 
  // This looks after storing in all other cases
   } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues(getLabel()) ) {

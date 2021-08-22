@@ -75,8 +75,8 @@ ActionShortcut(ao)
     else mykernels = mykernels + "+exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))"; 
   }
   // Hard coded switching function on minimum distance here -- should be improved
-  readInputLine( getShortcutLabel() + "_ksum: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_cmap.w VECTORS1=" + getShortcutLabel() + "_cmap.x " +
-                                              "VECTORS2=" + getShortcutLabel() + "_cmap.y VECTORS3=" + getShortcutLabel() + "_cmap.z" 
+  readInputLine( getShortcutLabel() + "_ksum: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_cmap.w ARG1=" + getShortcutLabel() + "_cmap.x " +
+                                              "ARG2=" + getShortcutLabel() + "_cmap.y ARG3=" + getShortcutLabel() + "_cmap.z" 
                                               " FUNCTION1={FUNC=" + mykernels + " LABEL=n} FUNCTION2={FUNC=1 LABEL=d}" );
   // And just the sum of the coordination numbers
   readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_cmap.w");

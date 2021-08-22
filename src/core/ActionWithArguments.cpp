@@ -246,7 +246,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
     if( !allow_streams ) { storing=true; break; }
-    if( arguments[i]->alwaysstore || arguments[i]->columnsums ) { 
+    if( arguments[i]->alwaysstore ) { 
         ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
         if( !as ) { storing=true; break; }
     }

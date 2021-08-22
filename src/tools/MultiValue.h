@@ -60,9 +60,6 @@ private:
   std::vector<unsigned> mat_nindices;
   std::vector<std::vector<unsigned> > mat_indices;
   std::vector<std::vector<Vector> > tmp_atoms;
-/// Tempory storage space for doing stuff with symmetry functions
-  unsigned symfunc_index;
-  std::vector<std::vector<double> > symfunc_tmp_derivs;
 public:
   MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t ncols=0, const std::size_t nmat=0, const std::size_t nfder=0 );
   void resize( const std::size_t&, const std::size_t&, const std::size_t&, const std::size_t& );
@@ -143,12 +140,6 @@ public:
   bool inMatrixRerun() const ;
 ///
   void setMatrixStashForNormalRun();
-///
-  void setSymfuncTemporyIndex( const unsigned& ind );
-///
-  unsigned getSymfuncTemporyIndex() const ;
-///
-  std::vector<double>& getSymfuncTemporyDerivatives( const unsigned& ind );
 };
 
 inline
@@ -377,22 +368,6 @@ unsigned MultiValue::getNumberOfMatrixIndices( const unsigned& nmat ) const {
 inline
 std::vector<unsigned>& MultiValue::getMatrixIndices( const unsigned& nmat ) {
   plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_indices[nmat];
-}
-
-
-inline
-void MultiValue::setSymfuncTemporyIndex( const unsigned& ind ) {
-  symfunc_index=ind;
-}
-
-inline
-unsigned MultiValue::getSymfuncTemporyIndex() const {
-  return symfunc_index;
-}
-
-inline
-std::vector<double>& MultiValue::getSymfuncTemporyDerivatives( const unsigned& ind ) {
-  plumed_dbg_assert( ind<symfunc_tmp_derivs.size() ); return symfunc_tmp_derivs[ind];
 }
 
 inline

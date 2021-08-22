@@ -46,9 +46,7 @@ MultiValue::MultiValue( const std::size_t& nvals, const std::size_t& nder, const
   nsplit(0),
   mat_nindices(nmat,0),
   mat_indices(nmat),
-  tmp_atoms(2),
-  symfunc_index(0),
-  symfunc_tmp_derivs(nvals)
+  tmp_atoms(2)
 {
   for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
 }
@@ -59,7 +57,7 @@ void MultiValue::resize( const std::size_t& nvals, const std::size_t& nder, cons
   nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat);
   matrix_element_stash.resize(ncols*nmat); nindices=0; mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
   for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
-  symfunc_tmp_derivs.resize( nvals ); atLeastOneSet=false;
+  atLeastOneSet=false;
 }
 
 void MultiValue::clearMatrixBookeepingArrays() {

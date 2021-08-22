@@ -11,7 +11,7 @@ cmat_fo: CUSTOM ARG1=cmat_or ARG2=cmat_oo.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
 beh_oo: COORDINATIONNUMBER WEIGHT=cmat_fo
 
 cmat_oh: CONTACT_MATRIX GROUPA=1,4 GROUPB=2,3,5,6 SWITCH={TANH3 R_0=10.0} COMPONENTS
-beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w VECTORS1=cmat_oh.x VECTORS2=cmat_oh.y VECTORS3=cmat_oh.z FUNCTION1={FUNC=((tanh(1-sqrt(rjk)/10))^3)*exp(-0.001*(rij+rik+rjk))*(1+cos(ajik)) LABEL=g4} 
+beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w ARG1=cmat_oh.x ARG2=cmat_oh.y ARG3=cmat_oh.z FUNCTION1={FUNC=((tanh(1-sqrt(rjk)/10))^3)*exp(-0.001*(rij+rik+rjk))*(1+cos(ajik)) LABEL=g4} 
 
 PRINT ARG1=beh_hh ATOMS=2,3,5,6 FMT=%8.4f FILE=gfunc_h.xyz
 PRINT ARG1=beh_oo ARG2=beh_oh.g4 ATOMS=1,4 FMT=%8.4f FILE=gfunc_o.xyz

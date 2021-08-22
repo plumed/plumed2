@@ -44,8 +44,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   skip_ieqj(false),
   isAdjacencyMatrix(false)
 {
-  if( getNumberOfArguments()>0 ) {
-      if( getNumberOfArguments()%2!=0 ) error("should have a multiple of two arguments");
+  if( getNumberOfArguments()>0 && getNumberOfArguments()%2==0 ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
       }

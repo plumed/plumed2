@@ -46,7 +46,6 @@ Value::Value():
   alwaysstore(false),
   storedata(true),
   neverstore(false),
-  columnsums(false),
   symmetric(false),
   bufstart(0),
   streampos(0),
@@ -88,7 +87,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   alwaysstore(false),
   storedata(true),
   neverstore(false),
-  columnsums(false),
   symmetric(false),
   bufstart(0),
   streampos(0),
@@ -156,10 +154,6 @@ void Value::makeTimeSeries() {
 
 void Value::neverStoreValues() {
   plumed_assert( !alwaysstore ); neverstore=true;
-}
-
-void Value::buildColumnSums() {
-  columnsums=true; storedata=true;
 }
 
 void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values ) {

@@ -47,11 +47,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);
-  unsigned getNumberOfDerivatives() const override;
+  virtual unsigned getNumberOfDerivatives() const ;
   bool canBeAfterInChain( ActionWithValue* av ) const override;
   virtual unsigned getNumberOfColumns() const ;
   bool mustBeTreatedAsDistinctArguments() const override ;
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
   void lockRequests() override;
   void unlockRequests() override;
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
