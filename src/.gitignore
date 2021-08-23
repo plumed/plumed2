@@ -51,6 +51,7 @@
 !/funnel
 !/fisst
 !/sasa
+!/xdrfile
 
 # And just ignore these files
 *.xxd
