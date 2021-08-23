@@ -66,7 +66,7 @@ public:
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                        const std::vector<double>& vec1, const std::vector<double>& vec2,
                                        std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const = 0;
-  void apply() override;
+  virtual void apply();
 };
 
 }

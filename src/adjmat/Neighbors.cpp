@@ -19,19 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
+#include "MatrixProductBase.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
-#include "tools/Angle.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class Neighbors :
-  public ActionWithValue,
-  public ActionWithArguments
-{
+class Neighbors : public MatrixProductBase {
 private:
   bool lowest;
   unsigned number;
@@ -39,26 +33,25 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void calculate() { if( !actionInChain() ) plumed_error(); }
-  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void apply() {}
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  double computeVectorProduct( const unsigned& index1, const unsigned& index2,
+                               const std::vector<double>& vec1, const std::vector<double>& vec2,
+                               std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const override { plumed_error(); }
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Neighbors,"NEIGHBORS")
 
 void Neighbors::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  MatrixProductBase::registerKeywords( keys );
   keys.add("compulsory","NLOWEST","0","in each row of the output matrix set the elements that correspond to the n lowest elements in each row of the input matrix equal to one");
   keys.add("compulsory","NHIGHEST","0","in each row of the output matrix set the elements that correspond to the n highest elements in each row of the input matrix equal to one");
 }
 
 Neighbors::Neighbors(const ActionOptions&ao):
   Action(ao),
-  ActionWithValue(ao),
-  ActionWithArguments(ao)
+  MatrixProductBase(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only input one argument to Neighbors");
   if( getPntrToArgument(0)->getRank()!=2 ) error("input to neighbors should be a matrix");

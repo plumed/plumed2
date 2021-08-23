@@ -89,16 +89,18 @@ ActionShortcut(ao)
     std::string unormstr; if( gtype=="TRACE" || gtype=="KAPPA2" ) unormstr = " UNORMALIZED"; 
     // Now compute the gyration tensor
     readInputLine( getShortcutLabel() + "_tensor: GYRATION_TENSOR ATOMS=" + atoms + pbcstr + unormstr + " CENTER=" + getShortcutLabel() + "_cent");
+    // Pick out the diagonal elements
+    readInputLine( getShortcutLabel() + "_diag_elements: SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_tensor COMPONENTS=1.1,2.2,3.3");
     if( gtype=="RADIUS") {
         // And now we need the average trace for the gyration radius
-        readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + 
-            	   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
+        readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO"); 
         // Square root the radius
         readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
     } else if( gtype=="TRACE" ) {
 	// Compte the trace of the gyration tensor
-	readInputLine( getShortcutLabel() + ": COMBINE COEFFICIENTS=2,2,2 ARG=" + getShortcutLabel() + "_tensor.1.1," +
-                   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO");
+	readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO");
+        // And double it
+        readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_trace FUNC=2*x PERIODIC=NO"); 
     } else {
 	// Diagonalize the gyration tensor
 	readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_tensor VECTORS=all" );    

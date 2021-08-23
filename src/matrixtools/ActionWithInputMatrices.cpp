@@ -33,7 +33,7 @@ ActionWithInputMatrices::ActionWithInputMatrices(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao)
 {
-  if( getName()!="CONCATENATE" ) {
+  if( getName()!="SELECT_COMPONENTS" && getName()!="CONCATENATE" ) {
       for(unsigned i=0; i<getNumberOfArguments();++i) {
           if( getPntrToArgument(i)->getRank()!=2 ) error("input argument for this action should be a matrix");
       }
