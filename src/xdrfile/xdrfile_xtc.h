@@ -34,11 +34,11 @@
 #ifndef _xdrfile_xtc_h
 #define _xdrfile_xtc_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "xdrfile.h"
+
+namespace PLMD {
+namespace xdrfile {
+
   
   /* All functions return exdrOK if succesfull. 
    * (error codes defined in xdrfile.h).
@@ -56,8 +56,7 @@ extern "C" {
 		       int natoms,int step,float time,
 		       matrix box,rvec *x,float prec);
   
-#ifdef __cplusplus
 }
-#endif
+}
 
 #endif

@@ -1,4 +1,4 @@
-USE=core config tools molfile
+USE=core config tools molfile xdrfile
 
 # generic makefile
 include ../maketools/make.module

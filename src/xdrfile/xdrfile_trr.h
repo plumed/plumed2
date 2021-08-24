@@ -33,12 +33,12 @@
 #ifndef _xdrfile_trr_h
 #define _xdrfile_trr_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "xdrfile.h"
   
+namespace PLMD {
+namespace xdrfile {
+
   /* All functions return exdrOK if succesfull. 
    * (error codes defined in xdrfile.h).
    */  
@@ -55,9 +55,7 @@ extern "C" {
   extern int write_trr(XDRFILE *xd,int natoms,int step,float t,float lambda,
 		       matrix box,rvec *x,rvec *v,rvec *f);
 
-  
-#ifdef __cplusplus
 }
-#endif
+}
 
 #endif

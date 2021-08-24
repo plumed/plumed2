@@ -78,10 +78,10 @@
 #ifndef _XDRFILE_H_
 #define _XDRFILE_H_
 
-#ifdef __cplusplus
-extern "C" 
+namespace PLMD
 {
-#endif
+namespace xdrfile
+{
 
 	/*! \brief Abstract datatype for an portable binary file handle 
 	 *
@@ -96,13 +96,13 @@ extern "C"
 	 *  library FILE, so don't even think about using an XDRFILE pointer as an 
 	 *  argument to a routine that needs a standard FILE pointer.
 	 */
-	typedef struct XDRFILE XDRFILE;
+        typedef struct XDRFILE XDRFILE;
 
 	enum { exdrOK, exdrHEADER, exdrSTRING, exdrDOUBLE, 
 		   exdrINT, exdrFLOAT, exdrUINT, exdr3DX, exdrCLOSE, exdrMAGIC,
 		   exdrNOMEM, exdrENDOFFILE, exdrFILENOTFOUND, exdrNR };
 
-	extern char *exdr_message[exdrNR];
+	extern const char *exdr_message[exdrNR];
 
 #define DIM 3
 	typedef float matrix[DIM][DIM];
@@ -628,9 +628,8 @@ extern "C"
 
 
 
-#ifdef __cplusplus
 }
-#endif
+}
 
 #endif /* _XDRFILE_H_ */
 

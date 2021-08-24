@@ -44,6 +44,9 @@
 #define BUFSIZE		128
 #define GROMACS_MAGIC   1993
 
+namespace PLMD {
+namespace xdrfile {
+
 typedef struct		/* This struct describes the order and the	*/
 /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
 {
@@ -95,7 +98,7 @@ static int do_trnheader(XDRFILE *xd,mybool bRead,t_trnheader *sh)
 {
 	int magic=GROMACS_MAGIC;
 	int nflsz,slen,result;
-	char *version = "GMX_trn_file";
+	const char *version = "GMX_trn_file";
 	char buf[BUFSIZE];
   
 	if (xdrfile_read_int(&magic,1,xd) != 1)
@@ -115,7 +118,7 @@ static int do_trnheader(XDRFILE *xd,mybool bRead,t_trnheader *sh)
         slen = strlen(version)+1;
         if (xdrfile_read_int(&slen,1,xd) != 1)
             return exdrINT;
-        if (xdrfile_write_string(version,xd) != (strlen(version)+1) )
+        if (xdrfile_write_string(const_cast<char*>(version),xd) != (strlen(version)+1) )
             return exdrSTRING;
     }
 	if (xdrfile_read_int(&sh->ir_size,1,xd) != 1)
@@ -494,5 +497,8 @@ int read_trr(XDRFILE *xd,int natoms,int *step,float *t,float *lambda,
 			 matrix box,rvec *x,rvec *v,rvec *f)
 {
 	return do_trn(xd,1,step,t,lambda,box,&natoms,x,v,f);
+}
+
+}
 }
 

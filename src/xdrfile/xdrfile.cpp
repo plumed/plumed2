@@ -64,7 +64,12 @@
 #define F77_FUNC(name,NAME) name ## _
 #endif
 
-char *exdr_message[exdrNR] = {
+namespace PLMD
+{
+namespace xdrfile
+{
+
+ const char *exdr_message[exdrNR] = {
 	"OK", 
 	"Header",
 	"String", 
@@ -2524,7 +2529,7 @@ static void xdrstdio_destroy (XDR *);
 /*
  * Ops vector for stdio type XDR
  */
-static const struct xdr_ops xdrstdio_ops =
+static const XDR::xdr_ops xdrstdio_ops =
 	{
 		xdrstdio_getlong,		/* deserialize a long int */
 		xdrstdio_putlong,		/* serialize a long int */
@@ -2545,7 +2550,7 @@ xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
 {
 	xdrs->x_op = op;
 
-	xdrs->x_ops = (struct xdr_ops *) &xdrstdio_ops;
+	xdrs->x_ops = (XDR::xdr_ops *) &xdrstdio_ops;
 	xdrs->x_private = (char *) file;
 }
 
@@ -2612,6 +2617,7 @@ xdrstdio_setpos (XDR *xdrs, unsigned int pos)
 	return fseek ((FILE *) xdrs->x_private, pos, 0) < 0 ? 0 : 1;
 }
 
-
+}
+}
 
 #endif /* HAVE_RPC_XDR_H not defined */

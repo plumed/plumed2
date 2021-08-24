@@ -33,6 +33,9 @@
 	
 #define MAGIC 1995
 
+namespace PLMD {
+namespace xdrfile {
+
 enum { FALSE, TRUE };
 
 static int xtc_header(XDRFILE *xd,int *natoms,int *step,float *time,mybool bRead)
@@ -132,4 +135,6 @@ int write_xtc(XDRFILE *xd,
 		return result;
   
 	return exdrOK;
+}
+}
 }
