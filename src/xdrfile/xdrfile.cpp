@@ -2409,20 +2409,20 @@ xdr_float(XDR *xdrs, float *fp)
 
 	case XDR_ENCODE:
 		if (sizeof(float) == sizeof(int32_t))
-			return (xdr_putlong(xdrs, (int32_t *)fp));
+			return (xdr_putlong(xdrs, (int32_t *) (void*) fp));
 		else if (sizeof(float) == sizeof(int)) {
-			int32_t tmp = *(int *)fp;
+			int32_t tmp = *(int *) (void*) fp;
 			return (xdr_putlong(xdrs, &tmp));
 		}
 		break;
 
 	case XDR_DECODE:
 		if (sizeof(float) == sizeof(int32_t))
-			return (xdr_getlong(xdrs, (int32_t *)fp));
+			return (xdr_getlong(xdrs, (int32_t *) (void*) fp));
 		else if (sizeof(float) == sizeof(int)) {
 			int32_t tmp;
 			if (xdr_getlong(xdrs, &tmp)) {
-				*(int *)fp = tmp;
+				*(int *) (void*)fp = tmp;
 				return (1);
 			}
 		}
@@ -2481,11 +2481,11 @@ xdr_double(XDR *xdrs, double *dp)
     
 	case XDR_ENCODE:
 		if (2*sizeof(int32_t) == sizeof(double)) {
-			int32_t *lp = (int32_t *)dp;
+			int32_t *lp = (int32_t *) (void*) dp;
 			return (xdr_putlong(xdrs, lp+!LSW) &&
 					xdr_putlong(xdrs, lp+LSW));
 		} else if (2*sizeof(int) == sizeof(double)) {
-			int *ip = (int *)dp;
+			int *ip = (int *) (void*) dp;
 			int32_t tmp[2];
 			tmp[0] = ip[!LSW];
 			tmp[1] = ip[LSW];
@@ -2496,11 +2496,11 @@ xdr_double(XDR *xdrs, double *dp)
     
 	case XDR_DECODE:
 		if (2*sizeof(int32_t) == sizeof(double)) {
-			int32_t *lp = (int32_t *)dp;
+			int32_t *lp = (int32_t *) (void*) dp;
 			return (xdr_getlong(xdrs, lp+!LSW) &&
 					xdr_getlong(xdrs, lp+LSW));
 		} else if (2*sizeof(int) == sizeof(double)) {
-			int *ip = (int *)dp;
+			int *ip = (int *) (void*) dp;
 			int32_t tmp[2];
 			if (xdr_getlong(xdrs, tmp+!LSW) &&
 				xdr_getlong(xdrs, tmp+LSW)) {
@@ -2617,7 +2617,7 @@ xdrstdio_setpos (XDR *xdrs, unsigned int pos)
 	return fseek ((FILE *) xdrs->x_private, pos, 0) < 0 ? 0 : 1;
 }
 
-}
-}
-
 #endif /* HAVE_RPC_XDR_H not defined */
+
+}
+}
