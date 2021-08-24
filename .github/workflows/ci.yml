@@ -54,7 +54,6 @@ jobs:
         sudo apt-get install -y gsl-bin
         sudo apt-get install -y libgsl0-dev
         sudo apt-get install -y ccache
-        ./.travis/install.xdrfile
     - name: Install system boost
       if: ${{ ! contains( matrix.variant, '-debug-' ) }}
       run: |

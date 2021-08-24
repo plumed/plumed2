@@ -35,7 +35,6 @@ RUN . /etc/bashrc \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
  && export PYTHON_BIN=python3 \
  && .travis/install.boost release \
- && .travis/install.xdrfile \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check
