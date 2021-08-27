@@ -232,7 +232,7 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
       if( mtype.find("DRMSD")!=std::string::npos ) action->readInputLine( scut_lab + "_instantaneous: DISTANCE " + distances_str );
       else action->readInputLine( scut_lab + "_instantaneous: " + mtype );
       ActionWithValue* aval = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( scut_lab + "_instantaneous" );
-      nquantities = aval->copyOutput(0)->getNumberOfValues( scut_lab + "_instantaneous" );
+      nquantities = aval->copyOutput(0)->getNumberOfValues();
   }
   // Now create PLUMED object that computes all distances
   std::string ref_line =  scut_lab + "_data: PLUMED_VECTOR ";
@@ -257,7 +257,7 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
             ref_line += " ARG1=" + scut_lab + "_instantaneous";
           } else {
             ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( refactions[i] );
-            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues( av->getLabel() ); 
+            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues(); 
             ref_line +=" ARG1=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
           }
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";

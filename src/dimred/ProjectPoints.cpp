@@ -78,9 +78,9 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
   rowstart(OpenMP::getNumThreads()),
   myminimiser( this )
 {
-  unsigned nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  unsigned nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
       if( nvals!=tvals ) error("mismatch between numbers of projections");
   }
   std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors; unsigned ntoproj=0;

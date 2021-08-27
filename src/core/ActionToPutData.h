@@ -63,8 +63,6 @@ public:
   void clearDerivatives( const bool& force ){}
 /// Do not add chains to setup actions
   bool canChainFromThisAction() const { return false; }
-/// Have to override this to deal with wildcards
-  void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const { return 0; }
 /// Do we need to sum this over all the domains

@@ -126,7 +126,7 @@ FunctionOnGrid::FunctionOnGrid(const ActionOptions&ao):
    // And finally calculate all the grid points
    std::vector<double> dder( labels.size() ), xx( labels.size() );
    Value* valout=getPntrToOutput(0); std::vector<unsigned> indices( labels.size() );
-   for(unsigned index=0;index<valout->getNumberOfValues( getLabel() );++index) {
+   for(unsigned index=0;index<valout->getNumberOfValues();++index) {
        getGridPointIndicesAndCoordinates( index, indices, xx );
        for(unsigned j=0;j<xx.size();++j) {
            try {

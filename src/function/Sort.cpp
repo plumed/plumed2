@@ -76,7 +76,7 @@ Sort::Sort(const ActionOptions&ao):
   unsigned k=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+ getPntrToArgument(i)->getName() +")");
-    for(unsigned j=0; j<getPntrToArgument(i)->getNumberOfValues(getLabel()); ++j) {
+    for(unsigned j=0; j<getPntrToArgument(i)->getNumberOfValues(); ++j) {
       std::string s; Tools::convert(k+1,s);
       addComponentWithDerivatives(s+"th");
       getPntrToComponent(k)->setNotPeriodic(); k++;

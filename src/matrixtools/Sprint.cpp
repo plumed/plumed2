@@ -138,11 +138,12 @@ ActionShortcut(ao)
   unsigned k=0;
   for(unsigned j=0; j<nin_group.size(); ++j) {
     std::string jnum, knum; Tools::convert( j+1, jnum ); Tools::convert(k+1, knum); k++;
-    std::string sort_act = getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_sp." + knum;
+    std::string sort_act = getShortcutLabel() + "_selection" + jnum + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_sp COMPONENTS=" + knum;
     for(unsigned n=1; n<nin_group[j]; ++n) {
-      Tools::convert( k+1, knum ); sort_act += "," + getShortcutLabel() + "_sp." + knum; k++;
+      Tools::convert( k+1, knum ); sort_act += ","+ knum; k++;
     }
     readInputLine( sort_act );
+    readInputLine( getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_selection" + jnum );
   }
 }
 

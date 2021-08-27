@@ -61,7 +61,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
 
   nvals = 0; landmarks.resize(nlandmarks);
   for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
-      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues();
       else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
   }
 
@@ -69,7 +69,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
   for(unsigned i=0;i<arg_ends.size()-1;++i) { 
       unsigned tvals=0; 
       for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues();
           else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
       }
       if( tvals!=nvals ) {
@@ -180,14 +180,14 @@ void LandmarkSelectionBase::runFinalJobs() {
   }
   plumed_dbg_assert( !actionInChain() ); nvals=0;
   for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
-      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues();
       else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
   }
   std::vector<unsigned> shape(2); shape[0]=nlandmarks; shape[1]=nvals;
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
       unsigned tvals=0;
       for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues();
           else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
       }
       if( tvals!=nvals ) error("mismatch between sizes of input positions");

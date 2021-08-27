@@ -143,20 +143,23 @@ PCA::PCA( const ActionOptions& ao ) :
           std::string num, pnum, atnum; Tools::convert( i+1, atnum );
           // This calculates the centered data vector for the x component
           Tools::convert( anum, num ); Tools::convert( 3*i + 1, pnum );
+          readInputLine( getShortcutLabel() + "_avpos" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_average_atoms COMPONENTS=" + pnum );
           readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posx-" + atnum + 
-                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum + 
+                                                                               " ARG2=" + getShortcutLabel() + "_avpos"  + pnum + 
                                                                                " FUNC=x-y PERIODIC=NO"); 
           argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
           // This calculates the centered data vector for the y component 
           Tools::convert( anum, num ); Tools::convert( 3*i + 2, pnum );
+          readInputLine( getShortcutLabel() + "_avpos" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_average_atoms COMPONENTS=" + pnum ); 
           readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posy-" + atnum +
-                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum + 
+                                                                               " ARG2=" + getShortcutLabel() + "_avpos"  + pnum + 
                                                                                " FUNC=x-y PERIODIC=NO");
           argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
           // This calculates the centered data vector for the z component 
           Tools::convert( anum, num ); Tools::convert( 3*i + 3, pnum ); 
+          readInputLine( getShortcutLabel() + "_avpos" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_average_atoms COMPONENTS=" + pnum );
           readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posz-" + atnum +
-                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum +
+                                                                               " ARG2=" + getShortcutLabel() + "_avpos"  + pnum +
                                                                                " FUNC=x-y PERIODIC=NO");
           argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
       } 

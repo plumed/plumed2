@@ -123,7 +123,7 @@ void ActionWithInputMatrices::runFinalJobs() {
       std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
       for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
       getPntrToOutput(0)->setShape( shape );
-  } else resizeForFinalTasks(); 
+  } else if( getName()!="SELECT_COMPONENTS" ) resizeForFinalTasks(); 
   completeMatrixOperations();
 }
 

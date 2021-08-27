@@ -129,14 +129,14 @@ Wham::Wham(const ActionOptions&ao):
 
 void Wham::calculateWeights() {
   // Retrieve the values that were stored for the biase
-  std::vector<double> stored_biases( getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
+  std::vector<double> stored_biases( getPntrToArgument(0)->getNumberOfValues() );
   for(unsigned i=0;i<stored_biases.size();++i) stored_biases[i] = getPntrToArgument(0)->get(i);
   // Get the minimum value of the bias
   double minv = *min_element(std::begin(stored_biases), std::end(stored_biases));
   // Resize final weights array
   plumed_assert( stored_biases.size()%nreplicas==0 );
   std::vector<double> final_weights( stored_biases.size() / nreplicas, 1.0 );
-  if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=final_weights.size() ) {
+  if( getPntrToOutput(0)->getNumberOfValues()!=final_weights.size() ) {
       std::vector<unsigned> shape(1); shape[0]=final_weights.size(); getPntrToOutput(0)->setShape( shape );
   } 
   // Offset and exponential of the bias

@@ -57,7 +57,7 @@ SetupReferenceBase(ao)
       } else if( getNumberOfArguments()==0 ) { 
           shape[0]=read_args.size(); 
       } else if( !numberedkeys ) {
-          shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+          shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
       }
       log.printf("  read in center of cluster in space of dimension %d \n", shape[0] );
       if( getName()=="READ_VECTOR" ) {
@@ -87,10 +87,6 @@ SetupReferenceBase(ao)
               names.push_back( getPntrToArgument(i)->getName() );
           } else if( getPntrToArgument(i)->getRank()==0 ) {
               names.push_back( getPntrToArgument(i)->getName() );
-          } else if ( !getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
-              for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues( getLabel() );++j) {
-                  names.push_back( getPntrToArgument(i)->getOutputDescription( getLabel(), j ) );
-              }
           } else if( getPntrToArgument(i)->getRank()==1 ) {
               for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
                   std::string num; Tools::convert( j+1, num );

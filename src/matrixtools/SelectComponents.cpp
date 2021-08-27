@@ -52,8 +52,10 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
   ActionWithInputMatrices(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
+  getPntrToArgument(0)->buildDataStore( getLabel() ); 
   std::vector<std::string> elements; parseVector("COMPONENTS",elements);
-  std::vector<unsigned> shape(1); shape[0]=elements.size(); addValue( shape ); 
+  std::vector<unsigned> shape(1); shape[0]=elements.size(); if( shape[0]==1 ) shape.resize(0); 
+  addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
   log.printf("  selecting components from input "); selection.resize( elements.size() );
   if( getPntrToArgument(0)->getRank()==1 ) {
       log.printf("vector ");

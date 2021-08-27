@@ -1,4 +1,4 @@
-#! FIELDS time lambdav restraint_bias
+#! FIELDS time lambdav restraint.bias
  0.000000   7.2076 22496.0626
  1.000000   6.9494 20797.1547
  2.000000   6.2397 16472.0541

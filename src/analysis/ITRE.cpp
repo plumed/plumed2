@@ -96,7 +96,7 @@ ITRE::ITRE(const ActionOptions&ao):
 void ITRE::calculateWeights() {
   Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getShape()[0];
   // Set the shape of the output vector if we need to
-  if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=nvals ) {
+  if( getPntrToOutput(0)->getNumberOfValues()!=nvals ) {
       std::vector<unsigned> shape(1); shape[0]=nvals; getPntrToOutput(0)->setShape( shape );
   }
   Matrix<double> mymatrix( nvals, nvals ); // lower triangular exponential matrix

@@ -330,7 +330,7 @@ void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
 }
 
 unsigned ActionAtomistic::getTotAtoms()const {
-  return massValue->getNumberOfValues( getLabel() );
+  return massValue->getNumberOfValues();
 }
 
 Vector ActionAtomistic::getGlobalPosition(AtomNumber i) const {

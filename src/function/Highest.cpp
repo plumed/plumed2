@@ -92,18 +92,18 @@ void Highest::transformFinalValueAndDerivatives( const std::vector<double>& buf 
   unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfValues( getLabel() ); ++j ) {
+    for(unsigned j=0; j<myarg->getNumberOfValues(); ++j ) {
       if( myarg->get(j)>highest ) { aind=i; highest=myarg->get(j); hind = pves + j; }
     }
-    pves += myarg->getNumberOfValues( getLabel() );
+    pves += myarg->getNumberOfValues();
   }
   Value* val0 = getPntrToComponent(0); val0->set( highest );
   if( !doNotCalculateDerivatives() ) {
     unsigned nn=0, nm=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      nn += getPntrToArgument(i)->getNumberOfValues();
       if( hind<nn ) { break; }
-      nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      nm += getPntrToArgument(i)->getNumberOfValues();
     }
     tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
     unsigned istrn = getPntrToArgument(aind)->getPositionInStream();

@@ -83,8 +83,8 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       }
       if( av->copyOutput(0)->getRank()!=0 ) {
           av->copyOutput(0)->buildDataStore( getLabel() );
-          if( i==1 ) ncols = av->copyOutput(0)->getNumberOfValues( getLabel() );
-          else if( ncols!=av->copyOutput(0)->getNumberOfValues( getLabel() ) ) {
+          if( i==1 ) ncols = av->copyOutput(0)->getNumberOfValues();
+          else if( ncols!=av->copyOutput(0)->getNumberOfValues() ) {
              error("mismatched sizes of values");
           }
       }
@@ -155,7 +155,7 @@ void ParallelPlumedActions::clearDerivatives( const bool& force ) {
 void ParallelPlumedActions::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                                   std::vector<std::string>& max, std::vector<unsigned>& nbin,
                                                   std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues( getLabel() ); spacing[0] = 1;
+  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues(); spacing[0] = 1;
 }
 
 void ParallelPlumedActions::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {

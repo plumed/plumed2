@@ -92,18 +92,18 @@ void Lowest::transformFinalValueAndDerivatives( const std::vector<double>& buf )
   unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfValues( getLabel() ); ++j ) {
+    for(unsigned j=0; j<myarg->getNumberOfValues(); ++j ) {
       if( myarg->get(j)<lowest ) { aind=i; lowest=myarg->get(j); lind = pves + j; }
     }
-    pves += myarg->getNumberOfValues( getLabel() );
+    pves += myarg->getNumberOfValues();
   }
   Value* val0 = getPntrToComponent(0); val0->set( lowest );
   if( !doNotCalculateDerivatives() ) {
     unsigned nn=0, nm=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      nn += getPntrToArgument(i)->getNumberOfValues();
       if( lind<nn ) { break; }
-      nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      nm += getPntrToArgument(i)->getNumberOfValues();
     }
     tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( lind - nm, tvals );
     unsigned istrn = getPntrToArgument(aind)->getPositionInStream();

@@ -74,7 +74,7 @@ void SetupReferenceBase::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) 
       if( myindices[i].serial()>natoms ) natoms = myindices[i].serial();
   }
   // Get the number of arguments
-  nargs=0; if( getNumberOfComponents()>0 ) nargs = getPntrToOutput(0)->getNumberOfValues( getLabel() );
+  nargs=0; if( getNumberOfComponents()>0 ) nargs = getPntrToOutput(0)->getNumberOfValues();
 }
 
 void SetupReferenceBase::getAtomsFromReference( const unsigned& npos, std::vector<double>& masses, 
@@ -90,7 +90,7 @@ void SetupReferenceBase::getReferenceConfiguration( std::vector<double>& ref ) c
   unsigned n=0;
   if( getNumberOfComponents()>0 ) {
       Value* myval=getPntrToOutput(0);
-      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      unsigned nvals = myval->getNumberOfValues();
       for(unsigned i=0;i<nvals;++i) { ref[n] = myval->get(i); n++; }
   }
   for(unsigned i=0;i<mygroup.size();++i) {
@@ -103,7 +103,7 @@ void SetupReferenceBase::setReferenceConfiguration( std::vector<double>& ref ) {
   unsigned n=0;
   if( getNumberOfComponents()>0 ) {
       Value* myval=getPntrToOutput(0);
-      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      unsigned nvals = myval->getNumberOfValues();
       for(unsigned i=0;i<nvals;++i) { myval->set( i, ref[n]) ; n++; }
   }
   for(unsigned i=0;i<mygroup.size();++i) {
@@ -117,7 +117,7 @@ void SetupReferenceBase::displaceReferenceConfiguration( const double& val, cons
   unsigned n=0;
   if( getNumberOfComponents()>0 ) {
       Value* myval=getPntrToOutput(0);
-      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      unsigned nvals = myval->getNumberOfValues();
       for(unsigned i=0;i<nvals;++i) { myval->set( i, myval->get(i) + val*dir[n]) ; n++; }
   }
   for(unsigned i=0;i<mygroup.size();++i) {
@@ -130,7 +130,7 @@ void SetupReferenceBase::displaceReferenceConfiguration( const double& val, cons
 std::string SetupReferenceBase::getArgName( const unsigned& k ) const {
   unsigned nn=0;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
-      unsigned nvals = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      unsigned nvals = getPntrToArgument(i)->getNumberOfValues();
       if( k<nn+nvals ) {
           if( getPntrToArgument(i)->getRank()==0 ) return getPntrToArgument(i)->getName();
           if( getPntrToArgument(i)->getRank()==1 ) {

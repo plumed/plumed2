@@ -273,7 +273,7 @@ KDE::KDE(const ActionOptions&ao):
       std::vector<std::string> bandwidth(1); parseVector("METRIC",bandwidth);
       std::vector<Value*> bw_args; interpretArgumentList( bandwidth, bw_args );
       if( bw_args[0]->hasDerivatives() ) error("bandwidth should not have derivatives");
-      if( bw_args[0]->getRank()==1 && bw_args[0]->getNumberOfValues( getLabel() )!=getNumberOfDerivatives() ) error("size of bandwidth vector is incorrect");
+      if( bw_args[0]->getRank()==1 && bw_args[0]->getNumberOfValues()!=getNumberOfDerivatives() ) error("size of bandwidth vector is incorrect");
       if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");
       log.printf("  bandwidths are taken from : %s \n", bandwidth[0].c_str() );
       std::vector<Value*> args( getArguments() ); args.push_back( bw_args[0] );

@@ -105,11 +105,11 @@ unsigned Stack::getNumberOfFinalTasks() {
 
 std::vector<unsigned> Stack::getMatrixShapeForFinalTasks() {
   unsigned nvals = 0;
-  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
   // Check for consistent numbers of values in other actions
   for(unsigned j=0;j<arg_ends.size()-1;++j) {
       unsigned tvals = 0;
-      for(unsigned i=arg_ends[j];i<arg_ends[j+1];++i) tvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      for(unsigned i=arg_ends[j];i<arg_ends[j+1];++i) tvals += getPntrToArgument(i)->getNumberOfValues();
       if( tvals!=nvals ) error("mismatch between number of values in each vector that is to be combined");
   }
 

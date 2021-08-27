@@ -91,7 +91,7 @@ void DataPassingObjectTyped<T>::share_data( const std::set<AtomNumber>&index, co
 
 template <class T>
 void DataPassingObjectTyped<T>::add_force( Value* value ) {
-   unsigned nvals=value->getNumberOfValues( value->getName() );
+   unsigned nvals=value->getNumberOfValues();
    #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(this->f,nvals))
    for(unsigned i=0;i<nvals;++i) this->f[i*stride] += T(funit*value->getForce(i));
 }

@@ -94,7 +94,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
    // And finally read all the grid points
    Value* valout=getPntrToOutput(0); 
    std::vector<double> dder( labels.size() ), xx( labels.size() );
-   for(unsigned i=0;i<valout->getNumberOfValues( getLabel() );++i) {
+   for(unsigned i=0;i<valout->getNumberOfValues();++i) {
      double x, val, norm; ifile.scanField( valuestr, val ); ifile.scanField( "normalisation", norm );
      for(unsigned j=0; j<labels.size(); ++j) {
        ifile.scanField(labels[j],x); 

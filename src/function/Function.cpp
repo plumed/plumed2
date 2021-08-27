@@ -54,8 +54,8 @@ Function::Function(const ActionOptions&ao):
   bool gridinput=false; unsigned npoints=0; std::string gtype; std::vector<std::string> gargn, min, max; 
   // Method for if input to function is a function on a grid
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() && getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
-      gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
+      gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues();
       nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments(); 
       gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
       min.resize( getPntrToArgument(i)->getRank() ); max.resize( getPntrToArgument(i)->getRank() ); 
@@ -72,7 +72,7 @@ Function::Function(const ActionOptions&ao):
     if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       if( getPntrToArgument(j)->getRank()!=0 ) {
-        if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
+        if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
         (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
         if( gtype!=ggtype ) error("mismatch between grid types");
         for(unsigned k=0;k<min.size();++k) { 
@@ -92,7 +92,7 @@ Function::Function(const ActionOptions&ao):
         for(unsigned i=0; i<arg_ends.size()-1; ++i ) {
             if( arg_ends[i+1]-arg_ends[i]==1 ) {
                 plumed_assert( arg_ends[i]<getNumberOfArguments() );
-                if( getPntrToArgument(arg_ends[i])->getNumberOfValues( getLabel() )==1 ) {
+                if( getPntrToArgument(arg_ends[i])->getNumberOfValues()==1 ) {
                     ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
                     if(!as) hasscalar=true; else getPntrToArgument(arg_ends[i])->buildDataStore( getLabel() );
                 } else {
@@ -102,20 +102,14 @@ Function::Function(const ActionOptions&ao):
             } else hasrank=true;
         }
         // Check if we are using not all the values in an average base 
-        if( !hasrank ) {
-            for(unsigned i=0; i<getNumberOfArguments(); ++i ) {
-                CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(i)->getPntrToAction() );
-                if( ab ) { if( !getPntrToArgument(i)->usingAllVals(getLabel()) ) hasrank=true; }
-            }
-        }
     }
     if( hasscalar && hasrank ) {
       unsigned nscalars=0; done_over_stream=false;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->getNumberOfValues( getLabel() )==1 ) nscalars++;
+        if( getPntrToArgument(i)->getNumberOfValues()==1 ) nscalars++;
         else {
           getPntrToArgument(i)->buildDataStore( getLabel() );
-          npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+          npoints=getPntrToArgument(i)->getNumberOfValues();
         }
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
@@ -137,7 +131,7 @@ Function::Function(const ActionOptions&ao):
     }
   }
 
-  if( getPntrToArgument(0)->usingAllVals( getLabel() ) ) matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
+  matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
   if( matinp ) {
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()>0 ) plumed_massert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives(), "problem in " + getLabel() );
@@ -151,7 +145,7 @@ std::vector<unsigned> Function::getShape() {
   // Get the total number of values
   unsigned maxrank=0, rmax=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->usingAllVals( getLabel() ) && getPntrToArgument(i)->getRank()>maxrank ) { maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
+    if( getPntrToArgument(i)->getRank()>maxrank ) { maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
   }
   if( hasGridOutput() ) {
     shape.resize( maxrank );
@@ -161,7 +155,7 @@ std::vector<unsigned> Function::getShape() {
   } else if( maxrank==0 ) {
     unsigned maxvals=0;
     for(unsigned i=0;i<arg_ends.size()-1;++i) {
-        unsigned nvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+        unsigned nvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) nvals += getPntrToArgument(j)->getNumberOfValues();
         if( nvals>maxvals ) { maxvals=nvals; }
     }
     if( maxvals>1 ) { shape.resize(1); shape[0]=maxvals; }
@@ -174,7 +168,7 @@ std::vector<unsigned> Function::getShape() {
 
 bool Function::hasGridOutput() const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() && getPntrToArgument(i)->usingAllVals( getLabel() ) ) return true;
+    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) return true;
   }
   return false;
 }
@@ -338,10 +332,10 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 void Function::evaluateAllFunctions() {
   if( firststep ) {
     std::vector<unsigned> shape( getShape() );
-    unsigned ival = getPntrToOutput(0)->getNumberOfValues( getLabel() );
+    unsigned ival = getPntrToOutput(0)->getNumberOfValues();
     getPntrToOutput(0)->setShape( shape ); firststep=false;
-    if( ival<getPntrToOutput(0)->getNumberOfValues( getLabel() ) ) {
-      for(unsigned j=ival; j<getPntrToOutput(0)->getNumberOfValues( getLabel() ); ++j) addTaskToList(j);
+    if( ival<getPntrToOutput(0)->getNumberOfValues() ) {
+      for(unsigned j=ival; j<getPntrToOutput(0)->getNumberOfValues(); ++j) addTaskToList(j);
     }
   }
   runAllTasks();
@@ -350,7 +344,7 @@ void Function::evaluateAllFunctions() {
 void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   unsigned nstart = getFullNumberOfTasks(), ndata = 0; 
   for(unsigned i=0;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues();
   }
   if( nstart<ndata ) { 
       for(unsigned i=nstart;i<ndata;++i) addTaskToList(i); 
@@ -391,7 +385,7 @@ unsigned Function::getNumberOfFinalTasks() {
   for(unsigned i=0; i<arg_ends.size()-1; ++i) {
     unsigned tnval = 0;
     for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-        if( getPntrToArgument(j)->getNumberOfValues( getLabel() )==1 ) nscalars++;
+        if( getPntrToArgument(j)->getNumberOfValues()==1 ) nscalars++;
         else tnval += getPntrToArgument(j)->getShape()[0];
     }
     if( tnval>0 && (nvalues==0 || tnval<nvalues) ) nvalues = tnval; 
@@ -461,7 +455,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
         }
         if( distinct_arguments[i].second==0 ) der_start += distinct_arguments[i].first->getNumberOfDerivatives();
         else if( getPntrToArgument(jvalind)->isTimeSeries() ) der_start++;
-        else der_start += getPntrToArgument(jvalind)->getNumberOfValues(getLabel());
+        else der_start += getPntrToArgument(jvalind)->getNumberOfValues();
       }
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           if( getPntrToArgument(i)->getRank()==0 ) { 
@@ -512,7 +506,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
             myvals.updateIndex( ostrn, base + myvals.getTaskIndex() );
           }
         }
-        for(unsigned k=arg_ends[i]; k<arg_ends[i+1]; ++k) base += getPntrToArgument(k)->getNumberOfValues( getLabel() );
+        for(unsigned k=arg_ends[i]; k<arg_ends[i+1]; ++k) base += getPntrToArgument(k)->getNumberOfValues();
       }
     } else {
       for(unsigned j=0; j<getNumberOfComponents(); ++j) {

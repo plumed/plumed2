@@ -96,42 +96,51 @@ std::string ActionShortcut::convertInputLineToString() {
   line.resize(0); return output;
 }
 
-void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& arg ) const {
+void ActionShortcut::interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& arg ) const {
   std::size_t dot=mystr.find_first_of('.'); std::string a=mystr.substr(0,dot); std::string name=mystr.substr(dot+1);
   // Retrieve the keywords for the shortcut
   Keywords skeys; actionRegister().getKeywords( getName(), skeys );
-  std::vector<std::string> out_comps( skeys.getAllOutputComponents() ); unsigned carg = nargs; 
+  std::vector<std::string> out_comps( skeys.getAllOutputComponents() ); 
   // Now get the output components
   if( name=="*" ) {
       for(unsigned k=0; k<out_comps.size(); ++k) {
           if( out_comps[k]=="" ) {
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
-              if( action ) action->interpretDataLabel( a, myuser, nargs, arg );
+              if( action ) { 
+                  if( action->getNumberOfComponents()!=1 ) myuser->error("action named " + a + " has more than one component");
+                  myuser->useValue( action->copyOutput(0), arg ); 
+              }
           } else {
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
-              if( action ) action->interpretDataLabel( a + "_" + out_comps[k], myuser, nargs, arg );
-              else {
+              if( action ) {
+                  if( action->getNumberOfComponents()!=1 ) myuser->error("action named " + a + "_" + out_comps[k] + " has more than one component");
+                  myuser->useValue( action->copyOutput(0), arg );
+              } else {
                  for(unsigned j=1;; ++j) {
                      std::string numstr; Tools::convert( j, numstr );
                      ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr ); 
                      if(!act) break;
-                     act->interpretDataLabel( a + "_" + out_comps[k] + numstr, myuser, nargs, arg );
+                     for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) myuser->useValue( act->copyOutput(n), arg );
                  }
               }
           }
       }
   } else {
+      // Check for an action that has action.component 
+      ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
+      if( act && act->exists(mystr) ) { myuser->useValue( act->copyOutput(mystr), arg ); return; }
+      // Get components that are actually actions
       for(unsigned k=0; k<out_comps.size(); ++k) {
           if( name.find(out_comps[k])!=std::string::npos ) {
               if( name==out_comps[k] ) {
                    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
-                   action->interpretDataLabel( a + "_" + name, myuser, nargs, arg );
+                   myuser->useValue( action->copyOutput(a+"_"+name), arg );
               } else { 
                    for(unsigned j=1;; ++j) {
                        std::string numstr; Tools::convert( j, numstr );
                        if( name==out_comps[k] + numstr ) {
                            ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name + numstr );
-                           action->interpretDataLabel( a + "_" + name + numstr, myuser, nargs, arg ); break;
+                           myuser->useValue( action->copyOutput(a+"_"+name+numstr), arg );
                        }
                    }
               }

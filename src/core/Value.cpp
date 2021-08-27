@@ -134,6 +134,10 @@ void Value::setupPeriodicity() {
   }
 }
 
+void Value::addUser( const std::string& user ) {
+  userdata.push_back(user);
+}
+
 void Value::buildDataStore( const std::string& actlabel ) {
   if( neverstore ) return ;
   bool found=false; 
@@ -154,39 +158,6 @@ void Value::makeTimeSeries() {
 
 void Value::neverStoreValues() {
   plumed_assert( !alwaysstore ); neverstore=true;
-}
-
-void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values ) {
-  bool found=false;
-  if( shape.size()>0 ) {
-    for(unsigned i=0; i<args.size(); ++i) {
-      if( this==args[i] ) { found=true; break; }
-    }
-  }
-  ActionSetup* isset=dynamic_cast<ActionSetup*>( action );
-  if( !found || isset ) { args.push_back(this); }
-
-  if( userdata.count(uselab) ) {
-    if( values=="" ) { nargs++; return; }
-    if( userdata[uselab][0].first<0 ) plumed_merror("cannot mix use of specific items from value and all items in a single action");
-  } else {
-    userdata.insert( std::pair<std::string,std::vector<std::pair<int,int> > >(uselab,std::vector<std::pair<int,int> >()) );
-    if( values=="*" ) { plumed_merror("invalid use of wildcard"); return; }
-    else if( values=="" ) { userdata[uselab].push_back(std::pair<int,int>(-1,nargs) ); nargs++; return; }
-  }
-  // Retrieve the indices of the point from the string requesting the index
-  std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
-  for(unsigned i=0; i<shape.size()-1; ++i) {
-    std::size_t dot = indstr.find_first_of(".");
-    if( dot==std::string::npos && action ) action->error("invalid specification for element of value"); 
-    else if( dot==std::string::npos ) plumed_merror("invalid specification for element of value");
-    Tools::convert( indstr.substr(0,dot), indices[i] );
-    indices[i] -= 1; indstr=indstr.substr(dot+1);
-  }
-  Tools::convert( indstr, indices[indices.size()-1] ); indices[indices.size()-1] -= 1;
-  std::size_t dot = name.find_first_of("."); std::string aname=name; if( dot!=std::string::npos ) aname = name.substr(0,dot);
-  if( getIndex(indices)>=getNumberOfValues(aname) ) action->error("action does not have this many components");
-  userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
 
 bool Value::isPeriodic()const {
@@ -288,25 +259,21 @@ ActionWithValue* Value::getPntrToAction() {
 }
 
 unsigned Value::getSize() const {
-  unsigned size=getNumberOfValues( name );
+  unsigned size=getNumberOfValues();
   if( shape.size()>0 && hasDeriv && action ) return size*( 1 + action->getNumberOfDerivatives() ); 
   else if( shape.size()>0 && hasDeriv ) return size*( 1 + shape.size() );
   return size;
 }
 
-unsigned Value::getNumberOfValues( const std::string& alab ) const {
-  if( usingAllVals(alab) ) {
-    unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
-    return size;
-  } else {
-    return userdata.find(alab)->second.size();
-  }
+unsigned Value::getNumberOfValues() const {
+  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
+  return size;
 }
 
 double Value::get(const unsigned& ival, const bool trueind) const {
   if( hasDeriv ) return data[ival*(1+ngrid_der)] / norm;
 #ifdef DNDEBUG 
-  if( action ) plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
+  if( action ) plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
 #endif
   if( shape.size()==2 && getNumberOfColumns()<shape[1] && trueind ) {
       unsigned irow = std::floor( ival / shape[0] ), jcol = ival%shape[0];
@@ -321,7 +288,7 @@ double Value::get(const unsigned& ival, const bool trueind) const {
 }
 
 void Value::addForce(const unsigned& iforce, double f, const bool trueind) {
-  hasForce=true;
+  if( action->getName()=="COLLECT_FRAMES" ) return; hasForce=true;
   if( shape.size()==2 && !hasDeriv && getNumberOfColumns()<shape[1] && trueind ) { 
       unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
       for(unsigned i=0; i<getRowLength(irow); ++i) {
@@ -329,6 +296,7 @@ void Value::addForce(const unsigned& iforce, double f, const bool trueind) {
       }
       plumed_assert( fabs(f)<epsilon ); return;
   } 
+  plumed_massert( iforce<inputForces.size(), "can't add force to " + name );
   inputForces[iforce]+=f;
 }
 
@@ -343,27 +311,17 @@ void Value::setGridDerivative(const unsigned& n, const unsigned& j, const double
 }
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {
-  plumed_dbg_assert( userdata.count(uselab) );
+  if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
   if( shape.size()==0 ) {
-    if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
     ofile.printField( name, get(0) );
-  } else if( userdata.find(uselab)->second[0].first<0 ) {
-    if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
+  } else {
     std::vector<unsigned> indices( shape.size() );
-    for(unsigned i=0; i<getNumberOfValues(uselab); ++i) {
+    for(unsigned i=0; i<getNumberOfValues(); ++i) {
       convertIndexToindices( i, indices ); std::string num, fname = name;
       for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
       ofile.printField( fname, get(i) );
     }
-  } else {
-    if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
-    std::vector<unsigned> indices( shape.size() );
-    for(unsigned i=0; i<userdata.find(uselab)->second.size(); ++i) {
-      convertIndexToindices( userdata.find(uselab)->second[i].first, indices ); std::string num, fname = name;
-      for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
-      ofile.printField( fname, get( userdata.find(uselab)->second[i].first ) );
-    }
-  }
+  } 
 }
 
 //void Value::setPositionInStream( const unsigned& istream ){
@@ -413,56 +371,11 @@ void Value::set(const unsigned& n, const double& v ) {
   else { data[n*(1+ngrid_der)] = v; }
 }
 
-bool Value::usingAllVals( const std::string& alabel ) const {
-  if( !userdata.count(alabel) ) return true;
-  if( userdata.find(alabel)->second.size()==0 ) return true;
-  if( userdata.find(alabel)->second[0].first<0 ) return true;
-  return false;
-}
-
-double Value::getRequiredValue(  const std::string& alabel, const unsigned& num  ) const {
-  if( usingAllVals(alabel) ) return get(num);
-  return get( userdata.find(alabel)->second[num].first );
-}
-
-void Value::addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  ) {
-  if( istimeseries ) return;
-  if( usingAllVals(alabel) ) addForce( num, ff );
-  else addForce( userdata.find(alabel)->second[num].first, ff );
-}
-
-void Value::getRequiredValue(  const std::string& alabel, const unsigned& num, std::vector<double>& args ) const {
-  if( usingAllVals(alabel) ) {
-    args[userdata.find(alabel)->second[0].second+num] = getRequiredValue( alabel, num );
-  } else {
-    args[userdata.find(alabel)->second[num].second] = getRequiredValue( alabel, num );
-  }
-}
-
-std::string Value::getOutputDescription( const std::string& alabel ) const {
-  if( getRank()==0 ) return " " + name;
-
-  if( usingAllVals(alabel) ) {
-    if( hasDerivatives() ) return " grid labelled " + name;
-    if( getRank()==1 ) return " vector labelled " + name;
-    if( getRank()==2 ) return " matrix labelled " + name;
-  }
-  // N.B. Output for rank 2 values in this case is not very transparent.
-  std::string datp;
-  for(unsigned i=0; i<userdata.find(alabel)->second.size(); ++i) datp += " " + getOutputDescription( alabel, i ); 
-  return datp;
-}
-
-std::string Value::getOutputDescription( const std::string& alabel, const unsigned& i ) const {
-  if( getRank()==1 ) {
-      std::string num; Tools::convert( userdata.find(alabel)->second[i].first+1, num ); return name + "." + num;
-  } else if( getRank()==2 ) {
-      std::string num; Tools::convert( std::floor(userdata.find(alabel)->second[i].first/shape[1])+1 , num );
-      std::string num2; Tools::convert( userdata.find(alabel)->second[i].first%shape[1]+1, num2 );
-      return name + "." + num + "." + num2;
-  } else {
-      action->error("elements of three rank objects have not been implemented");
-  }
+std::string Value::getOutputDescription() const {
+  if( getRank()==0 ) return " scalar labelled " + name;
+  if( hasDerivatives() ) return " grid labelled " + name;
+  if( getRank()==1 ) return " vector labelled " + name;
+  return " matrix labelled " + name;
 }
 
 void Value::setSymmetric( const bool& sym ) {

@@ -49,7 +49,7 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
    if( gtype!=val ) error("not implemented functionality to pass derviatives or forces to python.  Email gareth.tribello@gmail.com if you want this.");
 
    if( getNumberOfArguments()!=1 ) error("python interface works best when you ask for one argument at a time");
-   getPntrToArgument(0)->buildDataStore( getLabel() ); data.resize( getPntrToArgument(0)->getNumberOfValues(getLabel()) );
+   getPntrToArgument(0)->buildDataStore( getLabel() ); data.resize( getPntrToArgument(0)->getNumberOfValues() );
 }
 
 void ActionToGetData::get_rank(long* rank ) {
@@ -67,7 +67,7 @@ void ActionToGetData::set_memory(void* val ) {
 
 void ActionToGetData::calculate() {
    plumed_assert( gtype==val ); Value* val = getPntrToArgument(0);
-   for(unsigned i=0;i<data.size();++i) data[i] = val->getRequiredValue( getLabel(), i );
+   for(unsigned i=0;i<data.size();++i) data[i] = val->get( i );
    mydata->setData( data );
 }
  

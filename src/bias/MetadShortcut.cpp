@@ -93,8 +93,16 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       // Evaluate the instantaneous value of the bias potential 
       act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID ARG=" + lab + "_grid " + truncflag2 );
   } else {
-      // Square root the variance to get sigma
-      act->readInputLine( lab + "_sigma: CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={MATHEVAL ARG1=variance FUNC=sqrt(x) PERIODIC=NO}");
+      // Square root the variance to get sigma and separate it into various values
+      if( args.size()==1 ) {
+          std::size_t com=args[0].find_first_of(","); std::string thisarg=args[0].substr(0,com);
+          act->readInputLine( lab + "_sigma_" + thisarg + ": CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={MATHEVAL ARG1=variance FUNC=sqrt(x) PERIODIC=NO }");
+      } else {
+          for(unsigned i=0; i<args.size();++i) {
+              std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com); 
+              act->readInputLine( lab + "_sigma_" + thisarg + ": CALCULATE_REFERENCE CONFIG=" + lab + "_ref" + " INPUT={s: MATHEVAL ARG1=variance FUNC=sqrt(x) PERIODIC=NO ; SELECT_COMPONENTS ARG=s COMPONENTS=" + num + "}");
+          }
+      }
       std::string store_args; for(unsigned i=0;i<args.size();++i) { std::string num; Tools::convert( i+1, num ); store_args += " ARG" + num + "=" + args[i]; }
       // Create a store to hold the list of Gaussians
       act->readInputLine( lab + "_store: COLLECT_FRAMES STRIDE=" + pacestr + store_args + " LOGWEIGHTS=" + weight_str );
@@ -103,13 +111,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       for(unsigned i=0;i<args.size();++i) {
           std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com);
           act->readInputLine( lab + "_sub_" + thisarg + ": DIFFERENCE ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
-          if( args.size()==1 ) {
-              act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg +
-                             " ARG2=" + lab + "_sigma" );
-          } else {
-              act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg +
-                             " ARG2=" + lab + "_sigma." + num );
-          }
+          act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg + " ARG2=" + lab + "_sigma_" + thisarg );
           func_args += " ARG" + num + "=" + lab + "_scaled_" + thisarg;
       }
       // Calculate the potential

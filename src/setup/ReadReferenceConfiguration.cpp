@@ -126,7 +126,7 @@ SetupReferenceBase(ao)
          }
          if( getNumberOfArguments()>0 ) {
              std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0; double val;
-             for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+             for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
              addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
              for(unsigned i=0;i<getNumberOfArguments();++i) {
                  if( getPntrToArgument(i)->getRank()==0 ) {

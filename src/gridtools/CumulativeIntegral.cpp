@@ -85,7 +85,7 @@ CumulativeIntegral::CumulativeIntegral(const ActionOptions&ao):
 }
 
 void CumulativeIntegral::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
 }
 
 unsigned CumulativeIntegral::getNumberOfDerivatives() const {

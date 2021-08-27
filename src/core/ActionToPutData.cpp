@@ -96,11 +96,6 @@ void ActionToPutData::set_force(void* val ) {
    mydata->setForcePointer(val);
 }
 
-void ActionToPutData::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) {
-   if( mystr.find("*")!=std::string::npos ) return;
-   ActionWithValue::interpretDataLabel( mystr, myuser, nargs, args );
-}
-
 void ActionToPutData::share( const unsigned& j, const unsigned& k ) {
   plumed_assert( scattered ); if( wasset ) mydata->share_data( j, k, getPntrToValue() ); 
 }
@@ -111,7 +106,7 @@ void ActionToPutData::share( const std::set<AtomNumber>&index, const std::vector
 
 void ActionToPutData::wait() {
    dataCanBeSet=false; if( fixed || scattered || !wasset ) { return; } plumed_assert( wasset ); 
-   mydata->share_data( 0, getPntrToValue()->getNumberOfValues( getPntrToValue()->getName() ), getPntrToValue() );
+   mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }
 
 void ActionToPutData::apply() {
@@ -129,7 +124,7 @@ void ActionToPutData::apply() {
 void ActionToPutData::rescaleForces( const double& alpha ) {
    if( noforce ) return; wasscaled=true;
    if( scattered ) mydata->rescale_force( plumed.getAtoms().getGatindex().size(), alpha, getPntrToValue() );
-   else mydata->rescale_force( getPntrToValue()->getNumberOfValues( getPntrToValue()->getName() ), alpha, getPntrToValue() );
+   else mydata->rescale_force( getPntrToValue()->getNumberOfValues(), alpha, getPntrToValue() );
 }
 
 void ActionToPutData::writeBinary(std::ostream&o) {

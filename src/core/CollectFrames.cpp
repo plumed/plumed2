@@ -54,17 +54,17 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   nvals = 0;
   if( n_real_args>0 ) {
       plumed_assert( arg_ends.size()>0 );
-      for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
   } else if( getNumberOfAtoms()>0 ) nvals = std::floor( getNumberOfAtoms() / atom_pos.size() );
   else {
-      for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) nvals += getPntrToArgument(i)->getNumberOfValues();
   }
   frame_weights.resize( nvals ); std::vector<unsigned> shape( 1 ); shape[0]=( clearstride / getStride() )*nvals; 
   // Setup values to hold arguments
   if( n_real_args>0 ) {
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
           if( arg_ends[i]>=n_real_args ) break;   // Ignore anything that is weights
-          unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
           if( tvals!=nvals ) error("all values input to store object must have same length");
           addComponent( getPntrToArgument(arg_ends[i])->getName(), shape ); 
           if( getPntrToArgument(arg_ends[i])->isPeriodic() ) { 
@@ -83,7 +83,7 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
       addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
   }
   if( getNumberOfArguments()>n_real_args ) {
-      unsigned tvals=0; for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) tvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      unsigned tvals=0; for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) tvals += getPntrToArgument(i)->getNumberOfValues();
       if( tvals!=nvals ) error("number of weights does not match number of input arguments");
   }
   // And create a component to store the weights -- if we store the history this is a matrix
@@ -94,7 +94,7 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
 void CollectFrames::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,
                                      std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues( getLabel() ); spacing[0] = getStride()*getTimeStep();
+  gtype="flat"; nbin[0] = getPntrToOutput(0)->getNumberOfValues(); spacing[0] = getStride()*getTimeStep();
   pbc[0]=false; Tools::convert( spacing[0]*starttime, min[0] ); Tools::convert( spacing[0]*(starttime+nbin[0]), max[0] );
 }
 
@@ -138,7 +138,7 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
       unsigned k=0; 
       for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
           Value* thisarg = getPntrToArgument(j); 
-          unsigned nv = thisarg->getNumberOfValues( getLabel() );
+          unsigned nv = thisarg->getNumberOfValues();
           for(unsigned n=0;n<nv;++n) { thisarg->set( n, values[i*nvals+k] ); k++; }
       }
   }
@@ -175,10 +175,10 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
           std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
           if( name.substr(0,dot)==p->getLabel() ) {
               foundbias[i-n_real_args]=true; 
-              unsigned nv = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+              unsigned nv = getPntrToArgument(i)->getNumberOfValues();
               for(unsigned j=0;j<nv;++j) weights[basej+j] = getPntrToArgument(i)->get(j);
           }
-          basej += getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
+          basej += getPntrToArgument(i)->getNumberOfValues(); 
       }
       // Check if we have recalculated all the things we need
       bool foundall=true; 

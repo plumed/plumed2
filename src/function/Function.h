@@ -109,7 +109,7 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
   if( arg_ends.size()>0 ) {
     unsigned base=0;
     for(unsigned i=0; i<jder; ++i) {
-      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) base += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) base += getPntrToArgument(j)->getNumberOfValues();
     }
     if( arg_ends[jder+1]==(arg_ends[jder]+1) && getPntrToArgument(arg_ends[jder])->getRank()==0 ) {
       myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base, der );

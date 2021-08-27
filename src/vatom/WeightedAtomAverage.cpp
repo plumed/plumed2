@@ -89,7 +89,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
           str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
           error("cannot find action named " + str_weights[0] +str);
         }
-        action->interpretDataLabel( str_weights[0], this, nargs, args );
+        args.push_back( action->copyOutput(str_weights[0].substr(dot+1)) );
+        args[args.size()-1]->addUser( getLabel() );
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0] );
         if( !action ) {
@@ -97,7 +98,9 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
           str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
           error("cannot find action named " + str_weights[0] +str);
         }
-        action->interpretDataLabel( str_weights[0], this, nargs, args );
+        if( action->getNumberOfComponents()>1 ) error("requesting value from action " + action->getLabel() + " but action has components");
+        args.push_back( action->copyOutput(0) );
+        args[args.size()-1]->addUser( getLabel() );
       }
       if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
       if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape");
@@ -133,7 +136,7 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
 
 unsigned WeightedAtomAverage::getNumberOfDerivatives() const {
   if( val_weights && actionInChain() ) return 3*getNumberOfAtoms() + (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
-  if( val_weights ) return 3*getNumberOfAtoms() + val_weights->getNumberOfValues( getLabel() );
+  if( val_weights ) return 3*getNumberOfAtoms() + val_weights->getNumberOfValues();
   return 3*getNumberOfAtoms(); 
 } 
 
@@ -149,7 +152,7 @@ void WeightedAtomAverage::getSizeOfBuffer( const unsigned& nactive_tasks, unsign
       final_vals.resize( ntmp_vals ); weight_deriv.resize( getNumberOfDerivatives() );
       final_deriv.resize( ntmp_vals ); for(unsigned i=0;i<ntmp_vals;++i) final_deriv[i].resize( getNumberOfDerivatives() );
       if( val_weights ) {
-          val_deriv.resize( 9 ); unsigned nder = val_weights->getNumberOfValues( getLabel() ); 
+          val_deriv.resize( 9 ); unsigned nder = val_weights->getNumberOfValues(); 
           if( actionInChain() ) nder = (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
           val_forces.resize( nder ); for(unsigned i=0;i<9;++i) val_deriv[i].resize( nder );
       }
@@ -262,7 +265,7 @@ void WeightedAtomAverage::applyForcesToValue( const std::vector<double>& fff ) {
   if( actionInChain() ) {
       unsigned start=0; ActionWithArguments::setForcesOnActionChain( val_forces, start, val_weights->getPntrToAction() );
   } else {
-      unsigned narg_v = val_weights->getNumberOfValues( getLabel() );
+      unsigned narg_v = val_weights->getNumberOfValues();
       for(unsigned j=0; j<narg_v; ++j) val_weights->addForce( j, val_forces[j] ); 
   }
 }

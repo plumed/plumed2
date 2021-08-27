@@ -48,7 +48,6 @@ class ActionWithArguments : public virtual Action {
   friend class CollectFrames; 
 private:
   bool allrankzero;
-  std::vector<bool> usingAllArgs;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
   AverageBase* theAverageInArguments;
@@ -120,6 +119,8 @@ public:
   void unlockRequests() override;
 /// Returns an array of pointers to the arguments
   virtual const std::vector<Value*>    & getArguments() const ;
+/// Insert the Value vv into the vector of arguments arg
+  void useValue( Value* vv, std::vector<Value*>& arg ) const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 ///
@@ -143,7 +144,7 @@ Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
 inline
 unsigned ActionWithArguments::getNumberOfScalarArguments() const {
   unsigned nscalars=0;
-  for(unsigned i=0; i<arguments.size(); ++i) nscalars += arguments[i]->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<arguments.size(); ++i) nscalars += arguments[i]->getNumberOfValues();
   return nscalars;
 }
 
@@ -151,9 +152,9 @@ inline
 Value* ActionWithArguments::getArgumentForScalar(const unsigned n) const {
   unsigned nt = 0, nn = 0, j=0;
   for(unsigned i=0; i<arguments.size(); ++i) {
-    nt += arguments[i]->getNumberOfValues( getLabel() );
+    nt += arguments[i]->getNumberOfValues();
     if( n<nt ) { j=i; break ; }
-    nn += arguments[i]->getNumberOfValues( getLabel() );
+    nn += arguments[i]->getNumberOfValues();
   }
   return arguments[j];
 }
@@ -162,9 +163,9 @@ inline
 double ActionWithArguments::getArgumentScalar(const unsigned n) const {
   unsigned nt = 0, nn = 0, j=0;
   for(unsigned i=0; i<arguments.size(); ++i) {
-    nt += arguments[i]->getNumberOfValues( getLabel() );
+    nt += arguments[i]->getNumberOfValues();
     if( n<nt ) { j=i; break ; }
-    nn += arguments[i]->getNumberOfValues( getLabel() );
+    nn += arguments[i]->getNumberOfValues();
   }
   return arguments[j]->get( n - nn );
 }

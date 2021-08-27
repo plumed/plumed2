@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
+#include "ActionToPutData.h"
 #include "ActionAtomistic.h"
 #include "ActionSetup.h"
 #include "ParallelPlumedActions.h"
@@ -68,8 +69,11 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
   } else return false;
 }
 
+void ActionWithArguments::useValue( Value* vv, std::vector<Value*>& vals ) const {
+   vv->addUser(getLabel()); vals.push_back(vv);
+}
+
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg) {
-  unsigned nargs = 0;
   for(unsigned i=0; i<c.size(); i++) {
     // Skip this option if this is a refernece configuration that only gives the positions of atoms
     ActionSetup* setup=plumed.getActionSet().selectWithLabel<ActionSetup*>(c[i]);
@@ -127,7 +131,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
-                    all[j]->interpretDataLabel( putativeVal, this, nargs, arg );
+                    useValue( all[j]->copyOutput(putativeVal), arg );
                     found_something=true;
                     // log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
@@ -149,75 +153,108 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       std::string a=c[i].substr(0,dot);
       std::string name=c[i].substr(dot+1);
       if(c[i].find(".")!=std::string::npos) {   // if it contains a dot:
-        if(a=="*") {
+        if(a=="*" && name=="*") {
           // Take all values from all actions
-          std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() && shortcuts.empty() ) error("your input file is not telling plumed to calculate anything");
-          unsigned carg = nargs;
-          if( name!="bias" ) {
-              for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, this, nargs, arg );
-          }
+          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            if( name=="*" || all[j]->exists(all[j]->getLabel() + "." + name) ) all[j]->interpretDataLabel( all[j]->getLabel() + "." + name, this, nargs, arg );
+            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
           }
-          if( nargs==carg ) error("found no actions with a component called " + name );
-        } else {
-          // Take values from a shortcut
-          unsigned carg = nargs;
+        } else if ( name=="*") {
+          unsigned carg=arg.size();
+          // Take all the values from an action with a specific name 
           ActionShortcut* shortcut=plumed.getActionSet().getShortcutActionWithLabel(a);
-          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, this, nargs, arg ); 
-          if( carg==nargs ) {
-             // Take all the values from an action with a specific name
-             ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a); 
-             if( action ) {
-               action->interpretDataLabel( c[i], this, nargs, arg );
-               // Return an error if we find no arguments
-               if( nargs==carg ) {
-                 std::string str=" (hint! the components in this actions are: ";
-                 str+=action->getComponentsList()+")";
-                 error("action " + a + " has no component named " + name + str);
-               } 
-             } 
+          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, this, arg );
+          if( arg.size()==carg ) { 
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
+              if(!action) {
+                std::string str=" (hint! the actions with value in this ActionSet are: ";
+                str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
+                error("cannot find action named " + a + str);
+              }
+              if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+              for(int k=0; k<action->getNumberOfComponents(); ++k) useValue( action->copyOutput(k), arg ); 
+          }
+        } else if ( a=="*" ) {
+          std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
+          // Take components from all actions with a specific name
+          std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          unsigned carg=arg.size();
+          for(unsigned j=0; j<shortcuts.size(); ++j) {
+              shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, this, arg );
+          } 
+          unsigned nval=0;
+          for(unsigned j=0; j<all.size(); j++) {
+            std::string flab; flab=all[j]->getLabel() + "." + name;
+            bool found=false;
+            for(unsigned k=carg; k<arg.size(); ++k) {
+                if( flab==arg[k]->getName() ) { found=true; break; }
+            }
+            if( !found && all[j]->exists(flab) ) { useValue( all[j]->copyOutput(flab), arg ); nval++; }
+          }
+          if(nval==0 && arg.size()==carg) error("found no actions with a component called " + name );
+        } else {
+          // Take values with a specific name
+          ActionShortcut* shortcut=plumed.getActionSet().getShortcutActionWithLabel(a);
+          if( shortcut ) {
+              unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, this, arg );
+              if( arg.size()==narg ) error("found no element in " + a + " with label " + name );
+          } else {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
+              if(!action) {
+                std::string str=" (hint! the actions with value in this ActionSet are: ";
+                str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
+                error("cannot find action named " + a +str);
+              }
+              if( !(action->exists(c[i])) ) {
+                std::string str=" (hint! the components in this actions are: ";
+                str+=action->getComponentsList()+")";
+                error("action " + a + " has no component named " + name + str);
+              } 
+              useValue( action->copyOutput(c[i]), arg ); 
           }
         }
       } else {    // if it doesn't contain a dot
         if(c[i]=="*") {
-          // Take all values from all actions
+          // This outputs values from shortcuts
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
-          if( all.empty() && shortcuts.empty() ) error("your input file is not telling plumed to calculate anything");
-          unsigned carg = nargs;
+          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-              bool found=false;
-              for(unsigned k=0; k<shortcuts.size(); ++k) {
-                  if( all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
-              } 
-              if( found ) {
-                  all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
-              } else {
-                  for(unsigned k=0; k<shortcuts.size(); ++k) {
-                      if( all[j]->getLabel().find(shortcuts[k]->getShortcutLabel())!=std::string::npos ) { found=true; break; }
-                  }
-                  if( !found ) all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
-              }
+            bool found=false;
+            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
+            // Find an action created from the shortcut with this label that has a single action
+            for(unsigned k=0; k<shortcuts.size(); ++k) {
+                if( all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
+            }
+            if( found ) {
+                for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
+            } else {
+                // Don't print the working out that gets us to shortcut output
+                for(unsigned k=0; k<shortcuts.size(); ++k) {
+                    if( all[j]->getLabel().find(shortcuts[k]->getShortcutLabel())!=std::string::npos ) { found=true; break; }
+                }
+                if( !found ) {
+                    for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
+                }
+            }
           }
-          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, nargs, arg );
-          if( nargs==carg ) warning("no arguments in input");
+          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, arg );
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
             str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + c[i] + str );
-          } else {
-            unsigned carg=arg.size(); action->interpretDataLabel( "", this, nargs, arg );
-            if( arg.size()!=carg+1 ) {
-              std::string str=" (hint! the components in this actions are: ";
-              str+=action->getComponentsList()+")";
-              error("action " + c[i] + " has no component named " + c[i] +str);
-            };
           }
+          if( !(action->exists(c[i])) ) {
+            std::string str=" (hint! the components in this actions are: ";
+            str+=action->getComponentsList()+")";
+            error("action " + c[i] + " has no component named " + c[i] +str);
+          };
+          useValue(action->copyOutput(c[i]), arg);
         }
       }
     }
@@ -240,8 +277,6 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
   if( arguments.size()==0 ) return ;
   distinct_arguments.resize(0); done_over_stream=false;
   bool storing=false; allrankzero=true;
-  // This allows us to do some optimizing in getting values
-  for(unsigned i=0; i<arguments.size(); ++i) usingAllArgs.push_back( arguments[i]->usingAllVals( getLabel() ) );
   // Now check if we need to store data
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
@@ -250,7 +285,6 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
         ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
         if( !as ) { storing=true; break; }
     }
-    if( !usingAllArgs[i] && arguments[i]->getNumberOfValues(getLabel())>1 ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }
   std::string fullname,name;
@@ -360,7 +394,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
     arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
     arg_deriv_starts.push_back(0); unsigned nder;
     if( !distinct_but_stored ) nder = distinct_arguments[0].first->getNumberOfDerivatives();
-    else if(ab) nder = 1; else nder = arguments[argstart]->getNumberOfValues( getLabel() );
+    else if(ab) nder = 1; else nder = arguments[argstart]->getNumberOfValues();
 
     if( getNumberOfArguments()==1 ) { 
         arg_deriv_starts.push_back( nder );
@@ -395,7 +429,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
               nder++;
             } else {
               distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,1) );
-              nder += arguments[i]->getNumberOfValues( getLabel() );
+              nder += arguments[i]->getNumberOfValues();
             }
           }
         }
@@ -456,13 +490,13 @@ unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
   for(unsigned i=0; i<distinct_arguments.size(); ++i) {
     if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
     else {
-      if( distinct_arguments[i].first->getNumberOfComponents()==1 ) nderivatives += (distinct_arguments[i].first->getPntrToComponent(0))->getNumberOfValues( getLabel() );
+      if( distinct_arguments[i].first->getNumberOfComponents()==1 ) nderivatives += (distinct_arguments[i].first->getPntrToComponent(0))->getNumberOfValues();
       else {
         unsigned nd=0;
         for(unsigned j=0;j<getNumberOfArguments();++j) {
             if( (arguments[j]->getPntrToAction())->getLabel()==distinct_arguments[i].first->getLabel() ) { 
                  if( nd>0 ) error("cannot use more than one argument from an action at once in this way");
-                 if( distinct_arguments[i].second==2 ) nd = 1; else nd = arguments[j]->getNumberOfValues( getLabel() );
+                 if( distinct_arguments[i].second==2 ) nd = 1; else nd = arguments[j]->getNumberOfValues();
             }
         }
         plumed_assert( nd > 0 ); nderivatives += nd;
@@ -489,7 +523,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 
     if(!arg.empty()) {
       log.printf("  with arguments"); arg_ends.resize(0); numberedkeys=false;
-      for(unsigned i=0; i<arg.size(); i++) log.printf("%s",arg[i]->getOutputDescription( getLabel() ).c_str());
+      for(unsigned i=0; i<arg.size(); i++) log.printf("%s",arg[i]->getOutputDescription().c_str());
       log.printf("\n");
     } else if( keywords.numbered("ARG") ) {
       unsigned narg=0; arg_ends.push_back(0); numberedkeys=true;
@@ -498,8 +532,8 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
         if( argn.size()==0 ) break;
         unsigned nargt=0; log.printf("  %dth set of arguments",i);
         for(unsigned j=0; j<argn.size(); ++j) {
-          log.printf(" %s",argn[j]->getOutputDescription( getLabel() ).c_str());
-          arg.push_back( argn[j] ); nargt += argn[j]->getNumberOfValues( getLabel() );
+          log.printf(" %s",argn[j]->getOutputDescription().c_str());
+          arg.push_back( argn[j] ); nargt += argn[j]->getNumberOfValues();
         }
         arg_ends.push_back( arg.size() ); log.printf("\n");
         if( i==1 ) narg = nargt;
@@ -555,10 +589,9 @@ void ActionWithArguments::createTasksFromArguments() {
      for(unsigned j=arg_ends[0]; j<arg_ends[1]; ++j) {
          // Get number of tasks
          if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
-             if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
              ntasks += getPntrToArgument(j)->getShape()[0];
              // (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
-         } else ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+         } else ntasks += getPntrToArgument(j)->getNumberOfValues();
      }
 
      for(unsigned i=1; i<arg_ends.size()-1; ++i) {
@@ -566,16 +599,15 @@ void ActionWithArguments::createTasksFromArguments() {
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
           // Get number of tasks
           if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
-               if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
                nt += getPntrToArgument(j)->getShape()[0];
                //  (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
-          } else nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          } else nt += getPntrToArgument(j)->getNumberOfValues();
       }
       plumed_massert( nt==1 || nt==ntasks, "problem in " + getLabel() );
     }
-  } else if( getNumberOfArguments()==1 && arguments[0]->usingAllVals( getLabel() ) ) {
+  } else if( getNumberOfArguments()==1 && (getPntrToArgument(0)->getPntrToAction())->getName()!="SELECT_COMPONENTS" ) {
     arg_ends.push_back(0); arg_ends.push_back(1);
-    ntasks = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+    ntasks = getPntrToArgument(0)->getNumberOfValues();
   }
   for(unsigned i=0; i<ntasks; ++i) av->addTaskToList( i );
 }
@@ -621,16 +653,16 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
     for(unsigned i=argstart; i<(argstart+args.size()); ++i) {
       if( arguments[i]->getRank()==0 ) args[i-argstart]=arguments[i]->get();
       else if( !arguments[i]->value_set ) args[i-argstart]=myvals.get( arguments[i]->streampos );
-      else if( usingAllArgs[i] ) args[i-argstart]=arguments[i]->get( myvals.getTaskIndex() ); 
-      else if( arguments[i]->getNumberOfValues(getLabel())==1 ) args[i-argstart]=arguments[i]->getRequiredValue( getLabel(), 0 );
-      else plumed_merror("cannot stream in " + getLabel() );
+      else args[i-argstart]=arguments[i]->get( myvals.getTaskIndex() ); 
     }
     return;
   }
   if( arg_ends.size()==0 ) {
+    unsigned astart=0;
     for(unsigned i=0; i<arguments.size(); ++i) {
-      unsigned narg_v = arguments[i]->getNumberOfValues( getLabel() );
-      for(unsigned j=0; j<narg_v; ++j) arguments[i]->getRequiredValue( getLabel(), j, args );
+      unsigned narg_v = arguments[i]->getNumberOfValues();
+      for(unsigned j=0; j<narg_v; ++j) args[astart + j] = arguments[i]->get(j);
+      astart += narg_v;
     }
   } else {
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
@@ -642,19 +674,18 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
 
 double ActionWithArguments::retrieveRequiredArgument( const unsigned& iarg, const unsigned& jcomp ) const {
   unsigned k=arg_ends[iarg]; plumed_dbg_assert( k<arguments.size() );
-  if( arg_ends[iarg+1]==(k+1) && arguments[k]->getNumberOfValues( getLabel() )==1 ) {
-    plumed_dbg_assert( k<arguments.size() ); return arguments[k]->getRequiredValue( getLabel(), 0 );
+  if( arg_ends[iarg+1]==(k+1) && arguments[k]->getNumberOfValues()==1 ) {
+    plumed_dbg_assert( k<arguments.size() ); return arguments[k]->get( 0 );
   } else {
     unsigned nt=0, nn=0; unsigned mycode = jcomp;
     if( (arg_ends[iarg+1]-arg_ends[iarg])>1 ) {
         for(unsigned j=arg_ends[iarg]; j<arg_ends[iarg+1]; ++j) {
-          unsigned nv = arguments[j]->getNumberOfValues( getLabel() );
+          unsigned nv = arguments[j]->getNumberOfValues();
           nt += nv; if( mycode<nt ) { k=j; break; }
           nn += nv; k++;
         } 
     } 
-    if( usingAllArgs[k] ) return arguments[k]->get( mycode - nn );
-    else return arguments[k]->getRequiredValue( getLabel(), mycode - nn );
+    return arguments[k]->get( mycode - nn );
   }
 }
 
@@ -669,12 +700,11 @@ void ActionWithArguments::getTasksForParent( const std::string& parent, std::vec
 void ActionWithArguments::setForceOnScalarArgument(const unsigned n, const double& ff) {
   unsigned nt = 0, nn = 0, j=0;
   for(unsigned i=0; i<arguments.size(); ++i) {
-    nt += arguments[i]->getNumberOfValues( getLabel() );
+    nt += arguments[i]->getNumberOfValues();
     if( n<nt ) { j=i; break ; }
-    nn += arguments[i]->getNumberOfValues( getLabel() );
+    nn += arguments[i]->getNumberOfValues();
   }
-  if( usingAllArgs[j] ) arguments[j]->addForce( n-nn, ff );
-  else arguments[j]->addForceOnRequiredValue( getLabel(), n-nn, ff );
+  arguments[j]->addForce( n-nn, ff );
 }
 
 void ActionWithArguments::setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av ) {
@@ -708,10 +738,10 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
             if( already_done ) continue;
             // This makes sure we don't add to a vector of all ones multiple times when we do q6.  This is not very good programming Gareth
             if( arguments[j]->getName().find("_ones")!=std::string::npos ) added_force_on.push_back( arguments[j]->getName() ); 
-            unsigned narg_v = arguments[j]->getNumberOfValues( getLabel() ); if( distinct_arguments[i].second==2 ) narg_v = 1;
+            unsigned narg_v = arguments[j]->getNumberOfValues(); if( distinct_arguments[i].second==2 ) narg_v = 1;
             for(unsigned k=0; k<narg_v; ++k) {
-              plumed_dbg_assert( start<forces.size() );
-              arguments[j]->addForceOnRequiredValue( getLabel(), k, forces[start] ); start++;
+              plumed_assert( start<forces.size() ); 
+              arguments[j]->addForce( k, forces[start] ); start++;
             }
           }
         }
@@ -719,13 +749,8 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
     }
   } else {
     for(unsigned i=argstart; i<arguments.size(); ++i) {
-      unsigned narg_v = arguments[i]->getNumberOfValues( getLabel() );
-      if( usingAllArgs[i] ) {
-        for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( j, forces[start] ); start++; }
-      } else {
-        std::vector<std::pair<int,int> > & indices( arguments[i]->userdata.find( getLabel() )->second );
-        for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( indices[j].first, forces[start] ); start++; }
-      }
+      unsigned narg_v = arguments[i]->getNumberOfValues();
+      for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( j, forces[start] ); start++; }
     }
   }
 }
@@ -748,7 +773,7 @@ unsigned ActionWithArguments::getNumberOfArgumentsPerTask() const {
   if( arg_ends.size()>0 ) return arg_ends.size() - 1;
   if( done_over_stream ) return arguments.size();
   unsigned ntasks = 0;
-  for(unsigned i=0; i<arguments.size(); ++i) ntasks += arguments[i]->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<arguments.size(); ++i) ntasks += arguments[i]->getNumberOfValues();
   return ntasks;
 }
 
@@ -769,7 +794,7 @@ unsigned ActionWithArguments::getArgumentPositionInStream( const unsigned& jder,
     if( arguments[jder]->store_data_for[j].first==getLabel() ) {
       unsigned istrn = arguments[jder]->store_data_for[j].second;
       unsigned task_index = 0; 
-      if( arguments[jder]->getRank()>0 && !arguments[jder]->isTimeSeries() && usingAllArgs[jder] ) task_index=myvals.getTaskIndex();
+      if( arguments[jder]->getRank()>0 && !arguments[jder]->isTimeSeries() ) task_index=myvals.getTaskIndex();
       myvals.addDerivative( istrn, task_index, 1.0 );
       if( myvals.getNumberActive(istrn)==0 ) myvals.updateIndex( istrn, task_index );
       return istrn;

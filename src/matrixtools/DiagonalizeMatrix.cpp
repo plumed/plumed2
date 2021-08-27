@@ -36,7 +36,7 @@ public:
 /// Constructor
   explicit DiagonalizeMatrix(const ActionOptions&);
 /// This is required to set the number of derivatives for the eigenvalues
-  unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
+  unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(); }
 ///
   void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
 /// 

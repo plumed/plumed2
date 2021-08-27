@@ -95,9 +95,9 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   updateWasRun(false)
 {
   std::vector<unsigned> shape(1); shape[0]=0; 
-  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
       if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates");
       std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape ); 
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
@@ -329,9 +329,9 @@ void ArrangePoints::runFinalJobs() {
    if( updateWasRun ) return ; 
    // Resize all the output stuff
    std::vector<unsigned> shape(1); shape[0]=0; 
-   for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+   for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
    for(unsigned i=0;i<arg_ends.size()-1;++i) { 
-       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
        if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates"); 
        getPntrToOutput(i)->setShape( shape ); 
    }

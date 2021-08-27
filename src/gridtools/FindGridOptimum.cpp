@@ -99,7 +99,7 @@ void FindGridOptimum::runTheCalculation() {
   Value* gval = getPntrToArgument(0); ActionWithValue* gact=gval->getPntrToAction(); 
   std::vector<double> optargs( gval->getRank() ); std::vector<unsigned> gridind( gval->getRank() ); 
   double optval=getFunctionValue( 0 ); gact->getGridPointIndicesAndCoordinates( 0, gridind, optargs );
-  unsigned nval = gval->getNumberOfValues( getLabel() );
+  unsigned nval = gval->getNumberOfValues();
   for(unsigned i=0;i<nval;++i) {
       double tval = getFunctionValue( i ); 
       if( domin && (tval<optval || std::isnan(optval)) ) { optval=tval; gact->getGridPointIndicesAndCoordinates( i, gridind, optargs ); }

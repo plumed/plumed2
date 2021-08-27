@@ -173,9 +173,9 @@ Print::Print(const ActionOptions&ao):
           for(unsigned i=0; i<getNumberOfArguments(); ++i) {
               if( getPntrToArgument(i)->getRank()==1 && !getPntrToArgument(i)->hasDerivatives() ) myvals.push_back( getPntrToArgument(i) );
           }
-          unsigned nv = myvals[0]->getNumberOfValues( getLabel() );
+          unsigned nv = myvals[0]->getNumberOfValues();
           for(unsigned i=0; i<myvals.size();++i) {
-              if( myvals[i]->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+              if( myvals[i]->getNumberOfValues()!=nv ) error("for printing of time series all arguments must have same number of values");
           }
           log.printf("  input is printed as time series\n"); requestArguments( myvals, false ); 
       }
@@ -225,7 +225,7 @@ Print::Print(const ActionOptions&ao):
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
         if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; break; }
         if( getPntrToArgument(j)->getRank()!=1 ) error("problem outputting " + getPntrToArgument(j)->getName() + " can only output vectors in xyz/ndx output" );
-        nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+        nt += getPntrToArgument(j)->getNumberOfValues();
       }
       if( i==0 ) { nper=nt; }
       else if( nt!=nper ) error("mismatched number of values in matrices input in input");
@@ -388,9 +388,9 @@ Print::Print(const ActionOptions&ao):
         std::vector<AtomNumber> atlist; for(unsigned i=0;i<arg_ends.size()-1;++i) reference_atoms.push_back( atlist );
     } else {
         
-        unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
+        unsigned nv=getPntrToArgument(0)->getNumberOfValues();
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-            if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing to pdb files all arguments must have same number of values");
+            if( getPntrToArgument(i)->getNumberOfValues()!=nv ) error("for printing to pdb files all arguments must have same number of values");
         }
         // Need to add some sensible output here 
     }
@@ -458,7 +458,7 @@ void Print::update() {
   } else if( tstyle=="colvar" ) {
     OFile ogfile; ogfile.link(*this); 
     ogfile.setBackupString("analysis"); ogfile.open( file );
-    unsigned nv = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+    unsigned nv = getPntrToArgument(0)->getNumberOfValues();
     std::vector<std::string> arg_names( getNumberOfArguments() );
     for(unsigned j=0;j<getNumberOfArguments();++j) {
         arg_names[j] = getPntrToArgument(j)->getName();
@@ -517,7 +517,7 @@ void Print::update() {
         }
       }
     } else if( gridinput ) {
-      unsigned ngrid = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+      unsigned ngrid = getPntrToArgument(0)->getNumberOfValues();
       ActionWithValue* myaction = getPntrToArgument(0)->getPntrToAction();
       ofile.printf("%d\n",ngrid); ofile.printf("\n"); std::vector<double> pos;
       for(unsigned i=0; i<ngrid; ++i) {
@@ -571,7 +571,7 @@ void Print::update() {
       }
     }
 
-    for(unsigned i=0; i<gval->getNumberOfValues( getLabel() ); ++i) {
+    for(unsigned i=0; i<gval->getNumberOfValues(); ++i) {
       // Retrieve and print the grid coordinates
       act->getGridPointIndicesAndCoordinates( i, ind, xx );
       if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) ogfile.printf("\n");
@@ -680,7 +680,7 @@ void Print::update() {
                        }
                        opdbf.printf("\n");
                    } else if( description=="PCA" && reference_atoms[0].size()>0 ) {
-                       plumed_massert( thisarg->getNumberOfValues(getLabel())==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
+                       plumed_massert( thisarg->getNumberOfValues()==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
                        for(unsigned k=0;k<reference_atoms[0].size();++k) {
                            Vector pos; pos[0]=thisarg->get(3*k+0); pos[1]=thisarg->get(3*k+1); pos[2]=thisarg->get(3*k+2); 
                            printAtom( opdbf, reference_atoms[0][k].serial(), pos, getMass(k), getCharge(k) );
@@ -727,7 +727,7 @@ void Print::update() {
 
        std::string argstr = "ARG=" + getPntrToArgument(argnums[0])->getName();
        for(unsigned k=1;k<argnums.size();++k) argstr += "," + getPntrToArgument(argnums[k])->getName();
-       unsigned nvals = getPntrToArgument(argnums[0])->getNumberOfValues( getLabel() );
+       unsigned nvals = getPntrToArgument(argnums[0])->getNumberOfValues();
        for(unsigned j=0;j<nvals;++j) {
            opdbf.printf("REMARK %s \n", argstr.c_str() );
            opdbf.printf("REMARK ");

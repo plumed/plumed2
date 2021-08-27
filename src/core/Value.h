@@ -74,6 +74,8 @@ private:
   unsigned ngrid_der;
 /// Is this value a time series
   bool istimeseries;
+/// Who is using this action
+  std::vector<std::string> userdata;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
 /// This is used by actions that always store data.  They cannot operate without storing all values
@@ -87,8 +89,6 @@ private:
   std::vector<unsigned> matindexes;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
-/// Store information on who is using information contained in this value
-  std::map<std::string,std::vector<std::pair<int,int> > > userdata;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -107,8 +107,8 @@ public:
   explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
-/// Add information on who is using this action
-  void interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values );
+/// Add a user to this action
+  void addUser( const std::string& user );
 /// Set the shape of the Value
   void setShape( const std::vector<unsigned>&ss );
 /// Set the value of the function
@@ -142,7 +142,7 @@ public:
 /// Get the number of derivatives that this particular value has
   unsigned getNumberOfDerivatives() const;
 /// Get the size of this value
-  unsigned getNumberOfValues( const std::string& actlab ) const ;
+  unsigned getNumberOfValues() const ;
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
@@ -213,17 +213,7 @@ public:
 ///
   void print( const std::string& alabel, OFile& ofile ) const ;
 ///
-  bool usingAllVals( const std::string& alabel ) const ;
-///
-  double getRequiredValue(  const std::string& alabel, const unsigned& num  ) const ;
-///
-  void addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  );
-///
-  void getRequiredValue( const std::string& alabel, const unsigned& num, std::vector<double>& args ) const ;
-///
-  std::string getOutputDescription( const std::string& alabel ) const ;
-///
-  std::string getOutputDescription( const std::string& alabel, const unsigned& i ) const ;
+  std::string getOutputDescription() const ;
 ///
   void setSymmetric( const bool& sym );
 ///

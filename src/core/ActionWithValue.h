@@ -258,8 +258,6 @@ public:
   virtual unsigned getNumberOfDerivatives() const = 0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
-/// Interpret the data label and get arguments
-  virtual void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
 /// Reperform one of the tasks

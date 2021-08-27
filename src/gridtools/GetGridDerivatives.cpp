@@ -80,7 +80,7 @@ GetGridDerivatives::GetGridDerivatives(const ActionOptions&ao):
 }
 
 void GetGridDerivatives::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
 }
 
 unsigned GetGridDerivatives::getNumberOfDerivatives() const {

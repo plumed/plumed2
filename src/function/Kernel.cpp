@@ -153,7 +153,7 @@ Kernel::Kernel(const ActionOptions&ao):
 
   setup::SetupReferenceBase* as = plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( getShortcutLabel() + "_ref" );
   plumed_assert( as ); Value* myval = as->copyOutput( getShortcutLabel() + "_ref.center"); 
-  unsigned nvals = myval->getNumberOfValues( myval->getName() ); std::string det_inp; 
+  unsigned nvals = myval->getNumberOfValues(); std::string det_inp; 
   if( as->copyOutput(1)->getRank()==1 ) {
       // Invert the variance
       readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref " +

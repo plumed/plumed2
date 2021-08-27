@@ -68,7 +68,7 @@ ProjectOnVector::ProjectOnVector(const ActionOptions&ao):
   std::vector<std::string> coeff_str; parseVector("VECTOR",coeff_str);
   std::vector<Value*> arg( getArguments() ), coeff_args; interpretArgumentList( coeff_str, coeff_args );
   unsigned nvals=0; 
-  for(unsigned i=0; i<coeff_args.size(); ++i) { nvals += coeff_args[i]->getNumberOfValues( getLabel() ); arg.push_back( coeff_args[i] ); }
+  for(unsigned i=0; i<coeff_args.size(); ++i) { nvals += coeff_args[i]->getNumberOfValues(); arg.push_back( coeff_args[i] ); }
   if( nvals!=coefficients.size() ) error("not enough coefficients in input arguments");  
   requestArguments( arg, true );
 
@@ -83,8 +83,8 @@ ProjectOnVector::ProjectOnVector(const ActionOptions&ao):
 void ProjectOnVector::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
   double norm = 0; unsigned k=0;
   for(unsigned i=arg_ends[arg_ends.size()-1];i<getNumberOfArguments();++i) {
-      unsigned nvals = getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
-      for(unsigned j=0;j<nvals;++j) { coefficients[k] = getPntrToArgument(i)->getRequiredValue( getLabel(), j ); norm += coefficients[k]; k++; }
+      unsigned nvals = getPntrToArgument(i)->getNumberOfValues(); 
+      for(unsigned j=0;j<nvals;++j) { coefficients[k] = getPntrToArgument(i)->get( j ); norm += coefficients[k]; k++; }
   }
 }
 

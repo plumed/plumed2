@@ -98,7 +98,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
     log.printf("\n");
 
     for(unsigned i=0; i<weight_args.size(); ++i) {
-      tvals += weight_args[i]->getNumberOfValues( getLabel() );
+      tvals += weight_args[i]->getNumberOfValues();
       args.push_back( weight_args[i] );
     }
     if( tvals>1 && numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
@@ -111,7 +111,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
 
   // Resize the forces vector
   unsigned nvals_t=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues();
   forcesToApply.resize( nvals_t );
 }
 
@@ -127,9 +127,9 @@ void HistogramBase::createTaskList() {
 }
 
 void HistogramBase::setNumberOfKernels() {
-  numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues();
   for(unsigned i=1; i<arg_ends.size()-1; ++i) {
-    unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+    unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues();
     if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments");
   }
 }

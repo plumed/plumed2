@@ -387,34 +387,6 @@ void ActionWithValue::getGridPointAsCoordinate( const unsigned& ind, const bool&
   plumed_merror("problem in getting grid data for " + getLabel() ); 
 }
 
-void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) {
-  // Check for streams
-  unsigned nstr=0; for(unsigned i=0; i<values.size(); ++i) { if( values[i]->getRank()>0 ) nstr++; }
-
-  if( mystr=="" || mystr==getLabel() ) {
-    // Retrieve value with name of action
-    if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
-    // args.push_back( values[0] );
-    values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-  } else if( mystr==getLabel() + ".*" ) {
-    for(unsigned i=0; i<values.size(); ++i ) values[i]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-  } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
-    // Retrieve value with specific name
-    copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-  } else {
-    std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1);
-    plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1);
-    if( values.size()==1 ) {
-      plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
-      values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, rest );
-    } else {
-      std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);
-      if( !exists( thelab + "." + thecomp ) ) myuser->error("could not find component with label " + thelab + "." + thecomp );
-      getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), nargs, args, rest.substr(dot2+1) );
-    }
-  }
-}
-
 void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
   if( !thisAsActionWithArguments ) thisAsActionWithArguments = dynamic_cast<const ActionWithArguments*>( this );
   if( !thisAsActionWithVatom ) thisAsActionWithVatom=dynamic_cast<const ActionWithVirtualAtom*>( this );
@@ -432,11 +404,11 @@ bool ActionWithValue::checkUsedOutsideOfChain( const std::vector<std::string>& a
           // Check if the action is only being used within the chain
           bool inchain=false;
           for(unsigned j=0;j<actionLabelsInChain.size();++j) {
-              if( p.first==actionLabelsInChain[j] ){ inchain=true; break; }
+              if( p==actionLabelsInChain[j] ){ inchain=true; break; }
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
           if( !inchain ) {
-              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p.first );
+              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p );
               if( user ) user->getTasksForParent( parent, actionsThatSelectTasks, tflags );
               usedOutsideOfChain=true;
           }
@@ -719,7 +691,7 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
         } 
     } 
  // This looks after storing in all other cases
-  } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues(getLabel()) ) {
+  } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues() ) {
     unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );
     unsigned vindex = bufstart + code*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
     buffer[vindex] += myvals.get(sind);
@@ -761,7 +733,7 @@ void ActionWithValue::retrieveAllScalarValuesInLoop( const std::string& ulab, un
       for(unsigned j=0; j<myvals.size(); ++j) {
         if( values[i]->getName()==myvals[j]->getName() ) { found=true; break; }
       }
-      if( !found ) values[i]->interpretDataRequest( ulab, nargs, myvals, "" );
+      if( !found ) myvals.push_back( values[i].get() );
     }
   }
   if( action_to_do_after ) action_to_do_after->retrieveAllScalarValuesInLoop( ulab, nargs, myvals );
@@ -939,10 +911,10 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
                   // Check if the action is only being used within the chain
                   bool inchain=false;
                   for(unsigned k=0;k<chain.size();++k) {
-                      if( p.first==chain[k] ){ inchain=true; break; }
+                      if( p==chain[k] ){ inchain=true; break; }
                   }
                   if( inchain ) {
-                      ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( p.first ); plumed_assert( av2 );
+                      ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( p ); plumed_assert( av2 );
                       std::string label2=getCleanGraphLabel( av2->getLabel() ); 
                       std::string color="orange";
                       if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
@@ -975,10 +947,10 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
               // Check if the action is only being used within the chain
               bool inchain=false;
               for(unsigned k=0;k<chain.size();++k) {
-                  if( p.first==chain[k] ){ inchain=true; break; }
+                  if( p==chain[k] ){ inchain=true; break; }
               }
               if( !inchain ) {
-                  Action* av2=plumed.getActionSet().selectWithLabel<Action*>( p.first ); plumed_assert( av2 );
+                  Action* av2=plumed.getActionSet().selectWithLabel<Action*>( p ); plumed_assert( av2 );
                   ActionWithValue* avv2 = dynamic_cast<ActionWithValue*>( av2 );
                   if( !avv2 ) {
                       bool found=false;

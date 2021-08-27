@@ -161,7 +161,7 @@ Average::Average( const ActionOptions& ao):
 void Average::calculate() {
   if( n_real_args==0 || !firststep ) return;
 
-  if( getPntrToOutput(0)->hasDerivatives() && getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
+  if( getPntrToOutput(0)->hasDerivatives() && getPntrToOutput(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
       getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
   }
 }
@@ -191,12 +191,12 @@ void Average::accumulate( const std::vector<std::vector<Vector> >& dir  ) {
   }
 
   if( getNumberOfAtoms()==0 ) {
-      Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getNumberOfValues( getLabel() );
+      Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getNumberOfValues();
       if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
           // And accumulate the grid
           unsigned nder=val->getNumberOfDerivatives();
           for(unsigned i=0; i<nvals; ++i) {
-              val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
+              val->add( i*(1+nder), cweight*arg0->get(i) );
               for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
           }
       } else if( arg0->isPeriodic() ){

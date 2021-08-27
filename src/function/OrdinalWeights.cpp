@@ -77,7 +77,7 @@ OrdinalWeights::OrdinalWeights(const ActionOptions&ao):
 
   unsigned nargs=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string s; Tools::convert(i+1,s); nargs += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+    string s; Tools::convert(i+1,s); nargs += getPntrToArgument(i)->getNumberOfValues();
     if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+s+")");
   }
   parse("NLOWEST",nlowest); parse("NHIGHEST",nhighest);
@@ -95,16 +95,16 @@ void OrdinalWeights::transformFinalValueAndDerivatives( const std::vector<double
   // Count number of values
   unsigned nargs = 0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      nargs += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      nargs += getPntrToArgument(i)->getNumberOfValues();
   }
   // Retrieve all the values
   std::vector<std::pair<double,int> > argvals( nargs ); unsigned pves = 0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfValues( getLabel() ); ++j ) { 
+    for(unsigned j=0; j<myarg->getNumberOfValues(); ++j ) { 
         argvals[pves+j].first = myarg->get(j); argvals[pves+j].second = pves+j;
     } 
-    pves += myarg->getNumberOfValues( getLabel() );
+    pves += myarg->getNumberOfValues();
   }
   // Sort the values
   std::sort( argvals.begin(), argvals.end() ); Value* val0 = getPntrToComponent(0);

@@ -49,6 +49,9 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
   keys.reset_style("LOCATION","atoms");
+  keys.addOutputComponent("x","COMPONENTS","the x-components of the distance vectors");
+  keys.addOutputComponent("y","COMPONENTS","the y-components of the distance vectors");
+  keys.addOutputComponent("z","COMPONENTS","the z-components of the distance vectors");
 }
 
 Distances::Distances(const ActionOptions& ao):

@@ -22,7 +22,7 @@
 #ifndef __PLUMED_core_ActionShortcut_h
 #define __PLUMED_core_ActionShortcut_h
 
-#include "Action.h"
+#include "ActionWithArguments.h"
 
 namespace PLMD {
 
@@ -49,7 +49,7 @@ public:
 /// Take everything that was input to this action and convert it to a string
   std::string convertInputLineToString();
 /// This sorts out the reading of arguments from shortcuts
-  void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) const ;
+  void interpretDataLabel( const std::string& mystr, ActionWithArguments* myuser, std::vector<Value*>& args ) const ;
 /// It is a shortcut it should never need to be activated
   void activate() {}
 /// Do nothing.

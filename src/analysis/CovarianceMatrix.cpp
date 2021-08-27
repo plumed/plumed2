@@ -91,10 +91,10 @@ unsigned CovarianceMatrix::getNumberOfColumns() const {
 
 void CovarianceMatrix::buildTaskList() {
   unsigned ndata=0;
-  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) ndata += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) ndata += getPntrToArgument(i)->getNumberOfValues();
   // Now check all data sets have same size
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      unsigned tval=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tval += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      unsigned tval=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tval += getPntrToArgument(j)->getNumberOfValues();
       if( ndata>0 && tval!=ndata ) error("mismatch in sizes of input arguments for covariance matrix");
   } 
   // Now build the tasks
@@ -104,7 +104,7 @@ void CovarianceMatrix::buildTaskList() {
 double CovarianceMatrix::getWeight( const unsigned& mycode ) const {
   unsigned nt=0, nn=0, k=0, windex = arg_ends.size()-2;
   for(unsigned j=arg_ends[windex]; j<arg_ends[windex+1]; ++j) {
-    unsigned nv = getPntrToArgument(j)->getNumberOfValues( getLabel() );
+    unsigned nv = getPntrToArgument(j)->getNumberOfValues();
     nt += nv; if( mycode<nt ) { k=j; break; }
     nn += nv; k++;
   }
