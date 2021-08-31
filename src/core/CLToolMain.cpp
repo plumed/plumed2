@@ -116,8 +116,7 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
           }
           *ptr=0; ptr++;
         }
-        int ret=run(argc,&vvv[0],in,out,comm);
-        *val.get<int*>()=ret;
+        val.set(int(run(argc,&vvv[0],in,out,comm)));
       }
       break;
     default:

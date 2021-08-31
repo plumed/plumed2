@@ -105,7 +105,7 @@ public:
     d=double(m.template get<T>());
   }
   void double2MD(const double&d,const TypesafePtr & m)const override {
-    *m.get<T*>()=T(d);
+    m.set(T(d));
   }
   Vector getMDforces(const unsigned index)const override {
     unsigned stride;

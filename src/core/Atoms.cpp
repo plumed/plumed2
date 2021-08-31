@@ -463,7 +463,7 @@ double Atoms::getKbT()const {
 
 void Atoms::createFullList(const TypesafePtr & n) {
   if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
-    *n.template get<int*>()=natoms;
+    n.set(int(natoms));
     fullList.resize(natoms);
     for(unsigned i=0; i<natoms; i++) fullList[i]=i;
   } else {
@@ -483,7 +483,7 @@ void Atoms::createFullList(const TypesafePtr & n) {
     fullList.resize(0);
     fullList.reserve(unique.size());
     for(const auto & p : unique) fullList.push_back(p.index());
-    *n.template get<int*>()=fullList.size();
+    n.set(int(fullList.size()));
   }
 }
 

@@ -73,7 +73,7 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
     switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);
-      *val.get<int*>()=initialized;
+      val.set(int(initialized));
       break;
     case cmd_setMPIIntracomm:
       CHECK_NOTINIT(initialized,key);

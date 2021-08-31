@@ -323,6 +323,11 @@ private:
 public:
 
   template<typename T>
+  void set(T val) const {
+    *get_priv<T>(0,nullptr,false)=val;
+  }
+
+  template<typename T>
   typename std::enable_if<std::is_pointer<T>::value,T>::type get() const {
     typedef typename std::remove_pointer<T>::type T_noptr;
     return get_priv<T_noptr>(0,nullptr,false);
