@@ -23,8 +23,7 @@ export LIBS="-lfftw3 -lgsl -lgslcblas -llapack -lblas -lxdrfile -lz $LIBS"
 # --disable-libsearch forces to link only explicitely requested libraries
 # --disable-static-patch avoid tests that are only required for static patches
 # --disable-static-archive makes package smaller
-# --enable-asmjit enables bundled asmjit implementation
-./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --enable-asmjit
+./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive
 
 make -j${CPU_COUNT}
 make install

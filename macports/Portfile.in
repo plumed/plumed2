@@ -35,9 +35,6 @@ homepage            http://www.plumed.org/
 #            file2
 ### etc
 
-# Enable optional features.
-# --enable-asmjit:        Compile internal asmjit. Notice that internal asmjit is protected in
-#                         PLUMED namespace so will not collide with other asmjit implementations.
 # Disable additional features.
 # --disable-doc:          Do not create documentation, and avoid searching for Doxygen.
 # --disable-libsearch:    Avoid searching libraries using their default names.
@@ -54,10 +51,6 @@ configure.args-append \
                     --disable-static-patch \
                     --disable-mpi \
                     --disable-python
-
-if {${configure.build_arch} eq "x86_64"} {
-    configure.args-append --enable-asmjit
-}
 
 # install bash completions
 configure.args-append BASH_COMPLETION_DIR=${prefix}/share/bash-completion/completions
