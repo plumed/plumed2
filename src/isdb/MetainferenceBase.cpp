@@ -789,7 +789,7 @@ double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<
   return kbt_ * ene;
 }
 
-void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveTilde(const vector<double> &mean_, double &old_energy)
 {
   vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
@@ -821,7 +821,7 @@ void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy
   }
 }
 
-void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double &old_energy)
 {
   double new_scale = scale_;
 
@@ -910,7 +910,7 @@ void MetainferenceBase::moveScaleOffset(const vector<double> &mean_, double old_
   }
 }
 
-void MetainferenceBase::moveSigmas(const vector<double> &mean_, double old_energy, const unsigned i, const vector<unsigned> &indices, bool breaknow)
+void MetainferenceBase::moveSigmas(const vector<double> &mean_, double &old_energy, const unsigned i, const vector<unsigned> &indices, bool &breaknow)
 {
   vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;

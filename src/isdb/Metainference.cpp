@@ -255,9 +255,9 @@ class Metainference : public bias::Bias
                      const double scale, const double offset);
   double getEnergyGJE(const vector<double> &mean, const vector<double> &sigma,
                       const double scale, const double offset);
-  void moveTilde(const std::vector<double> &mean_, double old_energy);
-  void moveScaleOffset(const std::vector<double> &mean_, double old_energy);
-  void moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow);
+  void moveTilde(const std::vector<double> &mean_, double &old_energy);
+  void moveScaleOffset(const std::vector<double> &mean_, double &old_energy);
+  void moveSigmas(const std::vector<double> &mean_, double &old_energy, const unsigned i, const std::vector<unsigned> &indices, bool &breaknow);
   double doMonteCarlo(const vector<double> &mean);
   void getEnergyForceMIGEN(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
   void getEnergyForceSP(const vector<double> &mean, const vector<double> &dmean_x, const vector<double> &dmean_b);
@@ -1014,7 +1014,7 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
   return kbt_ * ene;
 }
 
-void Metainference::moveTilde(const vector<double> &mean_, double old_energy)
+void Metainference::moveTilde(const vector<double> &mean_, double &old_energy)
 {
   vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
@@ -1046,7 +1046,7 @@ void Metainference::moveTilde(const vector<double> &mean_, double old_energy)
   }
 }
 
-void Metainference::moveScaleOffset(const vector<double> &mean_, double old_energy)
+void Metainference::moveScaleOffset(const vector<double> &mean_, double &old_energy)
 {
   double new_scale = scale_;
 
@@ -1135,7 +1135,7 @@ void Metainference::moveScaleOffset(const vector<double> &mean_, double old_ener
   }
 }
 
-void Metainference::moveSigmas(const vector<double> &mean_, double old_energy, const unsigned i, const vector<unsigned> &indices, bool breaknow)
+void Metainference::moveSigmas(const vector<double> &mean_, double &old_energy, const unsigned i, const vector<unsigned> &indices, bool &breaknow)
 {
   vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;
