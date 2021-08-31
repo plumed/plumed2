@@ -1417,7 +1417,7 @@ Optional Features:
                           yes
   --enable-static-archive enable try to build libplumed.a for static linking,
                           default: yes
-  --enable-asmjit         enable enable embedded asmjit, default: no
+  --enable-asmjit         enable enable embedded asmjit, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -2871,7 +2871,7 @@ if test "${enable_asmjit+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) asmjit=true ;;
              (no)  asmjit=false ;;
   esac
@@ -6942,6 +6942,46 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
   fi
 
 
+
+if test $asmjit == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether architecture is X86/X64" >&5
+$as_echo_n "checking whether architecture is X86/X64... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+      defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+      defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+this_is_not_x86_x64
+#endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; };
+  x86_x64=true
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; } ;
+  x86_x64=false
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+if test $asmjit == true && test $x86_x64 == false ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: asmjit does not support this architecture, it will be disabled" >&5
+$as_echo "$as_me: WARNING: asmjit does not support this architecture, it will be disabled" >&2;}
+  asmjit=false
+fi
 
 if test $asmjit == true ; then
   found=ko

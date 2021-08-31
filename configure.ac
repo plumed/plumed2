@@ -259,7 +259,7 @@ PLUMED_CONFIG_ENABLE([bsymbolic],[use -Bsymbolic flag in making shared libraries
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
-PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[no])
+PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -674,6 +674,28 @@ fi
 # search for openmp is automatically disabled by autoconf
 # when configuring with --disable-openmp
 AC_OPENMP
+
+if test $asmjit == true ; then
+  AC_MSG_CHECKING([whether architecture is X86/X64])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+      defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+      defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+this_is_not_x86_x64
+#endif
+  ])],
+  [AC_MSG_RESULT([yes])];
+  x86_x64=true,
+  [AC_MSG_RESULT([no]) ;
+  x86_x64=false])
+fi
+
+if test $asmjit == true && test $x86_x64 == false ; then
+  AC_MSG_WARN([asmjit does not support this architecture, it will be disabled])
+  asmjit=false
+fi
 
 if test $asmjit == true ; then
   found=ko
