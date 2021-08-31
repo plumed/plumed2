@@ -1294,6 +1294,7 @@ double Metainference::doMonteCarlo(const vector<double> &mean_)
   }
   comm.Sum(old_energy);
 
+  // this is the energy with current coordinates and parameters
   return old_energy;
 }
 
