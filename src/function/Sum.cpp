@@ -19,25 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionTemplateBase.h"
+#include "Sum.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfVector.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace function {
-
-class Sum : public FunctionTemplateBase {
-private:
-  double prefactor;
-public:
-  void registerKeywords( Keywords& keys ) override;
-  void read( FunctionBase* action ) override;
-  unsigned getRank() override;
-  void setPrefactor( FunctionBase* action ) override;
-  void setPeriodicityForOutputs( FunctionBase* action ) override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
-};
 
 typedef FunctionShortcut<Sum> SumShortcut;
 PLUMED_REGISTER_ACTION(SumShortcut,"SUM")
@@ -50,11 +38,11 @@ void Sum::registerKeywords( Keywords& keys ) {
   keys.use("PERIODIC");
 }
  
-void Sum::read( FunctionBase* action ) {
+void Sum::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to sum actions");
 }
 
-void Sum::setPrefactor( FunctionBase* action ) {
+void Sum::setPrefactor( ActionWithArguments* action ) {
   if(action->getName().find("MEAN")!=std::string::npos) prefactor = 1. / (action->getPntrToArgument(0))->getNumberOfValues();
   else { plumed_assert( action->getName().find("SUM")!=std::string::npos ); prefactor = 1; }
 }
@@ -63,7 +51,7 @@ unsigned Sum::getRank() {
   return 0;
 }
 
-void Sum::setPeriodicityForOutputs( FunctionBase* action ) {
+void Sum::setPeriodicityForOutputs( ActionWithValue* action ) {
   std::vector<std::string> period; action->parseVector("PERIODIC",period);
   if( period.size()==1 ) {
     if( period[0]!="NO") action->error("input to PERIODIC keyword does not make sense");

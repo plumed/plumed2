@@ -38,12 +38,11 @@ friend class Dot;
 private:
   bool skip_ieqj;
   std::vector<double> forcesToApply;
-  void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
   bool isAdjacencyMatrix;
-  void setNotPeriodic();
-  void setPeriodic( const std::string& min, const std::string& max );
+  bool input_timeseries;
+  void readMatricesToMultiply( const bool& periodic, const std::string& min="", const std::string& max="" );
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);
@@ -59,13 +58,14 @@ public:
   void update() override;
   void runFinalJobs() override;
   unsigned getNumberOfFinalTasks() override;
-  std::vector<unsigned> getMatrixShapeForFinalTasks() override;
+  virtual std::vector<unsigned> getMatrixShapeForFinalTasks();
   virtual void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
   virtual void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                        const std::vector<double>& vec1, const std::vector<double>& vec2,
                                        std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const = 0;
+  virtual void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   virtual void apply();
 };
 

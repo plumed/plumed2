@@ -49,6 +49,9 @@ CustomProductMatrix::CustomProductMatrix(const ActionOptions& ao):
   MatrixProductBase(ao),
   domax(false),domin(false)
 {
+  // Read Matrices input
+  readMatricesToMultiply( false );
+  // Now read in the function
   std::string fstring; parse("FUNC",fstring);
   if( fstring=="min" ) { domin=true; log.printf("  product is minimum of input elements \n"); }
   else if( fstring=="max" ) { domax=true; log.printf("  product is maximum of input elements \n"); }
@@ -56,7 +59,6 @@ CustomProductMatrix::CustomProductMatrix(const ActionOptions& ao):
   if( domin || domax ) {
     if( getNumberOfArguments()>2 ) error("should be at most only two arguments");
   }
-  setNotPeriodic();
 }
 
 double CustomProductMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

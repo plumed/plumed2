@@ -32,33 +32,33 @@ class FunctionTemplateBase {
 protected:
 /// Parse a keyword from the input as a value
   template<class T>
-  void parse( FunctionBase* action, const std::string&key, T&t );
+  void parse( Action* action, const std::string&key, T&t );
 /// Parse a keyword from the input as a vector
   template<class T>
-  void parseVector( FunctionBase* action, const std::string&key,std::vector<T>&t);
+  void parseVector( Action* action, const std::string&key,std::vector<T>&t);
 /// Parse a keyword from the input as a flag
-  void parseFlag( FunctionBase* action, const std::string&key, bool&t );
+  void parseFlag( Action* action, const std::string&key, bool&t );
 public:
   virtual void registerKeywords( Keywords& keys ) = 0;
-  virtual void read( FunctionBase* action ) = 0;
+  virtual void read( ActionWithArguments* action ) = 0;
   virtual unsigned getRank() = 0;
-  virtual void setPeriodicityForOutputs( FunctionBase* action ) = 0;
-  virtual void setPrefactor( FunctionBase* action ) {}
+  virtual void setPeriodicityForOutputs( ActionWithValue* action ) = 0;
+  virtual void setPrefactor( ActionWithArguments* action ) {}
   virtual void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const = 0;
 };
 
 template<class T>
-void FunctionTemplateBase::parse( FunctionBase* action, const std::string&key, T&t ) {
+void FunctionTemplateBase::parse( Action* action, const std::string&key, T&t ) {
   action->parse(key,t);
 }
 
 template<class T>
-void FunctionTemplateBase::parseVector( FunctionBase* action, const std::string&key,std::vector<T>&t) {
+void FunctionTemplateBase::parseVector( Action* action, const std::string&key,std::vector<T>&t) {
   action->parseVector(key,t);
 }
 
 inline
-void FunctionTemplateBase::parseFlag( FunctionBase* action, const std::string&key, bool&t ) {
+void FunctionTemplateBase::parseFlag( Action* action, const std::string&key, bool&t ) {
   action->parseFlag(key,t);
 }
 

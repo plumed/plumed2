@@ -49,7 +49,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions& ao):
   Action(ao),
   MatrixProductBase(ao)
 {
-  setPeriodic( "-pi", "pi" );  // Make sure that the periodicity of the value is set
+  readMatricesToMultiply( true,  "-pi", "pi" );  // Make sure that the periodicity of the value is set
   std::vector<AtomNumber> atoms_a; parseAtomList("POSITIONS1", atoms_a );
   if( atoms_a.size()!=getPntrToArgument(0)->getShape()[0] ) error("mismatch between number of atoms specified using POSITIONS1 and number of arguments in vector input");
   log.printf("  using positions of these atoms for vectors in first matrix \n");

@@ -63,6 +63,7 @@ Neighbors::Neighbors(const ActionOptions&ao):
   shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[1];
   for(unsigned i=0; i<shape[0]; ++i) addTaskToList( i );
   addValue( shape ); getPntrToOutput(0)->neverStoreValues();
+  if( input_timeseries ) getPntrToComponent(0)->makeTimeSeries();
 
   unsigned nlow; parse("NLOWEST",nlow);
   unsigned nhigh; parse("NHIGHEST",nhigh);

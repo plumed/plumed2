@@ -45,7 +45,7 @@ Dot::Dot(const ActionOptions& ao):
   Action(ao),
   MatrixProductBase(ao)
 {
-  setNotPeriodic();
+  readMatricesToMultiply( false );
 }
 
 void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {

@@ -57,6 +57,9 @@ DissimilarityMatrix::DissimilarityMatrix( const ActionOptions& ao ):
   Action(ao),
   MatrixProductBase(ao)
 {
+  // Read the input matrices
+  readMatricesToMultiply( false );
+  // Work out the periodicity
   if( getPntrToArgument(0)->isPeriodic() ) {
       std::string smin, smax; getPntrToArgument(0)->getDomain( smin, smax );
       std::string tmin, tmax; getPntrToArgument(1)->getDomain( tmin, tmax );
@@ -65,7 +68,6 @@ DissimilarityMatrix::DissimilarityMatrix( const ActionOptions& ao ):
 
   parseFlag("SQUARED",squared);
   if( squared ) log.printf("  computing the square of the dissimilarity matrix\n");
-  setNotPeriodic();
 }
 
 double DissimilarityMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

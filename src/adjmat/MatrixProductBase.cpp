@@ -42,65 +42,62 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao),
   skip_ieqj(false),
-  isAdjacencyMatrix(false)
+  isAdjacencyMatrix(false),
+  input_timeseries(false)
 {
-  if( getNumberOfArguments()>0 && getNumberOfArguments()%2==0 ) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
-      }
-      std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); unsigned noutput = getNumberOfArguments() / 2;
-      bool zero_diag=false; if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
-      if( zero_diag && shape[0]!=shape[1] ) error("cannot set diagonal elements of matrix to zero if matrix is not square");
-      else if( zero_diag ) skip_ieqj=true;
-      if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n"); 
-      // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-      for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
-      // And create the matrix to hold the dot products
-      if( noutput>1 ) {
-          for(unsigned i=0; i<noutput; ++i) {
-              std::string name, fullname = getPntrToArgument(i)->getName();
-              std::size_t dot = fullname.find_first_of(".");
-              std::size_t und = fullname.find_first_of("_");
-              if( fullname.find(".")!=std::string::npos ) name = fullname.substr(dot+1);
-              else if( fullname.find("_")!=std::string::npos ) name = fullname.substr(und+1);
-              else name = fullname;
-              addComponent( name, shape ); 
-          }
-      } else { addValue( shape ); } 
-
-      // Now do some stuff for time series
-      for(unsigned nv=0; nv<noutput; ++nv ) {
-          bool timeseries=getPntrToArgument(nv)->isTimeSeries();
-          if( timeseries ) {
-              if( !getPntrToArgument(noutput+nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
-              getPntrToOutput(nv)->makeTimeSeries();
+  // Now do some stuff for time series
+  if( getNumberOfArguments()>0 ) {
+      input_timeseries = getPntrToArgument(0)->isTimeSeries();
+      for(unsigned nv=1; nv<getNumberOfArguments(); ++nv ) {
+          if( input_timeseries ) {
+              if( !getPntrToArgument(nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
           } else {
-              if( getPntrToArgument(noutput+nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+              if( getPntrToArgument(nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
           }
-          // This sets up matrix times vector calculations that are done without storing the input matrix
-          if( !getPntrToArgument(nv)->dataAlwaysStored() && !timeseries && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
-              // Chain off the action that computes the matrix
-              std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
-              (getPntrToArgument(nv)->getPntrToAction())->addActionToChain( alabels, this ); 
-          } else getPntrToArgument(nv)->buildDataStore( getLabel() );
-          // Store the vector or second matrix
-          getPntrToArgument(noutput+nv)->buildDataStore( getLabel() );
       }
-      // Rerequest arguments 
-      std::vector<Value*> args( getArguments() ); requestArguments( args, true );
   }
 }
 
-void MatrixProductBase::setNotPeriodic() {
-  if( getNumberOfComponents()==1 ) { ActionWithValue::setNotPeriodic(); return; }
-  for(unsigned i=0; i<getNumberOfComponents();++i) {
-      std::string name=getPntrToOutput(i)->getName(); std::size_t dot=name.find_first_of("."); componentIsNotPeriodic( name.substr(dot+1) );
+void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std::string& min, const std::string& max ) {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
   }
-}
+  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); unsigned noutput = getNumberOfArguments() / 2;
+  bool zero_diag=false; if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
+  if( zero_diag && shape[0]!=shape[1] ) error("cannot set diagonal elements of matrix to zero if matrix is not square");
+  else if( zero_diag ) skip_ieqj=true;
+  if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n");
+  // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
+  for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
+  // And create the matrix to hold the dot products
+  if( noutput>1 ) {
+      for(unsigned i=0; i<noutput; ++i) {
+          std::string name, fullname = getPntrToArgument(i)->getName();
+          std::size_t dot = fullname.find_first_of(".");
+          std::size_t und = fullname.find_first_of("_");
+          if( fullname.find(".")!=std::string::npos ) name = fullname.substr(dot+1);
+          else if( fullname.find("_")!=std::string::npos ) name = fullname.substr(und+1);
+          else name = fullname;
+          addComponent( name, shape ); 
+          if( periodic ) componentIsPeriodic( name, min, max ); else componentIsNotPeriodic( name );
+      }
+  } else {
+      addValue( shape ); if( periodic ) setPeriodic( min, max ); else setNotPeriodic();  
+  }
+  if( input_timeseries ) { for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeTimeSeries(); }
 
-void MatrixProductBase::setPeriodic( const std::string& min, const std::string& max ) {
-  if( getNumberOfComponents()==1 ) { ActionWithValue::setPeriodic( min, max ); return; }
-  plumed_merror("I can't be arsed to implement this now");
+  for(unsigned nv=0; nv<noutput; ++nv ) {
+      // This sets up matrix times vector calculations that are done without storing the input matrix
+      if( !getPntrToArgument(nv)->dataAlwaysStored() && !input_timeseries && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
+          // Chain off the action that computes the matrix
+          std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
+          (getPntrToArgument(nv)->getPntrToAction())->addActionToChain( alabels, this );
+      } else getPntrToArgument(nv)->buildDataStore( getLabel() );
+      // Store the vector or second matrix
+      getPntrToArgument(noutput+nv)->buildDataStore( getLabel() );
+  }
+  // Rerequest arguments 
+  std::vector<Value*> args( getArguments() ); requestArguments( args, true );
 }
 
 bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
@@ -113,7 +110,9 @@ bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
   if( ab ) return true;
   // We can't be after it if we are an Adjacency matrix but it isn't
   const AdjacencyMatrixBase* ab2=dynamic_cast<const AdjacencyMatrixBase*>(this);
-  if( ab2 || mp->skip_ieqj!=skip_ieqj ) return false;
+  if( ab2 ) return false; 
+  // The skip_ieqj thing needs putting back in Gareth
+  // if( ab2 || mp->skip_ieqj!=skip_ieqj ) return false;
   return true;
 }
 
