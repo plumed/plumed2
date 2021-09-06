@@ -82,10 +82,8 @@ class ECVmultiCanonical :
 {
 private:
   bool todoAutomatic_;
-  double beta0_;
-  std::vector<double> beta_;
   std::vector<double> ECVs_;
-  std::vector<double> derECVs_;
+  std::vector<double> derECVs_; //(beta_k-beta0) or (temp0/temp_k-1)/kbt
   void initECVs();
 
 public:
@@ -116,13 +114,11 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   : Action(ao)
   , ExpansionCVs(ao)
   , todoAutomatic_(false)
-  , beta0_(1./kbt_)
 {
   plumed_massert(getNumberOfArguments()==1,"only the internal energy should be given as ARG");
 
-//set temp0 and beta0_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  double temp0=kbt_/Kb;
+//set temp0
+  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
 
 //parse temp range
   double min_temp=-1;
@@ -144,11 +140,11 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     plumed_massert(temps.size()>=2,"set at least 2 temperatures");
     min_temp=temps[0];
     max_temp=temps[temps.size()-1];
-    beta_.resize(temps.size());
-    for(unsigned k=0; k<beta_.size(); k++)
+    derECVs_.resize(temps.size());
+    for(unsigned k=0; k<derECVs_.size(); k++)
     {
-      beta_[k]=1./(Kb*temps[k]);
-      if(k<beta_.size()-1)
+      derECVs_[k]=(temp0/temps[k]-1.)/kbt_;
+      if(k<derECVs_.size()-1)
         plumed_massert(temps[k]<=temps[k+1],"SET_ALL_TEMPS must be properly ordered");
     }
   }
@@ -166,13 +162,13 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
-    beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
-    beta_[1]=1./(Kb*max_temp);
+    derECVs_.resize(2);
+    derECVs_[0]=(temp0/min_temp-1.)/kbt_;
+    derECVs_[1]=(temp0/max_temp-1.)/kbt_;
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      setSteps(beta_,steps_temp,"TEMP");
+      setSteps(derECVs_,steps_temp,"TEMP");
     else
       todoAutomatic_=true;
   }
@@ -186,12 +182,9 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
 
 void ECVmultiCanonical::calculateECVs(const double * ene)
 {
-  for(unsigned k=0; k<beta_.size(); k++)
-  {
-    const double diff_k=(beta_[k]-beta0_);
-    ECVs_[k]=diff_k*ene[0];
-    derECVs_[k]=diff_k;
-  }
+  for(unsigned k=0; k<derECVs_.size(); k++)
+    ECVs_[k]=derECVs_[k]*ene[0];
+// derivatives never change: derECVs_k=(beta_k-beta0)
 }
 
 const double * ECVmultiCanonical::getPntrToECVs(unsigned j)
@@ -211,12 +204,12 @@ const double * ECVmultiCanonical::getPntrToDerECVs(unsigned j)
 std::vector<std::string> ECVmultiCanonical::getLambdas() const
 {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
-  std::vector<std::string> lambdas(beta_.size());
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  for(unsigned k=0; k<beta_.size(); k++)
+  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
+  std::vector<std::string> lambdas(derECVs_.size());
+  for(unsigned k=0; k<derECVs_.size(); k++)
   {
     std::ostringstream subs;
-    subs<<1./(Kb*beta_[k]);
+    subs<<temp0/(derECVs_[k]*kbt_+1);
     lambdas[k]=subs.str();
   }
   return lambdas;
@@ -226,11 +219,10 @@ void ECVmultiCanonical::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_,"this should not happen");
-  totNumECVs_=beta_.size();
-  ECVs_.resize(beta_.size());
-  derECVs_.resize(beta_.size());
+  totNumECVs_=derECVs_.size();
+  ECVs_.resize(derECVs_.size());
   isReady_=true;
-  log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
+  log.printf("  *%4lu temperatures for %s\n",derECVs_.size(),getName().c_str());
 }
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
@@ -241,9 +233,9 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");
+    const unsigned steps_temp=estimateSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    setSteps(beta_,steps_temp,"TEMP");
+    setSteps(derECVs_,steps_temp,"TEMP");
     todoAutomatic_=false;
   }
   initECVs();
@@ -256,7 +248,7 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    setSteps(beta_,lambdas.size(),"TEMP");
+    setSteps(derECVs_,lambdas.size(),"TEMP");
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

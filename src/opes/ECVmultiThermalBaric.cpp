@@ -82,8 +82,8 @@ private:
   std::vector<double> pres_;
   std::vector<double> ECVs_beta_;
   std::vector<double> ECVs_pres_;
-  std::vector<double> derECVs_beta_;
-  std::vector<double> derECVs_pres_;
+  std::vector<double> derECVs_beta_; //(beta_k-beta0) or (temp0/temp_k-1)/kbt
+  std::vector<double> derECVs_pres_; //(beta_k*pres_kk-beta0_*pres0_)
   void initECVs();
 
 //CUT_CORNER stuff
@@ -245,9 +245,13 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 
 //set CUT_CORNER
   std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
-  if(cut_corner.size()>0)
-    plumed_massert(cut_corner.size()==4,"expected 4 values for "+cc_usage);
-  if(cut_corner.size()==4) //this keeps cppcheck happy
+  if(cut_corner.size()==0)
+  {
+    coeff_=0;
+    low_pres_=0;
+    low_temp_Kb_=0;
+  }
+  else if(cut_corner.size()==4)
   {
     const double low_temp=cut_corner[0];
     const double low_pres=cut_corner[1];
@@ -268,9 +272,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   }
   else
   {
-    coeff_=0;
-    low_pres_=0;
-    low_temp_Kb_=0;
+    plumed_merror("expected 4 values: "+cc_usage);
   }
 
 //print some info
@@ -287,24 +289,11 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 
 void ECVmultiThermalBaric::calculateECVs(const double * ene_vol)
 {
-  unsigned i=0;
-  for(unsigned k=0; k<beta_.size(); k++)
-  {
-    const double diff_k=(beta_[k]-beta0_);
-    ECVs_beta_[k]=diff_k*ene_vol[0];
-    derECVs_beta_[k]=diff_k;
-    const double line_k=coeff_*(1./beta_[k]-low_temp_Kb_)+low_pres_;
-    for(unsigned kk=0; kk<pres_.size(); kk++)
-    {
-      if(coeff_==0 || pres_[kk]>=line_k)
-      {
-        const double diff_i=(beta_[k]*pres_[kk]-beta0_*pres0_); //this is not great, each beta-pres combination must be stored separately
-        ECVs_pres_[i]=diff_i*ene_vol[1];
-        derECVs_pres_[i]=diff_i;
-        i++;
-      }
-    }
-  }
+  for(unsigned k=0; k<derECVs_beta_.size(); k++)
+    ECVs_beta_[k]=derECVs_beta_[k]*ene_vol[0];
+  for(unsigned i=0; i<derECVs_pres_.size(); i++)
+    ECVs_pres_[i]=derECVs_pres_[i]*ene_vol[1];
+// derivatives are constant as usual in linear expansions
 }
 
 const double * ECVmultiThermalBaric::getPntrToECVs(unsigned j)
@@ -379,6 +368,22 @@ void ECVmultiThermalBaric::initECVs()
   derECVs_beta_.resize(beta_.size());
   ECVs_pres_.resize(totNumECVs_); //pres is mixed with temp (beta*p*V), thus we need to store all possible
   derECVs_pres_.resize(totNumECVs_);
+  //initialize the derECVs.
+  //this could be done before and one could avoid storing also beta0, beta_k, etc. but this way the code should be more readable
+  unsigned i=0;
+  for(unsigned k=0; k<beta_.size(); k++)
+  {
+    derECVs_beta_[k]=(beta_[k]-beta0_);
+    const double line_k=coeff_*(1./beta_[k]-low_temp_Kb_)+low_pres_;
+    for(unsigned kk=0; kk<pres_.size(); kk++)
+    {
+      if(coeff_==0 || pres_[kk]>=line_k)
+      {
+        derECVs_pres_[i]=(beta_[k]*pres_[kk]-beta0_*pres0_);
+        i++;
+      }
+    }
+  }
   isReady_=true;
   log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
   log.printf("  *%4lu pressures for %s\n",pres_.size(),getName().c_str());

@@ -71,9 +71,8 @@ private:
   bool todoAutomatic_;
   double beta0_;
   double lambda0_;
-  std::vector<double> lambda_;
   std::vector<double> ECVs_;
-  std::vector<double> derECVs_;
+  std::vector<double> derECVs_; //beta0*(lambda_k-lambda0)
   void initECVs();
 
 public:
@@ -124,20 +123,24 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   parse("MAX_LAMBDA",max_lambda);
   unsigned steps_lambda=0;
   parse("STEPS_LAMBDA",steps_lambda);
-  parseVector("SET_ALL_LAMBDAS",lambda_);
+  std::vector<double> lambdas;
+  parseVector("SET_ALL_LAMBDAS",lambdas);
 
   checkRead();
 
-//set the lambdas
-  if(lambda_.size()>0)
+//set the diff vector using lambdas
+  if(lambdas.size()>0)
   {
     plumed_massert(steps_lambda==0,"cannot set both STEPS_LAMBDA and SET_ALL_LAMBDAS");
     plumed_massert(std::isnan(min_lambda) && std::isnan(max_lambda),"cannot set both SET_ALL_LAMBDAS and MIN/MAX_LAMBDA");
-    plumed_massert(lambda_.size()>=2,"set at least 2 lambdas with SET_ALL_LAMBDAS");
-    for(unsigned k=0; k<lambda_.size()-1; k++)
-      plumed_massert(lambda_[k]<=lambda_[k+1],"SET_ALL_LAMBDAS must be properly ordered");
-    min_lambda=lambda_[0];
-    max_lambda=lambda_[lambda_.size()-1];
+    plumed_massert(lambdas.size()>=2,"set at least 2 lambdas with SET_ALL_LAMBDAS");
+    for(unsigned k=0; k<lambdas.size()-1; k++)
+      plumed_massert(lambdas[k]<=lambdas[k+1],"SET_ALL_LAMBDAS must be properly ordered");
+    min_lambda=lambdas[0];
+    max_lambda=lambdas[lambdas.size()-1];
+    derECVs_.resize(lambdas.size());
+    for(unsigned k=0; k<derECVs_.size(); k++)
+      derECVs_[k]=beta0_*(lambdas[k]-lambda0_);
   }
   else
   { //get MIN_LAMBDA and MAX_LAMBDA
@@ -152,13 +155,13 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
       log.printf("  no MAX_LAMBDA provided, using MAX_LAMBDA = %g\n",max_lambda);
     }
     plumed_massert(max_lambda>=min_lambda,"MAX_LAMBDA should be bigger than MIN_LAMBDA");
-    lambda_.resize(2);
-    lambda_[0]=min_lambda;
-    lambda_[1]=max_lambda;
+    derECVs_.resize(2);
+    derECVs_[0]=beta0_*(min_lambda-lambda0_);
+    derECVs_[1]=beta0_*(max_lambda-lambda0_);
     if(min_lambda==max_lambda && steps_lambda==0)
       steps_lambda=1;
     if(steps_lambda>0)
-      setSteps(lambda_,steps_lambda,"LAMBDA");
+      setSteps(derECVs_,steps_lambda,"LAMBDA");
     else
       todoAutomatic_=true;
   }
@@ -174,12 +177,9 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
 
 void ECVlinear::calculateECVs(const double * DeltaU)
 {
-  for(unsigned k=0; k<lambda_.size(); k++)
-  {
-    const double diff_k=beta0_*(lambda_[k]-lambda0_);
-    ECVs_[k]=diff_k*DeltaU[0];
-    derECVs_[k]=diff_k;
-  }
+  for(unsigned k=0; k<derECVs_.size(); k++)
+    ECVs_[k]=derECVs_[k]*DeltaU[0];
+// derivatives never change: derECVs_k=beta0*(lambda_k-lambda0)
 }
 
 const double * ECVlinear::getPntrToECVs(unsigned j)
@@ -199,11 +199,11 @@ const double * ECVlinear::getPntrToDerECVs(unsigned j)
 std::vector<std::string> ECVlinear::getLambdas() const
 {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
-  std::vector<std::string> lambdas(lambda_.size());
-  for(unsigned k=0; k<lambda_.size(); k++)
+  std::vector<std::string> lambdas(derECVs_.size());
+  for(unsigned k=0; k<derECVs_.size(); k++)
   {
     std::ostringstream subs;
-    subs<<lambda_[k];
+    subs<<derECVs_[k]/beta0_+lambda0_;
     lambdas[k]=subs.str();
   }
   return lambdas;
@@ -213,11 +213,10 @@ void ECVlinear::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_,"this should not happen");
-  totNumECVs_=lambda_.size();
-  ECVs_.resize(lambda_.size());
-  derECVs_.resize(lambda_.size());
+  totNumECVs_=derECVs_.size();
+  ECVs_.resize(derECVs_.size());
   isReady_=true;
-  log.printf("  *%4lu lambdas for %s\n",lambda_.size(),getName().c_str());
+  log.printf("  *%4lu lambdas for %s\n",derECVs_.size(),getName().c_str());
 }
 
 void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
@@ -228,10 +227,10 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_lambda=estimateSteps(beta0_*(lambda_[0]-lambda0_),beta0_*(lambda_[1]-lambda0_),obs_cv,"LAMBDA");
+    const unsigned steps_lambda=estimateSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
     if(beta0_!=1)
       log.printf("    (spacing is in beta0 units)\n");
-    setSteps(lambda_,steps_lambda,"LAMBDA");
+    setSteps(derECVs_,steps_lambda,"LAMBDA");
     todoAutomatic_=false;
   }
   initECVs();
@@ -244,7 +243,7 @@ void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    setSteps(lambda_,lambdas.size(),"LAMBDA");
+    setSteps(derECVs_,lambdas.size(),"LAMBDA");
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();
