@@ -192,15 +192,17 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
       log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
-    beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
-    beta_[1]=1./(Kb*max_temp);
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      setSteps(beta_,steps_temp,"TEMP");
+      beta_=setSteps(1./(Kb*min_temp),1./(Kb*max_temp),steps_temp,"TEMP");
     else
+    {
+      beta_.resize(2);
+      beta_[0]=1./(Kb*min_temp);
+      beta_[1]=1./(Kb*max_temp);
       todoAutomatic_beta_=true;
+    }
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
   if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
@@ -230,15 +232,17 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
       log.printf("  no MAX_PRESSURE provided, using MAX_PRESSURE=PRESSURE\n");
     }
     plumed_massert(max_pres>=min_pres,"MAX_PRESSURE should be bigger than MIN_PRESSURE");
-    pres_.resize(2);
-    pres_[0]=min_pres;
-    pres_[1]=max_pres;
     if(min_pres==max_pres && steps_pres==0)
       steps_pres=1;
     if(steps_pres>0)
-      setSteps(pres_,steps_pres,"PRESSURE");
+      pres_=setSteps(min_pres,max_pres,steps_pres,"PRESSURE");
     else
+    {
+      pres_.resize(2);
+      pres_[0]=min_pres;
+      pres_[1]=max_pres;
       todoAutomatic_pres_=true;
+    }
   }
   if(pres0_<min_pres || pres0_>max_pres)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
@@ -401,7 +405,7 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
       obs_ene[t]=all_obs_cvs[t*ncv+index_j]+pres0_*all_obs_cvs[t*ncv+index_j+1]; //U=E+pV
     const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");
     log.printf("    (spacing is on beta, not on temperature)\n");
-    setSteps(beta_,steps_temp,"TEMP");
+    beta_=setSteps(beta_[0],beta_[1],steps_temp,"TEMP");
     todoAutomatic_beta_=false;
   }
   if(todoAutomatic_pres_) //estimate the steps in pres from observations
@@ -412,7 +416,7 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
       obs_vol[t]=all_obs_cvs[t*ncv+index_j+1];
     const unsigned steps_pres=estimateSteps(beta0_*(pres_[0]-pres0_),beta0_*(pres_[1]-pres0_),obs_vol,"PRESSURE");
     log.printf("    (spacing is in beta0 units)\n");
-    setSteps(pres_,steps_pres,"PRESSURE");
+    pres_=setSteps(pres_[0],pres_[1],steps_pres,"PRESSURE");
     todoAutomatic_pres_=false;
   }
   initECVs();
@@ -437,7 +441,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
         break;
       steps_pres++;
     }
-    setSteps(pres_,steps_pres,"PRESSURE");
+    pres_=setSteps(pres_[0],pres_[1],steps_pres,"PRESSURE");
     todoAutomatic_pres_=false;
   }
   if(todoAutomatic_beta_)
@@ -449,7 +453,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
       if(getPres(i)==pres_max)
         steps_temp++;
     }
-    setSteps(beta_,steps_temp,"TEMP");
+    beta_=setSteps(beta_[0],beta_[1],steps_temp,"TEMP");
     todoAutomatic_beta_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

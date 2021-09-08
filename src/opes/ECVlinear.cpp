@@ -161,7 +161,7 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
     if(min_lambda==max_lambda && steps_lambda==0)
       steps_lambda=1;
     if(steps_lambda>0)
-      setSteps(derECVs_,steps_lambda,"LAMBDA");
+      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA");
     else
       todoAutomatic_=true;
   }
@@ -230,7 +230,7 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     const unsigned steps_lambda=estimateSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
     if(beta0_!=1)
       log.printf("    (spacing is in beta0 units)\n");
-    setSteps(derECVs_,steps_lambda,"LAMBDA");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA");
     todoAutomatic_=false;
   }
   initECVs();
@@ -243,7 +243,7 @@ void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    setSteps(derECVs_,lambdas.size(),"LAMBDA");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"LAMBDA");
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

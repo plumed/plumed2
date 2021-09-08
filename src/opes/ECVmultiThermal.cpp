@@ -168,7 +168,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      setSteps(derECVs_,steps_temp,"TEMP");
+      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP");
     else
       todoAutomatic_=true;
   }
@@ -235,7 +235,7 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_temp=estimateSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    setSteps(derECVs_,steps_temp,"TEMP");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP");
     todoAutomatic_=false;
   }
   initECVs();
@@ -248,7 +248,7 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    setSteps(derECVs_,lambdas.size(),"TEMP");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP");
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

@@ -108,13 +108,10 @@ std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
 }
 
 //following methods are meant to be used only in case of linear expansions
-void ExpansionCVs::setSteps(std::vector<double>& lambda,const unsigned steps_lambda,const std::string& msg)
+std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double max_lambda,const unsigned steps_lambda,const std::string& msg)
 {
-  plumed_massert(lambda.size()==2,"buggy ECV: min and max "+msg+" should be given to setSteps");
-  const double min_lambda=lambda[0];
-  const double max_lambda=lambda[1];
   plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_"+msg+" if MIN_"+msg+"==MAX_"+msg);
-  lambda.resize(steps_lambda);
+  std::vector<double> lambda(steps_lambda);
   if(steps_lambda==1)
   {
     lambda[0]=(min_lambda+max_lambda)/2.;
@@ -123,6 +120,7 @@ void ExpansionCVs::setSteps(std::vector<double>& lambda,const unsigned steps_lam
   else
     for(unsigned k=0; k<lambda.size(); k++)
       lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
+  return lambda;
 }
 
 unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string& msg) const
