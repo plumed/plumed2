@@ -108,7 +108,7 @@ std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
 }
 
 //following methods are meant to be used only in case of linear expansions
-std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double max_lambda,const unsigned steps_lambda,const std::string& msg)
+std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double max_lambda,const unsigned steps_lambda,const std::string& msg,const bool exp_spacing)
 {
   plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_"+msg+" if MIN_"+msg+"==MAX_"+msg);
   std::vector<double> lambda(steps_lambda);
@@ -118,8 +118,18 @@ std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double 
     log.printf(" +++ WARNING +++ using one single %s as target = %g\n",msg.c_str(),lambda[0]);
   }
   else
-    for(unsigned k=0; k<lambda.size(); k++)
-      lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
+  {
+    if(exp_spacing) //this is specific for temperature expansions. Is there a more general equivalent?
+    { //T_k=T_min+(T_max-T_min)*(exp(k/(N-1))-1)/(exp(1)-1)
+      const double min_Tlike=1./(min_lambda+1./kbt_);
+      const double max_Tlike=1./(max_lambda+1./kbt_);
+      for(unsigned k=0; k<lambda.size(); k++)
+        lambda[k]=1./(min_Tlike+(max_Tlike-min_Tlike)*(std::exp(k/(steps_lambda-1.))-1.)/(std::exp(1)-1.))-1./kbt_;
+    }
+    else
+      for(unsigned k=0; k<lambda.size(); k++)
+        lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
+  }
   return lambda;
 }
 

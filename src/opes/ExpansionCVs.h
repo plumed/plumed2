@@ -42,7 +42,7 @@ protected:
   unsigned totNumECVs_;
 
 //methods useful for linear expansions
-  std::vector<double> setSteps(const double,const double,const unsigned,const std::string&);
+  std::vector<double> setSteps(const double,const double,const unsigned,const std::string&,const bool exp_spacing=false);
   unsigned estimateSteps(const double,const double,const std::vector<double>&,const std::string&) const;
 
 public:

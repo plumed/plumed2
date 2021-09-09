@@ -203,7 +203,7 @@ std::vector<std::string> ECVlinear::getLambdas() const
   for(unsigned k=0; k<derECVs_.size(); k++)
   {
     std::ostringstream subs;
-    subs<<derECVs_[k]/beta0_+lambda0_;
+    subs<<derECVs_[k]/beta0_+lambda0_; //lambda_k
     lambdas[k]=subs.str();
   }
   return lambdas;

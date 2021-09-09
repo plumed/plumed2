@@ -37,8 +37,9 @@ If instead the simulation is at fixed pressure \f$p\f$, the contribution of the 
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
 Otherwise you can manually set this number with STEPS_TEMP.
-In both cases the steps will have a geometric distriution in the temperature, thus uniform in beta.
-For more fine controll you can use the keywork SET_ALL_TEMPS and explicitly provide each temperature.
+In both cases the steps will have a uniform distriution in the inverse temperature (beta).
+Use the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.
+Finally, you can use instead the keyword SET_ALL_TEMPS and explicitly provide each temperature.
 
 You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
 A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
@@ -82,6 +83,7 @@ class ECVmultiCanonical :
 {
 private:
   bool todoAutomatic_;
+  bool exp_spacing_;
   std::vector<double> ECVs_;
   std::vector<double> derECVs_; //(beta_k-beta0) or (temp0/temp_k-1)/kbt
   void initECVs();
@@ -108,6 +110,7 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys)
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
+  keys.addFlag("EXPONENTIAL_SPACING",false,"use exponential spacing in temperature instead of linear spacing in inverse temperature");
 }
 
 ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
@@ -129,6 +132,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   parse("STEPS_TEMP",steps_temp);
   std::vector<double> temps;
   parseVector("SET_ALL_TEMPS",temps);
+  parseFlag("EXPONENTIAL_SPACING",exp_spacing_);
 
   checkRead();
 
@@ -168,7 +172,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP");
+      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",exp_spacing_);
     else
       todoAutomatic_=true;
   }
@@ -209,7 +213,7 @@ std::vector<std::string> ECVmultiCanonical::getLambdas() const
   for(unsigned k=0; k<derECVs_.size(); k++)
   {
     std::ostringstream subs;
-    subs<<temp0/(derECVs_[k]*kbt_+1);
+    subs<<temp0/(derECVs_[k]*kbt_+1); //temp_k
     lambdas[k]=subs.str();
   }
   return lambdas;
@@ -235,7 +239,7 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_temp=estimateSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",exp_spacing_);
     todoAutomatic_=false;
   }
   initECVs();
@@ -248,7 +252,7 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP");
+    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP",exp_spacing_);
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();
