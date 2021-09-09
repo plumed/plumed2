@@ -813,7 +813,7 @@ double MetainferenceBase::getEnergyGJE(const std::vector<double> &mean, const st
   return kbt_ * ene;
 }
 
-void MetainferenceBase::moveTilde(const std::vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveTilde(const std::vector<double> &mean_, double &old_energy)
 {
   std::vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
@@ -845,7 +845,7 @@ void MetainferenceBase::moveTilde(const std::vector<double> &mean_, double old_e
   }
 }
 
-void MetainferenceBase::moveScaleOffset(const std::vector<double> &mean_, double old_energy)
+void MetainferenceBase::moveScaleOffset(const std::vector<double> &mean_, double &old_energy)
 {
   double new_scale = scale_;
 
@@ -934,7 +934,7 @@ void MetainferenceBase::moveScaleOffset(const std::vector<double> &mean_, double
   }
 }
 
-void MetainferenceBase::moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow)
+void MetainferenceBase::moveSigmas(const std::vector<double> &mean_, double &old_energy, const unsigned i, const std::vector<unsigned> &indices, bool &breaknow)
 {
   std::vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;
@@ -1093,6 +1093,7 @@ double MetainferenceBase::doMonteCarlo(const std::vector<double> &mean_)
   }
   comm.Sum(old_energy);
 
+  // this is the energy with current coordinates and parameters
   return old_energy;
 }
 
