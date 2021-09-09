@@ -93,6 +93,7 @@ std::string getPlumedProgramName() {
 
 std::string getEnvCommand() {
   return "env PLUMED_ROOT=\""+getPlumedRoot()+"\""+
+         " env PLUMED_VERSION=\""+getVersionLong()+"\""+
          " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
          " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
          " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
