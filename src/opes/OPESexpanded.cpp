@@ -240,7 +240,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
   if(wStateStride_>0)
-    plumed_massert(wStateStride_>stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
+    plumed_massert(wStateStride_>(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
