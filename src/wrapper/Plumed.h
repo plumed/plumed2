@@ -1615,6 +1615,8 @@ private:
   __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
   SafePtr(type val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     assert(sizeof(type)<=32); \
+    (void) nelem; \
+    (void) shape; \
     safe.ptr=buffer; \
     safe.nelem=1; \
     safe.shape=NULL; \
