@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <memory>
 
 #define PLUMED_VES_TARGETDISTRIBUTION_INIT(ao) TargetDistribution(ao)
 
@@ -66,10 +67,10 @@ private:
   // grid parameters
   std::vector<Value*> grid_args_;
   //
-  Grid* targetdist_grid_pntr_;
-  Grid* log_targetdist_grid_pntr_;
+  std::unique_ptr<Grid> targetdist_grid_pntr_;
+  std::unique_ptr<Grid> log_targetdist_grid_pntr_;
   //
-  std::vector<TargetDistModifer*> targetdist_modifer_pntrs_;
+  std::vector<std::unique_ptr<TargetDistModifer>> targetdist_modifer_pntrs_;
   //
   Action* action_pntr_;
   VesBias* vesbias_pntr_;
@@ -155,8 +156,8 @@ public:
   //
   void setupBiasCutoff();
   //
-  Grid* getTargetDistGridPntr() const {return targetdist_grid_pntr_;}
-  Grid* getLogTargetDistGridPntr() const {return log_targetdist_grid_pntr_;}
+  Grid* getTargetDistGridPntr() const {return targetdist_grid_pntr_.get();}
+  Grid* getLogTargetDistGridPntr() const {return log_targetdist_grid_pntr_.get();}
   //
   void clearLogTargetDistGrid();
   // calculate the target distribution itself
@@ -196,7 +197,7 @@ Action* TargetDistribution::getPntrToAction() const {
 
 inline
 void TargetDistribution::normalizeTargetDistGrid() {
-  double normalization = normalizeGrid(targetdist_grid_pntr_);
+  double normalization = normalizeGrid(targetdist_grid_pntr_.get());
   if(normalization<0.0) {plumed_merror(getName()+": something went wrong trying to normalize the target distribution, integrating over it gives a negative value.");}
 }
 

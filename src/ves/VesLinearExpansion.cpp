@@ -284,7 +284,7 @@ class VesLinearExpansion : public VesBias {
 private:
   unsigned int nargs_;
   std::vector<BasisFunctions*> basisf_pntrs_;
-  LinearBasisSetExpansion* bias_expansion_pntr_;
+  std::unique_ptr<LinearBasisSetExpansion> bias_expansion_pntr_;
   size_t ncoeffs_;
   Value* valueForce2_;
   bool all_values_inside;
@@ -337,7 +337,6 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   PLUMED_VES_VESBIAS_INIT(ao),
   nargs_(getNumberOfArguments()),
   basisf_pntrs_(0),
-  bias_expansion_pntr_(NULL),
   valueForce2_(NULL),
   all_values_inside(true),
   bf_values(0),
@@ -370,7 +369,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bool coeffs_read = readCoeffsFromFiles();
 
   checkThatTemperatureIsGiven();
-  bias_expansion_pntr_ = new LinearBasisSetExpansion(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
+  bias_expansion_pntr_ = Tools::make_unique<LinearBasisSetExpansion>(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //
@@ -408,9 +407,6 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
 
 
 VesLinearExpansion::~VesLinearExpansion() {
-  if(bias_expansion_pntr_!=NULL) {
-    delete bias_expansion_pntr_;
-  }
 }
 
 
@@ -478,14 +474,12 @@ void VesLinearExpansion::setupBiasFileOutput() {
 
 void VesLinearExpansion::writeBiasToFile() {
   bias_expansion_pntr_->updateBiasGrid();
-  OFile* ofile_pntr = getOFile(getCurrentBiasOutputFilename(),useMultipleWalkers());
+  auto ofile_pntr = getOFile(getCurrentBiasOutputFilename(),useMultipleWalkers());
   bias_expansion_pntr_->writeBiasGridToFile(*ofile_pntr);
-  ofile_pntr->close(); delete ofile_pntr;
   if(biasCutoffActive()) {
     bias_expansion_pntr_->updateBiasWithoutCutoffGrid();
-    OFile* ofile_pntr2 = getOFile(getCurrentBiasOutputFilename("without-cutoff"),useMultipleWalkers());
+    auto ofile_pntr2 = getOFile(getCurrentBiasOutputFilename("without-cutoff"),useMultipleWalkers());
     bias_expansion_pntr_->writeBiasWithoutCutoffGridToFile(*ofile_pntr2);
-    ofile_pntr2->close(); delete ofile_pntr2;
   }
 }
 
@@ -502,9 +496,8 @@ void VesLinearExpansion::setupFesFileOutput() {
 
 void VesLinearExpansion::writeFesToFile() {
   bias_expansion_pntr_->updateFesGrid();
-  OFile* ofile_pntr = getOFile(getCurrentFesOutputFilename(),useMultipleWalkers());
+  auto ofile_pntr = getOFile(getCurrentFesOutputFilename(),useMultipleWalkers());
   bias_expansion_pntr_->writeFesGridToFile(*ofile_pntr);
-  ofile_pntr->close(); delete ofile_pntr;
 }
 
 
@@ -526,21 +519,18 @@ void VesLinearExpansion::writeFesProjToFile() {
     std::string suffix;
     Tools::convert(i+1,suffix);
     suffix = "proj-" + suffix;
-    OFile* ofile_pntr = getOFile(getCurrentFesOutputFilename(suffix),useMultipleWalkers());
+    auto ofile_pntr = getOFile(getCurrentFesOutputFilename(suffix),useMultipleWalkers());
     std::vector<std::string> args = getProjectionArgument(i);
     bias_expansion_pntr_->writeFesProjGridToFile(args,*ofile_pntr);
-    ofile_pntr->close(); delete ofile_pntr;
   }
 }
 
 
 void VesLinearExpansion::writeTargetDistToFile() {
-  OFile* ofile1_pntr = getOFile(getCurrentTargetDistOutputFilename(),useMultipleWalkers());
-  OFile* ofile2_pntr = getOFile(getCurrentTargetDistOutputFilename("log"),useMultipleWalkers());
+  auto ofile1_pntr = getOFile(getCurrentTargetDistOutputFilename(),useMultipleWalkers());
+  auto ofile2_pntr = getOFile(getCurrentTargetDistOutputFilename("log"),useMultipleWalkers());
   bias_expansion_pntr_->writeTargetDistGridToFile(*ofile1_pntr);
   bias_expansion_pntr_->writeLogTargetDistGridToFile(*ofile2_pntr);
-  ofile1_pntr->close(); delete ofile1_pntr;
-  ofile2_pntr->close(); delete ofile2_pntr;
 }
 
 
@@ -549,10 +539,9 @@ void VesLinearExpansion::writeTargetDistProjToFile() {
     std::string suffix;
     Tools::convert(i+1,suffix);
     suffix = "proj-" + suffix;
-    OFile* ofile_pntr = getOFile(getCurrentTargetDistOutputFilename(suffix),useMultipleWalkers());
+    auto ofile_pntr = getOFile(getCurrentTargetDistOutputFilename(suffix),useMultipleWalkers());
     std::vector<std::string> args = getProjectionArgument(i);
     bias_expansion_pntr_->writeTargetDistProjGridToFile(args,*ofile_pntr);
-    ofile_pntr->close(); delete ofile_pntr;
   }
 }
 

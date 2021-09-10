@@ -240,18 +240,16 @@ void BasisFunctions::numericalUniformIntegrals() {
   std::vector<std::string> grid_min(1); grid_min[0]=intervalMinStr();
   std::vector<std::string> grid_max(1); grid_max[0]=intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins_;
-  std::vector<Value*> arguments(1); arguments[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> arguments(1); arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic()) {arguments[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {arguments[0]->setNotPeriodic();}
-  Grid* uniform_grid = new Grid("uniform",arguments,grid_min,grid_max,grid_bins,false,false);
+  auto uniform_grid = Tools::make_unique<Grid>("uniform",Tools::unique2raw(arguments),grid_min,grid_max,grid_bins,false,false);
   //
   double inverse_normalization = 1.0/(intervalMax()-intervalMin());
   for(Grid::index_t l=0; l<uniform_grid->getSize(); l++) {
     uniform_grid->setValue(l,inverse_normalization);
   }
-  uniform_integrals_ = numericalTargetDistributionIntegralsFromGrid(uniform_grid);
-  delete arguments[0]; arguments.clear();
-  delete uniform_grid;
+  uniform_integrals_ = numericalTargetDistributionIntegralsFromGrid(uniform_grid.get());
 }
 
 
@@ -349,11 +347,11 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   std::vector<std::string> min(1); min[0]=min_in;
   std::vector<std::string> max(1); max[0]=max_in;
   std::vector<unsigned int> nbins(1); nbins[0]=nbins_in;
-  std::vector<Value*> value_pntr(1);
-  value_pntr[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> value_pntr(1);
+  value_pntr[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic() && !ignore_periodicity) {value_pntr[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {value_pntr[0]->setNotPeriodic();}
-  Grid args_grid = Grid("grid",value_pntr,min,max,nbins,false,false);
+  Grid args_grid = Grid("grid",Tools::unique2raw(value_pntr),min,max,nbins,false,false);
 
   std::vector<double> args(args_grid.getSize(),0.0);
   for(unsigned int i=0; i<args.size(); i++) {
@@ -399,8 +397,6 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   }
   ofile_values.fmtField();
   ofile_derivs.fmtField();
-
-  delete value_pntr[0]; value_pntr.clear();
 
 }
 
