@@ -9,6 +9,7 @@ ecv: ECV_UMBRELLAS_FILE ...
   TEMP=300
   FILE=Kernels.data
   ADD_P0
+  LOWER_HALF_ONLY #never add this keword upon restart! this is for regtest only
 ...
 opes: OPES_EXPANDED FMT={% f} ARG=ecv.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10
 

@@ -190,19 +190,35 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
 
 void ECVumbrellasLine::calculateECVs(const double * cv)
 {
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  if(lower_only_)
   {
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
     {
-      const unsigned kk=k-P0_contribution_;
-      const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
-      if(lower_only_ && dist_jk>=0)
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
       {
-        ECVs_[j][k]=0;
-        derECVs_[j][k]=0;
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
+        if(dist_jk>=0)
+        {
+          ECVs_[j][k]=0;
+          derECVs_[j][k]=0;
+        }
+        else
+        {
+          ECVs_[j][k]=0.5*std::pow(dist_jk,2);
+          derECVs_[j][k]=dist_jk/sigma_;
+        }
       }
-      else
+    }
+  }
+  else
+  {
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+    {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
       {
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
         ECVs_[j][k]=0.5*std::pow(dist_jk,2);
         derECVs_[j][k]=dist_jk/sigma_;
       }
