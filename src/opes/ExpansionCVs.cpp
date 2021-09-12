@@ -134,7 +134,7 @@ std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double 
 }
 
 unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string& msg) const
-{ //for linear expansions only, it uses Neff to estimate the grid spacing
+{ //for linear expansions only, it uses effective sample size (Neff) to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {
     log.printf(" +++ WARNING +++ MIN_%s and MAX_%s are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());

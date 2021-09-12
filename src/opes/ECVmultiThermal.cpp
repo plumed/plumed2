@@ -35,7 +35,7 @@ The internal energy \f$U\f$ of of the system should be used as ARG.
 In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
 If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
 
-By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
+By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
 Otherwise you can manually set this number with STEPS_TEMP.
 In both cases the steps will have a uniform distriution in the inverse temperature (beta).
 Use the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.

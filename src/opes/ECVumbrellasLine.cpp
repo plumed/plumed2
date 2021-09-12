@@ -40,7 +40,7 @@ If you think the placed umbrellas will not cover the whole unbiased probability 
 See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
 
 The flag LOWER_HALF_ONLY modifies the ECVs so that they are set to zero when \f$\mathbf{s}>\mathbf{s}_i\f$, as in \ref LOWER_WALLS.
-This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat target distribution.
+This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat energy distribution as target.
 By pushing only from below one can avoid too extreme forces that could crash the simulation.
 
 \par Examples

@@ -35,6 +35,11 @@ The difference in Hamiltonian \f$\Delta U\f$ is expected as ARG.
 \f]
 Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature \f$\beta\f$.
 
+By defauly the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
+Otherwise one can set this number with STEPS_LAMBDA.
+In both cases the steps will be uniformly distriuted.
+Finally, one can use instead the keyword SET_ALL_LAMBDAS and explicitly provide each lambda value.
+
 \par Examples
 
 Typical multibaric simulation:

@@ -36,8 +36,9 @@ The potential \ref ENERGY, \f$E\f$, and the \ref VOLUME, \f$V\f$, of the system 
 If instead you wish to sample multiple temperatures and a single pressure, you should use \ref ECV_MULTITHERMAL with as ARG the internal energy \f$U=E+pV\f$.
 
 The STEPS_TEMP and STEPS_PRESSURE are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
+The algorithm for this guess is described in \cite Invernizzi2020unified should provide a rough estimate useful for most applications.
 The pressures are uniformely spaced, while the temperatures steps are uniform in inverse temperature (beta).
-Use the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.
+Use instead the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.
 For more detailed control you can use SET_ALL_TEMPS and SET_ALL_PRESSURES.
 The temperatures and pressures are then combined in a 2D grid.
 
