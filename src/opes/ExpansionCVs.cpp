@@ -108,7 +108,7 @@ std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
 }
 
 //following methods are meant to be used only in case of linear expansions
-std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double max_lambda,const unsigned steps_lambda,const std::string& msg,const bool exp_spacing)
+std::vector<double> ExpansionCVs::getSteps(double min_lambda,double max_lambda,const unsigned steps_lambda,const std::string& msg,const bool geom_spacing, const double shift) const
 {
   plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_"+msg+" if MIN_"+msg+"==MAX_"+msg);
   std::vector<double> lambda(steps_lambda);
@@ -119,21 +119,25 @@ std::vector<double> ExpansionCVs::setSteps(const double min_lambda,const double 
   }
   else
   {
-    if(exp_spacing) //this is specific for temperature expansions. Is there a more general equivalent?
-    { //T_k=T_min+(T_max-T_min)*(exp(k/(N-1))-1)/(exp(1)-1)
-      const double min_Tlike=1./(min_lambda+1./kbt_);
-      const double max_Tlike=1./(max_lambda+1./kbt_);
+    if(geom_spacing) //geometric spacing
+    { //this way lambda[k]/lambda[k+1] is constant
+      min_lambda+=shift;
+      max_lambda+=shift;
+      plumed_massert(min_lambda>0,"cannot use GEOM_SPACING when MIN_%s is not greater than zero");
+      plumed_massert(max_lambda>0,"cannot use GEOM_SPACING when MAX_%s is not greater than zero");
+      const double log_min_lambda=std::log(min_lambda);
+      const double log_max_lambda=std::log(max_lambda);
       for(unsigned k=0; k<lambda.size(); k++)
-        lambda[k]=1./(min_Tlike+(max_Tlike-min_Tlike)*(std::exp(k/(steps_lambda-1.))-1.)/(std::exp(1)-1.))-1./kbt_;
+        lambda[k]=std::exp(log_min_lambda+k*(log_max_lambda-log_min_lambda)/(steps_lambda-1))-shift;
     }
-    else
+    else //linear spacing
       for(unsigned k=0; k<lambda.size(); k++)
         lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
   }
   return lambda;
 }
 
-unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string& msg) const
+unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double right_side,const std::vector<double>& obs,const std::string& msg) const
 { //for linear expansions only, it uses effective sample size (Neff) to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {

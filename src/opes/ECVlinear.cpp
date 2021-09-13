@@ -74,6 +74,7 @@ class ECVlinear :
 {
 private:
   bool todoAutomatic_;
+  bool geom_spacing_;
   double beta0_;
   double lambda0_;
   std::vector<double> ECVs_;
@@ -104,6 +105,7 @@ void ECVlinear::registerKeywords(Keywords& keys)
   keys.add("optional","STEPS_LAMBDA","uniformly place the lambda values, for a total of STEPS_LAMBDA");
   keys.add("optional","SET_ALL_LAMBDAS","manually set all the lamdbas");
   keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
+  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing in lambda");
 }
 
 ECVlinear::ECVlinear(const ActionOptions&ao)
@@ -130,6 +132,7 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   parse("STEPS_LAMBDA",steps_lambda);
   std::vector<double> lambdas;
   parseVector("SET_ALL_LAMBDAS",lambdas);
+  parseFlag("GEOM_SPACING",geom_spacing_);
 
   checkRead();
 
@@ -166,7 +169,7 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
     if(min_lambda==max_lambda && steps_lambda==0)
       steps_lambda=1;
     if(steps_lambda>0)
-      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA");
+      derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA",geom_spacing_,beta0_*lambda0_);
     else
       todoAutomatic_=true;
   }
@@ -178,6 +181,8 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   log.printf("  targeting a lambda range from MIN_LAMBDA=%g to MAX_LAMBDA=%g\n",min_lambda,max_lambda);
   if(dimensionless)
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
+  if(geom_spacing_)
+    log.printf(" -- GEOM_SPACING: lambdas will be geometrically spaced\n");
 }
 
 void ECVlinear::calculateECVs(const double * DeltaU)
@@ -232,10 +237,10 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_lambda=estimateSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
+    const unsigned steps_lambda=estimateNumSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
     if(beta0_!=1)
       log.printf("    (spacing is in beta0 units)\n");
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA");
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA",geom_spacing_,beta0_*lambda0_);
     todoAutomatic_=false;
   }
   initECVs();
@@ -248,7 +253,7 @@ void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"LAMBDA");
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],lambdas.size(),"LAMBDA",geom_spacing_,beta0_*lambda0_);
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

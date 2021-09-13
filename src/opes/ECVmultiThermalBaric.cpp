@@ -38,7 +38,7 @@ If instead you wish to sample multiple temperatures and a single pressure, you s
 The STEPS_TEMP and STEPS_PRESSURE are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
 The algorithm for this guess is described in \cite Invernizzi2020unified should provide a rough estimate useful for most applications.
 The pressures are uniformely spaced, while the temperatures steps are uniform in inverse temperature (beta).
-Use instead the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.
+Use instead the keyword GEOM_SPACING for geometrically spacing the temperature steps, which should result in a more uniform sampling of the temperature range.
 For more detailed control you can use SET_ALL_TEMPS and SET_ALL_PRESSURES.
 The temperatures and pressures are then combined in a 2D grid.
 
@@ -78,7 +78,7 @@ class ECVmultiThermalBaric :
 private:
   bool todoAutomatic_beta_;
   bool todoAutomatic_pres_;
-  bool exp_spacing_;
+  bool geom_spacing_;
   double pres0_;
   std::vector<double> pres_;
   std::vector<double> ECVs_beta_;
@@ -116,7 +116,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
-  keys.addFlag("EXPONENTIAL_SPACING",false,"use exponential spacing in temperature instead of linear spacing in inverse temperature");
+  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in temperature instead of linear spacing in inverse temperature");
 //pressure
   keys.add("compulsory","PRESSURE","pressure. Use the proper units");
   keys.add("optional","MIN_PRESSURE","the minimum of the pressure range");
@@ -149,7 +149,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   parse("STEPS_TEMP",steps_temp);
   std::vector<double> temps;
   parseVector("SET_ALL_TEMPS",temps);
-  parseFlag("EXPONENTIAL_SPACING",exp_spacing_);
+  parseFlag("GEOM_SPACING",geom_spacing_);
 //parse pressures
   parse("PRESSURE",pres0_);
   double min_pres=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
@@ -200,7 +200,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      derECVs_beta_=setSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",exp_spacing_);
+      derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
     else
       todoAutomatic_beta_=true;
   }
@@ -235,7 +235,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     if(min_pres==max_pres && steps_pres==0)
       steps_pres=1;
     if(steps_pres>0)
-      pres_=setSteps(min_pres,max_pres,steps_pres,"PRESSURE");
+      pres_=getSteps(min_pres,max_pres,steps_pres,"PRESSURE",false,0);
     else
     {
       pres_.resize(2);
@@ -287,6 +287,8 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   log.printf("   and a pressure range from MIN_PRESSURE=%g to MAX_PRESSURE=%g\n",min_pres,max_pres);
   if(min_pres==max_pres)
     log.printf(" +++ WARNING +++ if you only need a multithermal simulation it is more efficient to set it up with ECV_MULTITHERMAL\n");
+  if(geom_spacing_)
+    log.printf(" -- GEOM_SPACING: temperatures will be geometrically spaced\n");
   if(coeff_!=0)
     log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
 }
@@ -404,9 +406,9 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j]+pres0_*all_obs_cvs[t*ncv+index_j+1]; //U=E+pV
-    const unsigned steps_temp=estimateSteps(derECVs_beta_[0],derECVs_beta_[1],obs_ene,"TEMP");
+    const unsigned steps_temp=estimateNumSteps(derECVs_beta_[0],derECVs_beta_[1],obs_ene,"TEMP");
     log.printf("    (spacing is on beta, not on temperature)\n");
-    derECVs_beta_=setSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",exp_spacing_);
+    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_beta_=false;
   }
   if(todoAutomatic_pres_) //estimate the steps in pres from observations
@@ -415,9 +417,9 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     std::vector<double> obs_vol(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_vol.size(); t++)
       obs_vol[t]=all_obs_cvs[t*ncv+index_j+1];
-    const unsigned steps_pres=estimateSteps((pres_[0]-pres0_)/kbt_,(pres_[1]-pres0_)/kbt_,obs_vol,"PRESSURE");
+    const unsigned steps_pres=estimateNumSteps((pres_[0]-pres0_)/kbt_,(pres_[1]-pres0_)/kbt_,obs_vol,"PRESSURE");
     log.printf("    (spacing is in beta0 units)\n");
-    pres_=setSteps(pres_[0],pres_[1],steps_pres,"PRESSURE");
+    pres_=getSteps(pres_[0],pres_[1],steps_pres,"PRESSURE",false,0);
     todoAutomatic_pres_=false;
   }
   initECVs();
@@ -442,7 +444,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
         break;
       steps_pres++;
     }
-    pres_=setSteps(pres_[0],pres_[1],steps_pres,"PRESSURE");
+    pres_=getSteps(pres_[0],pres_[1],steps_pres,"PRESSURE",false,0);
     todoAutomatic_pres_=false;
   }
   if(todoAutomatic_beta_)
@@ -454,7 +456,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
       if(getPres(i)==pres_max)
         steps_temp++;
     }
-    derECVs_beta_=setSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",exp_spacing_);
+    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_beta_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

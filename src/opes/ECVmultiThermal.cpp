@@ -38,7 +38,7 @@ If instead the simulation is at fixed pressure \f$p\f$, the contribution of the 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
 Otherwise you can manually set this number with STEPS_TEMP.
 In both cases the steps will have a uniform distriution in the inverse temperature (beta).
-Use the keyword EXPONENTIAL_SPACING for an exponential distribution of the temperature steps, that should result in a more uniform sampling of the temperature range.
+Use the keyword GEOM_SPACING for a geometric spacing of the temperature steps, that should result in a more uniform sampling of the temperature range.
 Finally, you can use instead the keyword SET_ALL_TEMPS and explicitly provide each temperature.
 
 You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
@@ -83,7 +83,7 @@ class ECVmultiCanonical :
 {
 private:
   bool todoAutomatic_;
-  bool exp_spacing_;
+  bool geom_spacing_;
   std::vector<double> ECVs_;
   std::vector<double> derECVs_; //(beta_k-beta0) or (temp0/temp_k-1)/kbt
   void initECVs();
@@ -110,7 +110,7 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys)
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
-  keys.addFlag("EXPONENTIAL_SPACING",false,"use exponential spacing in temperature instead of linear spacing in inverse temperature");
+  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in temperature instead of linear spacing in inverse temperature");
 }
 
 ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
@@ -132,7 +132,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   parse("STEPS_TEMP",steps_temp);
   std::vector<double> temps;
   parseVector("SET_ALL_TEMPS",temps);
-  parseFlag("EXPONENTIAL_SPACING",exp_spacing_);
+  parseFlag("GEOM_SPACING",geom_spacing_);
 
   checkRead();
 
@@ -172,7 +172,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
     if(steps_temp>0)
-      derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",exp_spacing_);
+      derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
     else
       todoAutomatic_=true;
   }
@@ -182,6 +182,8 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
 
 //print some info
   log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
+  if(geom_spacing_)
+    log.printf(" -- GEOM_SPACING: temperatures will be geometrically spaced\n");
 }
 
 void ECVmultiCanonical::calculateECVs(const double * ene)
@@ -237,9 +239,9 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_temp=estimateSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
+    const unsigned steps_temp=estimateNumSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",exp_spacing_);
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_=false;
   }
   initECVs();
@@ -252,7 +254,7 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    derECVs_=setSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP",exp_spacing_);
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();
