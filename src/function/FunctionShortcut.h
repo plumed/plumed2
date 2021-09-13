@@ -54,10 +54,19 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  std::vector<std::string> args; parseVector("ARG",args);
-  plumed_assert( args.size()==1 ); plumed_assert( args[0].find_first_of('.')==std::string::npos );
-  ActionWithValue* inpt = plumed.getActionSet().template selectWithLabel<ActionWithValue*>(args[0]); plumed_assert( inpt ); Value* val=inpt->copyOutput(0);
-  if( val->getRank()==1 && !val->hasDerivatives() ) {
+  std::vector<std::string> args; parseVector("ARG",args); Value* val;
+  plumed_assert( args.size()==1 ); 
+  if( args[0].find_first_of('.')!=std::string::npos ) {
+      std::size_t dot=args[0].find_first_of('.'); ActionWithValue* inpt = plumed.getActionSet().template selectWithLabel<ActionWithValue*>(args[0].substr(0,dot));
+      plumed_assert( inpt ); val=inpt->copyOutput( args[0] );
+  } else {
+      ActionWithValue* inpt = plumed.getActionSet().template selectWithLabel<ActionWithValue*>(args[0]); 
+      plumed_assert( inpt ); val=inpt->copyOutput(0);
+  }
+  if( val->getRank()==0 ) {
+      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + args[0] + " " + convertInputLineToString() );
+      else plumed_merror("there is no action registered that allows you to do " + getName() + " with scalars"); 
+  } else if( val->getRank()==1 && !val->hasDerivatives() ) {
       if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + args[0] + " " + convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with vectors");
   } else if( val->getRank()==2 && !val->hasDerivatives() ) {

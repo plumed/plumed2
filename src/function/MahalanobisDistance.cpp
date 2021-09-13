@@ -82,19 +82,19 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_sinediff: MATHEVAL ARG1=" + getShortcutLabel() + "_scaled FUNC=sin(x) PERIODIC=NO");
       // Compute the diagonal elements
       readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + getShortcutLabel() + "_scaled ARG2=" + getShortcutLabel() + "_metoff.center FUNC=2*(1-cos(x))*y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_diag: COMBINE ARG=" + getShortcutLabel() + "_prod PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_diag: SUM ARG=" + getShortcutLabel() + "_prod PERIODIC=NO"); 
       // Compute the off diagonal elements
       readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + getShortcutLabel() + "_metoff.covariance ARG2=" + getShortcutLabel() +"_sinediff");
       readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_sinediff FUNC=x*y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_offdiag: COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_offdiag: SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
       // Sum everything
       if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");
       else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");
   } else {
       readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diff");
       readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_diff FUNC=x*y PERIODIC=NO");
-      if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
-      else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+      if( !squared ) readInputLine( getShortcutLabel() + "_2: SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+      else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
   }
   if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }

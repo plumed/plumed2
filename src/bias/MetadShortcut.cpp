@@ -118,7 +118,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       std::string num; Tools::convert( args.size()+1, num );
       act->readInputLine( lab + "_heights: CUSTOM PERIODIC=NO FUNC=exp(x) ARG1=" + lab + "_store.logweights" );
       act->readInputLine( lab + "_gvals: CUSTOM PERIODIC=NO FUNC=vh*exp(-(" + func + ")/2)" + names + ",vh " + func_args + " ARG" + num + "=" + lab  + "_heights");
-      act->readInputLine( lab + "_bias: COMBINE ARG=" + lab + "_gvals PERIODIC=NO");
+      act->readInputLine( lab + "_bias: SUM ARG=" + lab + "_gvals PERIODIC=NO");
   }
 }
 

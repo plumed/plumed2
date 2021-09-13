@@ -61,7 +61,7 @@ public:
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
   if( getPntrToArgument(0)->isTimeSeries() && ipoint==getPntrToArgument(0)->getShape()[0] ) return getPntrToArgument(0)->get( ipoint-1 );
-  plumed_dbg_assert( ipoint<getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
+  plumed_dbg_assert( ipoint<getPntrToArgument(0)->getNumberOfValues() );
   return getPntrToArgument(0)->get( ipoint );
 }
 

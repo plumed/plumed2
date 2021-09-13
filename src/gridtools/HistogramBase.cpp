@@ -39,7 +39,7 @@ void HistogramBase::createKDEObject( const std::string& lab, const std::string& 
   // Deal with the weights if we are doing averages on a grid
   if( height.length()>0 && !uflag ) {
     inp = lab + "_unorm: " + command + "_CALC " + action->convertInputLineToString(); 
-    action->readInputLine( lab + "_hsum: COMBINE ARG=" + height + " PERIODIC=NO");
+    action->readInputLine( lab + "_hsum: SUM ARG=" + height + " PERIODIC=NO");
     inp = inp + " UNORMALIZED";
   } else if( !uflag ) {
      inp = lab + ": " + command + "_CALC " + action->convertInputLineToString();

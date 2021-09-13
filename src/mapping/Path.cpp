@@ -124,7 +124,6 @@ Path::Path( const ActionOptions& ao ):
   std::vector<std::string> properties, pnames;
   if( getName()=="PATH") { properties.resize(1); }
   else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
-  for(unsigned i=0;i<properties.size();++i) properties[i] = "COEFFICIENTS=";
   // Create list of reference configurations that PLUMED will use
   std::string mtype, refname; std::vector<std::string> refactions;
   readInputFrames( mtype, refname, false, this, refactions );
@@ -133,30 +132,28 @@ Path::Path( const ActionOptions& ao ):
   // Now create MATHEVAL object to compute exponential functions
   readInputLine( getShortcutLabel() + "_weights: MATHEVAL ARG1=" + getShortcutLabel() + "_data  FUNC=exp(-x*" + lambda + ") PERIODIC=NO" );
   // Create denominator
-  readInputLine( getShortcutLabel() + "_denom: COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
   // Now compte zpath variable
   readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
   // Now get coefficients for properies for spath
-  readPropertyData( refname, pnames, properties );
+  readPropertyData( refname, "_ref", pnames, this );
   // Now create COMBINE objects to compute numerator of path
   for(unsigned i=0;i<properties.size();++i) {
-      std::string numer_input, path_input; 
       if( pnames.size()>0 ) {
-          numer_input = pnames[i] + "_numer:";
-          path_input = pnames[i] + ": MATHEVAL ARG1=" + pnames[i] + "_numer";
+          readInputLine( pnames[i] + "_numer_prod: CUSTOM ARG1=" + getShortcutLabel() + "_weights ARG2=" + pnames[i] + "_ref FUNC=x*y PERIODIC=NO");
+          readInputLine( pnames[i] + "_numer: SUM ARG=" + pnames[i]  + "_numer_prod PERIODIC=NO");
+          readInputLine( pnames[i] + ": CUSTOM ARG1=" + pnames[i]  + "_numer ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
       } else {
-          numer_input = getShortcutLabel()  + "_numer:";
-          path_input = getShortcutLabel() + "_s: MATHEVAL ARG1=" + getShortcutLabel() + "_numer";
+          readInputLine( getShortcutLabel() + "_s_prod: CUSTOM ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_ind FUNC=x*y PERIODIC=NO");
+          readInputLine( getShortcutLabel()  + "_numer: SUM ARG=" + getShortcutLabel() + "_s_prod PERIODIC=NO");
+          readInputLine( getShortcutLabel() + "_s: CUSTOM ARG1=" + getShortcutLabel() + "_numer ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
       }
-      // Create numerators for SPATH variables
-      readInputLine( numer_input + " COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO " + properties[i] );
-      // Create final values of SPATH variables
-      readInputLine( path_input + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
 }
 
-void Path::readPropertyData( const std::string& refname, const std::vector<std::string>& pnames, std::vector<std::string>& properties ) {
-  FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
+void Path::readPropertyData( const std::string& refname, const std::string& refstr, const std::vector<std::string>& pnames, ActionShortcut* action ) { 
+  std::vector<std::string> properties( pnames.size() ); if( pnames.size()==0 ) properties.resize(1);
+  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; FILE* fp=std::fopen(refname.c_str(),"r");
   while (do_read ) {
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
@@ -175,6 +172,9 @@ void Path::readPropertyData( const std::string& refname, const std::vector<std::
       }
       nfram++;
   }
+  if( pnames.size()>0 ) {
+      for(unsigned i=0;i<pnames.size();++i) action->readInputLine( pnames[i] + refstr + ": READ_VECTOR ARG=" + action->getShortcutLabel() + "_data CENTER=" + properties[i] );
+  } else action->readInputLine( action->getShortcutLabel() + "_ind: READ_VECTOR ARG=" + action->getShortcutLabel() + "_data CENTER=" + properties[0] );
 }
 
 void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
@@ -260,14 +260,16 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
             plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues(); 
             ref_line +=" ARG1=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
           }
-          std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
-          if( mtype=="DRMSD" ) powstr += " NORMALIZE"; 
           if( coeff.size()>0 ) {
+              if( geometric ) action->error("having coefficients with geometric path makes no sense");
               if( coeff.size()!=nquantities ) action->error("mismatch between number of coefficients and number of values");
-              std::string str_coeff; Tools::convert( coeff[0]*coeff[0], str_coeff); powstr += " COEFFICIENTS=" + str_coeff;
-              for(unsigned i=1;i<nquantities;++i) { Tools::convert( coeff[i]*coeff[i], str_coeff); powstr += "," + str_coeff; } 
-          }
-          if( !geometric) ref_line += "; COMBINE ARG=" + scut_lab + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
+              std::string str_coeff; Tools::convert( coeff[0], str_coeff); 
+              ref_line +=  "; " + scut_lab + "_coeff" + num + ": READ_VECTOR CENTER=" + str_coeff;
+              for(unsigned i=1;i<nquantities;++i) { Tools::convert( coeff[i], str_coeff); ref_line += "," + str_coeff; } 
+              ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " ARG2=" + scut_lab + "_coeff" + num + " FUNC=y*y*x*x PERIODIC=NO";
+          } else if( !geometric ) ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " FUNC=x*x PERIODIC=NO";
+          if( mtype=="DRMSD" && !geometric ) ref_line += "; MEAN ARG=" + scut_lab + "_diff_sq" + num + " PERIODIC=NO } "; 
+          else if( !geometric ) ref_line += "; SUM ARG=" + scut_lab + "_diff_sq" + num + " PERIODIC=NO } "; 
           else ref_line += "} ";
       } 
   }

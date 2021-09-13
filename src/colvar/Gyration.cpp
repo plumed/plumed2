@@ -93,12 +93,12 @@ ActionShortcut(ao)
     readInputLine( getShortcutLabel() + "_diag_elements: SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_tensor COMPONENTS=1.1,2.2,3.3");
     if( gtype=="RADIUS") {
         // And now we need the average trace for the gyration radius
-        readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO"); 
+        readInputLine( getShortcutLabel() + "_trace: SUM ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO"); 
         // Square root the radius
         readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
     } else if( gtype=="TRACE" ) {
 	// Compte the trace of the gyration tensor
-	readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO");
+	readInputLine( getShortcutLabel() + "_trace: SUM ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO");
         // And double it
         readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_trace FUNC=2*x PERIODIC=NO"); 
     } else {

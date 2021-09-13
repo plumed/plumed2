@@ -22,6 +22,7 @@
 #include "ParallelPlumedActions.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include "ActionShortcut.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -71,7 +72,12 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
           } 
       }
       // Check that final command in input is just a scalar
-      const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i-1].second-1].get() );
+      unsigned aind = action_lists[i-1].second-1;
+      while( true ) {
+         const ActionShortcut* as=dynamic_cast<const ActionShortcut*>( plumed.getActionSet()[aind].get() );
+         if( !as ) break ; aind = aind - 1; plumed_assert( aind>=0 );
+      }
+      const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[aind].get() );
       if( !av ) error("final action in each created set of action should have a value");
       if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD_CALC" ) error("final action in each created set of actions should calculate only one scalar");
       if( i==1 && av->copyOutput(0)->isPeriodic() ) { periodic=true; av->copyOutput(0)->getDomain( pmin, pmax ); }
@@ -101,8 +107,7 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   // Now work out the number of derivatives we have in this action
   der_starts.resize( action_lists.size() );
   for(unsigned i=0;i<action_lists.size();++i) {
-      ActionWithValue* av=dynamic_cast<ActionWithValue*>( plumed.getActionSet()[action_lists[i].second-1].get() );
-      der_starts[i]=nderivatives; nderivatives += av->getNumberOfDerivatives();
+      der_starts[i]=nderivatives; nderivatives += (valuesToGet[i]->getPntrToAction())->getNumberOfDerivatives();
   }
 }
 

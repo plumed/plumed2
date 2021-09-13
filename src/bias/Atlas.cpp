@@ -367,7 +367,7 @@ ActionShortcut(ao)
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
                + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
             // Sum the components of the vector
-            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
+            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": SUM ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
             // Divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
 	    // However, since it seems quite complex to normalize the periodic boundary too, we do not normalize the non-periodic boundaries for the sqrt(eigval)
 	    // As a matter of fact, for periodic CVs this procedure is basically a selection of the most important modes in the basins

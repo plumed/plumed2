@@ -163,7 +163,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   readInputLine( getShortcutLabel() +"_data: DIHEDRAL_CORRELATION " + convertInputLineToString() ); 
-  readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_data PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_data PERIODIC=NO");
 } 
 
 }

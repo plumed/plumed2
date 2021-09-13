@@ -82,7 +82,7 @@ ActionShortcut(ao)
   std::map<std::string,std::string> keymap; readShortcutKeywords( keys, keymap ); if( do_mean ) keymap.insert(std::pair<std::string,std::string>("SUM",""));
   MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), getShortcutLabel() + "_wmat", keymap, this );
   if( do_mean ) {
-      readInputLine( getShortcutLabel() + "_denom: COMBINE ARG=" + getShortcutLabel() + "_wmat PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_wmat PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_mean: CUSTOM ARG1=" + getShortcutLabel() + "_sum ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
 }

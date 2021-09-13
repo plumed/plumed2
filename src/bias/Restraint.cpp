@@ -92,24 +92,28 @@ Restraint::Restraint(const ActionOptions&ao):
       }
   }
   
-  std::string biasargs, forceargs;
+  std::string biasargs, forceargs; bool non_constant_force=false;
   for(unsigned i=0;i<args.size();++i) {
       std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
       readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
-      readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_kap_" + argn + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn ); 
-      if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
-      readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_slope_" + argn + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
-      biasargs += "," + getShortcutLabel() + "_slope_" + argn;
-      readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + 
-                       " ARG1=" + getShortcutLabel() + "_harm_" + argn );
-      if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;
+      if( kappa[i]!="0.0" ) {
+          non_constant_force = true;
+          readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
+          readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM NO_WILDCARD PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn ); 
+          readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn ); 
+          if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
+          if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;    
+     }  
+      if( slope[i]!="0.0" ) {
+          readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
+          readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM NO_WILDCARD PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
+          if( biasargs.length()==0 ) biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn; else biasargs += "," + getShortcutLabel() + "_slope_" + argn;
+      }
   }
   // This is the bias
   readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasargs );
   readInputLine( getShortcutLabel() + ": BIASVALUE ARG=" + getShortcutLabel() + "_bias STRIDE=" + stride );
-  readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
+  if( non_constant_force ) readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
 }
 
 }

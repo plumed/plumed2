@@ -53,6 +53,7 @@ public:
 template <class T>
 void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   FunctionBase::registerKeywords( keys );
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
 }
 
@@ -119,23 +120,28 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
 
   // And now compute the derivatives
   if( actionInChain() ) {
-      for(unsigned i=0;i<getNumberOfComponents();++i) {
-          unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
-          for(unsigned j=0;j<getNumberOfArguments();++j) {
-              if( getPntrToArgument(i)->getRank()==1 ) {
-                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
-                  for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-                      unsigned kind=myvals.getActiveIndex(istrn,k);
+      for(unsigned j=0;j<getNumberOfArguments();++j) {
+          if( getPntrToArgument(j)->getRank()==1 ) {
+              unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+              for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+                  unsigned kind=myvals.getActiveIndex(istrn,k);
+                  for(unsigned i=0;i<getNumberOfComponents();++i) {
+                      unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
                       myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
                       myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
-                  } 
-              } else plumed_merror("not implemented this yet");
-          }
+                  }
+              } 
+          } else plumed_merror("not implemented this yet");
       }
   } else {
-      for(unsigned i=0;i<getNumberOfComponents();++i) {
-          unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
-          for(unsigned j=0;j<getNumberOfArguments();++j) { myvals.addDerivative( ostrn, j, derivatives(i,j) ); myvals.updateIndex( ostrn, j ); }
+      for(unsigned j=0;j<getNumberOfArguments();++j) { 
+          if( getPntrToArgument(j)->getRank()==1 ) {
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream(); 
+                  myvals.addDerivative( ostrn, current, derivatives(i,j) ); 
+                  myvals.updateIndex( ostrn, current );
+              }
+          } else plumed_error();
       }
   }
 }

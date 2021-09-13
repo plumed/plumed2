@@ -388,13 +388,15 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
             // Retrieve number of quantities so we can make the powers vector
             ActionWithValue* aval = plmd.getActionSet().selectWithLabel<ActionWithValue*>( "diff" + istr );
             unsigned nquantities = aval->copyOutput(0)->getShape()[0];
-            // SUM OF SQUARED
-            std::string comb_string = "comb" + istr + ": COMBINE ARG=diff" + istr + " PERIODIC=NO POWERS=2";
-            for(unsigned i=1;i<nquantities;++i) comb_string += ",2";
-            const char* icinp2=comb_string.c_str(); plmd.cmd("readInputLine",icinp2);
+            // SQUARES OF DIFFERENCES
+            std::string diff_string2 = "diff" + istr + "_2: CUSTOM ARG1=diff" + istr + " FUNC=x*x PERIODIC=NO";
+            const char* icinp2=diff_string2.c_str(); plmd.cmd("readInputLine",icinp2);
+            // SUM THEM
+            std::string comb_string = "comb" + istr + ": SUM ARG=diff" + istr + "_2 PERIODIC=NO";
+            const char* icinp3=comb_string.c_str(); plmd.cmd("readInputLine",icinp3);
             // SQUARE ROOT
             std::string fstr = "d" + istr + ": MATHEVAL ARG=comb" + istr + " FUNC=sqrt(x) PERIODIC=NO";
-            const char* icinp3=fstr.c_str(); plmd.cmd("readInputLine",icinp3); 
+            const char* icinp4=fstr.c_str(); plmd.cmd("readInputLine",icinp4); 
         } else {
             plumed_merror("metric type " + mtype + " has not been implemented");
         }

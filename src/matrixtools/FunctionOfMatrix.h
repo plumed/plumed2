@@ -57,6 +57,7 @@ public:
 template <class T>
 void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
   Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); keys.use("ARG");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
 }

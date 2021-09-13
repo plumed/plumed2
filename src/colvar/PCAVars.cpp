@@ -88,7 +88,6 @@ PCAVars::PCAVars( const ActionOptions& ao ):
     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
     if( do_read ) {
         std::string num; Tools::convert( nfram, num ); nfram++;
-        std::string comb_inp = getShortcutLabel()  + "_eig-" + num + ": COMBINE ARG=" + getShortcutLabel() + ".disp PERIODIC=NO";
         // Normalize the eigenvector in the input
         double norm=0;
         for(unsigned i=0;i<mypdb.getPositions().size();++i) {
@@ -108,13 +107,17 @@ PCAVars::PCAVars( const ActionOptions& ao ):
                 normed_coeffs[3*i+2] = sqrt(displace[i])*mypdb.getPositions()[i][2] / norm;
             }
         }
-        std::string coeff1; Tools::convert( normed_coeffs[0], coeff1 );
-        comb_inp +=" COEFFICIENTS=" + coeff1;
+        std::string coeff1, pvec; Tools::convert( normed_coeffs[0], pvec );
         for(unsigned i=1;i<normed_coeffs.size();++i) {
             Tools::convert( normed_coeffs[i], coeff1 );
-            comb_inp += "," + coeff1;
+            pvec += "," + coeff1;
         }
-        readInputLine( comb_inp );
+        // Read in eigenvector
+        readInputLine( getShortcutLabel() + "_peig-" + num + ": READ_VECTOR CENTER=" + pvec );
+        // Multiply displacement by eigevector  
+        readInputLine( getShortcutLabel() + "_vprod-" + num + ": CUSTOM ARG1=" + getShortcutLabel() + "_peig-" + num + " ARG2=" + getShortcutLabel() + ".disp FUNC=x*y PERIODIC=NO");
+        // And sum displacement times vector
+        readInputLine( getShortcutLabel()  + "_eig-" + num + ": SUM ARG=" + getShortcutLabel() + "_vprod-" + num + " PERIODIC=NO");
     } else { break; }
   }
   std::fclose(fp);

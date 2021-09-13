@@ -67,11 +67,11 @@ ActionShortcut(ao)
     if( dosum || domean ) {
       readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + mc_lab + " ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       std::string tlab = getShortcutLabel() + "_numer"; if( dosum ) tlab = getShortcutLabel() + "_sum:";
-      readInputLine( tlab + ": COMBINE ARG=" + getShortcutLabel() + "_prod PERIODIC=NO"); 
+      readInputLine( tlab + ": SUM ARG=" + getShortcutLabel() + "_prod PERIODIC=NO"); 
     }
     if( domean ) {
       // Calculate denominator
-      readInputLine( getShortcutLabel() + "_norm: COMBINE ARG=" + getShortcutLabel() + " PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_norm: SUM ARG=" + getShortcutLabel() + " PERIODIC=NO"); 
       // And calculate final quantity which is mean of these two actions
       std::string arg1_lab = getShortcutLabel() + "_numer"; if( dosum ) arg1_lab = getShortcutLabel()  + "_sum"; 
       readInputLine( getShortcutLabel() + "_mean: MATHEVAL ARG1=" + arg1_lab + " ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO"); 
@@ -82,7 +82,7 @@ ActionShortcut(ao)
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_lt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_lt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum
-      readInputLine( getShortcutLabel() + "_lessthan: COMBINE ARG=" + getShortcutLabel() + "_lt PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO"); 
     }
     if( mt_input.length()>0 ) {
       // Calculate number less than
@@ -90,7 +90,7 @@ ActionShortcut(ao)
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_mt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_mt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum
-      readInputLine( getShortcutLabel() + "_morethan: COMBINE ARG=" + getShortcutLabel() + "_mt PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_morethan: SUM ARG=" + getShortcutLabel() + "_mt PERIODIC=NO"); 
     }
     if( bt_input.length()>0 ) {
       // Calculate number less than
@@ -98,11 +98,11 @@ ActionShortcut(ao)
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_bt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_bt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum
-      readInputLine( getShortcutLabel() + "_between: COMBINE ARG=" + getShortcutLabel() + "_bt PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_between: SUM ARG=" + getShortcutLabel() + "_bt PERIODIC=NO"); 
     }
   } else if( dosum ) {
     readInputLine( getShortcutLabel() + "_vols: " + voltype + "_CALC " + convertInputLineToString() );
-    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_vols PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vols PERIODIC=NO"); 
   } else {
     readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() );
   }

@@ -85,7 +85,7 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // Now for the weights - read the vector of weights first
   std::string wvec; parse("WEIGHTS",wvec);
   // Now calculate the sum of thse weights
-  readInputLine( wvec + "_sum: COMBINE ARG=" + wvec + " PERIODIC=NO");
+  readInputLine( wvec + "_sum: SUM ARG=" + wvec + " PERIODIC=NO");
   // And normalise the vector of weights using this sum
   readInputLine( wvec + "_normed: CUSTOM ARG1=" + wvec + "_sum ARG2=" + wvec + " FUNC=y/x PERIODIC=NO");
   // And now create the matrix of weights

@@ -34,6 +34,7 @@ class ActionShortcut :
   public virtual Action {
 friend class ActionSet;
 private:
+  bool wildcard;
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
 public:
@@ -58,6 +59,8 @@ public:
   void apply() override {}
 /// Get the lines of the shortcut that were read in
   std::vector<std::string> getSavedInputLines() const ;
+/// Is the output from this shortcut a match for the * keyword
+  bool matchWildcard() const ;
 };
 
 }

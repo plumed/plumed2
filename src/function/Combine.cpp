@@ -182,6 +182,7 @@ Combine::Combine(const ActionOptions&ao):
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
   if( args.size()==1 && !numberedkeys ) {
+    plumed_massert(getPntrToArgument(0)->getRank()==0, "REPLACE COMBINE WITH SUM " + getLabel() );
     unsigned ind = myvals.getTaskIndex(); if( parameters.size()==1 ) ind=0;
     plumed_dbg_assert( ind<parameters.size() );
     double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );

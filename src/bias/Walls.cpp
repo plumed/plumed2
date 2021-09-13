@@ -110,10 +110,12 @@ UWalls::UWalls(const ActionOptions&ao):
           readInputLine( getShortcutLabel() + "_scale_" + argn + ": MATHEVAL PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG1=" + getShortcutLabel() + "_cv_" + argn );
           readInputLine( getShortcutLabel() + "_pow_" + argn + ": MATHEVAL PERIODIC=NO FUNC=step(-x)*x^" + exp[i] + " ARG1=" + getShortcutLabel() + "_scale_" + argn );
       }
-      readInputLine( getShortcutLabel() + "_wall_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG1=" + getShortcutLabel() + "_pow_" + argn );
+      readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG1=" + getShortcutLabel() + "_pow_" + argn );
+      readInputLine( getShortcutLabel() + "_wall_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_wall_" + argn + " PERIODIC=NO"); 
       readInputLine( getShortcutLabel() + "_force_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
                      "ARG1=" + getShortcutLabel() + "_pow_" + argn + " ARG2=" + getShortcutLabel() + "_scale_" + argn ); 
-      readInputLine( getShortcutLabel() + "_force2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=x*x ARG1=" + getShortcutLabel() + "_force_" + argn );
+      readInputLine( getShortcutLabel() + "_v_force2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=x*x ARG1=" + getShortcutLabel() + "_force_" + argn );
+      readInputLine( getShortcutLabel() + "_force2_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_force2_" + argn + " PERIODIC=NO");
       if(i==0) {
          biasinp = " ARG=" + getShortcutLabel() + "_wall_" + argn; 
          forceinp = " ARG=" + getShortcutLabel() + "_force2_" + argn;

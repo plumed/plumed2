@@ -78,7 +78,7 @@ public:
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords(Keywords& keys) {
-  MultiColvarBase::registerKeywords( keys ); MultiColvarBase::shortcutKeywords( keys );
+  ActionShortcut::registerKeywords( keys ); MultiColvarBase::shortcutKeywords( keys );
 }
 
 Torsions::Torsions(const ActionOptions& ao):

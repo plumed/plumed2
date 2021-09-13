@@ -109,33 +109,33 @@ vrm[im5]: MATHEVAL ARG1=a1 ARG2=d1_im[5] FUNC=x*y PERIODIC=NO
 vrm[rm6]: MATHEVAL ARG1=a1 ARG2=d1_rm[6] FUNC=x*y PERIODIC=NO
 vrm[im6]: MATHEVAL ARG1=a1 ARG2=d1_im[6] FUNC=x*y PERIODIC=NO
 
-srm[rm-6]: COMBINE ARG=vrm[rm-6] PERIODIC=NO
-srm[im-6]: COMBINE ARG=vrm[im-6] PERIODIC=NO
-srm[rm-5]: COMBINE ARG=vrm[rm-5] PERIODIC=NO
-srm[im-5]: COMBINE ARG=vrm[im-5] PERIODIC=NO
-srm[rm-4]: COMBINE ARG=vrm[rm-4] PERIODIC=NO
-srm[im-4]: COMBINE ARG=vrm[im-4] PERIODIC=NO
-srm[rm-3]: COMBINE ARG=vrm[rm-3] PERIODIC=NO
-srm[im-3]: COMBINE ARG=vrm[im-3] PERIODIC=NO
-srm[rm-2]: COMBINE ARG=vrm[rm-2] PERIODIC=NO
-srm[im-2]: COMBINE ARG=vrm[im-2] PERIODIC=NO
-srm[rm-1]: COMBINE ARG=vrm[rm-1] PERIODIC=NO
-srm[im-1]: COMBINE ARG=vrm[im-1] PERIODIC=NO
-srm[rm0]: COMBINE ARG=vrm[rm0] PERIODIC=NO
-srm[im0]: COMBINE ARG=vrm[im0] PERIODIC=NO
-srm[rm1]: COMBINE ARG=vrm[rm1] PERIODIC=NO
-srm[im1]: COMBINE ARG=vrm[im1] PERIODIC=NO
-srm[rm2]: COMBINE ARG=vrm[rm2] PERIODIC=NO
-srm[im2]: COMBINE ARG=vrm[im2] PERIODIC=NO
-srm[rm3]: COMBINE ARG=vrm[rm3] PERIODIC=NO
-srm[im3]: COMBINE ARG=vrm[im3] PERIODIC=NO
-srm[rm4]: COMBINE ARG=vrm[rm4] PERIODIC=NO
-srm[im4]: COMBINE ARG=vrm[im4] PERIODIC=NO
-srm[rm5]: COMBINE ARG=vrm[rm5] PERIODIC=NO
-srm[im5]: COMBINE ARG=vrm[im5] PERIODIC=NO
-srm[rm6]: COMBINE ARG=vrm[rm6] PERIODIC=NO
-srm[im6]: COMBINE ARG=vrm[im6] PERIODIC=NO
-numer: COMBINE ARG=a1 PERIODIC=NO
+srm[rm-6]: SUM ARG=vrm[rm-6] PERIODIC=NO
+srm[im-6]: SUM ARG=vrm[im-6] PERIODIC=NO
+srm[rm-5]: SUM ARG=vrm[rm-5] PERIODIC=NO
+srm[im-5]: SUM ARG=vrm[im-5] PERIODIC=NO
+srm[rm-4]: SUM ARG=vrm[rm-4] PERIODIC=NO
+srm[im-4]: SUM ARG=vrm[im-4] PERIODIC=NO
+srm[rm-3]: SUM ARG=vrm[rm-3] PERIODIC=NO
+srm[im-3]: SUM ARG=vrm[im-3] PERIODIC=NO
+srm[rm-2]: SUM ARG=vrm[rm-2] PERIODIC=NO
+srm[im-2]: SUM ARG=vrm[im-2] PERIODIC=NO
+srm[rm-1]: SUM ARG=vrm[rm-1] PERIODIC=NO
+srm[im-1]: SUM ARG=vrm[im-1] PERIODIC=NO
+srm[rm0]: SUM ARG=vrm[rm0] PERIODIC=NO
+srm[im0]: SUM ARG=vrm[im0] PERIODIC=NO
+srm[rm1]: SUM ARG=vrm[rm1] PERIODIC=NO
+srm[im1]: SUM ARG=vrm[im1] PERIODIC=NO
+srm[rm2]: SUM ARG=vrm[rm2] PERIODIC=NO
+srm[im2]: SUM ARG=vrm[im2] PERIODIC=NO
+srm[rm3]: SUM ARG=vrm[rm3] PERIODIC=NO
+srm[im3]: SUM ARG=vrm[im3] PERIODIC=NO
+srm[rm4]: SUM ARG=vrm[rm4] PERIODIC=NO
+srm[im4]: SUM ARG=vrm[im4] PERIODIC=NO
+srm[rm5]: SUM ARG=vrm[rm5] PERIODIC=NO
+srm[im5]: SUM ARG=vrm[im5] PERIODIC=NO
+srm[rm6]: SUM ARG=vrm[rm6] PERIODIC=NO
+srm[im6]: SUM ARG=vrm[im6] PERIODIC=NO
+numer: SUM ARG=a1 PERIODIC=NO
 
 mrm[rm-6]: MATHEVAL ARG=srm[rm-6],numer FUNC=x/y PERIODIC=NO
 mrm[im-6]: MATHEVAL ARG=srm[im-6],numer FUNC=x/y PERIODIC=NO

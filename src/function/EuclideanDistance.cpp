@@ -49,9 +49,9 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_diff FUNC=x*x PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared);
   if( !squared ) {
-      readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_2: SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
       readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
-  } else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+  } else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
 }
 
 }

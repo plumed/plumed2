@@ -45,7 +45,7 @@ ActionShortcut(ao)
   std::string arg; parse("ARG",arg); 
   readInputLine( getShortcutLabel() + "_vec: CONCATENATE ARG=" + arg );
   readInputLine( getShortcutLabel() + "_logs: MATHEVAL ARG1=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_logsum: COMBINE ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_logsum: SUM ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");
   readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_logsum FUNC=exp(x) PERIODIC=NO");
 }
 

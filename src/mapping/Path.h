@@ -34,7 +34,7 @@ public:
   static void readInputFrames( std::string& mytype, std::string& refname, const bool& geometric, 
                                ActionShortcut* action, std::vector<std::string>& refactions );
   static unsigned getNumberOfFramesAndMetric( const std::string& mtype, const std::string& reffile, std::string& metric );
-  static void readPropertyData( const std::string& refname, const std::vector<std::string>& pnames, std::vector<std::string>& properties );
+  static void readPropertyData( const std::string& refname, const std::string& refstr, const std::vector<std::string>& pnames, ActionShortcut* action );
   explicit Path(const ActionOptions&);
 };
 

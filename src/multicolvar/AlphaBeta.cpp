@@ -55,7 +55,7 @@ ActionShortcut(ao)
   // Now matheval for cosine bit
   readInputLine( getShortcutLabel() + "_cos: MATHEVAL ARG1=" + getShortcutLabel() + "_comb FUNC=0.5+0.5*cos(x) PERIODIC=NO");
   // And combine to get final value
-  readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_cos PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_cos PERIODIC=NO");
 }
 
 }

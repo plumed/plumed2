@@ -83,14 +83,14 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   else readInputLine( getShortcutLabel() + "_mat: DISTANCE" + distances_str ); 
   // And the difference between these two sets of matrices
   readInputLine( getShortcutLabel() + "_diffm: DIFFERENCE ARG1=" + getShortcutLabel() + "_mat ARG2=" + getShortcutLabel() + "_ref"); 
-  unsigned nn = Tools::getWords( distances_str ).size();
+  // Calculate all the squares
+  readInputLine( getShortcutLabel() + "_sqs: CUSTOM ARG1=" + getShortcutLabel() + "_diffm FUNC=x*x PERIODIC=NO");
   // And the total difference
   bool squared; parseFlag("SQUARED",squared); std::string comb_inp; 
-  if( !squared ) comb_inp = getShortcutLabel() + "_2:"; else comb_inp = getShortcutLabel() + ":";
-  comb_inp += " COMBINE NORMALIZE PERIODIC=NO ARG=" + getShortcutLabel() + "_diffm POWERS=2";
-  for(unsigned i=1;i<nn;++i) comb_inp += ",2"; readInputLine( comb_inp );
-  // And the square root of the distance if required
-  if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  if( !squared ) {
+      readInputLine( getShortcutLabel() + "_2: MEAN ARG=" + getShortcutLabel() + "_sqs PERIODIC=NO");
+      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  } else readInputLine( getShortcutLabel() + ": MEAN ARG=" + getShortcutLabel() + "_sqs PERIODIC=NO");
 }
 
 std::string DRMSD::getDistancesString( PlumedMain& pp, const std::string& reflab, const std::string& drmsd_input ) {

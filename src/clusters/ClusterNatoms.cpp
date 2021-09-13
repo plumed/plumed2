@@ -44,7 +44,7 @@ ActionShortcut(ao)
   // Create a cluster weights object
   readInputLine( getShortcutLabel() + "_weights: CLUSTER_WEIGHTS " + convertInputLineToString() );
   // Add all the weights together (weights are 1 or 0)
-  readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
 }
 
 }

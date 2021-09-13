@@ -16,5 +16,5 @@ beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w ARG1=cmat_oh.x ARG2=cmat_oh.y ARG3=c
 PRINT ARG1=beh_hh ATOMS=2,3,5,6 FMT=%8.4f FILE=gfunc_h.xyz
 PRINT ARG1=beh_oo ARG2=beh_oh.g4 ATOMS=1,4 FMT=%8.4f FILE=gfunc_o.xyz
 
-comb_hh: COMBINE ARG=beh_hh PERIODIC=NO
+comb_hh: SUM ARG=beh_hh PERIODIC=NO
 BIASVALUE ARG=comb_hh

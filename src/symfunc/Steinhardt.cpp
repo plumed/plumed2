@@ -108,9 +108,9 @@ ActionShortcut(ao)
     for(int i=-l; i<=l; ++i) {
       std::string snum; Tools::convert( i, snum );
       // Real part
-      readInputLine( getShortcutLabel() + "_rms-[" + snum + "]: COMBINE ARG=" + getShortcutLabel() + "_rmn-[" + snum + "] NORMALIZE PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_rms-[" + snum + "]: MEAN ARG=" + getShortcutLabel() + "_rmn-[" + snum + "] PERIODIC=NO");
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_ims-[" + snum + "]: COMBINE ARG=" + getShortcutLabel() + "_imn-[" + snum + "] NORMALIZE PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_ims-[" + snum + "]: MEAN ARG=" + getShortcutLabel() + "_imn-[" + snum + "] PERIODIC=NO");
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", l, "ms" );
@@ -120,9 +120,9 @@ ActionShortcut(ao)
     for(int i=-l; i<=l; ++i) {
       std::string snum; Tools::convert( i, snum );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmz-[" + snum + "]: COMBINE ARG=" + getShortcutLabel() + "_rmn-[" + snum + "] PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_rmz-[" + snum + "]: SUM ARG=" + getShortcutLabel() + "_rmn-[" + snum + "] PERIODIC=NO"); 
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imz-[" + snum + "]: COMBINE ARG=" + getShortcutLabel() + "_imn-[" + snum + "] PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_imz-[" + snum + "]: SUM ARG=" + getShortcutLabel() + "_imn-[" + snum + "] PERIODIC=NO"); 
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", l, "mz" );

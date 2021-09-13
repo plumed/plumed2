@@ -30,6 +30,7 @@ namespace PLMD {
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
+  keys.addFlag("NO_WILDCARD",false,"if this keyword is present the single value output by this action will not be a match for the * wildcard");
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
@@ -55,6 +56,7 @@ void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::s
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
   Action(ao),
+  wildcard(true),
   shortcutlabel(label)
 {
   std::string s; Tools::convert(plumed.getActionSet().size(),s);
@@ -62,6 +64,11 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
     std::string t; Tools::convert(plumed.getActionSet().size()+1,t);
     shortcutlabel="@" + t;
   } else label = ("@" + s);
+  bool nwild=false; 
+  if( keywords.exists("NO_WILDCARD") ) {
+      parseFlag("NO_WILDCARD",nwild); 
+      if( nwild ) wildcard=false; 
+  }
 }
 
 void ActionShortcut::readInputLine( const std::string& input, const bool never_update ) {
@@ -152,6 +159,10 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, ActionWithArg
 
 std::vector<std::string> ActionShortcut::getSavedInputLines() const {
   return savedInputLines;
+}
+
+bool ActionShortcut::matchWildcard() const {
+  return wildcard;
 }
 
 }

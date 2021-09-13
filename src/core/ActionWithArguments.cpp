@@ -227,7 +227,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
             // Find an action created from the shortcut with this label that has a single action
             for(unsigned k=0; k<shortcuts.size(); ++k) {
-                if( all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
+                if( shortcuts[k]->matchWildcard() && all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
             }
             if( found ) {
                 for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
@@ -283,7 +283,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
     if( !allow_streams ) { storing=true; break; }
     if( arguments[i]->alwaysstore ) { 
         ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
-        if( !as ) { storing=true; break; }
+        if( as ) { arguments[i]->buildDataStore( getLabel() ); } else { storing=true; break; }
     }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }

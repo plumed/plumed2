@@ -133,16 +133,16 @@ ActionShortcut(ao)
   }
   readInputLine( grpstr ); readInputLine( getShortcutLabel() + ": PLANE " + dline + " " + convertInputLineToString() );
   if( vmean ) {
-    readInputLine( getShortcutLabel() + "_xs: COMBINE ARG=" + getShortcutLabel() + ".x NORMALIZE PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_ys: COMBINE ARG=" + getShortcutLabel() + ".y NORMALIZE PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_zs: COMBINE ARG=" + getShortcutLabel() + ".z NORMALIZE PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_xs: MEAN ARG=" + getShortcutLabel() + ".x PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_ys: MEAN ARG=" + getShortcutLabel() + ".y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_zs: MEAN ARG=" + getShortcutLabel() + ".z PERIODIC=NO");
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", "s" );
   }
   if( vsum ) {
-    readInputLine( getShortcutLabel() + "_xz: COMBINE ARG=" + getShortcutLabel() + ".x PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_yz: COMBINE ARG=" + getShortcutLabel() + ".y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_zz: COMBINE ARG=" + getShortcutLabel() + ".z PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_xz: SUM ARG=" + getShortcutLabel() + ".x PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_yz: SUM ARG=" + getShortcutLabel() + ".y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_zz: SUM ARG=" + getShortcutLabel() + ".z PERIODIC=NO"); 
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", "z" );
   }

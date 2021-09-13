@@ -61,15 +61,11 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   // And read in the data that we want on the projections
   std::vector<std::string> pnames; parseVector("PROPERTY",pnames); 
   std::string weights; parse("WEIGHT",weights); pnames.push_back( weights );
-  std::vector<std::string> properties(pnames.size()); 
-  for(unsigned i=0;i<pnames.size();++i) properties[i]="CENTER="; 
-  mapping::Path::readPropertyData( refname, pnames, properties );
   // Now create fixed vectors using some sort of reference action
-  for(unsigned i=0;i<pnames.size()-1;++i) readInputLine( pnames[i] + ": READ_VECTOR ARG=" + getShortcutLabel() + "_data " + properties[i] );
-  readInputLine( pnames[pnames.size()-1] + ": READ_VECTOR ARG=" + getShortcutLabel() + "_data " + properties[pnames.size()-1] );
+  mapping::Path::readPropertyData( refname, "", pnames, this );
   // Normalise the vector of weights
-  readInputLine( getShortcutLabel() + "_weights: CALCULATE_REFERENCE CONFIG=" + pnames[pnames.size()-1] + " INPUT={" + 
-                 "sum: COMBINE ARG=" + pnames[pnames.size()-1] + " PERIODIC=NO ; CUSTOM ARG1=sum ARG2=" + pnames[pnames.size()-1] + " FUNC=y/x PERIODIC=NO}");
+  readInputLine( getShortcutLabel() + "_weights: CALCULATE_REFERENCE CONFIG=" + weights + " INPUT={" + 
+                 "sum: SUM ARG=" + weights + " PERIODIC=NO ; CUSTOM ARG1=sum ARG2=" + weights + " FUNC=y/x PERIODIC=NO}");
   // Transform the high dimensional distances
   std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc);
   readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG1=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");

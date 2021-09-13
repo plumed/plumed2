@@ -90,18 +90,18 @@ ActionShortcut(ao)
   bool do_vmean; parseFlag("VMEAN",do_vmean);
   if( do_vmean ) {
     // Real part
-    readInputLine( getShortcutLabel() + "_rms: COMBINE ARG=" + getShortcutLabel() + "_rmn NORMALIZE PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_rms: MEAN ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO");
     // Imaginary part
-    readInputLine( getShortcutLabel() + "_ims: COMBINE ARG=" + getShortcutLabel() + "_imn NORMALIZE PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_ims: MEAN ARG=" + getShortcutLabel() + "_imn PERIODIC=NO");
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", "ms" );
   }
   bool do_vsum; parseFlag("VSUM",do_vsum);
   if( do_vsum ) {
     // Real part
-    readInputLine( getShortcutLabel() + "_rmz: COMBINE ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_rmz: SUM ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO"); 
     // Imaginary part
-    readInputLine( getShortcutLabel() + "_imz: COMBINE ARG=" + getShortcutLabel() + "_imn PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_imz: SUM ARG=" + getShortcutLabel() + "_imn PERIODIC=NO"); 
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", "mz" );
   }
