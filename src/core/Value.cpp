@@ -41,6 +41,7 @@ Value::Value():
   hasForce(false),
   hasDeriv(true),
   ngrid_der(0),
+  historydependent(false),
   istimeseries(false),
   shape(std::vector<unsigned>()),
   alwaysstore(false),
@@ -83,6 +84,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   name(name),
   hasDeriv(withderiv),
   ngrid_der(0),
+  historydependent(false),
   istimeseries(false),
   alwaysstore(false),
   storedata(true),
@@ -152,8 +154,9 @@ void Value::alwaysStoreValues() {
   plumed_assert( !neverstore); alwaysstore=true; storedata=true; setShape( shape );
 }
 
-void Value::makeTimeSeries() {
-  istimeseries=true; setShape( shape );
+void Value::makeHistoryDependent() {
+  historydependent=true;
+  if( shape.size()==1 && !hasDeriv && action->getName()!="AVERAGE" ) { istimeseries=true; setShape( shape ); }
 }
 
 void Value::neverStoreValues() {

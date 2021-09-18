@@ -256,18 +256,6 @@ void Function::addValueWithDerivatives() {
     }
   }
   if( actionInChain() && matinp ) matout=getPntrToOutput(0)->getRank()==2;
-  // Check if input arguments are time series
-  fixTimeSeries();
-}
-
-void Function::fixTimeSeries() {
-  bool timeseries=false;
-  for(unsigned i=0;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
-  }
-  if( timeseries ) {
-      for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->makeTimeSeries();
-  }
 }
 
 unsigned Function::getNumberOfColumns() const {
@@ -325,8 +313,6 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
       for(unsigned i=1; i<getNumberOfComponents(); ++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
     } 
   } 
-  // Check if input arguments are time series
-  fixTimeSeries();
 }
 
 void Function::evaluateAllFunctions() {

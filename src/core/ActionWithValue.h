@@ -89,6 +89,8 @@ private:
   bool serial;
 /// Are we using timers
   bool timers;
+/// Can the input be a mixture of history dependent quantities and non-history dependent quantities
+  bool allow_mixed_history_input;
 /// The stopwatch that times the different parts of the calculation
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
@@ -115,6 +117,8 @@ private:
 /// Actions that must be done after this one
   ActionWithValue* action_to_do_after;
   ActionAtomistic* atom_action_to_do_after;
+/// Check if the input to this action is a time series
+  bool inputIsTimeSeries() const ;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
 ////

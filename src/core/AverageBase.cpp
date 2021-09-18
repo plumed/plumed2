@@ -62,6 +62,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
        if ( (i+1) % 25 == 0 ) log.printf("  \n");
        log.printf("  %d", all_atoms[i].serial());
      }
+     log.printf("\n");
   } else {
      std::vector<AtomNumber> t;
      for(int i=1;; ++i ) {

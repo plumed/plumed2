@@ -110,7 +110,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       for(unsigned i=1;i<args.size();++i) {  std::string num; Tools::convert( i+1, num ); names += ",v" + num; func += "+v" + num + "*v" + num; }
       for(unsigned i=0;i<args.size();++i) {
           std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com);
-          act->readInputLine( lab + "_sub_" + thisarg + ": DIFFERENCE ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
+          act->readInputLine( lab + "_sub_" + thisarg + ": DIFFERENCE MIX_HISTORY_DEPENDENCE ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
           act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg + " ARG2=" + lab + "_sigma_" + thisarg );
           func_args += " ARG" + num + "=" + lab + "_scaled_" + thisarg;
       }

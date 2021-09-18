@@ -83,14 +83,6 @@ nderivatives(getNumberOfScalarArguments())
   myfunc.setPeriodicityForOutputs( this );
   // Now setup the action in the chain if we can
   if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
-  // Fix any functions that are time series
-  bool timeseries=false;
-  for(unsigned i=0;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
-  }
-  if( timeseries ) {
-      for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->makeTimeSeries();
-  }
 }
 
 template <class T>

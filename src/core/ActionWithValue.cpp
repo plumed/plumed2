@@ -22,6 +22,8 @@
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
 #include "ActionAtomistic.h"
+#include "ActionSetup.h"
+#include "AverageBase.h"
 #include "ActionWithVirtualAtom.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -39,6 +41,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
                                  "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
+  keys.addFlag("MIX_HISTORY_DEPENDENCE",false,"allow arguments to be a mixture of history-dependent and non-history-dependent quantities");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("TIMINGS",false,"output information on the timings of the various parts of the calculation");
 }
@@ -67,6 +70,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   no_openmp(plumed.getMDEngine()=="plumed"),
   serial(false),
   timers(false),
+  allow_mixed_history_input(false),
   nactive_tasks(0),
   thisAsActionWithArguments(NULL),
   thisAsActionWithVatom(NULL),
@@ -74,6 +78,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   action_to_do_after(NULL),
   atom_action_to_do_after(NULL)
 {
+  if( keywords.exists("MIX_HISTORY_DEPENDENCE") )parseFlag("MIX_HISTORY_DEPENDENCE",allow_mixed_history_input);
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -207,16 +212,44 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
   return values[n].get();
 }
 
+bool ActionWithValue::inputIsTimeSeries() const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this ); 
+  if( !aa || aa->getNumberOfArguments()==0 ) return false;
+  // Now check if this is a timeseries
+  if( allow_mixed_history_input ) {
+      for(unsigned i=0; i<aa->getNumberOfArguments(); ++i) {
+          if( (aa->getPntrToArgument(i))->isHistoryDependent() ) return true;
+      }
+      return false;
+  }
+  // Now check if this is a timeseries
+  bool istimeseries = (aa->getPntrToArgument(0))->isHistoryDependent();
+  for(unsigned i=0; i<aa->getNumberOfArguments(); ++i) {
+     if( istimeseries && !(aa->getPntrToArgument(i))->isHistoryDependent() ) {
+         ActionSetup* as = dynamic_cast<ActionSetup*>((aa->getPntrToArgument(i))->getPntrToAction());
+         if( !as ) error( (aa->getPntrToArgument(0))->getName() + " is time series but " + (aa->getPntrToArgument(i))->getName() + " is not");
+     } else if( !istimeseries && (aa->getPntrToArgument(i))->isHistoryDependent() ) {
+         ActionSetup* as = dynamic_cast<ActionSetup*>((aa->getPntrToArgument(0))->getPntrToAction());
+         if( !as ) error( (aa->getPntrToArgument(0))->getName() + " is not time series but " + (aa->getPntrToArgument(i))->getName() + " is time series"); 
+         else istimeseries=true;
+     }
+  }
+  return istimeseries;
+}
+
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
+  AverageBase* ab = dynamic_cast<AverageBase*>(this);
+  if( ab || inputIsTimeSeries() ) getPntrToOutput(0)->makeHistoryDependent();
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
+  if( shape.size()==0 && inputIsTimeSeries() ) getPntrToOutput(0)->makeHistoryDependent();
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -253,8 +286,9 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
   values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
-  std::string msg="  added component to this action:  "+thename+" \n";
-  log.printf(msg.c_str());
+  std::string msg="  added component to this action:  "+thename+" \n"; log.printf(msg.c_str());
+  AverageBase* ab = dynamic_cast<AverageBase*>(this);
+  if( ab || inputIsTimeSeries() ) copyOutput( thename )->makeHistoryDependent();
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
@@ -270,8 +304,8 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
   values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
-  std::string msg="  added component to this action:  "+thename+" \n";
-  log.printf(msg.c_str());
+  std::string msg="  added component to this action:  "+thename+" \n"; log.printf(msg.c_str());
+  if( shape.size()==0 && inputIsTimeSeries() ) copyOutput( thename )->makeHistoryDependent();
 }
 
 int ActionWithValue::getComponent( const std::string& name ) const {

@@ -99,7 +99,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
 
   // Now add a value
   std::vector<unsigned> shape( gridobject.getDimension() ); 
-  if( getPntrToArgument(0)->isTimeSeries() ) { addValue( shape ); getPntrToOutput(0)->makeTimeSeries(); } 
+  if( getPntrToArgument(0)->isTimeSeries() ) addValue( shape );  
   else addValueWithDerivatives( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );

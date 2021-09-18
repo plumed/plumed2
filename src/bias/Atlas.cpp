@@ -485,7 +485,7 @@ ActionShortcut(ao)
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num );
       // And the bias due to each basin (product of bias due to basin and kernel weight)
-      readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_bias ARG2=" +
+      readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL MIX_HISTORY_DEPENDENCE ARG1=" + getShortcutLabel() + "-" + num + "_bias ARG2=" +
                      getShortcutLabel() + "_wkernel-" + num + " FUNC=x*y PERIODIC=NO");
   }
 
@@ -499,10 +499,10 @@ ActionShortcut(ao)
                                                                       "ARG2=" + getShortcutLabel() + "_ext_wkernel "+
                                                                       "ARG3=" + getShortcutLabel() + "_wtfact FUNC="+adaptive_wall+"*y/x*exp(z) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_cum_adaptive_wall: AVERAGE NORMALIZATION=false CLEAR=0 STRIDE="+pacestr+" ARG=" + getShortcutLabel() + "_height_adaptive_wall");
-  readInputLine( getShortcutLabel() + "_adaptive_wall: MATHEVAL ARG1=" + getShortcutLabel() + "_cum_adaptive_wall ARG2=" + getShortcutLabel() + "_ext_wkernel FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_adaptive_wall: MATHEVAL MIX_HISTORY_DEPENDENCE ARG1=" + getShortcutLabel() + "_cum_adaptive_wall ARG2=" + getShortcutLabel() + "_ext_wkernel FUNC=x*y PERIODIC=NO");
 
   // This is for the sum of these quantities
-  std::string combstr = getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_static_wall," + getShortcutLabel() + "_adaptive_wall," + getShortcutLabel() + "_wbias-1";
+  std::string combstr = getShortcutLabel() + ": COMBINE MIX_HISTORY_DEPENDENCE PERIODIC=NO ARG=" + getShortcutLabel() + "_static_wall," + getShortcutLabel() + "_adaptive_wall," + getShortcutLabel() + "_wbias-1";
   for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); combstr += "," + getShortcutLabel() + "_wbias-" + num; }
 
   // And the final bias

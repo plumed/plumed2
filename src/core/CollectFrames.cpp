@@ -71,16 +71,15 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
               std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max ); 
               componentIsPeriodic( getPntrToArgument(arg_ends[i])->getName(), min, max );
           } else componentIsNotPeriodic( getPntrToArgument(arg_ends[i])->getName() );
-          getPntrToOutput(i)->makeTimeSeries(); 
       }
   }
   data.resize( getNumberOfComponents() );
   // Setup values to hold atomic positions
   for(unsigned j=0;j<getNumberOfAtoms();++j) {
       std::string num; Tools::convert( j+1, num );
-      addComponent( "posx-" + num, shape ); componentIsNotPeriodic( "posx-" + num ); getPntrToOutput(n_real_args+3*j+0)->makeTimeSeries();
-      addComponent( "posy-" + num, shape ); componentIsNotPeriodic( "posy-" + num ); getPntrToOutput(n_real_args+3*j+1)->makeTimeSeries();
-      addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
+      addComponent( "posx-" + num, shape ); componentIsNotPeriodic( "posx-" + num );
+      addComponent( "posy-" + num, shape ); componentIsNotPeriodic( "posy-" + num );
+      addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); 
   }
   if( getNumberOfArguments()>n_real_args ) {
       unsigned tvals=0; for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) tvals += getPntrToArgument(i)->getNumberOfValues();
@@ -88,7 +87,6 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   }
   // And create a component to store the weights -- if we store the history this is a matrix
   addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
-  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
 }
 
 void CollectFrames::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,

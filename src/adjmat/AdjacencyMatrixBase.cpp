@@ -102,7 +102,6 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
     addComponent( "y", shape ); componentIsNotPeriodic("y");
     addComponent( "z", shape ); componentIsNotPeriodic("z");
   }
-  if( input_timeseries ) { for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->makeTimeSeries(); }   
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }
 

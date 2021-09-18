@@ -42,20 +42,8 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao),
   skip_ieqj(false),
-  isAdjacencyMatrix(false),
-  input_timeseries(false)
+  isAdjacencyMatrix(false)
 {
-  // Now do some stuff for time series
-  if( getNumberOfArguments()>0 ) {
-      input_timeseries = getPntrToArgument(0)->isTimeSeries();
-      for(unsigned nv=1; nv<getNumberOfArguments(); ++nv ) {
-          if( input_timeseries ) {
-              if( !getPntrToArgument(nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
-          } else {
-              if( getPntrToArgument(nv)->isTimeSeries() ) error("all arguments should either be time series or not time series");
-          }
-      }
-  }
 }
 
 void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std::string& min, const std::string& max ) {
@@ -84,11 +72,10 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   } else {
       addValue( shape ); if( periodic ) setPeriodic( min, max ); else setNotPeriodic();  
   }
-  if( input_timeseries ) { for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeTimeSeries(); }
 
   for(unsigned nv=0; nv<noutput; ++nv ) {
       // This sets up matrix times vector calculations that are done without storing the input matrix
-      if( !getPntrToArgument(nv)->dataAlwaysStored() && !input_timeseries && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
+      if( !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isTimeSeries() && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
           (getPntrToArgument(nv)->getPntrToAction())->addActionToChain( alabels, this );

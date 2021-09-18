@@ -49,17 +49,6 @@ void ActionWithInputMatrices::addValue( const std::vector<unsigned>& shape ) {
       std::string smin, smax; getPntrToArgument(0)->getDomain( smin, smax ); setPeriodic( smin, smax );
   } else setNotPeriodic();
   getPntrToOutput(0)->alwaysStoreValues();
-  bool istimeseries=false;
-  for(unsigned i=0; i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(0)->isTimeSeries() ) { istimeseries=true; break; }
-  }
-
-  if( istimeseries  ) {
-      for(unsigned i=0; i<getNumberOfArguments();++i) {
-          if( !getPntrToArgument(0)->isTimeSeries() ) error( "on argument is time series but " + getPntrToArgument(i)->getName() + " is not a time series");
-      }
-      getPntrToOutput(0)->makeTimeSeries();
-  }
 }
 
 unsigned ActionWithInputMatrices::getNumberOfDerivatives() const {

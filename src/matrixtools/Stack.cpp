@@ -73,12 +73,8 @@ ActionWithValue(ao)
    } else setNotPeriodic(); 
 
    getPntrToOutput(0)->alwaysStoreValues(); 
-   bool istimeseries=getPntrToArgument(0)->isTimeSeries();
-   if( istimeseries ) getPntrToOutput(0)->makeTimeSeries();
 
    for(unsigned i=0; i<getNumberOfArguments();++i) {
-      if( istimeseries && !getPntrToArgument(i)->isTimeSeries() ) error("one argument is time series but " + getPntrToArgument(i)->getName() + " is not a time series");
-      if( !istimeseries && getPntrToArgument(i)->isTimeSeries() ) error("one argument is not a time series but " + getPntrToArgument(i)->getName() + " is a time series");
       if( periodic && !getPntrToArgument(i)->isPeriodic() ) error("one argument is periodic but " + getPntrToArgument(i)->getName() + " is not periodic");
       if( !periodic && getPntrToArgument(i)->isPeriodic() ) error("one argument is not periodic but " + getPntrToArgument(i)->getName() + " is periodic");
       if( periodic && getPntrToArgument(i)->isPeriodic() ) {

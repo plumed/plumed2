@@ -83,8 +83,6 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   buildTaskList(); std::vector<unsigned> shape(2); 
   shape[0]=shape[1]=ndata; addValue(shape); setNotPeriodic();
   getPntrToComponent(0)->alwaysStoreValues();
-  // And convert eigenvector is a time series if it should be a time series  
-  if( getPntrToArgument(0)->isTimeSeries() ) getPntrToComponent(0)->makeTimeSeries();
 }
 
 unsigned CovarianceMatrix::getNumberOfColumns() const {

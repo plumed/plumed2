@@ -115,7 +115,6 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
       std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape ); 
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
-      if( getPntrToArgument(arg_ends[i])->isTimeSeries() ) getPntrToOutput(i)->makeTimeSeries(); 
   }
   // Create a list of tasks to perform
   for(unsigned i=0;i<ntoproj;++i) addTaskToList(i);

@@ -101,7 +101,6 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
       if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates");
       std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape ); 
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
-      if( getPntrToArgument(arg_ends[i])->isTimeSeries() ) getPntrToOutput(i)->makeTimeSeries();
   }
   std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors; 
   // Read in target "distances" and target weights

@@ -72,6 +72,8 @@ private:
   bool hasDeriv;
 /// The number of derivatives for the grid
   unsigned ngrid_der;
+/// Is this value dependent on a stored history
+  bool historydependent;
 /// Is this value a time series
   bool istimeseries;
 /// Who is using this action
@@ -180,7 +182,8 @@ public:
   static double projection(const Value&,const Value&);
 /// Build the store of data
   void buildDataStore( const std::string& actlabel );
-  void makeTimeSeries();
+  void makeHistoryDependent();
+  bool isHistoryDependent() const ;
   bool isTimeSeries() const ;
   void alwaysStoreValues();
   void neverStoreValues();
@@ -392,6 +395,11 @@ double Value::getMaxMinusMin()const {
 inline
 bool Value::isTimeSeries() const {
   return istimeseries;
+}
+
+inline
+bool Value::isHistoryDependent() const {
+  return historydependent;
 }
 
 inline

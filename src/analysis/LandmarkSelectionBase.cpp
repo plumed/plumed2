@@ -99,7 +99,6 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
           std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
           componentIsPeriodic( vname, min, max );
       } else componentIsNotPeriodic( vname ); 
-      if( argi->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
       getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
   }
   if( foundmat.size()>0 ) {
@@ -107,7 +106,6 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       for(unsigned i=0;i<foundmat.size();++i) {
           addComponent( foundmat[i] + "_sqr", shape ); componentIsNotPeriodic( foundmat[i] + "_sqr" ); 
           getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues(); 
-          if( getPntrToOutput(0)->isTimeSeries() ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
       }
   }
 }

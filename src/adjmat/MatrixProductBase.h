@@ -41,7 +41,6 @@ private:
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
   bool isAdjacencyMatrix;
-  bool input_timeseries;
   void readMatricesToMultiply( const bool& periodic, const std::string& min="", const std::string& max="" );
 public:
   static void registerKeywords( Keywords& keys );

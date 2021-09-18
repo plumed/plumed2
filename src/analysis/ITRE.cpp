@@ -90,7 +90,7 @@ ITRE::ITRE(const ActionOptions&ao):
   parse("MAXITER",maxiter);
   // Now setup the value
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); getPntrToOutput(0)->makeTimeSeries(); setNotPeriodic();
+  addValue( shape ); setNotPeriodic();
 }
 
 void ITRE::calculateWeights() {
