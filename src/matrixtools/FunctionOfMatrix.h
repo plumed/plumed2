@@ -40,6 +40,8 @@ public:
   explicit FunctionOfMatrix(const ActionOptions&);
 /// Get the shape of the output matrix
   std::vector<unsigned> getMatrixShapeForFinalTasks() override ;
+/// Make sure the derivatives are turned on
+  void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const override ;
 /// This gets the number of columns
@@ -93,6 +95,12 @@ nderivatives(getNumberOfScalarArguments())
 }
 
 template <class T>
+void FunctionOfMatrix<T>::turnOnDerivatives() {
+  if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
+  ActionWithValue::turnOnDerivatives(); 
+}
+
+template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() const {
   return nderivatives;
 }
@@ -118,7 +126,7 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
   } else {
       unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
       for(unsigned i=0;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==2 ) args[i]=getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index2 + ind2 );
+          if( getPntrToArgument(i)->getRank()==2 ) args[i]=getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
           else args[i] = getPntrToArgument(i)->get();
       }
   }
@@ -141,6 +149,19 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
                       myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
                   }
               } else plumed_merror("not implemented this yet");
+          }
+      }
+      // If we are computing a matrix we need to update the indices here so that derivatives are calcualted correctly in functions of these
+      if( getPntrToOutput(0)->getRank()==2 ) { 
+          for(unsigned i=0;i<getNumberOfComponents();++i) {
+              unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+              for(unsigned j=0;j<getNumberOfArguments();++j) {
+                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+                  for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+                      unsigned kind=myvals.getActiveIndex(istrn,k); 
+                      myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
+                  }
+              }
           }
       }
   } else plumed_merror("not implemented this yet");

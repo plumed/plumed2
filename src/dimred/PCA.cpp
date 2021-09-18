@@ -168,6 +168,8 @@ PCA::PCA( const ActionOptions& ao ) :
   readInputLine( getShortcutLabel() + "_weights: MATHEVAL ARG1=" + arg + ".logweights FUNC=exp(x) PERIODIC=NO");
   // And calculate the covariance matrix
   readInputLine( getShortcutLabel() + "_covar: COVARIANCE_MATRIX " + argstr + " WEIGHTS=" + getShortcutLabel() + "_weights");
+  // Make a stack of all the data
+  readInputLine( getShortcutLabel() + "_stack: VSTACK " + argstr );
   // Diagonalize the covariance matrix
   unsigned ndim; parse("NLOW_DIM",ndim); std::string vecstr="1";
   if( ndim<=0 || ndim>mydata->getNumberOfComponents()-1 ) error("cannot generate projection in space of dimension higher than input coordinates"); 
@@ -195,7 +197,7 @@ PCA::PCA( const ActionOptions& ao ) :
   // And calculate the projections of the stored data on to the PCA vectors
   for(unsigned i=0;i<ndim;++i) {
       std::string num; Tools::convert( i+1, num );
-      readInputLine( getShortcutLabel() + "-" + num + ": PROJECT_ON_VECTOR " + argstr + " VECTOR=" + getShortcutLabel() + "_eig.vecs-" + num ); 
+      readInputLine( getShortcutLabel() + "-" + num + ": DOT ARG1=" + getShortcutLabel() + "_stack ARG2=" + getShortcutLabel() + "_eig.vecs-" + num );
   }
 }
 

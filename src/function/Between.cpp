@@ -19,9 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Function.h"
+#include "Between.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
-#include "tools/HistogramBead.h"
 
 #include <cmath>
 
@@ -39,22 +40,12 @@ Use a switching function to determine how many of the input variables are within
 */
 //+ENDPLUMEDOC
 
-
-class Between :
-  public Function
-{
-  HistogramBead hist;
-public:
-  explicit Between(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  static void registerKeywords(Keywords& keys);
-};
-
-
-PLUMED_REGISTER_ACTION(Between,"BETWEEN")
+typedef FunctionShortcut<Between> BetweenShortcut;
+PLUMED_REGISTER_ACTION(BetweenShortcut,"BETWEEN")
+typedef FunctionOfVector<Between> VectorBetween;
+PLUMED_REGISTER_ACTION(VectorBetween,"BETWEEN_VECTOR")
 
 void Between::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
   keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
@@ -63,29 +54,22 @@ void Between::registerKeywords(Keywords& keys) {
            "When this keyword is present you no longer need the LOWER, UPPER, SMEAR and KERNEL keywords.");
 }
 
-Between::Between(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
+void Between::read( ActionWithArguments* action ) {
+  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to between actions");
+
   std::string str_min, str_max, tstr_min, tstr_max;
-  bool isPeriodic = getPntrToArgument(0)->isPeriodic();
-  if( isPeriodic ) getPntrToArgument(0)->getDomain( str_min, str_max );
-  for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-    if( isPeriodic ) {
-      if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
-      getPntrToArgument(i)->getDomain( tstr_min, tstr_max );
-      if( tstr_min!=str_min || tstr_max!=str_max ) error("cannot mix periodic arguments with different domains");
-    }
-  }
-  std::string hinput; parse("SWITCH",hinput);
+  bool isPeriodic = action->getPntrToArgument(0)->isPeriodic();
+  if( isPeriodic ) action->getPntrToArgument(0)->getDomain( str_min, str_max );
+
+  std::string hinput; action->parse("SWITCH",hinput);
   if(hinput.length()==0) {
     std::string low, up, sme;
-    parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
+    action->parse("LOWER",low); action->parse("UPPER",up); action->parse("SMEAR",sme);
     hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
   }
   std::string errors; hist.set( hinput, errors );
-  if( errors.size()!=0 ) error( errors );
-  log.printf("  %s \n", hist.description().c_str() );
+  if( errors.size()!=0 ) action->error( errors );
+  action->log.printf("  %s \n", hist.description().c_str() );
 
   if( !isPeriodic ) hist.isNotPeriodic();
   else {
@@ -93,14 +77,18 @@ Between::Between(const ActionOptions&ao):
     double max; Tools::convert( str_max, max );
     hist.isPeriodic( min, max );
   }
-
-  addValueWithDerivatives();
-  checkRead();
 }
 
-void Between::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  plumed_dbg_assert( args.size()==1 ); double dv, f = hist.calculate(args[0], dv);
-  addValue( 0, f, myvals ); addDerivative( 0, 0, dv, myvals );
+unsigned Between::getRank() {
+  return 1;
+}
+
+void Between::setPeriodicityForOutputs( ActionWithValue* action ) {
+  action->setNotPeriodic();
+}
+
+void Between::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  plumed_dbg_assert( args.size()==1 ); vals[0] = hist.calculate( args[0], derivatives(0,0) );
 }
 
 }

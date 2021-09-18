@@ -82,7 +82,7 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_denom: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_cmap.w");
   // And the transformed switching functions
   std::string swcoord_str; parse("SWITCH_COORD",swcoord_str);
-  readInputLine( getShortcutLabel() + "_mtdenom: MORE_THAN ARG1=" + getShortcutLabel() + "_denom SWITCH={" + swcoord_str +"}");
+  readInputLine( getShortcutLabel() + "_mtdenom: MORE_THAN ARG=" + getShortcutLabel() + "_denom SWITCH={" + swcoord_str +"}");
   // And matheval to get the final quantity
   readInputLine( getShortcutLabel() + "_smac: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum.n ARG2=" + getShortcutLabel() + "_mtdenom ARG3=" + getShortcutLabel() + "_ksum.d FUNC=x*y/z PERIODIC=NO");
   // And this expands everything

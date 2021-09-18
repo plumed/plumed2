@@ -40,6 +40,8 @@ public:
   explicit FunctionOfVector(const ActionOptions&);
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks() override ;
+/// Check if derivatives are available
+  void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const override ;
 /// This updates the number of tasks we need to do if there is a time seeries
@@ -89,6 +91,12 @@ nderivatives(getNumberOfScalarArguments())
   if( timeseries ) {
       for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->makeTimeSeries();
   }
+}
+
+template <class T>
+void FunctionOfVector<T>::turnOnDerivatives() {
+  if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
+  ActionWithValue::turnOnDerivatives(); 
 }
 
 template <class T>

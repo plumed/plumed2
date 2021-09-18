@@ -42,7 +42,7 @@ void SecondaryStructureRMSD::readShortcutWords( std::string& ltmap, ActionShortc
 }
 
 void SecondaryStructureRMSD::expandShortcut( const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action ) { 
-  action->readInputLine( labout + "_lt: LESS_THAN ARG1=" + labin + " SWITCH={" + ltmap  +"}");
+  action->readInputLine( labout + "_lt: LESS_THAN ARG=" + labin + " SWITCH={" + ltmap  +"}");
   action->readInputLine( labout + "_lessthan: SUM ARG=" + labout + "_lt PERIODIC=NO");
 }
 

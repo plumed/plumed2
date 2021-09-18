@@ -198,7 +198,7 @@ Kernel::Kernel(const ActionOptions&ao):
         ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_dist_2_diff" ); plumed_assert( av );
         if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
         av->copyOutput(0)->getDomain(min,max); Tools::convert( weight, wstr );
-        det_inp += " bes: BESSEL ORDER=0 ARG1=vec ; cc: MATHEVAL ARG1=bes FUNC=("+max+"-"+min+")*x PERIODIC=NO; PRODUCT ARG=cc"; 
+        det_inp += " bes: BESSEL ORDER=0 ARG=vec ; cc: MATHEVAL ARG1=bes FUNC=("+max+"-"+min+")*x PERIODIC=NO; PRODUCT ARG=cc"; 
     } else error("only gaussian and von-misses kernels are normalizable");
     // Compute the normalizing constant
     readInputLine( getShortcutLabel() + "_vol: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={" + det_inp + "}");

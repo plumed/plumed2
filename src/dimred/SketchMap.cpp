@@ -78,10 +78,10 @@ SketchMap::SketchMap( const ActionOptions& ao):
       analysis::LandmarkSelectionBase* lb = plumed.getActionSet().selectWithLabel<analysis::LandmarkSelectionBase*>( dissmat.substr(0,dot) );
       if( lb && projall ) {
          std::string lname = dissmat.substr(dot+1); std::size_t und = lname.find_first_of("_"); 
-         readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG1=" + dissmat.substr(0,dot) + "." + lname.substr(0,und)  + "_rect SQUARED SWITCH={" + hdfunc + "}");
+         readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG=" + dissmat.substr(0,dot) + "." + lname.substr(0,und)  + "_rect SQUARED SWITCH={" + hdfunc + "}");
       } else if( projall ) error("input is not a set of landmark coordinates so cannot do out of sample projection");
   }
-  readInputLine( getShortcutLabel() + "_hdmat: MORE_THAN ARG1=" + dissmat + " SQUARED SWITCH={" + hdfunc + "}");
+  readInputLine( getShortcutLabel() + "_hdmat: MORE_THAN ARG=" + dissmat + " SQUARED SWITCH={" + hdfunc + "}");
   // Now for the weights - read the vector of weights first
   std::string wvec; parse("WEIGHTS",wvec);
   // Now calculate the sum of thse weights

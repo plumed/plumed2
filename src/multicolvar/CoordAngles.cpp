@@ -64,7 +64,7 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_dd: DISTANCES" + atlist );
   // Transform with the switching function
   std::string switch_input; parse("SWITCH",switch_input);
-  readInputLine( getShortcutLabel() + "_sw: LESS_THAN ARG1=" + getShortcutLabel() + "_dd SWITCH={" + switch_input +"}");
+  readInputLine( getShortcutLabel() + "_sw: LESS_THAN ARG=" + getShortcutLabel() + "_dd SWITCH={" + switch_input +"}");
   // Now get the normalised vectors
   readInputLine( getShortcutLabel() + "_comp: DISTANCES" + atlist + " COMPONENTS"); 
   readInputLine( getShortcutLabel() + "_norm: NORMALIZE ARG1=" + getShortcutLabel() + "_comp.x" + " ARG2=" + getShortcutLabel() + "_comp.y ARG3=" + getShortcutLabel() + "_comp.z");

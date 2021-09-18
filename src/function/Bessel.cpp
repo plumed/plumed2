@@ -19,7 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Function.h"
+#include "FunctionTemplateBase.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 #include <array>
@@ -40,11 +43,9 @@ Calculate the value of a Bessel function.
 //+ENDPLUMEDOC
 
 
-class Bessel :
-  public Function
-{
-  unsigned order;
+class Bessel : public FunctionTemplateBase {
 private:
+  unsigned order;
   // Cheb coefficient for range [0,8]
   static std::vector<double> A;
   // Cheb coefficient for range (8,inf)
@@ -52,32 +53,39 @@ private:
   double chbevl(double x,std::vector<double>& array) const; // sub copied from scipy in C
   void fill_coefficients();
 public:
-  explicit Bessel(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  static void registerKeywords(Keywords& keys);
-  void turnOnDerivatives() { error("derivatives for BESSEL have not been implemented"); }
+  bool derivativesImplemented() override { return false; }
+  void registerKeywords( Keywords& keys ) override;
+  void read( ActionWithArguments* action ) override;
+  unsigned getRank() override;
+  void setPeriodicityForOutputs( ActionWithValue* action ) override;
+  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-
-PLUMED_REGISTER_ACTION(Bessel,"BESSEL")
+typedef FunctionShortcut<Bessel> BesselShortcut;
+PLUMED_REGISTER_ACTION(BesselShortcut,"BESSEL")
+typedef FunctionOfScalar<Bessel> ScalarBessel;
+PLUMED_REGISTER_ACTION(ScalarBessel,"BESSEL_SCALAR")
+typedef FunctionOfVector<Bessel> VectorBessel;
+PLUMED_REGISTER_ACTION(VectorBessel,"BESSEL_VECTOR")
 
 void Bessel::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","ORDER","0","the order of Bessel function to use.  Can only be zero at the moment.");
 }
 
-Bessel::Bessel(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
-  }
-  parse("ORDER",order); log.printf("  computing %dth order bessel function \n", order );
-  if( order!=0 ) error("only zero order bessel function is implemented");
+void Bessel::read( ActionWithArguments* action ) { 
+  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to bessel actions");
+  if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
+  action->parse("ORDER",order); action->log.printf("  computing %dth order bessel function \n", order );
+  if( order!=0 ) action->error("only zero order bessel function is implemented");
   fill_coefficients();
-  addValueWithDerivatives();
-  checkRead();
+}
+
+unsigned Bessel::getRank() {
+  return 1;
+} 
+
+void Bessel::setPeriodicityForOutputs( ActionWithValue* action ) {
+  action->setNotPeriodic();
 }
 
 double Bessel::chbevl(double x,std::vector<double>& array) const {
@@ -97,19 +105,16 @@ double Bessel::chbevl(double x,std::vector<double>& array) const {
 }
 
 
-void Bessel::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+void Bessel::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 ); 
   if( order==0 ) {
-      double y;
       double x = fabs(args[0]);
       if (x <= 8.0) {
-      	y = (x / 2.0) - 2.0;
-	double res =  chbevl(y, A) ;
-        addValue( 0, res ,  myvals );
+      	double y = (x / 2.0) - 2.0;
+	vals[0] =  chbevl(y, A) ;
         return;
       }
-      double res = chbevl(32.0 / x - 2.0, B) / sqrt(x) ;
-      addValue( 0, res , myvals ); 
+      vals[0] = chbevl(32.0 / x - 2.0, B) / sqrt(x) ;
   } else plumed_error();
 }
 
@@ -174,8 +179,6 @@ void Bessel::fill_coefficients(){
               6.88975834691682398426E-5,
               3.36911647825569408990E-3,
               8.04490411014108831608E-1};
-
-
 }
 
 }

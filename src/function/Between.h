@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2011-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,24 +19,25 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionOfMatrix.h"
-#include "core/ActionRegister.h"
-#include "function/Sum.h"
-#include "function/LessThan.h"
-#include "function/MoreThan.h"
-#include "function/Between.h"
+#ifndef __PLUMED_function_Between_h
+#define __PLUMED_function_Between_h
+
+#include "FunctionTemplateBase.h"
+#include "tools/HistogramBead.h"
 
 namespace PLMD {
-namespace matrixtools {
+namespace function {
 
-typedef FunctionOfMatrix<function::Sum> MatrixSum;
-PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
-typedef FunctionOfMatrix<function::LessThan> MatrixLessThan;
-PLUMED_REGISTER_ACTION(MatrixLessThan,"LESS_THAN_MATRIX")
-typedef FunctionOfMatrix<function::MoreThan> MatrixMoreThan;
-PLUMED_REGISTER_ACTION(MatrixMoreThan,"MORE_THAN_MATRIX")
-typedef FunctionOfMatrix<function::Between> MatrixBetween;
-PLUMED_REGISTER_ACTION(MatrixBetween,"BETWEEN_MATRIX")
+class Between : public FunctionTemplateBase {
+  HistogramBead hist;
+public:
+  void registerKeywords( Keywords& keys ) override;
+  void read( ActionWithArguments* action ) override;
+  unsigned getRank() override;
+  void setPeriodicityForOutputs( ActionWithValue* action ) override;
+  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+};
 
 }
 }
+#endif

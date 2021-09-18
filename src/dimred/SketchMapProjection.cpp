@@ -68,7 +68,7 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
                  "sum: SUM ARG=" + weights + " PERIODIC=NO ; CUSTOM ARG1=sum ARG2=" + weights + " FUNC=y/x PERIODIC=NO}");
   // Transform the high dimensional distances
   std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc);
-  readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG1=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");
+  readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");
   // Create the projection object
   std::string ldfunc, cgtol; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol);
   std::string num, argstr=""; for(unsigned i=0;i<pnames.size()-1;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + pnames[i]; }

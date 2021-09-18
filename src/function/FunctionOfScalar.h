@@ -54,6 +54,7 @@ public:
   void apply() override;
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() const override;
+  void turnOnDerivatives() override;
 };
 
 template <class T>
@@ -90,6 +91,12 @@ void FunctionOfScalar<T>::setDerivative(Value*v,int i,double d) {
 template <class T>
 void FunctionOfScalar<T>::setDerivative(int i,double d) {
   setDerivative(getPntrToValue(),i,d);
+}
+
+template <class T>
+void FunctionOfScalar<T>::turnOnDerivatives() {
+  if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
+  ActionWithValue::turnOnDerivatives(); 
 }
 
 template <class T>

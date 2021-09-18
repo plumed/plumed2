@@ -84,7 +84,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   // Parse LESS_THAN
   if( keymap.count("LESS_THAN") ) {
     std::string sum_arg = labout + "_lt", lt_string = keymap.find("LESS_THAN")->second;
-    action->readInputLine( labout + "_lt: LESS_THAN ARG1=" + argin + " SWITCH={" + lt_string + "}"); 
+    action->readInputLine( labout + "_lt: LESS_THAN ARG=" + argin + " SWITCH={" + lt_string + "}"); 
     if( weights.length()>0 ) {
         sum_arg = labout + "_wlt";
         action->readInputLine( labout + "_wlt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_lt FUNC=x*y PERIODIC=NO");   
@@ -96,7 +96,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::string istr; Tools::convert( i, istr ); 
       if( !keymap.count("LESS_THAN" + istr ) ) { break; }
       std::string sum_arg = labout + "_lt" + istr, lt_string1 = keymap.find("LESS_THAN" + istr)->second;
-      action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG1=" + argin + " SWITCH={" + lt_string1 + "}");  
+      action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG=" + argin + " SWITCH={" + lt_string1 + "}");  
       if( weights.length()>0 ) {
           sum_arg = labout + "_wlt" + istr;
           action->readInputLine( labout + "_wlt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
@@ -107,7 +107,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   // Parse MORE_THAN
   if( keymap.count("MORE_THAN") ) {
     std::string sum_arg=labout + "_mt", mt_string = keymap.find("MORE_THAN")->second;
-    action->readInputLine( labout + "_mt: MORE_THAN ARG1=" + argin + " SWITCH={" + mt_string + "}");
+    action->readInputLine( labout + "_mt: MORE_THAN ARG=" + argin + " SWITCH={" + mt_string + "}");
     if( weights.length()>0 ) {
         sum_arg = labout + "_wmt";
         action->readInputLine( labout + "_wmt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_mt FUNC=x*y PERIODIC=NO" );
@@ -119,7 +119,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::string istr; Tools::convert( i, istr ); 
       if( !keymap.count("MORE_THAN" + istr ) ) { break; }
       std::string sum_arg = labout + "_mt" + istr, mt_string1 = keymap.find("MORE_THAN" + istr)->second;
-      action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG1=" + argin + " SWITCH={" + mt_string1 + "}");  
+      action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG=" + argin + " SWITCH={" + mt_string1 + "}");  
       if( weights.length()>0 ) {
           sum_arg = labout + "_wmt" + istr;
           action->readInputLine( labout + "_wmt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
@@ -184,7 +184,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   // Parse BETWEEN
   if( keymap.count("BETWEEN") ) {
     std::string sum_arg=labout + "_bt", bt_string = keymap.find("BETWEEN")->second;
-    action->readInputLine( labout + "_bt: BETWEEN ARG1=" + argin + " SWITCH={" + bt_string + "}" );
+    action->readInputLine( labout + "_bt: BETWEEN ARG=" + argin + " SWITCH={" + bt_string + "}" );
     if( weights.length()>0 ) {
       sum_arg = labout + "_wbt";
       action->readInputLine( labout + "_wbt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt FUNC=x*y PERIODIC=NO");
@@ -197,7 +197,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
       std::string istr; Tools::convert( i, istr ); 
       if( !keymap.count("BETWEEN" + istr) ) break;
       std::string sum_arg=labout + "_bt" + istr, bt_string1 = keymap.find("BETWEEN" + istr)->second;
-      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG1=" + argin + " SWITCH={" + bt_string1 + "}" );
+      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + bt_string1 + "}" );
       if( weights.length()>0 ) {
         sum_arg = labout + "_wbt" + istr;
         action->readInputLine( labout + "_wbt" + istr + ": MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
@@ -220,7 +220,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
     for(unsigned i=0; i<nbins; ++i) {
       std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr ); std::string sum_arg=labout + "_bt" + istr;
       std::string low_str, high_str; Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
-      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG1=" + argin + " SWITCH={" + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr + "}");
+      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr + "}");
       if( weights.length()>0 ) {
         sum_arg = labout + "_wbt" + istr;
         action->readInputLine( labout + "_wbt" + istr + ": MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");

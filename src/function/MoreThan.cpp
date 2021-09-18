@@ -19,9 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Function.h"
+#include "MoreThan.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
-#include "tools/SwitchingFunction.h"
 
 #include <cmath>
 
@@ -39,24 +40,12 @@ Use a switching function to determine how many of the input variables are more t
 */
 //+ENDPLUMEDOC
 
-
-class MoreThan :
-  public Function
-{
-  bool squared;
-  SwitchingFunction switchingFunction;
-public:
-  explicit MoreThan(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  static void registerKeywords(Keywords& keys);
-};
-
-
-PLUMED_REGISTER_ACTION(MoreThan,"MORE_THAN")
+typedef FunctionShortcut<MoreThan> MoreThanShortcut;
+PLUMED_REGISTER_ACTION(MoreThanShortcut,"MORE_THAN")
+typedef FunctionOfVector<MoreThan> VectorMoreThan;
+PLUMED_REGISTER_ACTION(VectorMoreThan,"MORE_THAN_VECTOR")
 
 void MoreThan::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -67,38 +56,40 @@ void MoreThan::registerKeywords(Keywords& keys) {
   keys.addFlag("SQUARED",false,"is the input quantity the square of the value that you would like to apply the switching function to");
 }
 
-MoreThan::MoreThan(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
-  }
+void MoreThan::read( ActionWithArguments* action ) {
+  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to more_than actions");
+  if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
+  
 
   string sw,errors;
-  parse("SWITCH",sw);
+  action->parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) action->error("problem reading SWITCH keyword : " + errors );
   } else {
-    int nn=6; int mm=0; double d0=0.0; double r0=0.0; parse("R_0",r0);
-    if(r0<=0.0) error("R_0 should be explicitly specified and positive");
-    parse("D_0",d0); parse("NN",nn); parse("MM",mm);
+    int nn=6; int mm=0; double d0=0.0; double r0=0.0; action->parse("R_0",r0);
+    if(r0<=0.0) action->error("R_0 should be explicitly specified and positive");
+    action->parse("D_0",d0); action->parse("NN",nn); action->parse("MM",mm);
     switchingFunction.set(nn,mm,r0,d0);
   }
-  log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
-  parseFlag("SQUARED",squared);
-  if( squared ) log<<"  input quantity is square of quantity that switching function acts upon\n";
-
-  addValueWithDerivatives();
-  checkRead();
+  action->log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
+  action->parseFlag("SQUARED",squared);
+  if( squared ) action->log<<"  input quantity is square of quantity that switching function acts upon\n";
 }
 
-void MoreThan::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  plumed_dbg_assert( args.size()==1 ); double dv, f;
-  if( squared ) f = 1.0 - switchingFunction.calculateSqr( args[0], dv );
-  else f = 1.0 - switchingFunction.calculate( args[0], dv );
-  addValue( 0, f, myvals ); addDerivative( 0, 0, -dv*args[0], myvals );
+unsigned MoreThan::getRank() {
+  return 1;
+}
+
+void MoreThan::setPeriodicityForOutputs( ActionWithValue* action ) {
+  action->setNotPeriodic();
+}
+
+void MoreThan::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  plumed_dbg_assert( args.size()==1 );
+  if( squared ) vals[0] = 1.0 - switchingFunction.calculateSqr( args[0], derivatives(0,0) );
+  else vals[0] = 1.0 - switchingFunction.calculate( args[0], derivatives(0,0) );
+  derivatives(0,0) = -args[0]*derivatives(0,0);
 }
 
 }

@@ -78,7 +78,7 @@ ActionShortcut(ao)
     }
     if( lt_input.length()>0 ) {
       // Calculate number less than
-      readInputLine( mc_lab + "_" + getShortcutLabel() + "_lt: LESS_THAN ARG1=" + mc_lab + " SWITCH={" + lt_input +"}");
+      readInputLine( mc_lab + "_" + getShortcutLabel() + "_lt: LESS_THAN ARG=" + mc_lab + " SWITCH={" + lt_input +"}");
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_lt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_lt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum
@@ -86,7 +86,7 @@ ActionShortcut(ao)
     }
     if( mt_input.length()>0 ) {
       // Calculate number less than
-      readInputLine( mc_lab + "_" + getShortcutLabel() + "_mt: MORE_THAN ARG1=" + mc_lab + " SWITCH={" + mt_input  + "}");
+      readInputLine( mc_lab + "_" + getShortcutLabel() + "_mt: MORE_THAN ARG=" + mc_lab + " SWITCH={" + mt_input  + "}");
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_mt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_mt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum
@@ -94,7 +94,7 @@ ActionShortcut(ao)
     }
     if( bt_input.length()>0 ) {
       // Calculate number less than
-      readInputLine( mc_lab + "_" + getShortcutLabel() + "_bt: LESS_THAN ARG1=" + mc_lab + " SWITCH={" + bt_input +"}");
+      readInputLine( mc_lab + "_" + getShortcutLabel() + "_bt: BETWEEN ARG=" + mc_lab + " SWITCH={" + bt_input +"}");
       // And the matheval bit
       readInputLine( getShortcutLabel() + "_bt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_bt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO"); 
       // And the final sum

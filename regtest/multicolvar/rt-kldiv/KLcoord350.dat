@@ -9,7 +9,7 @@ LABEL=cmat
 
 coord: COORDINATIONNUMBER WEIGHT=cmat.w
 #coord_morethan: MORE_THAN ARG1=coord SWITCH={RATIONAL R_0=2. D_0=4. NN=10 MM=20 D_MAX=7.8}
-coord_morethan: MORE_THAN ARG1=coord SWITCH={RATIONAL R_0=2. D_0=8. NN=10 MM=20 D_MAX=13.}
+coord_morethan: MORE_THAN ARG=coord SWITCH={RATIONAL R_0=2. D_0=8. NN=10 MM=20 D_MAX=13.}
 coord_sum: COMBINE ARG=coord_morethan PERIODIC=NO
 
 

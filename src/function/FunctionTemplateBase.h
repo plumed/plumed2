@@ -39,6 +39,8 @@ protected:
 /// Parse a keyword from the input as a flag
   void parseFlag( Action* action, const std::string&key, bool&t );
 public:
+/// Override this function if you have not implemented the derivatives
+  virtual bool derivativesImplemented() { return true; }
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
   virtual unsigned getRank() = 0;
