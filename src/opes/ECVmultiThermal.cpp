@@ -37,8 +37,8 @@ If instead the simulation is at fixed pressure \f$p\f$, the contribution of the 
 
 By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
 Otherwise you can manually set this number with STEPS_TEMP.
-In both cases the steps will have a uniform distriution in the inverse temperature (beta).
-Use the keyword GEOM_SPACING for a geometric spacing of the temperature steps, that should result in a more uniform sampling of the temperature range.
+In both cases the steps will be geometrically spaced in temperature.
+Use instead the keyword NO_GEOM_SPACING for a linear spacing in the inverse temperature (beta), that typically increases the focus on lower temperatures.
 Finally, you can use instead the keyword SET_ALL_TEMPS and explicitly provide each temperature.
 
 You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
@@ -63,7 +63,7 @@ ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
-If instead the pressure is fixed and the volume changes, you must calculate the internal energy first, \f$U=E+pV\f$
+If instead the pressure is fixed and the volume changes, you shuld calculate the internal energy first, \f$U=E+pV\f$
 
 \plumedfile
 ene: ENERGY
@@ -110,7 +110,7 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys)
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
-  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in temperature instead of linear spacing in inverse temperature");
+  keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
 }
 
 ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
@@ -132,7 +132,8 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   parse("STEPS_TEMP",steps_temp);
   std::vector<double> temps;
   parseVector("SET_ALL_TEMPS",temps);
-  parseFlag("GEOM_SPACING",geom_spacing_);
+  parseFlag("NO_GEOM_SPACING",geom_spacing_);
+  geom_spacing_=!geom_spacing_;
 
   checkRead();
 
@@ -182,8 +183,8 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
 
 //print some info
   log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
-  if(geom_spacing_)
-    log.printf(" -- GEOM_SPACING: temperatures will be geometrically spaced\n");
+  if(!geom_spacing_)
+    log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
 }
 
 void ECVmultiCanonical::calculateECVs(const double * ene)

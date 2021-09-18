@@ -105,7 +105,7 @@ void ECVlinear::registerKeywords(Keywords& keys)
   keys.add("optional","STEPS_LAMBDA","uniformly place the lambda values, for a total of STEPS_LAMBDA");
   keys.add("optional","SET_ALL_LAMBDAS","manually set all the lamdbas");
   keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
-  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing in lambda");
+  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing");
 }
 
 ECVlinear::ECVlinear(const ActionOptions&ao)

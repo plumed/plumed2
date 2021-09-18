@@ -37,9 +37,9 @@ If instead you wish to sample multiple temperatures and a single pressure, you s
 
 The STEPS_TEMP and STEPS_PRESSURE are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
 The algorithm for this guess is described in \cite Invernizzi2020unified should provide a rough estimate useful for most applications.
-The pressures are uniformely spaced, while the temperatures steps are uniform in inverse temperature (beta).
-Use instead the keyword GEOM_SPACING for geometrically spacing the temperature steps, which should result in a more uniform sampling of the temperature range.
-For more detailed control you can use SET_ALL_TEMPS and SET_ALL_PRESSURES.
+The pressures are uniformely spaced, while the temperatures steps are geometrically spaced.
+Use instead the keyword NO_GEOM_SPACING for a linear spacing in inverse temperature (beta).
+For more detailed control you can use SET_ALL_TEMPS and/or SET_ALL_PRESSURES.
 The temperatures and pressures are then combined in a 2D grid.
 
 You can use CUT_CORNER to avoid a high-temperature/low-pressure region.
@@ -116,7 +116,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
   keys.add("optional","MAX_TEMP","the maximum of the temperature range");
   keys.add("optional","STEPS_TEMP","the number of steps in temperature");
   keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
-  keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in temperature instead of linear spacing in inverse temperature");
+  keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
 //pressure
   keys.add("compulsory","PRESSURE","pressure. Use the proper units");
   keys.add("optional","MIN_PRESSURE","the minimum of the pressure range");
@@ -149,7 +149,8 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   parse("STEPS_TEMP",steps_temp);
   std::vector<double> temps;
   parseVector("SET_ALL_TEMPS",temps);
-  parseFlag("GEOM_SPACING",geom_spacing_);
+  parseFlag("NO_GEOM_SPACING",geom_spacing_);
+  geom_spacing_=!geom_spacing_;
 //parse pressures
   parse("PRESSURE",pres0_);
   double min_pres=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
@@ -288,7 +289,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   if(min_pres==max_pres)
     log.printf(" +++ WARNING +++ if you only need a multithermal simulation it is more efficient to set it up with ECV_MULTITHERMAL\n");
   if(geom_spacing_)
-    log.printf(" -- GEOM_SPACING: temperatures will be geometrically spaced\n");
+    log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
   if(coeff_!=0)
     log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
 }
