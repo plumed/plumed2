@@ -35,11 +35,11 @@ The potential \ref ENERGY, \f$E\f$, and the \ref VOLUME, \f$V\f$, of the system 
 
 If instead you wish to sample multiple temperatures and a single pressure, you should use \ref ECV_MULTITHERMAL with as ARG the internal energy \f$U=E+pV\f$.
 
-The STEPS_TEMP and STEPS_PRESSURE are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
+The TEMP_STEPS and PRESSURE_STEPS are automatically guessed from the initial unbiased steps (see OBSERVATION_STEPS in \ref OPES_EXPANDED), unless explicitly set.
 The algorithm for this guess is described in \cite Invernizzi2020unified should provide a rough estimate useful for most applications.
 The pressures are uniformely spaced, while the temperatures steps are geometrically spaced.
 Use instead the keyword NO_GEOM_SPACING for a linear spacing in inverse temperature (beta).
-For more detailed control you can use SET_ALL_TEMPS and/or SET_ALL_PRESSURES.
+For more detailed control you can use instead TEMP_SET_ALL and/or PRESSURE_SET_ALL to explicitly set all of them.
 The temperatures and pressures are then combined in a 2D grid.
 
 You can use CUT_CORNER to avoid a high-temperature/low-pressure region.
@@ -56,11 +56,11 @@ vol: VOLUME
 ecv: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=500
-  MIN_TEMP=270
-  MAX_TEMP=800
+  TEMP_MIN=270
+  TEMP_MAX=800
   PRESSURE=0.06022140857*2000 #2 kbar
-  MIN_PRESSURE=0.06022140857  #1 bar
-  MAX_PRESSURE=0.06022140857*4000 #4 kbar
+  PRESSURE_MIN=0.06022140857  #1 bar
+  PRESSURE_MAX=0.06022140857*4000 #4 kbar
   CUT_CORNER=500,0.06022140857,800,0.06022140857*1000
 ...
 opes: OPES_EXPANDED ARG=ecv.* FILE=DeltaF.data PACE=500 WALKERS_MPI
@@ -89,8 +89,8 @@ private:
 
 //CUT_CORNER stuff
   double coeff_;
-  double low_pres_;
-  double low_temp_Kb_;
+  double pres_low_;
+  double kB_temp_low_;
 
 public:
   explicit ECVmultiThermalBaric(const ActionOptions&);
@@ -112,17 +112,17 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
   keys.remove("ARG");
   keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
 //temperature
-  keys.add("optional","MIN_TEMP","the minimum of the temperature range");
-  keys.add("optional","MAX_TEMP","the maximum of the temperature range");
-  keys.add("optional","STEPS_TEMP","the number of steps in temperature");
-  keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
+  keys.add("optional","TEMP_MIN","the minimum of the temperature range");
+  keys.add("optional","TEMP_MAX","the maximum of the temperature range");
+  keys.add("optional","TEMP_STEPS","the number of steps in temperature");
+  keys.add("optional","TEMP_SET_ALL","manually set all the temperatures");
   keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
 //pressure
   keys.add("compulsory","PRESSURE","pressure. Use the proper units");
-  keys.add("optional","MIN_PRESSURE","the minimum of the pressure range");
-  keys.add("optional","MAX_PRESSURE","the maximum of the pressure range");
-  keys.add("optional","STEPS_PRESSURE","the number of steps in pressure");
-  keys.add("optional","SET_ALL_PRESSURES","manually set all the pressures");
+  keys.add("optional","PRESSURE_MIN","the minimum of the pressure range");
+  keys.add("optional","PRESSURE_MAX","the maximum of the pressure range");
+  keys.add("optional","PRESSURE_STEPS","the number of steps in pressure");
+  keys.add("optional","PRESSURE_SET_ALL","manually set all the pressures");
 //other
 //  keys.add("optional","SET_GRID_TEMPS_PRESSURES","manually set the whole temperature-pressure grid. Comma separated points, with internal underscore, e.g.: temp1_pres1,temp1_pres2,...");
   keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: \\f$T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}\\f$");
@@ -137,29 +137,29 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   plumed_massert(getNumberOfArguments()==2,"ENERGY and VOLUME should be given as ARG");
 
 //set temp0
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  const double temp0=kbt_/Kb;
+  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double temp0=kbt_/kB;
 
 //parse temp range
-  double min_temp=-1;
-  double max_temp=-1;
-  parse("MIN_TEMP",min_temp);
-  parse("MAX_TEMP",max_temp);
-  unsigned steps_temp=0;
-  parse("STEPS_TEMP",steps_temp);
+  double temp_min=-1;
+  double temp_max=-1;
+  parse("TEMP_MIN",temp_min);
+  parse("TEMP_MAX",temp_max);
+  unsigned temp_steps=0;
+  parse("TEMP_STEPS",temp_steps);
   std::vector<double> temps;
-  parseVector("SET_ALL_TEMPS",temps);
+  parseVector("TEMP_SET_ALL",temps);
   parseFlag("NO_GEOM_SPACING",geom_spacing_);
   geom_spacing_=!geom_spacing_;
 //parse pressures
   parse("PRESSURE",pres0_);
-  double min_pres=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
-  double max_pres=std::numeric_limits<double>::quiet_NaN();
-  parse("MIN_PRESSURE",min_pres);
-  parse("MAX_PRESSURE",max_pres);
-  unsigned steps_pres=0;
-  parse("STEPS_PRESSURE",steps_pres);
-  parseVector("SET_ALL_PRESSURES",pres_);
+  double pres_min=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
+  double pres_max=std::numeric_limits<double>::quiet_NaN();
+  parse("PRESSURE_MIN",pres_min);
+  parse("PRESSURE_MAX",pres_max);
+  unsigned pres_steps=0;
+  parse("PRESSURE_STEPS",pres_steps);
+  parseVector("PRESSURE_SET_ALL",pres_);
 //other
   std::vector<double> cut_corner;
   parseVector("CUT_CORNER",cut_corner);
@@ -169,111 +169,111 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 //set the intermediate temperatures
   if(temps.size()>0)
   {
-    plumed_massert(steps_temp==0,"cannot set both STEPS_TEMP and SET_ALL_TEMPS");
-    plumed_massert(min_temp==-1 && max_temp==-1,"cannot set both SET_ALL_TEMPS and MIN/MAX_TEMP");
+    plumed_massert(temp_steps==0,"cannot set both TEMP_STEPS and TEMP_SET_ALL");
+    plumed_massert(temp_min==-1 && temp_max==-1,"cannot set both TEMP_SET_ALL and TEMP_MIN/MAX");
     plumed_massert(temps.size()>=2,"set at least 2 temperatures");
-    min_temp=temps[0];
-    max_temp=temps[temps.size()-1];
+    temp_min=temps[0];
+    temp_max=temps[temps.size()-1];
     derECVs_beta_.resize(temps.size());
     for(unsigned k=0; k<derECVs_beta_.size(); k++)
     {
       derECVs_beta_[k]=(temp0/temps[k]-1.)/kbt_;
       if(k<derECVs_beta_.size()-1)
-        plumed_massert(temps[k]<=temps[k+1],"SET_ALL_TEMPS must be properly ordered");
+        plumed_massert(temps[k]<=temps[k+1],"TEMP_SET_ALL must be properly ordered");
     }
   }
   else
-  { //get MIN_TEMP and MAX_TEMP
-    if(min_temp==-1)
+  { //get TEMP_MIN and TEMP_MAX
+    if(temp_min==-1)
     {
-      min_temp=temp0;
-      log.printf("  no MIN_TEMP provided, using MIN_TEMP=TEMP\n");
+      temp_min=temp0;
+      log.printf("  no TEMP_MIN provided, using TEMP_MIN=TEMP\n");
     }
-    if(max_temp==-1)
+    if(temp_max==-1)
     {
-      max_temp=temp0;
-      log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
+      temp_max=temp0;
+      log.printf("  no TEMP_MAX provided, using TEMP_MAX=TEMP\n");
     }
-    plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
+    plumed_massert(temp_max>=temp_min,"TEMP_MAX should be bigger than TEMP_MIN");
     derECVs_beta_.resize(2);
-    derECVs_beta_[0]=(temp0/min_temp-1.)/kbt_;
-    derECVs_beta_[1]=(temp0/max_temp-1.)/kbt_;
-    if(min_temp==max_temp && steps_temp==0)
-      steps_temp=1;
-    if(steps_temp>0)
-      derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
+    derECVs_beta_[0]=(temp0/temp_min-1.)/kbt_;
+    derECVs_beta_[1]=(temp0/temp_max-1.)/kbt_;
+    if(temp_min==temp_max && temp_steps==0)
+      temp_steps=1;
+    if(temp_steps>0)
+      derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],temp_steps,"TEMP",geom_spacing_,1./kbt_);
     else
       todoAutomatic_beta_=true;
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
+  if(temp0<(1-tol)*temp_min || temp0>(1+tol)*temp_max)
     log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp0);
 
 //set the intermediate pressures
   if(pres_.size()>0)
   {
-    plumed_massert(steps_pres==0,"cannot set both STEPS_PRESSURE and SET_ALL_PRESSURES");
-    plumed_massert(std::isnan(min_pres) && std::isnan(max_pres),"cannot set both SET_ALL_PRESSURES and MIN/MAX_PRESSURE");
+    plumed_massert(pres_steps==0,"cannot set both PRESSURE_STEPS and PRESSURE_SET_ALL");
+    plumed_massert(std::isnan(pres_min) && std::isnan(pres_max),"cannot set both PRESSURE_SET_ALL and PRESSURE_MIN/MAX");
     plumed_massert(pres_.size()>=2,"set at least 2 pressures");
     for(unsigned kk=0; kk<pres_.size()-1; kk++)
-      plumed_massert(pres_[kk]<=pres_[kk+1],"SET_ALL_PRESSURES must be properly ordered");
-    min_pres=pres_[0];
-    max_pres=pres_[pres_.size()-1];
+      plumed_massert(pres_[kk]<=pres_[kk+1],"PRESSURE_SET_ALL must be properly ordered");
+    pres_min=pres_[0];
+    pres_max=pres_[pres_.size()-1];
   }
   else
-  { //get MIN_PRESSURE and MAX_PRESSURE
-    if(std::isnan(min_pres))
+  { //get PRESSURE_MIN and PRESSURE_MAX
+    if(std::isnan(pres_min))
     {
-      min_pres=pres0_;
-      log.printf("  no MIN_PRESSURE provided, using MIN_PRESSURE=PRESSURE\n");
+      pres_min=pres0_;
+      log.printf("  no PRESSURE_MIN provided, using PRESSURE_MIN=PRESSURE\n");
     }
-    if(std::isnan(max_pres))
+    if(std::isnan(pres_max))
     {
-      max_pres=pres0_;
-      log.printf("  no MAX_PRESSURE provided, using MAX_PRESSURE=PRESSURE\n");
+      pres_max=pres0_;
+      log.printf("  no PRESSURE_MAX provided, using PRESSURE_MAX=PRESSURE\n");
     }
-    plumed_massert(max_pres>=min_pres,"MAX_PRESSURE should be bigger than MIN_PRESSURE");
-    if(min_pres==max_pres && steps_pres==0)
-      steps_pres=1;
-    if(steps_pres>0)
-      pres_=getSteps(min_pres,max_pres,steps_pres,"PRESSURE",false,0);
+    plumed_massert(pres_max>=pres_min,"PRESSURE_MAX should be bigger than PRESSURE_MIN");
+    if(pres_min==pres_max && pres_steps==0)
+      pres_steps=1;
+    if(pres_steps>0)
+      pres_=getSteps(pres_min,pres_max,pres_steps,"PRESSURE",false,0);
     else
     {
       pres_.resize(2);
-      pres_[0]=min_pres;
-      pres_[1]=max_pres;
+      pres_[0]=pres_min;
+      pres_[1]=pres_max;
       todoAutomatic_pres_=true;
     }
   }
-  if(pres0_<min_pres || pres0_>max_pres)
+  if(pres0_<pres_min || pres0_>pres_max)
     log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
 //set CUT_CORNER
-  std::string cc_usage("CUT_CORNER=low_temp,low_pres,high_temp,high_pres");
+  std::string cc_usage("CUT_CORNER=temp_low,pres_low,temp_high,pres_high");
   if(cut_corner.size()==0)
   {
     coeff_=0;
-    low_pres_=0;
-    low_temp_Kb_=0;
+    pres_low_=0;
+    kB_temp_low_=0;
   }
   else if(cut_corner.size()==4)
   {
-    const double low_temp=cut_corner[0];
-    const double low_pres=cut_corner[1];
-    const double high_temp=cut_corner[2];
-    const double high_pres=cut_corner[3];
-    plumed_massert(low_temp<high_temp,"low_temp="+std::to_string(low_temp)+" should be smaller than high_temp="+std::to_string(high_temp)+", "+cc_usage);
-    plumed_massert(low_temp>=min_temp && low_temp<=max_temp,"low_temp="+std::to_string(low_temp)+" is out of temperature range. "+cc_usage);
-    plumed_massert(high_temp>=min_temp && high_temp<=max_temp,"high_temp="+std::to_string(high_temp)+" is out of temperature range. "+cc_usage);
-    plumed_massert(low_pres<high_pres,"low_pres="+std::to_string(low_pres)+" should be smaller than high_pres="+std::to_string(high_pres)+", "+cc_usage);
-    plumed_massert(low_pres>=min_pres && low_pres<=max_pres,"low_pres="+std::to_string(low_pres)+" is out of pressure range. "+cc_usage);
-    plumed_massert(high_pres>=min_pres && high_pres<=max_pres,"high_pres="+std::to_string(high_pres)+" is out of pressure range. "+cc_usage);
-    low_temp_Kb_=low_temp*Kb;
-    coeff_=(high_pres-low_pres)/(high_temp-low_temp)/Kb;
+    const double temp_low=cut_corner[0];
+    const double pres_low=cut_corner[1];
+    const double temp_high=cut_corner[2];
+    const double pres_high=cut_corner[3];
+    plumed_massert(temp_low<temp_high,"temp_low="+std::to_string(temp_low)+" should be smaller than temp_high="+std::to_string(temp_high)+", "+cc_usage);
+    plumed_massert(temp_low>=temp_min && temp_low<=temp_max,"temp_low="+std::to_string(temp_low)+" is out of temperature range. "+cc_usage);
+    plumed_massert(temp_high>=temp_min && temp_high<=temp_max,"temp_high="+std::to_string(temp_high)+" is out of temperature range. "+cc_usage);
+    plumed_massert(pres_low<pres_high,"pres_low="+std::to_string(pres_low)+" should be smaller than pres_high="+std::to_string(pres_high)+", "+cc_usage);
+    plumed_massert(pres_low>=pres_min && pres_low<=pres_max,"pres_low="+std::to_string(pres_low)+" is out of pressure range. "+cc_usage);
+    plumed_massert(pres_high>=pres_min && pres_high<=pres_max,"pres_high="+std::to_string(pres_high)+" is out of pressure range. "+cc_usage);
+    kB_temp_low_=kB*temp_low;
+    coeff_=(pres_high-pres_low)/(temp_high-temp_low)/kB;
     plumed_massert(coeff_!=0,"this should not be possible");
-    const double small_value=(high_temp-low_pres)/1e4;
-    low_pres_=low_pres-small_value; //make sure max_pres is included
-    plumed_massert(max_pres>=coeff_*(max_temp*Kb-low_temp_Kb_)+low_pres_,"please chose a high_pres slightly smaller than MAX_PRESSURE in "+cc_usage);
+    const double small_value=(temp_high-pres_low)/1e4;
+    pres_low_=pres_low-small_value; //make sure pres_max is included
+    plumed_massert(pres_max>=coeff_*(kB*temp_max-kB_temp_low_)+pres_low_,"please chose a pres_high slightly smaller than PRESSURE_MAX in "+cc_usage);
   }
   else
   {
@@ -282,11 +282,11 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 
 //print some info
   log.printf("  running at TEMP=%g and PRESSURE=%g\n",temp0,pres0_);
-  log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
-  if(min_temp==max_temp)
+  log.printf("  targeting a temperature range from TEMP_MIN=%g to TEMP_MAX=%g\n",temp_min,temp_max);
+  if(temp_min==temp_max)
     log.printf(" +++ WARNING +++ if you only need a multibaric simulation it is more efficient to set it up with ECV_LINEAR\n");
-  log.printf("   and a pressure range from MIN_PRESSURE=%g to MAX_PRESSURE=%g\n",min_pres,max_pres);
-  if(min_pres==max_pres)
+  log.printf("   and a pressure range from PRESSURE_MIN=%g to PRESSURE_MAX=%g\n",pres_min,pres_max);
+  if(pres_min==pres_max)
     log.printf(" +++ WARNING +++ if you only need a multithermal simulation it is more efficient to set it up with ECV_MULTITHERMAL\n");
   if(geom_spacing_)
     log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
@@ -330,8 +330,8 @@ std::vector< std::vector<unsigned> > ECVmultiThermalBaric::getIndex_k() const
   unsigned i=0;
   for(unsigned k=0; k<derECVs_beta_.size(); k++)
   {
-    const double temp_k_Kb=kbt_/(derECVs_beta_[k]*kbt_+1);
-    const double line_k=coeff_*(temp_k_Kb-low_temp_Kb_)+low_pres_;
+    const double kB_temp_k=kbt_/(derECVs_beta_[k]*kbt_+1);
+    const double line_k=coeff_*(kB_temp_k-kB_temp_low_)+pres_low_;
     for(unsigned kk=0; kk<pres_.size(); kk++)
     {
       if(coeff_==0 || pres_[kk]>=line_k) //important to be inclusive, thus >=, not just >
@@ -349,17 +349,17 @@ std::vector<std::string> ECVmultiThermalBaric::getLambdas() const
 {
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"cannot access lambdas before initializing them");
   std::vector<std::string> lambdas;
-  const double Kb=plumed.getAtoms().getKBoltzmann();
+  const double kB=plumed.getAtoms().getKBoltzmann();
   for(unsigned k=0; k<derECVs_beta_.size(); k++)
   {
-    const double temp_k_Kb=kbt_/(derECVs_beta_[k]*kbt_+1);
-    const double line_k=coeff_*(temp_k_Kb-low_temp_Kb_)+low_pres_;
+    const double kB_temp_k=kbt_/(derECVs_beta_[k]*kbt_+1);
+    const double line_k=coeff_*(kB_temp_k-kB_temp_low_)+pres_low_;
     for(unsigned kk=0; kk<pres_.size(); kk++)
     {
       if(coeff_==0 || pres_[kk]>=line_k)
       {
         std::ostringstream subs;
-        subs<<temp_k_Kb/Kb<<"_"<<pres_[kk];
+        subs<<kB_temp_k/kB<<"_"<<pres_[kk];
         lambdas.emplace_back(subs.str());
       }
     }
@@ -381,13 +381,13 @@ void ECVmultiThermalBaric::initECVs()
   unsigned i=0;
   for(unsigned k=0; k<derECVs_beta_.size(); k++)
   {
-    const double temp_k_Kb=kbt_/(derECVs_beta_[k]*kbt_+1);
-    const double line_k=coeff_*(temp_k_Kb-low_temp_Kb_)+low_pres_;
+    const double kB_temp_k=kbt_/(derECVs_beta_[k]*kbt_+1);
+    const double line_k=coeff_*(kB_temp_k-kB_temp_low_)+pres_low_;
     for(unsigned kk=0; kk<pres_.size(); kk++)
     {
       if(coeff_==0 || pres_[kk]>=line_k)
       {
-        derECVs_pres_[i]=(pres_[kk]/temp_k_Kb-pres0_/kbt_);
+        derECVs_pres_[i]=(pres_[kk]/kB_temp_k-pres0_/kbt_);
         i++;
       }
     }
@@ -407,9 +407,9 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j]+pres0_*all_obs_cvs[t*ncv+index_j+1]; //U=E+pV
-    const unsigned steps_temp=estimateNumSteps(derECVs_beta_[0],derECVs_beta_[1],obs_ene,"TEMP");
+    const unsigned temp_steps=estimateNumSteps(derECVs_beta_[0],derECVs_beta_[1],obs_ene,"TEMP");
     log.printf("    (spacing is on beta, not on temperature)\n");
-    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
+    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],temp_steps,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_beta_=false;
   }
   if(todoAutomatic_pres_) //estimate the steps in pres from observations
@@ -418,9 +418,9 @@ void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cv
     std::vector<double> obs_vol(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_vol.size(); t++)
       obs_vol[t]=all_obs_cvs[t*ncv+index_j+1];
-    const unsigned steps_pres=estimateNumSteps((pres_[0]-pres0_)/kbt_,(pres_[1]-pres0_)/kbt_,obs_vol,"PRESSURE");
+    const unsigned pres_steps=estimateNumSteps((pres_[0]-pres0_)/kbt_,(pres_[1]-pres0_)/kbt_,obs_vol,"PRESSURE");
     log.printf("    (spacing is in beta0 units)\n");
-    pres_=getSteps(pres_[0],pres_[1],steps_pres,"PRESSURE",false,0);
+    pres_=getSteps(pres_[0],pres_[1],pres_steps,"PRESSURE",false,0);
     todoAutomatic_pres_=false;
   }
   initECVs();
@@ -437,27 +437,27 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
   auto getPres=[&lambdas](const unsigned i) {return lambdas[i].substr(lambdas[i].find("_")+1);};
   if(todoAutomatic_pres_)
   {
-    unsigned steps_pres=1;
-    std::string min_pres=getPres(0);
+    unsigned pres_steps=1;
+    std::string pres_min=getPres(0);
     for(unsigned i=1; i<lambdas.size(); i++) //pres is second, thus increas by 1
     {
-      if(getPres(i)==min_pres)
+      if(getPres(i)==pres_min)
         break;
-      steps_pres++;
+      pres_steps++;
     }
-    pres_=getSteps(pres_[0],pres_[1],steps_pres,"PRESSURE",false,0);
+    pres_=getSteps(pres_[0],pres_[1],pres_steps,"PRESSURE",false,0);
     todoAutomatic_pres_=false;
   }
   if(todoAutomatic_beta_)
   {
-    unsigned steps_temp=1;
+    unsigned temp_steps=1;
     std::string pres_max=getPres(pres_.size()-1);
     for(unsigned i=pres_.size(); i<lambdas.size(); i++)
     { //even if CUT_CORNER, the max pressures are all present, for each temp
       if(getPres(i)==pres_max)
-        steps_temp++;
+        temp_steps++;
     }
-    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],steps_temp,"TEMP",geom_spacing_,1./kbt_);
+    derECVs_beta_=getSteps(derECVs_beta_[0],derECVs_beta_[1],temp_steps,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_beta_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

@@ -42,18 +42,18 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   , totNumECVs_(0)
 {
 //set kbt_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
+  const double kB=plumed.getAtoms().getKBoltzmann();
   kbt_=plumed.getAtoms().getKbT();
   double temp=-1;
   parse("TEMP",temp);
   if(temp>0)
   {
-    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
-    kbt_=Kb*temp;
+    if(kbt_>0 && std::abs(kbt_-kB*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/kB);
+    kbt_=kB*temp;
   }
   plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  log.printf("  temperature = %g, beta = %g\n",kbt_/Kb,1./kbt_);
+  log.printf("  temperature = %g, beta = %g\n",kbt_/kB,1./kbt_);
 
 //set components
   plumed_massert( getNumberOfArguments()!=0, "you must specify the underlying CV");
@@ -108,31 +108,31 @@ std::vector< std::vector<unsigned> > ExpansionCVs::getIndex_k() const
 }
 
 //following methods are meant to be used only in case of linear expansions
-std::vector<double> ExpansionCVs::getSteps(double min_lambda,double max_lambda,const unsigned steps_lambda,const std::string& msg,const bool geom_spacing, const double shift) const
+std::vector<double> ExpansionCVs::getSteps(double lambda_min,double lambda_max,const unsigned lambda_steps,const std::string& msg,const bool geom_spacing, const double shift) const
 {
-  plumed_massert(!(min_lambda==max_lambda && steps_lambda>1),"cannot have multiple STEPS_"+msg+" if MIN_"+msg+"==MAX_"+msg);
-  std::vector<double> lambda(steps_lambda);
-  if(steps_lambda==1)
+  plumed_massert(!(lambda_min==lambda_max && lambda_steps>1),"cannot have multiple "+msg+"_STEPS if "+msg+"_MIN=="+msg+"_MAX");
+  std::vector<double> lambda(lambda_steps);
+  if(lambda_steps==1)
   {
-    lambda[0]=(min_lambda+max_lambda)/2.;
+    lambda[0]=(lambda_min+lambda_max)/2.;
     log.printf(" +++ WARNING +++ using one single %s as target = %g\n",msg.c_str(),lambda[0]);
   }
   else
   {
     if(geom_spacing) //geometric spacing
     { //this way lambda[k]/lambda[k+1] is constant
-      min_lambda+=shift;
-      max_lambda+=shift;
-      plumed_massert(min_lambda>0,"cannot use GEOM_SPACING when MIN_%s is not greater than zero");
-      plumed_massert(max_lambda>0,"cannot use GEOM_SPACING when MAX_%s is not greater than zero");
-      const double log_min_lambda=std::log(min_lambda);
-      const double log_max_lambda=std::log(max_lambda);
+      lambda_min+=shift;
+      lambda_max+=shift;
+      plumed_massert(lambda_min>0,"cannot use GEOM_SPACING when %s_MIN is not greater than zero");
+      plumed_massert(lambda_max>0,"cannot use GEOM_SPACING when %s_MAX is not greater than zero");
+      const double log_lambda_min=std::log(lambda_min);
+      const double log_lambda_max=std::log(lambda_max);
       for(unsigned k=0; k<lambda.size(); k++)
-        lambda[k]=std::exp(log_min_lambda+k*(log_max_lambda-log_min_lambda)/(steps_lambda-1))-shift;
+        lambda[k]=std::exp(log_lambda_min+k*(log_lambda_max-log_lambda_min)/(lambda_steps-1))-shift;
     }
     else //linear spacing
       for(unsigned k=0; k<lambda.size(); k++)
-        lambda[k]=min_lambda+k*(max_lambda-min_lambda)/(steps_lambda-1);
+        lambda[k]=lambda_min+k*(lambda_max-lambda_min)/(lambda_steps-1);
   }
   return lambda;
 }
@@ -141,7 +141,7 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
 { //for linear expansions only, it uses effective sample size (Neff) to estimate the grid spacing
   if(left_side==0 && right_side==0)
   {
-    log.printf(" +++ WARNING +++ MIN_%s and MAX_%s are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
+    log.printf(" +++ WARNING +++ %s_MIN and %s_MAX are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
@@ -210,24 +210,24 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
   {
     right_HWHM*=2;
     if(left_side==0)
-      log.printf(" --- MIN_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- %s_MIN is equal to %s\n",msg.c_str(),msg.c_str());
     else
-      log.printf(" +++ WARNING +++ MIN_%s is very close to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" +++ WARNING +++ %s_MIN is very close to %s\n",msg.c_str(),msg.c_str());
   }
   if(right_HWHM==0)
   {
     left_HWHM*=2;
     if(right_side==0)
-      log.printf(" --- MAX_%s is equal to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" --- %s_MAX is equal to %s\n",msg.c_str(),msg.c_str());
     else
-      log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
+      log.printf(" +++ WARNING +++ %s_MAX is very close to %s\n",msg.c_str(),msg.c_str());
   }
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("   estimated %s spacing = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
   if(steps<2 || grid_spacing==0)
   {
-    log.printf(" +++ WARNING +++ %s range is very narrow, using MIN_%s and MAX_%s as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
+    log.printf(" +++ WARNING +++ %s range is very narrow, using %s_MIN and %s_MAX as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
     steps=2;
   }
   return steps;

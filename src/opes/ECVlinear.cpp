@@ -36,9 +36,9 @@ The difference in Hamiltonian \f$\Delta U\f$ is expected as ARG.
 Use the DIMENSIONLESS flag to avoid multiplying for the inverse temperature \f$\beta\f$.
 
 By defauly the needed steps in lambda are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
-Otherwise one can set this number with STEPS_LAMBDA.
+Otherwise one can set this number with LAMBDA_STEPS.
 In both cases the steps will be uniformly distriuted.
-Finally, one can use instead the keyword SET_ALL_LAMBDAS and explicitly provide each lambda value.
+Finally, one can use instead the keyword LAMBDA_SET_ALL and explicitly provide each lambda value.
 
 \par Examples
 
@@ -50,8 +50,8 @@ ecv: ECV_LINEAR ...
   ARG=vol
   TEMP=300
   LAMBDA=0.06022140857*2000 #2 kbar
-  MIN_LAMBDA=0.06022140857  #1 bar
-  MAX_LAMBDA=0.06022140857*4000 #4 kbar
+  LAMBDA_MIN=0.06022140857  #1 bar
+  LAMBDA_MAX=0.06022140857*4000 #4 kbar
 ...
 opes: OPES_EXPANDED ARG=ecv.vol PACE=500
 \endplumedfile
@@ -64,7 +64,7 @@ ecv: ECV_LINEAR ARG=DeltaU TEMP=300
 opes: OPES_EXPANDED ARG=ecv.* PACE=100
 \endplumedfile
 
-Notice that by defauly LAMBDA=0, MIN_LAMBDA=0 and MAX_LAMBDA=1, which is the typical case for thermodynamic integration.
+Notice that by defauly LAMBDA=0, LAMBDA_MIN=0 and LAMBDA_MAX=1, which is the typical case for thermodynamic integration.
 
 */
 //+ENDPLUMEDOC
@@ -100,10 +100,10 @@ void ECVlinear::registerKeywords(Keywords& keys)
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the Hamiltonian difference \\f$\\Delta U\\f$");
   keys.add("compulsory","LAMBDA","0","the lambda at which the underlying simulation runs");
-  keys.add("optional","MIN_LAMBDA","( default=0 ) the minimum of the lambda range");
-  keys.add("optional","MAX_LAMBDA","( default=1 ) the maximum of the lambda range");
-  keys.add("optional","STEPS_LAMBDA","uniformly place the lambda values, for a total of STEPS_LAMBDA");
-  keys.add("optional","SET_ALL_LAMBDAS","manually set all the lamdbas");
+  keys.add("optional","LAMBDA_MIN","( default=0 ) the minimum of the lambda range");
+  keys.add("optional","LAMBDA_MAX","( default=1 ) the maximum of the lambda range");
+  keys.add("optional","LAMBDA_STEPS","uniformly place the lambda values, for a total of LAMBDA_STEPS");
+  keys.add("optional","LAMBDA_SET_ALL","manually set all the lamdbas");
   keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
   keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing");
 }
@@ -124,14 +124,14 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
 
 //parse lambda info
   parse("LAMBDA",lambda0_);
-  double min_lambda=std::numeric_limits<double>::quiet_NaN();
-  double max_lambda=std::numeric_limits<double>::quiet_NaN();
-  parse("MIN_LAMBDA",min_lambda);
-  parse("MAX_LAMBDA",max_lambda);
-  unsigned steps_lambda=0;
-  parse("STEPS_LAMBDA",steps_lambda);
+  double lambda_min=std::numeric_limits<double>::quiet_NaN();
+  double lambda_max=std::numeric_limits<double>::quiet_NaN();
+  parse("LAMBDA_MIN",lambda_min);
+  parse("LAMBDA_MAX",lambda_max);
+  unsigned lambda_steps=0;
+  parse("LAMBDA_STEPS",lambda_steps);
   std::vector<double> lambdas;
-  parseVector("SET_ALL_LAMBDAS",lambdas);
+  parseVector("LAMBDA_SET_ALL",lambdas);
   parseFlag("GEOM_SPACING",geom_spacing_);
 
   checkRead();
@@ -139,46 +139,46 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
 //set the diff vector using lambdas
   if(lambdas.size()>0)
   {
-    plumed_massert(steps_lambda==0,"cannot set both STEPS_LAMBDA and SET_ALL_LAMBDAS");
-    plumed_massert(std::isnan(min_lambda) && std::isnan(max_lambda),"cannot set both SET_ALL_LAMBDAS and MIN/MAX_LAMBDA");
-    plumed_massert(lambdas.size()>=2,"set at least 2 lambdas with SET_ALL_LAMBDAS");
+    plumed_massert(lambda_steps==0,"cannot set both LAMBDA_STEPS and LAMBDA_SET_ALL");
+    plumed_massert(std::isnan(lambda_min) && std::isnan(lambda_max),"cannot set both LAMBDA_SET_ALL and LAMBDA_MIN/MAX");
+    plumed_massert(lambdas.size()>=2,"set at least 2 lambdas with LAMBDA_SET_ALL");
     for(unsigned k=0; k<lambdas.size()-1; k++)
-      plumed_massert(lambdas[k]<=lambdas[k+1],"SET_ALL_LAMBDAS must be properly ordered");
-    min_lambda=lambdas[0];
-    max_lambda=lambdas[lambdas.size()-1];
+      plumed_massert(lambdas[k]<=lambdas[k+1],"LAMBDA_SET_ALL must be properly ordered");
+    lambda_min=lambdas[0];
+    lambda_max=lambdas[lambdas.size()-1];
     derECVs_.resize(lambdas.size());
     for(unsigned k=0; k<derECVs_.size(); k++)
       derECVs_[k]=beta0_*(lambdas[k]-lambda0_);
   }
   else
-  { //get MIN_LAMBDA and MAX_LAMBDA
-    if(std::isnan(min_lambda))
+  { //get LAMBDA_MIN and LAMBDA_MAX
+    if(std::isnan(lambda_min))
     {
-      min_lambda=0;
-      log.printf("  no MIN_LAMBDA provided, using MIN_LAMBDA = %g\n",min_lambda);
+      lambda_min=0;
+      log.printf("  no LAMBDA_MIN provided, using LAMBDA_MIN = %g\n",lambda_min);
     }
-    if(std::isnan(max_lambda))
+    if(std::isnan(lambda_max))
     {
-      max_lambda=1;
-      log.printf("  no MAX_LAMBDA provided, using MAX_LAMBDA = %g\n",max_lambda);
+      lambda_max=1;
+      log.printf("  no LAMBDA_MAX provided, using LAMBDA_MAX = %g\n",lambda_max);
     }
-    plumed_massert(max_lambda>=min_lambda,"MAX_LAMBDA should be bigger than MIN_LAMBDA");
+    plumed_massert(lambda_max>=lambda_min,"LAMBDA_MAX should be bigger than LAMBDA_MIN");
     derECVs_.resize(2);
-    derECVs_[0]=beta0_*(min_lambda-lambda0_);
-    derECVs_[1]=beta0_*(max_lambda-lambda0_);
-    if(min_lambda==max_lambda && steps_lambda==0)
-      steps_lambda=1;
-    if(steps_lambda>0)
-      derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA",geom_spacing_,beta0_*lambda0_);
+    derECVs_[0]=beta0_*(lambda_min-lambda0_);
+    derECVs_[1]=beta0_*(lambda_max-lambda0_);
+    if(lambda_min==lambda_max && lambda_steps==0)
+      lambda_steps=1;
+    if(lambda_steps>0)
+      derECVs_=getSteps(derECVs_[0],derECVs_[1],lambda_steps,"LAMBDA",geom_spacing_,beta0_*lambda0_);
     else
       todoAutomatic_=true;
   }
-  if(lambda0_<min_lambda || lambda0_>max_lambda)
+  if(lambda0_<lambda_min || lambda0_>lambda_max)
     log.printf(" +++ WARNING +++ running at LAMBDA=%g which is outside the chosen lambda range\n",lambda0_);
 
 //print some info
   log.printf("  running at LAMBDA=%g\n",lambda0_);
-  log.printf("  targeting a lambda range from MIN_LAMBDA=%g to MAX_LAMBDA=%g\n",min_lambda,max_lambda);
+  log.printf("  targeting a lambda range from LAMBDA_MIN=%g to LAMBDA_MAX=%g\n",lambda_min,lambda_max);
   if(dimensionless)
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
   if(geom_spacing_)
@@ -237,10 +237,10 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
     std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_cv.size(); t++)
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_lambda=estimateNumSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
+    const unsigned lambda_steps=estimateNumSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
     if(beta0_!=1)
       log.printf("    (spacing is in beta0 units)\n");
-    derECVs_=getSteps(derECVs_[0],derECVs_[1],steps_lambda,"LAMBDA",geom_spacing_,beta0_*lambda0_);
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],lambda_steps,"LAMBDA",geom_spacing_,beta0_*lambda0_);
     todoAutomatic_=false;
   }
   initECVs();
