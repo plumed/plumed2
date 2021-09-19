@@ -22,6 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "core/PlumedMain.h"
 
 //+PLUMEDOC REWEIGHTING COVARIANCE_MATRIX
 /*
@@ -72,7 +73,7 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   unsigned ndata = arg_ends.size()-1;
   std::vector<std::string> weight_str; parseVector("WEIGHTS",weight_str);
   if( weight_str.size()>0 ) { 
-    std::vector<Value*> weight_args, args( getArguments() ); interpretArgumentList( weight_str, weight_args );
+    std::vector<Value*> weight_args, args( getArguments() ); ActionWithArguments::interpretArgumentList( weight_str, plumed.getActionSet(), this, weight_args );
     log.printf("  quantities used for weights are : %s ", weight_str[0].c_str() );
     for(unsigned i=1; i<weight_args.size(); ++i) log.printf(", %s", weight_str[i].c_str() );
     log.printf("\n");

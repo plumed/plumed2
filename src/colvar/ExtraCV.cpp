@@ -73,7 +73,7 @@ ExtraCV::ExtraCV(const ActionOptions&ao):
 {
   std::vector<std::string> argn(1); parse("NAME",argn[0]);
   plumed.cmd("createValue " + argn[0] + ": PUT SHAPE=0 PERIODIC=NO"); 
-  std::vector<Value*> arg; interpretArgumentList(argn,arg); 
+  std::vector<Value*> arg; ActionWithArguments::interpretArgumentList(argn,plumed.getActionSet(),this,arg); 
   if( arg.size()!=1 || arg[0]->getRank()>0 ) error("input argument is not valid"); 
   log<<"  name: "<<arg[0]->getName()<<"\n"; 
   addValueWithDerivatives(); setNotPeriodic();

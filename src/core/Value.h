@@ -33,6 +33,7 @@
 namespace PLMD {
 
 class OFile;
+class Action;
 class ActionWithValue;
 
 /// \ingroup TOOLBOX
@@ -109,10 +110,10 @@ public:
   explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
-/// Add a user to this action
-  void addUser( const std::string& user );
 /// Set the shape of the Value
   void setShape( const std::vector<unsigned>&ss );
+/// Use this value in in action
+  void use( Action* act, std::vector<Value*>& arg );
 /// Set the value of the function
   void set(double);
 /// Set the value of the stored data

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "ActionWithInputGrid.h"
 
 namespace PLMD {
@@ -60,7 +61,7 @@ ActionWithInputGrid(ao)
   arg_ends.resize(0); arg_ends.push_back(1); 
   for(unsigned i=0;i<gval->getRank();++i) arg_ends.push_back( 2+i );
   // Retreive values with these arguments
-  std::vector<Value*> argv; interpretArgumentList( argn, argv ); 
+  std::vector<Value*> argv; ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, argv ); 
   // Now check that arguments make sense
   for(unsigned i=1;i<argv.size();++i) {
       if( argv[0]->getRank()!=argv[i]->getRank() ) error("mismatched ranks for arguments");

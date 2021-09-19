@@ -53,7 +53,7 @@ void ReweightBase::update() {
 }
 
 void ReweightBase::setArguments( const std::vector<std::string>& c ) {
-  std::vector<Value*> arg; interpretArgumentList(c,arg); requestArguments(arg,false);
+  std::vector<Value*> arg; ActionWithArguments::interpretArgumentList(c,plumed.getActionSet(),this,arg); requestArguments(arg,false);
 }
 
 }

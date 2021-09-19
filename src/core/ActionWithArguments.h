@@ -40,6 +40,7 @@ This is used in PLMD::Function and PLMD::Bias
  when you use parseArgumentList.
 */
 
+class ActionSet;
 class AverageBase;
 class ReweightBase;
 
@@ -119,10 +120,8 @@ public:
   void unlockRequests() override;
 /// Returns an array of pointers to the arguments
   virtual const std::vector<Value*>    & getArguments() const ;
-/// Insert the Value vv into the vector of arguments arg
-  void useValue( Value* vv, std::vector<Value*>& arg ) const ;
 /// Convert a list of argument names into a list of pointers to the values
-  void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+  static void interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* action, std::vector<Value*>&arg);
 ///
   virtual void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
 /// Retrieve the argument values

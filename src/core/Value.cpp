@@ -136,8 +136,9 @@ void Value::setupPeriodicity() {
   }
 }
 
-void Value::addUser( const std::string& user ) {
-  userdata.push_back(user);
+void Value::use( Action* act, std::vector<Value*>& arg ) {
+  arg.push_back( this ); ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( act );
+  if( aa ) userdata.push_back(aa->getLabel());
 }
 
 void Value::buildDataStore( const std::string& actlabel ) {

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "HistogramBase.h"
+#include "core/PlumedMain.h"
 #include "core/ActionShortcut.h"
 
 namespace PLMD {
@@ -91,7 +92,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   // Get the heights if need be
   std::vector<std::string> weight_str; parseVector("HEIGHTS",weight_str);
   if( weight_str.size()>0 ) {
-    std::vector<Value*> weight_args; interpretArgumentList( weight_str, weight_args );
+    std::vector<Value*> weight_args; ActionWithArguments::interpretArgumentList( weight_str, plumed.getActionSet(), this, weight_args );
     heights_index=2; std::vector<Value*> args( getArguments() ); unsigned tvals=0;
     log.printf("  quantities used for weights are : %s ", weight_str[0].c_str() );
     for(unsigned i=1; i<weight_args.size(); ++i) log.printf(", %s", weight_str[i].c_str() );

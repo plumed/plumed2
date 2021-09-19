@@ -89,8 +89,7 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
           str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
           error("cannot find action named " + str_weights[0] +str);
         }
-        args.push_back( action->copyOutput(str_weights[0].substr(dot+1)) );
-        args[args.size()-1]->addUser( getLabel() );
+        action->copyOutput(str_weights[0].substr(dot+1))->use( this, args );
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0] );
         if( !action ) {
@@ -99,8 +98,7 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
           error("cannot find action named " + str_weights[0] +str);
         }
         if( action->getNumberOfComponents()>1 ) error("requesting value from action " + action->getLabel() + " but action has components");
-        args.push_back( action->copyOutput(0) );
-        args[args.size()-1]->addUser( getLabel() );
+        action->copyOutput(0)->use( this, args );
       }
       if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
       if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape");

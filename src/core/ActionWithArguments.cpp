@@ -57,29 +57,25 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
     if( keywords.getDefaultValue(key,def) ) c.push_back( def );
     else return;
   }
-  interpretArgumentList(c,arg);
+  interpretArgumentList(c,plumed.getActionSet(),this,arg);
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
   std::vector<std::string> c;
   arg.clear();
   if(parseNumberedVector(key,i,c)) {
-    interpretArgumentList(c,arg);
+    interpretArgumentList(c,plumed.getActionSet(),this,arg);
     return true;
   } else return false;
 }
 
-void ActionWithArguments::useValue( Value* vv, std::vector<Value*>& vals ) const {
-   vv->addUser(getLabel()); vals.push_back(vv);
-}
-
-void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg) {
+void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, const ActionSet& action_set, Action* action, std::vector<Value*>&arg) {
   for(unsigned i=0; i<c.size(); i++) {
     // Skip this option if this is a refernece configuration that only gives the positions of atoms
-    ActionSetup* setup=plumed.getActionSet().selectWithLabel<ActionSetup*>(c[i]);
+    ActionSetup* setup=action_set.selectWithLabel<ActionSetup*>(c[i]);
     if( setup ) { 
         ActionWithValue* avs=dynamic_cast<ActionWithValue*>( setup );
-        if( avs->getNumberOfComponents()==0 && getName()=="PRINT") continue; 
+        if( avs->getNumberOfComponents()==0 && action->getName()=="PRINT") continue; 
     }
     // is a regex? then just interpret it. The signal is ()
     if(!c[i].compare(0,1,"(")) {
@@ -109,8 +105,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         plumed_massert(reg.re_nsub==1,"I can parse with only one subexpression");
         regmatch_t match;
         // select all the actions that have a value
-        std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-        if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+        std::vector<ActionWithValue*> all=action_set.select<ActionWithValue*>();
+        if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
         bool found_something=false;
         for(unsigned j=0; j<all.size(); j++) {
           std::vector<std::string> ss=all[j]->getComponentsVector();
@@ -131,7 +127,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
-                    useValue( all[j]->copyOutput(putativeVal), arg );
+                    all[j]->copyOutput(putativeVal)->use( action, arg );
                     found_something=true;
                     // log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
@@ -155,35 +151,35 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       if(c[i].find(".")!=std::string::npos) {   // if it contains a dot:
         if(a=="*" && name=="*") {
           // Take all values from all actions
-          std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          std::vector<ActionWithValue*> all=action_set.select<ActionWithValue*>();
+          if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
             ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) all[j]->copyOutput(k)->use( action, arg ); 
           }
         } else if ( name=="*") {
           unsigned carg=arg.size();
           // Take all the values from an action with a specific name 
-          ActionShortcut* shortcut=plumed.getActionSet().getShortcutActionWithLabel(a);
-          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, this, arg );
+          ActionShortcut* shortcut=action_set.getShortcutActionWithLabel(a);
+          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, action, arg );
           if( arg.size()==carg ) { 
-              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-              if(!action) {
+              ActionWithValue* avalue=action_set.selectWithLabel<ActionWithValue*>(a);
+              if(!avalue) {
                 std::string str=" (hint! the actions with value in this ActionSet are: ";
-                str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
-                error("cannot find action named " + a + str);
+                str+=action_set.getLabelList<ActionWithValue*>()+")";
+                action->error("cannot find action named " + a + str);
               }
-              if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-              for(int k=0; k<action->getNumberOfComponents(); ++k) useValue( action->copyOutput(k), arg ); 
+              if( avalue->getNumberOfComponents()==0 ) action->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+              for(int k=0; k<avalue->getNumberOfComponents(); ++k) avalue->copyOutput(k)->use( action, arg ); 
           }
         } else if ( a=="*" ) {
-          std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
+          std::vector<ActionShortcut*> shortcuts=action_set.select<ActionShortcut*>();
           // Take components from all actions with a specific name
-          std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          std::vector<ActionWithValue*> all=action_set.select<ActionWithValue*>();
+          if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           unsigned carg=arg.size();
           for(unsigned j=0; j<shortcuts.size(); ++j) {
-              shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, this, arg );
+              shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, action, arg );
           } 
           unsigned nval=0;
           for(unsigned j=0; j<all.size(); j++) {
@@ -192,36 +188,36 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             for(unsigned k=carg; k<arg.size(); ++k) {
                 if( flab==arg[k]->getName() ) { found=true; break; }
             }
-            if( !found && all[j]->exists(flab) ) { useValue( all[j]->copyOutput(flab), arg ); nval++; }
+            if( !found && all[j]->exists(flab) ) { all[j]->copyOutput(flab)->use( action, arg ); nval++; }
           }
-          if(nval==0 && arg.size()==carg) error("found no actions with a component called " + name );
+          if(nval==0 && arg.size()==carg) action->error("found no actions with a component called " + name );
         } else {
           // Take values with a specific name
-          ActionShortcut* shortcut=plumed.getActionSet().getShortcutActionWithLabel(a);
+          ActionShortcut* shortcut=action_set.getShortcutActionWithLabel(a);
           if( shortcut ) {
-              unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, this, arg );
-              if( arg.size()==narg ) error("found no element in " + a + " with label " + name );
+              unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, action, arg );
+              if( arg.size()==narg ) action->error("found no element in " + a + " with label " + name );
           } else {
-              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-              if(!action) {
+              ActionWithValue* avalue=action_set.selectWithLabel<ActionWithValue*>(a);
+              if(!avalue) {
                 std::string str=" (hint! the actions with value in this ActionSet are: ";
-                str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
-                error("cannot find action named " + a +str);
+                str+=action_set.getLabelList<ActionWithValue*>()+")";
+                action->error("cannot find action named " + a +str);
               }
-              if( !(action->exists(c[i])) ) {
+              if( !(avalue->exists(c[i])) ) {
                 std::string str=" (hint! the components in this actions are: ";
-                str+=action->getComponentsList()+")";
-                error("action " + a + " has no component named " + name + str);
+                str+=avalue->getComponentsList()+")";
+                action->error("action " + a + " has no component named " + name + str);
               } 
-              useValue( action->copyOutput(c[i]), arg ); 
+              avalue->copyOutput(c[i])->use( action, arg ); 
           }
         }
       } else {    // if it doesn't contain a dot
         if(c[i]=="*") {
           // This outputs values from shortcuts
-          std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          std::vector<ActionWithValue*> all=action_set.select<ActionWithValue*>();
+          std::vector<ActionShortcut*> shortcuts=action_set.select<ActionShortcut*>();
+          if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
             bool found=false;
             ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
@@ -230,31 +226,31 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                 if( shortcuts[k]->matchWildcard() && all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }
             }
             if( found ) {
-                for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
+                for(int k=0; k<all[j]->getNumberOfComponents(); ++k) all[j]->copyOutput(k)->use( action, arg ); 
             } else {
                 // Don't print the working out that gets us to shortcut output
                 for(unsigned k=0; k<shortcuts.size(); ++k) {
                     if( all[j]->getLabel().find(shortcuts[k]->getShortcutLabel())!=std::string::npos ) { found=true; break; }
                 }
                 if( !found ) {
-                    for(int k=0; k<all[j]->getNumberOfComponents(); ++k) useValue( all[j]->copyOutput(k), arg ); 
+                    for(int k=0; k<all[j]->getNumberOfComponents(); ++k) all[j]->copyOutput(k)->use( action, arg ); 
                 }
             }
           }
-          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, arg );
+          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", action, arg );
         } else {
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-          if(!action) {
+          ActionWithValue* avalue=action_set.selectWithLabel<ActionWithValue*>(c[i]);
+          if(!avalue) {
             std::string str=" (hint! the actions with value in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
-            error("cannot find action named " + c[i] + str );
+            str+=action_set.getLabelList<ActionWithValue*>()+")";
+            action->error("cannot find action named " + c[i] + str );
           }
-          if( !(action->exists(c[i])) ) {
+          if( !(avalue->exists(c[i])) ) {
             std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            error("action " + c[i] + " has no component named " + c[i] +str);
+            str+=avalue->getComponentsList()+")";
+            action->error("action " + c[i] + " has no component named " + c[i] +str);
           };
-          useValue(action->copyOutput(c[i]), arg);
+          avalue->copyOutput(c[i])->use( action, arg );
         }
       }
     }
@@ -265,7 +261,7 @@ void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {
   std::vector<std::string> arg_names = pdb.getArgumentNames();
   if( arg_names.size()>0 ) {
     std::vector<Value*> arg_vals;
-    interpretArgumentList( arg_names, arg_vals );
+    interpretArgumentList( arg_names, plumed.getActionSet(), this, arg_vals );
   }
 }
 

@@ -54,23 +54,33 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
 Action(ao),
 ActionShortcut(ao)
 {
-  std::vector<std::string> args; parseVector("ARG",args); Value* val;
-  plumed_assert( args.size()==1 ); 
-  if( args[0].find_first_of('.')!=std::string::npos ) {
-      std::size_t dot=args[0].find_first_of('.'); ActionWithValue* inpt = plumed.getActionSet().template selectWithLabel<ActionWithValue*>(args[0].substr(0,dot));
-      plumed_assert( inpt ); val=inpt->copyOutput( args[0] );
-  } else {
-      ActionWithValue* inpt = plumed.getActionSet().template selectWithLabel<ActionWithValue*>(args[0]); 
-      plumed_assert( inpt ); val=inpt->copyOutput(0);
+  std::vector<std::string> args; parseVector("ARG",args); 
+  if( args.size()==0 ) {
+      for(unsigned i=1;; ++i) { 
+          std::string argn; 
+          if( !parseNumbered("ARG",i,argn) ) break ; 
+          args.push_back(argn);
+      }
   }
-  if( val->getRank()==0 ) {
-      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + args[0] + " " + convertInputLineToString() );
+  std::string allargs=args[0]; for(unsigned i=1;i<args.size();++i) allargs += "," + args[i];
+  std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
+  if( vals.size()==0 ) error("found no input arguments to function");
+  unsigned maxrank=vals[0]->getRank(); bool isgrid=false;
+  for(unsigned i=0; i<vals.size(); ++i) {
+      if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) isgrid=true;
+      if( vals[i]->getRank()>maxrank ) maxrank=vals[i]->getRank();
+  }
+  if( isgrid ) {
+      if( actionRegister().check( getName() + "_GRID") ) readInputLine( getShortcutLabel() + ": " + getName() + "_GRID ARG=" + allargs + " " + convertInputLineToString() );
+      else plumed_merror("there is no action registered that allows you to do " + getName() + " with functions on a grid");
+  } else if( maxrank==0 ) {
+      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with scalars"); 
-  } else if( val->getRank()==1 && !val->hasDerivatives() ) {
-      if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + args[0] + " " + convertInputLineToString() );
+  } else if( maxrank==1 ) {
+      if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + allargs + " " + convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with vectors");
-  } else if( val->getRank()==2 && !val->hasDerivatives() ) {
-      if( actionRegister().check( getName() + "_MATRIX") ) readInputLine( getShortcutLabel() + ": " + getName() + "_MATRIX ARG=" + args[0] + " " + convertInputLineToString() );
+  } else if( maxrank==2  ) {
+      if( actionRegister().check( getName() + "_MATRIX") ) readInputLine( getShortcutLabel() + ": " + getName() + "_MATRIX ARG=" + allargs + " " + convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with matrices");
   } else plumed_error();
 }

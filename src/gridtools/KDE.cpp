@@ -271,7 +271,7 @@ KDE::KDE(const ActionOptions&ao):
   parse("KERNEL",kerneltype); 
   if( kerneltype!="DISCRETE" ) {
       std::vector<std::string> bandwidth(1); parseVector("METRIC",bandwidth);
-      std::vector<Value*> bw_args; interpretArgumentList( bandwidth, bw_args );
+      std::vector<Value*> bw_args; ActionWithArguments::interpretArgumentList( bandwidth, plumed.getActionSet(), this, bw_args );
       if( bw_args[0]->hasDerivatives() ) error("bandwidth should not have derivatives");
       if( bw_args[0]->getRank()==1 && bw_args[0]->getNumberOfValues()!=getNumberOfDerivatives() ) error("size of bandwidth vector is incorrect");
       if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");

@@ -372,7 +372,7 @@ Print::Print(const ActionOptions&ao):
             }
             reference_atoms.push_back( at_flist );
             // Now see if there are any arguments 
-            std::vector<Value*> myargs; interpretArgumentList( confstr, myargs );
+            std::vector<Value*> myargs; ActionWithArguments::interpretArgumentList( confstr, plumed.getActionSet(), this, myargs );
             if( atlist.size()>0 && myargs.size()>0 ) log.printf(" and arguments :");
             else if( myargs.size()>0 ) log.printf("arguments :");
             for(unsigned j=0;j<myargs.size();++j) { all_args.push_back( myargs[j] );  log.printf(" %s", myargs[j]->getName().c_str() ); }

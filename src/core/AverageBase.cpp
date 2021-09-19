@@ -95,7 +95,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
 
   std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr); 
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
-  std::vector<Value*> arg( getArguments() ), biases; interpretArgumentList( wwstr, biases );
+  std::vector<Value*> arg( getArguments() ), biases; ActionWithArguments::interpretArgumentList( wwstr, plumed.getActionSet(), this, biases );
   for(unsigned i=0; i<biases.size(); ++i) {
     arg.push_back( biases[i] ); log.printf("%s ",biases[i]->getName().c_str() );
   }
