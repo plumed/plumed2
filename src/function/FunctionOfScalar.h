@@ -50,7 +50,11 @@ protected:
 public:
   explicit FunctionOfScalar(const ActionOptions&);
   virtual ~FunctionOfScalar() {}
+/// Get the label to write in the graph
+  std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
   void calculate() override;
+  void update() override;
+  void runFinalJobs() override;
   void apply() override;
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() const override;
@@ -73,14 +77,19 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao)
 {
-  myfunc.read( this ); plumed_assert( myfunc.getRank()==0 );
+  myfunc.read( this ); 
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
   if( components.size()==0 ) addValueWithDerivatives();
-  else { for(unsigned i=0;i<components.size();++i) addComponentWithDerivatives( components[i] ); }
+  else { 
+    std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
+    for(unsigned i=0;i<components.size();++i) {
+        for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j] );
+    } 
+  }
   // Set the periodicities of the output components
-  myfunc.setPeriodicityForOutputs( this ); myfunc.setPrefactor( this );
+  myfunc.setPeriodicityForOutputs( this ); myfunc.setPrefactor( this, 1.0 );
 }
 
 template <class T>
@@ -116,6 +125,18 @@ void FunctionOfScalar<T>::calculate() {
       Value* val = getPntrToComponent(i);
       for(unsigned j=0;j<args.size();++j) setDerivative( val, j, derivatives(i,j) ); 
   }
+}
+
+template <class T>
+void FunctionOfScalar<T>::update() {
+  if( skipUpdate() ) return;
+  calculate();
+}
+
+template <class T>
+void FunctionOfScalar<T>::runFinalJobs() {
+  if( skipUpdate() ) return;
+  calculate();
 }
 
 template <class T>

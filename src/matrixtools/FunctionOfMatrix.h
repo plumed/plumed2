@@ -40,6 +40,8 @@ public:
   explicit FunctionOfMatrix(const ActionOptions&);
 /// Get the shape of the output matrix
   std::vector<unsigned> getMatrixShapeForFinalTasks() override ;
+/// Get the label to write in the graph
+  std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
 /// Make sure the derivatives are turned on
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
@@ -72,18 +74,34 @@ nderivatives(getNumberOfScalarArguments())
 {
   // Get the shape of the output
   std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
+  // Check if the output matrix is symmetric
+  bool symmetric=true;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) {
+          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false; break; }
+      }                        
+  }
   // Create the task list
   for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
   // Read the input and do some checks
   myfunc.read( this );
   // Check we are not calculating a sum
-  if( myfunc.getRank()==0 ) shape.resize(0);  
+  if( myfunc.zeroRank() ) shape.resize(0);  
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 && myfunc.getRank()==0 ) addValueWithDerivatives( shape );
-  else if( components.size()==0 ) addValue( shape );
-  else { for(unsigned i=0;i<components.size();++i) addComponent( components[i], shape ); }
+  if( components.size()==0 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
+  else if( components.size()==0 ) { 
+     addValue( shape ); getPntrToOutput(0)->setSymmetric( symmetric );
+  } else {
+    std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
+    for(unsigned i=0;i<components.size();++i) {
+        for(unsigned j=0;j<str_ind.size();++j) {
+            addComponent( components[i] + str_ind[j], shape );
+            copyOutput( getLabel() + "." + components[i] + str_ind[j] )->setSymmetric( symmetric );
+        }
+    }
+  }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // Now setup the action in the chain if we can
@@ -138,13 +156,13 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
       for(unsigned i=0;i<getNumberOfComponents();++i) {
           unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
           for(unsigned j=0;j<getNumberOfArguments();++j) {
-              if( getPntrToArgument(i)->getRank()==2 ) {
-                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+              if( getPntrToArgument(j)->getRank()==2 ) {
+                  unsigned istrn = getArgumentPositionInStream( j, myvals ); 
                   for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
                       unsigned kind=myvals.getActiveIndex(istrn,k);
                       myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
                   }
-              } else plumed_merror("not implemented this yet");
+              }  
           }
       }
       // If we are computing a matrix we need to update the indices here so that derivatives are calcualted correctly in functions of these
@@ -152,6 +170,13 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
           for(unsigned i=0;i<getNumberOfComponents();++i) {
               unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
               for(unsigned j=0;j<getNumberOfArguments();++j) {
+                  if( getPntrToArgument(j)->getRank()==0 ) continue ;
+                  // Ensure we only store one lot of derivative indices
+                  bool found=false;
+                  for(unsigned k=0; k<j; ++k) {
+                      if( arg_deriv_starts[k]==arg_deriv_starts[j] ) { found=true; break; }
+                  }
+                  if( found ) continue;
                   unsigned istrn = getPntrToArgument(j)->getPositionInStream();
                   for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
                       unsigned kind=myvals.getActiveIndex(istrn,k); 
@@ -160,7 +185,7 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
               }
           }
       }
-  } else plumed_merror("not implemented this yet");
+  } else plumed_merror("not implemented non chain yet " + getLabel() );
   return true;
 }
 
@@ -219,7 +244,7 @@ std::vector<unsigned> FunctionOfMatrix<T>::getMatrixShapeForFinalTasks() {
           plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
       }   
   }
-  myfunc.setPrefactor( this ); return shape;
+  myfunc.setPrefactor( this, 1.0 ); return shape;
 }
 
 }

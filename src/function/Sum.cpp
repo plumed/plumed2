@@ -46,22 +46,13 @@ void Sum::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to sum actions");
 }
 
-void Sum::setPrefactor( ActionWithArguments* action ) {
-  if(action->getName().find("MEAN")!=std::string::npos) prefactor = 1. / (action->getPntrToArgument(0))->getNumberOfValues();
-  else { plumed_assert( action->getName().find("SUM")!=std::string::npos ); prefactor = 1; }
+void Sum::setPrefactor( ActionWithArguments* action, const double pref ) {
+  if(action->getName().find("MEAN")!=std::string::npos) prefactor = pref / (action->getPntrToArgument(0))->getNumberOfValues();
+  else prefactor = pref;
 }
 
-unsigned Sum::getRank() {
-  return 0;
-}
-
-void Sum::setPeriodicityForOutputs( ActionWithValue* action ) {
-  std::vector<std::string> period; action->parseVector("PERIODIC",period);
-  if( period.size()==1 ) {
-    if( period[0]!="NO") action->error("input to PERIODIC keyword does not make sense");
-    action->setNotPeriodic(); return;
-  } else if( period.size()!=2 ) action->error("input to PERIODIC keyword does not make sense");
-  action->setPeriodic( period[0], period[1] );
+bool Sum::zeroRank() const {
+  return true;
 }
 
 void Sum::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

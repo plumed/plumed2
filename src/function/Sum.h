@@ -33,9 +33,8 @@ private:
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  unsigned getRank() override;
-  void setPrefactor( ActionWithArguments* action ) override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
+  bool zeroRank() const override;
+  void setPrefactor( ActionWithArguments* action, const double pref ) override;
   void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 

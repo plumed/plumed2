@@ -7,7 +7,7 @@ cmap: CONTACT_MATRIX ...
 # Now construct histogram
 cmapn: NORMALIZE ARG1=cmap.x ARG2=cmap.y ARG3=cmap.z 
 h: SPHERICAL_KDE ARG1=cmapn.x ARG2=cmapn.y ARG3=cmapn.z HEIGHTS=cmap.w CONCENTRATION=10 GRID_BIN=100
-iv: INTEGRATE_GRID ARG=h
+iv: INTEGRATE_GRID ARG=h PERIODIC=NO
 
 b: RESTRAINT ARG=iv AT=0.75 KAPPA=10.0
 PRINT ARG=iv,b.* FILE=colvar FMT=%8.4f

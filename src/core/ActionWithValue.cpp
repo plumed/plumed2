@@ -933,13 +933,9 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       // Now create all the nodes in this chain
       unsigned gstart = graph_actions.size(); 
       for(unsigned i=0;i<chain.size();++i){
-          ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string exline, num; 
+          ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string num; 
           std::string label=getCleanGraphLabel( av->getLabel() );
-          if( av->writeInGraph(exline) ) {
-              ofile.printf("     %s [label=\"%d \\n %s: \\n %s \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str(), exline.c_str() );
-          } else {
-              ofile.printf("     %s [label=\"%d \\n %s: \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str() );   
-          }
+          ofile.printf("     %s [label=\"%d \\n %s: \\n %s \"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->writeInGraph().c_str() );
           for(unsigned j=0;j<av->values.size();++j) {
               for(const auto & p : (av->values[j])->userdata) {
                   // Check if the action is only being used within the chain
@@ -964,13 +960,9 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
       ofile.printf("   }\n");
   } else {
       std::string label=getCleanGraphLabel( getLabel() ); 
-      const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); std::string exline; graph_actions.push_back( getLabel() );
-      if( av ) {  
-          if( av->writeInGraph(exline) ) {
-              ofile.printf("     %s [label=\"%s: \\n %s \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str(), exline.c_str() );
-          } else {
-              ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str() );
-          }
+      const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); graph_actions.push_back( getLabel() );
+      if( av ) { 
+          ofile.printf("     %s [label=\"%s: \\n %s \"] \n", label.c_str(), getLabel().c_str(), writeInGraph().c_str() ); 
       } else ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str() ); 
   }
   // Now create the links to the nodes outside of this chain

@@ -51,7 +51,7 @@ ActionShortcut(ao)
   if( input_g=="") plumed_merror("could not find ARG keyword in input to KL_ENTROPY");
   readInputLine( getShortcutLabel()  + "_kl: MATHEVAL ARG1=" + input_g + " ARG2=" + getShortcutLabel() + "_ref FUNC=y*log(y/(0.5*(x+y))) PERIODIC=NO");
   // Compute integral
-  readInputLine( getShortcutLabel() + ": INTEGRATE_GRID ARG=" + getShortcutLabel() + "_kl"); 
+  readInputLine( getShortcutLabel() + ": INTEGRATE_GRID ARG=" + getShortcutLabel() + "_kl PERIODIC=NO"); 
 }
 
 }

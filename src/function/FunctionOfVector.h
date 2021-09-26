@@ -22,15 +22,23 @@
 #ifndef __PLUMED_function_FunctionOfVector_h
 #define __PLUMED_function_FunctionOfVector_h
 
-#include "FunctionBase.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
+#include "core/CollectFrames.h"
+#include "core/ActionSetup.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
 namespace function {
 
 template <class T>
-class FunctionOfVector : public FunctionBase {
+class FunctionOfVector : 
+public ActionWithValue,
+public ActionWithArguments
+{
 private:
+/// The forces that we get from the values
+  std::vector<double> forcesToApply;
 /// The function that is being computed
   T myfunc;
 /// The number of derivatives for this action
@@ -44,8 +52,13 @@ public:
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const override ;
+/// Get the label to write in the graph
+  std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
 /// This updates the number of tasks we need to do if there is a time seeries
-  void resizeTimeSeriesTaskList() override ;
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void calculate() override;
+  void update() override;
+  void runFinalJobs() override;
 /// Calculate the function
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
 /// Add the forces 
@@ -54,7 +67,8 @@ public:
 
 template <class T>
 void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
-  FunctionBase::registerKeywords( keys );
+  Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); keys.use("ARG");
+  keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
 }
@@ -62,7 +76,8 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
 template <class T>
 FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
 Action(ao),
-FunctionBase(ao),
+ActionWithValue(ao),
+ActionWithArguments(ao),
 nderivatives(getNumberOfScalarArguments())
 {
   // Get the shape of the output
@@ -72,17 +87,34 @@ nderivatives(getNumberOfScalarArguments())
   // Read the input and do some checks
   myfunc.read( this );
   // Check we are not calculating a sum
-  if( myfunc.getRank()==0 ) shape.resize(0);  
+  if( myfunc.zeroRank() ) shape.resize(0);  
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 && myfunc.getRank()==0 ) addValueWithDerivatives( shape );
+  if( components.size()==0 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
   else if( components.size()==0 ) addValue( shape );
-  else { for(unsigned i=0;i<components.size();++i) addComponent( components[i], shape ); }
+  else { 
+    std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
+    for(unsigned i=0;i<components.size();++i) {
+        for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j], shape );
+    }  
+  }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
-  // Now setup the action in the chain if we can
-  if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  // Check if we can put the function in a chain
+  bool hasscalar=false;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(i)->getPntrToAction() );
+      // No chains if we have a scalar input that is not calculated in setup 
+      if( getPntrToArgument(i)->getRank()==0 ) {
+          ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(i)->getPntrToAction() );
+          if(!as) hasscalar=true; else getPntrToArgument(i)->buildDataStore( getLabel() );
+      // No chains if we are doing some analysis of a stored time series
+      } else if(ab) {
+          if( ab->hasClear() ) { hasscalar=true; getPntrToArgument(i)->buildDataStore( getLabel() ); }
+      }
+  }
+  if( !hasscalar && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
 }
 
 template <class T>
@@ -101,8 +133,9 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   std::vector<double> args( getNumberOfArguments() );
   if( actionInChain() ) {
       for(unsigned i=0;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==1 ) args[i] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
-          else args[i] = getPntrToArgument(i)->get();
+          if(  getPntrToArgument(i)->getRank()==0 ) args[i] = getPntrToArgument(i)->get();
+          else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
+          else args[i] = getPntrToArgument(i)->get( myvals.getTaskIndex() );
       }
   } else {
       for(unsigned i=0;i<getNumberOfArguments();++i) {
@@ -121,27 +154,45 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   // And now compute the derivatives
   if( actionInChain() ) {
       for(unsigned j=0;j<getNumberOfArguments();++j) {
-          if( getPntrToArgument(j)->getRank()==1 ) {
-              unsigned istrn = getPntrToArgument(j)->getPositionInStream();
-              for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-                  unsigned kind=myvals.getActiveIndex(istrn,k);
-                  for(unsigned i=0;i<getNumberOfComponents();++i) {
-                      unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
-                      myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
-                      myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
-                  }
-              } 
-          } else plumed_merror("not implemented this yet");
+          unsigned istrn = getArgumentPositionInStream( j, myvals );
+          for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+              unsigned kind=myvals.getActiveIndex(istrn,k);
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+                  myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
+              }
+          }
+          // Ensure we only store one lot of derivative indices
+          bool found=false;
+          for(unsigned k=0; k<j; ++k) {
+              if( arg_deriv_starts[k]==arg_deriv_starts[j] ) { found=true; break; }
+          }
+          if( found ) continue;
+          for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+              unsigned kind=myvals.getActiveIndex(istrn,k);
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+                  myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
+              }
+          } 
       }
   } else {
+      unsigned base=0;
       for(unsigned j=0;j<getNumberOfArguments();++j) { 
           if( getPntrToArgument(j)->getRank()==1 ) {
               for(unsigned i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getPntrToOutput(i)->getPositionInStream(); 
-                  myvals.addDerivative( ostrn, current, derivatives(i,j) ); 
-                  myvals.updateIndex( ostrn, current );
+                  myvals.addDerivative( ostrn, base+current, derivatives(i,j) ); 
+                  myvals.updateIndex( ostrn, base+current );
               }
-          } else plumed_error();
+          } else {
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+                  myvals.addDerivative( ostrn, base, derivatives(i,j) );
+                  myvals.updateIndex( ostrn, base );
+              }
+          }
+          base += getPntrToArgument(j)->getNumberOfValues();
       }
   }
 }
@@ -152,18 +203,21 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       plumed_assert( getPntrToArgument(i)->getRank()<2 );
       if( getPntrToArgument(i)->getRank()==1 ) {
-          if( nelements>0 && getPntrToArgument(i)->getShape()[0]!=nelements ) error("all vectors input should have the same length");
-          else if( nelements==0 ) nelements=getPntrToArgument(i)->getShape()[0];
+          if( nelements>0 ) { 
+              if( getPntrToArgument(i)->isTimeSeries() && getPntrToArgument(i)->getShape()[0]<nelements ) nelements=getPntrToArgument(i)->isTimeSeries();
+              else if(getPntrToArgument(i)->getShape()[0]!=nelements ) error("all vectors input should have the same length");
+          } else if( nelements==0 ) nelements=getPntrToArgument(i)->getShape()[0];
           plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
       }
   }
   // The prefactor for average and sum is set here so the number of input scalars is guaranteed to be correct
-  myfunc.setPrefactor( this );
+  myfunc.setPrefactor( this, 1.0 );
   return nelements;
 }
 
 template <class T>
-void FunctionOfVector<T>::resizeTimeSeriesTaskList() {
+void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  // If we have a time series then resize the task list so this action does all the required tasks
   unsigned nstart = getFullNumberOfTasks(), ndata = 0;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues();
@@ -175,11 +229,56 @@ void FunctionOfVector<T>::resizeTimeSeriesTaskList() {
           if( getPntrToOutput(i)->getRank()==1 ) getPntrToOutput(i)->setShape( shape );
       }
   }
+  // Check if there is a sepcial method for setting up the task list
+  if( !myfunc.defaultTaskListBuilder() ) {
+      myfunc.buildTaskList( this, actionsThatSelectTasks );
+  } else {
+      bool safeToChain=true, atLeastOneRank=false;
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getRank()>0 ) atLeastOneRank=true;
+          Action* myact = getPntrToArgument(i)->getPntrToAction();
+          if( myact ) {
+              std::string argact = myact->getLabel(); bool found=false;
+              for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+                  if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
+              }
+              if( !found ) safeToChain=false;
+          } else safeToChain=false;
+      }
+      plumed_assert( atLeastOneRank );
+      if( safeToChain ) actionsThatSelectTasks.push_back( getLabel() );
+  }
+}
+
+template <class T>
+void FunctionOfVector<T>::calculate() {
+  // Everything is done elsewhere
+  if( actionInChain() ) return;
+  // This is done if we are calculating a function of multiple cvs
+  runAllTasks();
+}
+
+template <class T>
+void FunctionOfVector<T>::update() {
+  if( skipUpdate() || actionInChain() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+}
+  
+template <class T>
+void FunctionOfVector<T>::runFinalJobs() {
+  if( skipUpdate() || actionInChain() ) return;
+  resizeForFinalTasks(); runAllTasks();
 }
 
 template <class T>
 void FunctionOfVector<T>::apply() {
-  applyNonGrid();
+  if( doNotCalculateDerivatives() ) return;
+          
+  if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
+  
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
 }
 
 }

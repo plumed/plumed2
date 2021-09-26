@@ -19,7 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "function/Function.h"
+#include "function/FunctionTemplateBase.h"
+#include "matrixtools/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -71,35 +72,31 @@ PRINT ARG=d.* FILE=colv
 //+ENDPLUMEDOC
 
 
-class Fccubic : public function::Function {
+class Fccubic : public function::FunctionTemplateBase {
 private:
   double alpha, a1, b1;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Fccubic(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
+  void registerKeywords( Keywords& keys ) override;
+  void read( ActionWithArguments* action ) override;
+  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Fccubic,"FCCCUBIC_FUNC")
+typedef matrixtools::FunctionOfMatrix<Fccubic> MatrixFccubic;
+PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
-  function::Function::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
 }
 
-Fccubic::Fccubic(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
+void Fccubic::read( ActionWithArguments* action ) { 
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
-  parse("ALPHA",alpha);
+  parse(action,"ALPHA",alpha);
   a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
-  log.printf("  setting alpha paramter equal to %f \n",alpha);
-  addValueWithDerivatives(); checkRead();
+  action->log.printf("  setting alpha paramter equal to %f \n",alpha);
 }
 
-void Fccubic::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+void Fccubic::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const { 
   double x2 = args[0]*args[0];
   double x4 = x2*x2;
 
@@ -120,14 +117,12 @@ void Fccubic::calculateFunction( const std::vector<double>& args, MultiValue& my
   double t2 = (z2*x4+z2*y4)/r8-alpha*z2*x4*y4/r12;
   double t3 = (2*tmp-alpha*x4*y4*z4/r12)/d2;
 
-  Vector myder;
-  myder[0]=4*a1*args[0]*(t0-t3);
-  myder[1]=4*a1*args[1]*(t1-t3);
-  myder[2]=4*a1*args[2]*(t2-t3);
+  derivatives(0,0)=4*a1*args[0]*(t0-t3);
+  derivatives(0,1)=4*a1*args[1]*(t1-t3);
+  derivatives(0,2)=4*a1*args[2]*(t2-t3);
 
   // Set the value and the derivatives
-  addValue( 0, (a1*tmp+b1), myvals );
-  for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative( 0, i, myder[i], myvals ); 
+  vals[0] = (a1*tmp+b1);
 }
 
 }

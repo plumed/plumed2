@@ -96,7 +96,7 @@ valg: KDE ARG1=ang_mat GRID_MIN=0 GRID_MAX=pi GRID_BIN=20 BANDWIDTH=0.05
 conv: MATHEVAL ARG1=valg ARG2=refg FUNC=x*y PERIODIC=NO
 
 # Now integrate the product of the two functions
-integral: INTEGRATE_GRID ARG=conv 
+integral: INTEGRATE_GRID ARG=conv PERIODIC=NO
 
 # And lastly compute the negative logarithm of the integral
 value: MATHEVAL ARG=integral FUNC=-log(x) PERIODIC=NO

@@ -304,7 +304,7 @@ public:
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
 ///
-  virtual bool writeInGraph( std::string& exline ) const { return false; }
+  virtual std::string writeInGraph() const { return getName(); }
 ///
   void generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const ;
   static std::string getCleanGraphLabel( const std::string& glab );

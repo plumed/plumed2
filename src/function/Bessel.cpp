@@ -56,8 +56,6 @@ public:
   bool derivativesImplemented() override { return false; }
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  unsigned getRank() override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override;
   void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -78,14 +76,6 @@ void Bessel::read( ActionWithArguments* action ) {
   action->parse("ORDER",order); action->log.printf("  computing %dth order bessel function \n", order );
   if( order!=0 ) action->error("only zero order bessel function is implemented");
   fill_coefficients();
-}
-
-unsigned Bessel::getRank() {
-  return 1;
-} 
-
-void Bessel::setPeriodicityForOutputs( ActionWithValue* action ) {
-  action->setNotPeriodic();
 }
 
 double Bessel::chbevl(double x,std::vector<double>& array) const {

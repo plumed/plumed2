@@ -76,11 +76,11 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG1=" + getShortcutLabel() + "_swd FUNC=0.5*x PERIODIC=NO");
   // And the matrix of dot products and the angles
   readInputLine( getShortcutLabel() + "_dpmat: DOT ARG1=" + getShortcutLabel() + "_stack ARG2=" + getShortcutLabel() + "_stackT");
-  readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_dpmat FUNC=acos(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_angles: CUSTOM ARG1=" + getShortcutLabel() + "_dpmat FUNC=acos(x) PERIODIC=NO");
   // Read the input
   Keywords keys; MultiColvarBase::shortcutKeywords( keys ); pruneShortcuts( keys ); bool do_mean; parseFlag("MEAN",do_mean); 
   std::map<std::string,std::string> keymap; readShortcutKeywords( keys, keymap ); if( do_mean ) keymap.insert(std::pair<std::string,std::string>("SUM",""));
-  MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), getShortcutLabel() + "_wmat", keymap, this );
+  MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_angles", getShortcutLabel() + "_wmat", keymap, this );
   if( do_mean ) {
       readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_wmat PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_mean: CUSTOM ARG1=" + getShortcutLabel() + "_sum ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");

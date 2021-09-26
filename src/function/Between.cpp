@@ -79,14 +79,6 @@ void Between::read( ActionWithArguments* action ) {
   }
 }
 
-unsigned Between::getRank() {
-  return 1;
-}
-
-void Between::setPeriodicityForOutputs( ActionWithValue* action ) {
-  action->setNotPeriodic();
-}
-
 void Between::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 ); vals[0] = hist.calculate( args[0], derivatives(0,0) );
 }

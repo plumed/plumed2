@@ -19,28 +19,19 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionOfMatrix.h"
+#include "FunctionOfGrid.h"
 #include "core/ActionRegister.h"
 #include "function/Sum.h"
-#include "function/LessThan.h"
-#include "function/MoreThan.h"
-#include "function/Between.h"
 #include "function/Custom.h"
 
 namespace PLMD {
-namespace matrixtools {
+namespace gridtools {
 
-typedef FunctionOfMatrix<function::Sum> MatrixSum;
-PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
-typedef FunctionOfMatrix<function::LessThan> MatrixLessThan;
-PLUMED_REGISTER_ACTION(MatrixLessThan,"LESS_THAN_MATRIX")
-typedef FunctionOfMatrix<function::MoreThan> MatrixMoreThan;
-PLUMED_REGISTER_ACTION(MatrixMoreThan,"MORE_THAN_MATRIX")
-typedef FunctionOfMatrix<function::Between> MatrixBetween;
-PLUMED_REGISTER_ACTION(MatrixBetween,"BETWEEN_MATRIX")
-typedef FunctionOfMatrix<function::Custom> MatrixCustom;
-PLUMED_REGISTER_ACTION(MatrixCustom,"CUSTOM_MATRIX")
-PLUMED_REGISTER_ACTION(MatrixCustom,"MATHEVAL_MATRIX")
+typedef FunctionOfGrid<function::Sum> GridSum;
+PLUMED_REGISTER_ACTION(GridSum,"INTEGRATE_GRID")
+typedef FunctionOfGrid<function::Custom> GridCustom;
+PLUMED_REGISTER_ACTION(GridCustom,"CUSTOM_GRID")
+PLUMED_REGISTER_ACTION(GridCustom,"MATHEVAL_GRID")
 
 }
 }

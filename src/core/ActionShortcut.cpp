@@ -62,7 +62,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
   std::string s; Tools::convert(plumed.getActionSet().size(),s);
   if( shortcutlabel==("@" + s) ) {
     std::string t; Tools::convert(plumed.getActionSet().size()+1,t);
-    shortcutlabel="@" + t;
+    label="@" + t;
   } else label = ("@" + s);
   bool nwild=false; 
   if( keywords.exists("NO_WILDCARD") ) {

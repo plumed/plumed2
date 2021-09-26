@@ -37,7 +37,7 @@ public:
                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(CustomProductMatrix,"CUSTOM_MATRIX")
+PLUMED_REGISTER_ACTION(CustomProductMatrix,"CUSTOM_DOT")
 
 void CustomProductMatrix::registerKeywords( Keywords& keys ) {
   MatrixProductBase::registerKeywords( keys );

@@ -19,8 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Custom.h"
 #include "ActionRegister.h"
-#include "Function.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "tools/OpenMP.h"
 #include "tools/LeptonCall.h"
 
@@ -159,24 +162,15 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 */
 //+ENDPLUMEDOC
 
-
-class Custom :
-  public Function
-{
-  std::string func;
-  LeptonCall function;
-/// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
-/// to speed things up
-  std::vector<unsigned> check_multiplication_vars;
-public:
-  explicit Custom(const ActionOptions&);
-  bool writeInGraph( std::string& exline ) const override;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
-  static void registerKeywords(Keywords& keys);
-};
-
-PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
+typedef FunctionShortcut<Custom> CustomShortcut;
+PLUMED_REGISTER_ACTION(CustomShortcut,"CUSTOM")
+PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")
+typedef FunctionOfScalar<Custom> ScalarCustom;
+PLUMED_REGISTER_ACTION(ScalarCustom,"CUSTOM_SCALAR")
+PLUMED_REGISTER_ACTION(ScalarCustom,"MATHEVAL_SCALAR")
+typedef FunctionOfVector<Custom> VectorCustom;
+PLUMED_REGISTER_ACTION(VectorCustom,"CUSTOM_VECTOR")
+PLUMED_REGISTER_ACTION(VectorCustom,"MATHEVAL_VECTOR")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
@@ -202,34 +196,23 @@ RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 */
 //+ENDPLUMEDOC
 
-class Matheval :
-  public Custom {
-};
-
-PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
-
 void Custom::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
 
-Custom::Custom(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
+void Custom::read( ActionWithArguments* action ) {
   // Read in the variables
-  std::vector<std::string> var; parseVector("VAR",var); parse("FUNC",func);
+  std::vector<std::string> var; parseVector(action,"VAR",var); parse(action,"FUNC",func);
   if(var.size()==0) {
-    var.resize(getNumberOfArguments());
-    if(getNumberOfArguments()>3)
-      error("Using more than 3 arguments you should explicitly write their names with VAR");
+    var.resize(action->getNumberOfArguments());
+    if(var.size()>3) action->error("Using more than 3 arguments you should explicitly write their names with VAR");
     if(var.size()>0) var[0]="x";
     if(var.size()>1) var[1]="y";
     if(var.size()>2) var[2]="z";
   }
-  if(var.size()!=getNumberOfArguments()) error("Size of VAR array should be the same as number of arguments");
+  if(var.size()!=action->getNumberOfArguments()) action->error("Size of VAR array should be the same as number of arguments");
   // Check for operations that are not multiplication (this can probably be done much more cleverly)
   bool onlymultiplication = func.find("*")!=std::string::npos;
   // Find first bracket in expression
@@ -248,40 +231,39 @@ Custom::Custom(const ActionOptions&ao):
       for(unsigned i=0;i<var.size();++i) check_multiplication_vars.push_back(i);
   }
   if( check_multiplication_vars.size()>0 ) {
-      log.printf("  optimizing implementation as function only involves multiplication \n");
+      action->log.printf("  optimizing implementation as function only involves multiplication \n");
   }
-  addValueWithDerivatives();
-  checkRead();
 
-  log.printf("  with function : %s\n",func.c_str());
-  log.printf("  with variables :");
-  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
-  log.printf("\n"); function.set( func, var, this );
+  action->log.printf("  with function : %s\n",func.c_str());
+  action->log.printf("  with variables :");
+  for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
+  action->log.printf("\n"); function.set( func, var, action );
 }
 
-bool Custom::writeInGraph( std::string& exline ) const { 
-  exline = "FUNC=" + func; return true;
+std::string Custom::getGraphInfo( const std::string& name ) const { 
+  return FunctionTemplateBase::getGraphInfo( name ) + "\\n" + "FUNC=" + func;
 }
 
-void Custom::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  if( check_multiplication_vars.size()>0 ) {
-      bool foundarg=false;
-      for(unsigned i=0;i<check_multiplication_vars.size();++i) {
-          if( getPntrToArgument(check_multiplication_vars[i])->getPntrToAction() ) { 
-              std::string argact = getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
-              for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
-                  if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
-              } 
-              if( foundarg ) break;
-          }
+
+bool Custom::defaultTaskListBuilder() const {
+  return check_multiplication_vars.size()==0;
+}
+ 
+void Custom::buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const {
+  bool foundarg=false;
+  for(unsigned i=0;i<check_multiplication_vars.size();++i) {
+      if( action->getPntrToArgument(check_multiplication_vars[i])->getPntrToAction() ) { 
+          std::string argact = action->getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
+          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+              if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
+          } 
+          if( foundarg ) break;
       }
-      if( foundarg ) actionsThatSelectTasks.push_back( getLabel() );
-  } else {
-      Function::buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
   }
+  if( foundarg ) actionsThatSelectTasks.push_back( action->getLabel() );
 }
 
-void Custom::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+void Custom::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {
       bool allzero;
       if( check_multiplication_vars.size()>0 ) {
@@ -289,19 +271,19 @@ void Custom::calculateFunction( const std::vector<double>& args, MultiValue& myv
           for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
             if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
           } 
-      } else if( check_multiplication_vars.size()==0 ) {
+      } else {
           allzero=(fabs(args[0])<epsilon);
           for(unsigned i=1; i<args.size(); ++i) {
             if( fabs(args[i])>epsilon ) { allzero=false; break; }
           }
       }
       if( allzero ) {
-          addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
+          vals[0]=0; for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = 0.0;
           return;
       }
   }
-  addValue( 0, function.evaluate( args ), myvals );
-  for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative( 0, i, function.evaluateDeriv( i, args ), myvals );
+  vals[0] = function.evaluate( args );
+  for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = function.evaluateDeriv( i, args );
 }
 
 }
