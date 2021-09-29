@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
@@ -22,7 +24,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL
+//+PLUMEDOC OPES_EXPANSION_CV ECV_MULTITHERMAL
 /*
 Expand a simulation to sample multiple temperatures simultaneously.
 
@@ -165,7 +167,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
     beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp);//ordered temp, inverted beta
+    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
     beta_[1]=1./(Kb*max_temp);
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
@@ -233,10 +235,10 @@ void ECVmultiCanonical::initECVs()
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
-  if(todoAutomatic_)//estimate the steps in beta from observations
+  if(todoAutomatic_) //estimate the steps in beta from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observation (would be better not to copy...)
+    std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
     const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");

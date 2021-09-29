@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -340,16 +340,14 @@ inline
 Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept {
   if(this!=&handler) {
     if(watch) {
-      if(stop) {
-        try {
-          watch->stop();
-        } catch(...) {
+      try {
+        if(stop) watch->stop();
+        else watch->pause();
+      } catch(...) {
 // this is to avoid problems with cppcheck, given than this method is declared as
-// noexcept and stop might throw in case of an internal bug
-          std::terminate();
-        }
+// noexcept and stop and pause might throw in case of an internal bug
+        std::terminate();
       }
-      else watch->pause();
     }
     watch=handler.watch;
     stop=handler.stop;

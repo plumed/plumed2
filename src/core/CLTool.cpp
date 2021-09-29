@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,9 +105,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
         }
       }
       if(!found) {
-        fprintf(stderr,"ERROR in input for command line tool %s : %s option is unknown \n\n", name.c_str(), a.c_str() );
-        fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
-        fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+        std::fprintf(stderr,"ERROR in input for command line tool %s : %s option is unknown \n\n", name.c_str(), a.c_str() );
+        std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+        std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
         keywords.print( out );
         printhelp=true;
       }
@@ -118,7 +118,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
   if(!printhelp) setRemainingToDefault(out);
 
   if(printhelp) {
-    fprintf(out,"Usage: %s [options] \n\n", name.c_str() );
+    std::fprintf(out,"Usage: %s [options] \n\n", name.c_str() );
     keywords.print( out );
   }
 
@@ -135,7 +135,7 @@ void CLTool::setRemainingToDefault(FILE* out) {
           plumed_assert( def.length()>0 );
           inputData.insert(std::pair<std::string,std::string>(thiskey,def));
         } else {
-          fprintf(out,"ERROR : argument %s is compulsory. Use --help option for help\n",thiskey.c_str() );
+          std::fprintf(out,"ERROR : argument %s is compulsory. Use --help option for help\n",thiskey.c_str() );
           plumed_error();
         }
       }
@@ -152,8 +152,8 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
     a=argv[i];
     if(a.length()==0) continue;
     if(a=="-h" || a=="--help") {
-      fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
-      fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+      std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+      std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
       return false;
     }
@@ -163,9 +163,9 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   if(argc==2) {
     mystdin=fopen(argv[1],"r");
     if(!mystdin) {
-      fprintf(stderr,"ERROR: cannot open file %s\n\n",argv[1]);
-      fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
-      fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+      std::fprintf(stderr,"ERROR: cannot open file %s\n\n",argv[1]);
+      std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+      std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
       return false;
     }
@@ -179,7 +179,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
     for(unsigned i=0; i<line.length(); ++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
     Tools::stripLeadingAndTrailingBlanks( line );
     if(line.length()==0) continue;
-    sscanf(line.c_str(),"%255s",buffer);
+    std::sscanf(line.c_str(),"%255s",buffer);
     std::string keyword=buffer; bool found=false;
     for(unsigned i=0; i<keywords.size(); ++i) {
       std::string thiskey=keywords.get(i);
@@ -191,9 +191,9 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
       }
     }
     if(!found) {
-      fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n\n",name.c_str(),keyword.c_str());
-      fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
-      fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+      std::fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n\n",name.c_str(),keyword.c_str());
+      std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+      std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
       fclose(mystdin);
       return false;
@@ -205,8 +205,8 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   return true;
 }
 
-void CLTool::error( const std::string& msg ) {
-  fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",name.c_str(),msg.c_str());
+[[noreturn]] void CLTool::error( const std::string& msg ) {
+  std::fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",name.c_str(),msg.c_str());
   plumed_error();
 }
 

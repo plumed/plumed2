@@ -24,13 +24,14 @@ jobs:
         - -coverage-mpi-
         - -debug-
         - -debug-mpi-
+        - -intel-
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
       with:
         path: ~/.ccache
-        key: ccache-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-linux${{ matrix.variant }}hash-
+        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -49,7 +50,6 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y libatlas-base-dev
-        sudo apt-get install -y libmatheval-dev
         sudo apt-get install -y libfftw3-dev
         sudo apt-get install -y gsl-bin
         sudo apt-get install -y libgsl0-dev
@@ -81,20 +81,35 @@ jobs:
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
         ./.travis/install.doxygen Release_1_8_17
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc --enable-asmjit" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
         ./.travis/install.lcov v1.15
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --enable-asmjit --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Setup debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-debug --enable-debug-glibcxx" >> $GITHUB_ENV
+    - name: Install INTEL compiler
+      # install INTEL at last since it modifies CC and CXX
+      if: contains( matrix.variant, '-intel-' )
+      run: |
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        sudo apt-get update
+        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
+        source /opt/intel/oneapi/setvars.sh
+        printenv >> $GITHUB_ENV
+        echo "CXX=icpc" >> $GITHUB_ENV
+        echo "CC=icc" >> $GITHUB_ENV
+        echo "FC=ifort" >> $GITHUB_ENV
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
@@ -108,7 +123,7 @@ jobs:
     - name: Build PLUMED
       run: |
         ccache -s -M 100M
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --enable-fftw --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
@@ -116,7 +131,11 @@ jobs:
         ccache -s -M 100M
     - name: Run tests
       run: |
-         make --no-print-directory -C regtest
+         (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
+              df -h
+              sleep 15
+              done) &
+         make --no-print-directory -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
@@ -152,7 +171,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 1.90
+        ./.travis/install.cppcheck 2.5
     - name: Build astyle
       run: |
         make -j 4 -C astyle
@@ -163,6 +182,7 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
+  # We test on centos7 to make sure we have compatibility with older compilers (gcc 4.8)
   centos7:
     runs-on: ubuntu-20.04
     steps:
@@ -170,6 +190,15 @@ jobs:
     - name: Build and run tests
       run: |
         make -C docker centos7
+
+  # We test on fedora34 to make sure we have compatibility with newer compilers (gcc 11)
+  fedora34:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and run tests
+      run: |
+        make -C docker fedora34
 
   macports:
     runs-on: macos-10.15

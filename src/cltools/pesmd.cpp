@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -139,7 +139,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
       Tools::convert(frictionstr,friction);
     }
     parse("plumed",plumedin); parse("dimension",dim);
@@ -219,10 +219,10 @@ public:
     plumed->cmd("setStep",&istep);
     plumed->cmd("setMasses",&masses[0]);
     for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
-    plumed->cmd("setForces",&forces[0]);
+    plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&zero);
     if( lperiod ) plumed->cmd("setBox",&box[0]);
-    plumed->cmd("setPositions",&positions[0]);
+    plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
 
 
@@ -231,7 +231,7 @@ public:
 
     for(int istep=0; istep<nsteps; ++istep) {
 
-      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %i\n",istep);
+      if( istep%20==0 && pc.Get_rank()==0 ) std::printf("Doing step %i\n",istep);
 
       // Langevin thermostat
       double lscale=std::exp(-0.5*tstep/friction);
@@ -259,10 +259,10 @@ public:
       plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
       for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
-      plumed->cmd("setForces",&forces[0]);
+      plumed->cmd("setForces",&forces[0][0]);
       double fenergy=0.0;
       plumed->cmd("setEnergy",&fenergy);
-      plumed->cmd("setPositions",&positions[0]);
+      plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
       // if(istep%2000==0) plumed->cmd("writeCheckPointFile");
@@ -298,7 +298,7 @@ public:
 
       // Print everything
       // conserved = potential+1.5*ttt+therm_eng;
-      if( pc.Get_rank()==0 ) fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      if( pc.Get_rank()==0 ) std::fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
     }
 
     fclose(fp);

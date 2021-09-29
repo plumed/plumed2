@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,6 +47,7 @@ void GenericMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
+  keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC");
 }
 
 GenericMolInfo::~GenericMolInfo() {
@@ -57,11 +58,15 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   Action(ao),
   ActionAnyorder(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao)
+  ActionAtomistic(ao),
+  iswhole_(false)
 {
   plumed_assert(getStride()==1);
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);
+
+  // check if whole
+  parseFlag("WHOLE", iswhole_);
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) log<<"  overriding last MOLINFO with label " << moldat->getLabel()<<"\n";
@@ -242,7 +247,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
           atoms.push_back(AtomNumber::serial(n));
         }
         ok=1;
-      } catch (Exception & e) {
+      } catch (const Exception & e) {
         error_msg=e.what();
       }
       comm.Bcast(ok,0);
@@ -299,6 +304,18 @@ unsigned GenericMolInfo::getPDBsize()const {
 
 std::string GenericMolInfo::getResidueName(AtomNumber a)const {
   return pdb.getResidueName(a);
+}
+
+std::string GenericMolInfo::getChainID(AtomNumber a)const {
+  return pdb.getChainID(a);
+}
+
+Vector GenericMolInfo::getPosition(AtomNumber a)const {
+  return pdb.getPosition(a);
+}
+
+bool GenericMolInfo::isWhole() const {
+  return iswhole_;
 }
 
 void GenericMolInfo::prepare() {

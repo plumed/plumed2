@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
@@ -20,7 +22,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_CUSTOM
+//+PLUMEDOC OPES_EXPANSION_CV ECV_CUSTOM
 /*
 Use some given CVs as a set of expansion collective variables (ECVs).
 
@@ -220,9 +222,9 @@ void ECVcustom::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos = lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos = lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

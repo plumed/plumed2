@@ -29,6 +29,7 @@
 !/funnel
 !/opes
 !/tools
+!/sasa
 # These files we just want to ignore completely
 tmp
 report.txt

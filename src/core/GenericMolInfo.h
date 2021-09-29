@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,6 +55,8 @@ private:
   std::string pythonCmd;
 /// Selector subprocess
   std::unique_ptr<Subprocess> selector;
+/// Structure in pdb file is whole
+  bool iswhole_;
 public:
   ~GenericMolInfo();
   void calculate() override {}
@@ -65,6 +67,9 @@ public:
   std::string getAtomName(AtomNumber a)const;
   bool checkForAtom(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;
+  std::string getChainID(AtomNumber a)const;
+  Vector getPosition(AtomNumber a)const;
+  bool isWhole() const;
   unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );

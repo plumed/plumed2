@@ -21,7 +21,7 @@ The bias quickly becomes quasi-static and the desired properties, such as the fr
 Depending on the kind of target distribution one wishes to sample, different \ref OPES_BIAS "OPES biases" can be used.
 
 ## Installation 
-This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features.
+This module is not installed by default. Add '\-\-enable-modules=opes' to your './configure' command when building PLUMED to enable these features. See also \ref mymodules.
 
 ## Usage
 The OPES module is composed by two bias actions, \ref OPES_METAD that samples metadynamics-like target distributions (e.g. the well-tempered one),
@@ -29,16 +29,17 @@ and \ref OPES_EXPANDED that samples expanded ensembles target distributions (rep
 It also contains various expansion collective variables (ECVs) to define such expanded targets.
 
 ## Module Contents
-- \subpage OPES_BIAS
-- \subpage EXPANSION_CV
+- \subpage OPES_bias
+- \subpage expansion_CV
+- \subpage OPES_tutorial
 
-\page OPES_BIAS Biases
+\page OPES_bias Biases
 
 The following list contains the biases available in the OPES module.
 
 @OPES_BIAS@
 
-\page EXPANSION_CV Expansion Collective Variables
+\page expansion_CV Expansion Collective Variables
 
 Expansion collective variables (ECVs) are used to define the expanded ensemble to be sampled by \ref OPES_EXPANDED.
 See Ref.\cite Invernizzi2020unified for details.
@@ -46,4 +47,11 @@ ECVs take as argument some underlying colvar and have as output components the s
 
 The following list contains the expansion CVs available in the OPES module.
 
-@EXPANSION_CV@
+@OPES_EXPANSION_CV@
+
+\page OPES_tutorial Tutorials
+
+The following list contains the tutorials available in the OPES module.
+
+@OPES_TUTORIALS@
+

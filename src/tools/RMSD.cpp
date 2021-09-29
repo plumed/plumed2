@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -316,7 +316,7 @@ double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector>
   return ret;
 }
 
-double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
+double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
   double ret=0.;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -848,8 +848,8 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
     const std::vector<Vector> & positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
-    Tensor & rotationPosClose,
-    Tensor & rotationRefClose,
+    const Tensor & rotationPosClose,
+    const Tensor & rotationRefClose,
     std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
     bool squared) const {
   //initialize the data into the structure
@@ -1091,18 +1091,20 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 
   // calculate rotation matrix derivatives and components distances needed for components only when align!=displacement
   if(!alEqDis)ddist_drotation.zero();
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
   }
   // ddist_drotation if needed
-  if(!alEqDis or !only_rotation)
+  if(!alEqDis or !only_rotation) {
     for (unsigned iat=0; iat<n; iat++)
       ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
 
-  if(!alEqDis or !only_rotation) {
     ddist_drr01.zero();
     for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
   }
@@ -1141,7 +1143,7 @@ double RMSDCoreData::getDistance( bool squared) {
   return dist;
 }
 
-void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
+void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
 
   unsigned natoms = reference.size();
   Tensor ddist_drxy;
@@ -1155,7 +1157,10 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
 
   Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for (unsigned iat=0; iat<natoms; iat++) {
     d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
   }
@@ -1164,9 +1169,6 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
       //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
       ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
     }
-  }
-
-  if (!alEqDis) {
     for(unsigned i=0; i<3; i++)
       for(unsigned j=0; j<3; j++)
         ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i][j];

@@ -1,3 +1,7 @@
+// this turns on typecheck for plumed_cmd and plumed_gcmd
+// it is temporarily off by default, we enable typechecks in this test
+#define __PLUMED_WRAPPER_CXX_BIND_C 1
+
 #include "plumed/wrapper/Plumed.h"
 #include "plumed/tools/Exception.h"
 #include <fstream>
@@ -86,48 +90,70 @@ extern "C"{
   void PLUMED_F_USE_COUNT__(char*c,int*i);
 }
 
-template<typename T,typename S>
-void testme(T p,S cmd){
-  int natoms=10;
-  std::vector<double> positions(3*natoms,0.0);
-  std::vector<double> masses(natoms,1.0);
-  std::vector<double> forces(3*natoms,0.0);
-  std::vector<double> virial(9,0.0);
-
-
-  cmd(p,(char*)"setNatoms",&natoms);
-  cmd(p,(char*)"init",NULL);
-  cmd(p,(char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2");
-  cmd(p,(char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES");
-  int step=1;
-  cmd(p,(char*)"setStep",&step);
-  cmd(p,(char*)"setPositions",&positions[0]);
-  cmd(p,(char*)"setMasses",&masses[0]);
-  cmd(p,(char*)"setForces",&forces[0]);
-  cmd(p,(char*)"setVirial",&virial[0]);
-  cmd(p,(char*)"calc",NULL);
+#define testme_(p,cmd) \
+{ \
+  int natoms=10; \
+  std::vector<double> positions(3*natoms,0.0); \
+  std::vector<double> masses(natoms,1.0); \
+  std::vector<double> forces(3*natoms,0.0); \
+  std::vector<double> virial(9,0.0); \
+ \
+ \
+  cmd(p,(char*)"setNatoms",&natoms); \
+  cmd(p,(char*)"init",NULL); \
+  cmd(p,(char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2"); \
+  cmd(p,(char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES"); \
+  int step=1; \
+  cmd(p,(char*)"setStep",&step); \
+  cmd(p,(char*)"setPositions",&positions[0]); \
+  cmd(p,(char*)"setMasses",&masses[0]); \
+  cmd(p,(char*)"setForces",&forces[0]); \
+  cmd(p,(char*)"setVirial",&virial[0]); \
+  cmd(p,(char*)"calc",NULL); \
 }
 
-template<typename S>
-void testme(S cmd){
-  int natoms=10;
-  std::vector<double> positions(3*natoms,0.0);
-  std::vector<double> masses(natoms,1.0);
-  std::vector<double> forces(3*natoms,0.0);
-  std::vector<double> virial(9,0.0);
+#define TESTME(X) \
+{ \
+  int natoms=10; \
+  const std::vector<double> positions(3*natoms,0.0); \
+  const std::vector<double> masses(natoms,1.0); \
+  std::vector<double> forces(3*natoms,0.0); \
+  std::vector<double> virial(9,0.0); \
+ \
+ \
+  X((char*)"setNatoms",&natoms); \
+  X((char*)"init",NULL); \
+  X((char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2"); \
+  X((char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES"); \
+  int step=1; \
+  X((char*)"setStep",&step); \
+  X((char*)"setPositions",&positions[0]); \
+  X((char*)"setMasses",&masses[0]); \
+  X((char*)"setForces",&forces[0]); \
+  X((char*)"setVirial",&virial[0]); \
+  X((char*)"calc",NULL); \
+}
 
-
-  cmd((char*)"setNatoms",&natoms);
-  cmd((char*)"init",NULL);
-  cmd((char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2");
-  cmd((char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES");
-  int step=1;
-  cmd((char*)"setStep",&step);
-  cmd((char*)"setPositions",&positions[0]);
-  cmd((char*)"setMasses",&masses[0]);
-  cmd((char*)"setForces",&forces[0]);
-  cmd((char*)"setVirial",&virial[0]);
-  cmd((char*)"calc",NULL);
+#define testme(cmd) \
+{ \
+  int natoms=10; \
+  std::vector<double> positions(3*natoms,0.0); \
+  std::vector<double> masses(natoms,1.0); \
+  std::vector<double> forces(3*natoms,0.0); \
+  std::vector<double> virial(9,0.0); \
+ \
+ \
+  cmd((char*)"setNatoms",&natoms); \
+  cmd((char*)"init",NULL); \
+  cmd((char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2"); \
+  cmd((char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES"); \
+  int step=1; \
+  cmd((char*)"setStep",&step); \
+  cmd((char*)"setPositions",&positions[0]); \
+  cmd((char*)"setMasses",&masses[0]); \
+  cmd((char*)"setForces",&forces[0]); \
+  cmd((char*)"setVirial",&virial[0]); \
+  cmd((char*)"calc",NULL); \
 }
 
 void testmecpp(PLMD::Plumed p){
@@ -149,6 +175,7 @@ void testmecpp(PLMD::Plumed p){
   p.cmd((char*)"setForces",&forces[0]);
   p.cmd((char*)"setVirial",&virial[0]);
   p.cmd((char*)"calc",NULL);
+//plumed_forget_ptr(p,&masses[0]);
 }
 
 int main(){
@@ -229,7 +256,7 @@ int main(){
 
     PLMD::Plumed::gcreate();
     if(!PLMD::Plumed::gvalid()) plumed_error();
-    testme(PLMD::Plumed::gcmd);
+    TESTME(PLMD::Plumed::gcmd); // testme does not work since gcmd is an overload!
     PLMD::Plumed::gfinalize();
   }
   {
@@ -239,7 +266,7 @@ int main(){
       char f[32];
       PLMD::Plumed p;
       p.toFortran(f);
-      testme(f,plumed_f_cmd);
+      testme_(f,plumed_f_cmd);
     }
 
     {
@@ -286,18 +313,18 @@ int main(){
       plumed p=plumed_create();
       void* x=plumed_c2v(p);
       plumed q=plumed_create_reference_v(x);
-      testme(q,plumed_cmd);
+      testme_(q,plumed_cmd);
       plumed_finalize(q);
       plumed_finalize(p);
     }
     plumed p=plumed_create();
-    testme(p,plumed_cmd);
+    testme_(p,plumed_cmd);
     plumed_finalize(p);
 
     {
 // test dlopen
       plumed p=plumed_create_dlopen(std::getenv("PLUMED_KERNEL"));
-      testme(p,plumed_cmd);
+      testme_(p,plumed_cmd);
       plumed_finalize(p);
     }
 // test use_count
@@ -308,7 +335,7 @@ int main(){
       if(plumed_use_count(p)!=2) plumed_error();
       plumed_finalize(p);
       if(plumed_use_count(q)!=1) plumed_error();
-      testme(q,plumed_cmd);
+      testme_(q,plumed_cmd);
       plumed_finalize(q);
     }
 
@@ -316,7 +343,7 @@ int main(){
     plumed_gcreate();
     if(!plumed_gvalid()) plumed_error();
     if(!plumed_ginitialized()) plumed_error();
-    testme(plumed_global(),plumed_cmd);
+    testme_(plumed_global(),plumed_cmd);
     plumed_gfinalize();
     if(plumed_ginitialized()) plumed_error();
 
@@ -330,7 +357,7 @@ int main(){
     char f[32];
     plumed p=plumed_create();
     plumed_c2f(p,f);
-    testme(f,plumed_f_cmd);
+    testme_(f,plumed_f_cmd);
     plumed_finalize(plumed_f2c(f));
   }
   {
@@ -340,14 +367,14 @@ int main(){
     plumed_f_installed(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create(p);
-    testme(p,plumed_f_cmd);
+    testme_(p,plumed_f_cmd);
     plumed_f_finalize(p);
 
     {
 // test dlopen
       char p[32];
       plumed_f_create_dlopen(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,plumed_f_cmd);
+      testme_(p,plumed_f_cmd);
       plumed_f_finalize(p);
     }
 // test use_count
@@ -363,7 +390,7 @@ int main(){
       plumed_f_finalize(p);
       plumed_f_use_count(q,&count);
       if(count!=1) plumed_error();
-      testme(q,plumed_f_cmd);
+      testme_(q,plumed_f_cmd);
       plumed_f_finalize(q);
     }
 
@@ -373,7 +400,7 @@ int main(){
     plumed_f_gcreate();
     plumed_f_ginitialized(&ini); if(!ini) plumed_error();
     plumed_f_global(p2);
-    testme(p2,plumed_f_cmd);
+    testme_(p2,plumed_f_cmd);
     plumed_f_gfinalize();
     plumed_f_ginitialized(&ini); if(ini) plumed_error();
 
@@ -389,14 +416,14 @@ int main(){
     plumed_f_installed_(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create_(p);
-    testme(p,plumed_f_cmd_);
+    testme_(p,plumed_f_cmd_);
     plumed_f_finalize_(p);
 
     {
 // test dlopen
       char p[32];
       plumed_f_create_dlopen_(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,plumed_f_cmd_);
+      testme_(p,plumed_f_cmd_);
       plumed_f_finalize_(p);
     }
 // test use_count
@@ -412,7 +439,7 @@ int main(){
       plumed_f_finalize_(p);
       plumed_f_use_count_(q,&count);
       if(count!=1) plumed_error();
-      testme(q,plumed_f_cmd_);
+      testme_(q,plumed_f_cmd_);
       plumed_f_finalize_(q);
     }
 
@@ -422,7 +449,7 @@ int main(){
     plumed_f_gcreate_();
     plumed_f_ginitialized_(&ini); if(!ini) plumed_error();
     plumed_f_global_(p2);
-    testme(p2,plumed_f_cmd_);
+    testme_(p2,plumed_f_cmd_);
     plumed_f_gfinalize_();
     plumed_f_ginitialized_(&ini); if(ini) plumed_error();
 
@@ -438,14 +465,14 @@ int main(){
     plumed_f_installed__(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create__(p);
-    testme(p,plumed_f_cmd__);
+    testme_(p,plumed_f_cmd__);
     plumed_f_finalize__(p);
 
     {
 // test dlopen
       char p[32];
       plumed_f_create_dlopen__(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,plumed_f_cmd__);
+      testme_(p,plumed_f_cmd__);
       plumed_f_finalize__(p);
     }
 // test use_count
@@ -461,7 +488,7 @@ int main(){
       plumed_f_finalize__(p);
       plumed_f_use_count__(q,&count);
       if(count!=1) plumed_error();
-      testme(q,plumed_f_cmd__);
+      testme_(q,plumed_f_cmd__);
       plumed_f_finalize__(q);
     }
 
@@ -471,7 +498,7 @@ int main(){
     plumed_f_gcreate__();
     plumed_f_ginitialized__(&ini); if(!ini) plumed_error();
     plumed_f_global__(p2);
-    testme(p2,plumed_f_cmd__);
+    testme_(p2,plumed_f_cmd__);
     plumed_f_gfinalize__();
     plumed_f_ginitialized__(&ini); if(ini) plumed_error();
 
@@ -487,14 +514,14 @@ int main(){
     PLUMED_F_INSTALLED(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE(p);
-    testme(p,PLUMED_F_CMD);
+    testme_(p,PLUMED_F_CMD);
     PLUMED_F_FINALIZE(p);
 
     {
 // test dlopen
       char p[32];
       PLUMED_F_CREATE_DLOPEN(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,PLUMED_F_CMD);
+      testme_(p,PLUMED_F_CMD);
       PLUMED_F_FINALIZE(p);
     }
 // test use_count
@@ -510,7 +537,7 @@ int main(){
       PLUMED_F_FINALIZE(p);
       PLUMED_F_USE_COUNT(q,&count);
       if(count!=1) plumed_error();
-      testme(q,PLUMED_F_CMD);
+      testme_(q,PLUMED_F_CMD);
       PLUMED_F_FINALIZE(q);
     }
 
@@ -520,7 +547,7 @@ int main(){
     PLUMED_F_GCREATE();
     PLUMED_F_GINITIALIZED(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL(p2);
-    testme(p2,PLUMED_F_CMD);
+    testme_(p2,PLUMED_F_CMD);
     PLUMED_F_GFINALIZE();
     PLUMED_F_GINITIALIZED(&ini); if(ini) plumed_error();
 
@@ -536,14 +563,14 @@ int main(){
     PLUMED_F_INSTALLED_(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE_(p);
-    testme(p,PLUMED_F_CMD_);
+    testme_(p,PLUMED_F_CMD_);
     PLUMED_F_FINALIZE_(p);
 
     {
 // test dlopen
       char p[32];
       PLUMED_F_CREATE_DLOPEN_(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,PLUMED_F_CMD_);
+      testme_(p,PLUMED_F_CMD_);
       PLUMED_F_FINALIZE_(p);
     }
 // test use_count
@@ -559,7 +586,7 @@ int main(){
       PLUMED_F_FINALIZE_(p);
       PLUMED_F_USE_COUNT_(q,&count);
       if(count!=1) plumed_error();
-      testme(q,PLUMED_F_CMD_);
+      testme_(q,PLUMED_F_CMD_);
       PLUMED_F_FINALIZE_(q);
     }
 
@@ -569,7 +596,7 @@ int main(){
     PLUMED_F_GCREATE_();
     PLUMED_F_GINITIALIZED_(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL_(p2);
-    testme(p2,PLUMED_F_CMD_);
+    testme_(p2,PLUMED_F_CMD_);
     PLUMED_F_GFINALIZE_();
     PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 
@@ -585,14 +612,14 @@ int main(){
     PLUMED_F_INSTALLED__(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE__(p);
-    testme(p,PLUMED_F_CMD__);
+    testme_(p,PLUMED_F_CMD__);
     PLUMED_F_FINALIZE__(p);
 
     {
 // test dlopen
       char p[32];
       PLUMED_F_CREATE_DLOPEN__(std::getenv("PLUMED_KERNEL"),p);
-      testme(p,PLUMED_F_CMD__);
+      testme_(p,PLUMED_F_CMD__);
       PLUMED_F_FINALIZE__(p);
     }
 // test use_count
@@ -608,7 +635,7 @@ int main(){
       PLUMED_F_FINALIZE__(p);
       PLUMED_F_USE_COUNT__(q,&count);
       if(count!=1) plumed_error();
-      testme(q,PLUMED_F_CMD__);
+      testme_(q,PLUMED_F_CMD__);
       PLUMED_F_FINALIZE__(q);
     }
 
@@ -618,7 +645,7 @@ int main(){
     PLUMED_F_GCREATE__();
     PLUMED_F_GINITIALIZED__(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL__(p2);
-    testme(p2,PLUMED_F_CMD__);
+    testme_(p2,PLUMED_F_CMD__);
     PLUMED_F_GFINALIZE__();
     PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 

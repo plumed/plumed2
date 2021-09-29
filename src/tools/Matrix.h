@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -100,7 +100,7 @@ public:
   /// Set the matrix from a vector input
   inline void setFromVector( const std::vector<T>& vecin ) { plumed_assert( vecin.size()==sz ); for(unsigned i=0; i<sz; ++i) data[i]=vecin[i]; }
   /// Return element i,j of the matrix
-  inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
+  inline const T& operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
   /// Return a referenre to element i,j of the matrix
   inline T& operator () (const unsigned& i, const unsigned& j)      { return data[j+i*cl]; }
   /// Set all elements of the matrix equal to the value of v

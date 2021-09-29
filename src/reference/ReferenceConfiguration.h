@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,7 +86,7 @@ private:
   std::vector<double> fake_metric;
 protected:
 /// Crash with an error
-  void error(const std::string& msg);
+  [[noreturn]] void error(const std::string& msg);
 public:
   explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
@@ -111,7 +111,7 @@ public:
 /// Copy derivatives from one frame to this frame
   void copyDerivatives( const ReferenceConfiguration* );
 /// Get one of the referene arguments
-  virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
+  virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here
 /// to make PLMD::distance work
   virtual const std::vector<Vector>& getReferencePositions() const ;

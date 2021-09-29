@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -69,6 +69,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   {
     log<<"Opening reference file "<<reference.c_str()<<"\n";
     bool do_read=true;
+    unsigned nat=0;
     while (do_read) {
       PDB mypdb;
       RMSD mymsd;
@@ -76,7 +77,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
       if(do_read) {
         nframes++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat==0) nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) {
           aaa=mypdb.getAtomNumbers();

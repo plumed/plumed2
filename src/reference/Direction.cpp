@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,7 +60,7 @@ void Direction::zeroDirection() {
 
 double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                         ReferenceValuePack& myder, const bool& squared ) const {
-  plumed_merror("You should never be calling calc for a direction"); return 1.0;
+  plumed_merror("You should never be calling calc for a direction");
 }
 
 void Direction::extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const {

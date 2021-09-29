@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 
@@ -154,7 +156,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
     double func_b=func(side,obs,av_obs);
     if(func_b>=0)
       return 0.0; //no zero is present!
-    if(b<0)//left side case
+    if(b<0) //left side case
     {
       std::swap(a,b);
       std::swap(func_a,func_b);
@@ -174,7 +176,7 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
         func_b=func_c;
       }
       c=(a*func_b-b*func_a)/(func_b-func_a);
-      func_c=func(c,obs,av_obs);//func is evaluated only here, it might be expensive
+      func_c=func(c,obs,av_obs); //func is evaluated only here, it might be expensive
     }
     return std::abs(c);
   };
@@ -208,15 +210,14 @@ unsigned ExpansionCVs::estimateSteps(const double left_side,const double right_s
     else
       log.printf(" +++ WARNING +++ MAX_%s is very close to %s\n",msg.c_str(),msg.c_str());
   }
-  if(left_HWHM==0 && right_HWHM==0)
-  {
-    log.printf(" +++ WARNING +++ %s range is very narrow, using MIN_%s and MAX_%s as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
-    return 2;
-  }
   const double grid_spacing=left_HWHM+right_HWHM;
   log.printf("   estimated %s spacing = %g\n",msg.c_str(),grid_spacing);
   unsigned steps=std::ceil(std::abs(right_side-left_side)/grid_spacing);
-  plumed_massert(steps>1,"something went wrong and estimated grid spacing for "+msg+" gives a step="+std::to_string(steps));
+  if(steps<2 || grid_spacing==0)
+  {
+    log.printf(" +++ WARNING +++ %s range is very narrow, using MIN_%s and MAX_%s as only steps\n",msg.c_str(),msg.c_str(),msg.c_str());
+    steps=2;
+  }
   return steps;
 }
 

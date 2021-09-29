@@ -35,9 +35,6 @@ homepage            http://www.plumed.org/
 #            file2
 ### etc
 
-# Enable optional features.
-# --enable-asmjit:        Compile internal asmjit. Notice that internal asmjit is protected in
-#                         PLUMED namespace so will not collide with other asmjit implementations.
 # Disable additional features.
 # --disable-doc:          Do not create documentation, and avoid searching for Doxygen.
 # --disable-libsearch:    Avoid searching libraries using their default names.
@@ -49,7 +46,6 @@ homepage            http://www.plumed.org/
 # --disable-mpi:          Do not search for MPI compiler (replaced when enabling mpi, see below)
 # --disable-python:       Python wrappers will be installed with a separate python port
 configure.args-append \
-                    --enable-asmjit \
                     --disable-doc \
                     --disable-libsearch \
                     --disable-static-patch \
@@ -90,8 +86,9 @@ configure.cxxflags-replace -Os -O3
 # Library names are specified here to make sure that
 # only requested packages are linked.
 configure.ldflags-append \
-                    -lxdrfile -lz -lgsl
-depends_lib-append  port:gawk \
+                    -lxdrfile -lz -lgsl -lfftw3
+depends_lib-append  port:fftw-3 \
+                    port:gawk \
                     port:gsl \
                     port:xdrfile \
                     port:zlib
@@ -99,7 +96,7 @@ depends_lib-append  port:gawk \
 # C++ library
 # Required in order to use clang with gcc library on old OSX versions.
 # See https://github.com/macports/macports-ports/pull/1254
-if [string match *clang* ${configure.compiler}] {
+if {[string match *clang* ${configure.compiler}]} {
     configure.ldflags-append -stdlib=${configure.cxx_stdlib}
 }
 

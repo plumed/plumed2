@@ -76,7 +76,7 @@ public:
   explicit drrtool(const CLToolOptions &co);
   int main(FILE *in, FILE *out, Communicator &pc);
   void extractdrr(const vector<string> &filename);
-  void mergewindows(const vector<string> &filename);
+  void mergewindows(const vector<string> &filename, string outputname);
   void calcDivergence(const vector<string> &filename);
   string description() const { return "Extract or merge the drrstate files."; }
 
@@ -92,6 +92,7 @@ void drrtool::registerKeywords(Keywords &keys) {
   CLTool::registerKeywords(keys);
   keys.add("optional", "--extract", "Extract drrstate file(s)");
   keys.add("optional", "--merge", "Merge eABF windows");
+  keys.add("optional", "--merge_output", "The output filename of the merged result");
   keys.add("optional", "--divergence", "Calculate divergence of gradient field (experimental)");
   keys.add("compulsory","--units","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
   keys.addFlag("-v", false, "Verbose output");
@@ -115,7 +116,9 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   vector<string> stateFilesToMerge;
   bool domerge = parseVector("--merge", stateFilesToMerge);
   if (domerge) {
-    mergewindows(stateFilesToMerge);
+    string merge_outputname;
+    parse("--merge_output", merge_outputname);
+    mergewindows(stateFilesToMerge, merge_outputname);
   }
   vector<string> stateFilesToDivergence;
   bool dodivergence = parseVector("--divergence", stateFilesToDivergence);
@@ -168,7 +171,7 @@ void drrtool::extractdrr(const vector<string> &filename) {
   }
 }
 
-void drrtool::mergewindows(const vector<string> &filename) {
+void drrtool::mergewindows(const vector<string> &filename, string outputname) {
   if (filename.size() < 2) {
     std::cerr << "ERROR! You need at least two .drrstate file to merge windows!" << std::endl;
     std::abort();
@@ -201,14 +204,21 @@ void drrtool::mergewindows(const vector<string> &filename) {
     cmerged = CZAR::mergewindow(cmerged, czars[i]);
     amerged = ABF::mergewindow(amerged, abfs[i]);
   }
-  // Generate new file name for merged grad and count
-  vector<string> tmp_name = filename;
-  std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name), [&](string s) {return s.substr(0, s.find(suffix));});
-  string mergename = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""), [](const string & a, const string & b) {return a + b + "+";});
-  mergename = mergename.substr(0, mergename.size() - 1);
-  cmerged.writeAll(mergename);
-  cmerged.writeZCount(mergename);
-  amerged.writeAll(mergename);
+  if (outputname.empty()) {
+    // Generate new file name for merged grad and count
+    vector<string> tmp_name = filename;
+    std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name),
+    [&](string s) {return s.substr(0, s.find(suffix));});
+    outputname = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""),
+    [](const string & a, const string & b) {return a + b + "+";});
+    outputname = outputname.substr(0, outputname.size() - 1);
+    std::cerr << "You have not specified an output filename for the merged"
+              << " result, so the default name \"" + outputname
+              << "\" is used here, which may yield unexpected behavior.\n";
+  }
+  cmerged.writeAll(outputname);
+  cmerged.writeZCount(outputname);
+  amerged.writeAll(outputname);
 }
 
 void drrtool::calcDivergence(const vector<string> &filename) {

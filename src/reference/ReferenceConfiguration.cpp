@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,7 +58,7 @@ std::string ReferenceConfiguration::getName() const {
   return name;
 }
 
-void ReferenceConfiguration::error(const std::string& msg) {
+[[noreturn]] void ReferenceConfiguration::error(const std::string& msg) {
   plumed_merror("error reading reference configuration of type " + name + " : " + msg );
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -331,8 +331,8 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     std::vector<double> costmp( ndim() ), sintmp( ndim() ), sinout( ndim(), 0.0 );
     for(unsigned i=0; i<ndim(); ++i) {
       if( pos[i]->isPeriodic() ) {
-        sintmp[i]=sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
-        costmp[i]=cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+        sintmp[i]=std::sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+        costmp[i]=std::cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
       } else {
         sintmp[i]=pos[i]->get() - center[i];
         costmp[i]=1.0;

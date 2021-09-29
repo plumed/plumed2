@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -141,7 +141,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
       Tools::convert(frictionstr,friction);
     }
     parse("forcecutoff",forcecutoff);
@@ -153,31 +153,31 @@ private:
     // Read in stuff with sanity checks
     parse("inputfile",inputfile);
     if(inputfile.length()==0) {
-      fprintf(stderr,"Specify input file\n");
+      std::fprintf(stderr,"Specify input file\n");
       exit(1);
     }
     parse("outputfile",outputfile);
     if(outputfile.length()==0) {
-      fprintf(stderr,"Specify output file\n");
+      std::fprintf(stderr,"Specify output file\n");
       exit(1);
     }
     std::string nconfstr; parse("nconfig",nconfstr);
-    sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
+    std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
     trajfile=buffer1;
     if(trajfile.length()==0) {
-      fprintf(stderr,"Specify traj file\n");
+      std::fprintf(stderr,"Specify traj file\n");
       exit(1);
     }
     std::string nstatstr; parse("nstat",nstatstr);
-    sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
+    std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
     statfile=buffer1;
     if(statfile.length()==0) {
-      fprintf(stderr,"Specify stat file\n");
+      std::fprintf(stderr,"Specify stat file\n");
       exit(1);
     }
     parse("ndim",ndim);
     if(ndim<1 || ndim>3) {
-      fprintf(stderr,"ndim should be 1,2 or 3\n");
+      std::fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
     }
     std::string w;
@@ -190,7 +190,7 @@ private:
 // read the number of atoms in file "input.xyz"
     FILE* fp=fopen(inputfile.c_str(),"r");
     if(!fp) {
-      fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
       exit(1);
     }
 
@@ -198,7 +198,7 @@ private:
     auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
-    int ret=fscanf(fp,"%1000d",&natoms);
+    int ret=std::fscanf(fp,"%1000d",&natoms);
     if(ret==0) plumed_error() <<"Error reading number of atoms from file "<<inputfile;
   }
 
@@ -207,7 +207,7 @@ private:
 // natoms (input variable) and number of atoms in the file should be consistent
     FILE* fp=fopen(inputfile.c_str(),"r");
     if(!fp) {
-      fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
       exit(1);
     }
 // call fclose when fp goes out of scope
@@ -218,10 +218,10 @@ private:
     char atomname[256];
     char* cret=fgets(buffer,256,fp);
     if(cret==nullptr) plumed_error() <<"Error reading buffer from file "<<inputfile;
-    int ret=fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
+    int ret=std::fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
     if(ret==0) plumed_error() <<"Error reading cell line from file "<<inputfile;
     for(int i=0; i<natoms; i++) {
-      ret=fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
+      ret=std::fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
 // note: atomname is read but not used
       if(ret==0) plumed_error() <<"Error reading atom line from file "<<inputfile;
     }
@@ -276,8 +276,8 @@ private:
         if(d2>listcutoff2)continue;
         if(point[iatom+1]>listsize) {
 // too many neighbours
-          fprintf(stderr,"%s","Verlet list size exceeded\n");
-          fprintf(stderr,"%s","Increase maxneighbours\n");
+          std::fprintf(stderr,"%s","Verlet list size exceeded\n");
+          std::fprintf(stderr,"%s","Increase maxneighbours\n");
           exit(1);
         }
         list[point[iatom+1]]=jatom;
@@ -359,14 +359,14 @@ private:
     } else {
       fp=fopen(trajfile.c_str(),"a");
     }
-    fprintf(fp,"%d\n",natoms);
-    fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
+    std::fprintf(fp,"%d\n",natoms);
+    std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
       else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
-      fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
+      std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
     fclose(fp);
   }
@@ -377,14 +377,14 @@ private:
     Vector pos;
     FILE*fp;
     fp=fopen(outputfile.c_str(),"w");
-    fprintf(fp,"%d\n",natoms);
-    fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
+    std::fprintf(fp,"%d\n",natoms);
+    std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
       else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
-      fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
+      std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
     fclose(fp);
   }
@@ -404,7 +404,7 @@ private:
       write_statistics_fp=fopen(statfile.c_str(),"a");
       write_statistics_last_time_reopened=istep;
     }
-    fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/double(ndim*natoms),engconf,engkin+engconf,engkin+engconf+engint);
+    std::fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/double(ndim*natoms),engconf,engkin+engconf,engkin+engconf+engint);
   }
 
 
@@ -472,23 +472,23 @@ private:
     read_natoms(inputfile,natoms);
 
 // write the parameters in output so they can be checked
-    fprintf(out,"%s %s\n","Starting configuration           :",inputfile.c_str());
-    fprintf(out,"%s %s\n","Final configuration              :",outputfile.c_str());
-    fprintf(out,"%s %d\n","Number of atoms                  :",natoms);
-    fprintf(out,"%s %f\n","Temperature                      :",temperature);
-    fprintf(out,"%s %f\n","Time step                        :",tstep);
-    fprintf(out,"%s %f\n","Friction                         :",friction);
-    fprintf(out,"%s %f\n","Cutoff for forces                :",forcecutoff);
-    fprintf(out,"%s %f\n","Cutoff for neighbour list        :",listcutoff);
-    fprintf(out,"%s %d\n","Number of steps                  :",nstep);
-    fprintf(out,"%s %d\n","Stride for trajectory            :",nconfig);
-    fprintf(out,"%s %s\n","Trajectory file                  :",trajfile.c_str());
-    fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
-    fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
-    fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
-    fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
-    fprintf(out,"%s %d\n","Seed                             :",idum);
-    fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
+    std::fprintf(out,"%s %s\n","Starting configuration           :",inputfile.c_str());
+    std::fprintf(out,"%s %s\n","Final configuration              :",outputfile.c_str());
+    std::fprintf(out,"%s %d\n","Number of atoms                  :",natoms);
+    std::fprintf(out,"%s %f\n","Temperature                      :",temperature);
+    std::fprintf(out,"%s %f\n","Time step                        :",tstep);
+    std::fprintf(out,"%s %f\n","Friction                         :",friction);
+    std::fprintf(out,"%s %f\n","Cutoff for forces                :",forcecutoff);
+    std::fprintf(out,"%s %f\n","Cutoff for neighbour list        :",listcutoff);
+    std::fprintf(out,"%s %d\n","Number of steps                  :",nstep);
+    std::fprintf(out,"%s %d\n","Stride for trajectory            :",nconfig);
+    std::fprintf(out,"%s %s\n","Trajectory file                  :",trajfile.c_str());
+    std::fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
+    std::fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
+    std::fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
+    std::fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
+    std::fprintf(out,"%s %d\n","Seed                             :",idum);
+    std::fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
 
 // Setting the seed
     random.setSeed(idum);
@@ -538,7 +538,7 @@ private:
 // neighbour list are computed, and reference positions are saved
     compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
 
-    fprintf(out,"List size: %d\n",point[natoms-1]);
+    std::fprintf(out,"List size: %d\n",point[natoms-1]);
     for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
 
 // forces are computed before starting md
@@ -573,8 +573,8 @@ private:
       if(recompute_list) {
         compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
         for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
-        fprintf(out,"Neighbour list recomputed at step %d\n",istep);
-        fprintf(out,"List size: %d\n",point[natoms-1]);
+        std::fprintf(out,"Neighbour list recomputed at step %d\n",istep);
+        std::fprintf(out,"List size: %d\n",point[natoms-1]);
       }
 
       compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
@@ -586,10 +586,10 @@ private:
         for(int i=0; i<3; i++) cell9[i][i]=cell[i];
         plumed->cmd("setStep",&istepplusone);
         plumed->cmd("setMasses",&masses[0]);
-        plumed->cmd("setForces",&forces[0]);
+        plumed->cmd("setForces",&forces[0][0]);
         plumed->cmd("setEnergy",&engconf);
-        plumed->cmd("setPositions",&positions[0]);
-        plumed->cmd("setBox",cell9);
+        plumed->cmd("setPositions",&positions[0][0]);
+        plumed->cmd("setBox",&cell9[0][0]);
         plumed->cmd("setStopFlag",&plumedWantsToStop);
         plumed->cmd("calc");
         if(plumedWantsToStop) nstep=istep;

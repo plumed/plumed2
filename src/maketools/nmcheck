@@ -1,6 +1,9 @@
 #! /bin/bash
 
-LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::")
+# NOTE: boost have unique global symbols and using them would make plumed lib not unloadable
+# NOTE: also shared_ptr in some GNU library version has the same problem :-( This seems not solvable.
+
+LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "std::_Sp_make_shared_tag")
 
 if test -n "$LIST" ;
 then

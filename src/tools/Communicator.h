@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #endif
 #include <cstdlib>
 #include "Exception.h"
+#include "TypesafePtr.h"
 #include <vector>
 #include <string>
 #include "Vector.h"
@@ -160,10 +161,10 @@ public:
   MPI_Comm & Get_comm();
 /// Set from a pointer to a real MPI communicator (C).
 /// \param comm Pointer to a C MPI communicator
-  void Set_comm(void*comm);
+  void Set_comm(const TypesafePtr & comm);
 /// Set from a pointer to a real MPI communicator (FORTRAN).
 /// \param comm Pointer to a FORTRAN MPI communicator (INTEGER)
-  void Set_fcomm(void*comm);
+  void Set_fcomm(const TypesafePtr & comm);
 /// Wrapper to MPI_Abort.
 /// \param code Error code
   void Abort(int code);

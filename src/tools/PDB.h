@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -82,6 +82,8 @@ public:
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
+/// Get the chain ID from atom number
+  std::string getChainID(AtomNumber a) const;
 ///use the log to dump information
   friend Log& operator<<(Log& ostr, const PDB& pdb);
 /// return the name of a specific atom

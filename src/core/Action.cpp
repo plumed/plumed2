@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -238,7 +238,7 @@ void Action::prepare() {
   return;
 }
 
-void Action::error( const std::string & msg ) const {
+[[noreturn]] void Action::error( const std::string & msg ) const {
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }

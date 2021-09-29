@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -91,7 +91,6 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
     if (values[i]->name==name) return values[i].get();
   }
   plumed_merror("there is no pointer with name " + name);
-  return NULL;
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
@@ -173,7 +172,6 @@ int ActionWithValue::getComponent( const std::string& name ) const {
     if (values[i]->name==thename) return i;
   }
   plumed_merror("there is no component with name " + name);
-  return -1;
 }
 
 std::string ActionWithValue::getComponentsList( ) const {

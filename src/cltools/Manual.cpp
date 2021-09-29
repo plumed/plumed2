@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -90,7 +90,7 @@ int Manual::main(FILE* in, FILE*out,Communicator& pc) {
   bool spellout; parseFlag("--spelling",spellout);
   if( vimout && spellout ) error("can only use one of --vim and --spelling at a time");
   if( !actionRegister().printManual(action,vimout,spellout) && !cltoolRegister().printManual(action,spellout) ) {
-    fprintf(stderr,"specified action is not registered\n");
+    std::fprintf(stderr,"specified action is not registered\n");
     return 1;
   }
 

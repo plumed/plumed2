@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,8 @@
 #ifndef __PLUMED_tools_PlumedHandle_h
 #define __PLUMED_tools_PlumedHandle_h
 #include "core/PlumedMainInitializer.h"
+#include "core/WithCmd.h"
+#include "TypesafePtr.h"
 #include <memory>
 
 namespace PLMD
@@ -33,18 +35,18 @@ class PlumedMain;
 Tiny local class to load a PLUMED kernel.
 
 Maps command to either a loaded PLUMED kernel or to the present one.
-It is a simplified version of the interface located at wrapper/Plumed.h.
+It provides a wrapper around the official interface located at wrapper/Plumed.h,
+with some changes.
 Differences are:
 - It does not use the `PLUMED_KERNEL` env var. Indeed, it would not make sense to use it,
   since this class is meant to load different kernels.
 - It does not implement interoperability with C/FORTRAN interfaces.
 - It does not implement global versions (e.g. PLMD::Plumed::gcmd).
-- It does not implement PLMD::Plumed::ginitialized. If it cannot be loaded, it crashes in its constructor.
+- It does not implement PLMD::Plumed::valid. If kernel cannot be loaded, its constructor throws.
   This will make sure that once constructed the object is usable.
 
-The mechanism for loading the kernel is anyway very similar to the one in wrapper/Plumed.c.
-In particular, it can load both kernels from PLUMED <=2.4 and >=2.5, and it
-tries to load the `libplumed.so` object if the `libplumedKernel.so` object does not load correctly.
+In its implementation, this class uses the PLMD::Plumed class in wrapper/Plumed.h and thus
+has the same capability to load PLUMED kernels of any version (starting with 2.0).
 It can also be created without passing any kernel path. In that case it refers to the current one
 (the one to which this class belongs).
 
@@ -68,46 +70,14 @@ Notice that if there are problems loading the kernel an exception is thrown.
 Thus, once constructed the object is guaranteed to be functional.
 
 */
-class PlumedHandle {
-/// Automatically dlclosing auxiliary class.
-/// Just used to make sure that handle is dlclosed correctly.
-  class DlHandle {
-    void *handle=nullptr;
-  public:
-/// Default construct as nullptr
-    DlHandle() {}
-/// Construct from a void*
-    explicit DlHandle(void*h): handle(h) {}
-/// Destructor will call dlclose if necessary
-    ~DlHandle();
-/// Covertible to void* so that it can be used directly
-    operator void*() const {
-      return handle;
-    }
-  };
+class PlumedHandle :
+  public WithCmd
+{
 /// Pointer to PlumedMain.
 /// Used when using the current kernel in order to avoid unneeded indirections.
   std::unique_ptr<PlumedMain> local;
-/// Pointer to dlsym handle used to open the kernel.
-/// Null when using current kernel.
-  DlHandle handle;
-/// Pointer to symbol table.
-/// Used for kernels>=2.5. We store it here since it is needed
-/// in constructor to initialize create_/cmd_/finalize_.
-/// Later on we might use the additional version information that it carries.
-  plumed_symbol_table_type* const symbol_=nullptr;
-/// Pointer to create function.
-/// Used when kernel is dlopened.
-  const plumed_create_pointer create_=nullptr;
-/// Pointer to cmd function.
-/// Used when kernel is dlopened.
-  const plumed_cmd_pointer cmd_=nullptr;
-/// Pointer to finalize function.
-/// Used when kernel is dlopened.
-  const plumed_finalize_pointer finalize_=nullptr;
-/// Pointer to the plumed object.
-/// Used when kernel is dlopened.
-  void* const p=nullptr;
+/// Pointer to loaded Plumed object;
+  void* const loaded=nullptr;
 /// Constructor using the path to a kernel.
 /// I keep it private to avoid confusion wrt the
 /// similar constructor of PLMD::Plumed that accepts a string (conversion from FORTRAN).
@@ -126,7 +96,9 @@ public:
 /// Move constructor.
   PlumedHandle(PlumedHandle &&) = default;
 /// Execute cmd.
-  void cmd(const char*key,const void*ptr=nullptr);
+  void cmd(const std::string & key,const TypesafePtr & ptr=nullptr);
+/// Bring in the possibility to pass shape/nelem
+  using WithCmd::cmd;
 };
 
 }

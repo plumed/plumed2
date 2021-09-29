@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -115,7 +115,7 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
      <<"\n";
   if(labels.size()==0) {
     char buf[500];
-    sprintf(buf,"Need to specify PROPERTY with this action\n");
+    std::sprintf(buf,"Need to specify PROPERTY with this action\n");
     plumed_merror(buf);
   } else {
     for(unsigned i=0; i<labels.size(); i++) {
@@ -133,7 +133,7 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
         if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val);}
         else {
           char buf[500];
-          sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
+          std::sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
           plumed_merror(buf);
         };
       }

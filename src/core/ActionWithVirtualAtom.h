@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,7 @@
 #include "tools/Vector.h"
 #include "tools/Tensor.h"
 #include "Atoms.h"
+#include <array>
 
 namespace PLMD {
 
@@ -40,9 +41,9 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 class ActionWithVirtualAtom:
   public ActionAtomistic
 {
-  AtomNumber index;
+  const AtomNumber index;
   std::vector<Tensor> derivatives;
-  std::vector<Tensor> boxDerivatives;
+  std::array<Tensor,3> boxDerivatives;
   std::map<AtomNumber,Tensor> gradients;
   void apply() override;
 protected:
@@ -57,7 +58,7 @@ protected:
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
 /// Set the box derivatives.
-/// This should be a vector of size 3. First index corresponds
+/// This should be an array of size 3. First index corresponds
 /// to the components of the virtual atom.
 /// Notice that this routine subtract the trivial term coming from cell deformation
 /// since this term is already implicitly included. Indeed, if the vatom
@@ -65,7 +66,7 @@ protected:
 /// to call this function (implicit term is fine) (e.g. vatom::COM and vatom::Center).
 /// On the other hand if the vatom position is a non-linear function of atomic coordinates this
 /// should be called (see vatom::Ghost).
-  void setBoxDerivatives(const std::vector<Tensor> &d);
+  void setBoxDerivatives(const std::array<Tensor,3> &d);
 /// Set box derivatives automatically.
 /// It should be called after the settomsDerivatives has been used for all
 /// single atoms.

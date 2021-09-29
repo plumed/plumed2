@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 #ifndef __PLUMED_core_Atoms_h
 #define __PLUMED_core_Atoms_h
 
+#include "tools/TypesafePtr.h"
 #include "tools/Communicator.h"
 #include "tools/Tensor.h"
 #include "tools/Units.h"
@@ -156,10 +157,10 @@ public:
   void setRealPrecision(int);
   int  getRealPrecision()const;
 
-  void setTimeStep(void*);
+  void setTimeStep(const TypesafePtr &);
   double getTimeStep()const;
 
-  void setKbT(void*);
+  void setKbT(const TypesafePtr &);
   double getKbT()const;
 
   void setNatoms(int);
@@ -178,28 +179,28 @@ public:
   void setCollectEnergy(bool b) { collectEnergy=b; }
 
   void setDomainDecomposition(Communicator&);
-  void setAtomsGatindex(int*,bool);
+  void setAtomsGatindex(const TypesafePtr &,bool);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 
   void startStep();
-  void setEnergy(void*);
-  void setBox(void*);
-  void setVirial(void*);
-  void setPositions(void*);
-  void setPositions(void*,int);
-  void setForces(void*);
-  void setForces(void*,int);
-  void setMasses(void*);
-  void setCharges(void*);
+  void setEnergy(const TypesafePtr &);
+  void setBox(const TypesafePtr &);
+  void setVirial(const TypesafePtr &);
+  void setPositions(const TypesafePtr &);
+  void setPositions(const TypesafePtr &,int);
+  void setForces(const TypesafePtr &);
+  void setForces(const TypesafePtr &,int);
+  void setMasses(const TypesafePtr &);
+  void setCharges(const TypesafePtr &);
   bool chargesWereSet() const ;
   bool boxWasSet() const ;
 
-  void MD2double(const void*m,double&d)const;
-  void double2MD(const double&d,void*m)const;
+  void MD2double(const TypesafePtr & m,double&d)const;
+  void double2MD(const double&d,const TypesafePtr & m)const;
 
-  void createFullList(int*);
-  void getFullList(int**);
+  void createFullList(const TypesafePtr &);
+  void getFullList(const TypesafePtr &);
   void clearFullList();
 
   void add(ActionAtomistic*);
@@ -233,8 +234,8 @@ public:
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
 
-  void setExtraCV(const std::string &name,void*p);
-  void setExtraCVForce(const std::string &name,void*p);
+  void setExtraCV(const std::string &name,const TypesafePtr & p);
+  void setExtraCVForce(const std::string &name,const TypesafePtr & p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
 };

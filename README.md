@@ -10,6 +10,7 @@
 [![AUR package](https://repology.org/badge/version-for-repo/aur/plumed.svg)](https://repology.org/project/plumed/versions)
 [![DPorts package](https://repology.org/badge/version-for-repo/dports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/plumed.svg)](https://repology.org/project/plumed/versions)
+[![Spack package](https://repology.org/badge/version-for-repo/spack/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
 Branches and releases
@@ -94,7 +95,6 @@ Required software:
 * C/c++ compiler (c++11 support is required as of version 2.4).
 * A modern version of the `patch` command line tool.
 * Support for POSIX library `dirent.h`.
-* `xxd` (present in most UNIX distributions).
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
 
@@ -112,7 +112,7 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 Quick compilation instructions
 ------------------------------
 
-Extensive installation instructions are in the [user documentation](http://www.plumed.org/documentation).
+Extensive installation instructions are in the [user documentation](http://www.plumed.org/doc).
 Quick instructions:
 
     ./configure --prefix=$HOME/opt
@@ -122,11 +122,11 @@ Quick instructions:
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
-[Pre-compiled documentation](http://www.plumed.org/documentation) is available online, so this is only required
+[Pre-compiled documentation](http://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
-we recomment installing PLUMED. 
+we recommend installing PLUMED. 
 To install it in `$HOME/opt` (directory should be set during `./configure`):
 
     umask 022
@@ -141,3 +141,4 @@ If you compiled your own documentation, paths to the installed documentation can
 A sample modulefile with environment variable will be placed in
 `$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
 install multiple PLUMED versions side by side and select them with env modules.
+

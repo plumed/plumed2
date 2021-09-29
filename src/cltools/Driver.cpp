@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -275,12 +275,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 // Parse everything
   bool printhelpdebug; parseFlag("--help-debug",printhelpdebug);
   if( printhelpdebug ) {
-    fprintf(out,"%s",
-            "Additional options for debug (only to be used in regtest):\n"
-            "  [--debug-float yes]     : turns on the single precision version (to check float interface)\n"
-            "  [--debug-dd yes]        : use a fake domain decomposition\n"
-            "  [--debug-pd yes]        : use a fake particle decomposition\n"
-           );
+    std::fprintf(out,"%s",
+                 "Additional options for debug (only to be used in regtest):\n"
+                 "  [--debug-float yes]     : turns on the single precision version (to check float interface)\n"
+                 "  [--debug-dd yes]        : use a fake domain decomposition\n"
+                 "  [--debug-pd yes]        : use a fake particle decomposition\n"
+                );
     return 0;
   }
   // Are we reading trajectory data
@@ -311,7 +311,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     else if(fakein=="no") debug_pd=false;
     else error("--debug-pd should have argument yes or no");
   }
-  if(debug_pd) fprintf(out,"DEBUGGING PARTICLE DECOMPOSITION\n");
+  if(debug_pd) std::fprintf(out,"DEBUGGING PARTICLE DECOMPOSITION\n");
 
   bool debug_dd=false;
   fakein="";
@@ -320,7 +320,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     else if(fakein=="no") debug_dd=false;
     else error("--debug-dd should have argument yes or no");
   }
-  if(debug_dd) fprintf(out,"DEBUGGING DOMAIN DECOMPOSITION\n");
+  if(debug_dd) std::fprintf(out,"DEBUGGING DOMAIN DECOMPOSITION\n");
 
   if( debug_pd || debug_dd ) {
     if(noatoms) error("cannot debug without atoms");
@@ -415,7 +415,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       std::string traj_molfile;
       parse(molfile_key,traj_molfile);
       if(traj_molfile.length()>0) {
-        fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins[i]->name,traj_molfile.c_str());
+        std::fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins[i]->name,traj_molfile.c_str());
         trajectoryFile=traj_molfile;
         trajectory_fmt=std::string(plugins[i]->name);
         use_molfile=true;
@@ -431,7 +431,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       if(traj_xtc.length()>0) nn++;
       if(traj_trr.length()>0) nn++;
       if(nn>1) {
-        fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+        std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
         if(grex_log)fclose(grex_log);
         return 1;
       }
@@ -457,7 +457,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       trajectory_fmt="xdr-trr";
     }
     if(trajectoryFile.length()==0&&!parseOnly) {
-      fprintf(stderr,"ERROR: missing trajectory data\n");
+      std::fprintf(stderr,"ERROR: missing trajectory data\n");
       if(grex_log)fclose(grex_log);
       return 1;
     }
@@ -481,12 +481,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       pbc_cli_given=true;
       std::vector<std::string> words=Tools::getWords(pbc_cli_list,",");
       if(words.size()==3) {
-        for(int i=0; i<3; i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[4*i]));
+        for(int i=0; i<3; i++) std::sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[4*i]));
       } else if(words.size()==9) {
-        for(int i=0; i<9; i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[i]));
+        for(int i=0; i<9; i++) std::sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[i]));
       } else {
         std::string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
-        fprintf(stderr,"%s\n",msg.c_str());
+        std::fprintf(stderr,"%s\n",msg.c_str());
         return 1;
       }
 
@@ -503,16 +503,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
   PlumedMain p;
-  int rr=sizeof(real);
-  p.cmd("setRealPrecision",&rr);
+  p.cmd("setRealPrecision",(int)sizeof(real));
   int checknatoms=-1;
   long int step=0;
   parse("--initial-step",step);
 
-  if(restart) {
-    int irestart=1;
-    p.cmd("setRestart",&irestart);
-  }
+  if(restart) p.cmd("setRestart",1);
 
   if(Communicator::initialized()) {
     if(multi) {
@@ -522,11 +518,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  p.cmd("setMDLengthUnits",&units.getLength());
-  p.cmd("setMDChargeUnits",&units.getCharge());
-  p.cmd("setMDMassUnits",&units.getMass());
+  p.cmd("setMDLengthUnits",units.getLength());
+  p.cmd("setMDChargeUnits",units.getCharge());
+  p.cmd("setMDMassUnits",units.getMass());
   p.cmd("setMDEngine","driver");
-  p.cmd("setTimestep",&timestep);
+  p.cmd("setTimestep",timestep);
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
@@ -570,7 +566,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         xd=xdrfile_open(trajectoryFile.c_str(),"r");
         if(!xd) {
           std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
-          fprintf(stderr,"%s\n",msg.c_str());
+          std::fprintf(stderr,"%s\n",msg.c_str());
           return 1;
         }
         if(trajectory_fmt=="xdr-xtc") read_xtc_natoms(&trajectoryFile[0],&natoms);
@@ -580,7 +576,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         fp=fopen(trajectoryFile.c_str(),"r");
         if(!fp) {
           std::string msg="ERROR: Error opening trajectory file "+trajectoryFile;
-          fprintf(stderr,"%s\n",msg.c_str());
+          std::fprintf(stderr,"%s\n",msg.c_str());
           return 1;
         }
       }
@@ -629,7 +625,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if(trajectory_fmt=="dlp4") {
     if(!Tools::getline(fp,line)) error("error reading title");
     if(!Tools::getline(fp,line)) error("error reading atoms");
-    sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
+    std::sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
 
   }
   bool lstep=true;
@@ -651,16 +647,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(!noatoms&&!parseOnly) {
       if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")) {
         if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
-        sscanf(line.c_str(),"%100d",&natoms);
+        std::sscanf(line.c_str(),"%100d",&natoms);
       }
       if(use_molfile==false && trajectory_fmt=="dlp4") {
         char xa[9];
         int xb,xc,xd;
         double t;
-        sscanf(line.c_str(),"%8s %ld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
-        timestep = real(t);
+        std::sscanf(line.c_str(),"%8s %ld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
         if (lstep) {
-          p.cmd("setTimestep",&timestep);
+          p.cmd("setTimestep",real(t));
           lstep = false;
         }
       }
@@ -695,10 +690,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     if( checknatoms<0 ) {
       if(kt>=0) {
-        p.cmd("setKbT",&kt);
+        p.cmd("setKbT",kt);
       }
       checknatoms=natoms;
-      p.cmd("setNatoms",&natoms);
+      p.cmd("setNatoms",natoms);
       p.cmd("init");
       if(parseOnly) break;
     }
@@ -729,12 +724,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         pd_nlocal=loc[intracomm.Get_rank()];
         pd_start=start[intracomm.Get_rank()];
         if(intracomm.Get_rank()==0) {
-          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
-          fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) fprintf(out,"%d ",loc[i]); printf("\n");
-          fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) fprintf(out,"%d ",start[i]); printf("\n");
+          std::fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+          std::fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) std::fprintf(out,"%d ",loc[i]); printf("\n");
+          std::fprintf(out,"DRIVER: "); for(int i=0; i<npe; i++) std::fprintf(out,"%d ",start[i]); printf("\n");
         }
-        p.cmd("setAtomsNlocal",&pd_nlocal);
-        p.cmd("setAtomsContiguous",&pd_start);
+        p.cmd("setAtomsNlocal",pd_nlocal);
+        p.cmd("setAtomsContiguous",pd_start);
       } else if(debug_dd) {
         int npe=intracomm.Get_size();
         int rank=intracomm.Get_rank();
@@ -758,10 +753,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
         }
         if(intracomm.Get_rank()==0) {
-          fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
+          std::fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
-        p.cmd("setAtomsNlocal",&dd_nlocal);
-        p.cmd("setAtomsGatindex",&dd_gatindex[0]);
+        p.cmd("setAtomsNlocal",dd_nlocal);
+        p.cmd("setAtomsGatindex",&dd_gatindex[0],dd_nlocal);
       }
     }
 
@@ -773,10 +768,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(ts_in.A>0.0) { // this is negative if molfile does not provide box
             // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
             real cosBC=cos(real(ts_in.alpha)*pi/180.);
-            //double sinBC=sin(ts_in.alpha*pi/180.);
-            real cosAC=cos(real(ts_in.beta)*pi/180.);
-            real cosAB=cos(real(ts_in.gamma)*pi/180.);
-            real sinAB=sin(real(ts_in.gamma)*pi/180.);
+            //double sinBC=std::sin(ts_in.alpha*pi/180.);
+            real cosAC=std::cos(real(ts_in.beta)*pi/180.);
+            real cosAB=std::cos(real(ts_in.gamma)*pi/180.);
+            real sinAB=std::sin(real(ts_in.gamma)*pi/180.);
             real Ax=real(ts_in.A);
             real Bx=real(ts_in.B)*cosAB;
             real By=real(ts_in.B)*sinAB;
@@ -827,12 +822,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> words;
             words=Tools::getWords(line);
             if(words.size()==3) {
-              sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
+              std::sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
             } else if(words.size()==9) {
-              sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
-                     &celld[0], &celld[1], &celld[2],
-                     &celld[3], &celld[4], &celld[5],
-                     &celld[6], &celld[7], &celld[8]);
+              std::sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
+                          &celld[0], &celld[1], &celld[2],
+                          &celld[3], &celld[4], &celld[5],
+                          &celld[6], &celld[7], &celld[8]);
             } else error("needed box in second line of xyz file");
           } else {			// from command line
             celld=pbc_cli_box;
@@ -843,11 +838,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           std::vector<double> celld(9,0.0);
           if(pbc_cli_given==false) {
             if(!Tools::getline(fp,line)) error("error reading vector a of cell");
-            sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[1],&celld[2]);
+            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[1],&celld[2]);
             if(!Tools::getline(fp,line)) error("error reading vector b of cell");
-            sscanf(line.c_str(),"%lf %lf %lf",&celld[3],&celld[4],&celld[5]);
+            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[3],&celld[4],&celld[5]);
             if(!Tools::getline(fp,line)) error("error reading vector c of cell");
-            sscanf(line.c_str(),"%lf %lf %lf",&celld[6],&celld[7],&celld[8]);
+            std::sscanf(line.c_str(),"%lf %lf %lf",&celld[6],&celld[7],&celld[8]);
           } else {
             celld=pbc_cli_box;
           }
@@ -870,12 +865,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
               // calculate the distance between dots (as in gromacs gmxlib/confio.c, routine get_w_conf )
               //
               const char      *p1, *p2, *p3;
-              p1 = strchr(line.c_str(), '.');
+              p1 = std::strchr(line.c_str(), '.');
               if (p1 == NULL) error("seems there are no coordinates in the gro file");
-              p2 = strchr(&p1[1], '.');
+              p2 = std::strchr(&p1[1], '.');
               if (p2 == NULL) error("seems there is only one coordinates in the gro file");
               ddist = p2 - p1;
-              p3 = strchr(&p2[1], '.');
+              p3 = std::strchr(&p2[1], '.');
               if (p3 == NULL)error("seems there are only two coordinates in the gro file");
               if (p3 - p2 != ddist)error("not uniform spacing in fields in the gro file");
             }
@@ -886,11 +881,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             char dummy[9];
             int idummy;
             double m,c;
-            sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
+            std::sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
             masses[i]=real(m);
             charges[i]=real(c);
             if(!Tools::getline(fp,line)) error("error reading coordinates");
-            sscanf(line.c_str(),"%lf %lf %lf",&cc[0],&cc[1],&cc[2]);
+            std::sscanf(line.c_str(),"%lf %lf %lf",&cc[0],&cc[1],&cc[2]);
             cc[0]*=0.1;
             cc[1]*=0.1;
             cc[2]*=0.1;
@@ -924,7 +919,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
       }
 
-      p.cmd("setStepLong",&step);
+      p.cmd("setStepLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
 
       if(debug_dd) {
@@ -934,24 +929,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           dd_coordinates[3*i+1]=coordinates[3*kk+1];
           dd_coordinates[3*i+2]=coordinates[3*kk+2];
         }
-        p.cmd("setForces",&dd_forces[0]);
-        p.cmd("setPositions",&dd_coordinates[0]);
-        p.cmd("setMasses",&dd_masses[0]);
-        p.cmd("setCharges",&dd_charges[0]);
+        p.cmd("setForces",&dd_forces[0],3*dd_nlocal);
+        p.cmd("setPositions",&dd_coordinates[0],3*dd_nlocal);
+        p.cmd("setMasses",&dd_masses[0],dd_nlocal);
+        p.cmd("setCharges",&dd_charges[0],dd_nlocal);
       } else {
 // this is required to avoid troubles when the last domain
 // contains zero atoms
 // Basically, for empty domains we pass null pointers
 #define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
-        p.cmd("setForces",fix_pd(forces[3*pd_start]));
-        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
-        p.cmd("setMasses",fix_pd(masses[pd_start]));
-        p.cmd("setCharges",fix_pd(charges[pd_start]));
+        p.cmd("setForces",fix_pd(forces[3*pd_start]),3*pd_nlocal);
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]),3*pd_nlocal);
+        p.cmd("setMasses",fix_pd(masses[pd_start]),pd_nlocal);
+        p.cmd("setCharges",fix_pd(charges[pd_start]),pd_nlocal);
       }
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&virial[0]);
+      p.cmd("setBox",cell.data(),9);
+      p.cmd("setVirial",virial.data(),9);
     } else {
-      p.cmd("setStepLong",&step);
+      p.cmd("setStepLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
     }
     p.cmd("calc");
@@ -984,31 +979,31 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int partner=r+(2*((r+step/grex_stride)%2))-1;
         if(partner<0)partner=0;
         if(partner>=n) partner=n-1;
-        p.cmd("GREX setPartner",&partner);
+        p.cmd("GREX setPartner",partner);
         p.cmd("GREX calculate");
         p.cmd("GREX shareAllDeltaBias");
         for(int i=0; i<n; i++) {
           std::string s; Tools::convert(i,s);
-          real a=std::numeric_limits<real>::quiet_NaN(); s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
-          if(grex_log) fprintf(grex_log," %f",a);
+          real a=std::numeric_limits<real>::quiet_NaN(); s="GREX getDeltaBias "+s; p.cmd(s,&a);
+          if(grex_log) std::fprintf(grex_log," %f",a);
         }
-        if(grex_log) fprintf(grex_log,"\n");
+        if(grex_log) std::fprintf(grex_log,"\n");
       }
     }
 
 
     if(fp_forces) {
-      fprintf(fp_forces,"%d\n",natoms);
+      std::fprintf(fp_forces,"%d\n",natoms);
       std::string fmtv=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
       std::string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
       if(dumpfullvirial) {
-        fprintf(fp_forces,fmtv.c_str(),virial[0],virial[1],virial[2],virial[3],virial[4],virial[5],virial[6],virial[7],virial[8]);
+        std::fprintf(fp_forces,fmtv.c_str(),virial[0],virial[1],virial[2],virial[3],virial[4],virial[5],virial[6],virial[7],virial[8]);
       } else {
-        fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+        std::fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
       }
       fmt="X "+fmt;
       for(int i=0; i<natoms; i++)
-        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
+        std::fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
     }
     if(debugforces.length()>0) {
       // Now call the routine to work out the derivatives numerically
@@ -1069,13 +1064,13 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
   for(int i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j) {
       pos[i][j]=pos[i][j]+delta;
-      p.cmd("setStepLong",&step);
-      p.cmd("setPositions",&pos[0][0]);
-      p.cmd("setForces",&fake_forces[0]);
-      p.cmd("setMasses",&masses[0]);
-      p.cmd("setCharges",&charges[0]);
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&fake_virial[0]);
+      p.cmd("setStepLong",step);
+      p.cmd("setPositions",&pos[0][0],3*natoms);
+      p.cmd("setForces",&fake_forces[0],3*natoms);
+      p.cmd("setMasses",&masses[0],natoms);
+      p.cmd("setCharges",&charges[0],natoms);
+      p.cmd("setBox",&cell[0],9);
+      p.cmd("setVirial",&fake_virial[0],9);
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);
@@ -1093,13 +1088,13 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
       for(int j=0; j<natoms; ++j) pos[j]=pbc.realToScaled( pos[j] );
       cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box);
       for(int j=0; j<natoms; j++) pos[j]=pbc.scaledToReal( pos[j] );
-      p.cmd("setStepLong",&step);
-      p.cmd("setPositions",&pos[0][0]);
-      p.cmd("setForces",&fake_forces[0]);
-      p.cmd("setMasses",&masses[0]);
-      p.cmd("setCharges",&charges[0]);
-      p.cmd("setBox",&cell[0]);
-      p.cmd("setVirial",&fake_virial[0]);
+      p.cmd("setStepLong",step);
+      p.cmd("setPositions",&pos[0][0],3*natoms);
+      p.cmd("setForces",&fake_forces[0],3*natoms);
+      p.cmd("setMasses",&masses[0],natoms);
+      p.cmd("setCharges",&charges[0],natoms);
+      p.cmd("setBox",&cell[0],9);
+      p.cmd("setVirial",&fake_virial[0],9);
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);

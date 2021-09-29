@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,26 +79,27 @@ public:
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it
-  static bool convert(const std::string & str,double & t);
+  static bool convertNoexcept(const std::string & str,double & t);
 /// Convert a string to a long double, reading it
-  static bool convert(const std::string & str,long double & t);
+  static bool convertNoexcept(const std::string & str,long double & t);
 /// Convert a string to a float, reading it
-  static bool convert(const std::string & str,float & t);
+  static bool convertNoexcept(const std::string & str,float & t);
 /// Convert a string to a int, reading it
-  static bool convert(const std::string & str,int & t);
+  static bool convertNoexcept(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
-  static bool convert(const std::string & str,long int & t);
+  static bool convertNoexcept(const std::string & str,long int & t);
 /// Convert a string to an unsigned int, reading it
-  static bool convert(const std::string & str,unsigned & t);
+  static bool convertNoexcept(const std::string & str,unsigned & t);
 /// Convert a string to a long unsigned int, reading it
-  static bool convert(const std::string & str,long unsigned & t);
+  static bool convertNoexcept(const std::string & str,long unsigned & t);
 /// Convert a string to a atom number, reading it
-  static bool convert(const std::string & str,AtomNumber & t);
+  static bool convertNoexcept(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
-  static bool convert(const std::string & str,std::string & t);
+  static bool convertNoexcept(const std::string & str,std::string & t);
 /// Convert anything into a string
   template<typename T>
-  static void convert(T i,std::string & str);
+  static bool convertNoexcept(T i,std::string & str);
+/// Convert anything into anything, throwing an exception in case there is an error
 /// Remove trailing blanks
   static void trim(std::string & s);
 /// Remove trailing comments
@@ -113,7 +114,11 @@ public:
 /// will set s="xx"
   static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to val
-  template <class T>
+  template <typename T,typename U>
+  static void convert(const T & t,U & u) {
+    plumed_assert(convertNoexcept(t,u)) <<"Error converting  "<<t;
+  }
+  template <typename T>
   static bool parse(std::vector<std::string>&line,const std::string&key,T&val,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
@@ -221,7 +226,7 @@ template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) return false;
-  if(s.length()>0 && !convert(s,val))return false;
+  if(s.length()>0 && !convertNoexcept(s,val))return false;
   return true;
 }
 
@@ -241,7 +246,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
-    if(!convert(s,v))return false;
+    if(!convertNoexcept(s,v))return false;
     val.push_back(v);
   }
   return true;
@@ -286,10 +291,11 @@ double Tools::pbc(double x) {
 }
 
 template<typename T>
-void Tools::convert(T i,std::string & str) {
+bool Tools::convertNoexcept(T i,std::string & str) {
   std::ostringstream ostr;
   ostr<<i;
   str=ostr.str();
+  return true;
 }
 
 inline

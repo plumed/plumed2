@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,8 +51,7 @@ GREX::~GREX() {
 #define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
-void GREX::cmd(const std::string&key,void*val) {
-
+void GREX::cmd(const std::string&key,const TypesafePtr & val) {
 // Enumerate all possible commands:
   enum {
 #include "GREXEnum.inc"
@@ -74,25 +73,25 @@ void GREX::cmd(const std::string&key,void*val) {
     switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);
-      *static_cast<int*>(val)=initialized;
+      *val.get<int*>()=initialized;
       break;
     case cmd_setMPIIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_comm(val);
+      intracomm.Set_comm(val.get<const void*>());
       break;
     case cmd_setMPIIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_comm(val);
-      plumedMain.multi_sim_comm.Set_comm(val);
+      intercomm.Set_comm(val.get<const void*>());
+      plumedMain.multi_sim_comm.Set_comm(val.get<const void*>());
       break;
     case cmd_setMPIFIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_fcomm(val);
+      intracomm.Set_fcomm(val.get<const void*>());
       break;
     case cmd_setMPIFIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_fcomm(val);
-      plumedMain.multi_sim_comm.Set_fcomm(val);
+      intercomm.Set_fcomm(val.get<const void*>());
+      plumedMain.multi_sim_comm.Set_fcomm(val.get<const void*>());
       break;
     case cmd_init:
       CHECK_NOTINIT(initialized,key);
@@ -114,7 +113,7 @@ void GREX::cmd(const std::string&key,void*val) {
       break;
     case cmd_setPartner:
       CHECK_INIT(initialized,key);
-      partner=*static_cast<int*>(val);
+      partner=val.get<int>();
       break;
     case cmd_savePositions:
       CHECK_INIT(initialized,key);

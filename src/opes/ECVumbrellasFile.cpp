@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
@@ -21,7 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_UMBRELLAS_FILE
+//+PLUMEDOC OPES_EXPANSION_CV ECV_UMBRELLAS_FILE
 /*
 Target a multiumbrella ensemble, by combining systems each with a parabolic bias potential at a different location.
 
@@ -34,9 +36,8 @@ Notice that \f$\mathbf{\sigma}_i\f$ is diagonal, thus only one SIGMA per CV has 
 You can choose the umbrellas manually, or place them on a grid, or along a path, similar to \ref PATH.
 They must cover all the CV space that one wishes to sample.
 
-You can also use as input file a STATE file from an earlier \ref OPES_METAD_EXPLORE (or \ref OPES_METAD) run.
-As experimental feature, you can set the flag READ_HEIGHT to use the estimate from \ref OPES_METAD_EXPLORE as initial guess for the \f$\Delta F(\mathbf{s}_i)\f$.
 The first column of the umbrellas file is always ignored and must be called "time".
+You can also use as input file a STATE file from an earlier \ref OPES_METAD run (or an \ref OPES_MEAD_EXPLORE run, if you combine it with other ECVs).
 
 Similarly to \ref ECV_UMBRELLAS_LINE, you should set the flag ADD_P0 if you think your umbrellas might not properly cover all the CV region relevant for the unbiased distribution.
 You can also use BARRIER to set the maximum barrier height to be explored, and avoid huge biases at the beginning of your simulation.
@@ -70,10 +71,9 @@ class ECVumbrellasFile :
   public ExpansionCVs
 {
 private:
-  unsigned P0_contribution_;
   double barrier_;
+  unsigned P0_contribution_;
 
-  std::vector<double> deltaFguess_;
   std::vector< std::vector<double> > centers_;
   std::vector< std::vector<double> > sigmas_;
 
@@ -99,9 +99,8 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys)
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
-  keys.addFlag("READ_HEIGHT",false,"read from FILE also the height of the umbrellas and use it as initial guess \\f$\\Delta F_i=-\\frac{1}{\\beta}\\log(h_i)\\f$");
-  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
+  keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
@@ -126,8 +125,6 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
   parse("BARRIER",barrier_);
 
 //set umbrellas
-  bool read_height;
-  parseFlag("READ_HEIGHT",read_height);
   std::string umbrellasFileName;
   parse("FILE",umbrellasFileName);
   IFile ifile;
@@ -137,26 +134,20 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf("  reading from FILE '%s'\n",umbrellasFileName.c_str());
     ifile.open(umbrellasFileName);
     ifile.allowIgnoredFields();
-    double time;//first field is ignored
+    double time; //first field is ignored
     while(ifile.scanField("time",time))
     {
       for(unsigned j=0; j<ncv; j++)
       {
         double centers_j;
         ifile.scanField(getPntrToArgument(j)->getName(),centers_j);
-        centers_[j].push_back(centers_j);//this might be slow
+        centers_[j].push_back(centers_j); //this might be slow
       }
       for(unsigned j=0; j<ncv; j++)
       {
         double sigmas_j;
         ifile.scanField("sigma_"+getPntrToArgument(j)->getName(),sigmas_j);
         sigmas_[j].push_back(sigmas_j);
-      }
-      if(read_height)
-      {
-        double height;
-        ifile.scanField("height",height);
-        deltaFguess_.push_back(-kbt_*std::log(height));
       }
       ifile.scanField();
     }
@@ -173,8 +164,6 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     plumed_massert(centers_[j].size()==sizeUmbrellas,"mismatch in the number of centers read from file");
     plumed_massert(sigmas_[j].size()==sizeUmbrellas,"mismatch in the number of sigmas read from file");
   }
-  if(read_height)
-    plumed_massert(deltaFguess_.size()==sizeUmbrellas,"mismatch in the number of heights read from file");
 
 //set ECVs stuff
   totNumECVs_=sizeUmbrellas+P0_contribution_;
@@ -187,8 +176,6 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
-  if(read_height)
-    log.printf(" -- READ_HEIGHT: the height of the umbrellas is used to estimate an initial guess for the DeltaFs\n");
 }
 
 void ECVumbrellasFile::calculateECVs(const double * cv)
@@ -251,30 +238,21 @@ void ECVumbrellasFile::initECVs()
 
 void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
+  //this non-linear exansion never uses automatic initialization
   initECVs();
-  if(deltaFguess_.size()>0)
-  {
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-        ECVs_[j][k]=std::min(barrier_,deltaFguess_[k-P0_contribution_])/kbt_;
-    deltaFguess_.clear();
-  }
-  else
-  {
-    calculateECVs(&all_obs_cvs[index_j]);//use only first obs point
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-        ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
-  }
+  calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
+  for(unsigned j=0; j<getNumberOfArguments(); j++)
+    for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+      ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
 }
 
 void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=0;
   for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_", pos+1); //checking only lambdas[0] is hopefully enough
+    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
-  pos=lambdas[0].find("_", pos+1);
+  pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());
 
   std::vector<std::string> myLambdas=getLambdas();

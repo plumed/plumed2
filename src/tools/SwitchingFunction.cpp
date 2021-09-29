@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -469,8 +469,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
         dfunc=0.0;
       } else if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
-        double tmpcos = cos ( rdist * PI );
-        double tmpsin = sin ( rdist * PI );
+        double tmpcos = std::cos ( rdist * PI );
+        double tmpsin = std::sin ( rdist * PI );
         result = 0.5 * (tmpcos + 1.0);
         dfunc=-0.5 * PI * tmpsin * invr0;
       } else {

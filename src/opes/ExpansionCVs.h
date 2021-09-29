@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_opes_ExpansionCVs_h
 #define __PLUMED_opes_ExpansionCVs_h
@@ -49,11 +51,11 @@ public:
   void apply() override;
   void calculate() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives() override {return 1;};
+  inline unsigned getNumberOfDerivatives() override {return 1;};
 
-  double getKbT() const {return kbt_;};
-  unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
-  virtual std::vector< std::vector<unsigned> > getIndex_k() const;//might need to override this
+  inline double getKbT() const {return kbt_;};
+  inline unsigned getTotNumECVs() const {plumed_massert(isReady_,"cannot ask for totNumECVs before ECV isReady"); return totNumECVs_;};
+  virtual std::vector< std::vector<unsigned> > getIndex_k() const; //might need to override this
 
   virtual void calculateECVs(const double *) = 0;
   virtual const double * getPntrToECVs(unsigned) = 0;

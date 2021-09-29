@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_core_ExchangePatterns_h
 
 #include "tools/ForwardDecl.h"
+#include "tools/TypesafePtr.h"
 
 namespace PLMD {
 class Random;
@@ -39,7 +40,7 @@ public:
   void setNofR(const int);
   void setSeed(const int);
   void setFlag(const int);
-  void getList(int *ind);
+  void getList(const TypesafePtr & ind);
   void getFlag(int&);
 };
 }

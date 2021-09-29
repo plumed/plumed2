@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -153,7 +153,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   parse("FILE",fileName);
   if(fileName.length()==0) error("name out output file was not specified\n");
   output.link(*this);
-  output.open(fileName.c_str());
+  output.open(fileName);
 
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);

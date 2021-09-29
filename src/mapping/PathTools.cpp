@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -142,7 +142,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string ofmt; parse("--arg-fmt",ofmt);
   std::string ofilename; parse("--out",ofilename);
   if( ifilename.length()>0 ) {
-    fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
+    std::fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
     bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
@@ -234,9 +234,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   unsigned nbefore, nbetween, nafter;
   parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
   nbetween++;
-  fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
-  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
-          "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
+  std::fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
+  std::fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
+               "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
 // Create a vector of arguments to use for calculating displacements
   Pbc fpbc;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -387,6 +387,7 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ) {
       else error("found more than one " + mynam + " object in action");
     }
   }
+  plumed_assert(target>=0);
   return functions[target].get();
 }
 

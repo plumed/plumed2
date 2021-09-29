@@ -1,18 +1,20 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2020 of Michele Invernizzi.
+   Copyright (c) 2020-2021 of Michele Invernizzi.
 
-The opes module is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+   This file is part of the OPES plumed module.
 
-The opes module is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+   The OPES plumed module is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-You should have received a copy of the GNU Lesser General Public License
-along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   The OPES plumed module is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
@@ -22,7 +24,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace opes {
 
-//+PLUMEDOC EXPANSION_CV ECV_MULTITHERMAL_MULTIBARIC
+//+PLUMEDOC OPES_EXPANSION_CV ECV_MULTITHERMAL_MULTIBARIC
 /*
 Expand a simulation to sample multiple temperatures and pressures.
 
@@ -148,7 +150,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   parseVector("SET_ALL_TEMPS",temps);
 //parse pressures
   parse("PRESSURE",pres0_);
-  double min_pres=std::numeric_limits<double>::quiet_NaN();//-1 might be a meaningful pressure
+  double min_pres=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
   double max_pres=std::numeric_limits<double>::quiet_NaN();
   parse("MIN_PRESSURE",min_pres);
   parse("MAX_PRESSURE",max_pres);
@@ -191,7 +193,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     }
     plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
     beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp);//ordered temp, inverted beta
+    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
     beta_[1]=1./(Kb*max_temp);
     if(min_temp==max_temp && steps_temp==0)
       steps_temp=1;
@@ -261,7 +263,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     coeff_=(high_pres-low_pres)/(high_temp-low_temp)/Kb;
     plumed_massert(coeff_!=0,"this should not be possible");
     const double small_value=(high_temp-low_pres)/1e4;
-    low_pres_=low_pres-small_value;//make sure max_pres is included
+    low_pres_=low_pres-small_value; //make sure max_pres is included
     plumed_massert(max_pres>=coeff_*(1./beta_[beta_.size()-1]-low_temp_Kb_)+low_pres_,"please chose a high_pres slightly smaller than MAX_PRESSURE in "+cc_usage);
   }
   else
@@ -296,7 +298,7 @@ void ECVmultiThermalBaric::calculateECVs(const double * ene_vol)
     {
       if(coeff_==0 || pres_[kk]>=line_k)
       {
-        const double diff_i=(beta_[k]*pres_[kk]-beta0_*pres0_);//this is not great, each beta-pres combination must be stored separately
+        const double diff_i=(beta_[k]*pres_[kk]-beta0_*pres0_); //this is not great, each beta-pres combination must be stored separately
         ECVs_pres_[i]=diff_i*ene_vol[1];
         derECVs_pres_[i]=diff_i;
         i++;
@@ -371,11 +373,11 @@ void ECVmultiThermalBaric::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"this should not happen");
-  totNumECVs_=getLambdas().size();//slow, but runs only once
+  totNumECVs_=getLambdas().size(); //slow, but runs only once
   plumed_massert(beta_.size()*pres_.size()>=totNumECVs_,"this should not happen, is something wrong with CUT_CORNER ?");
   ECVs_beta_.resize(beta_.size());
   derECVs_beta_.resize(beta_.size());
-  ECVs_pres_.resize(totNumECVs_);//pres is mixed with temp (beta*p*V), thus we need to store all possible
+  ECVs_pres_.resize(totNumECVs_); //pres is mixed with temp (beta*p*V), thus we need to store all possible
   derECVs_pres_.resize(totNumECVs_);
   isReady_=true;
   log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
@@ -386,21 +388,21 @@ void ECVmultiThermalBaric::initECVs()
 
 void ECVmultiThermalBaric::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
-  if(todoAutomatic_beta_)//estimate the steps in beta from observations
+  if(todoAutomatic_beta_) //estimate the steps in beta from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_ene(all_obs_cvs.size()/ncv);//copy only useful observations
+    std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_ene.size(); t++)
-      obs_ene[t]=all_obs_cvs[t*ncv+index_j]+pres0_*all_obs_cvs[t*ncv+index_j+1];//U=E+pV
+      obs_ene[t]=all_obs_cvs[t*ncv+index_j]+pres0_*all_obs_cvs[t*ncv+index_j+1]; //U=E+pV
     const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");
     log.printf("    (spacing is on beta, not on temperature)\n");
     setSteps(beta_,steps_temp,"TEMP");
     todoAutomatic_beta_=false;
   }
-  if(todoAutomatic_pres_)//estimate the steps in pres from observations
+  if(todoAutomatic_pres_) //estimate the steps in pres from observations
   {
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j+1<ncv,"initECVs_observ parameters are inconsistent");
-    std::vector<double> obs_vol(all_obs_cvs.size()/ncv);//copy only useful observations
+    std::vector<double> obs_vol(all_obs_cvs.size()/ncv); //copy only useful observations
     for(unsigned t=0; t<obs_vol.size(); t++)
       obs_vol[t]=all_obs_cvs[t*ncv+index_j+1];
     const unsigned steps_pres=estimateSteps(beta0_*(pres_[0]-pres0_),beta0_*(pres_[1]-pres0_),obs_vol,"PRESSURE");
@@ -424,7 +426,7 @@ void ECVmultiThermalBaric::initECVs_restart(const std::vector<std::string>& lamb
   {
     unsigned steps_pres=1;
     std::string pres_min=getPres(0);
-    for(unsigned i=1; i<lambdas.size(); i++)//pres is second, thus increas by 1
+    for(unsigned i=1; i<lambdas.size(); i++) //pres is second, thus increas by 1
     {
       if(getPres(i)==pres_min)
         break;

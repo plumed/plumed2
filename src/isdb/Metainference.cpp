@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -258,9 +258,9 @@ class Metainference : public bias::Bias
                      const double scale, const double offset);
   double getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                       const double scale, const double offset);
-  void moveTilde(const std::vector<double> &mean_, double old_energy);
-  void moveScaleOffset(const std::vector<double> &mean_, double old_energy);
-  void moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow);
+  void moveTilde(const std::vector<double> &mean_, double &old_energy);
+  void moveScaleOffset(const std::vector<double> &mean_, double &old_energy);
+  void moveSigmas(const std::vector<double> &mean_, double &old_energy, const unsigned i, const std::vector<unsigned> &indices, bool &breaknow);
   double doMonteCarlo(const std::vector<double> &mean);
   void getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   void getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
@@ -1044,7 +1044,7 @@ double Metainference::getEnergyGJE(const std::vector<double> &mean, const std::v
   return kbt_ * ene;
 }
 
-void Metainference::moveTilde(const std::vector<double> &mean_, double old_energy)
+void Metainference::moveTilde(const std::vector<double> &mean_, double &old_energy)
 {
   std::vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
@@ -1076,7 +1076,7 @@ void Metainference::moveTilde(const std::vector<double> &mean_, double old_energ
   }
 }
 
-void Metainference::moveScaleOffset(const std::vector<double> &mean_, double old_energy)
+void Metainference::moveScaleOffset(const std::vector<double> &mean_, double &old_energy)
 {
   double new_scale = scale_;
 
@@ -1165,7 +1165,7 @@ void Metainference::moveScaleOffset(const std::vector<double> &mean_, double old
   }
 }
 
-void Metainference::moveSigmas(const std::vector<double> &mean_, double old_energy, const unsigned i, const std::vector<unsigned> &indices, bool breaknow)
+void Metainference::moveSigmas(const std::vector<double> &mean_, double &old_energy, const unsigned i, const std::vector<unsigned> &indices, bool &breaknow)
 {
   std::vector<double> new_sigma(sigma_.size());
   new_sigma = sigma_;
@@ -1324,6 +1324,7 @@ double Metainference::doMonteCarlo(const std::vector<double> &mean_)
   }
   comm.Sum(old_energy);
 
+  // this is the energy with current coordinates and parameters
   return old_energy;
 }
 

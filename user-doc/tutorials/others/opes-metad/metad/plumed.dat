@@ -1,0 +1,38 @@
+# vim:ft=plumed
+UNITS NATURAL
+
+# setup the potential
+p: DISTANCE ATOMS=1,2 COMPONENTS
+ene: CUSTOM PERIODIC=NO ARG=p.x,p.y ...
+ FUNC=1.34549*x^4+1.90211*x^3*y+3.92705*x^2*y^2-6.44246*x^2-1.90211*x*y^3+5.58721*x*y+1.33481*x+1.34549*y^4-5.55754*y^2+0.904586*y+19 
+...
+potential: BIASVALUE ARG=ene
+
+# setup the biasing
+metad: METAD ...
+  ARG=p.x
+  TEMP=1
+  PACE=500
+  HEIGHT=1
+  SIGMA=0.185815
+  BIASFACTOR=10
+  GRID_MIN=-3.5
+  GRID_MAX=3.5
+  GRID_BIN=200
+  CALC_RCT
+  GRID_WFILE=BIAS
+  GRID_WSTRIDE=500*1000
+  STORE_GRIDS
+...
+PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=p.x,p.y,metad.rbias,metad.rct
+
+ENDPLUMED
+
+Run simulation (should last a few minutes):
+ plumed pesmd ../input_md.dat > log
+
+Reweighting:
+ ../FES_from_Reweighting.py --kt 1 -s 0.03 --blocks 5 --deltaFat 0
+
+Runnig FES from bias:
+ plumed sum_hills --hills HILLS --mintozero --stride 1000 

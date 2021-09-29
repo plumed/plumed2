@@ -630,7 +630,6 @@ use_loader_path
 use_absolute_soname
 program_can_run_mpi
 program_can_run
-xxd
 make_pdfdoc
 dot
 doxygen
@@ -709,6 +708,7 @@ enable_doc
 enable_pdfdoc
 enable_debug
 enable_gcov
+enable_cxx
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
@@ -1390,6 +1390,9 @@ Optional Features:
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-gcov           enable gcov to estimate code coverage, default: no
+  --enable-cxx            11 or 14. To link libraries with headers that need
+                          this C++ level. Use --enable-cxx=none to remove
+                          -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
@@ -1414,7 +1417,7 @@ Optional Features:
                           yes
   --enable-static-archive enable try to build libplumed.a for static linking,
                           default: yes
-  --enable-asmjit         enable enable embedded asmjit, default: no
+  --enable-asmjit         enable enable embedded asmjit, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -2605,6 +2608,25 @@ else
 fi
 
 
+# Check whether --enable-cxx was given.
+if test "${enable_cxx+set}" = set; then :
+  enableval=$enable_cxx;
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) as_fn_error $? "cxx level not supported" "$LINENO" 5
+    esac
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Selected C++ level: $cxx_level" >&5
+$as_echo "$as_me: Selected C++ level: $cxx_level" >&6;}
+
+else
+
+    cxx_level="11"
+
+
+fi
+
 
 basic_warnings=
 # Check whether --enable-basic-warnings was given.
@@ -2849,7 +2871,7 @@ if test "${enable_asmjit+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) asmjit=true ;;
              (no)  asmjit=false ;;
   esac
@@ -4615,11 +4637,15 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test -n "$cxx_level"
+then
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++11"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6916,6 +6942,46 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
   fi
 
 
+
+if test $asmjit == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether architecture is X86/X64" >&5
+$as_echo_n "checking whether architecture is X86/X64... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+      defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+      defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+this_is_not_x86_x64
+#endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; };
+  x86_x64=true
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; } ;
+  x86_x64=false
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+if test $asmjit == true && test $x86_x64 == false ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: asmjit does not support this architecture, it will be disabled" >&5
+$as_echo "$as_me: WARNING: asmjit does not support this architecture, it will be disabled" >&2;}
+  asmjit=false
+fi
 
 if test $asmjit == true ; then
   found=ko
@@ -9773,49 +9839,6 @@ $as_echo "$as_me: A PDF version of the manual will not be generated" >&6;}
   make_pdfdoc=no
 fi
 
-### Look for xxd
-# Extract the first word of "xxd", so it can be a program name with args.
-set dummy xxd; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_xxd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$xxd"; then
-  ac_cv_prog_xxd="$xxd" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_xxd="found"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-xxd=$ac_cv_prog_xxd
-if test -n "$xxd"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xxd" >&5
-$as_echo "$xxd" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-if test "$xxd" != found
-then
-  as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
-fi
-
 
 program_can_run=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program can be run on this machine" >&5
@@ -9959,7 +9982,7 @@ do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with $test_LD_RO" >&5
 $as_echo_n "checking whether C++ objects can be grouped with $test_LD_RO... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -10003,7 +10026,7 @@ do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static libraries can be created with $test_AR_CR" >&5
 $as_echo_n "checking whether static libraries can be created with $test_AR_CR... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);

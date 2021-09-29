@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ class GREX:
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
-  void cmd(const std::string&key,void*val=NULL) override;
+  void cmd(const std::string&key,const TypesafePtr & val=nullptr) override;
   void calculate();
   void savePositions();
 };

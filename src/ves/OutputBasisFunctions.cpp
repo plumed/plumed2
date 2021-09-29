@@ -179,8 +179,8 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
   std::vector<std::string> grid_min(1); grid_min[0]=bf_pntrs[0]->intervalMinStr();
   std::vector<std::string> grid_max(1); grid_max[0]=bf_pntrs[0]->intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins;
-  std::vector<Value*> arguments(1);
-  arguments[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> arguments(1);
+  arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(bf_pntrs[0]->arePeriodic() && !ignore_periodicity) {
     arguments[0]->setDomain(bf_pntrs[0]->intervalMinStr(),bf_pntrs[0]->intervalMaxStr());
   }
@@ -197,13 +197,13 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
     std::string is; Tools::convert(i,is);
     //
     if(targetdist_pntrs[i]!=NULL) {
-      targetdist_pntrs[i]->setupGrids(arguments,grid_min,grid_max,grid_bins);
+      targetdist_pntrs[i]->setupGrids(Tools::unique2raw(arguments),grid_min,grid_max,grid_bins);
       plumed_massert(targetdist_pntrs[i]->getDimension()==1,"the target distribution must be one dimensional");
       targetdist_pntrs[i]->updateTargetDist();
     }
     //
     std::vector<double> bf_integrals = bf_pntrs[0]->getTargetDistributionIntegrals(targetdist_pntrs[i]);
-    CoeffsVector targetdist_averages = CoeffsVector("aver.targetdist-"+is,arguments,bf_pntrs,comm,false);
+    CoeffsVector targetdist_averages = CoeffsVector("aver.targetdist-"+is,Tools::unique2raw(arguments),bf_pntrs,comm,false);
     targetdist_averages.setValues(bf_integrals);
     if(fmt_targetdist_aver.size()>0) {targetdist_averages.setOutputFmt(fmt_targetdist_aver);}
     targetdist_averages.writeToFile(ofile_targetdist_aver,true);
@@ -219,8 +219,6 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
     }
   }
   ofile_targetdist_aver.close();
-  delete arguments[0]; arguments.clear();
-
 
 
 }

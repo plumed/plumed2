@@ -28,8 +28,8 @@
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
-from cpython cimport array
 import array
+import ctypes
 import re
 import gzip
 import math
@@ -63,7 +63,7 @@ cdef class Plumed:
             if not self.c_plumed.valid():
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
-         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
+         self.c_plumed.cmd_int( "setRealPrecision", pres)
      def finalize(self):
          """ Explicitly finalize a Plumed object.
 
@@ -86,51 +86,79 @@ cdef class Plumed:
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
-     def cmd_ndarray_real(self, ckey, val):
+     cdef cmd_ndarray_double(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
-     def cmd_ndarray_int(self, ckey, val):
+         cdef size_t ashape[5]
+         shape=val.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <double*>&abuffer[0], <size_t*> & ashape[0])
+     cdef cmd_ndarray_int(self, ckey, val):
+         cdef int [:] abuffer = val.ravel()
+         cdef size_t ashape[5]
+         shape=val.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <int*>&abuffer[0], <size_t*> & ashape[0])
+     cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
+         cdef size_t ashape[5]
+         shape=val.shape
+         assert len(shape)<5
+         for i in range(len(shape)):
+            ashape[i]=shape[i]
+         ashape[len(shape)]=0
+         self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
+     cdef cmd_array_double(self, ckey, val):
+         cdef double [:] abuffer = val
+         self.c_plumed.cmd( ckey, <double*>&abuffer[0], len(abuffer))
+     cdef cmd_array_int(self, ckey, val):
+         cdef int [:] abuffer = val
+         self.c_plumed.cmd( ckey, <int*>&abuffer[0], len(abuffer))
+     cdef cmd_array_long(self, ckey, val):
+         cdef long [:] abuffer = val
+         self.c_plumed.cmd( ckey, <long*>&abuffer[0], len(abuffer))
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd( ckey, <void*>&val )
+         self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd( ckey, <void*>&val)
+         self.c_plumed.cmd_int( ckey, val)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
-         cdef array.array ar
          if val is None :
-            self.c_plumed.cmd( ckey, NULL )
+            self.c_plumed.cmd( ckey)
          elif isinstance(val, (int,long) ):
-            if key=="getDataRank" :
-               raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
             self.cmd_int(ckey, val)
          elif isinstance(val, float ) :
-            if key=="getBias" :
-               raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val)
          elif HAS_NUMPY and isinstance(val, np.ndarray) :
-            if( val.dtype=="float64" ):
-               self.cmd_ndarray_real(ckey, val)
-            elif( val.dtype=="int64" ) :
+            # See https://numpy.org/doc/stable/user/basics.types.html
+            if( val.dtype==np.double):
+               self.cmd_ndarray_double(ckey, val)
+            elif( val.dtype==np.intc ) :
                self.cmd_ndarray_int(ckey, val)
+            elif( val.dtype==np.int_ ) :
+               self.cmd_ndarray_long(ckey, val)
             else :
-               raise ValueError("ndarrys should be float64 or int64")
+               raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
-               ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.cmd_array_double(ckey, val)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
-               ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.cmd_array_int(ckey, val)
+            elif( (val.typecode=="l" or val.typecode=="L") ) :
+               self.cmd_array_long(ckey, val)
             else :
-               raise ValueError("ndarrays should be double (size=8) or int")
+               raise ValueError("ndarrays should be double (size=8), int, or long")
          elif isinstance(val, str ) :
               py_bytes = val.encode()
               cval = py_bytes
-              self.c_plumed.cmd( ckey, <void*>cval )
+              self.c_plumed.cmd( ckey, <const char*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))
 
@@ -257,7 +285,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
        If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader
        that can be iterated in order to read a file in chunks. Every iteration returns an object
        equivalent to the one that would have been returned with a call to
-       read_pandas with chunksize=None (that is: either a pandas.DataFrame
+       read_as_pandas with chunksize=None (that is: either a pandas.DataFrame
        or a subclass of it).
 
        Comments

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -136,7 +136,7 @@ void Vessel::checkRead() {
   if( describe.length()>0 && action ) action->log.printf("  %s\n", describe.c_str() );
 }
 
-void Vessel::error( const std::string& msg ) {
+[[noreturn]] void Vessel::error( const std::string& msg ) {
   if( action ) {
     action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
     if(finished_read) keywords.print( action->log );

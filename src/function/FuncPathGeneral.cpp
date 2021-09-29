@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2020 The plumed team
+   Copyright (c) 2020,2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/IFile.h"
+#include <limits>
 
 namespace PLMD {
 namespace function {
@@ -274,6 +275,8 @@ void FuncPathGeneral::calculate() {
     s_path += ((*it).first + 1) * expdist;
     partition += expdist;
   }
+
+  if(partition==0.0) partition=std::numeric_limits<double>::min();
 
   s_path /= partition;
   val_s_path->set(s_path);

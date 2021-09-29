@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,6 +28,8 @@
 #include <map>
 #include <memory>
 
+#include "tools/TypesafePtr.h"
+
 namespace PLMD {
 
 class ActionSet;
@@ -51,13 +53,13 @@ public:
 ///
   bool activate() const ;
 /// Return the rank required for a particular key
-  static void get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* rank );
+  static void get_rank( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & rank );
 /// Return the shape required for a particular key
-  static void get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims );
+  static void get_shape( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & dims );
 /// Find the action that calculates a particular value
   static ActionWithValue* findAction( const ActionSet& a, const std::string& key );
 /// Set the pointer to the data
-  virtual void setData( const std::string& key, const std::string& type, void* outval )=0;
+  virtual void setData( const std::string& key, const std::string& type, const TypesafePtr & outval )=0;
 /// After calc has been performed grab all the data and put it in the relevant arrays
   virtual void finishDataGrab()=0;
 };

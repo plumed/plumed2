@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ public:
   bool readBunch(BiasRepresentation *br, int stride);
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
   void getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin);
-  void getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, std::vector<double> &histosigma);
+  void getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma);
 };
 FilesHandler::FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
   this->action=&action;
@@ -136,7 +136,7 @@ void FilesHandler::getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std:
   // loop over the kernels and get the support
   br.getMinMaxBin(vmin,vmax,vbin);
 }
-void FilesHandler::getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, std::vector<double> &histosigma) {
+void FilesHandler::getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma) {
   BiasRepresentation br(vals,cc,histosigma);
   // read all the kernels
   readBunch(&br);

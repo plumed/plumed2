@@ -75,7 +75,7 @@ CoeffsBase::CoeffsBase(
 
 CoeffsBase::CoeffsBase(
   const std::string& label,
-  std::vector<Value*>& args,
+  const std::vector<Value*>& args,
   std::vector<BasisFunctions*>& basisf,
   const bool use_iteration_counter):
   label_(label),

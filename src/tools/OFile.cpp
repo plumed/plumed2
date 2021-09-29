@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,7 +55,7 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     } else {
-      r=fwrite(ptr,1,s,fp);
+      r=std::fwrite(ptr,1,s,fp);
     }
   }
 //  This barrier is apparently useless since it comes
@@ -110,7 +110,7 @@ int OFile::printf(const char*fmt,...) {
     int newlen=buflen;
     while(newlen<=r+actual_buffer_length) newlen*=2;
     auto newbuf=Tools::make_unique<char[]>(newlen);
-    memmove(newbuf.get(),buffer.get(),buflen);
+    std::memmove(newbuf.get(),buffer.get(),buflen);
     for(int k=buflen; k<newlen; k++) newbuf[k]=0;
     buffer=std::move(newbuf);
     buflen=newlen;
@@ -127,14 +127,14 @@ int OFile::printf(const char*fmt,...) {
 // newline is only searched in the just added portion:
   char*psearch=p1+actual_buffer_length;
   actual_buffer_length+=r;
-  while((p2=strchr(psearch,'\n'))) {
+  while((p2=std::strchr(psearch,'\n'))) {
     if(linePrefix.length()>0) llwrite(linePrefix.c_str(),linePrefix.length());
     llwrite(p1,p2-p1+1);
     actual_buffer_length-=(p2-p1)+1;
     p1=p2+1;
     psearch=p1;
   };
-  if(buffer.get()!=p1) memmove(buffer.get(),p1,actual_buffer_length);
+  if(buffer.get()!=p1) std::memmove(buffer.get(),p1,actual_buffer_length);
   return r;
 }
 
@@ -168,31 +168,31 @@ OFile& OFile::printField(const std::string&name,double v) {
 // The distinction between +nan and -nan is not well defined
 // Always printing nan simplifies some regtest (special functions computed our of range).
   if(std::isnan(v)) v=std::numeric_limits<double>::quiet_NaN();
-  sprintf(buffer_string.get(),fieldFmt.c_str(),v);
+  std::sprintf(buffer_string.get(),fieldFmt.c_str(),v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,int v) {
-  sprintf(buffer_string.get()," %d",v);
+  std::sprintf(buffer_string.get()," %d",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long int v) {
-  sprintf(buffer_string.get()," %ld",v);
+  std::sprintf(buffer_string.get()," %ld",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,unsigned v) {
-  sprintf(buffer_string.get()," %u",v);
+  std::sprintf(buffer_string.get()," %u",v);
   printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long unsigned v) {
-  sprintf(buffer_string.get()," %lu",v);
+  std::sprintf(buffer_string.get()," %lu",v);
   printField(name,buffer_string.get());
   return *this;
 }
@@ -300,7 +300,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
         else std::fclose(fff);
       }
       int check=rename(fname.c_str(),backup.c_str());
-      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
     }
   }
 }
@@ -359,7 +359,7 @@ OFile& OFile::rewind() {
     std::string file=fname.substr(found+1);
     std::string backup=directory+backstring +".last."+file;
     int check=rename(fname.c_str(),backup.c_str());
-    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
   }
 
   if(comm) comm->Barrier();

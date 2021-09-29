@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -201,11 +201,11 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
 
 
             // fill 4d matrix
-            double dummy = sin(gamma*rtilde_norm)/(rtilde_norm*gamma);
+            double dummy = std::sin(gamma*rtilde_norm)/(rtilde_norm*gamma);
             mat[idx][0] = dummy*rtilde[0];
             mat[idx][1] = dummy*rtilde[1];
             mat[idx][2] = dummy*rtilde[2];
-            mat[idx][3] = (1.+ cos(gamma*rtilde_norm))/gamma;
+            mat[idx][3] = (1.+ std::cos(gamma*rtilde_norm))/gamma;
 
             // Derivative (drtilde_dx)
             std::vector<Tensor3d> drtilde_dx;
@@ -221,7 +221,7 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
               }
             }
 
-            double dummy1 = (cos(gamma*rtilde_norm) - dummy);
+            double dummy1 = (std::cos(gamma*rtilde_norm) - dummy);
 
             idx1 = i*nresidues*6 + j*6;
 
@@ -229,9 +229,9 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
               //std::cout << i << " " << j << " " << idx1 << " " << idx1+l << "\n";
 
               // components 1,2,3
-              // sin(gamma*|rtilde|)/gamma*|rtilde|*d_rtilde +
+              // std::sin(gamma*|rtilde|)/gamma*|rtilde|*d_rtilde +
               // + ((d_rtilde*r_tilde/r_tilde^2) out r_tilde)*
-              // (cos(gamma*|rtilde| - sin(gamma*|rtilde|)/gamma*|rtilde|))
+              // (std::cos(gamma*|rtilde| - std::sin(gamma*|rtilde|)/gamma*|rtilde|))
               Vector3d rdr = matmul(rtilde,drtilde_dx[l]);
               Tensor tt = dummy*drtilde_dx[l] + (dummy1*irnorm*irnorm)*Tensor(rtilde,rdr);
               for (unsigned m=0; m<3; m++) {
@@ -240,7 +240,7 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
                 Gderi[idx1+l].setRow(m,tt.getRow(m));
               }
               // component 4
-              // - sin(gamma*|rtilde|)/|rtilde|*(r_tilde*d_rtilde)
+              // - std::sin(gamma*|rtilde|)/|rtilde|*(r_tilde*d_rtilde)
               //dG_dx[l].setRow(3,-dummy*gamma*rdr);
               Gderi[idx1+l].setRow(3,-dummy*gamma*rdr);
             }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,9 +51,9 @@ size_t IFile::llread(char*ptr,size_t s) {
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   } else {
-    r=fread(ptr,1,s,fp);
-    if(feof(fp))   eof=true;
-    if(ferror(fp)) err=true;
+    r=std::fread(ptr,1,s,fp);
+    if(std::feof(fp))   eof=true;
+    if(std::ferror(fp)) err=true;
   }
   return r;
 }
@@ -95,7 +95,7 @@ IFile& IFile::advanceField() {
         }
         done=true;
       } else if( !words.empty() ) {
-        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number");
+        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number\n this is the faulty line:\n"+line);
       }
     }
   }

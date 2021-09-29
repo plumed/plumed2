@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,18 +25,6 @@
 #include "lapack/lapack.h"
 
 namespace PLMD {
-
-/// Small auxiliary class.
-/// I use it to test a few things that I am scary of and could introduce bugs.
-/// It checks at startup that Tensor satifies some requirement so as to allow
-/// accessing a vector of tensors as a 9 times longer array of doubles.
-static class TensorChecks {
-public:
-  TensorChecks() {
-    if(sizeof(Tensor)==9*sizeof(double)) return;
-    plumed_merror("sizeof(Tensor)!=9*sizeof(double). PLUMED cannot work properly in these conditions.");
-  }
-} checks;
 
 void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
                                     double *a, int *lda, double *vl, double *vu, int *
