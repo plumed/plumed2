@@ -122,7 +122,7 @@ template <class T>
 void FunctionOfScalar<T>::calculate() {
   std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0;i<args.size();++i) args[i]=getPntrToArgument(i)->get();
   std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), getNumberOfArguments() );
-  myfunc.calc( args, vals, derivatives );
+  myfunc.calc( this, args, vals, derivatives );
   for(unsigned i=0;i<vals.size();++i) getPntrToOutput(i)->set(vals[i]);
   if( doNotCalculateDerivatives() ) return;
 

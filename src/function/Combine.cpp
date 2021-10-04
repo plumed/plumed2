@@ -19,7 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Function.h"
+#include "Combine.h"
+#include "FunctionTemplateBase.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
 
 namespace PLMD {
@@ -72,130 +76,53 @@ RESTRAINT ARG=c KAPPA=10 AT=0
 */
 //+ENDPLUMEDOC
 
+typedef FunctionShortcut<Combine> CombineShortcut;
+PLUMED_REGISTER_ACTION(CombineShortcut,"COMBINE")
+typedef FunctionOfScalar<Combine> ScalarCombine;
+PLUMED_REGISTER_ACTION(ScalarCombine,"COMBINE_SCALAR")
+typedef FunctionOfVector<Combine> VectorCombine;
+PLUMED_REGISTER_ACTION(VectorCombine,"COMBINE_VECTOR")
 
-class Combine :
-  public Function
-{
-  bool normalize;
-  std::vector<double> coefficients;
-  std::vector<double> parameters;
-  std::vector<double> powers;
-public:
-  explicit Combine(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
-  static void registerKeywords(Keywords& keys);
-};
-
-
-PLUMED_REGISTER_ACTION(Combine,"COMBINE")
 
 void Combine::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("PERIODIC");
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
   keys.add("compulsory","PARAMETERS","0.0","the parameters of the arguments in your function");
   keys.add("compulsory","POWERS","1.0","the powers to which you are raising each of the arguments in your function");
   keys.addFlag("NORMALIZE",false,"normalize all the coefficients so that in total they are equal to one");
 }
 
-Combine::Combine(const ActionOptions&ao):
-  Action(ao),
-  Function(ao),
-  normalize(false),
-  coefficients(getNumberOfArguments(),1.0),
-  parameters(getNumberOfArguments(),0.0),
-  powers(getNumberOfArguments(),1.0)
-{
-  if( !numberedkeys ) {
-    if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("should only specify one non-scalar argument in input to ARG keyword");
+void Combine::read( ActionWithArguments* action ) {
+  coefficients.resize( action->getNumberOfArguments() ); parameters.resize( action->getNumberOfArguments() ); powers.resize( action->getNumberOfArguments() );
+  parseVector(action,"COEFFICIENTS",coefficients);
+  if(coefficients.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of COEFFICIENTS array should be the same as number for arguments");
+  parseVector(action,"PARAMETERS",parameters);
+  if(parameters.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of PARAMETERS array should be the same as number for arguments");
+  parseVector(action,"POWERS",powers); if(powers.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of POWERS array should be the same as number for arguments");
 
-    coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
-    if(coefficients.size()>1 && coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-      error("Size of COEFFICIENTS array should be the same as number for arguments");
-
-    parameters.resize(getNumberOfScalarArguments()); parseVector("PARAMETERS",parameters);
-    if(parameters.size()>1 && parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-      error("Size of PARAMETERS array should be the same as number for arguments");
-
-    powers.resize(getNumberOfScalarArguments()); parseVector("POWERS",powers);
-    if(powers.size()>1 && powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-      error("Size of POWERS array should be the same as number for arguments");
-  } else {
-    parseVector("COEFFICIENTS",coefficients);
-    if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
-      error("Size of COEFFICIENTS array should be the same as number for arguments");
-
-    parseVector("PARAMETERS",parameters);
-    if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
-      error("Size of PARAMETERS array should be the same as number for arguments");
-
-    parseVector("POWERS",powers);
-    if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
-      error("Size of POWERS array should be the same as number for arguments");
-  }
-  parseFlag("NORMALIZE",normalize);
-
+  parseFlag(action,"NORMALIZE",normalize);
   if(normalize) {
     double n=0.0;
     for(unsigned i=0; i<coefficients.size(); i++) n+=coefficients[i];
     for(unsigned i=0; i<coefficients.size(); i++) coefficients[i]*=(1.0/n);
   }
 
-  addValueWithDerivatives();
-  checkRead();
-
-  bool allsame=true; double coeff=coefficients[0];
-  for(unsigned i=1; i<coefficients.size(); i++) {
-    if( coefficients[i]!=coeff ) { allsame=false; break; }
-  }
-  if( allsame ) {
-    log.printf("  with all coefficients equal to %f\n",coeff);
-  } else {
-    log.printf("  with coefficients:");
-    for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
-    log.printf("\n");
-  }
-  allsame=true; double param=parameters[0];
-  for(unsigned i=1; i<parameters.size(); i++) {
-    if( parameters[i]!=param ) { allsame=false; break; }
-  }
-  if( allsame ) {
-    log.printf("  with all parameters equal to %f\n",param);
-  } else {
-    log.printf("  with parameters:");
-    for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
-    log.printf("\n");
-  }
-  allsame=true; double power=powers[0];
-  for(unsigned i=1; i<powers.size(); i++) {
-    if( powers[i]!=power ) { allsame=false; break; }
-  }
-  if( allsame ) {
-    log.printf("  with all powers equal to %f\n",power);
-  } else {
-    log.printf("  and powers:");
-    for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
-    log.printf("\n");
-  }
+  action->log.printf("  with coefficients:");
+  for(unsigned i=0; i<coefficients.size(); i++) action->log.printf(" %f",coefficients[i]);
+  action->log.printf("\n  with parameters:");
+  for(unsigned i=0; i<parameters.size(); i++) action->log.printf(" %f",parameters[i]);
+  action->log.printf("\n  and powers:");
+  for(unsigned i=0; i<powers.size(); i++) action->log.printf(" %f",powers[i]);
+  action->log.printf("\n");
 }
 
-void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  double combine=0.0;
-  if( args.size()==1 && !numberedkeys ) {
-    plumed_massert(getPntrToArgument(0)->getRank()==0, "REPLACE COMBINE WITH SUM " + getLabel() );
-    unsigned ind = myvals.getTaskIndex(); if( parameters.size()==1 ) ind=0;
-    plumed_dbg_assert( ind<parameters.size() );
-    double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
-    combine = coefficients[ind]*pow(cv,powers[ind]);
-    addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals );
-  } else {
-    for(unsigned i=0; i<coefficients.size(); ++i) {
-      double cv = difference(i,parameters[i],args[i]);
-      combine+=coefficients[i]*pow(cv,powers[i]);
-      addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
-    };
+void Combine::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  vals[0]=0.0;
+  for(unsigned i=0; i<coefficients.size(); ++i) {
+    double cv = action->difference( i, parameters[i], args[i] );
+    vals[0] += coefficients[i]*pow( cv, powers[i] );
+    derivatives(0,i) = coefficients[i]*powers[i]*pow(cv,powers[i]-1.0); 
   }
-  addValue( 0, combine, myvals );
 }
 
 }

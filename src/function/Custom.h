@@ -40,7 +40,7 @@ public:
   void read( ActionWithArguments* action ) override;
   bool defaultTaskListBuilder() const override;
   void buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 }

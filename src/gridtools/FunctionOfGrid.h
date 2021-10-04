@@ -152,7 +152,7 @@ void FunctionOfGrid<T>::performTask( const unsigned& current, MultiValue& myvals
   }
   // Calculate the function and its derivatives
   std::vector<double> vals(1); Matrix<double> derivatives( 1, getNumberOfArguments() );
-  myfunc.calc( args, vals, derivatives ); unsigned np = myvals.getTaskIndex();
+  myfunc.calc( this, args, vals, derivatives ); unsigned np = myvals.getTaskIndex();
   // And set the values and derivatives
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.addValue( ostrn, vals[0] ); 

@@ -263,7 +263,7 @@ void Custom::buildTaskList( ActionWithArguments* action, std::vector<std::string
   if( foundarg ) actionsThatSelectTasks.push_back( action->getLabel() );
 }
 
-void Custom::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {
       bool allzero;
       if( check_multiplication_vars.size()>0 ) {

@@ -47,7 +47,7 @@ public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override; 
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef matrixtools::FunctionOfMatrix<CylindricalHarmonic> MatrixCyHarm;
@@ -69,7 +69,7 @@ void CylindricalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
   action->componentIsNotPeriodic("rm"); action->componentIsNotPeriodic("im");
 }
 
-void CylindricalHarmonic::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void CylindricalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   double dlen2 = args[0]*args[0] + args[1]*args[1]; double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen; 
   std::complex<double> com1( args[0]/dlen,args[1]/dlen ); double weight=1; if( args.size()==3 ) weight=args[2];
   std::complex<double> ppp = pow( com1, tmom-1 ), ii( 0, 1 ); double real_z = real( ppp*com1 ), imag_z = imag( ppp*com1 );

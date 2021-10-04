@@ -77,7 +77,7 @@ void LessThan::read( ActionWithArguments* action ) {
   if( squared ) action->log<<"  input quantity is square of quantity that switching function acts upon\n";
 }
 
-void LessThan::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void LessThan::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 );
   if( squared ) vals[0] = switchingFunction.calculateSqr( args[0], derivatives(0,0) );
   else vals[0] = switchingFunction.calculate( args[0], derivatives(0,0) );

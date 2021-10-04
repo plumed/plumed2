@@ -73,7 +73,7 @@ public:
   void registerKeywords(Keywords& keys) override;
   void read( ActionWithArguments* action ) override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 
@@ -112,7 +112,7 @@ void Piecewise::setPeriodicityForOutputs( ActionWithValue* action ) {
   for(unsigned i=0;i<action->getNumberOfComponents();++i) action->copyOutput(i)->setNotPeriodic();
 }
 
-void Piecewise::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Piecewise::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   for(unsigned i=0; i<args.size(); i++) {
     unsigned p=0;
     for(; p<points.size(); p++) {

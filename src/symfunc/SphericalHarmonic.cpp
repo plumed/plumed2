@@ -53,7 +53,7 @@ public:
   void read( ActionWithArguments* action ) override;
   std::vector<std::string> getComponentsPerLabel() const override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef matrixtools::FunctionOfMatrix<SphericalHarmonic> MatrixSpHarm;
@@ -126,7 +126,7 @@ void SphericalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
   for(unsigned i=0;i<comp.size();++i) { action->componentIsNotPeriodic("rm" + comp[i]); action->componentIsNotPeriodic("im" + comp[i]); }
 }
 
-void SphericalHarmonic::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   double weight=1; if( args.size()==4 ) weight = args[3];
   if( weight<epsilon ) return; 
 

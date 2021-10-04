@@ -95,7 +95,7 @@ Restraint::Restraint(const ActionOptions&ao):
   std::string biasargs, forceargs; bool non_constant_force=false;
   for(unsigned i=0;i<args.size();++i) {
       std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
-      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE NO_WILDCARD PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
       if( kappa[i]!="0.0" ) {
           non_constant_force = true;
           readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL NO_WILDCARD PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
@@ -111,9 +111,9 @@ Restraint::Restraint(const ActionOptions&ao):
       }
   }
   // This is the bias
-  readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasargs );
+  readInputLine( getShortcutLabel() + "_bias: COMBINE NO_WILDCARD PERIODIC=NO " + biasargs );
   readInputLine( getShortcutLabel() + ": BIASVALUE ARG=" + getShortcutLabel() + "_bias STRIDE=" + stride );
-  if( non_constant_force ) readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
+  if( non_constant_force ) readInputLine( getShortcutLabel() + "_force2: COMBINE NO_WILDCARD PERIODIC=NO " + forceargs );
 }
 
 }

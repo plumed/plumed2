@@ -79,7 +79,7 @@ void Between::read( ActionWithArguments* action ) {
   }
 }
 
-void Between::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Between::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 ); vals[0] = hist.calculate( args[0], derivatives(0,0) );
 }
 

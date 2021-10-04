@@ -148,7 +148,7 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
   }
   // Calculate the function and its derivatives
   std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), getNumberOfArguments() );
-  myfunc.calc( args, vals, derivatives );
+  myfunc.calc( this, args, vals, derivatives );
   // And set the values
   for(unsigned i=0;i<vals.size();++i) myvals.addValue( getPntrToOutput(i)->getPositionInStream(), vals[i] );
   // Return if we are not computing derivatives

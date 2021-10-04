@@ -26,6 +26,7 @@
 #include "function/MoreThan.h"
 #include "function/Between.h"
 #include "function/Custom.h"
+#include "function/Combine.h"
 
 namespace PLMD {
 namespace matrixtools {
@@ -41,6 +42,8 @@ PLUMED_REGISTER_ACTION(MatrixBetween,"BETWEEN_MATRIX")
 typedef FunctionOfMatrix<function::Custom> MatrixCustom;
 PLUMED_REGISTER_ACTION(MatrixCustom,"CUSTOM_MATRIX")
 PLUMED_REGISTER_ACTION(MatrixCustom,"MATHEVAL_MATRIX")
+typedef FunctionOfMatrix<function::Combine> MatrixCombine;
+PLUMED_REGISTER_ACTION(MatrixCombine,"COMBINE_MATRIX")
 
 }
 }

@@ -78,7 +78,7 @@ private:
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef matrixtools::FunctionOfMatrix<Fccubic> MatrixFccubic;
@@ -96,7 +96,7 @@ void Fccubic::read( ActionWithArguments* action ) {
   action->log.printf("  setting alpha paramter equal to %f \n",alpha);
 }
 
-void Fccubic::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const { 
+void Fccubic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const { 
   double x2 = args[0]*args[0];
   double x4 = x2*x2;
 

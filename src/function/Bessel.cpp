@@ -56,7 +56,7 @@ public:
   bool derivativesImplemented() override { return false; }
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  void calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 typedef FunctionShortcut<Bessel> BesselShortcut;
@@ -95,7 +95,7 @@ double Bessel::chbevl(double x,std::vector<double>& array) const {
 }
 
 
-void Bessel::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Bessel::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 ); 
   if( order==0 ) {
       double x = fabs(args[0]);

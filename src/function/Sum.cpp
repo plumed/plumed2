@@ -55,7 +55,7 @@ bool Sum::zeroRank() const {
   return true;
 }
 
-void Sum::calc( const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+void Sum::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   vals[0]=prefactor*args[0]; derivatives(0,0)=prefactor;
 }
 
