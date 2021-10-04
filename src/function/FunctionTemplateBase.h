@@ -73,7 +73,7 @@ void FunctionTemplateBase::parseFlag( Action* action, const std::string&key, boo
 
 inline
 std::vector<std::string> FunctionTemplateBase::getComponentsPerLabel() const {
-  std::vector<std::string> comps; comps.push_back(""); return comps;
+  std::vector<std::string> comps; return comps;
 }
 
 inline

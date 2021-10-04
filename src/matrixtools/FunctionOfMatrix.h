@@ -96,10 +96,12 @@ nderivatives(getNumberOfScalarArguments())
   } else {
     std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
     for(unsigned i=0;i<components.size();++i) {
-        for(unsigned j=0;j<str_ind.size();++j) {
-            addComponent( components[i] + str_ind[j], shape );
-            copyOutput( getLabel() + "." + components[i] + str_ind[j] )->setSymmetric( symmetric );
-        }
+        if( str_ind.size()>0 ) {
+            for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j], shape );
+        } else if( components[i].find_first_of("_")!=std::string::npos ) {
+            if( getNumberOfArguments()==1 ) addValue( shape );
+            else { for(unsigned i=0; i<getNumberOfArguments(); ++i) addComponent( getPntrToArgument(i)->getName() + components[i], shape ); }
+        } else addComponent( components[i], shape );
     }
   }
   // Set the periodicities of the output components

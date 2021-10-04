@@ -85,7 +85,12 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   else { 
     std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
     for(unsigned i=0;i<components.size();++i) {
-        for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j] );
+        if( str_ind.size()>0 ) {
+            for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( components[i] + str_ind[j] );
+        } else if( components[i].find_first_of("_")!=std::string::npos ) {
+            if( getNumberOfArguments()==1 ) addValueWithDerivatives(); 
+            else { for(unsigned j=0; j<getNumberOfArguments(); ++j) addComponentWithDerivatives( getPntrToArgument(j)->getName() + components[i] ); }
+        } else addComponentWithDerivatives( components[i] );
     } 
   }
   // Set the periodicities of the output components
