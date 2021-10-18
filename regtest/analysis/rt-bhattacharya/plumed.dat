@@ -79,10 +79,14 @@ COMPONENTS
 ... 
 
 # Now normalize the CO orientation vectors
-vv: NORMALIZE ARG1=dd.x ARG2=dd.y ARG3=dd.z
+dd_r2: COMBINE ARG1=dd.x ARG2=dd.y ARG3=dd.z POWERS=2,2,2 PERIODIC=NO
+dd_r: CUSTOM ARG1=dd_r2 FUNC=sqrt(x) PERIODIC=NO
+vv_x: CUSTOM ARG1=dd.x ARG2=dd_r FUNC=x/y PERIODIC=NO
+vv_y: CUSTOM ARG1=dd.y ARG2=dd_r FUNC=x/y PERIODIC=NO
+vv_z: CUSTOM ARG1=dd.z ARG2=dd_r FUNC=x/y PERIODIC=NO
 
 # And calculate matrix of dot products between orientation vectors
-stack: VSTACK ARG1=vv.x ARG2=vv.y ARG3=vv.z
+stack: VSTACK ARG1=vv_x ARG2=vv_y ARG3=vv_z
 stackT: TRANSPOSE ARG=stack
 dp_mat: DOT ARG1=stack ARG2=stackT
 

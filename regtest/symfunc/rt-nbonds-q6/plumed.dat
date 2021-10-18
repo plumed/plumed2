@@ -1,106 +1,102 @@
 q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN 
 q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
 
-nq6: NORMALIZE ...
-  ARG1=q6.rm-[-6]
-  ARG2=q6.im-[-6] 
-  ARG3=q6.rm-[-5]
-  ARG4=q6.im-[-5]
-  ARG5=q6.rm-[-4]   
-  ARG6=q6.im-[-4] 
-  ARG7=q6.rm-[-3]
-  ARG8=q6.im-[-3] 
-  ARG9=q6.rm-[-2] 
-  ARG10=q6.im-[-2]
-  ARG11=q6.rm-[-1]
-  ARG12=q6.im-[-1]
-  ARG13=q6.rm-[0]
-  ARG14=q6.im-[0]
-  ARG15=q6.rm-[1]
-  ARG16=q6.im-[1]
-  ARG17=q6.rm-[2]
-  ARG18=q6.im-[2]
-  ARG19=q6.rm-[3]
-  ARG20=q6.im-[3]
-  ARG21=q6.rm-[4]
-  ARG22=q6.im-[4]
-  ARG23=q6.rm-[5]
-  ARG24=q6.im-[5]
-  ARG25=q6.rm-[6]
-  ARG26=q6.im-[6]
-...
+nq6_rm-[-6]: CUSTOM  ARG1=q6.rm-[-6] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[-6]: CUSTOM  ARG1=q6.im-[-6] ARG2=q6_norm FUNC=x/y PERIODIC=NO 
+nq6_rm-[-5]: CUSTOM  ARG1=q6.rm-[-5] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[-5]: CUSTOM  ARG1=q6.im-[-5] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[-4]: CUSTOM  ARG1=q6.rm-[-4] ARG2=q6_norm FUNC=x/y PERIODIC=NO   
+nq6_im-[-4]: CUSTOM  ARG1=q6.im-[-4] ARG2=q6_norm FUNC=x/y PERIODIC=NO 
+nq6_rm-[-3]: CUSTOM  ARG1=q6.rm-[-3] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[-3]: CUSTOM  ARG1=q6.im-[-3] ARG2=q6_norm FUNC=x/y PERIODIC=NO 
+nq6_rm-[-2]: CUSTOM  ARG1=q6.rm-[-2] ARG2=q6_norm FUNC=x/y PERIODIC=NO 
+nq6_im-[-2]: CUSTOM  ARG1=q6.im-[-2] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[-1]: CUSTOM  ARG1=q6.rm-[-1] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[-1]: CUSTOM  ARG1=q6.im-[-1] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[0]: CUSTOM  ARG1=q6.rm-[0] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[0]: CUSTOM  ARG1=q6.im-[0] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[1]: CUSTOM  ARG1=q6.rm-[1] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[1]: CUSTOM  ARG1=q6.im-[1] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[2]: CUSTOM  ARG1=q6.rm-[2] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[2]: CUSTOM  ARG1=q6.im-[2] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[3]: CUSTOM  ARG1=q6.rm-[3] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[3]: CUSTOM  ARG1=q6.im-[3] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[4]: CUSTOM  ARG1=q6.rm-[4] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[4]: CUSTOM  ARG1=q6.im-[4] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[5]: CUSTOM  ARG1=q6.rm-[5] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[5]: CUSTOM  ARG1=q6.im-[5] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_rm-[6]: CUSTOM  ARG1=q6.rm-[6] ARG2=q6_norm FUNC=x/y PERIODIC=NO
+nq6_im-[6]: CUSTOM  ARG1=q6.im-[6] ARG2=q6_norm FUNC=x/y PERIODIC=NO
 
 data6: VSTACK ...
-  ARG1=nq6.rm-[-6] 
-  ARG2=nq6.im-[-6] 
-  ARG3=nq6.rm-[-5]  
-  ARG4=nq6.im-[-5]
-  ARG5=nq6.rm-[-4]   
-  ARG6=nq6.im-[-4] 
-  ARG7=nq6.rm-[-3]
-  ARG8=nq6.im-[-3] 
-  ARG9=nq6.rm-[-2] 
-  ARG10=nq6.im-[-2]
-  ARG11=nq6.rm-[-1]  
-  ARG12=nq6.im-[-1]
-  ARG13=nq6.rm-[0]
-  ARG14=nq6.im-[0]
-  ARG15=nq6.rm-[1]
-  ARG16=nq6.im-[1]
-  ARG17=nq6.rm-[2]
-  ARG18=nq6.im-[2]
-  ARG19=nq6.rm-[3]
-  ARG20=nq6.im-[3]
-  ARG21=nq6.rm-[4]
-  ARG22=nq6.im-[4]
-  ARG23=nq6.rm-[5] 
-  ARG24=nq6.im-[5] 
-  ARG25=nq6.rm-[6]
-  ARG26=nq6.im-[6]
+  ARG1=nq6_rm-[-6] 
+  ARG2=nq6_im-[-6] 
+  ARG3=nq6_rm-[-5]  
+  ARG4=nq6_im-[-5]
+  ARG5=nq6_rm-[-4]   
+  ARG6=nq6_im-[-4] 
+  ARG7=nq6_rm-[-3]
+  ARG8=nq6_im-[-3] 
+  ARG9=nq6_rm-[-2] 
+  ARG10=nq6_im-[-2]
+  ARG11=nq6_rm-[-1]  
+  ARG12=nq6_im-[-1]
+  ARG13=nq6_rm-[0]
+  ARG14=nq6_im-[0]
+  ARG15=nq6_rm-[1]
+  ARG16=nq6_im-[1]
+  ARG17=nq6_rm-[2]
+  ARG18=nq6_im-[2]
+  ARG19=nq6_rm-[3]
+  ARG20=nq6_im-[3]
+  ARG21=nq6_rm-[4]
+  ARG22=nq6_im-[4]
+  ARG23=nq6_rm-[5] 
+  ARG24=nq6_im-[5] 
+  ARG25=nq6_rm-[6]
+  ARG26=nq6_im-[6]
 ...
 
 data6T: TRANSPOSE ARG=data6 
 
-nq4: NORMALIZE ...
-  ARG1=q4.rm-[-4]
-  ARG2=q4.im-[-4]
-  ARG3=q4.rm-[-3]
-  ARG4=q4.im-[-3]
-  ARG5=q4.rm-[-2]  
-  ARG6=q4.im-[-2]
-  ARG7=q4.rm-[-1]
-  ARG8=q4.im-[-1]
-  ARG9=q4.rm-[0]
-  ARG10=q4.im-[0]
-  ARG11=q4.rm-[1]
-  ARG12=q4.im-[1]
-  ARG13=q4.rm-[2]
-  ARG14=q4.im-[2]
-  ARG15=q4.rm-[3]
-  ARG16=q4.im-[3]
-  ARG17=q4.rm-[4]
-  ARG18=q4.im-[4]
-...
+nq4_rm-[-4]: CUSTOM ARG1=q4.rm-[-4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-4]: CUSTOM ARG1=q4.im-[-4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-3]: CUSTOM ARG1=q4.rm-[-3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-3]: CUSTOM ARG1=q4.im-[-3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-2]: CUSTOM ARG1=q4.rm-[-2] ARG2=q4_norm FUNC=x/y PERIODIC=NO  
+nq4_im-[-2]: CUSTOM ARG1=q4.im-[-2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-1]: CUSTOM ARG1=q4.rm-[-1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-1]: CUSTOM ARG1=q4.im-[-1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[0]: CUSTOM ARG1=q4.rm-[0] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[0]: CUSTOM ARG1=q4.im-[0] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[1]: CUSTOM ARG1=q4.rm-[1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[1]: CUSTOM ARG1=q4.im-[1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[2]: CUSTOM ARG1=q4.rm-[2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[2]: CUSTOM ARG1=q4.im-[2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[3]: CUSTOM ARG1=q4.rm-[3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[3]: CUSTOM ARG1=q4.im-[3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[4]: CUSTOM ARG1=q4.rm-[4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[4]: CUSTOM ARG1=q4.im-[4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
 
 data4: VSTACK ...
-  ARG1=nq4.rm-[-4]
-  ARG2=nq4.im-[-4]
-  ARG3=nq4.rm-[-3]
-  ARG4=nq4.im-[-3]
-  ARG5=nq4.rm-[-2]
-  ARG6=nq4.im-[-2]
-  ARG7=nq4.rm-[-1]
-  ARG8=nq4.im-[-1]
-  ARG9=nq4.rm-[0]
-  ARG10=nq4.im-[0]
-  ARG11=nq4.rm-[1]
-  ARG12=nq4.im-[1]
-  ARG13=nq4.rm-[2]
-  ARG14=nq4.im-[2]
-  ARG15=nq4.rm-[3]
-  ARG16=nq4.im-[3]
-  ARG17=nq4.rm-[4]
-  ARG18=nq4.im-[4]
+  ARG1=nq4_rm-[-4]
+  ARG2=nq4_im-[-4]
+  ARG3=nq4_rm-[-3]
+  ARG4=nq4_im-[-3]
+  ARG5=nq4_rm-[-2]
+  ARG6=nq4_im-[-2]
+  ARG7=nq4_rm-[-1]
+  ARG8=nq4_im-[-1]
+  ARG9=nq4_rm-[0]
+  ARG10=nq4_im-[0]
+  ARG11=nq4_rm-[1]
+  ARG12=nq4_im-[1]
+  ARG13=nq4_rm-[2]
+  ARG14=nq4_im-[2]
+  ARG15=nq4_rm-[3]
+  ARG16=nq4_im-[3]
+  ARG17=nq4_rm-[4]
+  ARG18=nq4_im-[4]
 ...
 
 data4T: TRANSPOSE ARG=data4

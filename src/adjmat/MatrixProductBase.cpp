@@ -149,6 +149,9 @@ void MatrixProductBase::getTasksForParent( const std::string& parent, std::vecto
       for(unsigned i=0; i<tflags.size(); ++i) {
         if( tflags[i]>0 ) nacc++;
       }
+  } else {
+      if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+      bool ignore = checkUsedOutsideOfChain( actionsLabelsInChain, parent, actionsThatSelectTasks, tflags );
   }
 }
 
@@ -166,6 +169,7 @@ void MatrixProductBase::calculateNumericalDerivatives( ActionWithValue* a ) { pl
 
 void MatrixProductBase::calculate() {
   if( actionInChain() || skipCalculate() ) return;
+  if( getPntrToOutput(0)->getRank()==2 ) done_over_stream=false; 
   runAllTasks();
 }
 
@@ -189,11 +193,11 @@ unsigned MatrixProductBase::getNumberOfFinalTasks() {
 std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
   std::vector<unsigned> shape(2); unsigned noutput=getNumberOfArguments() / 2;
   if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) {
-      shape[0]=getPntrToArgument(noutput)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[0];
+      shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(noutput)->getShape()[0];
       for(unsigned i=1;i<noutput;++i) {
           if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(noutput+i)->getRank()!=1 ) error("all input arguments should have rank one");
-          if( shape[0]!=getPntrToArgument(noutput+i)->getShape()[0] ) error("shapes of all output matrices should match");
-          if( shape[1]!=getPntrToArgument(i)->getShape()[1] ) error("shapes of all output matrices should match");
+          if( shape[0]!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
+          if( shape[1]!=getPntrToArgument(noutput+i)->getShape()[1] ) error("shapes of all output matrices should match");
       }
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(noutput)->getRank()==2 ) {
       if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
@@ -228,6 +232,9 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
 
 void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
   if( getPntrToOutput(0)->getRank()==1 ) {
+      for(unsigned nv=0; nv<getNumberOfComponents(); ++nv ) {
+          unsigned ostrn = getPntrToOutput(nv)->getPositionInStream();
+      }
       if( !actionInChain() ) return ;
       for(unsigned nv=0; nv<getNumberOfComponents(); ++nv ) {
           unsigned istrn = getPntrToArgument(nv)->getPositionInMatrixStash();
@@ -358,7 +365,8 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
           }
       }
       double val = computeVectorProduct( index1, index2, args1, args2, der1, der2, myvals );
-      if( abs(val)<epsilon ) {
+      unsigned ostrn = getPntrToOutput(nv)->getPositionInStream();
+      if( fabs(val)<epsilon && getPntrToOutput(nv)->getRank()==2 ) {
           if( !doNotCalculateDerivatives() ) {
               if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
               clearMatrixElements( myvals );
@@ -366,7 +374,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
           if( noutput==1 ) return false;    
           else continue;   
       }
-      unsigned ostrn = getPntrToOutput(nv)->getPositionInStream(); myvals.addValue( ostrn, val );
+      myvals.addValue( ostrn, val );
       // Return after calculation of value if we do not need derivatives
       if( doNotCalculateDerivatives() ) continue;
 
@@ -380,7 +388,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
               }
               vstart = (getPntrToArgument(nv)->getPntrToAction())->getNumberOfDerivatives();
           } else { myvals.addDerivative( ostrn, index1*ss0 + ind2, der1[0] ); myvals.updateIndex( ostrn, index1*ss0 + ind2 ); }
-          myvals.addDerivative( ostrn, vstart + ind2, der2[0] ); myvals.updateIndex( ostrn, vstart + ind2 );
+          if( fabs(der2[0])>0 ) { myvals.addDerivative( ostrn, vstart + ind2, der2[0] ); myvals.updateIndex( ostrn, vstart + ind2 ); }
       } else {
           unsigned nmat = getPntrToOutput(nv)->getPositionInMatrixStash();
           std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );

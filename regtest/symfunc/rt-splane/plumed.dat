@@ -34,10 +34,14 @@ PRINT ARG=s2.* FILE=colv FMT=%8.4f
 BIASVALUE ARG=s2.*
 
 # Normalize vectors for planes
-nn: NORMALIZE ARG1=m3.x ARG2=m3.y ARG3=m3.z
+m3_norm2: COMBINE ARG1=m3.x ARG2=m3.y ARG3=m3.z POWERS=2,2,2 PERIODIC=NO
+m3_norm: CUSTOM ARG1=m3_norm2 FUNC=sqrt(x) PERIODIC=NO
+nn_x: CUSTOM ARG1=m3.x ARG2=m3_norm FUNC=x/y PERIODIC=NO 
+nn_y: CUSTOM ARG1=m3.y ARG2=m3_norm FUNC=x/y PERIODIC=NO 
+nn_z: CUSTOM ARG1=m3.z ARG2=m3_norm FUNC=x/y PERIODIC=NO
 
 # Compute required function of matrices
-data: VSTACK ARG1=nn.x ARG2=nn.y ARG3=nn.z
+data: VSTACK ARG1=nn_x ARG2=nn_y ARG3=nn_z
 dataT: TRANSPOSE ARG=data
 con: CONTACT_MATRIX GROUP=m3 SWITCH={RATIONAL R_0=0.6}
 dd: DOT ARG1=data ARG2=dataT 

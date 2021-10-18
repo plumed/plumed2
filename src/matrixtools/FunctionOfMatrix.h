@@ -35,6 +35,8 @@ private:
   T myfunc;
 /// The number of derivatives for this action
   unsigned nderivatives;
+/// The list of actiosn in this chain
+  std::vector<std::string> actionsLabelsInChain;
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfMatrix(const ActionOptions&);
@@ -48,6 +50,8 @@ public:
   unsigned getNumberOfDerivatives() const override ;
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
+/// This checks for tasks in the parent class
+  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
 /// This is not used
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
@@ -86,7 +90,7 @@ nderivatives(getNumberOfScalarArguments())
   // Read the input and do some checks
   myfunc.read( this );
   // Check we are not calculating a sum
-  if( myfunc.zeroRank() ) shape.resize(0);  
+  if( myfunc.zeroRank() ) shape.resize(0);
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
@@ -129,6 +133,15 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
      }
   }
   plumed_error(); return 0;
+}
+
+template <class T>
+void FunctionOfMatrix<T>::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  // Check if this is the first element in a chain
+  if( actionInChain() ) return;
+  // If it is computed outside a chain get the tassks the daughter chain needs
+  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+  bool ignore = checkUsedOutsideOfChain( actionsLabelsInChain, parent, actionsThatSelectTasks, tflags );
 }
 
 template <class T>
@@ -187,7 +200,21 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
               }
           }
       }
-  } else plumed_merror("not implemented non chain yet " + getLabel() );
+  } else {
+      unsigned base=0; unsigned ind2 = index2;
+      if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+      for(unsigned j=0;j<getNumberOfArguments();++j) {
+          if( getPntrToArgument(j)->getRank()==2 ) {
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+                  unsigned myind = base + getPntrToOutput(i)->getShape()[1]*index1 + ind2;
+                  myvals.addDerivative( ostrn, myind, derivatives(i,j) );
+                  myvals.updateIndex( ostrn, myind ); 
+              }
+          } else plumed_merror("no implmentation of forces on scalar");
+          base += getPntrToArgument(j)->getNumberOfValues();
+      }
+  }
   return true;
 }
 
@@ -229,10 +256,9 @@ void FunctionOfMatrix<T>::updateCentralMatrixIndex( const unsigned& ind, const s
                   unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
                    myvals.updateIndex( ostrn, arg_deriv_starts[i] + mat_indices[k] );
               }
-
           }
       }
-  } else plumed_merror("I have not implemented this as I am not sure it is needed");
+  } 
 }
 
 template <class T>

@@ -430,7 +430,7 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
 
 bool ActionWithValue::checkUsedOutsideOfChain( const std::vector<std::string>& actionLabelsInChain, const std::string& parent, 
                                                std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  bool usedOutsideOfChain=false;
+  std::vector<std::string> user_list;
   for(unsigned i=0;i<values.size();++i) {
       if( values[i]->getRank()==0 ) continue;
       // Check for users of full list of values 
@@ -442,13 +442,20 @@ bool ActionWithValue::checkUsedOutsideOfChain( const std::vector<std::string>& a
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
           if( !inchain ) {
-              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p );
-              if( user ) user->getTasksForParent( parent, actionsThatSelectTasks, tflags );
-              usedOutsideOfChain=true;
+              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p ); 
+              // Check if we have already recognised this action
+              plumed_assert( user ); bool found=false;
+              for(unsigned j=0; j<user_list.size(); ++j) {
+                  if( user_list[j]==user->getLabel() ) { found=true; break; }
+              }
+              if( !found ) {
+                  user->getTasksForParent( parent, actionsThatSelectTasks, tflags );
+                  user_list.push_back( user->getLabel() ); 
+              }
           }
       }
   } 
-  return usedOutsideOfChain;
+  return user_list.size()>0;
 }
 
 void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
@@ -883,7 +890,8 @@ void ActionWithValue::gatherForces( const unsigned& itask, const MultiValue& myv
       } else if( values[k]->getRank()>0 && values[k]->hasForce ) {
         unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
         for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
-          unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+          unsigned jder=myvals.getActiveIndex(sspos, j); plumed_dbg_assert( jder<forces.size() ); 
+          forces[jder] += fforce*myvals.getDerivative( sspos, jder );
         }
       }
     }

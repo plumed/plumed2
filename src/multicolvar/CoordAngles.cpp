@@ -67,8 +67,12 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_sw: LESS_THAN ARG=" + getShortcutLabel() + "_dd SWITCH={" + switch_input +"}");
   // Now get the normalised vectors
   readInputLine( getShortcutLabel() + "_comp: DISTANCES" + atlist + " COMPONENTS"); 
-  readInputLine( getShortcutLabel() + "_norm: NORMALIZE ARG1=" + getShortcutLabel() + "_comp.x" + " ARG2=" + getShortcutLabel() + "_comp.y ARG3=" + getShortcutLabel() + "_comp.z");
-  readInputLine( getShortcutLabel() + "_stack: VSTACK ARG1=" + getShortcutLabel() + "_norm.x" + " ARG2=" + getShortcutLabel() + "_norm.y ARG3=" + getShortcutLabel() + "_norm.z"); 
+  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG1=" + getShortcutLabel() + "_comp.x" + " ARG2=" + getShortcutLabel() + "_comp.y ARG3=" + getShortcutLabel() + "_comp.z POWERS=2,2,2 PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG1=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG1=" + getShortcutLabel() + "_comp.x ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG1=" + getShortcutLabel() + "_comp.y ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG1=" + getShortcutLabel() + "_comp.z ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_stack: VSTACK ARG1=" + getShortcutLabel() + "_norm_x" + " ARG2=" + getShortcutLabel() + "_norm_y ARG3=" + getShortcutLabel() + "_norm_z"); 
   readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_stack");
   // Create the matrix of weights
   readInputLine( getShortcutLabel() + "_swd: DOT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG1=" + getShortcutLabel() + "_sw ARG2=" + getShortcutLabel() + "_sw");

@@ -56,11 +56,15 @@ ActionShortcut(ao)
   }
   readInputLine( dline );
   // Normalize the vectors
-  readInputLine( getShortcutLabel() + "_norm: NORMALIZE ARG1=" + getShortcutLabel() + ".x ARG2=" + getShortcutLabel() + ".y ARG3=" + getShortcutLabel() + ".z"); 
+  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG1=" + getShortcutLabel() + ".x" + " ARG2=" + getShortcutLabel() + ".y ARG3=" + getShortcutLabel() + ".z POWERS=2,2,2 PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG1=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG1=" + getShortcutLabel() + ".x ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG1=" + getShortcutLabel() + ".y ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG1=" + getShortcutLabel() + ".z ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   // Now compute the angles with matheval
-  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm.x");
-  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm.y");
-  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm.z");   
+  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
+  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
+  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");   
   // Add shortcuts to label
   MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }

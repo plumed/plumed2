@@ -1,13 +1,13 @@
-#! FIELDS c1 q6_norm h dh_c1 dh_q6_norm
+#! FIELDS c1 q6_anorm h dh_c1 dh_q6_anorm
 #! SET normalisation    4.0000
 #! SET min_c1 0
 #! SET max_c1 10
 #! SET nbins_c1  200
 #! SET periodic_c1 false
-#! SET min_q6_norm 0
-#! SET max_q6_norm 2
-#! SET nbins_q6_norm  200
-#! SET periodic_q6_norm false
+#! SET min_q6_anorm 0
+#! SET max_q6_anorm 2
+#! SET nbins_q6_anorm  200
+#! SET periodic_q6_anorm false
    0.0000   0.0000   0.0000   0.0000   0.0000
    0.0500   0.0000   0.0000   0.0002   0.0002
    0.1000   0.0000   0.0000   0.0011   0.0011

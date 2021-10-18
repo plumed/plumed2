@@ -38,6 +38,8 @@ friend class Dot;
 private:
   bool skip_ieqj;
   std::vector<double> forcesToApply;
+/// The list of actiosn in this chain
+  std::vector<std::string> actionsLabelsInChain;
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
 protected:
   bool isAdjacencyMatrix;

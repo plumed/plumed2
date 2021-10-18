@@ -50,7 +50,9 @@ Dot::Dot(const ActionOptions& ao):
 
 void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
   if( getPntrToArgument(1)->getRank()==1 ) {
-      unsigned nr = 0, nvals = getPntrToArgument(1)->getShape()[0]; 
+      unsigned nr = 0, nvals;
+      if( getPntrToOutput(0)->getRank()==1 ) nvals = getPntrToArgument(1)->getShape()[0]; 
+      else nvals = nvals = getPntrToOutput(0)->getShape()[1];
       for(unsigned i=0;i<nvals;++i) {
           if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
           if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) nr++;

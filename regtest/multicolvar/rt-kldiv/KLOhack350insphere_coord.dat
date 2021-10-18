@@ -1058,14 +1058,22 @@ ATOMS699=6981,Z350
 ATOMS700=6981,ZM350
 COMPONENTS
 ...
-
-X_vectors: NORMALIZE ARG1=X_dist.x ARG2=X_dist.y ARG3=X_dist.z
-Z_vectors: NORMALIZE ARG1=Z_dist.x ARG2=Z_dist.y ARG3=Z_dist.z
+ 
+X_len2: COMBINE ARG1=X_dist.x ARG2=X_dist.y ARG3=X_dist.z POWERS=2,2,2 PERIODIC=NO
+X_len: CUSTOM ARG1=X_len2 FUNC=sqrt(x) PERIODIC=NO
+X_vectors_x: CUSTOM ARG1=X_dist.x ARG2=X_len FUNC=x/y PERIODIC=NO 
+X_vectors_y: CUSTOM ARG1=X_dist.y ARG2=X_len FUNC=x/y PERIODIC=NO 
+X_vectors_z: CUSTOM ARG1=X_dist.z ARG2=X_len FUNC=x/y PERIODIC=NO
+Z_len2: COMBINE ARG1=Z_dist.x ARG2=Z_dist.y ARG3=Z_dist.z POWERS=2,2,2 PERIODIC=NO
+Z_len: CUSTOM ARG1=Z_len2 FUNC=sqrt(x) PERIODIC=NO
+Z_vectors_x: CUSTOM ARG1=Z_dist.x ARG2=Z_len FUNC=x/y PERIODIC=NO
+Z_vectors_y: CUSTOM ARG1=Z_dist.y ARG2=Z_len FUNC=x/y PERIODIC=NO
+Z_vectors_z: CUSTOM ARG1=Z_dist.z ARG2=Z_len FUNC=x/y PERIODIC=NO
 
 # Insphere for vectors can't use sp because it is half the length needed for Z vectors
 sp2: INSPHERE ATOMS=1-6981:20,1-6981:20 CENTER=c1 RADIUS={RATIONAL R_0=0.2 D_0=2.3 NN=10 MM=20 D_MAX=2.7}
 
-Sp_X: SPHERICAL_KDE ARG1=X_vectors.x ARG2=X_vectors.y ARG3=X_vectors.z HEIGHTS=sp GRID_BIN=400 CONCENTRATION=50.0
-Sp_Z: SPHERICAL_KDE ARG1=Z_vectors.x ARG2=Z_vectors.y ARG3=Z_vectors.z HEIGHTS=sp2 GRID_BIN=400 CONCENTRATION=50.0
+Sp_X: SPHERICAL_KDE ARG1=X_vectors_x ARG2=X_vectors_y ARG3=X_vectors_z HEIGHTS=sp GRID_BIN=400 CONCENTRATION=50.0
+Sp_Z: SPHERICAL_KDE ARG1=Z_vectors_x ARG2=Z_vectors_y ARG3=Z_vectors_z HEIGHTS=sp2 GRID_BIN=400 CONCENTRATION=50.0
 #Sp_X: SPHERICAL_KDE ARG1=X_vectors.x ARG2=X_vectors.y ARG3=X_vectors.z GRID_BIN=400 CONCENTRATION=50.0
 #Sp_Z: SPHERICAL_KDE ARG1=Z_vectors.x ARG2=Z_vectors.y ARG3=Z_vectors.z GRID_BIN=400 CONCENTRATION=50.0

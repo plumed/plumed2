@@ -43,7 +43,7 @@ namespace symfunc {
 
 class Steinhardt : public ActionShortcut {
 private: 
-  void createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& vlab );
+  void createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab );
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -92,19 +92,22 @@ ActionShortcut(ao)
       arg2 += "," + getShortcutLabel() + "_denom_ones," + getShortcutLabel() + "_denom_ones";
   }
   readInputLine( getShortcutLabel() + ": DOT ARG1=" + arg1 + " ARG2=" + arg2 );
-   
-  // Divide all components by coordination numbers
-  for(int i=-l; i<=l; ++i) {
-    Tools::convert( i, snum );
-    // Real part
-    readInputLine( getShortcutLabel() + "_rmn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".rm-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-    // Imaginary part
-    readInputLine( getShortcutLabel() + "_imn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".im-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-  }
 
   // If we are doing VMEAN determine sum of vector components
   bool do_vmean; parseFlag("VMEAN",do_vmean);
-  if( do_vmean ) {
+  bool do_vsum; parseFlag("VSUM",do_vsum);
+  if( do_vmean || do_vsum ) {
+    // Divide all components by coordination numbers
+    for(int i=-l; i<=l; ++i) {
+      Tools::convert( i, snum );
+      // Real part
+      readInputLine( getShortcutLabel() + "_rmn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".rm-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      // Imaginary part
+      readInputLine( getShortcutLabel() + "_imn-[" + snum + "]: CUSTOM ARG1=" + getShortcutLabel() + ".im-[" + snum + "] ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    }
+  }
+
+  if( do_vmean ) { 
     for(int i=-l; i<=l; ++i) {
       std::string snum; Tools::convert( i, snum );
       // Real part
@@ -113,9 +116,8 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_ims-[" + snum + "]: MEAN ARG=" + getShortcutLabel() + "_imn-[" + snum + "] PERIODIC=NO");
     }
     // Now calculate the total length of the vector
-    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", l, "ms" );
+    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", l, "_", "ms" );
   }
-  bool do_vsum; parseFlag("VSUM",do_vsum);
   if( do_vsum ) {
     for(int i=-l; i<=l; ++i) {
       std::string snum; Tools::convert( i, snum );
@@ -125,22 +127,24 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_imz-[" + snum + "]: SUM ARG=" + getShortcutLabel() + "_imn-[" + snum + "] PERIODIC=NO"); 
     }
     // Now calculate the total length of the vector
-    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", l, "mz" );
+    createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", l, "_", "mz" );
   }
 
   // Now calculate the total length of the vector
-  createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_norm", l, "mn" );
-  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_norm", "", this );
+  createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_norm", l, ".", "m" );
+  // And take average
+  readInputLine( getShortcutLabel() + "_anorm: CUSTOM ARG1=" + getShortcutLabel() + "_norm ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_anorm", "", this );
 }
 
-void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& vlab ) {
+void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab ) {
   std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2"; arg_inp = "";
   std::string snum, num; unsigned nn=1;
   for(int i=-l; i<=l; ++i) {
     Tools::convert( nn, num ); Tools::convert( i, snum );
-    arg_inp += " ARG" + num + "=" + ilab + "_r" + vlab + "-[" + snum + "]";
+    arg_inp += " ARG" + num + "=" + ilab + sep + "r" + vlab + "-[" + snum + "]";
     nn++; Tools::convert( nn, num );
-    arg_inp += " ARG" + num + "=" + ilab + "_i" + vlab + "-[" + snum + "]";
+    arg_inp += " ARG" + num + "=" + ilab + sep + "i" + vlab + "-[" + snum + "]";
     nn++;
     if( i==-l ) norm_input += ",2"; else norm_input += ",2,2";
   }

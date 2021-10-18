@@ -15,7 +15,7 @@ sphere: INSPHERE ATOMS=q6 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=
 prod: MATHEVAL ARG1=qbar6 ARG2=sphere FUNC=x*y PERIODIC=NO
 sphere_sum: SUM ARG=prod PERIODIC=NO
 
-DUMPDERIVATIVES ARG=sphere_sum FILE=deriv FMT=%8.4f
+# DUMPDERIVATIVES ARG=sphere_sum FILE=deriv FMT=%8.4f
 
 # Renormalize
 lambdav: CUSTOM ARG=sphere_sum FUNC=1.732125*x PERIODIC=NO

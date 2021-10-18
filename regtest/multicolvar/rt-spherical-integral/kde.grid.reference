@@ -1,4 +1,4 @@
-#! FIELDS d1n.x d1n.y d1n.z h dh_d1n.x dh_d1n.y dh_d1n.z
+#! FIELDS d1n_x d1n_y d1n_z h dh_d1n_x dh_d1n_y dh_d1n_z
 #! SET normalisation    1.0000
 #! SET nbins  100
    0.1411  -0.9900   0.0000   0.0037   0.0052  -0.0364   0.0000

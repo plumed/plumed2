@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h" 
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "CoordinationNumbers.h"
 #include <string>
@@ -112,9 +114,15 @@ ActionShortcut(ao)
   int l; Tools::convert( getName().substr(15), l );
   for(int i=-l; i<=l; ++i) {
     std::string num; Tools::convert( i, num );
+    if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_rmn-[" + num + "]") ) {
+        readInputLine( specB + "_rmn-[" + num + "]: CUSTOM ARG1=" + specB + ".rm-[" + num + "] ARG2=" + specB + "_denom FUNC=x/y PERIODIC=NO");
+    }
     readInputLine( getShortcutLabel() + "_prod-rmn-[" + num + "]: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + specB + "_rmn-[" + num + "]");
     readInputLine( getShortcutLabel() + "_av-rmn-[" + num + "]: MATHEVAL ARG1=" + getShortcutLabel() + "_prod-rmn-[" + num + "] ARG2=" + specA + 
                    "_rmn-[" + num + "] ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO");
+    if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_imn-[" + num + "]") ) {
+        readInputLine( specB  + "_imn-[" + num + "]: CUSTOM ARG1=" + specB + ".im-[" + num + "] ARG2=" + specB  + "_denom FUNC=x/y PERIODIC=NO");
+    }
     readInputLine( getShortcutLabel() + "_prod-imn-[" + num + "]: DOT ARG1=" + getShortcutLabel() + "_mat.w ARG2=" + specB + "_imn-[" + num + "]");
     readInputLine( getShortcutLabel() + "_av-imn-[" + num + "]: MATHEVAL ARG1=" + getShortcutLabel() + "_prod-imn-[" + num + "] ARG2=" + specA + 
                    "_imn-[" + num + "] ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO"); 

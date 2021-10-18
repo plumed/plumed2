@@ -1,21 +1,19 @@
 q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
 
-norm_q1: NORMALIZE ...
-  ARG1=q1.rm-[-1]
-  ARG2=q1.im-[-1]
-  ARG3=q1.rm-[0]
-  ARG4=q1.im-[0]
-  ARG5=q1.rm-[1]
-  ARG6=q1.im-[1]
-...
+norm_q1_rm-[-1]: CUSTOM ARG1=q1.rm-[-1] ARG2=q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_im-[-1]: CUSTOM ARG1=q1.im-[-1] ARG2=q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_rm-[0]: CUSTOM ARG1=q1.rm-[0] ARG2=q1_norm FUNC=x/y PERIODIC=NO 
+norm_q1_im-[0]: CUSTOM ARG1=q1.im-[0] ARG2=q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_rm-[1]: CUSTOM ARG1=q1.rm-[1] ARG2=q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_im-[1]: CUSTOM ARG1=q1.im-[1] ARG2=q1_norm FUNC=x/y PERIODIC=NO
 
 dd: VSTACK ...
-     ARG1=norm_q1.rm-[-1]
-     ARG2=norm_q1.im-[-1]
-     ARG3=norm_q1.rm-[0]
-     ARG4=norm_q1.im-[0]
-     ARG5=norm_q1.rm-[1]
-     ARG6=norm_q1.im-[1]
+     ARG1=norm_q1_rm-[-1]
+     ARG2=norm_q1_im-[-1]
+     ARG3=norm_q1_rm-[0]
+     ARG4=norm_q1_im-[0]
+     ARG5=norm_q1_rm-[1]
+     ARG6=norm_q1_im-[1]
 ...
 
 ddT: TRANSPOSE ARG=dd

@@ -5,8 +5,12 @@ cmap: CONTACT_MATRIX ...
 ...
 
 # Now construct histogram
-cmapn: NORMALIZE ARG1=cmap.x ARG2=cmap.y ARG3=cmap.z 
-h: SPHERICAL_KDE ARG1=cmapn.x ARG2=cmapn.y ARG3=cmapn.z HEIGHTS=cmap.w CONCENTRATION=10 GRID_BIN=100
+cmapn_d2: COMBINE ARG1=cmap.x ARG2=cmap.y ARG3=cmap.z POWERS=2,2,2 PERIODIC=NO
+cmapn_d: CUSTOM ARG1=cmapn_d2 FUNC=sqrt(x) PERIODIC=NO
+cmapn_x: CUSTOM ARG1=cmap.x ARG2=cmapn_d FUNC=x/y PERIODIC=NO
+cmapn_y: CUSTOM ARG1=cmap.y ARG2=cmapn_d FUNC=x/y PERIODIC=NO
+cmapn_z: CUSTOM ARG1=cmap.z ARG2=cmapn_d FUNC=x/y PERIODIC=NO
+h: SPHERICAL_KDE ARG1=cmapn_x ARG2=cmapn_y ARG3=cmapn_z HEIGHTS=cmap.w CONCENTRATION=10 GRID_BIN=100
 iv: INTEGRATE_GRID ARG=h PERIODIC=NO
 
 b: RESTRAINT ARG=iv AT=0.75 KAPPA=10.0
