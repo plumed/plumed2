@@ -50,6 +50,7 @@ public:
   virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
+  virtual bool doWithTasks() const { return true; }
   virtual bool zeroRank() const { return false; }
   virtual void setPeriodicityForOutputs( ActionWithValue* action );
   virtual void setPrefactor( ActionWithArguments* action, const double pref ) {}

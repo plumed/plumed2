@@ -45,6 +45,9 @@ private:
   unsigned nderivatives;
 public:
   static void registerKeywords(Keywords&);
+/// This method is used to run the calculation with functions such as highest/lowest and sort.  
+/// It is static so we can reuse the functionality in FunctionOfMatrix
+  static void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
   explicit FunctionOfVector(const ActionOptions&);
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks() override ;
@@ -82,10 +85,12 @@ nderivatives(getNumberOfScalarArguments())
 {
   // Get the shape of the output
   std::vector<unsigned> shape(1); shape[0]=getNumberOfFinalTasks();
-  // Create the task list
-  for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
   // Read the input and do some checks
   myfunc.read( this );
+  // Create the task list
+  if( myfunc.doWithTasks() ) {
+      for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
+  } else { plumed_assert( getNumberOfArguments()==1 ); done_over_stream=false; getPntrToArgument(0)->buildDataStore( getLabel() ); }
   // Check we are not calculating a sum
   if( myfunc.zeroRank() ) shape.resize(0);  
   // Get the names of the components
@@ -119,7 +124,7 @@ nderivatives(getNumberOfScalarArguments())
           if( ab->hasClear() ) { hasscalar=true; getPntrToArgument(i)->buildDataStore( getLabel() ); }
       }
   }
-  if( !hasscalar && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  if( myfunc.doWithTasks() && !hasscalar && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
 }
 
 template <class T>
@@ -223,7 +228,7 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
 template <class T>
 void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   // If we have a time series then resize the task list so this action does all the required tasks
-  unsigned nstart = getFullNumberOfTasks(), ndata = 0;
+  plumed_assert( myfunc.doWithTasks() ); unsigned nstart = getFullNumberOfTasks(), ndata = 0;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues();
   }
@@ -256,23 +261,42 @@ void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector
 }
 
 template <class T>
+void FunctionOfVector<T>::runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f ) {
+  // This is used if we are doing sorting actions on a single vector
+  unsigned nv = arg->getNumberOfValues(); std::vector<double> args( nv );
+  for(unsigned i=0;i<nv;++i) args[i] = arg->get(i);
+  std::vector<double> vals( action->getNumberOfComponents() ); Matrix<double> derivatives( action->getNumberOfComponents(), nv );
+  f.calc( NULL, args, vals, derivatives );
+  for(unsigned i=0;i<vals.size();++i) action->copyOutput(i)->set( vals[i] );
+  // Return if we are not computing derivatives
+  if( action->doNotCalculateDerivatives() ) return;
+  // Now set the derivatives
+  for(unsigned j=0; j<nv; ++j) {
+      for(unsigned i=0;i<vals.size();++i) action->copyOutput(i)->setDerivative( j, derivatives(i,j) );
+  }
+} 
+
+template <class T>
 void FunctionOfVector<T>::calculate() {
   // Everything is done elsewhere
   if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
-  runAllTasks();
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  // This is used if we are doing sorting actions on a single vector
+  else runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
 
 template <class T>
 void FunctionOfVector<T>::update() {
   if( skipUpdate() || actionInChain() ) return;
-  plumed_dbg_assert( !actionInChain() );
+  plumed_dbg_assert( !actionInChain() ); plumed_assert( myfunc.doWithTasks() );
   if( getFullNumberOfTasks()>0 ) runAllTasks();
 }
   
 template <class T>
 void FunctionOfVector<T>::runFinalJobs() {
   if( skipUpdate() || actionInChain() ) return;
+  plumed_assert( myfunc.doWithTasks() );
   resizeForFinalTasks(); runAllTasks();
 }
 

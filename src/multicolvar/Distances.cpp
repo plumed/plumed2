@@ -42,6 +42,7 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 void Distances::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
@@ -60,6 +61,7 @@ ActionShortcut(ao)
 {
   // Create distances
   std::string dline = getShortcutLabel() + ": DISTANCE";
+  bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) dline += " NOPBC";
   bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder); if( numder ) dline += " NUMERICAL_DERIVATIVES";
   bool comp; parseFlag("COMPONENTS",comp); if( comp ) dline += " COMPONENTS";
   bool scomp; parseFlag("SCALED_COMPONENTS",scomp); if( scomp ) dline += " SCALED_COMPONENTS";

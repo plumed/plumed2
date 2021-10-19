@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,13 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
-#include "Function.h"
-
-#include <cmath>
-#include <algorithm>
-#include <utility>
-
-using namespace std;
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
+#include "FunctionTemplateBase.h"
 
 namespace PLMD {
 namespace function {
@@ -40,76 +37,52 @@ This function can be used to find the highest colvar by magnitude in a set.
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION LOWEST
+/*
+This function can be used to find the lowest colvar by magnitude in a set.
 
-class Highest: public Function {
-private:
-  MultiValue tvals;
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+class Highest : public FunctionTemplateBase {
+private: 
+  bool min, scalar_out;
 public:
-  explicit Highest(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
-  static void registerKeywords(Keywords& keys);
-  void transformFinalValueAndDerivatives( const std::vector<double>& buf );
+  void registerKeywords( Keywords& keys ) override {}
+  void read( ActionWithArguments* action ) override;
+  bool zeroRank() const override { return scalar_out; }
+  bool doWithTasks() const override { return !scalar_out; }
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
+typedef FunctionShortcut<Highest> HighestShortcut;
+PLUMED_REGISTER_ACTION(HighestShortcut,"HIGHEST")
+PLUMED_REGISTER_ACTION(HighestShortcut,"LOWEST")
+typedef FunctionOfScalar<Highest> ScalarHighest;
+PLUMED_REGISTER_ACTION(ScalarHighest,"HIGHEST_SCALAR")
+PLUMED_REGISTER_ACTION(ScalarHighest,"LOWEST_SCALAR")
+typedef FunctionOfVector<Highest> VectorHighest;
+PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
+PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
-PLUMED_REGISTER_ACTION(Highest,"HIGHEST")
-
-void Highest::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG");
+void Highest::read( ActionWithArguments* action ) {
+  min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos ); 
+  for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
+      if( action->getPntrToArgument(i)->isPeriodic() ) action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
+  }
+  scalar_out = action->getNumberOfArguments()==1;
+  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("sorting a single scalar is trivial");
 }
 
-Highest::Highest(const ActionOptions&ao):
-  Action(ao),
-  Function(ao),
-  tvals(0,0)
-{
-  if( !numberedkeys ) {
-    if( getPntrToArgument(0)->getRank()>0 ) {
-      if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
-    }
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() );
-  }
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string s; Tools::convert(i+1,s);
-    if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+s+")");
-  }
-  addValueWithDerivatives(); checkRead();
-}
-
-void Highest::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  if( args.size()>1 ) {
-    double highest = args[0]; unsigned highind = 0;
-    for(unsigned i=1; i<args.size(); ++i) {
-      if( args[i]>highest ) { highest = args[i]; highind = 0; }
-    }
-    addValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
-  }
-}
-
-void Highest::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
-  if( !actionInChain() || getNumberOfArguments()>1 ) return;
-
-  unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfValues(); ++j ) {
-      if( myarg->get(j)>highest ) { aind=i; highest=myarg->get(j); hind = pves + j; }
-    }
-    pves += myarg->getNumberOfValues();
-  }
-  Value* val0 = getPntrToComponent(0); val0->set( highest );
-  if( !doNotCalculateDerivatives() ) {
-    unsigned nn=0, nm=0;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      nn += getPntrToArgument(i)->getNumberOfValues();
-      if( hind<nn ) { break; }
-      nm += getPntrToArgument(i)->getNumberOfValues();
-    }
-    tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
-    unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
-    for(unsigned i=0; i<tvals.getNumberActive(istrn); ++i) {
-      unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
-    }
+void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  if( min ) {
+      vals[0] = *std::min_element(args.begin(), args.end());
+      derivatives(0,std::min_element(args.begin(), args.end()) - args.begin()) = 1;
+  } else { 
+      vals[0] = *std::max_element(args.begin(), args.end());
+      derivatives(0,std::max_element(args.begin(), args.end()) - args.begin()) = 1; 
   }
 }
 
