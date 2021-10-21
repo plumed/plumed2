@@ -102,11 +102,21 @@ nderivatives(getNumberOfScalarArguments())
     std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
     for(unsigned i=0;i<components.size();++i) {
         if( str_ind.size()>0 ) {
-            for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j], shape );
+            for(unsigned j=0;j<str_ind.size();++j) {
+                if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] + str_ind[j], shape );
+                else addComponent( components[i] + str_ind[j], shape );
+            }
         } else if( components[i].find_first_of("_")!=std::string::npos ) {
-            if( getNumberOfArguments()==1 ) addValue( shape ); 
-            else { for(unsigned i=0; i<getNumberOfArguments(); ++i) addComponent( getPntrToArgument(i)->getName() + components[i], shape ); }
-        } else addComponent( components[i], shape );
+            if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
+            else if( getNumberOfArguments()==1 ) addValue( shape ); 
+            else { 
+               for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+                   if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i], shape ); 
+                   else addComponent( getPntrToArgument(i)->getName() + components[i], shape ); 
+               }
+            }
+        } else if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i], shape );
+        else addComponent( components[i], shape );
     } 
   }
   // Set the periodicities of the output components
@@ -266,7 +276,7 @@ void FunctionOfVector<T>::runSingleTaskCalculation( const Value* arg, ActionWith
   unsigned nv = arg->getNumberOfValues(); std::vector<double> args( nv );
   for(unsigned i=0;i<nv;++i) args[i] = arg->get(i);
   std::vector<double> vals( action->getNumberOfComponents() ); Matrix<double> derivatives( action->getNumberOfComponents(), nv );
-  f.calc( NULL, args, vals, derivatives );
+  ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(action); plumed_assert( aa ); f.calc( aa, args, vals, derivatives );
   for(unsigned i=0;i<vals.size();++i) action->copyOutput(i)->set( vals[i] );
   // Return if we are not computing derivatives
   if( action->doNotCalculateDerivatives() ) return;
