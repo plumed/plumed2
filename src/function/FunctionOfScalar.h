@@ -81,8 +81,11 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 ) addValueWithDerivatives();
-  else { 
+  std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
+  if( components.size()==0 && str_ind.size()==0 ) addValueWithDerivatives();
+  else if ( components.size()==0 ) {
+    for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j] ); 
+  } else { 
     std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
     for(unsigned i=0;i<components.size();++i) {
         if( str_ind.size()>0 ) {

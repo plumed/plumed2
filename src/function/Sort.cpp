@@ -19,8 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
-#include "Function.h"
+#include "FunctionTemplateBase.h"
 
 namespace PLMD {
 namespace function {
@@ -51,54 +54,64 @@ PRINT ARG=sort.1,sort.4
 //+ENDPLUMEDOC
 
 
-class Sort :
-  public Function
-{
+class Sort : public FunctionTemplateBase {
+private:
+  bool scalar_out;
+  unsigned nargs;
 public:
-  explicit Sort(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
-  static void registerKeywords(Keywords& keys);
+  void registerKeywords(Keywords& keys) override ;
+  void read( ActionWithArguments* action ) override;
+  bool zeroRank() const override { return true; }
+  bool doWithTasks() const override { return !scalar_out; }
+  std::vector<std::string> getComponentsPerLabel() const override ;
+  void setPeriodicityForOutputs( ActionWithValue* action ) override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-
-PLUMED_REGISTER_ACTION(Sort,"SORT")
+typedef FunctionShortcut<Sort> SortShortcut;
+PLUMED_REGISTER_ACTION(SortShortcut,"SORT")
+typedef FunctionOfScalar<Sort> ScalarSort;
+PLUMED_REGISTER_ACTION(ScalarSort,"SORT_SCALAR")
+typedef FunctionOfVector<Sort> VectorSort;
+PLUMED_REGISTER_ACTION(VectorSort,"SORT_VECTOR")
 
 void Sort::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
-  useCustomisableComponents(keys);
+   keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
+                                  "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on"); 
 }
 
-Sort::Sort(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
-  unsigned k=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+ getPntrToArgument(i)->getName() +")");
-    for(unsigned j=0; j<getPntrToArgument(i)->getNumberOfValues(); ++j) {
-      std::string s; Tools::convert(k+1,s);
-      addComponentWithDerivatives(s+"th");
-      getPntrToComponent(k)->setNotPeriodic(); k++;
-    }
+
+void Sort::read( ActionWithArguments* action ) {
+  scalar_out = action->getNumberOfArguments()==1; nargs = action->getNumberOfArguments(); if( scalar_out ) nargs = action->getPntrToArgument(0)->getNumberOfValues();
+  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("cannot calculate moments if only given one variable"); 
+
+  for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
+    if((action->getPntrToArgument(i))->isPeriodic()) action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
   }
-  checkRead();
-
 }
 
-void Sort::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  std::vector<std::pair<double,int> > vals(getNumberOfScalarArguments());
-  for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) {
-    vals[i].first=args[i];
+std::vector<std::string> Sort::getComponentsPerLabel() const {
+  std::vector<std::string> comp; std::string num;
+  for(unsigned i=0; i<nargs; ++i) {
+    Tools::convert(i+1,num); comp.push_back( num+"th" );
+  }
+  return comp;
+} 
+  
+void Sort::setPeriodicityForOutputs( ActionWithValue* action ) {
+  for(unsigned i=0;i<nargs;++i) { std::string num; Tools::convert(i+1,num); action->componentIsNotPeriodic( num+"th" ); }
+}
+
+void Sort::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  std::vector<std::pair<double,int> > data(args.size());
+  for(unsigned i=0; i<args.size(); ++i) {
+    data[i].first=args[i];
 // In this manner I remember from which argument the component depends:
-    vals[i].second=i;
+    data[i].second=i;
   }
 // STL sort sorts based on first element (value) then second (index)
-  std::sort(vals.begin(),vals.end());
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    addValue( i, vals[i].first, myvals );
-    addDerivative( i, vals[i].second, 1.0, myvals );
-  }
+  std::sort(data.begin(),data.end()); derivatives = 0;
+  for(int i=0; i<vals.size(); ++i) { vals[i] = data[i].first; derivatives(i, data[i].second ) = 1; }
 }
 
 }

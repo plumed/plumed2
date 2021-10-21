@@ -94,11 +94,15 @@ nderivatives(getNumberOfScalarArguments())
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
-  else if( components.size()==0 ) { 
+  std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
+  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) addValueWithDerivatives( shape );
+  else if( components.size()==0 && myfunc.zeroRank() ) {
+     for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j], shape );
+  } else if( components.size()==0 && str_ind.size()==0 ) { 
      addValue( shape ); getPntrToOutput(0)->setSymmetric( symmetric );
+  } else if ( components.size()==0 ) {
+    for(unsigned j=0;j<str_ind.size();++j) { addComponent( str_ind[j], shape ); getPntrToOutput(j)->setSymmetric( symmetric ); }
   } else {
-    std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
     for(unsigned i=0;i<components.size();++i) {
         if( str_ind.size()>0 ) {
             for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j], shape );
