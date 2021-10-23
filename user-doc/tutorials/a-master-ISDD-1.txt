@@ -18,7 +18,7 @@ Once this tutorial is completed, users will be able to:
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
-\section master-ISDD-1-install Software
+\section master-ISDD-1-software Software
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.7.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using Conda.
