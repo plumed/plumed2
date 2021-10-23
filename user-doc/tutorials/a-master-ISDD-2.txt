@@ -34,7 +34,7 @@ tar xvzf master-ISDD-2.tar.gz
 Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
 it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
 
-\note This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
+\note This tutorial has been tested with PLUMED version 2.7.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 
