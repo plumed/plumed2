@@ -33,6 +33,8 @@ conda
 
 In case the command is not found, please follow the instructions below to install Conda in the
 directory `/path/to/conda`. You can choose it in your home so that you will have write permission to it.
+If Conda is already installed on your machine, please skip the instructions below and move directly
+to the creation of the conda environment for this tutorial.
 
 \verbatim
 # on Linux:
