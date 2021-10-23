@@ -1,5 +1,5 @@
 /**
-\page master-ISDD-1 Master ISDD tutorial 2020: Brief introduction to PLUMED
+\page master-ISDD-1 Master ISDD tutorial 2021: Brief introduction to PLUMED
 
 \section master-ISDD-1-aims Aims
 
@@ -7,9 +7,9 @@ The aim of this tutorial is to introduce users to the PLUMED syntax. We will go 
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
 (adapting a lot of material from other tutorials) for 
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Universite' de Paris on November 25th, 2020.
+at Universite' de Paris on October 26th, 2021.
 
-\section master-ISDD-1-lo Learning Outcomes
+\section master-ISDD-1-lo Aims 
 
 Once this tutorial is completed, users will be able to:
 
@@ -18,12 +18,65 @@ Once this tutorial is completed, users will be able to:
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
-\section master-ISDD-1-install Software overview
+\section master-ISDD-1-install Software
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.6.2 and
-<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. Both codes have already been installed on your machines and are ready to use. If you are attending the tutorial on Zoom, please have a look below at the section "Install GROMACS+PLUMED on your own machine with Conda". 
+<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using Conda.
 
-\subsection master-ISDD-1-plumed PLUMED
+\subsection master-ISDD-1-install Installation
+
+First, check if Conda is installed on your machine by typing:
+
+\verbatim
+conda
+\endverbatim
+
+In case the command is not found, please follow the instructions below to install Conda in the
+directory `/path/to/conda`. You can choose it in your home so that you will have write permission to it.
+
+\verbatim
+# on Linux:
+wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+# on MacOS:
+# wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+bash ./miniconda.sh -b -f -p /path/to/conda
+# export PATH to find the Conda executable
+export PATH="/path/to/conda/bin:$PATH"
+# initialize bash shell
+conda init bash
+\endverbatim
+
+Now we can create a conda environment for the ISDD tutorial using the following commands:
+
+\verbatim
+# create environment
+conda create --name ISDD-tutorial-2021
+\endverbatim
+
+and activate it with:
+
+\verbatim
+# activate environment
+conda activate ISDD-tutorial-2021
+\endverbatim
+
+Finally, we can proceed with the installation of the required software: 
+
+\verbatim
+conda install -c conda-forge plumed py-plumed 
+conda install --strict-channel-priority -c plumed/label/masterclass -c conda-forge gromacs
+\endverbatim
+
+The `--strict-channel-priority` might be necessary in case your conda install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
+
+Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
+activate the `ISDD-tutorial-2021` Conda environment using the following command:
+
+\verbatim
+conda activate ISDD-tutorial-2021
+\endverbatim
+
+\subsection master-ISDD-1-plumed PLUMED overview
  
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyses on-the-fly and to bias 
@@ -54,19 +107,12 @@ As you can see we can do a number of things with PLUMED \ref driver. For all of 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations during
 a MD simulation, so all the things that you will learn now will be useful later when you will run PLUMED coupled to GROMACS.
 
-\subsection master-ISDD-1-gromacs GROMACS
+\subsection master-ISDD-1-gromacs GROMACS overview
 
 GROMACS is a molecular dynamics package mainly designed for simulations of proteins, lipids, and nucleic acids.
 More info can be found <a href="http://www.gromacs.org">here</a>.
 
-To be able to use GROMACS on your machine, you need to execute the following command line in your bash terminal:
-
-\verbatim
-source /opt/sdv/gromacs-2019.6/bin/GMXRC
-\endverbatim
-
-You need to execute the command above in every new terminal window (shell) you open. Alternatively, you can add the line 
-to the file `.bashrc` located in your home directory. After doing this, you can open a new shell and check that GROMACS is properly working by typing:
+You can check that GROMACS is properly working by typing:
 
 \verbatim
 gmx mdrun -h
@@ -74,65 +120,6 @@ gmx mdrun -h
 
 If you inspect the long output generated by this command, you will notice a `-plumed` option, which indicates that GROMACS has
 properly been compiled with PLUMED. Great, now you are ready to go!
-
-\hidden{Install GROMACS+PLUMED on your own machine with Conda}
-
-In the eventuality in which you cannot find the software on your machine or you are working remotely, you can find a pre-compiled
-version of GROMACS 2018.8 patched with PLUMED version 2.6.2 on Conda.
-
-First, check if Conda is installed on your machine by typing:
-
-\verbatim
-conda
-\endverbatim
-
-In case the command is not found, please follow the instructions below to install Conda in the
-directory `/path/to/conda`. You can choose it in your home so that you will have write permission to it.
-
-\verbatim
-# on Linux:
-wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-# on MacOS:
-# wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-bash ./miniconda.sh -b -f -p /path/to/conda
-# export PATH to find the Conda executable
-export PATH="/path/to/conda/bin:$PATH"
-# initialize bash shell
-conda init bash
-\endverbatim
-
-Now you can open a new shell and create a separate environment for the ISDD tutorial using the following commands:
-
-\verbatim
-# create environment
-conda create --name ISDD-tutorial
-# activate environment
-conda activate ISDD-tutorial
-\endverbatim
-
-Finally, you can install the pre-compiled version of GROMACS 2018.8 patched with PLUMED 2.6.2:
-
-\verbatim
-conda install -c plumed/label/munster -c conda-forge gromacs
-\endverbatim 
-
-and check your installation by typing:
-
-\verbatim
-gmx mdrun -h
-\endverbatim
-
-If you inspect the long output generated by this command, you will notice a `-plumed` option, which indicates that GROMACS has
-properly been compiled with PLUMED. Great, now you are ready to go!
-
-Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
-activate the `ISDD-tutorial` Conda environment using the following command:
-
-\verbatim
-conda activate ISDD-tutorial
-\endverbatim
-
-\endhidden
 
 \section master-ISDD-1-structure Your first PLUMED input file
 
