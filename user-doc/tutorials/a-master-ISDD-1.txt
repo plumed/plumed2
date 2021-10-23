@@ -1,7 +1,7 @@
 /**
 \page master-ISDD-1 Master ISDD tutorial 2021: Brief introduction to PLUMED
 
-\section master-ISDD-1-aims Aims
+\section master-ISDD-1-aims Aim
 
 The aim of this tutorial is to introduce users to the PLUMED syntax. We will go through the preparation of input files to calculate
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
@@ -9,7 +9,7 @@ and print simple collective variables on a pre-calculated trajectory. This tutor
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
 at Universite' de Paris on October 26th, 2021.
 
-\section master-ISDD-1-lo Aims 
+\section master-ISDD-1-lo Objectives 
 
 Once this tutorial is completed, users will be able to:
 
