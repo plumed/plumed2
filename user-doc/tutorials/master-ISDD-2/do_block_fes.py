@@ -169,7 +169,7 @@ for i in range(0, nbins):
     for x in xs:
         log.write("%12.6lf " % x)
     # calculate fes and error
-    if (ave[i]>0):
+    try:
        # fes
        fes = -KBT_ * math.log(ave[i])
        # variance fes
@@ -178,6 +178,8 @@ for i in range(0, nbins):
        errf = math.sqrt(varf)
        # printout
        log.write("   %12.6lf %12.6lf\n" % (fes, errf))
-    else:
+    except ValueError:
+       log.write("   %12s %12s\n" % ("Inf","Inf"))
+    except OverflowError:
        log.write("   %12s %12s\n" % ("Inf","Inf"))
 log.close()
