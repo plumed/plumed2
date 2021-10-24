@@ -21,20 +21,20 @@ Once this tutorial is completed, users will be able to:
 \section master-ISDD-1-software Software
 
 In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.7.2 and
-<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using conda.
+<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using `conda`.
 
 \subsection master-ISDD-1-install Installation
 
-First, check if conda is installed on your machine by typing:
+First, check if `conda` is installed on your machine by typing:
 
 \verbatim
 conda
 \endverbatim
 
-In case the command is not found, please follow the instructions below to install conda in the
+In case the command is not found, please follow the instructions below to install `conda` in the
 directory `/path/to/conda`. You can choose it in your home so that you will have write permission to it.
-If conda is already installed on your machine, please skip the instructions below and move directly
-to the creation of the conda environment for this tutorial.
+If `conda` is already installed on your machine, please skip the instructions below and move directly
+to the creation of the `conda` environment for this tutorial.
 
 \verbatim
 # on Linux:
@@ -48,7 +48,7 @@ export PATH="/path/to/conda/bin:$PATH"
 conda init bash
 \endverbatim
 
-Now we can create a conda environment for the ISDD tutorial using the following commands:
+Now we can create a `conda` environment for the ISDD tutorial using the following commands:
 
 \verbatim
 # create environment
@@ -69,10 +69,10 @@ conda install -c conda-forge plumed
 conda install --strict-channel-priority -c plumed/label/masterclass -c conda-forge gromacs
 \endverbatim
 
-The `--strict-channel-priority` might be necessary in case your conda install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
+The `--strict-channel-priority` might be necessary in case your `conda` install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
 
 Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
-activate the `ISDD-tutorial-2021` conda environment using the following command:
+activate the `ISDD-tutorial-2021` environment using the following command:
 
 \verbatim
 conda activate ISDD-tutorial-2021
