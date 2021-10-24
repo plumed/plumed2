@@ -322,7 +322,7 @@ After completing the PLUMED input file above, let's use it to analyze the trajec
 
 You can use `gnuplot` to visualize the trajectory of the two CVs calculated with the PLUMED input file above
 and written in the `COLVAR` file.
-If you executed this exercise correctly, these two trajectories should be identical.
+__Are the two trajectories identical?__
 
 \subsection master-ISDD-1-ex-3 Exercise 3: Virtual atoms
 
@@ -370,10 +370,10 @@ plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
 \endverbatim
 
 Let's now analyze the output of the calculation by plotting the time series of the two CVs.
-Are they identical? What do you think is happening in those frames in which the two CVs are different?
+__Are they identical? What do you think is happening in those frames in which the two CVs are different?__
 
 You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
-Are the results identical?  
+__Are the results identical?__  
 
 \section master-ISDD-1-conclusions Conclusions
 

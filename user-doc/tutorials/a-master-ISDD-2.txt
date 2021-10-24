@@ -485,7 +485,7 @@ of the block that exceeds the correlation between data points (Fig. \ref master-
 \anchor master-ISDD-2-block-phi 
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
-What can we learn from this analysis about the convergence of the metadynamics simulation?
+__What can we learn from this analysis about the convergence of the metadynamics simulation?__
 
 \section master-ISDD-2-conclusions Conclusions
 
