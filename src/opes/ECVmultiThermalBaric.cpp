@@ -174,7 +174,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 
   if(custom_lambdas_.size()>0)
   {
-  //make sure no incompatible options are used
+    //make sure no incompatible options are used
     plumed_massert(temps.size()==0,"cannot set both SET_ALL_TEMP_PRESSURE and TEMP_SET_ALL");
     plumed_massert(pres_.size()==0,"cannot set both SET_ALL_TEMP_PRESSURE and PRESSURE_SET_ALL");
     plumed_massert(temp_steps==0,"cannot set both SET_ALL_TEMP_PRESSURE and TEMP_STEPS");
@@ -209,7 +209,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   }
   else
   {
-  //set the intermediate temperatures
+    //set the intermediate temperatures
     if(temps.size()>0)
     {
       plumed_massert(temp_steps==0,"cannot set both TEMP_STEPS and TEMP_SET_ALL");
@@ -252,7 +252,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     if(temp0<(1-tol)*temp_min || temp0>(1+tol)*temp_max)
       log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp0);
 
-  //set the intermediate pressures
+    //set the intermediate pressures
     if(pres_.size()>0)
     {
       plumed_massert(pres_steps==0,"cannot set both PRESSURE_STEPS and PRESSURE_SET_ALL");
@@ -291,7 +291,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     if(pres0_<pres_min || pres0_>pres_max)
       log.printf(" +++ WARNING +++ running at PRESSURE=%g which is outside the chosen pressure range\n",pres0_);
 
-  //set CUT_CORNER
+    //set CUT_CORNER
     std::string cc_usage("CUT_CORNER=temp_low,pres_low,temp_high,pres_high");
     if(cut_corner.size()==4)
     {
