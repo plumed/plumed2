@@ -77,7 +77,12 @@ mypath_obj(NULL)
       metric.cmd("init"); metric.cmd("readInputLine",cinp);
   }
   // Now setup stuff to retrieve the final displacement
-  ActionWithValue* fav = dynamic_cast<ActionWithValue*>( metric.getActionSet()[metric.getActionSet().size()-1].get() );
+  unsigned aind = metric.getActionSet().size()-1;
+  while( true ) {
+     const ActionShortcut* as=dynamic_cast<const ActionShortcut*>( metric.getActionSet()[aind].get() );
+     if( !as ) break ; aind = aind - 1; plumed_assert( aind>=0 );
+  } 
+  ActionWithValue* fav = dynamic_cast<ActionWithValue*>( metric.getActionSet()[aind].get() );
   if( !fav ) act->error("final value should calculate relevant value that you want as reference");
   std::string name = (fav->copyOutput(0))->getName(); long rank; metric.cmd("getDataRank " + name, &rank );
   if( rank==0 ) rank=1;

@@ -282,7 +282,12 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Retrieve final displacement vector
-  ActionWithValue* av=dynamic_cast<ActionWithValue*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
+  unsigned aind = plmd.getActionSet().size()-1;
+  while( true ) {
+     const ActionShortcut* as=dynamic_cast<const ActionShortcut*>( plmd.getActionSet()[aind].get() );
+     if( !as ) break ; aind = aind - 1; plumed_assert( aind>=0 );
+  } 
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( plmd.getActionSet()[aind].get() );
   if( !av ) error("invalid input for metric" );
   if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD_CALC" ) error("cannot use multi component actions as metric");
   std::string mydisp = av->copyOutput(0)->getName();

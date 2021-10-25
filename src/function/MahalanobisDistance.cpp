@@ -50,7 +50,7 @@ Action(ao),
 ActionShortcut(ao)
 { 
   std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
-  readInputLine( getShortcutLabel() + "_diff: DIFFERENCE ARG1=" + arg1 + " ARG2=" + arg2 );
+  readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
   bool von_miss, squared; parseFlag("VON_MISSES",von_miss); parseFlag("SQUARED",squared);
   if( von_miss ) {
       std::size_t dot=metstr.find_first_of("."); if( dot!=std::string::npos ) error("read in metric not implemented - contact G. Tribello");

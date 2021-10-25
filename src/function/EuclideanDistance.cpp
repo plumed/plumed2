@@ -45,7 +45,7 @@ Action(ao),
 ActionShortcut(ao)
 { 
   std::string arg1, arg2; parse("ARG1",arg1); parse("ARG2",arg2); 
-  readInputLine( getShortcutLabel() + "_diff: DIFFERENCE ARG1=" + arg1 + " ARG2=" + arg2 );
+  readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
   readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_diff FUNC=x*x PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared);
   if( !squared ) {

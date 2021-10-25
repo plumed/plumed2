@@ -177,6 +177,12 @@ void Path::readPropertyData( const std::string& refname, const std::string& refs
   } else action->readInputLine( action->getShortcutLabel() + "_ind: READ_VECTOR ARG=" + action->getShortcutLabel() + "_data CENTER=" + properties[0] );
 }
 
+std::string Path::fixArgumentName( const std::string& argin ) {
+  std::string argout = argin; std::size_t dot=argin.find(".");
+  if( dot!=std::string::npos ) argout = argin.substr(0,dot) + "_" + argin.substr(dot+1); 
+  return argout;
+}
+
 void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
                             ActionShortcut* action, std::vector<std::string>& refactions ) {
   std::vector<std::string> argnames; action->parseVector("ARG",argnames); std::vector<double> coeff;
@@ -197,6 +203,12 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
       if( !do_read ) break ;
       std::string num, stri; Tools::convert( nfram+1, num );
       action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr );
+      if( argnames.size()>1 ) {
+          for(unsigned i=0; i<argnames.size(); ++i) {
+              std::string cnum; Tools::convert( i+1, cnum ); 
+              action->readInputLine( scut_lab + "_ref" + num + "_" + fixArgumentName(argnames[i]) + ": SELECT_COMPONENTS ARG=" + scut_lab + "_ref" + num + " COMPONENTS=" + cnum );
+          }
+      }
 
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {
@@ -252,13 +264,20 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
           // Set the type
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
-          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG2=" + refactions[i]; 
+          ref_line += "INPUT" + num + "={"; 
           if( mtype!="EUCLIDEAN" ) {
-            ref_line += " ARG1=" + scut_lab + "_instantaneous";
+            ref_line += scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + scut_lab + "_instantaneous ARG2=" + refactions[i];
           } else {
             ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( refactions[i] );
-            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues(); 
-            ref_line +=" ARG1=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
+            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues();
+            if( argnames.size()==1 ) ref_line += scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + argnames[0] + " ARG2=" + refactions[i];
+            else { 
+                for(unsigned j=0; j<argnames.size(); ++j) {
+                    ref_line += scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[j]) + ": DIFFERENCE ARG1=" + argnames[j] + " ARG2=" + refactions[i] + "_" + fixArgumentName(argnames[j]) + " ; ";
+                }
+                ref_line += scut_lab + "_diff" + num + ": CONCATENATE ARG=" + scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[0]); 
+                for(unsigned j=1;j<argnames.size();++j) ref_line += "," + scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[j]); 
+            }
           }
           if( coeff.size()>0 ) {
               if( geometric ) action->error("having coefficients with geometric path makes no sense");

@@ -28,6 +28,8 @@ namespace PLMD {
 namespace mapping {
 
 class Path : public ActionShortcut {
+private:
+  static std::string fixArgumentName( const std::string& argin );
 public:
   static void registerKeywords(Keywords& keys);
   static void registerInputFileKeywords( Keywords& keys );

@@ -27,6 +27,7 @@
 #include "core/CollectFrames.h"
 #include "core/ActionSetup.h"
 #include "tools/Matrix.h"
+#include "Sum.h"
 
 namespace PLMD {
 namespace function {
@@ -126,19 +127,17 @@ nderivatives(getNumberOfScalarArguments())
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // Check if we can put the function in a chain
-  bool hasscalar=false;
+  bool doNotChain=false;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(i)->getPntrToAction() );
-      // No chains if we have a scalar input that is not calculated in setup 
+      if( ab && ab->hasClear() ) { doNotChain=true; getPntrToArgument(i)->buildDataStore( getLabel() ); } 
+      // No chains if we are using a sum or a mean
       if( getPntrToArgument(i)->getRank()==0 ) {
-          ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(i)->getPntrToAction() );
-          if(!as) hasscalar=true; else getPntrToArgument(i)->buildDataStore( getLabel() );
-      // No chains if we are doing some analysis of a stored time series
-      } else if(ab) {
-          if( ab->hasClear() ) { hasscalar=true; getPntrToArgument(i)->buildDataStore( getLabel() ); }
-      }
+          FunctionOfVector<Sum>* as = dynamic_cast<FunctionOfVector<Sum>*>( getPntrToArgument(i)->getPntrToAction() ); 
+          if(as) doNotChain=true;
+      }  
   }
-  if( myfunc.doWithTasks() && !hasscalar && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  if( myfunc.doWithTasks() && !doNotChain && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
 }
 
 template <class T>
@@ -297,7 +296,7 @@ void FunctionOfVector<T>::calculate() {
   // This is done if we are calculating a function of multiple cvs
   if( getFullNumberOfTasks()>0 ) runAllTasks();
   // This is used if we are doing sorting actions on a single vector
-  else runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
+  else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
 
 template <class T>

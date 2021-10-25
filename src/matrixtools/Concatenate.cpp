@@ -60,7 +60,17 @@ Concatenate::Concatenate(const ActionOptions& ao):
           getPntrToArgument(i)->buildDataStore( getLabel() ); 
       }
       std::vector<unsigned> shape(1); shape[0]=getNumberOfScalarArguments(); 
-      addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
+      addValue( shape ); bool period=getPntrToArgument(0)->isPeriodic(); 
+      std::string min, max; if( period ) getPntrToArgument(0)->getDomain( min, max );
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          if( period!=getPntrToArgument(i)->isPeriodic() ) error("periods of input arguments should match");
+          if( period ) {
+              std::string min0, max0; getPntrToArgument(i)->getDomain( min0, max0 );
+              if( min0!=min || max0!=max ) error("domains of input arguments should match");
+          }
+      }
+      if( period ) setPeriodic( min, max ); else setNotPeriodic(); 
+      getPntrToOutput(0)->alwaysStoreValues();
   } else {
       unsigned nrows=0, ncols=0; std::vector<Value*> arglist; vectors=false;
       for(unsigned i=1;; i++) {

@@ -120,9 +120,9 @@ void ParallelPlumedActions::turnOnDerivatives() {
           ActionWithValue* av=dynamic_cast<ActionWithValue*>( plumed.getActionSet()[j].get() );
           if(av) {
              av->turnOnDerivatives();
-             if( j>action_lists[i].first && !av->actionInChain() ) {
-                 error("cannot use derivatives with multiple chains in input");
-             }
+             // if( j>action_lists[i].first && !av->actionInChain() ) {
+             //     error("cannot use derivatives with multiple chains in input");
+             // }
           } 
       }
   }
