@@ -81,8 +81,9 @@ ActionWithValue(ao)
           std::string tmin, tmax; getPntrToArgument(i)->getDomain( tmin, tmax );
           if( tmin!=smin || tmax!=smax ) error("domain of argument " + getPntrToArgument(i)->getName() + " is different from domain for all other arguments");
       }
-   }
-  forcesToApply.resize( shape[0]*shape[1] ); for(unsigned i=0;i<getNumberOfFinalTasks();++i) addTaskToList(i);
+  }
+  if( shape.size()==1 ) forcesToApply.resize( shape[0] ); else forcesToApply.resize( shape[0]*shape[1] ); 
+  for(unsigned i=0;i<getNumberOfFinalTasks();++i) addTaskToList(i);
 }
 
 unsigned Stack::getNumberOfDerivatives() const {
@@ -95,23 +96,23 @@ unsigned Stack::getNumberOfColumns() const {
 
 unsigned Stack::getNumberOfFinalTasks() {
   std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
+  if( shape.size()==1 ) return 1;
   unsigned nvals=shape[1]; if( getName()=="VSTACK") nvals=shape[0];
   return nvals;
 }
 
 std::vector<unsigned> Stack::getMatrixShapeForFinalTasks() {
-  unsigned nvals = 0;
-  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
+  if( getNumberOfArguments()==0 ) error("no arguments have been selected");
+  unsigned nvals = getPntrToArgument(0)->getNumberOfValues();;
   // Check for consistent numbers of values in other actions
-  for(unsigned j=0;j<arg_ends.size()-1;++j) {
-      unsigned tvals = 0;
-      for(unsigned i=arg_ends[j];i<arg_ends[j+1];++i) tvals += getPntrToArgument(i)->getNumberOfValues();
-      if( tvals!=nvals ) error("mismatch between number of values in each vector that is to be combined");
+  for(unsigned j=0;j<getNumberOfArguments();++j) {
+      if( getPntrToArgument(j)->getNumberOfValues()!=nvals ) error("mismatch between number of values in each vector that is to be combined");
   }
 
   std::vector<unsigned> shape(2);
-  if( getName()=="HSTACK" ){ shape[0]=arg_ends.size()-1; shape[1]=nvals; }
-  else if( getName()=="VSTACK" ) { shape[0]=nvals; shape[1]=arg_ends.size()-1; }
+  if( getPntrToArgument(0)->getRank()==0 ) { shape.resize(1); shape[0]=getNumberOfArguments(); }
+  else if( getName()=="HSTACK" ){ shape[0]=getNumberOfArguments(); shape[1]=nvals; }
+  else if( getName()=="VSTACK" ) { shape[0]=nvals; shape[1]=getNumberOfArguments(); }
   else error("unknown type of stack object");
   return shape;
 }
@@ -143,12 +144,14 @@ void Stack::calculate() {
 
 void Stack::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                const unsigned& bufstart, std::vector<double>& buffer ) const {
-  std::vector<double> argsh( arg_ends.size()-1 ); retrieveArguments( myvals, argsh, 0 );
-  if( getName()=="HSTACK" ) {
+  unsigned nargs = getNumberOfArguments();
+  if( getPntrToOutput(0)->getRank()==1 ) {
+      plumed_assert( code==0 ); for(unsigned i=0;i<nargs;++i) buffer[ bufstart + i ] += getPntrToArgument(i)->get(code);
+  } else if( getName()=="HSTACK" ) {
       unsigned sss=getPntrToOutput(0)->getShape()[1];
-      for(unsigned i=0;i<argsh.size();++i) buffer[ bufstart + code + i*sss ] += argsh[i];  
+      for(unsigned i=0;i<nargs;++i) buffer[ bufstart + code + i*sss ] += getPntrToArgument(i)->get(code);  
   } else if( getName()=="VSTACK" ) {
-      for(unsigned i=0;i<argsh.size();++i) buffer[ bufstart + argsh.size()*code + i ] += argsh[i];
+      for(unsigned i=0;i<nargs;++i) buffer[ bufstart + nargs*code + i ] += getPntrToArgument(i)->get(code);
   } else plumed_error();
 }
 
@@ -156,7 +159,9 @@ void Stack::apply() {
   if( !getPntrToOutput(0)->forcesWereAdded() ) return;
 
   Value* mat=getPntrToOutput(0); std::vector<unsigned> shape( mat->getShape() );
-  if( getName()=="HSTACK" ) { 
+  if( shape.size()==1 ) {
+      for(unsigned i=0; i<shape[0]; ++i) forcesToApply[i] = mat->getForce( i );
+  } else if( getName()=="HSTACK" ) { 
       for(unsigned i=0; i<shape[0]; ++i) {
           for(unsigned j=0; j<shape[1]; ++j) forcesToApply[i*shape[1] + j] = mat->getForce( i*shape[1] + j );
       }   

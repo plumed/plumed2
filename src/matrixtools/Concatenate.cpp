@@ -76,13 +76,14 @@ Concatenate::Concatenate(const ActionOptions& ao):
       for(unsigned i=1;; i++) {
         unsigned nt_cols=0; unsigned size_b4 = arglist.size();
         for(unsigned j=1;; j++) {
-          if( j==10 ) error("cannot combine more than 10 matrices");
+          if( j==10 ) error("cannot combine more than 9 matrices");
           std::vector<Value*> argn; parseArgumentList("MATRIX", i*10+j, argn);
           if( argn.size()==0 ) break;
           if( argn.size()>1 ) error("should only be one argument to each matrix keyword");
           if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
           arglist.push_back( argn[0] ); nt_cols++;
-          log.printf("  %d %d component of composed matrix is %s \n", i, j, argn[0]->getName().c_str() );
+          if( argn[0]->getRank()==0 ) log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );  
+          else log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
         }
         if( arglist.size()==size_b4 ) break;
         if( i==1 ) ncols=nt_cols;
@@ -97,7 +98,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
         for(unsigned j=0; j<ncols; ++j) {
           if( arglist[k]->getRank()==0 ) {
               if( nr!=1 ) error("mismatched matrix sizes");
-          } else if( arglist[k]->getShape()[1]!=nr ) error("mismatched matrix sizes");
+          } else if( nrows>1 && arglist[k]->getShape()[1]!=nr ) error("mismatched matrix sizes");
           row_starts[k] = shape[0]; col_starts[k] = cstart;
           if( arglist[k]->getRank()==0 ) cstart += 1;
           else cstart += arglist[k]->getShape()[1]; 
@@ -143,7 +144,7 @@ void Concatenate::apply() {
     if( vectors ) {
         for(unsigned i=0;i<getNumberOfScalarArguments();++i) setForceOnScalarArgument( i, val->getForce(i) );
     } else {
-        unsigned ncols=val->getShape()[0];
+        unsigned ncols=val->getShape()[1];
         for(unsigned k=0; k<getNumberOfArguments(); ++k) {
           Value* argn=getPntrToArgument(k);
           if( argn->getRank()==0 ) argn->addForce( 0, val->getForce(ncols*row_starts[k]+col_starts[k]) );
@@ -154,7 +155,7 @@ void Concatenate::apply() {
 }
 
 double Concatenate::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {
-  unsigned ncols = getPntrToOutput(0)->getShape()[0];
+  unsigned ncols = getPntrToOutput(0)->getShape()[1];
   return getPntrToOutput(0)->getForce(ncols*(row_starts[imat]+jrow)+col_starts[imat]+kcol);
 }
 

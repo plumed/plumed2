@@ -88,7 +88,7 @@ ActionShortcut(ao)
   else {
       for(unsigned i=0;i<arg1f.size();++i) readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff: DIFFERENCE ARG1=" + arg1f[i] + " ARG2=" + arg2f[i] );
       std::string argdat = "ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff"; for(unsigned i=1;i<arg1f.size();++i) argdat += "," +  getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff";
-      readInputLine( getShortcutLabel() + ": CONCATENATE " + argdat );
+      readInputLine( getShortcutLabel() + ": VSTACK " + argdat );
   }
 }
 

@@ -27,6 +27,8 @@ namespace PLMD {
 namespace symfunc {
 
 class LocalSteinhardt : public ActionShortcut {
+private:
+  std::string getArgsForStack( const int& l, const std::string& lab ) const;
 public:
   static void registerKeywords( Keywords& keys );
   explicit LocalSteinhardt(const ActionOptions&);
@@ -48,6 +50,17 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
+std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& sp_lab ) const {
+  unsigned k=0; std::string numstr, numstr2, data_mat = "";
+  for(int i=-l; i<=l; ++i) {
+      k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 ); 
+      data_mat += " ARG" + numstr + "=" + sp_lab + ".rm-[" + numstr2 + "]"; 
+      k++; Tools::convert( k, numstr );
+      data_mat += " ARG" + numstr + "=" + sp_lab + ".im-[" + numstr2 + "]";
+  }
+  return data_mat;
+}
+
 LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
@@ -61,31 +74,27 @@ ActionShortcut(ao)
   std::string sp_str; parse("SPECIES",sp_str);
   std::string spa_str; parse("SPECIESA",spa_str);
   if( sp_str.length()>0 ) {
-    std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE";
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
-    for(unsigned j=0;j<sp_lab.size();++j) {
-        // This is the vector of lengths that we are going to use when normalising
-        std::string jnum; Tools::convert( j+1, jnum ); len_vec += " ARG" + jnum + "=" + sp_lab[j] + "_norm";  
-    }
+    // This creates the stash to hold all the vectors
     if( sp_lab.size()==1 ) {
-        readInputLine( getShortcutLabel() + "_nmat: DOT ARG1=" + sp_lab[0] + "_norm ARG2=" + getShortcutLabel() + "_uvec");
+        // The lengths of all the vectors in a vector
+        readInputLine( getShortcutLabel() + "_nmat: DOT ARG1=" + sp_lab[0] + "_norm ARG2=" + getShortcutLabel() + "_uvec");   
+        // The unormalised vectors
+        readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
     } else {
+        std::string concat_str = getShortcutLabel() + "_uvecs: CONCATENATE", len_vec = getShortcutLabel() + "_mags: CONCATENATE";
+        for(unsigned i=0;i<sp_lab.size();++i) {
+            std::string snum; Tools::convert( i+1, snum ); len_vec += " ARG" + snum + "=" + sp_lab[i] + "_norm";
+            concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecs" + snum;
+            readInputLine( getShortcutLabel() + "_uvecs" + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
+        }
         //  This is the vector that contains all the magnitudes
         readInputLine( len_vec );
         // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
         readInputLine( getShortcutLabel() + "_nmat: DOT ARG1=" + getShortcutLabel() + "_mags ARG2=" + getShortcutLabel() + "_uvec");
+        // The unormalised vectors
+        readInputLine( concat_str );
     }
-    // This creates the stash to hold all the vectors
-    unsigned k=0; std::string numstr, numstr2; std::string data_mat = getShortcutLabel() + "_uvecs: VSTACK";
-    for(int i=-l; i<=l; ++i) {
-        k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 ); 
-        data_mat +=" ARG" + numstr + "=" + sp_lab[0] + ".rm-[" + numstr2 + "]"; 
-        for(unsigned j=1;j<sp_lab.size();++j) data_mat += "," + sp_lab[j] + ".rm-[" + numstr2 + "]";
-        k++; Tools::convert( k, numstr );
-        data_mat += " ARG" + numstr + "=" + sp_lab[0] + ".im-[" + numstr2 + "]";
-        for(unsigned j=1;j<sp_lab.size();++j) data_mat += "," + sp_lab[j] + ".im-[" + numstr2 + "]";    
-    }
-    readInputLine( data_mat );
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecs: CUSTOM ARG1=" + getShortcutLabel() + "_uvecs ARG2=" + getShortcutLabel() + "_nmat FUNC=x/y PERIODIC=NO");
     // And transpose the matrix 
@@ -98,55 +107,47 @@ ActionShortcut(ao)
     if( spb_str.length()==0 ) plumed_merror("need both SPECIESA and SPECIESB in input");
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
     std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
-    std::string len_vec = getShortcutLabel() + "_magsA: CONCATENATE";
-    for(unsigned j=0;j<sp_laba.size();++j) {
-        // This is the vector of lengths that we are going to use when normalising
-        std::string jnum; Tools::convert( j+1, jnum ); len_vec += " ARG" + jnum + "=" + sp_laba[j] + "_norm";
-    }
     if( sp_laba.size()==1 ) {
-        readInputLine( getShortcutLabel() + "_nmatA: DOT ARG1=" +  sp_laba[0] + "_norm ARG2=" + getShortcutLabel() + "_uvec"); 
+        // The matrix that is used for normalising
+        readInputLine( getShortcutLabel() + "_nmatA: DOT ARG1=" +  sp_laba[0] + "_norm ARG2=" + getShortcutLabel() + "_uvec");  
+        // The unormalised vectors
+        readInputLine( getShortcutLabel() + "_uvecsA: VSTACK" + getArgsForStack( l, sp_laba[0] ) );
     } else {
+        std::string concat_str = getShortcutLabel() + "_uvecsA: CONCATENATE", len_vec = getShortcutLabel() + "_magsA: CONCATENATE";
+        for(unsigned i=0;i<sp_laba.size();++i) {
+            std::string snum; Tools::convert( i+1, snum ); 
+            len_vec += " ARG" + snum + "=" + sp_laba[i] + "_norm"; 
+            concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecsA" + snum;
+            readInputLine( getShortcutLabel() + "_uvecsA" + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
+        }
         //  This is the vector that contains all the magnitudes
         readInputLine( len_vec );
-         // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
+        // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
         readInputLine( getShortcutLabel() + "_nmatA: DOT ARG1=" + getShortcutLabel() + "_magsA ARG2=" + getShortcutLabel() + "_uvec");
+        // The unormalised vector
+        readInputLine( concat_str );
     }
-    unsigned k=0; std::string numstr, numstr2; std::string data_mat = getShortcutLabel() + "_uvecsA: VSTACK";
-    for(int i=-l; i<=l; ++i) {
-        k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );  
-        data_mat +=" ARG" + numstr + "=" + sp_laba[0] + ".rm-[" + numstr2 + "]"; 
-        for(unsigned j=1;j<sp_laba.size();++j) data_mat += "," + sp_laba[j] + ".rm-[" + numstr2 + "]";
-        k++; Tools::convert( k, numstr ); 
-        data_mat += " ARG" + numstr + "=" + sp_laba[0] + ".im-[" + numstr2 + "]";
-        for(unsigned j=1;j<sp_laba.size();++j) data_mat += "," + sp_laba[j] + ".im-[" + numstr2 + "]";
-    }
-    readInputLine( data_mat );
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsA: CUSTOM ARG1=" + getShortcutLabel() + "_uvecsA ARG2=" + getShortcutLabel() + "_nmatA FUNC=x/y PERIODIC=NO");
     // Now do second matrix
-    len_vec = getShortcutLabel() + "_magsB: CONCATENATE";
-    for(unsigned j=0;j<sp_labb.size();++j) {
-        // This is the vector of lengths that we are going to use when normalising
-        std::string jnum; Tools::convert( j+1, jnum ); len_vec += " ARG" + jnum + "=" + sp_labb[j] + "_norm";
-    }  
     if( sp_labb.size()==1 ) {
         readInputLine( getShortcutLabel() + "_nmatB: DOT ARG1=" +  sp_laba[0] + "_norm ARG2=" + getShortcutLabel() + "_uvec");
+        readInputLine( getShortcutLabel() + "_uvecsB: HSTACK" + getArgsForStack( l, sp_labb[0] ) );
     } else {
+        std::string concat_str = getShortcutLabel() + "_uvecsB: CONCATENATE", len_vec = getShortcutLabel() + "_magsB: CONCATENATE";
+        for(unsigned i=0;i<sp_labb.size();++i) {
+            std::string snum; Tools::convert( i+1, snum ); 
+            len_vec += " ARG" + snum + "=" + sp_labb[i] + "_norm";
+            concat_str += " MATRIX1" + snum + "=" + getShortcutLabel() + "_uvecsB" + snum;
+            readInputLine( getShortcutLabel() + "_uvecsB" + snum + ": HSTACK" + getArgsForStack( l, sp_labb[i] ) );
+        }
         //  This is the vector that contains all the magnitudes
         readInputLine( len_vec );
         // And the normalising matrix 
-        readInputLine( getShortcutLabel() + "_nmatB: DOT ARG1=" + getShortcutLabel() + "_uvec ARG2=" + getShortcutLabel() + "_magsB"); 
+        readInputLine( getShortcutLabel() + "_nmatB: DOT ARG1=" + getShortcutLabel() + "_uvec ARG2=" + getShortcutLabel() + "_magsB");
+        // The unormalised vectors
+        readInputLine( concat_str );
     }
-    k=0; data_mat = getShortcutLabel() + "_uvecsB: HSTACK";
-    for(int i=-l; i<=l; ++i) {
-        k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
-        data_mat +=" ARG" + numstr + "=" + sp_labb[0] + ".rm-[" + numstr2 + "]";
-        for(unsigned j=1;j<sp_labb.size();++j) data_mat += "," + sp_labb[j] + ".rm-[" + numstr2 + "]";
-        k++; Tools::convert( k, numstr );
-        data_mat += " ARG" + numstr + "=" + sp_labb[0] + ".im-[" + numstr2 + "]";
-        for(unsigned j=1;j<sp_labb.size();++j) data_mat += "," + sp_labb[j] + ".im-[" + numstr2 + "]";
-    }
-    readInputLine( data_mat ); 
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG1=" + getShortcutLabel() + "_uvecsB ARG2=" + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
     std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}");
