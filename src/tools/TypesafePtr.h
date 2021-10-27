@@ -257,35 +257,37 @@ private:
       }
 
     // cons==1 (by value) is here treated as cons==3 (const type*)
-    if(!std::is_pointer<T>::value) {
-      if(std::is_void<T>::value) {
-        if(cons==1) {
-          throw ExceptionTypeError() << "This command expects a void pointer. It received a value instead"<<extra_msg();
-        }
-      } else {
-        if(cons!=1 && cons!=2 && cons!=3) {
-          throw ExceptionTypeError() << "This command expects a pointer or a value. It received a pointer-to-pointer instead"<<extra_msg();
-        }
-      }
-      if(!std::is_const<T>::value) {
-        if(cons==3) {
-          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a non modifiable pointer instead (const T*)"<<extra_msg();
-        } else if(cons==1) {
-          throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a value instead (T)"<<extra_msg();
-        }
-      }
-    } else {
-      if(!std::is_const<T>::value) {
-        if(cons==1) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead"<<extra_msg();
-        if(cons==2 || cons==3) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead"<<extra_msg();
-        if(!std::is_const<T_noptr>::value) {
-          if(cons!=4) throw ExceptionTypeError() << "This command expects a modifiable pointer-to-pointer (T**)"<<extra_msg();
+    if(cons>0) {
+      if(!std::is_pointer<T>::value) {
+        if(std::is_void<T>::value) {
+          if(cons==1) {
+            throw ExceptionTypeError() << "This command expects a void pointer. It received a value instead"<<extra_msg();
+          }
         } else {
-          if(cons!=6) throw ExceptionTypeError() << "This command expects a modifiable pointer to unmodifiable pointer (const T**)"<<extra_msg();
+          if(cons!=1 && cons!=2 && cons!=3) {
+            throw ExceptionTypeError() << "This command expects a pointer or a value. It received a pointer-to-pointer instead"<<extra_msg();
+          }
+        }
+        if(!std::is_const<T>::value) {
+          if(cons==3) {
+            throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a non modifiable pointer instead (const T*)"<<extra_msg();
+          } else if(cons==1) {
+            throw ExceptionTypeError() << "This command expects a modifiable pointer (T*). It received a value instead (T)"<<extra_msg();
+          }
         }
       } else {
-        if(!std::is_const<T_noptr>::value) {
-          if(cons!=4 && cons!=5) throw ExceptionTypeError() << "This command expects T*const* pointer, and can only receive T**  or T*const* pointers"<<extra_msg();
+        if(!std::is_const<T>::value) {
+          if(cons==1) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a value intead"<<extra_msg();
+          if(cons==2 || cons==3) throw ExceptionTypeError() << "This command expects a pointer-to-pointer. It received a pointer intead"<<extra_msg();
+          if(!std::is_const<T_noptr>::value) {
+            if(cons!=4) throw ExceptionTypeError() << "This command expects a modifiable pointer-to-pointer (T**)"<<extra_msg();
+          } else {
+            if(cons!=6) throw ExceptionTypeError() << "This command expects a modifiable pointer to unmodifiable pointer (const T**)"<<extra_msg();
+          }
+        } else {
+          if(!std::is_const<T_noptr>::value) {
+            if(cons!=4 && cons!=5) throw ExceptionTypeError() << "This command expects T*const* pointer, and can only receive T**  or T*const* pointers"<<extra_msg();
+          }
         }
       }
     }
