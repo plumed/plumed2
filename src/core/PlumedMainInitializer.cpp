@@ -76,6 +76,15 @@ extern "C" {
 
 extern "C" {
   static void plumed_plumedmain_cmd_safe_nothrow(void*plumed,const char*key,plumed_safeptr_x safe,plumed_nothrow_handler_x nothrow) {
+// This is a workaround for a suboptimal choice in PLUMED <2.8
+// In particular, the only way to bypass the exception handling process was to call the plumed_plumedmain_cmd_safe
+// function directly.
+// With this modification, it is possible to just call the plumed_plumedmain_cmd_safe_nothrow function
+// passing a null error handler.
+    if(!nothrow.handler) {
+      plumed_plumedmain_cmd_safe(plumed,key,safe);
+      return;
+    }
 // At library boundaries we translate exceptions to error codes.
 // This allows an exception to be catched also if the MD code
 // was linked against a different C++ library
@@ -174,6 +183,7 @@ extern "C" {
 extern "C" {
   static void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow) {
     plumed_safeptr_x safe;
+    plumed_assert(nothrow.handler) << "Accepting a null pointer here would make the calling code non compatible with plumed 2.5 to 2.7";
     safe.ptr=val;
     safe.nelem=0;
     safe.shape=NULL;
