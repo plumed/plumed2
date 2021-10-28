@@ -36,7 +36,7 @@ class MatrixProductBase :
 {
 friend class Dot;
 private:
-  bool skip_ieqj;
+  bool skip_ieqj, diagonal;
   std::vector<double> forcesToApply;
 /// The list of actiosn in this chain
   std::vector<std::string> actionsLabelsInChain;

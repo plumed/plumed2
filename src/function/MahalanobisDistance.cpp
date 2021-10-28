@@ -51,6 +51,7 @@ ActionShortcut(ao)
 { 
   std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
+  readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
   bool von_miss, squared; parseFlag("VON_MISSES",von_miss); parseFlag("SQUARED",squared);
   if( von_miss ) {
       std::size_t dot=metstr.find_first_of("."); if( dot!=std::string::npos ) error("read in metric not implemented - contact G. Tribello");
@@ -92,9 +93,9 @@ ActionShortcut(ao)
       else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");
   } else {
       readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diff");
-      readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_diff FUNC=x*y PERIODIC=NO");
-      if( !squared ) readInputLine( getShortcutLabel() + "_2: SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
-      else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+      std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
+      readInputLine( getShortcutLabel() + "_vdot: DOT ARG1=" + getShortcutLabel() + "_matvec ARG2=" + getShortcutLabel() +"_diff"); 
+      readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() + "_diffT ARG2=" + getShortcutLabel() +"_matvec");
   }
   if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }

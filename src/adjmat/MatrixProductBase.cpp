@@ -42,8 +42,10 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithArguments(ao),
   ActionWithValue(ao),
   skip_ieqj(false),
+  diagonal(false),
   isAdjacencyMatrix(false)
 {
+  if( keywords.exists("DIAGONAL_ELEMENTS_ONLY") ) parseFlag("DIAGONAL_ELEMENTS_ONLY",diagonal);
 }
 
 void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std::string& min, const std::string& max ) {
@@ -56,7 +58,8 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   else if( zero_diag ) skip_ieqj=true;
   if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n");
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-  for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j);
+  if( shape.size()==0 ) addTaskToList(0);
+  else { for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j); }
   // And create the matrix to hold the dot products
   if( noutput>1 ) {
       for(unsigned i=0; i<noutput; ++i) {
@@ -70,7 +73,8 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
           if( periodic ) componentIsPeriodic( name, min, max ); else componentIsNotPeriodic( name );
       }
   } else {
-      addValue( shape ); if( periodic ) setPeriodic( min, max ); else setNotPeriodic();  
+      if( shape.size()==0 ) addValueWithDerivatives( shape ); else addValue( shape ); 
+      if( periodic ) setPeriodic( min, max ); else setNotPeriodic();  
   }
 
   for(unsigned nv=0; nv<noutput; ++nv ) {
@@ -91,7 +95,7 @@ bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
   // Input argument is the one that comes first in the order
   // We can be after this if it is not a matrix product, or if we or if we are outputting a vector
   MatrixProductBase* mp = dynamic_cast<MatrixProductBase*>(av);
-  if( !mp || getPntrToOutput(0)->getRank()==1 || (av->copyOutput(0))->getRank()==1 ) return true;
+  if( !mp || getPntrToOutput(0)->getRank()<2 || (av->copyOutput(0))->getRank()==1 ) return true;
   // We can be after it if is an AdjacencyMatrix
   AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
   if( ab ) return true;
@@ -105,7 +109,7 @@ bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
 
 unsigned MatrixProductBase::getNumberOfDerivatives() const {
   unsigned noutput = getNumberOfComponents();
-  if( actionInChain() && getPntrToOutput(0)->getRank()==1 ) return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives() + getPntrToArgument(noutput)->getSize();
+  if( actionInChain() && getPntrToOutput(0)->getRank()<2 ) return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives() + getPntrToArgument(noutput)->getSize();
   unsigned numargs = 0; if( getNumberOfArguments()>0 ) numargs = getPntrToArgument(0)->getSize() + getPntrToArgument(noutput)->getSize(); 
   if( getNumberOfAtoms()>0 ) return 3*getNumberOfAtoms() + 9 + numargs;
   return numargs;
@@ -220,21 +224,27 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
       }
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(noutput)->getRank()==1 ) {
       if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of elements in vector");
-      shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[0];
       for(unsigned i=1;i<noutput;++i) {
           if( getPntrToArgument(i)->getRank()!=2 || getPntrToArgument(noutput+i)->getRank()!=1 ) error("all first input arguments should have rank two and all second should have rank one");
           if( getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(noutput+i)->getShape()[0] ) error("number of columns in first matrix is not equal to number of elements in vector");
-          if( shape[0]!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
       }
+      if( diagonal && getPntrToArgument(0)->getShape()[0]==1 ) {
+         shape.resize(0);
+         for(unsigned i=1;i<noutput;++i) {
+             if( 1!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
+         }
+      } else {
+         shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[0];
+         for(unsigned i=1;i<noutput;++i) {
+             if( shape[0]!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
+         }
+     }
   } else error("cannot do product of row vector with matrix transpose matrix in ARG2 and do use DOT with matrix as ARG1 vector as ARG2");
   return shape;
 }
 
 void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  if( getPntrToOutput(0)->getRank()==1 ) {
-      for(unsigned nv=0; nv<getNumberOfComponents(); ++nv ) {
-          unsigned ostrn = getPntrToOutput(nv)->getPositionInStream();
-      }
+  if( getPntrToOutput(0)->getRank()<2 ) {
       if( !actionInChain() ) return ;
       for(unsigned nv=0; nv<getNumberOfComponents(); ++nv ) {
           unsigned istrn = getPntrToArgument(nv)->getPositionInMatrixStash();
@@ -281,7 +291,7 @@ unsigned MatrixProductBase::getNumberOfColumns() const {
 
 void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
   unsigned size_v;
-  if( getPntrToOutput(0)->getRank()==1 ) size_v = getPntrToArgument(0)->getShape()[1]; 
+  if( getPntrToOutput(0)->getRank()<2 ) size_v = getPntrToArgument(0)->getShape()[1]; 
   else size_v = getPntrToOutput(0)->getShape()[1]; 
   if( skip_ieqj ) {
       if( indices.size()!=size_v ) indices.resize( size_v ); 
@@ -349,10 +359,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
       if( getNumberOfArguments()>0 ) {
           ss0=1; if( getPntrToArgument(nv)->getRank()==2 ) ss0=getPntrToArgument(nv)->getShape()[1];
           ss1=1; if( getPntrToArgument(noutput+nv)->getRank()==2 ) ss1=getPntrToArgument(noutput+nv)->getShape()[1];
-          nargs=ss0; if( getPntrToOutput(nv)->getRank()==1 ) nargs=1;
+          nargs=ss0; if( getPntrToOutput(nv)->getRank()<2 ) nargs=1;
       }
       std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
-      if( getPntrToOutput(nv)->getRank()==1 ) {
+      if( getPntrToOutput(nv)->getRank()<2 ) {
           if( actionInChain() ) {
               if( myvals.inMatrixRerun() ) return true;
               args1[0] = myvals.get( getPntrToArgument(nv)->getPositionInStream() );
@@ -378,7 +388,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
       // Return after calculation of value if we do not need derivatives
       if( doNotCalculateDerivatives() ) continue;
 
-      if(  getPntrToOutput(nv)->getRank()==1 ) {
+      if(  getPntrToOutput(nv)->getRank()<2 ) {
           unsigned vstart = getPntrToArgument(nv)->getSize();
           if( actionInChain() ) {
               unsigned my_weight = getPntrToArgument(nv)->getPositionInStream();

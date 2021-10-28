@@ -47,12 +47,12 @@ ActionShortcut(ao)
 { 
   std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
-  readInputLine( getShortcutLabel() + "_vdot: MATHEVAL ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diff FUNC=x*y*y PERIODIC=NO");
-  bool squared; parseFlag("SQUARED",squared);
-  if( !squared ) {
-      readInputLine( getShortcutLabel() + "_2: SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
-      readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
-  } else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_vdot PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
+  // Need to construct a suitable matrix here to do this multiplication
+  readInputLine( getShortcutLabel() + "_sdiff: MATHEVAL ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diff FUNC=x*y PERIODIC=NO");
+  bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
+  readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() +"_diffT  ARG2=" + getShortcutLabel() + "_sdiff");
+  if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 }

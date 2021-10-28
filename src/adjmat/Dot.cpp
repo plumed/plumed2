@@ -29,7 +29,6 @@ class Dot : public MatrixProductBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Dot(const ActionOptions&);
-  void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const override;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
@@ -39,34 +38,14 @@ PLUMED_REGISTER_ACTION(Dot,"DOT")
 
 void Dot::registerKeywords( Keywords& keys ) {
   MatrixProductBase::registerKeywords( keys );
+  keys.addFlag("DIAGONAL_ELEMENTS_ONLY",false,"only calculate the elements on the diagonal and store them in a vector");
 }
 
 Dot::Dot(const ActionOptions& ao):
   Action(ao),
   MatrixProductBase(ao)
 {
-  readMatricesToMultiply( false );
-}
-
-void Dot::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
-  if( getPntrToArgument(1)->getRank()==1 ) {
-      unsigned nr = 0, nvals;
-      if( getPntrToOutput(0)->getRank()==1 ) nvals = getPntrToArgument(1)->getShape()[0]; 
-      else nvals = nvals = getPntrToOutput(0)->getShape()[1];
-      for(unsigned i=0;i<nvals;++i) {
-          if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
-          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) nr++;
-      }
-      if( indices.size()!=nr ) indices.resize( 1+nr );
-      indices[0]=current; unsigned k = 1, start_n = getFullNumberOfTasks();
-      for(unsigned i=0;i<nvals;++i) {
-          if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
-          if( fabs( getPntrToArgument(1)->get(i) )>epsilon ) { indices[k]=start_n + i; k++; }
-      }
-      myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() ); 
-      return;
-  } 
-  MatrixProductBase::setupForTask( current, myvals, indices, atoms );
+  readMatricesToMultiply( false ); 
 }
 
 double Dot::computeVectorProduct( const unsigned& index1, const unsigned& index2,

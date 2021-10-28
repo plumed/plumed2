@@ -63,8 +63,13 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
 
 std::vector<unsigned> TransposeMatrix::getMatrixShapeForFinalTasks() {
   std::vector<unsigned> shape(2);
-  shape[0]=getPntrToArgument(0)->getShape()[1]; 
-  shape[1]=getPntrToArgument(0)->getShape()[0];
+  if( getPntrToArgument(0)->getRank()==1 ) {
+     shape[0]=1;
+     shape[1]=getPntrToArgument(0)->getShape()[0]; 
+  } else {
+     shape[0]=getPntrToArgument(0)->getShape()[1]; 
+     shape[1]=getPntrToArgument(0)->getShape()[0];
+  }
   return shape;
 }
 
@@ -79,16 +84,26 @@ unsigned TransposeMatrix::getNumberOfColumns() const {
 
 void TransposeMatrix::completeMatrixOperations() {
   // Retrieve the non-zero pairs
-  unsigned nedge=0; retrieveEdgeList( 0, nedge ); std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
-  for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] ); 
-  if( getPntrToArgument(0)->isSymmetric() ) {
-      for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].first*shape[1] + pairs[i].second, vals[i] );
+  if( getPntrToArgument(0)->getRank()==1 ) {
+      unsigned nv=getPntrToArgument(0)->getNumberOfValues();
+      for(unsigned i=0; i<nv; ++i) getPntrToOutput(0)->set( i, getPntrToArgument(0)->get(i) );
+  } else {
+      unsigned nedge=0; retrieveEdgeList( 0, nedge ); std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+      for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] ); 
+      if( getPntrToArgument(0)->isSymmetric() ) {
+          for(unsigned i=0; i<nedge;++i) getPntrToOutput(0)->set( pairs[i].first*shape[1] + pairs[i].second, vals[i] );
+      }
   }
 }
 
 void TransposeMatrix::apply() {
   // Apply force on the matrix
-  if( getPntrToOutput(0)->forcesWereAdded() ) applyForceOnMatrix(0);
+  if( getPntrToOutput(0)->forcesWereAdded() ) {
+      if( getPntrToArgument(0)->getRank()==1 ) {
+          unsigned nv=getPntrToArgument(0)->getNumberOfValues();
+          for(unsigned i=0; i<nv; ++i) getPntrToArgument(0)->addForce( i, getPntrToOutput(0)->getForce(i) );
+      } else applyForceOnMatrix(0);
+  }
 }
 
 double TransposeMatrix::getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const {

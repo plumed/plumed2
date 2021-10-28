@@ -58,31 +58,36 @@ ActionShortcut(ao)
   std::vector<std::string> arg1, arg2, arg1f, arg2f; parseVector("ARG1",arg1); parseVector("ARG2",arg2);
   // Check if one of the input arguments is a reference cluster
   bool arg1iscenter=false;
-  if( arg1.size()==1 && arg1[0].find("center")!=std::string::npos ) {
-      std::size_t dot=arg1[0].find("."); setup::SetupReferenceBase* ss=plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( arg1[0].substr(0,dot) );
-      if( ss ) {
-          arg1iscenter=true; 
-          if( ss->getNumberOfArguments()!=arg2.size() ) error("mismatch between number of arguments in input and number of arguments in reference");
-          for(unsigned i=0;i<ss->getNumberOfArguments();++i) {
-              if( ss->getPntrToArgument(i)->getName()!=arg2[i] ) error("mismatch between arguments in input and refrence cluster");
-              std::string num; Tools::convert( i+1, num ); arg1f.push_back( getShortcutLabel() + "_" + fixArgumentDot(arg2[i]) + "_ref" );
-              readInputLine( arg1f[i] + ": SELECT_COMPONENTS ARG=" + arg1[0] + " COMPONENTS=" + num );
+  if( arg1.size()==arg2.size() ) { // Make this an assertion
+      for(unsigned i=0;i<arg2.size();++i){ arg1f.push_back( arg1[i] ); arg2f.push_back( arg2[i] ); }
+  } else {
+      // Get rid of all this crap Gareth by reworking the readin files
+      if( arg1.size()==1 && arg1[0].find("center")!=std::string::npos ) {
+          std::size_t dot=arg1[0].find("."); setup::SetupReferenceBase* ss=plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( arg1[0].substr(0,dot) );
+          if( ss ) {
+              arg1iscenter=true; 
+              if( ss->getNumberOfArguments()!=arg2.size() ) error("mismatch between number of arguments in input and number of arguments in reference");
+              for(unsigned i=0;i<ss->getNumberOfArguments();++i) {
+                  if( ss->getPntrToArgument(i)->getName()!=arg2[i] ) error("mismatch between arguments in input and refrence cluster");
+                  std::string num; Tools::convert( i+1, num ); arg1f.push_back( getShortcutLabel() + "_" + fixArgumentDot(arg2[i]) + "_ref" );
+                  readInputLine( arg1f[i] + ": SELECT_COMPONENTS ARG=" + arg1[0] + " COMPONENTS=" + num );
+              }
           }
-      }
-  } else { for(unsigned i=0;i<arg1.size();++i) arg1f.push_back( arg1[i] ); }
+      } else { for(unsigned i=0;i<arg1.size();++i) arg1f.push_back( arg1[i] ); }
  
-  if( arg2.size()==1 && arg2[0].find("center")!=std::string::npos ) {
-      std::size_t dot=arg2[0].find("."); setup::SetupReferenceBase* ss=plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( arg2[0].substr(0,dot) );
-      if( ss ) {
-          if( arg1iscenter ) error("both arguments are set constact during setup");
-          if( ss->getNumberOfArguments()!=arg1.size() ) error("mismatch between number of arguments in input and number of arguments in reference");
-          for(unsigned i=0;i<ss->getNumberOfArguments();++i) {
-              if( ss->getPntrToArgument(i)->getName()!=arg1[i] ) error("mismatch between arguments in input and refrence cluster");
-              std::string num; Tools::convert( i+1, num ); arg2f.push_back( getShortcutLabel() + "_" + fixArgumentDot(arg1[i]) + "_ref" );
-              readInputLine( arg2f[i] + ": SELECT_COMPONENTS ARG=" + arg2[0] + " COMPONENTS=" + num );
+      if( arg2.size()==1 && arg2[0].find("center")!=std::string::npos ) {
+          std::size_t dot=arg2[0].find("."); setup::SetupReferenceBase* ss=plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( arg2[0].substr(0,dot) );
+          if( ss ) {
+              if( arg1iscenter ) error("both arguments are set constact during setup");
+              if( ss->getNumberOfArguments()!=arg1.size() ) error("mismatch between number of arguments in input and number of arguments in reference");
+              for(unsigned i=0;i<ss->getNumberOfArguments();++i) {
+                  if( ss->getPntrToArgument(i)->getName()!=arg1[i] ) error("mismatch between arguments in input and refrence cluster");
+                  std::string num; Tools::convert( i+1, num ); arg2f.push_back( getShortcutLabel() + "_" + fixArgumentDot(arg1[i]) + "_ref" );
+                  readInputLine( arg2f[i] + ": SELECT_COMPONENTS ARG=" + arg2[0] + " COMPONENTS=" + num );
+              }
           }
-      }
-  } else { for(unsigned i=0;i<arg2.size();++i) arg2f.push_back( arg2[i] ); }
+      } else { for(unsigned i=0;i<arg2.size();++i) arg2f.push_back( arg2[i] ); }
+  }
 
   if( arg1f.size()==1 ) readInputLine( getShortcutLabel() + ": DIFFERENCE ARG1=" + arg1f[0] + " ARG2=" + arg2f[0] );
   else {
