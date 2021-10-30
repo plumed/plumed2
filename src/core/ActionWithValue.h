@@ -296,7 +296,7 @@ public:
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
-  virtual bool canBeAfterInChain( ActionWithValue* av ) const { return true; }
+  virtual bool canBeAfterInChain( ActionWithValue* av ) { return true; }
 ///
   virtual bool valuesComputedInChain() const { return true; }
 ///

@@ -43,7 +43,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionWithValue(ao),
   skip_ieqj(false),
   diagonal(false),
-  isAdjacencyMatrix(false)
+  doInnerLoop(false)
 {
   if( keywords.exists("DIAGONAL_ELEMENTS_ONLY") ) parseFlag("DIAGONAL_ELEMENTS_ONLY",diagonal);
 }
@@ -79,7 +79,7 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
 
   for(unsigned nv=0; nv<noutput; ++nv ) {
       // This sets up matrix times vector calculations that are done without storing the input matrix
-      if( !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isTimeSeries() && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
+      if( !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isHistoryDependent() && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
           (getPntrToArgument(nv)->getPntrToAction())->addActionToChain( alabels, this );
@@ -91,17 +91,21 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   std::vector<Value*> args( getArguments() ); requestArguments( args, true );
 }
 
-bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) const {
+bool MatrixProductBase::canBeAfterInChain( ActionWithValue* av ) {
   // Input argument is the one that comes first in the order
   // We can be after this if it is not a matrix product, or if we or if we are outputting a vector
   MatrixProductBase* mp = dynamic_cast<MatrixProductBase*>(av);
-  if( !mp || getPntrToOutput(0)->getRank()<2 || (av->copyOutput(0))->getRank()==1 ) return true;
+  if( !mp ) return true;
+  // Now check if there is a mismatch between the number of tasks in the two actions
+  if( mp->getNumberOfInnerTasks()!=getNumberOfInnerTasks() && getPntrToOutput(0)->getRank()!=1 ) doInnerLoop = true;
+  // If it is a vector or we are a vector everything is fine
+  if( getPntrToOutput(0)->getRank()<2 || (av->copyOutput(0))->getRank()<2 ) return true;
   // We can be after it if is an AdjacencyMatrix
   AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
   if( ab ) return true;
   // We can't be after it if we are an Adjacency matrix but it isn't
   const AdjacencyMatrixBase* ab2=dynamic_cast<const AdjacencyMatrixBase*>(this);
-  if( ab2 ) return false; 
+  if( ab2 ) return false;
   // The skip_ieqj thing needs putting back in Gareth
   // if( ab2 || mp->skip_ieqj!=skip_ieqj ) return false;
   return true;
@@ -115,8 +119,8 @@ unsigned MatrixProductBase::getNumberOfDerivatives() const {
   return numargs;
 }
 
-bool MatrixProductBase::mustBeTreatedAsDistinctArguments() const {
-  const AdjacencyMatrixBase* ab=dynamic_cast<const AdjacencyMatrixBase*>(this);
+bool MatrixProductBase::mustBeTreatedAsDistinctArguments() {
+  AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(this);
   if( ab ) return ActionWithArguments::mustBeTreatedAsDistinctArguments();
   return true;
 }
@@ -289,13 +293,16 @@ unsigned MatrixProductBase::getNumberOfColumns() const {
   return getPntrToOutput(0)->getShape()[1];
 }
 
+unsigned MatrixProductBase::getNumberOfInnerTasks() const {
+  if( getPntrToOutput(0)->getRank()<2 ) return getPntrToArgument(0)->getShape()[1];
+  return getPntrToOutput(0)->getShape()[1]; 
+}
+
 void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
-  unsigned size_v;
-  if( getPntrToOutput(0)->getRank()<2 ) size_v = getPntrToArgument(0)->getShape()[1]; 
-  else size_v = getPntrToOutput(0)->getShape()[1]; 
+  unsigned size_v = getNumberOfInnerTasks();
   if( skip_ieqj ) {
-      if( indices.size()!=size_v ) indices.resize( size_v ); 
-  } else if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+     if( indices.size()!=size_v ) indices.resize( size_v );
+  } else if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );; 
   unsigned k=1; indices[0]=current; unsigned start_n = getFullNumberOfTasks();
   for(unsigned i=0; i<size_v; ++i) {
       if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
@@ -306,7 +313,7 @@ void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myval
 
 void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<unsigned> & indices( myvals.getIndices() );
-  if( !isAdjacencyMatrix && actionInChain() ) {
+  if( !doInnerLoop && actionInChain() ) {
     // If this is not an adjacency matrix then have done the relevant calculations during the first pass through the loop 
     if( !doNotCalculateDerivatives() && myvals.inVectorCall() ) updateCentralMatrixIndex( myvals.getTaskIndex(), indices, myvals );
     return ;
@@ -327,7 +334,7 @@ void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals
 }
 
 void MatrixProductBase::updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  if( !isAdjacencyMatrix && getNumberOfComponents()>1 ) error("cannot calculate multiple outputs for this type of action");
+  if( !doInnerLoop && getNumberOfComponents()>1 ) error("cannot calculate multiple outputs for this type of action");
   unsigned narg_derivatives = 0; if( getNumberOfArguments()>0 ) narg_derivatives = getPntrToArgument(0)->getSize() + getPntrToArgument(1)->getSize();
   unsigned w_ind = getPntrToOutput(0)->getPositionInStream();
   // Update dynamic list indices for central atom
@@ -352,7 +359,7 @@ void MatrixProductBase::updateAtomicIndices( const unsigned& index1, const unsig
 
 bool MatrixProductBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
-  unsigned noutput=getNumberOfComponents(); if( isAdjacencyMatrix ) { noutput=1; if( controller!=getLabel() ) return false; }
+  unsigned noutput=getNumberOfComponents(); if( doInnerLoop ) { noutput=1; if( controller!=getLabel() ) return false; }
   // Now do the calculation
   unsigned ss0=0, ss1=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
   for(unsigned nv=0; nv<noutput; ++nv) {

@@ -50,7 +50,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   linkcells(comm),
   threecells(comm)
 {
-  isAdjacencyMatrix = true; std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
+  doInnerLoop = true; std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
     std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);

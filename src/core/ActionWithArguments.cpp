@@ -543,10 +543,16 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   }
 }
 
-bool ActionWithArguments::mustBeTreatedAsDistinctArguments() const {
+bool ActionWithArguments::mustBeTreatedAsDistinctArguments() {
 //  if( done_over_stream || arguments.size()>1 ) return true;
   if( !done_over_stream ) return true;
-  if( arguments.size()==1 ) return false;
+  if( arguments.size()==1 ) {
+      ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
+      plumed_assert( av ); ActionWithValue* cal = av->getActionThatCalculates();
+      ActionAtomistic* aa = dynamic_cast<ActionAtomistic*>(cal);
+      if( !aa ) return true;
+      return false;
+  }
 
   std::vector<const ActionWithValue*> allvals; (arguments[0]->getPntrToAction())->getAllActionsRequired( allvals );
   for(unsigned j=1;j<arguments.size();++j) {

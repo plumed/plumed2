@@ -124,6 +124,13 @@ nderivatives(getNumberOfScalarArguments())
         else addComponent( components[i], shape );
     } 
   }
+  // Check if this is a timeseries
+  for(unsigned i=0; i<getNumberOfArguments();++i) {
+    if( getPntrToArgument(i)->isTimeSeries() ) { 
+        for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent();
+        break;
+    }
+  }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // Check if we can put the function in a chain

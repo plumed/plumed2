@@ -127,7 +127,7 @@ public:
 /// Retrieve the argument values
   void retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const ;
 /// This tells us which arguments must be treated as distinct in functions
-  virtual bool mustBeTreatedAsDistinctArguments() const ;
+  virtual bool mustBeTreatedAsDistinctArguments();
 /// Get the number of quantities that must be stored in input
   void getNumberOfStashedInputArguments( unsigned& nquants ) const ;
 /// This gets the position of the argument in the stream

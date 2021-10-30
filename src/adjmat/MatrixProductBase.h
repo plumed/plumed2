@@ -41,16 +41,17 @@ private:
 /// The list of actiosn in this chain
   std::vector<std::string> actionsLabelsInChain;
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  unsigned getNumberOfInnerTasks() const ;
 protected:
-  bool isAdjacencyMatrix;
+  bool doInnerLoop;
   void readMatricesToMultiply( const bool& periodic, const std::string& min="", const std::string& max="" );
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixProductBase(const ActionOptions&);
   virtual unsigned getNumberOfDerivatives() const ;
-  bool canBeAfterInChain( ActionWithValue* av ) const override;
+  bool canBeAfterInChain( ActionWithValue* av ) override;
   virtual unsigned getNumberOfColumns() const ;
-  bool mustBeTreatedAsDistinctArguments() const override ;
+  bool mustBeTreatedAsDistinctArguments() override ;
   void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
   void lockRequests() override;
   void unlockRequests() override;

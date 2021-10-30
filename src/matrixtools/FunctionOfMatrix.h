@@ -82,7 +82,7 @@ nderivatives(getNumberOfScalarArguments())
   bool symmetric=true;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()==2 ) {
-          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false; break; }
+          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false;  }
       }                        
   }
   // Create the task list
@@ -105,17 +105,35 @@ nderivatives(getNumberOfScalarArguments())
   } else {
     for(unsigned i=0;i<components.size();++i) {
         if( str_ind.size()>0 ) {
-            for(unsigned j=0;j<str_ind.size();++j) addComponent( components[i] + str_ind[j], shape );
+            for(unsigned j=0;j<str_ind.size();++j) { addComponent( components[i] + str_ind[j], shape ); getPntrToOutput(i*str_ind.size()+j)->setSymmetric( symmetric ); }
         } else if( components[i].find_first_of("_")!=std::string::npos ) {
-            if( getNumberOfArguments()==1 ) addValue( shape );
-            else { for(unsigned i=0; i<getNumberOfArguments(); ++i) addComponent( getPntrToArgument(i)->getName() + components[i], shape ); }
-        } else addComponent( components[i], shape );
+            if( getNumberOfArguments()==1 ) { addValue( shape ); getPntrToOutput(0)->setSymmetric( symmetric ); }
+            else { 
+              for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+                 addComponent( getPntrToArgument(j)->getName() + components[i], shape );
+                 getPntrToOutput(i*getNumberOfArguments()+j)->setSymmetric( symmetric );
+              } 
+            }
+        } else { addComponent( components[i], shape ); getPntrToOutput(i)->setSymmetric( symmetric ); } 
+    }
+  }
+  // Check if this is a timeseries
+  for(unsigned i=0; i<getNumberOfArguments();++i) {
+    if( getPntrToArgument(i)->isTimeSeries() ) { 
+        for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent(); 
+        break;
     }
   }
   // Set the periodicities of the output components
-  myfunc.setPeriodicityForOutputs( this );
+  myfunc.setPeriodicityForOutputs( this ); bool hasstack=false;
+  // We can't do this with if we are dividing a stack by some a product v.v^T product as we need to store the vector
+  // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
+  for(unsigned i=0; i<getNumberOfArguments();++i) {
+      if( (getPntrToArgument(i)->getPntrToAction())->getName()=="VSTACK" ) { hasstack=true; break; }
+  }
   // Now setup the action in the chain if we can
-  if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  if( !hasstack && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  else { for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); }
 }
 
 template <class T>
