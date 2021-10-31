@@ -499,7 +499,6 @@ unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
       }
     }
   }
-  for(unsigned i=0;i<getNumberOfArguments();++i) { if( arguments[i]->getRank()==0 ) nderivatives++; }
   return nderivatives;
 }
 

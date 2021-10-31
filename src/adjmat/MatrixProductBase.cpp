@@ -80,7 +80,7 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   for(unsigned nv=0; nv<noutput; ++nv ) {
       // This sets up matrix times vector calculations that are done without storing the input matrix
       if( !diagonal && !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isHistoryDependent() && 
-          getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 & 
+          getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 && 
           (getPntrToArgument(noutput+nv)->getPntrToAction())->getName()!="TRANSPOSE" ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
@@ -218,7 +218,7 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
           if( shape[0]!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
           if( shape[1]!=getPntrToArgument(noutput+i)->getShape()[1] ) error("shapes of all output matrices should match"); 
       }
-      if( noutput==1 ) {
+      if( noutput==1 && !diagonal ) {
           // Check if we are multiplying a matrix by its transpose (if we are doing this we know the diagonal elements are all 1 or something similarly boring)
           if( (getPntrToArgument(0)->getPntrToAction())->getName()=="TRANSPOSE" ) {
                ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
@@ -227,6 +227,9 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
                ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(1)->getPntrToAction() );
                if( (aa->getPntrToArgument(0))->getName()==getPntrToArgument(0)->getName() && (getPntrToArgument(0)->getPntrToAction())->getName().find("STACK")!=std::string::npos ) skip_ieqj=true;
           }
+      } else if( diagonal ) { 
+          if( shape[0]!=shape[1] ) error("can only use DIAGONAL_ELEMENTS_ONLY flag if output matrix is square");
+          unsigned nn=shape[0]; shape.resize(1); shape[0]=nn; 
       }
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(noutput)->getRank()==1 ) {
       if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of elements in vector");
@@ -292,6 +295,7 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
 }
 
 unsigned MatrixProductBase::getNumberOfColumns() const { 
+  plumed_assert( !diagonal );
   return getPntrToOutput(0)->getShape()[1];
 }
 
@@ -301,14 +305,19 @@ unsigned MatrixProductBase::getNumberOfInnerTasks() const {
 }
 
 void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
-  unsigned size_v = getNumberOfInnerTasks();
-  if( skip_ieqj ) {
-     if( indices.size()!=size_v ) indices.resize( size_v );
-  } else if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );; 
-  unsigned k=1; indices[0]=current; unsigned start_n = getFullNumberOfTasks();
-  for(unsigned i=0; i<size_v; ++i) {
-      if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
-      indices[k]=start_n + i; k++;
+  if( diagonal && getPntrToOutput(0)->getRank()!=0 ) {
+      if( indices.size()!=2 ) indices.resize( 2 ); 
+      indices[0] = current; indices[1] = getFullNumberOfTasks() + current;
+  } else {
+      unsigned size_v = getNumberOfInnerTasks();
+      if( skip_ieqj ) {
+         if( indices.size()!=size_v ) indices.resize( size_v );
+      } else if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );; 
+      unsigned k=1; indices[0]=current; unsigned start_n = getFullNumberOfTasks();
+      for(unsigned i=0; i<size_v; ++i) {
+          if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
+          indices[k]=start_n + i; k++;
+      }
   }
   myvals.setSplitIndex( indices.size() ); myvals.setNumberOfIndices( indices.size() );
 }
@@ -368,10 +377,10 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
       if( getNumberOfArguments()>0 ) {
           ss0=1; if( getPntrToArgument(nv)->getRank()==2 ) ss0=getPntrToArgument(nv)->getShape()[1];
           ss1=1; if( getPntrToArgument(noutput+nv)->getRank()==2 ) ss1=getPntrToArgument(noutput+nv)->getShape()[1];
-          nargs=ss0; if( getPntrToOutput(nv)->getRank()<2 ) nargs=1;
+          nargs=ss0; if( !diagonal && getPntrToOutput(nv)->getRank()<2 ) nargs=1;
       }
       std::vector<double> args1(nargs), args2(nargs), der1(nargs), der2(nargs);
-      if( getPntrToOutput(nv)->getRank()<2 ) {
+      if( getPntrToOutput(nv)->getRank()==0 || (!diagonal && getPntrToOutput(nv)->getRank()<2) ) {
           if( actionInChain() ) {
               if( myvals.inMatrixRerun() ) return true;
               args1[0] = myvals.get( getPntrToArgument(nv)->getPositionInStream() );
@@ -397,7 +406,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
       // Return after calculation of value if we do not need derivatives
       if( doNotCalculateDerivatives() ) continue;
 
-      if(  getPntrToOutput(nv)->getRank()<2 ) {
+      if( getPntrToOutput(nv)->getRank()==0 || (!diagonal && getPntrToOutput(nv)->getRank()<2) ) {
           unsigned vstart = getPntrToArgument(nv)->getSize();
           if( actionInChain() ) {
               unsigned my_weight = getPntrToArgument(nv)->getPositionInStream();
@@ -409,10 +418,6 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
           } else { myvals.addDerivative( ostrn, index1*ss0 + ind2, der1[0] ); myvals.updateIndex( ostrn, index1*ss0 + ind2 ); }
           if( fabs(der2[0])>0 ) { myvals.addDerivative( ostrn, vstart + ind2, der2[0] ); myvals.updateIndex( ostrn, vstart + ind2 ); }
       } else {
-          unsigned nmat = getPntrToOutput(nv)->getPositionInMatrixStash();
-          std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-          plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
-          unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
           unsigned jind_start = 0; 
           if( getNumberOfArguments()>0 ) jind_start = getPntrToArgument(nv)->getSize(); 
           for(unsigned i=0; i<nargs; ++i) {
@@ -422,9 +427,15 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
             plumed_dbg_assert( jind_start + i*ss1 + ind2<myvals.getNumberOfDerivatives() );
             myvals.addDerivative( ostrn, jind_start + i*ss1 + ind2, der2[i] );
             myvals.updateIndex( ostrn, jind_start + i*ss1 + ind2 );
-            if( !myvals.inMatrixRerun() ) { matrix_indices[nmat_ind] = jind_start + i*ss1 + ind2; nmat_ind++; }
           }
-          myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+          if( !diagonal && !myvals.inMatrixRerun() ) {
+              unsigned nmat = getPntrToOutput(nv)->getPositionInMatrixStash();
+              std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
+              plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
+              unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
+              for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = jind_start + i*ss1 + ind2; nmat_ind++; }
+              myvals.setNumberOfMatrixIndices( nmat, nmat_ind );
+          }
           if( getNumberOfAtoms()>0 ) updateAtomicIndices( index1, index2, myvals );
       }
   }
