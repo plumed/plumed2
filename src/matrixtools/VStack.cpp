@@ -77,7 +77,7 @@ ActionWithValue(ao)
           if( tmin!=smin || tmax!=smax ) error("domain of argument " + getPntrToArgument(i)->getName() + " is different from domain for all other arguments");
       }
   }
-  if( shape.size()==1 ) forcesToApply.resize( shape[0] ); else forcesToApply.resize( shape[0]*shape[1] ); 
+  forcesToApply.resize( shape[0]*shape[1] ); 
   for(unsigned i=0;i<getNumberOfFinalTasks();++i) addTaskToList(i);
 
   bool usechain=(shape.size()==2 && distinct_arguments.size()>0);
@@ -110,7 +110,7 @@ std::vector<unsigned> VStack::getMatrixShapeForFinalTasks() {
   }
 
   std::vector<unsigned> shape(2);
-  if( getPntrToArgument(0)->getRank()==0 ) { shape.resize(1); shape[0]=getNumberOfArguments(); }
+  if( getPntrToArgument(0)->getRank()==0 ) { shape[0]=1; shape[1]=getNumberOfArguments(); }
   else { shape[0]=nvals; shape[1]=getNumberOfArguments(); }
   return shape; 
 }
@@ -153,31 +153,30 @@ bool VStack::performTask( const std::string& controller, const unsigned& index1,
           myvals.addDerivative( ostrn, arg_deriv_starts[iarg] + kind, myvals.getDerivative( istrn, kind ) );
           myvals.updateIndex( ostrn, arg_deriv_starts[iarg] + kind );
       }
+  } else if( getPntrToArgument(iarg)->getRank()==0 ) {
+      myvals.addDerivative( ostrn, iarg, 1 ); myvals.updateIndex( ostrn, iarg );
   } else plumed_error();
 
   return true;
 }
 
 void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
-  if( getPntrToOutput(0)->getRank()==1 ) {
-      unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-      myvals.addValue( ostrn, getPntrToArgument(current)->get() );
-      myvals.addDerivative( ostrn, current, 1 ); myvals.updateIndex( ostrn, current );
-  } else {
-      unsigned base = getFullNumberOfTasks();
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        // This does everything in the stream that is done with single matrix elements
-        runTask( getLabel(), myvals.getTaskIndex(), current, base + i, myvals );
-        // Now clear only elements that are not accumulated over whole row 
-        clearMatrixElements( myvals );
-      } 
-      if( doNotCalculateDerivatives() ) return;
-      // Now update the matrix indices
-      unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
-      std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned ntot_mat=0;
-      if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->getRank()==0 ) continue ;
+  unsigned base = getFullNumberOfTasks();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // This does everything in the stream that is done with single matrix elements
+    runTask( getLabel(), myvals.getTaskIndex(), current, base + i, myvals );
+    // Now clear only elements that are not accumulated over whole row 
+    clearMatrixElements( myvals );
+  } 
+  if( doNotCalculateDerivatives() ) return;
+  // Now update the matrix indices
+  unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
+  std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned ntot_mat=0;
+  if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) {
+          ntot_mat++; mat_indices[ntot_mat] = i;
+      } else {
           // Ensure we only store one lot of derivative indices
           bool found=false;
           for(unsigned j=0; j<i; ++j) {
@@ -188,8 +187,8 @@ void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
           for(unsigned k=0; k<myvals.getNumberActive( istrn ); ++k) mat_indices[ntot_mat + k] = arg_deriv_starts[i] + myvals.getActiveIndex(istrn,k);
           ntot_mat += myvals.getNumberActive( istrn );
       }
-      myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
   }
+  myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
 }
 
 void VStack::apply() {
@@ -197,10 +196,7 @@ void VStack::apply() {
 
   if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
-  if( getForcesFromValues( forcesToApply ) ) {
-      for(unsigned i=0;i<forcesToApply.size();++i) printf("GETTING FORCE %d %f \n", i, forcesToApply[i] );
-      setForcesOnArguments( 0, forcesToApply, mm );
-  }
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, mm );
 }
 
 }

@@ -79,7 +79,9 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
 
   for(unsigned nv=0; nv<noutput; ++nv ) {
       // This sets up matrix times vector calculations that are done without storing the input matrix
-      if( !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isHistoryDependent() && getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 ) {
+      if( !diagonal && !getPntrToArgument(nv)->dataAlwaysStored() && !getPntrToArgument(nv)->isHistoryDependent() && 
+          getPntrToArgument(nv)->getRank()==2 && getPntrToArgument(noutput+nv)->getRank()==1 & 
+          (getPntrToArgument(noutput+nv)->getPntrToAction())->getName()!="TRANSPOSE" ) {
           // Chain off the action that computes the matrix
           std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(nv)->getPntrToAction())->getLabel();
           (getPntrToArgument(nv)->getPntrToAction())->addActionToChain( alabels, this );

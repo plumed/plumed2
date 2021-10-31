@@ -634,21 +634,6 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   // Do matrix element task
   bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
-  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( thisAsActionWithArguments ) {
-    if( actionInChain() && thisAsActionWithArguments->getNumberOfArguments()>0 ) {
-      // Now check if the task takes a matrix as input - if it does do it
-      bool do_this_task = ((thisAsActionWithArguments->getPntrToArgument(0))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
-#ifdef DNDEBUG
-      if( do_this_task ) {
-        for(unsigned i=1; i<thisAsActionWithArguments->getNumberOfArguments(); ++i) {
-          plumed_dbg_assert( (thisAsActionWithArguments->getPntrToArgument(i))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
-        }
-      }
-#endif
-      if( do_this_task && isActive() ) { myvals.vector_call=false; myvals.setTaskIndex(task_index); performTask( current, myvals ); }
-    }
-  }
 
   // Check if we need to store stuff
   bool matrix=wasperformed;
