@@ -5,7 +5,10 @@ module plumed_module
   use iso_c_binding
   implicit none
 
+  ! names are private by default
   private
+
+  ! only these names are public
   public :: plumed_f_create
   public :: plumed_f_create_dlopen
   public :: plumed_f_create_reference
@@ -21,6 +24,43 @@ module plumed_module
   public :: plumed_f_gcmd
   public :: plumed_f_gfinalize
   public :: plumed_f_gvalid
+
+  ! this type maps to the struct plumed defined in src/wrapper/Plumed.h
+  type, bind(C) :: cplumed
+    type(c_ptr) :: ptr
+  end type cplumed
+
+  ! this type maps to the struct plumed_safeptr defined in src/wrapper/Plumed.h
+  type, bind(C) :: cplumed_safeptr
+    type(c_ptr)            :: ptr
+    integer(kind=c_size_t) :: nelem
+    type(c_ptr)            :: shape
+    integer(kind=c_size_t) :: flags
+    type(c_ptr)            :: opt
+  end type cplumed_safeptr
+
+  integer(kind=c_size_t), parameter :: flags_ptr = 67108864 ! 0x2000000*2
+
+  ! this function is used to translate 32-char to c identifiers, only used internally
+  interface
+    function plumed_f2c(c) bind(C)
+      import
+      character(kind=c_char), intent(in) :: c(32)
+      type(cplumed) :: plumed_f2c
+    end function plumed_f2c
+  end interface
+
+  ! this subroutine provides a typesafe interface to plumed
+  interface
+    subroutine plumed_cmd_safe(p,key,safeptr) bind(C)
+      import
+      type(cplumed),                  value :: p
+      character(kind=c_char), intent(in)    :: key(*)
+      type(cplumed_safeptr),          value :: safeptr
+    end subroutine plumed_cmd_safe
+  end interface
+
+  ! now there are interfaces to the classic Fortran functions
 
   interface
     subroutine plumed_f_create(c) bind(C)
@@ -113,25 +153,59 @@ module plumed_module
     end subroutine plumed_f_gvalid
   end interface
 
+  ! here the interfaces to C functions to construct the plumed_safeptr object
   interface
-    subroutine plumed_f_cmd_safe_char(p,key,val,pass_shape) bind(C)
+    function plumed_f_safeptr_ptr(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      character(kind=c_char), intent(in)    :: p(32)
-      character(kind=c_char), intent(in)    :: key(*)
-      character(kind=c_char)                :: val(*)
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_cmd_safe_char
+      type(c_ptr),                    value :: val
+      integer(kind=c_size_t),         value :: nelem
+      integer(kind=c_size_t)                :: pass_shape(*)
+      integer(kind=c_size_t),         value :: flags
+      type(c_ptr),                    value :: opt
+      type(cplumed_safeptr)                 :: plumed_f_safeptr_ptr
+    end function plumed_f_safeptr_ptr
   end interface
 
   interface
-    subroutine plumed_f_gcmd_safe_char(key,val,pass_shape) bind(C)
+    function plumed_f_safeptr_char(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      character(kind=c_char), intent(in)    :: key(*)
       character(kind=c_char)                :: val(*)
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_gcmd_safe_char
+      integer(kind=c_size_t),         value :: nelem
+      integer(kind=c_size_t)                :: pass_shape(*)
+      integer(kind=c_size_t),         value :: flags
+      type(c_ptr),                    value :: opt
+      type(cplumed_safeptr)                 :: plumed_f_safeptr_char
+    end function plumed_f_safeptr_char
   end interface
 
+#: for t in types
+#: for k in kinds[t]
+  interface
+    function plumed_f_safeptr_${cname(k)}$_scalar(val,nelem,pass_shape,flags,opt) bind(C)
+      import
+      ${t}$(kind=${k}$)                     :: val
+      integer(kind=c_size_t),         value :: nelem
+      integer(kind=c_size_t)                :: pass_shape(*)
+      integer(kind=c_size_t),         value :: flags
+      type(c_ptr),                    value :: opt
+      type(cplumed_safeptr)                 :: plumed_f_safeptr_${cname(k)}$_scalar
+    end function plumed_f_safeptr_${cname(k)}$_scalar
+  end interface
+  interface
+    function plumed_f_safeptr_${cname(k)}$(val,nelem,pass_shape,flags,opt) bind(C)
+      import
+      ${t}$(kind=${k}$)                     :: val(*)
+      integer(kind=c_size_t),         value :: nelem
+      integer(kind=c_size_t)                :: pass_shape(*)
+      integer(kind=c_size_t),         value :: flags
+      type(c_ptr),                    value :: opt
+      type(cplumed_safeptr)                 :: plumed_f_safeptr_${cname(k)}$
+    end function plumed_f_safeptr_${cname(k)}$
+  end interface
+#: endfor
+#: endfor
+
+  ! here are the interfaces used for overloading
   interface plumed_f_cmd
     module procedure plumed_f_cmd_char
 #: for t in types
@@ -154,62 +228,28 @@ module plumed_module
 #: endfor
   end interface plumed_f_gcmd
 
-#: for t in types
-#: for k in kinds[t]
-  interface
-    subroutine plumed_f_cmd_safe_${cname(k)}$_scalar(p,key,val,pass_shape) bind(C)
-      import
-      character(kind=c_char), intent(in)    :: p(32)
-      character(kind=c_char), intent(in)    :: key(*)
-      ${t}$(kind=${k}$)                           :: val
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_cmd_safe_${cname(k)}$_scalar
-  end interface
-  interface
-    subroutine plumed_f_cmd_safe_${cname(k)}$(p,key,val,pass_shape) bind(C)
-      import
-      character(kind=c_char), intent(in)    :: p(32)
-      character(kind=c_char), intent(in)    :: key(*)
-      ${t}$(kind=${k}$)                           :: val(*)
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_cmd_safe_${cname(k)}$
-  end interface
-  interface
-    subroutine plumed_f_gcmd_safe_${cname(k)}$_scalar(key,val,pass_shape) bind(C)
-      import
-      character(kind=c_char), intent(in)    :: key(*)
-      ${t}$(kind=${k}$)                           :: val
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_gcmd_safe_${cname(k)}$_scalar
-  end interface
-  interface
-    subroutine plumed_f_gcmd_safe_${cname(k)}$(key,val,pass_shape) bind(C)
-      import
-      character(kind=c_char), intent(in)    :: key(*)
-      ${t}$(kind=${k}$)                           :: val(*)
-      integer(kind=c_size_t) :: pass_shape(*)
-    end subroutine plumed_f_gcmd_safe_${cname(k)}$
-  end interface
-#: endfor
-#: endfor
-
   contains
+
+     ! we then define all the functions needed for overloading
 
      subroutine plumed_f_cmd_char(p,key,val)
        character(kind=c_char,len=32), intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
        character(kind=c_char,len=*), asynchronous   :: val
        integer(kind=c_size_t) :: pass_shape(2)
+       integer(kind=c_size_t) :: nelem
        pass_shape=(/len(val),0/)
-       call plumed_f_cmd_safe_char(p,key,val,pass_shape)
+       nelem=product(pass_shape)
+       call plumed_cmd_safe(plumed_f2c(p),key, &
+         plumed_f_safeptr_char(val,nelem,pass_shape,flags_ptr,c_null_ptr))
      end subroutine plumed_f_cmd_char
 
      subroutine plumed_f_gcmd_char(key,val)
        character(kind=c_char,len=*),  intent(in)    :: key
        character(kind=c_char,len=*), asynchronous   :: val
-       integer(kind=c_size_t) :: pass_shape(2)
-       pass_shape=(/len(val),0/)
-       call plumed_f_gcmd_safe_char(key,val,pass_shape)
+       character(kind=c_char,len=32) :: global
+       call plumed_f_global(global)
+       call plumed_f_cmd(global,key,val)
      end subroutine plumed_f_gcmd_char
 
 #: for t in types
@@ -220,34 +260,29 @@ module plumed_module
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
       ${t}$(KIND=${k}$), asynchronous              :: val${ranksuffix(r)}$
+      integer(kind=c_size_t) :: nelem
 #: if r==0
+#: set scalar = "_scalar"
       integer(kind=c_size_t) :: pass_shape(2)
       pass_shape=(/1,0/)
-      call plumed_f_cmd_safe_${cname(k)}$_scalar(p,key,val,pass_shape)
 #: else
+#: set scalar = ""
       integer(kind=c_size_t) :: pass_shape(${r+1}$)
 #: for rr in range(r)
       pass_shape(${rr+1}$)=size(val,${r-rr}$)
 #: endfor
       pass_shape(${r+1}$)=0
-      call plumed_f_cmd_safe_${cname(k)}$(p,key,val,pass_shape)
 #: endif
+       nelem=product(pass_shape)
+       call plumed_cmd_safe(plumed_f2c(p),key, &
+         plumed_f_safeptr_${cname(k)}$${scalar}$(val,nelem,pass_shape,flags_ptr,c_null_ptr))
     end subroutine plumed_f_cmd_${t}$_${ik}$_${r}$
     subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
       ${t}$(kind=${k}$), asynchronous              :: val${ranksuffix(r)}$
-#: if r==0
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-      call plumed_f_gcmd_safe_${cname(k)}$_scalar(key,val,pass_shape)
-#: else
-      integer(kind=c_size_t) :: pass_shape(${r+1}$)
-#: for rr in range(r)
-      pass_shape(${rr+1}$)=size(val,${r-rr}$)
-#: endfor
-      pass_shape(${r+1}$)=0
-      call plumed_f_gcmd_safe_${cname(k)}$(key,val,pass_shape)
-#: endif
+      character(kind=c_char,len=32) :: global
+      call plumed_f_global(global)
+      call plumed_f_cmd(global,key,val)
     end subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$
 #: endfor
 #: endfor
