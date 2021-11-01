@@ -107,7 +107,6 @@ bool hasExternalMolfile();
 
 bool hasZlib();
 
-bool hasXdrfile();
 }
 }
 

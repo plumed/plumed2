@@ -275,7 +275,6 @@ PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subpr
 PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
-PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
@@ -798,10 +797,6 @@ if test $gsl == true ; then
   else
     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
-fi
-
-if test $xdrfile == true ; then
-  PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
 
 if test $boost_graph == true ; then

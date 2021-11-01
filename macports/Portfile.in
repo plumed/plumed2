@@ -86,11 +86,10 @@ configure.cxxflags-replace -Os -O3
 # Library names are specified here to make sure that
 # only requested packages are linked.
 configure.ldflags-append \
-                    -lxdrfile -lz -lgsl -lfftw3
+                    -lz -lgsl -lfftw3
 depends_lib-append  port:fftw-3 \
                     port:gawk \
                     port:gsl \
-                    port:xdrfile \
                     port:zlib
 
 # C++ library
