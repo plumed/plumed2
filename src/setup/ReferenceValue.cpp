@@ -46,7 +46,10 @@ void ReferenceValue::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys); ActionWithValue::registerKeywords(keys);
   keys.remove("NUMERICAL_DERIVATIVES"); keys.remove("SERIAL"); keys.remove("TIMINGS");
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
-  keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
+  keys.add("optional","FILE","an input file containing the matrix");
+  keys.add("optional","NROWS","the number of rows in your input matrix");
+  keys.add("optional","NCOLS","the number of columns in your matrix");
+  keys.add("optional","VALUES","the elements of your matrix");
 }
 
 ReferenceValue::ReferenceValue(const ActionOptions&ao):
@@ -54,29 +57,37 @@ ReferenceValue::ReferenceValue(const ActionOptions&ao):
   ActionSetup(ao),
   ActionWithValue(ao)
 {
-  std::string fname; parse("FILE",fname); checkRead();
-  IFile mfile; mfile.open(fname); std::vector<unsigned> shape(2);
-  std::vector<std::vector<double> > dissimilarities;
-  // Read in first line
-  std::vector<std::string> words; shape[1]=0;
-  while( shape[1]==0 ) {
-    Tools::getParsedLine( mfile, words );
-    shape[1]=words.size();
-  }
+  std::string fname; parse("FILE",fname); 
+  std::vector<unsigned> shape(2); std::vector<double> vals;
+  if( fname.length()>0 ) {
+       IFile mfile; mfile.open(fname);
+       std::vector<std::vector<double> > dissimilarities;
+       // Read in first line
+       std::vector<std::string> words; shape[1]=0;
+       while( shape[1]==0 ) {
+         Tools::getParsedLine( mfile, words );
+         shape[1]=words.size();
+       }
 
-  std::vector<double> tmpdis( shape[1] );
-  for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
-  dissimilarities.push_back( tmpdis );
+       std::vector<double> tmpdis( shape[1] );
+       for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
+       dissimilarities.push_back( tmpdis );
 
-  while( Tools::getParsedLine( mfile, words ) ) {
-    if( words.size()!=shape[1] ) error("bad formatting in matrix file");
-    for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
-    dissimilarities.push_back( tmpdis );
+       while( Tools::getParsedLine( mfile, words ) ) {
+         if( words.size()!=shape[1] ) error("bad formatting in matrix file");
+         for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
+         dissimilarities.push_back( tmpdis );
+       }
+       mfile.close(); shape[0] = dissimilarities.size(); vals.resize( shape[0]*shape[1] );
+       for(unsigned i=0;i<shape[0];++i) {
+           for(unsigned j=0;j<shape[1];++j) vals[i*shape[1]+j] = dissimilarities[i][j];
+       }
+  } else {
+       parse("NROWS",shape[0]); parse("NCOLS",shape[1]); vals.resize( shape[0]*shape[1] ); parseVector("VALUES",vals);
   }
-  mfile.close(); shape[0] = dissimilarities.size(); 
   addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->alwaysStoreValues();
   for(unsigned i=0;i<shape[0];++i) {
-      for(unsigned j=0;j<shape[1];++j) getPntrToComponent(0)->set( i*shape[1] + j, dissimilarities[i][j] );
+      for(unsigned j=0;j<shape[1];++j) getPntrToComponent(0)->set( i*shape[1] + j, vals[i*shape[1] + j] );
   }
 }
 

@@ -56,6 +56,10 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
   std::vector<std::string> elements; parseVector("COMPONENTS",elements);
   std::vector<unsigned> shape(1); shape[0]=elements.size(); if( shape[0]==1 ) shape.resize(0); 
   addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
+  if( getPntrToArgument(0)->isPeriodic() ) {
+      std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
+  } else setNotPeriodic();
+
   log.printf("  selecting components from input "); selection.resize( elements.size() );
   if( getPntrToArgument(0)->getRank()==1 ) {
       log.printf("vector ");

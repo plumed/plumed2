@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace function {
@@ -50,7 +53,18 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
   // Vectors are in columns here
   readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
-  // Need to construct a suitable matrix here to do this multiplication
+  // Get the action that computes the differences
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT"); plumed_assert( av );
+  // If this is a matrix we need create a matrix to multiply by
+  if( av->copyOutput(0)->getRank()==2 ) {
+      // Create some ones   
+      std::string ones=" CENTER=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[1]; ++i ) ones += ",1";  
+      readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones );
+      // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
+      readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() + "_ones");
+      metstr = getShortcutLabel() + "_" + metstr;
+  } 
+  // Now do the multiplication
   readInputLine( getShortcutLabel() + "_sdiff: MATHEVAL ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
   readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() +"_diff  ARG2=" + getShortcutLabel() + "_sdiff");

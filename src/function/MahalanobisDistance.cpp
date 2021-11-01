@@ -83,8 +83,19 @@ ActionShortcut(ao)
       // Compute the off diagonal elements
       readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + getShortcutLabel() + "_metoff.covariance ARG2=" + getShortcutLabel() +"_sinediffT"); 
       readInputLine( getShortcutLabel() + "_offdiag: DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() + "_sinediff ARG2=" + getShortcutLabel() +"_matvec");
+      // Sort out the metric for the diagonal elements
+      std::string metstr2 = getShortcutLabel() + "_metoff.center";
+      // If this is a matrix we need create a matrix to multiply by
+      if( av->copyOutput(0)->getShape()[0]>1 ) {
+          // Create some ones   
+          std::string ones=" CENTER=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
+          readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones );
+          // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
+          readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG1=" + metstr2 + " ARG2=" + getShortcutLabel() + "_ones");
+          metstr2 = getShortcutLabel() + "_" + metstr;
+      }  
       // Compute the diagonal elements
-      readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + getShortcutLabel() + "_scaled ARG2=" + getShortcutLabel() + "_metoff.center FUNC=2*(1-cos(x))*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + getShortcutLabel() + "_scaled ARG2=" + metstr2 + " FUNC=2*(1-cos(x))*y PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_diag: SUM ARG=" + getShortcutLabel() + "_prod PERIODIC=NO");
       // Sum everything
       if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_diag," + getShortcutLabel() + "_offdiag PERIODIC=NO");

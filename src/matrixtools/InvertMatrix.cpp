@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputMatrices.h"
+#include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -27,6 +28,7 @@ namespace matrixtools {
 
 class InvertMatrix : public ActionWithInputMatrices {
 private:
+  bool input_is_constant;
   Matrix<double> mymatrix;
   Matrix<double> inverse;
   std::vector<double> forcesToApply;
@@ -49,11 +51,15 @@ void InvertMatrix::registerKeywords( Keywords& keys ) {
 
 InvertMatrix::InvertMatrix(const ActionOptions& ao):
   Action(ao),
-  ActionWithInputMatrices(ao)
+  ActionWithInputMatrices(ao),
+  input_is_constant(false)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
  
+  ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
+  if(as) input_is_constant=true;
+
   std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0]; addValue( shape ); 
 
   mymatrix.resize( shape[0], shape[1] ); inverse.resize( shape[0], shape[1] );
@@ -74,11 +80,11 @@ void InvertMatrix::completeMatrixOperations() {
     }
   } 
 
-  if( !doNotCalculateDerivatives() ) error("derivatives of inverse matrix have not been implemented");
+  if( !doNotCalculateDerivatives() && !input_is_constant ) error("derivatives of inverse matrix have not been implemented");
 }
 
 void InvertMatrix::apply() {
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() || input_is_constant ) return;
   error("derivatives of inverse matrix have not been implemented");
 }
 

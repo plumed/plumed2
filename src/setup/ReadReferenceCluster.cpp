@@ -27,6 +27,7 @@
 namespace PLMD {
 namespace setup {
 
+PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_SCALAR")
 PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_VECTOR")
 PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_CLUSTER")
 
@@ -60,7 +61,10 @@ SetupReferenceBase(ao)
           shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
       }
       log.printf("  read in center of cluster in space of dimension %d \n", shape[0] );
-      if( getName()=="READ_VECTOR" ) {
+      if( getName()=="READ_SCALAR" ) {
+          shape.resize(0); plumed_assert( center.size()==1 ); 
+          addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->set( center[0] );
+      } else if( getName()=="READ_VECTOR" ) {
           addValue( shape ); setNotPeriodic(); setCenterFromVector( center );
       } else { 
           addComponent( "center", shape ); componentIsNotPeriodic("center"); setCenterFromVector( center );
