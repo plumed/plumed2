@@ -714,7 +714,7 @@ typedef struct {
     0x10000000 * 1 to forbid pointer copy (pointer copy is also forbidden for pass-by-value)
     0x20000000 and higher bits are ignored, reserved for future extensions
   */
-  unsigned long int flags;
+  __PLUMED_WRAPPER_STD size_t flags;
   /** Optional information, not used yet  */
   void* opt;
 } plumed_safeptr;
@@ -2107,7 +2107,9 @@ private:
         }
         __PLUMED_WRAPPER_STD fprintf(stderr," )");
       }
-      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",safe->safe.flags,safe->safe.opt);
+      /* %lx is for unsigned long that might be smaller than size_t.
+         I explicitly convert flags here to unsigned long to avoid cppcheck warnings */
+      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",(unsigned long) safe->safe.flags,safe->safe.opt);
     }
     NothrowHandler h;
     h.code=0;
@@ -3075,6 +3077,11 @@ __PLUMED_WRAPPER_C_END
 __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
   plumed_implementation* pimpl;
+  /* This is to allow caller to use a null handler to imply that handling is not done */
+  if(!nothrow.handler) {
+    plumed_cmd_safe(p,key,safe);
+    return;
+  }
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));

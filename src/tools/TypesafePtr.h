@@ -85,7 +85,7 @@ class TypesafePtr {
 
 public:
 
-  TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, unsigned long int flags):
+  TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, std::size_t flags):
     ptr(ptr),
     nelem(nelem),
     flags(flags)
@@ -371,7 +371,7 @@ public:
     return shape.data();
   }
 
-  unsigned long int getFlags() const noexcept {
+  std::size_t getFlags() const noexcept {
     return flags;
   }
 
@@ -380,7 +380,7 @@ private:
   void* ptr=nullptr;
   std::size_t nelem=0;
   std::array<std::size_t,maxrank+1> shape; // make sure to initialize this!
-  unsigned long int flags=0;
+  std::size_t flags=0;
 };
 
 }
