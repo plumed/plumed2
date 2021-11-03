@@ -8,20 +8,20 @@ type(c_ptr)       :: ptr
 type(plumed_error) :: error
 integer :: s,i
 integer, target :: natoms
-real(c_double), allocatable :: positions(:,:)
-real(c_double), allocatable :: masses(:)
-real(c_double), allocatable :: forces(:,:)
-real(c_double) :: box(3,3)
-real(c_double) :: virial(3,3)
-integer(c_int) :: ene,stopflag
+real(c_double), target, allocatable :: positions(:,:)
+real(c_double), target, allocatable :: masses(:)
+real(c_double), target, allocatable :: forces(:,:)
+real(c_double), target :: box(3,3)
+real(c_double), target :: virial(3,3)
+integer(c_int), target :: ene,stopflag
 real(c_double) :: bias
 open(10,file="error_codes_full")
 
-call pl%cmd("initx","a",error=error)
+call pl%cmd_val("initx","a",error=error)
 write(10,*)error%code
-call pl%cmd("initx","a",error=error)
+call pl%cmd_val("initx","a",error=error)
 write(10,*)error%code
-call pl%cmd("setNatoms",3.0,error=error)
+call pl%cmd_val("setNatoms",3.0,error=error)
 write(10,*)error%code
 call pl%finalize()
 
@@ -44,28 +44,29 @@ enddo
 stopflag=0
 ene=1
 bias=-10
-call pl%cmd("setNatoms",c_loc(natoms)) ! pass a c pointer
-call pl%cmd("init",0)
-call pl%cmd("setStopFlag",stopflag)
-call pl%cmd("readInputLine","p: POSITION ATOM=2")
-call pl%cmd("readInputLine","g: GYRATION ATOMS=@allatoms")
-call pl%cmd("readInputLine","r: RESTRAINT ARG=g AT=0 KAPPA=3")
-call pl%cmd("readInputLine","COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30")
-call pl%cmd("readInputLine","PRINT ARG=p.*,r.* FILE=testme2")
-call pl%cmd("setStep",1)
-call pl%cmd("setPositions",positions)
-call pl%cmd("setForces",forces)
-call pl%cmd("setMasses",masses)
-call pl%cmd("setBox",box)
-call pl%cmd("setVirial",virial)
+call pl%cmd_const_ptr("setNatoms",c_loc(natoms)) ! dummy test
+call pl%cmd_val("setNatoms",1*natoms)
+call pl%cmd("init")
+call pl%cmd_ptr("setStopFlag",stopflag)
+call pl%cmd_val("readInputLine","p: POSITION ATOM=2")
+call pl%cmd_val("readInputLine","g: GYRATION ATOMS=@allatoms")
+call pl%cmd_val("readInputLine","r: RESTRAINT ARG=g AT=0 KAPPA=3")
+call pl%cmd_val("readInputLine","COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30")
+call pl%cmd_val("readInputLine","PRINT ARG=p.*,r.* FILE=testme2")
+call pl%cmd_val("setStep",1)
+call pl%cmd_const_ptr("setPositions",positions)
+call pl%cmd_ptr("setForces",forces)
+call pl%cmd_const_ptr("setMasses",masses)
+call pl%cmd_const_ptr("setBox",box)
+call pl%cmd_ptr("setVirial",virial)
 write(10,"(A,I5)") "stopflag should be 0",stopflag
 write(10,"(A,I5)") "isEnergyNeeded should be 1",ene
-call pl%cmd("isEnergyNeeded",ene)
+call pl%cmd_ref("isEnergyNeeded",ene)
 write(10,"(A,I5)") "isEnergyNeeded should be 0",ene
 write(10,"(A,I5)") "stopflag should be 0",stopflag
-call pl%cmd("calc",0)
+call pl%cmd("calc")
 write(10,"(A,I5)") "stopflag should be 1",stopflag
-call pl%cmd("getBias",bias)
+call pl%cmd_ref("getBias",bias)
 write(10,"(A,F10.4)") "bias",bias
 
 open(11,file="forces")

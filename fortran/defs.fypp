@@ -9,3 +9,7 @@ $:'' if RANK == 0 else '(' + ':' + ',:' * (RANK - 1) + ')'
 #:def cname(name)
 $:name.replace("c_","")
 #:enddef cname
+
+#:def contiguous(RANK)
+$:'' if RANK == 0 else 'contiguous,'
+#:enddef contiguous
