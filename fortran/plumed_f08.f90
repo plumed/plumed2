@@ -461,7 +461,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_ptr(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_ptr(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -500,7 +500,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_char(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_char(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -539,7 +539,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_int_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -578,7 +578,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -618,7 +618,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -659,7 +659,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -701,7 +701,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -739,7 +739,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_short_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -778,7 +778,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -818,7 +818,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -859,7 +859,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -901,7 +901,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -939,7 +939,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -978,7 +978,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1018,7 +1018,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1059,7 +1059,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1101,7 +1101,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1139,7 +1139,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_float_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1178,7 +1178,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1218,7 +1218,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1259,7 +1259,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1301,7 +1301,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1339,7 +1339,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_double_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1378,7 +1378,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1418,7 +1418,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1459,7 +1459,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1501,7 +1501,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1539,7 +1539,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1578,7 +1578,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1618,7 +1618,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1659,7 +1659,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1701,7 +1701,7 @@ module plumed_module_f08
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr),nothrow)
+         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
@@ -1793,17 +1793,15 @@ module plumed_module_f08
        endif
      end subroutine pl_assign
 
-     impure elemental subroutine pl_cmd(this,key,dummy,error,const,nocopy)
+     impure elemental subroutine pl_cmd(this,key,dummy,error)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
-       logical,            optional,  intent(in)    :: const
-       logical,            optional,  intent(in)    :: nocopy
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd(this%handle,key // c_null_char,c_null_ptr,error=error,const=const,nocopy=nocopy)
+       call plumed_f_cmd(this%handle,key // c_null_char,c_null_ptr,error=error)
      end subroutine pl_cmd
 
      subroutine pl_cmd_char(this,key,val,dummy,error,const,nocopy)
