@@ -44,28 +44,28 @@ enddo
 stopflag=0
 ene=1
 bias=-10
-call pl%cmd("setNatoms"//char(0),c_loc(natoms)) ! pass a c pointer
-call pl%cmd("init"//char(0),0)
-call pl%cmd("setStopFlag"//char(0),stopflag)
-call pl%cmd("readInputLine"//char(0),"p: POSITION ATOM=2"//char(0))
-call pl%cmd("readInputLine"//char(0),"g: GYRATION ATOMS=@allatoms"//char(0))
-call pl%cmd("readInputLine"//char(0),"r: RESTRAINT ARG=g AT=0 KAPPA=3"//char(0))
-call pl%cmd("readInputLine"//char(0),"COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30"//char(0))
-call pl%cmd("readInputLine"//char(0),"PRINT ARG=p.*,r.* FILE=testme2"//char(0))
-call pl%cmd("setStep"//char(0),1)
-call pl%cmd("setPositions"//char(0),positions)
-call pl%cmd("setForces"//char(0),forces)
-call pl%cmd("setMasses"//char(0),masses)
-call pl%cmd("setBox"//char(0),box)
-call pl%cmd("setVirial"//char(0),virial)
+call pl%cmd("setNatoms",c_loc(natoms)) ! pass a c pointer
+call pl%cmd("init",0)
+call pl%cmd("setStopFlag",stopflag)
+call pl%cmd("readInputLine","p: POSITION ATOM=2")
+call pl%cmd("readInputLine","g: GYRATION ATOMS=@allatoms")
+call pl%cmd("readInputLine","r: RESTRAINT ARG=g AT=0 KAPPA=3")
+call pl%cmd("readInputLine","COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30")
+call pl%cmd("readInputLine","PRINT ARG=p.*,r.* FILE=testme2")
+call pl%cmd("setStep",1)
+call pl%cmd("setPositions",positions)
+call pl%cmd("setForces",forces)
+call pl%cmd("setMasses",masses)
+call pl%cmd("setBox",box)
+call pl%cmd("setVirial",virial)
 write(10,"(A,I5)") "stopflag should be 0",stopflag
 write(10,"(A,I5)") "isEnergyNeeded should be 1",ene
-call pl%cmd("isEnergyNeeded"//char(0),ene)
+call pl%cmd("isEnergyNeeded",ene)
 write(10,"(A,I5)") "isEnergyNeeded should be 0",ene
 write(10,"(A,I5)") "stopflag should be 0",stopflag
-call pl%cmd("calc"//char(0),0)
+call pl%cmd("calc",0)
 write(10,"(A,I5)") "stopflag should be 1",stopflag
-call pl%cmd("getBias"//char(0),bias)
+call pl%cmd("getBias",bias)
 write(10,"(A,F10.4)") "bias",bias
 
 open(11,file="forces")
