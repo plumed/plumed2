@@ -470,7 +470,7 @@ module plumed_module_f08
      subroutine plumed_f_cmd_char(p,key,val,dummy,error,const,nocopy)
        type(cplumed),                 intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        type(dummy_type),   optional                 :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -509,7 +509,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_0_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val
+      integer(KIND=c_int)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -547,7 +547,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_0_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:)
+      integer(KIND=c_int)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -586,7 +586,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_0_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:)
+      integer(KIND=c_int)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -626,7 +626,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_0_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:,:)
+      integer(KIND=c_int)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -667,7 +667,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_0_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_int)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -709,7 +709,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_1_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val
+      integer(KIND=c_short)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -747,7 +747,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_1_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:)
+      integer(KIND=c_short)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -786,7 +786,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_1_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:)
+      integer(KIND=c_short)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -826,7 +826,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_1_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:,:)
+      integer(KIND=c_short)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -867,7 +867,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_1_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_short)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -909,7 +909,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_2_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val
+      integer(KIND=c_long)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -947,7 +947,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_2_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:)
+      integer(KIND=c_long)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -986,7 +986,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_2_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:)
+      integer(KIND=c_long)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1026,7 +1026,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_2_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:,:)
+      integer(KIND=c_long)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1067,7 +1067,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_integer_2_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_long)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1109,7 +1109,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_0_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val
+      real(KIND=c_float)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1147,7 +1147,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_0_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:)
+      real(KIND=c_float)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1186,7 +1186,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_0_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:)
+      real(KIND=c_float)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1226,7 +1226,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_0_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:,:)
+      real(KIND=c_float)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1267,7 +1267,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_0_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_float)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1309,7 +1309,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_1_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val
+      real(KIND=c_double)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1347,7 +1347,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_1_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:)
+      real(KIND=c_double)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1386,7 +1386,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_1_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:)
+      real(KIND=c_double)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1426,7 +1426,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_1_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:,:)
+      real(KIND=c_double)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1467,7 +1467,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_1_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_double)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1509,7 +1509,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_2_0(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val
+      real(KIND=c_long_double)                            :: val
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1547,7 +1547,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_2_1(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:)
+      real(KIND=c_long_double)                            :: val(:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1586,7 +1586,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_2_2(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:)
+      real(KIND=c_long_double)                            :: val(:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1626,7 +1626,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_2_3(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:,:)
+      real(KIND=c_long_double)                            :: val(:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1667,7 +1667,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_real_2_4(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_long_double)                            :: val(:,:,:,:)
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -1809,7 +1809,7 @@ module plumed_module_f08
      subroutine pl_cmd_char(this,key,val,dummy,error,const,nocopy)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1837,7 +1837,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_0_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val
+      integer(KIND=c_int)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1850,7 +1850,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_0_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:)
+      integer(KIND=c_int)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1863,7 +1863,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_0_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:)
+      integer(KIND=c_int)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1876,7 +1876,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_0_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:,:)
+      integer(KIND=c_int)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1889,7 +1889,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_0_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_int)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1902,7 +1902,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_1_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val
+      integer(KIND=c_short)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1915,7 +1915,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_1_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:)
+      integer(KIND=c_short)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1928,7 +1928,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_1_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:)
+      integer(KIND=c_short)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1941,7 +1941,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_1_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:,:)
+      integer(KIND=c_short)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1954,7 +1954,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_1_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_short)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1967,7 +1967,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_2_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val
+      integer(KIND=c_long)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1980,7 +1980,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_2_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:)
+      integer(KIND=c_long)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -1993,7 +1993,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_2_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:)
+      integer(KIND=c_long)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2006,7 +2006,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_2_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:,:)
+      integer(KIND=c_long)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2019,7 +2019,7 @@ module plumed_module_f08
     subroutine pl_cmd_integer_2_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long), asynchronous              :: val(:,:,:,:)
+      integer(KIND=c_long)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2032,7 +2032,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_0_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val
+      real(KIND=c_float)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2045,7 +2045,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_0_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:)
+      real(KIND=c_float)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2058,7 +2058,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_0_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:)
+      real(KIND=c_float)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2071,7 +2071,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_0_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:,:)
+      real(KIND=c_float)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2084,7 +2084,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_0_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_float)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2097,7 +2097,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_1_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val
+      real(KIND=c_double)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2110,7 +2110,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_1_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:)
+      real(KIND=c_double)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2123,7 +2123,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_1_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:)
+      real(KIND=c_double)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2136,7 +2136,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_1_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:,:)
+      real(KIND=c_double)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2149,7 +2149,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_1_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_double)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2162,7 +2162,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_2_0(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val
+      real(KIND=c_long_double)                            :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2175,7 +2175,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_2_1(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:)
+      real(KIND=c_long_double)                            :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2188,7 +2188,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_2_2(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:)
+      real(KIND=c_long_double)                            :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2201,7 +2201,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_2_3(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:,:)
+      real(KIND=c_long_double)                            :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -2214,7 +2214,7 @@ module plumed_module_f08
     subroutine pl_cmd_real_2_4(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), asynchronous              :: val(:,:,:,:)
+      real(KIND=c_long_double)                            :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const

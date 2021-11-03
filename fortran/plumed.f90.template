@@ -235,7 +235,7 @@ module plumed_module
      subroutine plumed_f_cmd_char(p,key,val)
        character(kind=c_char,len=32), intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        integer(kind=c_size_t) :: pass_shape(2)
        integer(kind=c_size_t) :: nelem
        pass_shape=(/len(val),0/)
@@ -246,7 +246,7 @@ module plumed_module
 
      subroutine plumed_f_gcmd_char(key,val)
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        character(kind=c_char,len=32) :: global
        call plumed_f_global(global)
        call plumed_f_cmd(global,key,val)
@@ -259,7 +259,7 @@ module plumed_module
     subroutine plumed_f_cmd_${t}$_${ik}$_${r}$(p,key,val)
       character(kind=c_char,len=32), intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$), asynchronous              :: val${ranksuffix(r)}$
+      ${t}$(KIND=${k}$)                            :: val${ranksuffix(r)}$
       integer(kind=c_size_t) :: nelem
 #: if r==0
 #: set scalar = "_scalar"
@@ -279,7 +279,7 @@ module plumed_module
     end subroutine plumed_f_cmd_${t}$_${ik}$_${r}$
     subroutine plumed_f_gcmd_${t}$_${ik}$_${r}$(key,val)
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(kind=${k}$), asynchronous              :: val${ranksuffix(r)}$
+      ${t}$(kind=${k}$)                            :: val${ranksuffix(r)}$
       character(kind=c_char,len=32) :: global
       call plumed_f_global(global)
       call plumed_f_cmd(global,key,val)

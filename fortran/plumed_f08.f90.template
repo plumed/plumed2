@@ -294,7 +294,7 @@ module plumed_module_f08
      subroutine plumed_f_cmd_char(p,key,val,dummy,error,const,nocopy)
        type(cplumed),                 intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        type(dummy_type),   optional                 :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -337,7 +337,7 @@ module plumed_module_f08
     subroutine plumed_f_cmd_${t}$_${ik}$_${r}$(p,key,val,dummy,error,const,nocopy)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$), asynchronous              :: val${ranksuffix(r)}$
+      ${t}$(KIND=${k}$)                            :: val${ranksuffix(r)}$
        type(dummy_type),   optional                 :: dummy
       type(plumed_error), optional,  intent(out)   :: error
       logical,            optional,  intent(in)    :: const
@@ -488,7 +488,7 @@ module plumed_module_f08
      subroutine pl_cmd_char(this,key,val,dummy,error,const,nocopy)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*), asynchronous   :: val
+       character(kind=c_char,len=*)                 :: val
        type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
@@ -520,7 +520,7 @@ module plumed_module_f08
     subroutine pl_cmd_${t}$_${ik}$_${r}$(this,key,val,dummy,error,const,nocopy)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$), asynchronous              :: val${ranksuffix(r)}$
+      ${t}$(KIND=${k}$)                            :: val${ranksuffix(r)}$
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        logical,            optional,  intent(in)    :: const
