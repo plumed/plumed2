@@ -538,7 +538,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      ${t}$(KIND=${k}$), target, ${contiguous(r)}$ intent(in) :: val${ranksuffix(r)}$
+      ${t}$(KIND=${k}$), target, ${contiguous(r)}$ intent(inout) :: val${ranksuffix(r)}$
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then

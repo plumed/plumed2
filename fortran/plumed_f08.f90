@@ -2017,7 +2017,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target,  intent(in) :: val
+      integer(KIND=c_int), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2070,7 +2070,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2123,7 +2123,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2176,7 +2176,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2229,7 +2229,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2282,7 +2282,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target,  intent(in) :: val
+      integer(KIND=c_short), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2335,7 +2335,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2388,7 +2388,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2441,7 +2441,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2494,7 +2494,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2547,7 +2547,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target,  intent(in) :: val
+      integer(KIND=c_long), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2600,7 +2600,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2653,7 +2653,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2706,7 +2706,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2759,7 +2759,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2812,7 +2812,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target,  intent(in) :: val
+      real(KIND=c_float), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2865,7 +2865,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_float), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2918,7 +2918,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -2971,7 +2971,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3024,7 +3024,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3077,7 +3077,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target,  intent(in) :: val
+      real(KIND=c_double), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3130,7 +3130,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_double), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3183,7 +3183,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3236,7 +3236,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3289,7 +3289,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3342,7 +3342,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target,  intent(in) :: val
+      real(KIND=c_long_double), target,  intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3395,7 +3395,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3448,7 +3448,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3501,7 +3501,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -3554,7 +3554,7 @@ module plumed_module_f08
       character(kind=c_char,len=*),  intent(in)    :: key
       ! workaround for bug in Intel 19 compiler (pointer => target)
       ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
