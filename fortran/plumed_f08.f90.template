@@ -536,7 +536,9 @@ module plumed_module_f08
     subroutine pl_cmd_ptr_${t}$_${ik}$_${r}$(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$), pointer, ${contiguous(r)}$ intent(in) :: val${ranksuffix(r)}$
+      ! workaround for bug in Intel 19 compiler (pointer => target)
+      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
+      ${t}$(KIND=${k}$), target, ${contiguous(r)}$ intent(in) :: val${ranksuffix(r)}$
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
@@ -548,7 +550,9 @@ module plumed_module_f08
     subroutine pl_cmd_const_ptr_${t}$_${ik}$_${r}$(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ${t}$(KIND=${k}$), pointer, ${contiguous(r)}$ intent(in) :: val${ranksuffix(r)}$
+      ! workaround for bug in Intel 19 compiler (pointer => target)
+      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
+      ${t}$(KIND=${k}$), target, ${contiguous(r)}$ intent(in) :: val${ranksuffix(r)}$
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
