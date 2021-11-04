@@ -173,8 +173,8 @@ void Path::readPropertyData( const std::string& refname, const std::string& refs
       nfram++;
   }
   if( pnames.size()>0 ) {
-      for(unsigned i=0;i<pnames.size();++i) action->readInputLine( pnames[i] + refstr + ": READ_VECTOR ARG=" + action->getShortcutLabel() + "_data CENTER=" + properties[i] );
-  } else action->readInputLine( action->getShortcutLabel() + "_ind: READ_VECTOR ARG=" + action->getShortcutLabel() + "_data CENTER=" + properties[0] );
+      for(unsigned i=0;i<pnames.size();++i) action->readInputLine( pnames[i] + refstr + ": CONSTANT_VALUE VALUES=" + properties[i] );
+  } else action->readInputLine( action->getShortcutLabel() + "_ind: CONSTANT_VALUE VALUES=" + properties[0] );
 }
 
 std::string Path::fixArgumentName( const std::string& argin ) {
@@ -283,7 +283,7 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
               if( geometric ) action->error("having coefficients with geometric path makes no sense");
               if( coeff.size()!=nquantities ) action->error("mismatch between number of coefficients and number of values");
               std::string str_coeff; Tools::convert( coeff[0], str_coeff); 
-              ref_line +=  "; " + scut_lab + "_coeff" + num + ": READ_VECTOR CENTER=" + str_coeff;
+              ref_line +=  "; " + scut_lab + "_coeff" + num + ": CONSTANT_VALUE VALUES=" + str_coeff;
               for(unsigned i=1;i<nquantities;++i) { Tools::convert( coeff[i], str_coeff); ref_line += "," + str_coeff; } 
               ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " ARG2=" + scut_lab + "_coeff" + num + " FUNC=y*y*x*x PERIODIC=NO";
           } else if( !geometric ) ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " FUNC=x*x PERIODIC=NO";

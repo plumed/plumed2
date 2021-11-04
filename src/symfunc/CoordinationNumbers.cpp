@@ -127,8 +127,8 @@ ActionShortcut(ao)
   Value* arg; if( matlab.find(".")!=std::string::npos ) arg=mb->copyOutput( matlab ); else arg=mb->copyOutput(0);
   if( arg->getRank()!=2 || arg->hasDerivatives() ) error("the input to this action should be a matrix or scalar");
   // Create vector of ones to multiply input matrix by
-  std::string ones=" CENTER=1"; for(unsigned i=1; i<arg->getShape()[1]; ++i ) ones += ",1";
-  readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones ); 
+  std::string ones=" VALUES=1"; for(unsigned i=1; i<arg->getShape()[1]; ++i ) ones += ",1";
+  readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE" + ones ); 
   if( getName()=="COORDINATION_MOMENTS" ) {
       // Calculate the lengths of the vectors
       std::string r_power; parse("R_POWER",r_power); 

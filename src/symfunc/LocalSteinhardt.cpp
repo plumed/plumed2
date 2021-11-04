@@ -68,8 +68,8 @@ ActionShortcut(ao)
   // Get the Q value 
   int l; Tools::convert( getName().substr(7), l);
   // Create a vector filled with ones 
-  std::string ones=" CENTER=1,1"; for(int i=-l; i<l; ++i ) ones += ",1,1";
-  readInputLine( getShortcutLabel() + "_uvec: READ_VECTOR " + ones );
+  std::string ones=" VALUES=1,1"; for(int i=-l; i<l; ++i ) ones += ",1,1";
+  readInputLine( getShortcutLabel() + "_uvec: CONSTANT_VALUE " + ones );
   // Read in species keyword
   std::string sp_str; parse("SPECIES",sp_str);
   std::string spa_str; parse("SPECIESA",spa_str);

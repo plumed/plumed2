@@ -64,8 +64,8 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   // Now create fixed vectors using some sort of reference action
   mapping::Path::readPropertyData( refname, "", pnames, this );
   // Normalise the vector of weights
-  readInputLine( getShortcutLabel() + "_weights: CALCULATE_REFERENCE CONFIG=" + weights + " INPUT={" + 
-                 "sum: SUM ARG=" + weights + " PERIODIC=NO ; CUSTOM ARG1=sum ARG2=" + weights + " FUNC=y/x PERIODIC=NO}");
+  readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights );
+  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG1=" + getShortcutLabel() + "_wsum ARG2=" +  weights + " FUNC=y/x PERIODIC=NO");
   // Transform the high dimensional distances
   std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc);
   readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");

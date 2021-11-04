@@ -113,7 +113,7 @@ PCAVars::PCAVars( const ActionOptions& ao ):
             pvec += "," + coeff1;
         }
         // Read in eigenvector
-        readInputLine( getShortcutLabel() + "_peig-" + num + ": READ_VECTOR CENTER=" + pvec );
+        readInputLine( getShortcutLabel() + "_peig-" + num + ": CONSTANT_VALUE VALUES=" + pvec );
         // Multiply displacement by eigevector  
         readInputLine( getShortcutLabel() + "_vprod-" + num + ": CUSTOM ARG1=" + getShortcutLabel() + "_peig-" + num + " ARG2=" + getShortcutLabel() + ".disp FUNC=x*y PERIODIC=NO");
         // And sum displacement times vector

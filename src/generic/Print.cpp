@@ -467,11 +467,14 @@ void Print::update() {
     }
     std::vector<double> time(1), time2(1); std::vector<unsigned> ind(1); ind[0]=nv;
     for(unsigned i=0; i<nv; ++i) {
-        (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time ); 
+        if( getPntrToArgument(0)->isConstant() ) time[0]=i;
+        else (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time ); 
         ogfile.fmtField(" %f"); ogfile.printField("time",time[0]);  
         for(unsigned j=0;j<getNumberOfArguments();++j) {
-            (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time2 );
-            if( time[0]!=time2[0] ) error("mismatched times in printed time series"); 
+            if( !getPntrToArgument(0)->isConstant() ) { 
+                (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( i, ind, time2 );
+                if( time[0]!=time2[0] ) error("mismatched times in printed time series"); 
+            }
             ogfile.fmtField(fmt); 
             if( getPntrToArgument(j)->isPeriodic() ) { 
                 std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );

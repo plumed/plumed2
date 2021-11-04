@@ -96,7 +96,8 @@ ConstantValue::ConstantValue(const ActionOptions&ao):
        log.printf("\n"); if( shape.size()==0 && vals.size()>1 ) { shape.resize(1); shape[0] = vals.size(); }
   }
   // Now set the value
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->setConstant();
+  addValue( shape ); setNotPeriodic(); 
+  getPntrToComponent(0)->setConstant(); getPntrToComponent(0)->alwaysStoreValues();
   for(unsigned i=0; i<vals.size(); ++i) getPntrToComponent(0)->set( i, vals[i] );
 }
 

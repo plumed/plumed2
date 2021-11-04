@@ -27,8 +27,8 @@
 namespace PLMD {
 namespace setup {
 
-PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_SCALAR")
-PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_VECTOR")
+// PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_SCALAR")
+// PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_VECTOR")
 PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_CLUSTER")
 
 void ReadReferenceCluster::registerKeywords( Keywords& keys ) {

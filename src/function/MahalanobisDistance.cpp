@@ -89,8 +89,8 @@ ActionShortcut(ao)
       // If this is a matrix we need create a matrix to multiply by
       if( av->copyOutput(0)->getShape()[0]>1 ) {
           // Create some ones   
-          std::string ones=" CENTER=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
-          readInputLine( getShortcutLabel() + "_ones: READ_VECTOR " + ones );
+          std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
+          readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE " + ones );
           // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
           readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG1=" + metstr2 + " ARG2=" + getShortcutLabel() + "_ones");
           metstr2 = getShortcutLabel() + "_" + metstr;

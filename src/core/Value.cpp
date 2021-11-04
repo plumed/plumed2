@@ -154,7 +154,7 @@ void Value::buildDataStore( const std::string& actlabel ) {
 }
 
 void Value::setConstant() {
-  constant=true; alwaysStoreValues();
+  constant=true; storedata=true; setShape( shape );
 }
 
 void Value::alwaysStoreValues() {
