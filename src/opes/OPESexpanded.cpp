@@ -726,6 +726,12 @@ void OPESexpanded::init_pntrToECVsClass()
 
 void OPESexpanded::init_linkECVs()
 {
+  //TODO It should be possible to make all of this more straightforward (and probably also faster):
+  //     - get rid of index_k_, making it trivial for each ECV
+  //     - store the ECVs_ and derECVs_ vectors here as a contiguous vector, and use pointers in the ECV classes
+  //     Some caveats:
+  //     - ECVmultiThermalBaric has a nontrivial index_k_ to avoid duplicates. use duplicates instead
+  //     - can the ECVs be MPI parallel or it's too complicated?
   plumed_massert(deltaF_size_>0,"must set deltaF_size_ before calling init_linkECVs()");
   if(NumParallel_==1)
     deltaF_.resize(deltaF_size_);
