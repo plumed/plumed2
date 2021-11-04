@@ -44,6 +44,7 @@ Value::Value():
   historydependent(false),
   istimeseries(false),
   shape(std::vector<unsigned>()),
+  constant(false),
   alwaysstore(false),
   storedata(true),
   neverstore(false),
@@ -86,6 +87,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   ngrid_der(0),
   historydependent(false),
   istimeseries(false),
+  constant(false),
   alwaysstore(false),
   storedata(true),
   neverstore(false),
@@ -151,6 +153,10 @@ void Value::buildDataStore( const std::string& actlabel ) {
   storedata=true; setShape( shape );
 }
 
+void Value::setConstant() {
+  constant=true; alwaysStoreValues();
+}
+
 void Value::alwaysStoreValues() {
   plumed_assert( !neverstore); alwaysstore=true; storedata=true; setShape( shape );
 }
@@ -170,7 +176,7 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce( std::vector<double>& forces ) const {
-  if( !hasForce ) return false;
+  if( !hasForce || constant ) return false;
 
   if( shape.size()==0 && hasDeriv ) {
     for(unsigned i=0; i<forces.size(); ++i) forces[i] += inputForces[0]*data[1 + i];

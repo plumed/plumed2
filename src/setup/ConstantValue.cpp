@@ -29,66 +29,75 @@ using namespace std;
 namespace PLMD {
 namespace setup {
 
-class ReferenceValue :
+class ConstantValue :
 public ActionSetup,
 public ActionWithValue
 {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit ReferenceValue(const ActionOptions&ao);
+  explicit ConstantValue(const ActionOptions&ao);
   void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const { return 0; }
 };
 
-PLUMED_REGISTER_ACTION(ReferenceValue,"READ_MATRIX")
+PLUMED_REGISTER_ACTION(ConstantValue,"CONSTANT_VALUE")
 
-void ReferenceValue::registerKeywords( Keywords& keys ) {
+void ConstantValue::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys); ActionWithValue::registerKeywords(keys);
   keys.remove("NUMERICAL_DERIVATIVES"); keys.remove("SERIAL"); keys.remove("TIMINGS");
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
   keys.add("optional","FILE","an input file containing the matrix");
-  keys.add("optional","NROWS","the number of rows in your input matrix");
-  keys.add("optional","NCOLS","the number of columns in your matrix");
+  keys.add("compulsory","NROWS","0","the number of rows in your input matrix");
+  keys.add("compulsory","NCOLS","0","the number of columns in your matrix");
   keys.add("optional","VALUES","the elements of your matrix");
 }
 
-ReferenceValue::ReferenceValue(const ActionOptions&ao):
+ConstantValue::ConstantValue(const ActionOptions&ao):
   Action(ao),
   ActionSetup(ao),
   ActionWithValue(ao)
 {
   std::string fname; parse("FILE",fname); 
-  std::vector<unsigned> shape(2); std::vector<double> vals;
+  std::vector<unsigned> shape; std::vector<double> vals;
   if( fname.length()>0 ) {
        IFile mfile; mfile.open(fname);
-       std::vector<std::vector<double> > dissimilarities;
        // Read in first line
-       std::vector<std::string> words; shape[1]=0;
-       while( shape[1]==0 ) {
+       std::vector<std::string> words; unsigned nline=0;
+       while( nline==0 ) {
          Tools::getParsedLine( mfile, words );
-         shape[1]=words.size();
+         nline=words.size();
        }
+       if( nline==1 ) shape.resize(1); 
+       else { shape.resize(2); shape[1]=nline; }
 
        std::vector<double> tmpdis( shape[1] );
+       std::vector<std::vector<double> > dissimilarities;
        for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
        dissimilarities.push_back( tmpdis );
 
        while( Tools::getParsedLine( mfile, words ) ) {
-         if( words.size()!=shape[1] ) error("bad formatting in matrix file");
-         for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
+         if( words.size()!=nline ) error("bad formatting in matrix file");
+         for(unsigned j=0; j<nline; ++j) Tools::convert( words[j], tmpdis[j] );
          dissimilarities.push_back( tmpdis );
        }
-       mfile.close(); shape[0] = dissimilarities.size(); vals.resize( shape[0]*shape[1] );
+       mfile.close(); shape[0] = dissimilarities.size(); vals.resize(shape[0]);
+       if( shape.size()==2 ) vals.resize( shape[0]*shape[1] );
        for(unsigned i=0;i<shape[0];++i) {
-           for(unsigned j=0;j<shape[1];++j) vals[i*shape[1]+j] = dissimilarities[i][j];
+           for(unsigned j=0;j<nline;++j) vals[i*nline+j] = dissimilarities[i][j];
        }
   } else {
-       parse("NROWS",shape[0]); parse("NCOLS",shape[1]); vals.resize( shape[0]*shape[1] ); parseVector("VALUES",vals);
+       unsigned nr, nc; parse("NROWS",nr); parse("NCOLS",nc); 
+       if( nr>0 && nc>0 ) { 
+           shape.resize(2); shape[0]=nr; shape[1]=nc; vals.resize( nr*nc );
+           log.printf("  reading in %d by %d matrix \n", nr, nc ); 
+       } else if( nr>0 || nc>0 ) error("makes no sense to set only one of NROWS and NCOLS to a non-zero value");
+       parseVector("VALUES",vals); log.printf("  read in %d values :", vals.size() );
+       for(unsigned i=0; i<vals.size(); ++i) log.printf(" %f", vals[i] );
+       log.printf("\n"); if( shape.size()==0 && vals.size()>1 ) { shape.resize(1); shape[0] = vals.size(); }
   }
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->alwaysStoreValues();
-  for(unsigned i=0;i<shape[0];++i) {
-      for(unsigned j=0;j<shape[1];++j) getPntrToComponent(0)->set( i*shape[1] + j, vals[i*shape[1] + j] );
-  }
+  // Now set the value
+  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->setConstant();
+  for(unsigned i=0; i<vals.size(); ++i) getPntrToComponent(0)->set( i, vals[i] );
 }
 
 }

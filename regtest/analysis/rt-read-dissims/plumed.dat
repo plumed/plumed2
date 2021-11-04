@@ -1,4 +1,4 @@
-r1: READ_MATRIX FILE=mymatrix.matx 
+r1: CONSTANT_VALUE FILE=mymatrix.matx 
 PRINT ARG=r1 FILE=mymatrix_out.matx FMT=%8.4f
 
 l1: LANDMARK_SELECT_STRIDE ARG1=r1 NLANDMARKS=5

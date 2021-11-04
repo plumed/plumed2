@@ -54,23 +54,24 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
   bool von_miss, squared; parseFlag("VON_MISSES",von_miss); parseFlag("SQUARED",squared);
   if( von_miss ) {
-      std::size_t dot=metstr.find_first_of("."); if( dot!=std::string::npos ) error("read in metric not implemented - contact G. Tribello");
       ActionWithValue* mav=plumed.getActionSet().selectWithLabel<ActionWithValue*>( metstr ); 
       if( !mav ) error("could not find action named " + metstr + " to use for metric"); 
       if( mav->copyOutput(0)->getRank()!=2 ) error("metric has incorrect rank");
       unsigned nrows = mav->copyOutput(0)->getShape()[0];
       if( mav->copyOutput(0)->getShape()[1]!=nrows ) error("metric is not symmetric"); 
       // Create a matrix that can be used to compute the off diagonal elements
-      std::string valstr; Tools::convert( mav->copyOutput(0)->get(0), valstr );
-      std::string covstr =" COVAR=0", centtr = " CENTER=" + valstr; unsigned n=0;
+      std::string valstr, nrstr; 
+      Tools::convert( mav->copyOutput(0)->get(0), valstr ); Tools::convert( nrows, nrstr );
+      std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT_VALUE VALUES=" + valstr;
+      std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT_VALUE NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
       for(unsigned i=0;i<nrows;++i) {
           for(unsigned j=0;j<nrows;++j) {
-              Tools::convert( mav->copyOutput(0)->get(n), valstr ); n++;
-              if( i==j && i>0 ) { covstr += ",0"; centtr += "," + valstr; }
-              else if( i!=j ) { covstr += "," + valstr; }
+              Tools::convert( mav->copyOutput(0)->get(i*nrows+j), valstr );
+              if( i==j && i>0 ) { offdiagmet += ",0"; diagmet += "," + valstr; }
+              else if( i!=j ) { offdiagmet += "," + valstr; }
           }
       }
-      readInputLine( getShortcutLabel() + "_metoff: READ_CLUSTER ARG=" + arg1 + centtr + covstr ); 
+      readInputLine( diagmet ); readInputLine( offdiagmet );
       // Compute distances scaled by periods
       ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff" ); plumed_assert( av );
       if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
@@ -81,10 +82,10 @@ ActionShortcut(ao)
       // Transpose sines to get a row vector
       readInputLine( getShortcutLabel() + "_sinediff: TRANSPOSE ARG=" + getShortcutLabel() + "_sinediffT");
       // Compute the off diagonal elements
-      readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + getShortcutLabel() + "_metoff.covariance ARG2=" + getShortcutLabel() +"_sinediffT"); 
+      readInputLine( getShortcutLabel() + "_matvec: DOT ARG1=" + getShortcutLabel() + "_offdiagmet ARG2=" + getShortcutLabel() +"_sinediffT"); 
       readInputLine( getShortcutLabel() + "_offdiag: DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() + "_sinediff ARG2=" + getShortcutLabel() +"_matvec");
       // Sort out the metric for the diagonal elements
-      std::string metstr2 = getShortcutLabel() + "_metoff.center";
+      std::string metstr2 = getShortcutLabel() + "_diagmet";
       // If this is a matrix we need create a matrix to multiply by
       if( av->copyOutput(0)->getShape()[0]>1 ) {
           // Create some ones   

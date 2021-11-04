@@ -47,10 +47,10 @@ ActionShortcut(ao)
           // Compute the normalizing constant
           std::string pstr; Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
           if( ktype=="gaussian" || ktype=="GAUSSIAN" ) {
-              readInputLine( getShortcutLabel() + "_vol: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref " +
-                             "INPUT={ det: PRODUCT ARG=variance ; MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO}");
-              if( height.length()>0 ) readInputLine( getShortcutLabel() + "_height: MATHEVAL ARG1=" + height + " ARG2=" + getShortcutLabel() + "_vol FUNC=x/y PERIODIC=NO");
-              else readInputLine( getShortcutLabel() + "_height: MATHEVAL ARG1=" + getShortcutLabel() + "_vol FUNC=1/x PERIODIC=NO");
+              readInputLine( getShortcutLabel() + "_bwprod: PRODUCT ARG=" + getShortcutLabel() + "_cov");
+              readInputLine( getShortcutLabel() + "_vol: CUSTOM ARG=" + getShortcutLabel() + "_bwprod FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO"); 
+              if( height.length()>0 ) readInputLine( getShortcutLabel() + "_height: CUSTOM ARG1=" + height + " ARG2=" + getShortcutLabel() + "_vol FUNC=x/y PERIODIC=NO");
+              else readInputLine( getShortcutLabel() + "_height: CUSTOM ARG1=" + getShortcutLabel() + "_vol FUNC=1/x PERIODIC=NO");
               height_str = " HEIGHTS=" + getShortcutLabel() + "_height";
           } else if( height.length()>0 ) {
               height_str = " HEIGHTS=" + height;
@@ -63,13 +63,14 @@ ActionShortcut(ao)
 }
 
 void KDEShortcut::convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, ActionShortcut* action ) {
-  double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + bwidths[0], argstr=" READ_ARG=cv1";
+  double bw; std::string band="VALUES=" + bwidths[0];
   for(unsigned i=0;i<bwidths.size();++i) {
       if( !Tools::convert( bwidths[i], bw ) ) action->error("could not convert input bandwidth to real number");
-      if( i>0 ) { center += ",0.0"; band += "," + bwidths[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; }
+      if( i>0 ) band += "," + bwidths[i]; 
   }
-  action->readInputLine( lab + "_ref: READ_CLUSTER " + argstr + center + band );
-  action->readInputLine( lab + "_icov: CALCULATE_REFERENCE CONFIG=" + lab + "_ref INPUT={MATHEVAL ARG1=variance FUNC=1/x PERIODIC=NO}" );
+  action->readInputLine( lab + "_sigma: CONSTANT_VALUE " + band );
+  action->readInputLine( lab + "_cov: CUSTOM ARG=" + lab + "_sigma FUNC=x*x PERIODIC=NO" );
+  action->readInputLine( lab + "_icov: CUSTOM ARG=" + lab + "_cov FUNC=1/x PERIODIC=NO" );
 }
 
 }

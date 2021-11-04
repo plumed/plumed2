@@ -132,6 +132,8 @@ public:
   void getNumberOfStashedInputArguments( unsigned& nquants ) const ;
 /// This gets the position of the argument in the stream
   unsigned getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const ;
+/// Used to calculate constant values in startup
+  bool calculateConstantValues();
 };
 
 

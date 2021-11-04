@@ -47,6 +47,7 @@ protected:
   bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
   void createTaskList();
+  void resizeForcesToApply();
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
   static void histogramKeywords( Keywords& keys );

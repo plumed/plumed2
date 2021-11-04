@@ -65,6 +65,7 @@ Action::Action(const ActionOptions&ao):
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
+  never_activate(false),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -184,6 +185,8 @@ bool Action::checkForDependency( Action* action ) {
 }
 
 void Action::activate() {
+// This is set to true if actions are only need to be computed in setup (during checkRead)  
+  if( never_activate ) return;
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
@@ -226,6 +229,8 @@ void Action::checkRead() {
     }
     error(msg);
   }
+  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
+  if(aa) never_activate = aa->calculateConstantValues();
 }
 
 long int Action::getStep()const {

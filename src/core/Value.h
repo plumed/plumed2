@@ -81,6 +81,8 @@ private:
   std::vector<std::string> userdata;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
+/// This is used if the action is a constant
+  bool constant;
 /// This is used by actions that always store data.  They cannot operate without storing all values
   bool alwaysstore;
 /// Are we storing the data
@@ -186,6 +188,8 @@ public:
   void makeHistoryDependent();
   bool isHistoryDependent() const ;
   bool isTimeSeries() const ;
+  bool isConstant() const ;
+  void setConstant();
   void alwaysStoreValues();
   void neverStoreValues();
 ///
@@ -318,7 +322,8 @@ void Value::clearInputForce() {
 
 inline
 void Value::clearDerivatives() {
-  value_set=false; if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+  plumed_assert( !constant ); value_set=false; 
+  if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
 
 inline
@@ -396,6 +401,11 @@ double Value::getMaxMinusMin()const {
 inline
 bool Value::isTimeSeries() const {
   return istimeseries;
+}
+
+inline
+bool Value::isConstant() const {
+  return constant;
 }
 
 inline

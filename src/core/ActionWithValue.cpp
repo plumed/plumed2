@@ -227,10 +227,10 @@ bool ActionWithValue::inputIsTimeSeries() const {
   for(unsigned i=0; i<aa->getNumberOfArguments(); ++i) {
      if( istimeseries && !(aa->getPntrToArgument(i))->isHistoryDependent() ) {
          ActionSetup* as = dynamic_cast<ActionSetup*>((aa->getPntrToArgument(i))->getPntrToAction());
-         if( !as ) error( (aa->getPntrToArgument(0))->getName() + " is time series but " + (aa->getPntrToArgument(i))->getName() + " is not");
+         if( !as && !(aa->getPntrToArgument(i))->isConstant() ) error( (aa->getPntrToArgument(0))->getName() + " is time series but " + (aa->getPntrToArgument(i))->getName() + " is not");
      } else if( !istimeseries && (aa->getPntrToArgument(i))->isHistoryDependent() ) {
          ActionSetup* as = dynamic_cast<ActionSetup*>((aa->getPntrToArgument(0))->getPntrToAction());
-         if( !as ) error( (aa->getPntrToArgument(0))->getName() + " is not time series but " + (aa->getPntrToArgument(i))->getName() + " is time series"); 
+         if( !as && !(aa->getPntrToArgument(i))->isConstant() ) error( (aa->getPntrToArgument(0))->getName() + " is not time series but " + (aa->getPntrToArgument(i))->getName() + " is time series"); 
          else istimeseries=true;
      }
   }
@@ -809,7 +809,7 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
   } else {
     // Check if there are any forces
     for(unsigned i=0; i<values.size(); ++i) {
-      if( values[i]->hasForce ) at_least_one_forced=true;
+      if( values[i]->hasForce && !values[i]->isConstant() ) at_least_one_forced=true;
     }
     if( !at_least_one_forced ) return false;
 

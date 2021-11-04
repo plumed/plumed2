@@ -24,7 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
-#include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -277,7 +276,7 @@ KDE::KDE(const ActionOptions&ao):
       if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");
       log.printf("  bandwidths are taken from : %s \n", bandwidth[0].c_str() );
       std::vector<Value*> args( getArguments() ); args.push_back( bw_args[0] );
-      requestArguments( args, true );
+      requestArguments( args, true ); resizeForcesToApply();
   }
   createTaskList();
 
@@ -310,9 +309,8 @@ KDE::KDE(const ActionOptions&ao):
         else grid_diff_value[i].setNotPeriodic();
     }
     addValueWithDerivatives( shape ); 
-    if( kerneltype!="DISCRETE" ) {
-        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
-        if(as) { fixed_width=true; setupNeighborsVector(); }
+    if( kerneltype!="DISCRETE" && getPntrToArgument(arg_ends[arg_ends.size()-1])->isConstant() ) { 
+        fixed_width=true; setupNeighborsVector(); 
     }
   } else {
     std::vector<unsigned> shape( getNumberOfDerivatives(), 1 );
@@ -390,9 +388,8 @@ void KDE::completeGridObjectSetup() {
       for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
     }
     // And setup the neighbors
-    if( kerneltype!="DISCRETE" ) {
-        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
-        if(as) { fixed_width=true; setupNeighborsVector(); }
+    if( kerneltype!="DISCRETE" && getPntrToArgument(arg_ends[arg_ends.size()-1])->isConstant() ) { 
+        fixed_width=true; setupNeighborsVector(); 
     }
     // And never do this again
     firststep=false;

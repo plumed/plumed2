@@ -102,6 +102,8 @@ private:
 
   bool doCheckPoint;
 
+  bool never_activate;
+
 public:
 
 /// Reference to main plumed object

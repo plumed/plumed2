@@ -272,17 +272,19 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
   arguments=arg; clearDependencies();
   if( arguments.size()==0 ) return ;
   distinct_arguments.resize(0); done_over_stream=false;
-  bool storing=false; allrankzero=true;
+  bool storing=false, allconstant=true; allrankzero=true;
   // Now check if we need to store data
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
     if( !allow_streams ) { storing=true; break; }
     if( arguments[i]->alwaysstore ) { 
         ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
-        if( as ) { arguments[i]->buildDataStore( getLabel() ); } else { storing=true; break; }
+        if( arguments[i]->isConstant() || as ) { arguments[i]->buildDataStore( getLabel() ); } else { storing=true; break; }
     }
+    if( !arguments[i]->isConstant() ) { allconstant=false; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }
+  if( allconstant ) storing=true;
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
@@ -741,7 +743,7 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
             if( arguments[j]->getName().find("_ones")!=std::string::npos ) added_force_on.push_back( arguments[j]->getName() ); 
             unsigned narg_v = arguments[j]->getNumberOfValues(); if( distinct_arguments[i].second==2 ) narg_v = 1;
             for(unsigned k=0; k<narg_v; ++k) {
-              plumed_assert( start<forces.size() ); 
+              plumed_dbg_assert( start<forces.size() ); 
               arguments[j]->addForce( k, forces[start] ); start++;
             }
           }
@@ -751,7 +753,7 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
   } else {
     for(unsigned i=argstart; i<arguments.size(); ++i) {
       unsigned narg_v = arguments[i]->getNumberOfValues();
-      for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( j, forces[start] ); start++; }
+      for(unsigned j=0; j<narg_v; ++j) { plumed_dbg_massert( start<forces.size(), "problem in " + getLabel() ); arguments[i]->addForce( j, forces[start] ); start++; }
     }
   }
 }
@@ -833,6 +835,29 @@ void ActionWithArguments::resizeForFinalTasks() {
   }
   ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( av->action_to_do_after );
   if( aa ) aa->resizeForFinalTasks();
+}
+
+bool ActionWithArguments::calculateConstantValues() {
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+  if( !av || arguments.size()==0 ) return false; 
+  bool constant = true;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+      if( !arguments[i]->isConstant() ) { constant=false; break; }
+  } 
+  if( constant ) {
+      // Set everything constant first as we need to set the shape
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
+      // Now do the calculation and store the values
+      activate(); calculate(); deactivate(); 
+      log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+         unsigned nv = av->copyOutput(i)->getNumberOfValues();
+         log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
+         for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
+         log.printf("\n");
+      }
+  }
+  return constant;
 }
 
 }

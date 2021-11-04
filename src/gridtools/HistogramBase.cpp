@@ -109,7 +109,10 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   parseFlag("UNORMALIZED",unorm);
   if( unorm ) log.printf("  calculating unormalized distribution \n");
   else log.printf("  calculating normalized distribution \n");
+  resizeForcesToApply();
+}
 
+void HistogramBase::resizeForcesToApply() {
   // Resize the forces vector
   unsigned nvals_t=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues();
