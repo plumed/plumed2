@@ -1,5 +1,5 @@
 PROGRAM main
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED) :: p
   if(.not. plumed_installed()) then

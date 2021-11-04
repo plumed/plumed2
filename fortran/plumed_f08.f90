@@ -3,7 +3,7 @@
 
 
 
-module plumed_module_f08
+module plumed_f08_module
   use iso_c_binding
   implicit none
 
@@ -3578,5 +3578,5 @@ module plumed_module_f08
     end subroutine pl_cmd_const_ptr_real_2_4
 
 
-end module plumed_module_f08
+end module plumed_f08_module
 

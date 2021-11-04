@@ -1,5 +1,5 @@
 subroutine testfull()
-use plumed_module_f08
+use plumed_f08_module
 use iso_c_binding
 implicit none
 
