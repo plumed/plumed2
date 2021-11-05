@@ -62,7 +62,7 @@ module plumed_f08_module
   type plumed
     type(cplumed), private :: handle
     logical,       private :: initialized = .false.
-  contains 
+  contains
     private
 
     generic, public :: cmd => pl_cmd
@@ -369,7 +369,7 @@ module plumed_f08_module
       integer(kind=c_int) :: cplumed_installed
     end function cplumed_installed
   end interface
-    
+
   interface
     function cplumed_valid(p) bind(C,name="plumed_valid")
       import
@@ -402,7 +402,7 @@ module plumed_f08_module
   interface
     function plumed_f_safeptr_char(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      character(kind=c_char)                :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -412,20 +412,9 @@ module plumed_f08_module
   end interface
 
   interface
-    function plumed_f_safeptr_int_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      integer(kind=c_int)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_int_scalar
-    end function plumed_f_safeptr_int_scalar
-  end interface
-  interface
     function plumed_f_safeptr_int(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      integer(kind=c_int)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -434,20 +423,9 @@ module plumed_f08_module
     end function plumed_f_safeptr_int
   end interface
   interface
-    function plumed_f_safeptr_short_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      integer(kind=c_short)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_short_scalar
-    end function plumed_f_safeptr_short_scalar
-  end interface
-  interface
     function plumed_f_safeptr_short(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      integer(kind=c_short)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -456,20 +434,9 @@ module plumed_f08_module
     end function plumed_f_safeptr_short
   end interface
   interface
-    function plumed_f_safeptr_long_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      integer(kind=c_long)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_long_scalar
-    end function plumed_f_safeptr_long_scalar
-  end interface
-  interface
     function plumed_f_safeptr_long(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      integer(kind=c_long)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -478,20 +445,9 @@ module plumed_f08_module
     end function plumed_f_safeptr_long
   end interface
   interface
-    function plumed_f_safeptr_float_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      real(kind=c_float)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_float_scalar
-    end function plumed_f_safeptr_float_scalar
-  end interface
-  interface
     function plumed_f_safeptr_float(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      real(kind=c_float)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -500,20 +456,9 @@ module plumed_f08_module
     end function plumed_f_safeptr_float
   end interface
   interface
-    function plumed_f_safeptr_double_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      real(kind=c_double)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_double_scalar
-    end function plumed_f_safeptr_double_scalar
-  end interface
-  interface
     function plumed_f_safeptr_double(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      real(kind=c_double)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -522,20 +467,9 @@ module plumed_f08_module
     end function plumed_f_safeptr_double
   end interface
   interface
-    function plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      real(kind=c_long_double)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_long_double_scalar
-    end function plumed_f_safeptr_long_double_scalar
-  end interface
-  interface
     function plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,opt) bind(C)
       import
-      real(kind=c_long_double)                     :: val(*)
+      type(c_ptr),                    value :: val
       integer(kind=c_size_t),         value :: nelem
       integer(kind=c_size_t)                :: pass_shape(*)
       integer(kind=c_size_t),         value :: flags
@@ -575,32 +509,23 @@ module plumed_f08_module
 
      ! we then define all the functions needed for overloading
 
-     subroutine plumed_f_cmd_ptr(p,key,val,dummy,error,const,nocopy)
+     subroutine plumed_f_cmd_ptr(p,key,val,const,nocopy,error)
        type(cplumed),                 intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       type(c_ptr),                     value       :: val
-       type(dummy_type),   optional                 :: dummy
+       type(c_ptr),                   intent(in)    :: val
+       logical,                       intent(in)    :: const
+       logical,                       intent(in)    :: nocopy
        type(plumed_error), optional,  intent(out)   :: error
-       logical,            optional,  intent(in)    :: const
-       logical,            optional,  intent(in)    :: nocopy
        type(plumed_error), target :: myerror
        integer(kind=c_size_t) :: pass_shape(1)
        integer(kind=c_size_t) :: flags
        type(cplumed_nothrow_handler) :: nothrow
        integer(kind=c_size_t) :: nelem
-       pass_shape=(/0/)
+       pass_shape=[0]
        nelem=product(pass_shape)
        flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
+       if (const) flags=flags_const_ptr
+       if (nocopy) flags=flags+flags_nocopy
        nothrow%ptr=c_loc(myerror)
        if(present(error)) then
          nothrow%handler=c_funloc(plumed_f_f08_eh)
@@ -614,1245 +539,258 @@ module plumed_f08_module
        endif
      end subroutine plumed_f_cmd_ptr
 
-     subroutine plumed_f_cmd_char(p,key,val,dummy,error,const,nocopy)
+     subroutine plumed_f_cmd_char(p,key, val, const, nocopy, error)
        type(cplumed),                 intent(in)    :: p
        character(kind=c_char,len=*),  intent(in)    :: key
-       character(kind=c_char,len=*),  intent(in)    :: val
-       type(dummy_type),   optional                 :: dummy
+       character(kind=c_char,len=*),  target, intent(in) :: val
+       logical,                       intent(in)    :: const
+       logical,                       intent(in)    :: nocopy
        type(plumed_error), optional,  intent(out)   :: error
-       logical,            optional,  intent(in)    :: const
-       logical,            optional,  intent(in)    :: nocopy
        type(plumed_error), target :: myerror
        integer(kind=c_size_t) :: pass_shape(2)
        integer(kind=c_size_t) :: flags
        type(cplumed_nothrow_handler) :: nothrow
        integer(kind=c_size_t) :: nelem
-       pass_shape=(/len(val),0/)
+       pass_shape=[len(val) ,0]
        nelem=product(pass_shape)
        flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
+       if (const) flags=flags_const_ptr
+       if (nocopy) flags=flags + flags_nocopy
        nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
+       if (present(error)) then
          nothrow%handler=c_funloc(plumed_f_f08_eh)
        else
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_char(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
+         plumed_f_safeptr_char(c_loc(val),nelem,pass_shape,flags,c_null_ptr),nothrow)
        if(present(error)) then
          error=myerror
        endif
      end subroutine plumed_f_cmd_char
 
-    subroutine plumed_f_cmd_integer_0_0(p,key,val,dummy,error,const,nocopy)
+    subroutine plumed_f_cmd_integer_0(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                            :: val
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_0_0
-    subroutine plumed_f_cmd_integer_0_1(p,key,val,dummy,error,const,nocopy)
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_int(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_integer_0
+    subroutine plumed_f_cmd_integer_1(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_0_1
-    subroutine plumed_f_cmd_integer_0_2(p,key,val,dummy,error,const,nocopy)
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_short(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_integer_1
+    subroutine plumed_f_cmd_integer_2(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_0_2
-    subroutine plumed_f_cmd_integer_0_3(p,key,val,dummy,error,const,nocopy)
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_long(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_integer_2
+    subroutine plumed_f_cmd_real_0(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_0_3
-    subroutine plumed_f_cmd_integer_0_4(p,key,val,dummy,error,const,nocopy)
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_float(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_real_0
+    subroutine plumed_f_cmd_real_1(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_int(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_0_4
-    subroutine plumed_f_cmd_integer_1_0(p,key,val,dummy,error,const,nocopy)
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_double(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_real_1
+    subroutine plumed_f_cmd_real_2(p, key, valptr, valshape, const, nocopy, error)
       type(cplumed),                 intent(in)    :: p
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                            :: val
-       type(dummy_type),   optional                 :: dummy
+      type(c_ptr),                   intent(in)    :: valptr
+      integer,                       intent(in)    :: valshape(:)
+      logical,                       intent(in)    :: const
+      logical,                       intent(in)    :: nocopy
       type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
+
       type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_1_0
-    subroutine plumed_f_cmd_integer_1_1(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_1_1
-    subroutine plumed_f_cmd_integer_1_2(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_1_2
-    subroutine plumed_f_cmd_integer_1_3(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_1_3
-    subroutine plumed_f_cmd_integer_1_4(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_short(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_1_4
-    subroutine plumed_f_cmd_integer_2_0(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                            :: val
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_2_0
-    subroutine plumed_f_cmd_integer_2_1(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_2_1
-    subroutine plumed_f_cmd_integer_2_2(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_2_2
-    subroutine plumed_f_cmd_integer_2_3(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_2_3
-    subroutine plumed_f_cmd_integer_2_4(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_integer_2_4
-    subroutine plumed_f_cmd_real_0_0(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                            :: val
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_0_0
-    subroutine plumed_f_cmd_real_0_1(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_0_1
-    subroutine plumed_f_cmd_real_0_2(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_0_2
-    subroutine plumed_f_cmd_real_0_3(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_0_3
-    subroutine plumed_f_cmd_real_0_4(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_float(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_0_4
-    subroutine plumed_f_cmd_real_1_0(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                            :: val
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_1_0
-    subroutine plumed_f_cmd_real_1_1(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_1_1
-    subroutine plumed_f_cmd_real_1_2(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_1_2
-    subroutine plumed_f_cmd_real_1_3(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_1_3
-    subroutine plumed_f_cmd_real_1_4(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_1_4
-    subroutine plumed_f_cmd_real_2_0(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_2_0
-    subroutine plumed_f_cmd_real_2_1(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_2_1
-    subroutine plumed_f_cmd_real_2_2(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_2_2
-    subroutine plumed_f_cmd_real_2_3(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_2_3
-    subroutine plumed_f_cmd_real_2_4(p,key,val,dummy,error,const,nocopy)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:,:,:)
-       type(dummy_type),   optional                 :: dummy
-      type(plumed_error), optional,  intent(out)   :: error
-      logical,            optional,  intent(in)    :: const
-      logical,            optional,  intent(in)    :: nocopy
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       flags=flags_ptr
-       if(present(const)) then
-         if(const) then
-           flags=flags_const_ptr
-         endif
-       endif
-       if(present(nocopy)) then
-         if(nocopy) then
-           flags=flags+flags_nocopy
-         endif
-       endif
-       nothrow%ptr=c_loc(myerror)
-       if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
-       else
-         nothrow%handler=c_null_funptr
-       endif
-       call plumed_cmd_safe_nothrow(p,key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
-    end subroutine plumed_f_cmd_real_2_4
+      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
+
+      if (size(valshape) == 0) then
+        pass_shape(:) = [1, 0]
+      else
+        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
+      endif
+      nelem = product(pass_shape)
+      flags = flags_ptr
+      if (const) flags = flags_const_ptr
+      if(nocopy) flags = flags + flags_nocopy
+      nothrow%ptr = c_loc(myerror)
+      if(present(error)) then
+        nothrow%handler = c_funloc(plumed_f_f08_eh)
+      else
+        nothrow%handler=c_null_funptr
+      endif
+      call plumed_cmd_safe_nothrow(p, key, &
+         plumed_f_safeptr_long_double(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
+      if(present(error)) then
+         error = myerror
+      endif
+
+    end subroutine plumed_f_cmd_real_2
 
      ! this is a soft wrapper to a C function
      function plumed_installed() result(res)
@@ -1948,7 +886,8 @@ module plumed_f08_module
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_ptr(this%handle,key // c_null_char,c_null_ptr,error=error)
+       call plumed_f_cmd_ptr(this%handle, key // c_null_char, c_null_ptr, const=.false.,&
+           & nocopy=.false., error=error)
      end subroutine pl_cmd
 
      subroutine pl_cmd_val_char(this,key,val,dummy,error)
@@ -1960,7 +899,8 @@ module plumed_f08_module
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_char(this%handle,key // c_null_char,val // c_null_char,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_char(this%handle,key // c_null_char,val // c_null_char, &
+           & const=.true., nocopy=.true., error=error)
      end subroutine pl_cmd_val_char
 
      subroutine pl_cmd_ptr_c(this,key,val,dummy,error)
@@ -1972,7 +912,8 @@ module plumed_f08_module
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_ptr(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_ptr(this%handle,key // c_null_char, val, const=.false., nocopy=.false.,&
+           & error=error)
      end subroutine pl_cmd_ptr_c
 
      subroutine pl_cmd_const_ptr_c(this,key,val,dummy,error)
@@ -1984,1599 +925,1959 @@ module plumed_f08_module
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_ptr(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_ptr(this%handle,key // c_null_char,val, const=.true., nocopy=.false.,&
+           & error=error)
      end subroutine pl_cmd_const_ptr_c
 
 
     subroutine pl_cmd_val_integer_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(in)    :: val
+      integer(KIND=c_int),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_0
 
     subroutine pl_cmd_ref_integer_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(inout) :: val
+      integer(KIND=c_int),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_0
 
     subroutine pl_cmd_ptr_integer_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target,  intent(inout) :: val
+      integer(KIND=c_int),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_0
 
     subroutine pl_cmd_const_ptr_integer_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target,  intent(in) :: val
+      integer(KIND=c_int),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_0_0
 
 
     subroutine pl_cmd_val_integer_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(in)    :: val(:)
+      integer(KIND=c_int), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_1
 
     subroutine pl_cmd_ref_integer_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(inout) :: val(:)
+      integer(KIND=c_int), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_1
 
     subroutine pl_cmd_ptr_integer_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_1
 
     subroutine pl_cmd_const_ptr_integer_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_0_1
 
 
     subroutine pl_cmd_val_integer_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(in)    :: val(:,:)
+      integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_2
 
     subroutine pl_cmd_ref_integer_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(inout) :: val(:,:)
+      integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_2
 
     subroutine pl_cmd_ptr_integer_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_2
 
     subroutine pl_cmd_const_ptr_integer_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_0_2
 
 
     subroutine pl_cmd_val_integer_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(in)    :: val(:,:,:)
+      integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_3
 
     subroutine pl_cmd_ref_integer_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(inout) :: val(:,:,:)
+      integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_3
 
     subroutine pl_cmd_ptr_integer_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_3
 
     subroutine pl_cmd_const_ptr_integer_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_0_3
 
 
     subroutine pl_cmd_val_integer_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(in)    :: val(:,:,:,:)
+      integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_4
 
     subroutine pl_cmd_ref_integer_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_int),             intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_4
 
     subroutine pl_cmd_ptr_integer_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_4
 
     subroutine pl_cmd_const_ptr_integer_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_int), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_0_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_0_4
 
 
     subroutine pl_cmd_val_integer_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(in)    :: val
+      integer(KIND=c_short),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_0
 
     subroutine pl_cmd_ref_integer_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(inout) :: val
+      integer(KIND=c_short),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_0
 
     subroutine pl_cmd_ptr_integer_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target,  intent(inout) :: val
+      integer(KIND=c_short),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_0
 
     subroutine pl_cmd_const_ptr_integer_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target,  intent(in) :: val
+      integer(KIND=c_short),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_1_0
 
 
     subroutine pl_cmd_val_integer_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(in)    :: val(:)
+      integer(KIND=c_short), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_1
 
     subroutine pl_cmd_ref_integer_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(inout) :: val(:)
+      integer(KIND=c_short), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_1
 
     subroutine pl_cmd_ptr_integer_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_1
 
     subroutine pl_cmd_const_ptr_integer_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_1_1
 
 
     subroutine pl_cmd_val_integer_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(in)    :: val(:,:)
+      integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_2
 
     subroutine pl_cmd_ref_integer_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(inout) :: val(:,:)
+      integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_2
 
     subroutine pl_cmd_ptr_integer_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_2
 
     subroutine pl_cmd_const_ptr_integer_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_1_2
 
 
     subroutine pl_cmd_val_integer_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(in)    :: val(:,:,:)
+      integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_3
 
     subroutine pl_cmd_ref_integer_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(inout) :: val(:,:,:)
+      integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_3
 
     subroutine pl_cmd_ptr_integer_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_3
 
     subroutine pl_cmd_const_ptr_integer_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_1_3
 
 
     subroutine pl_cmd_val_integer_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(in)    :: val(:,:,:,:)
+      integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_4
 
     subroutine pl_cmd_ref_integer_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_short),             intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_4
 
     subroutine pl_cmd_ptr_integer_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_4
 
     subroutine pl_cmd_const_ptr_integer_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_short), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_1_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_1_4
 
 
     subroutine pl_cmd_val_integer_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(in)    :: val
+      integer(KIND=c_long),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_0
 
     subroutine pl_cmd_ref_integer_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(inout) :: val
+      integer(KIND=c_long),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_0
 
     subroutine pl_cmd_ptr_integer_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target,  intent(inout) :: val
+      integer(KIND=c_long),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_0
 
     subroutine pl_cmd_const_ptr_integer_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target,  intent(in) :: val
+      integer(KIND=c_long),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_2_0
 
 
     subroutine pl_cmd_val_integer_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(in)    :: val(:)
+      integer(KIND=c_long), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_1
 
     subroutine pl_cmd_ref_integer_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(inout) :: val(:)
+      integer(KIND=c_long), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_1
 
     subroutine pl_cmd_ptr_integer_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_1
 
     subroutine pl_cmd_const_ptr_integer_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_2_1
 
 
     subroutine pl_cmd_val_integer_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(in)    :: val(:,:)
+      integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_2
 
     subroutine pl_cmd_ref_integer_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(inout) :: val(:,:)
+      integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_2
 
     subroutine pl_cmd_ptr_integer_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_2
 
     subroutine pl_cmd_const_ptr_integer_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_2_2
 
 
     subroutine pl_cmd_val_integer_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(in)    :: val(:,:,:)
+      integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_3
 
     subroutine pl_cmd_ref_integer_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(inout) :: val(:,:,:)
+      integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_3
 
     subroutine pl_cmd_ptr_integer_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_3
 
     subroutine pl_cmd_const_ptr_integer_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_2_3
 
 
     subroutine pl_cmd_val_integer_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(in)    :: val(:,:,:,:)
+      integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_4
 
     subroutine pl_cmd_ref_integer_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      integer(KIND=c_long),             intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_4
 
     subroutine pl_cmd_ptr_integer_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(inout) :: val(:,:,:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_4
 
     subroutine pl_cmd_const_ptr_integer_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      integer(KIND=c_long), target, contiguous, intent(in) :: val(:,:,:,:)
+      integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_integer_2_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_integer_2_4
 
 
     subroutine pl_cmd_val_real_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(in)    :: val
+      real(KIND=c_float),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_0
 
     subroutine pl_cmd_ref_real_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(inout) :: val
+      real(KIND=c_float),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_0
 
     subroutine pl_cmd_ptr_real_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target,  intent(inout) :: val
+      real(KIND=c_float),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_0
 
     subroutine pl_cmd_const_ptr_real_0_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target,  intent(in) :: val
+      real(KIND=c_float),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_0_0
 
 
     subroutine pl_cmd_val_real_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(in)    :: val(:)
+      real(KIND=c_float), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_1
 
     subroutine pl_cmd_ref_real_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(inout) :: val(:)
+      real(KIND=c_float), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_1
 
     subroutine pl_cmd_ptr_real_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(inout) :: val(:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_1
 
     subroutine pl_cmd_const_ptr_real_0_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_0_1
 
 
     subroutine pl_cmd_val_real_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(in)    :: val(:,:)
+      real(KIND=c_float), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_2
 
     subroutine pl_cmd_ref_real_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(inout) :: val(:,:)
+      real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_2
 
     subroutine pl_cmd_ptr_real_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_2
 
     subroutine pl_cmd_const_ptr_real_0_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_0_2
 
 
     subroutine pl_cmd_val_real_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(in)    :: val(:,:,:)
+      real(KIND=c_float), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_3
 
     subroutine pl_cmd_ref_real_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(inout) :: val(:,:,:)
+      real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_3
 
     subroutine pl_cmd_ptr_real_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_3
 
     subroutine pl_cmd_const_ptr_real_0_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_0_3
 
 
     subroutine pl_cmd_val_real_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(in)    :: val(:,:,:,:)
+      real(KIND=c_float), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_4
 
     subroutine pl_cmd_ref_real_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_float),             intent(inout) :: val(:,:,:,:)
+      real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_4
 
     subroutine pl_cmd_ptr_real_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(inout) :: val(:,:,:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_4
 
     subroutine pl_cmd_const_ptr_real_0_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_float), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_0_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_0_4
 
 
     subroutine pl_cmd_val_real_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(in)    :: val
+      real(KIND=c_double),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_0
 
     subroutine pl_cmd_ref_real_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(inout) :: val
+      real(KIND=c_double),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_0
 
     subroutine pl_cmd_ptr_real_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target,  intent(inout) :: val
+      real(KIND=c_double),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_0
 
     subroutine pl_cmd_const_ptr_real_1_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target,  intent(in) :: val
+      real(KIND=c_double),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_0
 
 
     subroutine pl_cmd_val_real_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(in)    :: val(:)
+      real(KIND=c_double), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_1
 
     subroutine pl_cmd_ref_real_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(inout) :: val(:)
+      real(KIND=c_double), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_1
 
     subroutine pl_cmd_ptr_real_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(inout) :: val(:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_1
 
     subroutine pl_cmd_const_ptr_real_1_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_1
 
 
     subroutine pl_cmd_val_real_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(in)    :: val(:,:)
+      real(KIND=c_double), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_2
 
     subroutine pl_cmd_ref_real_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(inout) :: val(:,:)
+      real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_2
 
     subroutine pl_cmd_ptr_real_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_2
 
     subroutine pl_cmd_const_ptr_real_1_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_2
 
 
     subroutine pl_cmd_val_real_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(in)    :: val(:,:,:)
+      real(KIND=c_double), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_3
 
     subroutine pl_cmd_ref_real_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(inout) :: val(:,:,:)
+      real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_3
 
     subroutine pl_cmd_ptr_real_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_3
 
     subroutine pl_cmd_const_ptr_real_1_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_3
 
 
     subroutine pl_cmd_val_real_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(in)    :: val(:,:,:,:)
+      real(KIND=c_double), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_4
 
     subroutine pl_cmd_ref_real_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_double),             intent(inout) :: val(:,:,:,:)
+      real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_4
 
     subroutine pl_cmd_ptr_real_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(inout) :: val(:,:,:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_4
 
     subroutine pl_cmd_const_ptr_real_1_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_double), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_1_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_4
 
 
     subroutine pl_cmd_val_real_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(in)    :: val
+      real(KIND=c_long_double),  target, intent(in) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_0(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_0
 
     subroutine pl_cmd_ref_real_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(inout) :: val
+      real(KIND=c_long_double),  target, intent(inout) :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_0(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_0
 
     subroutine pl_cmd_ptr_real_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target,  intent(inout) :: val
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_0(this%handle,key // c_null_char,val,error=error)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_0
 
     subroutine pl_cmd_const_ptr_real_2_0(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target,  intent(in) :: val
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(0)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_0(this%handle,key // c_null_char,val,error=error,const=.true.)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_2_0
 
 
     subroutine pl_cmd_val_real_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(in)    :: val(:)
+      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_1(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_1
 
     subroutine pl_cmd_ref_real_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(inout) :: val(:)
+      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_1(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_1
 
     subroutine pl_cmd_ptr_real_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_1(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_1
 
     subroutine pl_cmd_const_ptr_real_2_1(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(1)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_1(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_2_1
 
 
     subroutine pl_cmd_val_real_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(in)    :: val(:,:)
+      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_2(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_2
 
     subroutine pl_cmd_ref_real_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(inout) :: val(:,:)
+      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_2(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_2
 
     subroutine pl_cmd_ptr_real_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_2(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_2
 
     subroutine pl_cmd_const_ptr_real_2_2(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(2)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_2(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_2_2
 
 
     subroutine pl_cmd_val_real_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(in)    :: val(:,:,:)
+      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_3(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_3
 
     subroutine pl_cmd_ref_real_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(inout) :: val(:,:,:)
+      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_3(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_3
 
     subroutine pl_cmd_ptr_real_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_3(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_3
 
     subroutine pl_cmd_const_ptr_real_2_3(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(3)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_3(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_2_3
 
 
     subroutine pl_cmd_val_real_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(in)    :: val(:,:,:,:)
+      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_4(this%handle,key // c_null_char,val,error=error,const=.true.,nocopy=.true.)
+      valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_4
 
     subroutine pl_cmd_ref_real_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),             intent(inout) :: val(:,:,:,:)
+      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_4(this%handle,key // c_null_char,val,error=error,nocopy=.true.)
+       valshape = shape(val)
+        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+            & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_4
 
     subroutine pl_cmd_ptr_real_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(inout) :: val(:,:,:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_4(this%handle,key // c_null_char,val,error=error)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_4
 
     subroutine pl_cmd_const_ptr_real_2_4(this,key,val,dummy,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
-      ! workaround for bug in Intel 19 compiler (pointer => target)
-      ! https://github.com/dftbplus/dftbplus/commit/a9329e72791a224b005df70e7fe59dfb26b92a75
-      real(KIND=c_long_double), target, contiguous, intent(in) :: val(:,:,:,:)
+      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
        type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
+       integer :: valshape(4)
        if(.not.this%initialized) then
          call plumed_create(this)
        endif
-       call plumed_f_cmd_real_2_4(this%handle,key // c_null_char,val,error=error,const=.true.)
+       if (.not. is_contiguous(val)) then
+         error stop "Obtained const pointer to non-contiguous data"
+       end if
+       valshape = shape(val)
+       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
+           & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_2_4
 
 
 end module plumed_f08_module
-

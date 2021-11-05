@@ -3405,7 +3405,7 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_use_count,PLUMED_F_USE_COUNT,(char*c,int*i),
 /* note: flags & (~0x1ffffff) removes bits that are set here (code and size) */
 
 #define __PLUMED_IMPLEMENT_F_SAFEPTR_INNER(type,type_,size,code,suffix) \
-plumed_safeptr plumed_f_safeptr_ ## type_ ## suffix(type*val,__PLUMED_WRAPPER_STD size_t nelem,__PLUMED_WRAPPER_STD size_t*shape,__PLUMED_WRAPPER_STD size_t flags,void*opt) {\
+plumed_safeptr plumed_f_safeptr_ ## type_ ## suffix(void*val,__PLUMED_WRAPPER_STD size_t nelem,__PLUMED_WRAPPER_STD size_t*shape,__PLUMED_WRAPPER_STD size_t flags,void*opt) {\
   plumed_safeptr safe; \
   safe.ptr=val; \
   safe.nelem=nelem; \
@@ -3494,4 +3494,3 @@ __PLUMED_WRAPPER_EXTERN_C_END
 #endif
 #define plumed_gcmd __PLUMED_WRAPPER_REDEFINE_GCMD
 #endif
-
