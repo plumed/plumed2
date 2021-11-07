@@ -1013,7 +1013,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1030,7 +1036,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1076,7 +1088,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1093,7 +1111,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1139,7 +1163,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1156,7 +1186,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1202,7 +1238,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1219,7 +1261,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1318,7 +1366,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1335,7 +1389,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1381,7 +1441,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1398,7 +1464,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1444,7 +1516,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1461,7 +1539,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1507,7 +1591,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1524,7 +1614,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1623,7 +1719,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1640,7 +1742,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1686,7 +1794,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1703,7 +1817,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1749,7 +1869,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1766,7 +1892,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1812,7 +1944,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1829,7 +1967,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_integer_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1928,7 +2072,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1945,7 +2095,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -1991,7 +2147,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2008,7 +2170,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2054,7 +2222,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2071,7 +2245,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2117,7 +2297,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2134,7 +2320,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_0(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2233,7 +2425,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2250,7 +2448,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2296,7 +2500,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2313,7 +2523,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2359,7 +2575,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2376,7 +2598,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2422,7 +2650,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2439,7 +2673,13 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2538,7 +2778,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2555,7 +2800,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2601,7 +2851,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2618,7 +2873,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2664,7 +2924,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2681,7 +2946,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2727,7 +2997,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
@@ -2744,7 +3019,12 @@ module plumed_f08_module
          call plumed_create(this)
        endif
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&

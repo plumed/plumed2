@@ -506,7 +506,13 @@ module plumed_f08_module
        endif
 #: if r > 0
        if (.not. is_contiguous(val)) then
-         error stop "Obtained pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
 #: endif
@@ -525,7 +531,13 @@ module plumed_f08_module
        endif
 #: if r > 0
        if (.not. is_contiguous(val)) then
-         error stop "Obtained const pointer to non-contiguous data"
+         if (present(error)) then
+           error%code=20300
+           error%what="Obtained const pointer to non-contiguous data"
+           return
+         else
+           error stop "Obtained const pointer to non-contiguous data"
+         end if
        end if
        valshape = shape(val)
 #: endif

@@ -70,6 +70,11 @@ call pl%cmd_val("readInputLine","r: RESTRAINT ARG=g AT=0 KAPPA=3")
 call pl%cmd_val("readInputLine","COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30")
 call pl%cmd_val("readInputLine","PRINT ARG=p.*,r.* FILE=testme2")
 call pl%cmd_val("setStep",1)
+!! check 
+! NB intel cannot even compile this so I have to remove it:
+! call pl%cmd_const_ptr("setPositions",positions_ptr(:,::2),error=error)
+! write(10,*) "code",error%code
+
 call pl%cmd_const_ptr("setPositions",positions_ptr)
 call pl%cmd_ptr("setForces",forces_ptr)
 call pl%cmd_const_ptr("setMasses",masses_ptr)
