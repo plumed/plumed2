@@ -13,6 +13,14 @@ real(c_double), target, allocatable :: masses(:)
 real(c_double), target, allocatable :: forces(:,:)
 real(c_double), target :: box(3,3)
 real(c_double), target :: virial(3,3)
+
+! Required due to INTEL bug
+real(c_double), pointer :: positions_ptr(:,:)
+real(c_double), pointer :: masses_ptr(:)
+real(c_double), pointer :: forces_ptr(:,:)
+real(c_double), pointer :: box_ptr(:,:)
+real(c_double), pointer :: virial_ptr(:,:)
+
 integer(c_int), target :: ene,stopflag
 real(c_double) :: bias
 open(10,file="error_codes_full")
@@ -31,6 +39,14 @@ natoms=10
 ALLOCATE(positions(3,10))
 ALLOCATE(forces(3,10))
 ALLOCATE(masses(10))
+
+! Required due to INTEL bug
+positions_ptr => positions
+masses_ptr => masses
+forces_ptr => forces
+box_ptr => box
+virial_ptr => virial
+
 positions=0.0
 box=0.0
 virial=0.0
@@ -54,11 +70,11 @@ call pl%cmd_val("readInputLine","r: RESTRAINT ARG=g AT=0 KAPPA=3")
 call pl%cmd_val("readInputLine","COMMITTOR ARG=p.x STRIDE=1 BASIN_LL1=0 BASIN_UL1=30")
 call pl%cmd_val("readInputLine","PRINT ARG=p.*,r.* FILE=testme2")
 call pl%cmd_val("setStep",1)
-call pl%cmd_const_ptr("setPositions",positions)
-call pl%cmd_ptr("setForces",forces)
-call pl%cmd_const_ptr("setMasses",masses)
-call pl%cmd_const_ptr("setBox",box)
-call pl%cmd_ptr("setVirial",virial)
+call pl%cmd_const_ptr("setPositions",positions_ptr)
+call pl%cmd_ptr("setForces",forces_ptr)
+call pl%cmd_const_ptr("setMasses",masses_ptr)
+call pl%cmd_const_ptr("setBox",box_ptr)
+call pl%cmd_ptr("setVirial",virial_ptr)
 write(10,"(A,I5)") "stopflag should be 0",stopflag
 write(10,"(A,I5)") "isEnergyNeeded should be 1",ene
 call pl%cmd_ref("isEnergyNeeded",ene)
