@@ -16,10 +16,6 @@ module plumed_f08_module
   public :: plumed_installed
   public :: plumed_error
 
-  ! used to enforce keyword-only arguments
-  type dummy_type
-  end type dummy_type
-
   ! this type maps to the struct plumed defined in src/wrapper/Plumed.h
   type, bind(C) :: cplumed
     type(c_ptr) :: ptr
@@ -878,10 +874,9 @@ module plumed_f08_module
        endif
      end subroutine pl_assign
 
-     impure elemental subroutine pl_cmd(this,key,dummy,error)
+     impure elemental subroutine pl_cmd(this,key,error)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
-       type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
          call plumed_create(this)
@@ -890,11 +885,10 @@ module plumed_f08_module
            & nocopy=.false., error=error)
      end subroutine pl_cmd
 
-     subroutine pl_cmd_val_char(this,key,val,dummy,error)
+     subroutine pl_cmd_val_char(this,key,val,error)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        character(kind=c_char,len=*),  intent(in)    :: val
-       type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
          call plumed_create(this)
@@ -903,11 +897,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
      end subroutine pl_cmd_val_char
 
-     subroutine pl_cmd_ptr_c(this,key,val,dummy,error)
+     subroutine pl_cmd_ptr_c(this,key,val,error)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        type(c_ptr),                        value    :: val
-       type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
          call plumed_create(this)
@@ -916,11 +909,10 @@ module plumed_f08_module
            & error=error)
      end subroutine pl_cmd_ptr_c
 
-     subroutine pl_cmd_const_ptr_c(this,key,val,dummy,error)
+     subroutine pl_cmd_const_ptr_c(this,key,val,error)
        class(plumed),                 intent(inout) :: this ! inout to allow for initialization
        character(kind=c_char,len=*),  intent(in)    :: key
        type(c_ptr),                        value    :: val
-       type(dummy_type),   optional,  intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        if(.not.this%initialized) then
          call plumed_create(this)
@@ -930,11 +922,10 @@ module plumed_f08_module
      end subroutine pl_cmd_const_ptr_c
 
 
-    subroutine pl_cmd_val_integer_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -944,11 +935,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_0
 
-    subroutine pl_cmd_ref_integer_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -958,11 +948,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_0
 
-    subroutine pl_cmd_ptr_integer_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -972,11 +961,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_0
 
-    subroutine pl_cmd_const_ptr_integer_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -987,11 +975,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_0_0
 
 
-    subroutine pl_cmd_val_integer_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1002,11 +989,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_1
 
-    subroutine pl_cmd_ref_integer_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1017,11 +1003,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_1
 
-    subroutine pl_cmd_ptr_integer_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1035,11 +1020,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_1
 
-    subroutine pl_cmd_const_ptr_integer_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1054,11 +1038,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_0_1
 
 
-    subroutine pl_cmd_val_integer_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1069,11 +1052,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_2
 
-    subroutine pl_cmd_ref_integer_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1084,11 +1066,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_2
 
-    subroutine pl_cmd_ptr_integer_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1102,11 +1083,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_2
 
-    subroutine pl_cmd_const_ptr_integer_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1121,11 +1101,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_0_2
 
 
-    subroutine pl_cmd_val_integer_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1136,11 +1115,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_3
 
-    subroutine pl_cmd_ref_integer_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1151,11 +1129,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_3
 
-    subroutine pl_cmd_ptr_integer_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1169,11 +1146,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_3
 
-    subroutine pl_cmd_const_ptr_integer_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1188,11 +1164,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_0_3
 
 
-    subroutine pl_cmd_val_integer_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1203,11 +1178,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_0_4
 
-    subroutine pl_cmd_ref_integer_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1218,11 +1192,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_0_4
 
-    subroutine pl_cmd_ptr_integer_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1236,11 +1209,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_0_4
 
-    subroutine pl_cmd_const_ptr_integer_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_int),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1255,11 +1227,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_0_4
 
 
-    subroutine pl_cmd_val_integer_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1269,11 +1240,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_0
 
-    subroutine pl_cmd_ref_integer_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1283,11 +1253,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_0
 
-    subroutine pl_cmd_ptr_integer_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1297,11 +1266,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_0
 
-    subroutine pl_cmd_const_ptr_integer_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1312,11 +1280,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_1_0
 
 
-    subroutine pl_cmd_val_integer_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1327,11 +1294,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_1
 
-    subroutine pl_cmd_ref_integer_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1342,11 +1308,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_1
 
-    subroutine pl_cmd_ptr_integer_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1360,11 +1325,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_1
 
-    subroutine pl_cmd_const_ptr_integer_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1379,11 +1343,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_1_1
 
 
-    subroutine pl_cmd_val_integer_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1394,11 +1357,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_2
 
-    subroutine pl_cmd_ref_integer_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1409,11 +1371,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_2
 
-    subroutine pl_cmd_ptr_integer_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1427,11 +1388,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_2
 
-    subroutine pl_cmd_const_ptr_integer_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1446,11 +1406,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_1_2
 
 
-    subroutine pl_cmd_val_integer_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1461,11 +1420,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_3
 
-    subroutine pl_cmd_ref_integer_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1476,11 +1434,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_3
 
-    subroutine pl_cmd_ptr_integer_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1494,11 +1451,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_3
 
-    subroutine pl_cmd_const_ptr_integer_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1513,11 +1469,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_1_3
 
 
-    subroutine pl_cmd_val_integer_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1528,11 +1483,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_1_4
 
-    subroutine pl_cmd_ref_integer_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1543,11 +1497,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_1_4
 
-    subroutine pl_cmd_ptr_integer_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1561,11 +1514,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_1_4
 
-    subroutine pl_cmd_const_ptr_integer_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_short),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1580,11 +1532,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_1_4
 
 
-    subroutine pl_cmd_val_integer_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1594,11 +1545,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_0
 
-    subroutine pl_cmd_ref_integer_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1608,11 +1558,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_0
 
-    subroutine pl_cmd_ptr_integer_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1622,11 +1571,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_0
 
-    subroutine pl_cmd_const_ptr_integer_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1637,11 +1585,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_2_0
 
 
-    subroutine pl_cmd_val_integer_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1652,11 +1599,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_1
 
-    subroutine pl_cmd_ref_integer_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1667,11 +1613,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_1
 
-    subroutine pl_cmd_ptr_integer_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1685,11 +1630,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_1
 
-    subroutine pl_cmd_const_ptr_integer_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1704,11 +1648,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_2_1
 
 
-    subroutine pl_cmd_val_integer_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1719,11 +1662,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_2
 
-    subroutine pl_cmd_ref_integer_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1734,11 +1676,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_2
 
-    subroutine pl_cmd_ptr_integer_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1752,11 +1693,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_2
 
-    subroutine pl_cmd_const_ptr_integer_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -1771,11 +1711,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_2_2
 
 
-    subroutine pl_cmd_val_integer_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1786,11 +1725,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_3
 
-    subroutine pl_cmd_ref_integer_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1801,11 +1739,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_3
 
-    subroutine pl_cmd_ptr_integer_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1819,11 +1756,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_3
 
-    subroutine pl_cmd_const_ptr_integer_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -1838,11 +1774,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_2_3
 
 
-    subroutine pl_cmd_val_integer_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_integer_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1853,11 +1788,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_integer_2_4
 
-    subroutine pl_cmd_ref_integer_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_integer_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1868,11 +1802,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_integer_2_4
 
-    subroutine pl_cmd_ptr_integer_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_integer_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1886,11 +1819,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_integer_2_4
 
-    subroutine pl_cmd_const_ptr_integer_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_integer_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       integer(KIND=c_long),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -1905,11 +1837,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_integer_2_4
 
 
-    subroutine pl_cmd_val_real_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1919,11 +1850,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_0
 
-    subroutine pl_cmd_ref_real_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1933,11 +1863,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_0
 
-    subroutine pl_cmd_ptr_real_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1947,11 +1876,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_0
 
-    subroutine pl_cmd_const_ptr_real_0_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_0_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -1962,11 +1890,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_0_0
 
 
-    subroutine pl_cmd_val_real_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1977,11 +1904,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_1
 
-    subroutine pl_cmd_ref_real_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -1992,11 +1918,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_1
 
-    subroutine pl_cmd_ptr_real_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2010,11 +1935,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_1
 
-    subroutine pl_cmd_const_ptr_real_0_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_0_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2029,11 +1953,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_0_1
 
 
-    subroutine pl_cmd_val_real_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2044,11 +1967,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_2
 
-    subroutine pl_cmd_ref_real_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2059,11 +1981,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_2
 
-    subroutine pl_cmd_ptr_real_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2077,11 +1998,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_2
 
-    subroutine pl_cmd_const_ptr_real_0_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_0_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2096,11 +2016,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_0_2
 
 
-    subroutine pl_cmd_val_real_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2111,11 +2030,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_3
 
-    subroutine pl_cmd_ref_real_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2126,11 +2044,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_3
 
-    subroutine pl_cmd_ptr_real_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2144,11 +2061,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_3
 
-    subroutine pl_cmd_const_ptr_real_0_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_0_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2163,11 +2079,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_0_3
 
 
-    subroutine pl_cmd_val_real_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2178,11 +2093,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_0_4
 
-    subroutine pl_cmd_ref_real_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2193,11 +2107,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_0_4
 
-    subroutine pl_cmd_ptr_real_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2211,11 +2124,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_0_4
 
-    subroutine pl_cmd_const_ptr_real_0_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_0_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_float),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2230,11 +2142,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_0_4
 
 
-    subroutine pl_cmd_val_real_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2244,11 +2155,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_0
 
-    subroutine pl_cmd_ref_real_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2258,11 +2168,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_0
 
-    subroutine pl_cmd_ptr_real_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2272,11 +2181,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_0
 
-    subroutine pl_cmd_const_ptr_real_1_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_1_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2287,11 +2195,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_0
 
 
-    subroutine pl_cmd_val_real_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2302,11 +2209,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_1
 
-    subroutine pl_cmd_ref_real_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2317,11 +2223,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_1
 
-    subroutine pl_cmd_ptr_real_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2335,11 +2240,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_1
 
-    subroutine pl_cmd_const_ptr_real_1_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_1_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2354,11 +2258,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_1
 
 
-    subroutine pl_cmd_val_real_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2369,11 +2272,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_2
 
-    subroutine pl_cmd_ref_real_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2384,11 +2286,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_2
 
-    subroutine pl_cmd_ptr_real_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2402,11 +2303,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_2
 
-    subroutine pl_cmd_const_ptr_real_1_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_1_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2421,11 +2321,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_2
 
 
-    subroutine pl_cmd_val_real_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2436,11 +2335,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_3
 
-    subroutine pl_cmd_ref_real_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2451,11 +2349,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_3
 
-    subroutine pl_cmd_ptr_real_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2469,11 +2366,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_3
 
-    subroutine pl_cmd_const_ptr_real_1_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_1_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2488,11 +2384,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_3
 
 
-    subroutine pl_cmd_val_real_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2503,11 +2398,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_1_4
 
-    subroutine pl_cmd_ref_real_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2518,11 +2412,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_1_4
 
-    subroutine pl_cmd_ptr_real_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2536,11 +2429,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_1_4
 
-    subroutine pl_cmd_const_ptr_real_1_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_1_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2555,11 +2447,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_4
 
 
-    subroutine pl_cmd_val_real_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),  target, intent(in) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2569,11 +2460,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_0
 
-    subroutine pl_cmd_ref_real_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),  target, intent(inout) :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2583,11 +2473,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_0
 
-    subroutine pl_cmd_ptr_real_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2597,11 +2486,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_0
 
-    subroutine pl_cmd_const_ptr_real_2_0(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_2_0(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(0)
        if(.not.this%initialized) then
@@ -2612,11 +2500,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_2_0
 
 
-    subroutine pl_cmd_val_real_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(in) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2627,11 +2514,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_1
 
-    subroutine pl_cmd_ref_real_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2642,11 +2528,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_1
 
-    subroutine pl_cmd_ptr_real_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2660,11 +2545,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_1
 
-    subroutine pl_cmd_const_ptr_real_2_1(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_2_1(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(1)
        if(.not.this%initialized) then
@@ -2679,11 +2563,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_2_1
 
 
-    subroutine pl_cmd_val_real_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2694,11 +2577,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_2
 
-    subroutine pl_cmd_ref_real_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2709,11 +2591,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_2
 
-    subroutine pl_cmd_ptr_real_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2727,11 +2608,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_2
 
-    subroutine pl_cmd_const_ptr_real_2_2(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_2_2(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(2)
        if(.not.this%initialized) then
@@ -2746,11 +2626,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_2_2
 
 
-    subroutine pl_cmd_val_real_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2761,11 +2640,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_3
 
-    subroutine pl_cmd_ref_real_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2776,11 +2654,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_3
 
-    subroutine pl_cmd_ptr_real_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2794,11 +2671,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_3
 
-    subroutine pl_cmd_const_ptr_real_2_3(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_2_3(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(3)
        if(.not.this%initialized) then
@@ -2813,11 +2689,10 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_2_3
 
 
-    subroutine pl_cmd_val_real_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_val_real_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2828,11 +2703,10 @@ module plumed_f08_module
            & const=.true., nocopy=.true., error=error)
     end subroutine pl_cmd_val_real_2_4
 
-    subroutine pl_cmd_ref_real_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ref_real_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2843,11 +2717,10 @@ module plumed_f08_module
             & const=.false., nocopy=.true., error=error)
     end subroutine pl_cmd_ref_real_2_4
 
-    subroutine pl_cmd_ptr_real_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_ptr_real_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
@@ -2861,11 +2734,10 @@ module plumed_f08_module
            & const=.false., nocopy=.false., error=error)
     end subroutine pl_cmd_ptr_real_2_4
 
-    subroutine pl_cmd_const_ptr_real_2_4(this,key,val,dummy,error)
+    subroutine pl_cmd_const_ptr_real_2_4(this,key,val,error)
       class(plumed),                 intent(inout) :: this ! inout to allow for initialization
       character(kind=c_char,len=*),  intent(in)    :: key
       real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(dummy_type),   optional, intent(inout) :: dummy
        type(plumed_error), optional,  intent(out)   :: error
        integer :: valshape(4)
        if(.not.this%initialized) then
