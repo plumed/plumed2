@@ -119,7 +119,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   }
   std::string pname; parse("PROPERTY",pname);
   if( pname.length()>0 ) additional_input += " PROPERTY=" + pname;
-  readInputLine( getShortcutLabel() + ": GPATH REFERENCE=" + reffile + " TYPE=" + mtype + additional_input );
+  readInputLine( getShortcutLabel() + ": GPATH UNFIX_FRAMES REFERENCE=" + reffile + " TYPE=" + mtype + additional_input );
 
   // Get the number of frames in the path
   std::string metric; unsigned nframes = Path::getNumberOfFramesAndMetric( mtype, reffile, metric );

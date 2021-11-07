@@ -46,6 +46,7 @@ void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOALIGN",false,"when this flag is NOT present the geometric center of the molecule is calculated using the align column as weights.  This geometric center is then placed at the origin.");
   keys.add("hidden","READ_ARG","this is used by pathtool to get the arguments that must be read in");
   keys.addFlag("CHECKATOMS",false,"check that there are valid atoms with the numbers in the input file");
+  keys.addFlag("UNFIX",false,"do not make this a constant");
 }
 
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
@@ -57,7 +58,7 @@ SetupReferenceBase(ao)
   FILE* fp=fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
   unsigned number; parse("NUMBER",number); Vector center; center.zero();
-  bool noalign=false; parseFlag("NOALIGN",noalign);
+  bool noalign=false; parseFlag("NOALIGN",noalign); bool unfix=false; parseFlag("UNFIX",unfix);
   for(unsigned i=0;i<number;++i) {
       PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength());
       if(i==number-1) {
@@ -127,7 +128,8 @@ SetupReferenceBase(ao)
          if( getNumberOfArguments()>0 ) {
              std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0; double val;
              for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
-             addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
+             addValue( shape ); setNotPeriodic(); 
+             if( unfix ) getPntrToComponent(0)->buildDataStore( getLabel() ); else getPntrToComponent(0)->setConstant();
              for(unsigned i=0;i<getNumberOfArguments();++i) {
                  if( getPntrToArgument(i)->getRank()==0 ) {
                      if( !pdb.getArgumentValue(getPntrToArgument(i)->getName(), val)  ) error("did not find argument " + getPntrToArgument(i)->getName() + " in pdb file");
@@ -154,7 +156,8 @@ SetupReferenceBase(ao)
          }
          if( read_args.size()>0 ) {
              std::vector<unsigned> shape( 1 ); shape[0] = read_args.size(); double val;
-             addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
+             addValue( shape ); setNotPeriodic(); 
+             if( unfix ) getPntrToComponent(0)->buildDataStore( getLabel() ); else getPntrToComponent(0)->setConstant(); 
              for(unsigned i=0;i<read_args.size();++i) {
                  if( !pdb.getArgumentValue( read_args[i], val ) ) error("did not find argument " + read_args[i] + " in pdb file");
                  getPntrToComponent(0)->set( i, val );

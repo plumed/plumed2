@@ -91,8 +91,11 @@ ConstantValue::ConstantValue(const ActionOptions&ao):
            shape.resize(2); shape[0]=nr; shape[1]=nc; vals.resize( nr*nc );
            log.printf("  reading in %d by %d matrix \n", nr, nc ); 
        } else if( nr>0 || nc>0 ) error("makes no sense to set only one of NROWS and NCOLS to a non-zero value");
-       parseVector("VALUES",vals); log.printf("  read in %d values :", vals.size() );
-       for(unsigned i=0; i<vals.size(); ++i) log.printf(" %f", vals[i] );
+       parseVector("VALUES",vals); 
+       if( getLabel().find("_ones")==std::string::npos ) {
+           log.printf("  read in %d values :", vals.size() );
+           for(unsigned i=0; i<vals.size(); ++i) log.printf(" %f", vals[i] );
+       } else log.printf("  vector of %d ones", vals.size() );
        log.printf("\n"); if( shape.size()==0 && vals.size()>1 ) { shape.resize(1); shape[0] = vals.size(); }
   }
   // Now set the value

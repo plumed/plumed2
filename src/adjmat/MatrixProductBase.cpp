@@ -209,6 +209,10 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
           if( shape[0]!=getPntrToArgument(i)->getShape()[0] ) error("shapes of all output matrices should match");
           if( shape[1]!=getPntrToArgument(noutput+i)->getShape()[1] ) error("shapes of all output matrices should match");
       }
+      if( diagonal ) { 
+          if( shape[0]!=shape[1] ) error("can only use DIAGONAL_ELEMENTS_ONLY flag if output matrix is square");
+          unsigned nn=shape[0]; shape.resize(1); shape[0]=nn; 
+      }
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(noutput)->getRank()==2 ) {
       if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
       shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(noutput)->getShape()[1];

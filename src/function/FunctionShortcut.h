@@ -71,16 +71,16 @@ ActionShortcut(ao)
       if( vals[i]->getRank()>maxrank ) maxrank=vals[i]->getRank();
   }
   if( isgrid ) {
-      if( actionRegister().check( getName() + "_GRID") ) readInputLine( getShortcutLabel() + ": " + getName() + "_GRID ARG=" + allargs + " " + convertInputLineToString() );
+      if( actionRegister().check( getName() + "_GRID") ) readInputLine( getShortcutLabel() + ": " + getName() + "_GRID ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with functions on a grid");
   } else if( maxrank==0 ) {
-      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
+      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with scalars"); 
   } else if( maxrank==1 ) {
-      if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + allargs + " " + convertInputLineToString() );
+      if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with vectors");
   } else if( maxrank==2  ) {
-      if( actionRegister().check( getName() + "_MATRIX") ) readInputLine( getShortcutLabel() + ": " + getName() + "_MATRIX ARG=" + allargs + " " + convertInputLineToString() );
+      if( actionRegister().check( getName() + "_MATRIX") ) readInputLine( getShortcutLabel() + ": " + getName() + "_MATRIX ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
       else plumed_merror("there is no action registered that allows you to do " + getName() + " with matrices");
   } else plumed_error();
 }

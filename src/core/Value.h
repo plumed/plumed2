@@ -322,7 +322,7 @@ void Value::clearInputForce() {
 
 inline
 void Value::clearDerivatives() {
-  plumed_assert( !constant ); value_set=false; 
+  if( constant ) return; value_set=false; 
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
 

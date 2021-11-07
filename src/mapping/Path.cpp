@@ -186,10 +186,12 @@ std::string Path::fixArgumentName( const std::string& argin ) {
 void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
                             ActionShortcut* action, std::vector<std::string>& refactions ) {
   std::vector<std::string> argnames; action->parseVector("ARG",argnames); std::vector<double> coeff;
-  action->parse("TYPE",mtype); if( argnames.size()>0 && mtype=="OPTIMAL-FAST" ) mtype="EUCLIDEAN";
+  action->parse("TYPE",mtype); bool unfix=false; 
+  if( action->getName()=="GPATH" ) action->parseFlag("UNFIX_FRAMES",unfix); 
+  if( argnames.size()>0 && mtype=="OPTIMAL-FAST" ) mtype="EUCLIDEAN";
   if( mtype=="EUCLIDEAN") action->parseVector("COEFFICIENTS",coeff);
 
-  action->parse("REFERENCE",refname); 
+  action->parse("REFERENCE",refname); std::string unfix_str; if(unfix) unfix_str = " UNFIX";
   std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
   FILE* fp=std::fopen(refname.c_str(),"r"); std::string scut_lab = action->getShortcutLabel();
   if(!fp) action->error("could not open reference file " + refname );
@@ -202,7 +204,7 @@ void Path::readInputFrames( std::string& mtype, std::string& refname, const bool
       // Break if we are done
       if( !do_read ) break ;
       std::string num, stri; Tools::convert( nfram+1, num );
-      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr );
+      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr + unfix_str );
       if( argnames.size()>1 ) {
           for(unsigned i=0; i<argnames.size(); ++i) {
               std::string cnum; Tools::convert( i+1, cnum ); 

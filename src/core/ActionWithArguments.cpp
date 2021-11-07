@@ -338,14 +338,11 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
       // Check if we already have this argument in the stream
       ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
       ActionSetup* as = dynamic_cast<ActionSetup*>( myact ); bool found=false;
-      if( !as && myact->getName()!="READ" ) {
+      if( !as && !arguments[i]->isConstant() && myact->getName()!="READ" ) {
           for(unsigned k=0; k<f_actions.size(); ++k) {
             if( f_actions[k]==myact ) { found=true; break; }
           }
-          if( !found ) {
-            if( f_actions.size()==0 ) f_actions.push_back( myact );
-            else if( !arguments[i]->storedata ) f_actions.push_back( myact );
-          }
+          if( !found ) f_actions.push_back( myact );
       }
     } else arguments[i]->buildDataStore( getLabel() );
   }
@@ -356,7 +353,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
       return;
     }
   } else if(!thisAsActionWithValue) return;
-  
+
   if( storing ) {
     done_over_stream=false;
   } else if( f_actions.size()>1 ) {
@@ -365,10 +362,23 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
       if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ) { done_over_stream=false; break; }
       // This checks we are not creating cicular recursive loops
       if( f_actions[0]->checkForDependency(f_actions[i]) ) { done_over_stream=false; break; }
+      // Check everything for second action is computed before f_actions[0]
+      const std::vector<Action*> depend( f_actions[i]->getDependencies() ); 
+      for(unsigned j=0; j<depend.size(); ++j) {
+          bool found=false;
+          for(const auto & pp : plumed.getActionSet()) {
+              Action* p(pp.get());
+              // Check if this is the dependency
+              if( pp->getLabel()==depend[j]->getLabel() ) { found=true; break; }
+              // Check if this is the first of the distinct_arguments that will appear in the chain
+              else if( pp->getLabel()==f_actions[0]->getLabel() ) break; 
+          }
+          if( !found ) { done_over_stream=false; break; }
+      }
     }
     if( !done_over_stream ) {
       for(unsigned i=0; i<arg.size(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() );  }
-    }
+    } 
   } else if( f_actions.size()==1 ) done_over_stream=true;
 
   if( done_over_stream ) {
@@ -419,7 +429,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
             arg_deriv_starts.push_back( nder ); 
             ActionSetup* as=dynamic_cast<ActionSetup*>( myval );
             AverageBase* ab=dynamic_cast<AverageBase*>( myval );
-            if( !as && !distinct_but_stored && !ab ) {
+            if( !arguments[i]->isConstant() && !as && !distinct_but_stored && !ab ) {
               distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,0) );
               nder += myval->getNumberOfDerivatives();
             } else if( ab ) {
@@ -449,7 +459,7 @@ unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
 
     found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
     ActionSetup* as = dynamic_cast<ActionSetup*>( myact ); // If this is calculated in setup we never need to add to chain 
-    if( !as ) {
+    if( !as && !arguments[i]->isConstant() ) {
         for(unsigned j=0; j<f_actions.size(); ++j) {
           if( f_actions[j]==myact ) { found=true; break; }
         }
@@ -843,7 +853,7 @@ bool ActionWithArguments::calculateConstantValues() {
   bool constant = true;
   for(unsigned i=0; i<arguments.size(); ++i) {
       if( !arguments[i]->isConstant() ) { constant=false; break; }
-  } 
+  }
   if( constant ) {
       // Set everything constant first as we need to set the shape
       for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();

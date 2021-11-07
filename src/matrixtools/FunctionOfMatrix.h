@@ -168,14 +168,15 @@ void FunctionOfMatrix<T>::getTasksForParent( const std::string& parent, std::vec
 
 template <class T>
 bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  std::vector<double> args( getNumberOfArguments() );
+  std::vector<double> args( getNumberOfArguments() ); 
+  unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
   if( actionInChain() ) {
       for(unsigned i=0;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==2 ) args[i] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
-          else args[i] = getPntrToArgument(i)->get();
+          if( getPntrToArgument(i)->getRank()==0 ) args[i] = getPntrToArgument(i)->get(); 
+          else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i] = myvals.get( getPntrToArgument(i)->getPositionInStream() ); 
+          else args[i] = getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
       }
   } else {
-      unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
       for(unsigned i=0;i<getNumberOfArguments();++i) {
           if( getPntrToArgument(i)->getRank()==2 ) args[i]=getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
           else args[i] = getPntrToArgument(i)->get();
@@ -223,7 +224,7 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
           }
       }
   } else {
-      unsigned base=0; unsigned ind2 = index2;
+      unsigned base=0; ind2 = index2;
       if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
       for(unsigned j=0;j<getNumberOfArguments();++j) {
           if( getPntrToArgument(j)->getRank()==2 ) {

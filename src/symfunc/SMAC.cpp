@@ -72,14 +72,15 @@ ActionShortcut(ao)
 // Now need the Gaussians
   std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
   for(unsigned i=1;; ++i) {
-    std::string kstr_inpt, istr, kern_str; Tools::convert( i, istr );
+    std::string kstr_inpt, istr; Tools::convert( i, istr );
     if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }
     std::vector<std::string> words = Tools::getWords(kstr_inpt); 
-    if( words[0]=="GAUSSIAN" ) kern_str="gaussian";
-    else if( words[0]=="TRIANGULAR" ) kern_str="triangular";
-    else error("unknown kernel type");
     std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
-    readInputLine( getShortcutLabel() + "_kf" + istr + ": KERNEL ARG1=" + getShortcutLabel() + "_tpmat CENTER=" + center + " SIGMA=" + var + " TYPE=" + kern_str );
+    double nsig; Tools::convert( var, nsig ); std::string coeff; Tools::convert( 1/(nsig*nsig), coeff );
+    readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE PERIODIC=NO ARG1=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2"); 
+    if( words[0]=="GAUSSIAN" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG1=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
+    else if( words[0]=="TRIANGULAR" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG1=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+    else readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG1=" + getShortcutLabel() + "_kf" + istr + "_r2" );
     kmap_input += " ARG" + istr + "=" + getShortcutLabel() + "_kf" + istr;
   }
   readInputLine( kmap_input );

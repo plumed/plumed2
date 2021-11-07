@@ -59,16 +59,23 @@ ActionShortcut(ao)
   if( av->copyOutput(0)->getRank()==2 ) {
       // Create some ones   
       std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[1]; ++i ) ones += ",1";  
-      readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE " + ones );
-      // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
-      readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() + "_ones");
+      readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE " + ones ); 
+       // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector 
+      if( av->copyOutput(0)->getShape()[0]==1 ) {
+          readInputLine( getShortcutLabel() + "_" + metstr + "T: CUSTOM ARG1=" + metstr + " ARG2=" + getShortcutLabel() + "_ones FUNC=x*y PERIODIC=NO");
+          readInputLine( getShortcutLabel() + "_" + metstr + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + metstr + "T");
+      } else readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG1=" + metstr + " ARG2=" + getShortcutLabel() + "_ones");
       metstr = getShortcutLabel() + "_" + metstr;
   } 
   // Now do the multiplication
-  readInputLine( getShortcutLabel() + "_sdiff: MATHEVAL ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
+  if( av->copyOutput(0)->getShape()[0]==1 ) { 
+      // This is a row vector.  If we transpose it we get a column vector and we can use dot of two column vectors (this is a curiosity of PLUMED's implementation of matrix multiplication)
+      readInputLine( getShortcutLabel() + "_sdiff_mat: CUSTOM ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_sdiff: TRANSPOSE ARG=" + getShortcutLabel() + "_sdiff_mat"); 
+  } else readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG1=" + metstr + " ARG2=" + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
   readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() +"_diff  ARG2=" + getShortcutLabel() + "_sdiff");
-  if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  if( !squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 }

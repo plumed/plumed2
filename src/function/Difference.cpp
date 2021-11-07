@@ -24,7 +24,6 @@
 #include "FunctionOfVector.h"
 #include "ActionRegister.h"
 #include "FunctionTemplateBase.h"
-#include "core/ActionSetup.h"
 
 #include <cmath>
 
@@ -74,17 +73,17 @@ void Difference::read( ActionWithArguments* action ) {
   periodic=false;
   if( action->getPntrToArgument(0)->isPeriodic() ) {
       periodic=true; action->getPntrToArgument(0)->getDomain( min0, max0 );
-      ActionSetup* as=dynamic_cast<ActionSetup*>( action->getPntrToArgument(1)->getPntrToAction() ); 
-      if( action->getPntrToArgument(1)->getPntrToAction()->getName()!="SELECT_COMPONENTS" && !as && !action->getPntrToArgument(1)->isPeriodic() ) action->error("period for input variables should be the same 0"); 
-      if( !as && action->getPntrToArgument(1)->getPntrToAction()->getName()!="SELECT_COMPONENTS" ) {
+      if( !action->getPntrToArgument(1)->isConstant() && !action->getPntrToArgument(1)->isPeriodic() ) {
+          action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 0"); 
+      }
+      if( !action->getPntrToArgument(1)->isConstant() ) {
           std::string min1, max1; action->getPntrToArgument(1)->getDomain( min1, max1 );
           if( min0!=min0 || max0!=max1 ) action->error("domain for input variables should be the same");
       } else action->getPntrToArgument(1)->setDomain( min0, max0 );
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
       periodic=true; action->getPntrToArgument(1)->getDomain( min0, max0 );
-      ActionSetup* as=dynamic_cast<ActionSetup*>( action->getPntrToArgument(0)->getPntrToAction() );
-      if( !as && action->getPntrToArgument(0)->getPntrToAction()->getName()!="SELECT_COMPONENTS" ) {
-          action->error("period for input variables should be the same 1");
+      if( !action->getPntrToArgument(1)->isConstant() ) {
+          action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
       } else action->getPntrToArgument(0)->setDomain( min0, max0 );
   }
 }

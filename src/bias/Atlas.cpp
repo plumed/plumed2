@@ -337,8 +337,7 @@ ActionShortcut(ao)
      // Compute eigenvalues and eigenvectors for the input covariance matrix if required
      if( meig>0 ) {
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
-         readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_kernel-" + num + "_ref" +
-                          " INPUT={DIAGONALIZE ARG=covariance VECTORS=" + seig + "}");
+         readInputLine( getShortcutLabel() + "_eigv" + num + ": DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_cov VECTORS=" + seig );
      }
      // Store the weights as we will use these when constructing the bias later in the input
      weights.push_back(h); ifile.scanField();

@@ -149,7 +149,7 @@ nderivatives(getNumberOfScalarArguments())
 
 template <class T>
 void FunctionOfVector<T>::turnOnDerivatives() {
-  if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
+  if( !getPntrToOutput(0)->isConstant() && !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
   ActionWithValue::turnOnDerivatives(); 
 }
 
