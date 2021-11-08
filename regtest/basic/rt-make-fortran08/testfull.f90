@@ -51,6 +51,7 @@ positions=0.0
 box=0.0
 virial=0.0
 forces=0.0
+masses=1.0
 do i=1,natoms
   positions(1,i)=1.0+10*i
   positions(2,i)=2.0+10*i
