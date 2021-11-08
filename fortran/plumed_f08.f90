@@ -518,7 +518,7 @@ module plumed_f08_module
        type(cplumed_nothrow_handler) :: nothrow
        integer(kind=c_size_t) :: nelem
        pass_shape=[0]
-       nelem=product(pass_shape)
+       nelem=0
        flags=flags_ptr
        if (const) flags=flags_const_ptr
        if (nocopy) flags=flags+flags_nocopy
@@ -548,7 +548,7 @@ module plumed_f08_module
        type(cplumed_nothrow_handler) :: nothrow
        integer(kind=c_size_t) :: nelem
        pass_shape=[len(val) ,0]
-       nelem=product(pass_shape)
+       nelem=0
        flags=flags_ptr
        if (const) flags=flags_const_ptr
        if (nocopy) flags=flags + flags_nocopy
@@ -585,7 +585,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem=0
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
@@ -622,7 +622,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem=0
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
@@ -659,7 +659,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem=0
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
@@ -696,7 +696,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem=0
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
@@ -733,7 +733,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem=0
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
@@ -770,7 +770,7 @@ module plumed_f08_module
       else
         pass_shape(:) = [valshape(size(valshape):1:-1), 0]
       endif
-      nelem = product(pass_shape)
+      nelem = product(valshape)
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
