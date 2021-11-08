@@ -1,12 +1,12 @@
 function create_a_new_instance() result(pp)
-  use plumed_module_f08
+  use plumed_f08_module
   IMPLICIT NONE
   type(plumed) :: pp
   call plumed_create(pp)
 end function create_a_new_instance
 
 SUBROUTINE TEST3A()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED) :: pl1
   TYPE(PLUMED) :: pl2
@@ -16,7 +16,7 @@ SUBROUTINE TEST3A()
 END SUBROUTINE TEST3A
 
 SUBROUTINE TEST3B()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED), allocatable :: all(:)
   allocate(all(1))
@@ -26,7 +26,7 @@ SUBROUTINE TEST3B()
 END SUBROUTINE TEST3B
 
 SUBROUTINE TEST3C()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED), pointer :: all(:)
   allocate(all(1))
@@ -37,7 +37,7 @@ SUBROUTINE TEST3C()
 END SUBROUTINE TEST3C
 
 SUBROUTINE TEST3D()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED) :: create_a_new_instance
   TYPE(PLUMED) :: p
@@ -51,7 +51,7 @@ SUBROUTINE TEST3D()
 END SUBROUTINE TEST3D
 
 SUBROUTINE TEST3E()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE(PLUMED), ALLOCATABLE :: p(:)
   INTEGER :: i
@@ -77,7 +77,7 @@ SUBROUTINE TEST3()
 END SUBROUTINE
 
 MODULE TEST_DERIVED
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   IMPLICIT NONE
   TYPE, EXTENDS(PLUMED) :: PLUMEDX
     INTEGER :: i=77
@@ -94,7 +94,7 @@ SUBROUTINE TEST4()
 END SUBROUTINE TEST4
 
 SUBROUTINE TEST5()
-  USE PLUMED_MODULE_F08
+  USE PLUMED_F08_MODULE
   TYPE(PLUMED), ALLOCATABLE :: b(:)
   TYPE(PLUMED), ALLOCATABLE :: c(:)
   ALLOCATE(b(3))
@@ -109,3 +109,32 @@ SUBROUTINE TEST5()
   write(10,*)"C",c%use_count()
   close(10)
 END SUBROUTINE TEST5
+
+SUBROUTINE TEST6()
+  USE PLUMED_F08_MODULE
+  USE ISO_C_BINDING
+  IMPLICIT NONE
+  TYPE(PLUMED) :: pippo
+  TYPE(PLUMED_ERROR) :: error
+  open(10,file="error_codes")
+  error%code=-1 ! check if this is overwritten
+  call pippo%cmd("init",error=error)
+  write(10,*) "should be zero",error%code
+  error%code=-1 ! check if this is overwritten
+  call pippo%cmd("initxx",error=error)
+  write(10,*) "should be nonzero",error%code
+
+  call plumed_create(pippo) ! reset instance
+  error%code=-1 ! check if this is overwritten
+  call pippo%cmd("init",error=error)
+  write(10,*) "should be zero",error%code
+  error%code=-1 ! check if this is overwritten
+  call pippo%cmd("initxx",error=error)
+  write(10,*) "should be nonzero",error%code
+
+  call plumed_create(pippo) ! reset instance
+  call pippo%cmd_val("setNatoms",999)
+  call pippo%cmd("init")
+  close(10)
+END SUBROUTINE TEST6
+
