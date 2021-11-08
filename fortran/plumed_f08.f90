@@ -114,16 +114,6 @@ module plumed_f08_module
     procedure       ::             pl_cmd_val_real_1_3
     generic, public :: cmd_val => pl_cmd_val_real_1_4
     procedure       ::             pl_cmd_val_real_1_4
-    generic, public :: cmd_val => pl_cmd_val_real_2_0
-    procedure       ::             pl_cmd_val_real_2_0
-    generic, public :: cmd_val => pl_cmd_val_real_2_1
-    procedure       ::             pl_cmd_val_real_2_1
-    generic, public :: cmd_val => pl_cmd_val_real_2_2
-    procedure       ::             pl_cmd_val_real_2_2
-    generic, public :: cmd_val => pl_cmd_val_real_2_3
-    procedure       ::             pl_cmd_val_real_2_3
-    generic, public :: cmd_val => pl_cmd_val_real_2_4
-    procedure       ::             pl_cmd_val_real_2_4
     generic, public :: cmd_ref => pl_cmd_ref_integer_0_0
     procedure       ::             pl_cmd_ref_integer_0_0
     generic, public :: cmd_ref => pl_cmd_ref_integer_0_1
@@ -174,16 +164,6 @@ module plumed_f08_module
     procedure       ::             pl_cmd_ref_real_1_3
     generic, public :: cmd_ref => pl_cmd_ref_real_1_4
     procedure       ::             pl_cmd_ref_real_1_4
-    generic, public :: cmd_ref => pl_cmd_ref_real_2_0
-    procedure       ::             pl_cmd_ref_real_2_0
-    generic, public :: cmd_ref => pl_cmd_ref_real_2_1
-    procedure       ::             pl_cmd_ref_real_2_1
-    generic, public :: cmd_ref => pl_cmd_ref_real_2_2
-    procedure       ::             pl_cmd_ref_real_2_2
-    generic, public :: cmd_ref => pl_cmd_ref_real_2_3
-    procedure       ::             pl_cmd_ref_real_2_3
-    generic, public :: cmd_ref => pl_cmd_ref_real_2_4
-    procedure       ::             pl_cmd_ref_real_2_4
     generic, public :: cmd_ptr => pl_cmd_ptr_integer_0_0
     procedure       ::             pl_cmd_ptr_integer_0_0
     generic, public :: cmd_ptr => pl_cmd_ptr_integer_0_1
@@ -234,16 +214,6 @@ module plumed_f08_module
     procedure       ::             pl_cmd_ptr_real_1_3
     generic, public :: cmd_ptr => pl_cmd_ptr_real_1_4
     procedure       ::             pl_cmd_ptr_real_1_4
-    generic, public :: cmd_ptr => pl_cmd_ptr_real_2_0
-    procedure       ::             pl_cmd_ptr_real_2_0
-    generic, public :: cmd_ptr => pl_cmd_ptr_real_2_1
-    procedure       ::             pl_cmd_ptr_real_2_1
-    generic, public :: cmd_ptr => pl_cmd_ptr_real_2_2
-    procedure       ::             pl_cmd_ptr_real_2_2
-    generic, public :: cmd_ptr => pl_cmd_ptr_real_2_3
-    procedure       ::             pl_cmd_ptr_real_2_3
-    generic, public :: cmd_ptr => pl_cmd_ptr_real_2_4
-    procedure       ::             pl_cmd_ptr_real_2_4
     generic, public :: cmd_const_ptr => pl_cmd_const_ptr_integer_0_0
     procedure       ::             pl_cmd_const_ptr_integer_0_0
     generic, public :: cmd_const_ptr => pl_cmd_const_ptr_integer_0_1
@@ -294,16 +264,6 @@ module plumed_f08_module
     procedure       ::             pl_cmd_const_ptr_real_1_3
     generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_1_4
     procedure       ::             pl_cmd_const_ptr_real_1_4
-    generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_2_0
-    procedure       ::             pl_cmd_const_ptr_real_2_0
-    generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_2_1
-    procedure       ::             pl_cmd_const_ptr_real_2_1
-    generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_2_2
-    procedure       ::             pl_cmd_const_ptr_real_2_2
-    generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_2_3
-    procedure       ::             pl_cmd_const_ptr_real_2_3
-    generic, public :: cmd_const_ptr => pl_cmd_const_ptr_real_2_4
-    procedure       ::             pl_cmd_const_ptr_real_2_4
     generic, public :: cmd_val => pl_cmd_val_char
     procedure       ::            pl_cmd_val_char
     generic, public :: cmd_ptr => pl_cmd_ptr_c
@@ -461,17 +421,6 @@ module plumed_f08_module
       type(c_ptr),                    value :: opt
       type(cplumed_safeptr)                 :: plumed_f_safeptr_double
     end function plumed_f_safeptr_double
-  end interface
-  interface
-    function plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      type(c_ptr),                    value :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_long_double
-    end function plumed_f_safeptr_long_double
   end interface
 
   contains
@@ -750,43 +699,6 @@ module plumed_f08_module
       endif
 
     end subroutine plumed_f_cmd_real_1
-    subroutine plumed_f_cmd_real_2(p, key, valptr, valshape, const, nocopy, error)
-      type(cplumed),                 intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      type(c_ptr),                   intent(in)    :: valptr
-      integer,                       intent(in)    :: valshape(:)
-      logical,                       intent(in)    :: const
-      logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
-
-      type(plumed_error), target :: myerror
-      integer(kind=c_size_t) :: flags
-      type(cplumed_nothrow_handler) :: nothrow
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(max(size(valshape) + 1, 2))
-
-      if (size(valshape) == 0) then
-        pass_shape(:) = [1, 0]
-      else
-        pass_shape(:) = [valshape(size(valshape):1:-1), 0]
-      endif
-      nelem = product(valshape)
-      flags = flags_ptr
-      if (const) flags = flags_const_ptr
-      if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
-      if(present(error)) then
-        nothrow%handler = c_funloc(plumed_f_f08_eh)
-      else
-        nothrow%handler=c_null_funptr
-      endif
-      call plumed_cmd_safe_nothrow(p, key, &
-         plumed_f_safeptr_long_double(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
-
-    end subroutine plumed_f_cmd_real_2
 
      ! this is a soft wrapper to a C function
      function plumed_installed() result(res)
@@ -2685,351 +2597,6 @@ module plumed_f08_module
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
            & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_4
-
-
-    subroutine pl_cmd_val_real_2_0(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),  target, intent(in) :: val
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(0)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.true., error=error)
-    end subroutine pl_cmd_val_real_2_0
-
-    subroutine pl_cmd_ref_real_2_0(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),  target, intent(inout) :: val
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(0)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-            & const=.false., nocopy=.true., error=error)
-    end subroutine pl_cmd_ref_real_2_0
-
-    subroutine pl_cmd_ptr_real_2_0(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(0)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.false., nocopy=.false., error=error)
-    end subroutine pl_cmd_ptr_real_2_0
-
-    subroutine pl_cmd_const_ptr_real_2_0(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(0)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.false., error=error)
-    end subroutine pl_cmd_const_ptr_real_2_0
-
-
-    subroutine pl_cmd_val_real_2_1(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(1)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-      valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.true., error=error)
-    end subroutine pl_cmd_val_real_2_1
-
-    subroutine pl_cmd_ref_real_2_1(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(1)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       valshape = shape(val)
-        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-            & const=.false., nocopy=.true., error=error)
-    end subroutine pl_cmd_ref_real_2_1
-
-    subroutine pl_cmd_ptr_real_2_1(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(1)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained pointer to non-contiguous data"
-         else
-           error stop "Obtained pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.false., nocopy=.false., error=error)
-    end subroutine pl_cmd_ptr_real_2_1
-
-    subroutine pl_cmd_const_ptr_real_2_1(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(1)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained const pointer to non-contiguous data"
-         else
-           error stop "Obtained const pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.false., error=error)
-    end subroutine pl_cmd_const_ptr_real_2_1
-
-
-    subroutine pl_cmd_val_real_2_2(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(2)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-      valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.true., error=error)
-    end subroutine pl_cmd_val_real_2_2
-
-    subroutine pl_cmd_ref_real_2_2(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(2)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       valshape = shape(val)
-        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-            & const=.false., nocopy=.true., error=error)
-    end subroutine pl_cmd_ref_real_2_2
-
-    subroutine pl_cmd_ptr_real_2_2(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(2)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained pointer to non-contiguous data"
-         else
-           error stop "Obtained pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.false., nocopy=.false., error=error)
-    end subroutine pl_cmd_ptr_real_2_2
-
-    subroutine pl_cmd_const_ptr_real_2_2(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(2)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained const pointer to non-contiguous data"
-         else
-           error stop "Obtained const pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.false., error=error)
-    end subroutine pl_cmd_const_ptr_real_2_2
-
-
-    subroutine pl_cmd_val_real_2_3(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(3)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-      valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.true., error=error)
-    end subroutine pl_cmd_val_real_2_3
-
-    subroutine pl_cmd_ref_real_2_3(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(3)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       valshape = shape(val)
-        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-            & const=.false., nocopy=.true., error=error)
-    end subroutine pl_cmd_ref_real_2_3
-
-    subroutine pl_cmd_ptr_real_2_3(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(3)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained pointer to non-contiguous data"
-         else
-           error stop "Obtained pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.false., nocopy=.false., error=error)
-    end subroutine pl_cmd_ptr_real_2_3
-
-    subroutine pl_cmd_const_ptr_real_2_3(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(3)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained const pointer to non-contiguous data"
-         else
-           error stop "Obtained const pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.false., error=error)
-    end subroutine pl_cmd_const_ptr_real_2_3
-
-
-    subroutine pl_cmd_val_real_2_4(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(in) :: val(:,:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(4)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-      valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.true., error=error)
-    end subroutine pl_cmd_val_real_2_4
-
-    subroutine pl_cmd_ref_real_2_4(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double), contiguous, target, intent(inout) :: val(:,:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(4)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       valshape = shape(val)
-        call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-            & const=.false., nocopy=.true., error=error)
-    end subroutine pl_cmd_ref_real_2_4
-
-    subroutine pl_cmd_ptr_real_2_4(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(4)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained pointer to non-contiguous data"
-         else
-           error stop "Obtained pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.false., nocopy=.false., error=error)
-    end subroutine pl_cmd_ptr_real_2_4
-
-    subroutine pl_cmd_const_ptr_real_2_4(this,key,val,error)
-      class(plumed),                 intent(inout) :: this ! inout to allow for initialization
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double),   pointer,  intent(in)    :: val(:,:,:,:)
-       type(plumed_error), optional,  intent(out)   :: error
-       integer :: valshape(4)
-       if(.not.this%initialized) then
-         call plumed_create(this)
-       endif
-       if (.not. is_contiguous(val)) then
-         if (present(error)) then
-           error%code=20300
-           error%what="Obtained const pointer to non-contiguous data"
-         else
-           error stop "Obtained const pointer to non-contiguous data"
-         end if
-       end if
-       valshape = shape(val)
-       call plumed_f_cmd_real_2(this%handle, key // c_null_char, c_loc(val), valshape,&
-           & const=.true., nocopy=.false., error=error)
-    end subroutine pl_cmd_const_ptr_real_2_4
 
 
 end module plumed_f08_module

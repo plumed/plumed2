@@ -2,6 +2,7 @@
 
 
 
+
 module plumed_module
   use iso_c_binding
   implicit none
@@ -289,28 +290,6 @@ module plumed_module
       type(cplumed_safeptr)                 :: plumed_f_safeptr_double
     end function plumed_f_safeptr_double
   end interface
-  interface
-    function plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      real(kind=c_long_double)                     :: val
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_long_double_scalar
-    end function plumed_f_safeptr_long_double_scalar
-  end interface
-  interface
-    function plumed_f_safeptr_long_double(val,nelem,pass_shape,flags,opt) bind(C)
-      import
-      real(kind=c_long_double)                     :: val(*)
-      integer(kind=c_size_t),         value :: nelem
-      integer(kind=c_size_t)                :: pass_shape(*)
-      integer(kind=c_size_t),         value :: flags
-      type(c_ptr),                    value :: opt
-      type(cplumed_safeptr)                 :: plumed_f_safeptr_long_double
-    end function plumed_f_safeptr_long_double
-  end interface
 
   ! here are the interfaces used for overloading
   interface plumed_f_cmd
@@ -340,11 +319,6 @@ module plumed_module
     module procedure plumed_f_cmd_real_1_2
     module procedure plumed_f_cmd_real_1_3
     module procedure plumed_f_cmd_real_1_4
-    module procedure plumed_f_cmd_real_2_0
-    module procedure plumed_f_cmd_real_2_1
-    module procedure plumed_f_cmd_real_2_2
-    module procedure plumed_f_cmd_real_2_3
-    module procedure plumed_f_cmd_real_2_4
   end interface plumed_f_cmd
 
   interface plumed_f_gcmd
@@ -374,11 +348,6 @@ module plumed_module
     module procedure plumed_f_gcmd_real_1_2
     module procedure plumed_f_gcmd_real_1_3
     module procedure plumed_f_gcmd_real_1_4
-    module procedure plumed_f_gcmd_real_2_0
-    module procedure plumed_f_gcmd_real_2_1
-    module procedure plumed_f_gcmd_real_2_2
-    module procedure plumed_f_gcmd_real_2_3
-    module procedure plumed_f_gcmd_real_2_4
   end interface plumed_f_gcmd
 
   contains
@@ -905,106 +874,6 @@ module plumed_module
       call plumed_f_global(global)
       call plumed_f_cmd(global,key,val)
     end subroutine plumed_f_gcmd_real_1_4
-    subroutine plumed_f_cmd_real_2_0(p,key,val)
-      character(kind=c_char,len=32), intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape=(/1,0/)
-       nelem=product(pass_shape)
-       call plumed_cmd_safe(plumed_f2c(p),key, &
-         plumed_f_safeptr_long_double_scalar(val,nelem,pass_shape,flags_ptr,c_null_ptr))
-    end subroutine plumed_f_cmd_real_2_0
-    subroutine plumed_f_gcmd_real_2_0(key,val)
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                            :: val
-      character(kind=c_char,len=32) :: global
-      call plumed_f_global(global)
-      call plumed_f_cmd(global,key,val)
-    end subroutine plumed_f_gcmd_real_2_0
-    subroutine plumed_f_cmd_real_2_1(p,key,val)
-      character(kind=c_char,len=32), intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:)
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(2)
-      pass_shape(1)=size(val,1)
-      pass_shape(2)=0
-       nelem=product(pass_shape)
-       call plumed_cmd_safe(plumed_f2c(p),key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr))
-    end subroutine plumed_f_cmd_real_2_1
-    subroutine plumed_f_gcmd_real_2_1(key,val)
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                            :: val(:)
-      character(kind=c_char,len=32) :: global
-      call plumed_f_global(global)
-      call plumed_f_cmd(global,key,val)
-    end subroutine plumed_f_gcmd_real_2_1
-    subroutine plumed_f_cmd_real_2_2(p,key,val)
-      character(kind=c_char,len=32), intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:)
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(3)
-      pass_shape(1)=size(val,2)
-      pass_shape(2)=size(val,1)
-      pass_shape(3)=0
-       nelem=product(pass_shape)
-       call plumed_cmd_safe(plumed_f2c(p),key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr))
-    end subroutine plumed_f_cmd_real_2_2
-    subroutine plumed_f_gcmd_real_2_2(key,val)
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                            :: val(:,:)
-      character(kind=c_char,len=32) :: global
-      call plumed_f_global(global)
-      call plumed_f_cmd(global,key,val)
-    end subroutine plumed_f_gcmd_real_2_2
-    subroutine plumed_f_cmd_real_2_3(p,key,val)
-      character(kind=c_char,len=32), intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:,:)
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(4)
-      pass_shape(1)=size(val,3)
-      pass_shape(2)=size(val,2)
-      pass_shape(3)=size(val,1)
-      pass_shape(4)=0
-       nelem=product(pass_shape)
-       call plumed_cmd_safe(plumed_f2c(p),key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr))
-    end subroutine plumed_f_cmd_real_2_3
-    subroutine plumed_f_gcmd_real_2_3(key,val)
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                            :: val(:,:,:)
-      character(kind=c_char,len=32) :: global
-      call plumed_f_global(global)
-      call plumed_f_cmd(global,key,val)
-    end subroutine plumed_f_gcmd_real_2_3
-    subroutine plumed_f_cmd_real_2_4(p,key,val)
-      character(kind=c_char,len=32), intent(in)    :: p
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(KIND=c_long_double)                            :: val(:,:,:,:)
-      integer(kind=c_size_t) :: nelem
-      integer(kind=c_size_t) :: pass_shape(5)
-      pass_shape(1)=size(val,4)
-      pass_shape(2)=size(val,3)
-      pass_shape(3)=size(val,2)
-      pass_shape(4)=size(val,1)
-      pass_shape(5)=0
-       nelem=product(pass_shape)
-       call plumed_cmd_safe(plumed_f2c(p),key, &
-         plumed_f_safeptr_long_double(val,nelem,pass_shape,flags_ptr,c_null_ptr))
-    end subroutine plumed_f_cmd_real_2_4
-    subroutine plumed_f_gcmd_real_2_4(key,val)
-      character(kind=c_char,len=*),  intent(in)    :: key
-      real(kind=c_long_double)                            :: val(:,:,:,:)
-      character(kind=c_char,len=32) :: global
-      call plumed_f_global(global)
-      call plumed_f_cmd(global,key,val)
-    end subroutine plumed_f_gcmd_real_2_4
 
 end module plumed_module
 
