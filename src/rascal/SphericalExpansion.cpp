@@ -50,7 +50,7 @@ using namespace rascal;
 namespace PLMD {
 namespace rascal {
 
-//+PLUMEDOC COLVAR SOAP 
+//+PLUMEDOC COLVAR SPHERICAL_INVARIANTS
 /*
 Interface to librascal code for computing structural descritors such as SOAP.
 
@@ -65,7 +65,7 @@ To use PLUMED and librascal together you must configure as follows:
 Here is an example input file:
 
 \plumedfile
-r: SOAP ...
+r: SPHERICAL_INVARIANTS ...
   SPECIES=1-3
   HYPERPARAMS={ 
                 "max_radial": 3,
@@ -85,7 +85,8 @@ PRINT ARG=rr FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class Soap : 
+template <class T>
+class RascalSpherical : 
 public ActionAtomistic,
 public ActionWithValue 
 {
@@ -101,28 +102,33 @@ private:
 /// This is a vector containing the forces that act on the system
   std::vector<double> forcesToApply;
 /// This is the representation that is being computed using librascal
-  std::unique_ptr<CalculatorSphericalInvariants> representation;
+  std::unique_ptr<T> representation;
 /// This generates the json input for RASCAL
   void structureToJson();
 public:
   static void registerKeywords(Keywords& keys);
-  explicit Soap(const ActionOptions&);
+  explicit RascalSpherical(const ActionOptions&);
 // active methods:
   unsigned getNumberOfDerivatives() const override;
   void calculate() override;
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(Soap,"SOAP")
+typedef RascalSpherical<CalculatorSphericalInvariants> SphericalInvariants;
+PLUMED_REGISTER_ACTION(SphericalInvariants,"SPHERICAL_INVARIANTS")
+typedef RascalSpherical<CalculatorSphericalExpansion> SphericalExpansion;
+PLUMED_REGISTER_ACTION(SphericalExpansion,"SPHERICAL_EXPANSION")
 
-void Soap::registerKeywords(Keywords& keys) {
+template <class T>
+void RascalSpherical<T>::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionAtomistic::registerKeywords(keys); ActionWithValue::registerKeywords(keys);
   keys.add("numbered","SPECIES","the atoms in each species type"); keys.reset_style("SPECIES","atoms");
   keys.add("compulsory","HYPERPARAMS","the json input for the librascal hyperparameters");
   keys.add("compulsory","NFEATURES","the number of features that are being calculated with rascal");
 }
 
-Soap::Soap(const ActionOptions&ao):
+template <class T>
+RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao)
@@ -143,7 +149,7 @@ Soap::Soap(const ActionOptions&ao):
       error("remove units keywords from json input to HYPERPARAMS.  The units of length for PLUMED are nm or whatever length unit was specified in the UNIT action and cannot be changed in input to librascal");
   }
   // Create the representation using the hyper parameters 
-  representation=std::unique_ptr<CalculatorSphericalInvariants>( new CalculatorSphericalInvariants{hyper_params} );
+  representation=std::unique_ptr<T>( new T{hyper_params} );
   // Now read in the adaptors for the representation
   json ad1{{"name", "AdaptorNeighbourList"},
            {"initialization_arguments", {{"cutoff", cutoff}}}};
@@ -186,11 +192,13 @@ Soap::Soap(const ActionOptions&ao):
   checkRead();
 }
 
-unsigned Soap::getNumberOfDerivatives() const {
+template <class T>
+unsigned RascalSpherical<T>::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms()+9;
 }
 
-void Soap::structureToJson() {
+template <class T>
+void RascalSpherical<T>::structureToJson() {
   // Set the atoms from the atomic positions
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
       for(unsigned k=0;k<3;++k) structure["positions"][i][k]=getPosition(i)[k];
@@ -200,7 +208,8 @@ void Soap::structureToJson() {
 }
 
 // calculator
-void Soap::calculate() {
+template <class T>
+void RascalSpherical<T>::calculate() {
   // tranfer strcutre to json input
   structureToJson();
   // Now lets setup the stuff for librascal
@@ -220,7 +229,8 @@ void Soap::calculate() {
   }
 }
 
-void Soap::apply() {
+template <class T>
+void RascalSpherical<T>::apply() {
   // Do nothing if no forces were added
   if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
   // Clear the forces from last time
