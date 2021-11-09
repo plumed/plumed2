@@ -95,22 +95,23 @@ private:
   vector<string> activations;   // activation functions
   vector<vector<double> > weights;  // flattened weight arrays
   vector<vector<double> > biases;
+  vector<vector<double> > output_of_each_layer;
+  vector<vector<double> > input_of_each_layer;
   vector<double** > coeff;  // weight matrix arrays, reshaped from "weights"
 
 public:
   static void registerKeywords( Keywords& keys );
   explicit ANN(const ActionOptions&);
-  virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals) const ; 
-  void calculate_output_of_each_layer(vector<vector<double> >& input_of_each_layer, vector<vector<double> >& output_of_each_layer) const ;
-  void back_prop(vector<vector<double> >& input_of_each_layer, vector<vector<double> >& output_of_each_layer, 
-                 vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component) const ;
+  virtual void calculate();
+  void calculate_output_of_each_layer(const vector<double>& input);
+  void back_prop(vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component);
 };
 
 PLUMED_REGISTER_ACTION(ANN,"ANN")
 
 void ANN::registerKeywords( Keywords& keys ) {
   Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("ARG");
   keys.add("compulsory", "NUM_LAYERS", "number of layers of the neural network");
   keys.add("compulsory", "NUM_NODES", "numbers of nodes in each layer of the neural network");
   keys.add("compulsory", "ACTIVATIONS", "activation functions for the neural network");
@@ -130,6 +131,8 @@ ANN::ANN(const ActionOptions&ao):
   parse("NUM_LAYERS", num_layers);
   num_nodes = vector<int>(num_layers);
   activations = vector<string>(num_layers - 1);
+  output_of_each_layer = vector<vector<double> >(num_layers);
+  input_of_each_layer = vector<vector<double> >(num_layers);
   coeff = vector<double** >(num_layers - 1);
   parseVector("NUM_NODES", num_nodes);
   parseVector("ACTIVATIONS", activations);
@@ -207,9 +210,9 @@ ANN::ANN(const ActionOptions&ao):
   checkRead();
 }
 
-void ANN::calculate_output_of_each_layer(vector<vector<double> >& input_of_each_layer, vector<vector<double> >& output_of_each_layer) const {
+void ANN::calculate_output_of_each_layer(const vector<double>& input) {
   // first layer
-  // output_of_each_layer[0] = input;
+  output_of_each_layer[0] = input;
   // following layers
   for(int ii = 1; ii < num_nodes.size(); ii ++) {
     output_of_each_layer[ii].resize(num_nodes[ii]);
@@ -269,8 +272,7 @@ void ANN::calculate_output_of_each_layer(vector<vector<double> >& input_of_each_
   return;
 }
 
-void ANN::back_prop(vector<vector<double> >& input_of_each_layer, vector<vector<double> >& output_of_each_layer, 
-                    vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component) const {
+void ANN::back_prop(vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component) {
   derivatives_of_each_layer = output_of_each_layer;  // the data structure and size should be the same, so I simply deep copy it
   // first calculate derivatives for bottleneck layer
   for (int ii = 0; ii < num_nodes[num_nodes.size() - 1]; ii ++ ) {
@@ -361,24 +363,24 @@ void ANN::back_prop(vector<vector<double> >& input_of_each_layer, vector<vector<
   return;
 }
 
-void ANN::calculateFunction( const std::vector<double>& args, MultiValue& myvals) const {
+void ANN::calculate() {
 
-  vector<vector<double> > output_of_each_layer(num_layers), input_of_each_layer(num_layers);
-  output_of_each_layer[0].resize(args.size()); 
-  for(int ii = 0; ii < num_nodes[0]; ii ++) output_of_each_layer[0][ii] = args[ii];
+  vector<double> input_layer_data(num_nodes[0]);
+  for (int ii = 0; ii < num_nodes[0]; ii ++) {
+    input_layer_data[ii] = getArgument(ii);
+  }
 
-  calculate_output_of_each_layer(input_of_each_layer, output_of_each_layer);
+  calculate_output_of_each_layer(input_layer_data);
   vector<vector<double> > derivatives_of_each_layer;
 
   for (int ii = 0; ii < num_nodes[num_layers - 1]; ii ++) {
-    back_prop(input_of_each_layer, output_of_each_layer, derivatives_of_each_layer, ii);
-    // string name_of_this_component = "node-" + to_string(ii);
-    // Value* value_new=getPntrToComponent(name_of_this_component);
-    addValue(ii, output_of_each_layer[num_layers - 1][ii], myvals );
-//    value_new -> set(output_of_each_layer[num_layers - 1][ii]);
-    for (int jj = 0; jj < num_nodes[0]; jj ++) addDerivative( ii, jj, derivatives_of_each_layer[0][jj], myvals );
-    //   value_new -> setDerivative(jj, derivatives_of_each_layer[0][jj]);  // TODO: setDerivative or addDerivative?
-    // }
+    back_prop(derivatives_of_each_layer, ii);
+    string name_of_this_component = "node-" + to_string(ii);
+    Value* value_new=getPntrToComponent(name_of_this_component);
+    value_new -> set(output_of_each_layer[num_layers - 1][ii]);
+    for (int jj = 0; jj < num_nodes[0]; jj ++) {
+      value_new -> setDerivative(jj, derivatives_of_each_layer[0][jj]);  // TODO: setDerivative or addDerivative?
+    }
 #ifdef DEBUG_3
     printf("derivatives = ");
     for (int jj = 0; jj < num_nodes[0]; jj ++) {

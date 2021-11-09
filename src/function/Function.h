@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,86 +38,38 @@ class Function:
   public ActionWithValue,
   public ActionWithArguments
 {
-private:
-  bool firststep;
-  bool matinp, matout;
-  unsigned nderivatives;
-  std::vector<double> forcesToApply;
-  bool hasGridOutput() const ;
-  std::vector<unsigned> getShape();
-  void evaluateAllFunctions();
 protected:
-  int getPeriodFromArg;
+  void setDerivative(int,double);
+  void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
-  void addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;
-  void addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const ;
+  double getArgument( const unsigned& iarg ) const ;
 public:
-  static void registerKeywords(Keywords&);
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
-  virtual void calculate() override; 
-  virtual void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply() override;
-  void update() override;
-  unsigned getNumberOfFinalTasks() override;
-  void runFinalJobs();
+  static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() const override;
-  unsigned getNumberOfColumns() const override;
 };
 
 inline
+void Function::setDerivative(Value*v,int i,double d) {
+  v->addDerivative(i,d);
+}
+
+inline
+void Function::setDerivative(int i,double d) {
+  setDerivative(getPntrToValue(),i,d);
+}
+
+inline
 unsigned Function::getNumberOfDerivatives() const {
-  return nderivatives;
+  return getNumberOfArguments();
 }
 
 inline
-void Function::addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
-}
-
-inline
-void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() && !(getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives()) ) return ;
-
-  if( actionInChain() ) {
-    unsigned istrn = getArgumentPositionInStream(jder, myvals);
-    unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
-    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-      unsigned kind=myvals.getActiveIndex(istrn,k);
-      myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
-    }
-    return;
-  }
-  if( getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives() ) {
-    if( getPntrToArgument(jder)->getRank()==0 ) {
-      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
-    } else {
-      unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
-      for(unsigned i=0; i<getPntrToArgument(jder)->getRank(); ++i) {
-        myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) );
-      } 
-      if( nderivatives>getPntrToArgument(jder)->getRank() ) myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
-    }
-    return;
-  }
-  if( arg_ends.size()>0 ) {
-    unsigned base=0;
-    for(unsigned i=0; i<jder; ++i) {
-      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) base += getPntrToArgument(j)->getNumberOfValues();
-    }
-    if( arg_ends[jder+1]==(arg_ends[jder]+1) && getPntrToArgument(arg_ends[jder])->getRank()==0 ) {
-      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base, der );
-    } else {
-      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base + myvals.getTaskIndex(), der );
-    }
-    return;
-  }
-  myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), jder, der );
+double Function::getArgument( const unsigned& iarg ) const {
+ return getPntrToArgument(iarg)->get();
 }
 
 }

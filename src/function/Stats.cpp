@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,7 +62,7 @@ class Stats :
   bool upperd;
 public:
   explicit Stats(const ActionOptions&);
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -150,32 +150,32 @@ Stats::Stats(const ActionOptions&ao):
   checkRead();
 }
 
-void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const
+void Stats::calculate()
 {
   if(sqdonly) {
 
     double nsqd = 0.;
-    // Value* val;
-    // if(!components) val=getPntrToComponent("sqdevsum");
+    Value* val;
+    if(!components) val=getPntrToComponent("sqdevsum");
     for(unsigned i=0; i<parameters.size(); ++i) {
-      double dev = args[i]-parameters[i];
+      double dev = getArgument(i)-parameters[i];
       if(upperd&&dev<0) dev=0.;
       if(components) {
-        addValue( i, dev*dev, myvals );
-        addDerivative( i, i, 2*dev, myvals );
+        val=getPntrToComponent(i);
+        val->set(dev*dev);
       } else {
         nsqd += dev*dev;
-        addDerivative( 0, i, 2*dev, myvals );
       }
+      setDerivative(val,i,2.*dev);
     }
-    if(!components) addValue( 0, nsqd, myvals );
+    if(!components) val->set(nsqd);
 
   } else {
 
     double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
 
     for(unsigned i=0; i<parameters.size(); ++i) {
-      const double tmpx=args[i];
+      const double tmpx=getArgument(i);
       const double tmpy=parameters[i];
       scx  += tmpx;
       scx2 += tmpx*tmpx;
@@ -199,19 +199,24 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
     const double slope = num * idev2x;
     const double inter = (scy - slope * scx)/ns;
 
-    addValue(0, nsqd, myvals );
-    addValue(1, correlation, myvals );
-    addValue(2, slope, myvals );
-    addValue(3, inter, myvals );
+    Value* valuea=getPntrToComponent("sqdevsum");
+    Value* valueb=getPntrToComponent("corr");
+    Value* valuec=getPntrToComponent("slope");
+    Value* valued=getPntrToComponent("intercept");
+
+    valuea->set(nsqd);
+    valueb->set(correlation);
+    valuec->set(slope);
+    valued->set(inter);
 
     /* derivatives */
     for(unsigned i=0; i<parameters.size(); ++i) {
       const double common_d1 = (ns*parameters[i]-scy)*idevx;
-      const double common_d2 = num*(ns*args[i]-scx)*idev2x*idevx;
+      const double common_d2 = num*(ns*getArgument(i)-scx)*idev2x*idevx;
       const double common_d3 = common_d1 - common_d2;
 
       /* sqdevsum */
-      const double sq_der = 2.*(args[i]-parameters[i]);
+      const double sq_der = 2.*(getArgument(i)-parameters[i]);
       /* correlation */
       const double co_der = common_d3*idevy;
       /* slope */
@@ -219,10 +224,10 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
       /* intercept */
       const double int_der = -(slope+ scx*sl_der)/ns;
 
-      addDerivative(0,i,sq_der,myvals);
-      addDerivative(1,i,co_der,myvals);
-      addDerivative(2,i,sl_der,myvals);
-      addDerivative(3,i,int_der,myvals);
+      setDerivative(valuea,i,sq_der);
+      setDerivative(valueb,i,co_der);
+      setDerivative(valuec,i,sl_der);
+      setDerivative(valued,i,int_der);
     }
 
   }

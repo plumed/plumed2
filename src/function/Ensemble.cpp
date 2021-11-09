@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,7 +63,7 @@ class Ensemble :
   double   power;
 public:
   explicit Ensemble(const ActionOptions&);
-  void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override;
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -72,7 +72,7 @@ PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
 
 void Ensemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG"); keys.remove("SERIAL"); // Serial is always used
+  keys.use("ARG");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
   keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
@@ -93,7 +93,8 @@ Ensemble::Ensemble(const ActionOptions&ao):
   power(0)
 {
   parseFlag("REWEIGHT", do_reweight);
-  double temp=0.0; parse("TEMP",temp);
+  double temp=0.0;
+  parse("TEMP",temp);
   if(do_reweight) {
     if(temp>0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
     else kbt=plumed.getAtoms().getKbT();
@@ -149,7 +150,7 @@ Ensemble::Ensemble(const ActionOptions&ao):
   if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
 }
 
-void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+void Ensemble::calculate() {
   double norm = 0.0;
   double fact = 0.0;
 
@@ -158,7 +159,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
     std::vector<double> bias;
     bias.resize(ens_dim);
     if(master) {
-      bias[my_repl] = args[narg];
+      bias[my_repl] = getArgument(narg);
       if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);
     }
     comm.Sum(&bias[0], ens_dim);
@@ -180,7 +181,7 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
   std::vector<double> dmean(narg,fact);
   // calculate the mean
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*args[i];
+    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
     if(ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   }
   comm.Sum(&mean[0], narg);
@@ -194,14 +195,14 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
     if(!do_central) {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(args[i],moment-1);
-          v_moment[i]      = tmp*args[i];
+          const double tmp = fact*std::pow(getArgument(i),moment-1);
+          v_moment[i]      = tmp*getArgument(i);
           dv_moment[i]     = moment*tmp;
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(args[i],moment-1);
+          const double tmp = fact*std::pow(getArgument(i),moment-1);
           dv_moment[i]     = moment*tmp;
         }
       }
@@ -209,14 +210,14 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
     } else {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(args[i]-mean[i],moment-1);
-          v_moment[i]      = fact*tmp*(args[i]-mean[i]);
+          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
+          v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(args[i]-mean[i],moment-1);
+          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
       }
@@ -241,19 +242,21 @@ void Ensemble::calculateFunction( const std::vector<double>& args, MultiValue& m
   // set components
   for(unsigned i=0; i<narg; ++i) {
     // set mean
-    addValue( i, mean[i], myvals );
-    addDerivative( i, i, dmean[i], myvals );
+    Value* v=getPntrToComponent(i);
+    v->set(mean[i]);
+    setDerivative(v, i, dmean[i]);
     if(do_reweight) {
-      const double w_tmp = fact_kbt*(args[i] - mean[i]);
-      addDerivative( i, narg, w_tmp, myvals );
+      const double w_tmp = fact_kbt*(getArgument(i) - mean[i]);
+      setDerivative(v, narg, w_tmp);
     }
     if(do_moments) {
       // set moments
-      addValue( i+narg, v_moment[i], myvals );
-      addDerivative(i+narg, i, dv_moment[i], myvals );
+      Value* u=getPntrToComponent(i+narg);
+      u->set(v_moment[i]);
+      setDerivative(u, i, dv_moment[i]);
       if(do_reweight) {
-        const double w_tmp = fact_kbt*(pow(args[i],moment) - v_moment[i]);
-        addDerivative(i+narg, narg, w_tmp, myvals);
+        const double w_tmp = fact_kbt*(pow(getArgument(i),moment) - v_moment[i]);
+        setDerivative(u, narg, w_tmp);
       }
     }
   }

@@ -22,10 +22,7 @@
 #ifndef __PLUMED_function_FunctionOfScalar_h
 #define __PLUMED_function_FunctionOfScalar_h
 
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
-#include "tools/Communicator.h"
-#include "tools/OpenMP.h"
+#include "Function.h"
 
 namespace PLMD {
 namespace function {
@@ -37,16 +34,10 @@ This is the abstract base class to use for implementing new CV function, within 
 */
 
 template <class T>
-class FunctionOfScalar :
-  public ActionWithValue,
-  public ActionWithArguments
-{
+class FunctionOfScalar : public Function {
 private:
 /// The function that is being computed
   T myfunc;
-protected:
-  void setDerivative(int,double);
-  void setDerivative(Value*,int,double);
 public:
   explicit FunctionOfScalar(const ActionOptions&);
   virtual ~FunctionOfScalar() {}
@@ -55,27 +46,21 @@ public:
   void calculate() override;
   void update() override;
   void runFinalJobs() override;
-  void apply() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives() const override;
   void turnOnDerivatives() override;
 };
 
 template <class T>
 void FunctionOfScalar<T>::registerKeywords(Keywords& keys) {
-  Action::registerKeywords(keys);
-  ActionWithValue::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys); keys.use("ARG");
+  Function::registerKeywords(keys); keys.use("ARG");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
 }
 
 template <class T>
 FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   Action(ao),
-  ActionWithValue(ao),
-  ActionWithArguments(ao)
+  Function(ao)
 {
   myfunc.read( this ); 
   // Get the names of the components
@@ -101,24 +86,9 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
 }
 
 template <class T>
-void FunctionOfScalar<T>::setDerivative(Value*v,int i,double d) {
-  v->addDerivative(i,d);
-}
-
-template <class T>
-void FunctionOfScalar<T>::setDerivative(int i,double d) {
-  setDerivative(getPntrToValue(),i,d);
-}
-
-template <class T>
 void FunctionOfScalar<T>::turnOnDerivatives() {
   if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
   ActionWithValue::turnOnDerivatives(); 
-}
-
-template <class T>
-unsigned FunctionOfScalar<T>::getNumberOfDerivatives() const {
-  return getNumberOfArguments();
 }
 
 template <class T>
@@ -145,42 +115,6 @@ template <class T>
 void FunctionOfScalar<T>::runFinalJobs() {
   if( skipUpdate() ) return;
   calculate();
-}
-
-template <class T>
-void FunctionOfScalar<T>::apply() {
-  const unsigned noa=getNumberOfArguments();
-  const unsigned ncp=getNumberOfComponents();
-  const unsigned cgs=comm.Get_size();
-
-  std::vector<double> f(noa,0.0);
-
-  unsigned stride=1;
-  unsigned rank=0;
-  if(ncp>4*cgs) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  unsigned at_least_one_forced=0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
-  {
-    std::vector<double> omp_f(noa,0.0);
-    std::vector<double> forces(noa);
-    #pragma omp for reduction( + : at_least_one_forced)
-    for(unsigned i=rank; i<ncp; i+=stride) {
-      if(getPntrToComponent(i)->applyForce(forces)) {
-        at_least_one_forced+=1;
-        for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
-      }
-    }
-    #pragma omp critical
-    for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
-  }
-
-  if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
-
-  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(0, f[i]);
 }
 
 }

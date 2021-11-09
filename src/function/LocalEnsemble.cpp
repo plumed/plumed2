@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -76,9 +76,11 @@ res: RESTRAINT ARG=stca.*,stcb.*,stco.*,sthn.*,stnh.* AT=0.,0.,0.,0.,0. KAPPA=0.
 class LocalEnsemble :
   public Function
 {
+  unsigned ens_dim;
+  unsigned narg;
 public:
   explicit LocalEnsemble(const ActionOptions&);
-  void     calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const override ;
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -87,28 +89,44 @@ PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
 void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("compulsory","NUM","the number of local replicas");
-  keys.use("ARG"); ActionWithValue::useCustomisableComponents(keys);
+  useCustomisableComponents(keys);
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
-  Function(ao)
+  Function(ao),
+  ens_dim(0)
 {
+  parse("NUM",ens_dim);
+  if(ens_dim==0) error("NUM should be greater or equal to 1");
+  narg = getNumberOfArguments()/ens_dim;
+
   // these are the averages
-  std::vector<unsigned> shape; shape.resize(0);
-  for(unsigned i=0; i<arg_ends.size()-1; i++) {
-    std::string s=getPntrToArgument(arg_ends[i])->getName();
-    ActionWithValue::addComponentWithDerivatives(s, shape);
+  for(unsigned i=0; i<narg; i++) {
+    std::string s=getPntrToArgument(i)->getName();
+    addComponentWithDerivatives(s);
     getPntrToComponent(i)->setNotPeriodic();
   }
-  log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
+
+  log.printf("  averaging over %u replicas.\n", ens_dim);
 }
 
-void LocalEnsemble::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const
+void LocalEnsemble::calculate()
 {
-  const double fact = 1.0/static_cast<double>( arg_ends[1] - arg_ends[0] );
-  for(unsigned i=0; i<args.size(); ++i) { addValue( i, fact*args[i], myvals ); addDerivative( i, i, fact, myvals ); }
+  const double fact = 1.0/static_cast<double>(ens_dim);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<narg; ++i) {
+    double mean = 0.;
+    Value* v=getPntrToComponent(i);
+    for(unsigned j=0; j<ens_dim; ++j) {
+      const unsigned index = j*narg+i;
+      setDerivative(v, index, fact);
+      mean += fact*getArgument(index);
+    }
+    v->set(mean);
+  }
 }
 
 }
