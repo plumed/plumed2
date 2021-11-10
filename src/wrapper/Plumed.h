@@ -455,6 +455,18 @@
 #endif
 
 /*
+  1: Enable typesafe C interface
+  0: Disable typesafe C interface (default)
+
+  Only used in declarations. Requires C11 _Generic, and so it is automatically
+  disabled with C++ and pre C11 compilers.
+*/
+
+#ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#endif
+
+/*
   1: enable C++ wrapper (default)
   0: disable C++ wrapper
 
@@ -590,6 +602,23 @@
 #define __PLUMED_WRAPPER_CXX_STD 0
 #endif
 
+/* In C++, disable generics */
+#ifdef __cplusplus
+#undef __PLUMED_WRAPPER_C_TYPESAFE
+#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#endif
+
+/* In C < C11, disable generics */
+#ifdef __STDC_VERSION__
+#if __STDC_VERSION__ < 201112L
+#undef __PLUMED_WRAPPER_C_TYPESAFE
+#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#endif
+#else
+#undef __PLUMED_WRAPPER_C_TYPESAFE
+#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#endif
+
 /* Set prefix for stdlib functions */
 #if __PLUMED_WRAPPER_CXX_STD
 #define __PLUMED_WRAPPER_STD ::std::
@@ -647,8 +676,10 @@
 #include <cstddef> /* size_t */
 #include <cstring> /* memcpy */
 #else
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h> /* FILE */
 #endif
 
 /**
@@ -1065,6 +1096,122 @@ __PLUMED_WRAPPER_C_END
 __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_v2c(void*);
 __PLUMED_WRAPPER_C_END
+
+#if ! defined( __cplusplus) /*{*/
+
+#if __PLUMED_WRAPPER_C_TYPESAFE /*{*/
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_INNER(type_,typen_,flags_) \
+  static void plumed_cmd_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, const size_t* shape) { \
+    plumed_safeptr safe; \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.shape=(size_t*)shape; \
+    safe.flags=flags_; \
+    safe.opt=NULL; \
+    plumed_cmd_safe(p,key,safe); \
+  }
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,size) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type,             type_ ## _p,  size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const,       type_ ## _c,  size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type*,            type_ ## _pp, size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type*const,       type_ ## _pc, size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const*,      type_ ## _cp, size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const*const, type_ ## _cc, size | (0x10000*(code)) | (0x2000000*7))
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(type,type_,code) __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,0)
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_SIZED(type,type_,code) \
+  __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,sizeof(type)) \
+  static void plumed_cmd_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, const size_t* shape) { \
+    plumed_safeptr safe; \
+    char buffer[32]; \
+    assert(sizeof(type)<=32); \
+    (void) nelem; \
+    (void) shape; \
+    memcpy(buffer,&val,sizeof(type)); \
+    safe.ptr=&buffer[0]; \
+    safe.nelem=1; \
+    safe.shape=NULL; \
+    safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    safe.opt=NULL; \
+    plumed_cmd_safe(p,key,safe); \
+  }
+
+#define __PLUMED_WRAPPER_C_GENERIC1(type,typen_) \
+    type: plumed_cmd_ ## typen_,
+
+#define __PLUMED_WRAPPER_C_GENERIC_EMPTY(type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC1(type*,             type_ ## _p) \
+  __PLUMED_WRAPPER_C_GENERIC1(type const*,       type_ ## _c) \
+  __PLUMED_WRAPPER_C_GENERIC1(type**,            type_ ## _pp) \
+  __PLUMED_WRAPPER_C_GENERIC1(type*const*,       type_ ## _pc) \
+  __PLUMED_WRAPPER_C_GENERIC1(type const**,      type_ ## _cp) \
+  __PLUMED_WRAPPER_C_GENERIC1(type const*const*, type_ ## _cc)
+
+#define __PLUMED_WRAPPER_C_GENERIC2(type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC_EMPTY(type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC1(type,             type_ ## _v)
+
+/// Here we create all the required instances
+/// 1: void
+/// 3: integral
+/// 4: floating
+/// 5: FILE
+/// 0x100: unsigned
+__PLUMED_WRAPPER_C_TYPESAFE_EMPTY(void,void,1)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(char,char,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned char,unsigned_char,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(short,short,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned short,unsigned_short,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(int,int,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned int,unsigned_int,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long,long,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned long,unsigned_long,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long long,long_long,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned long long,unsigned_long_long,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(float,float,4)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(double,double,4)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long double,long_double,4)
+__PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
+
+#define plumed_cmdn(p,key,val,nelem) _Generic((val), \
+    __PLUMED_WRAPPER_C_GENERIC_EMPTY(void,void) \
+    __PLUMED_WRAPPER_C_GENERIC2(char,char) \
+    __PLUMED_WRAPPER_C_GENERIC2(unsigned char,unsigned_char) \
+    __PLUMED_WRAPPER_C_GENERIC2(short,short) \
+    __PLUMED_WRAPPER_C_GENERIC2(unsigned short,unsigned_short) \
+    __PLUMED_WRAPPER_C_GENERIC2(int,int) \
+    __PLUMED_WRAPPER_C_GENERIC2(unsigned int,unsigned_int) \
+    __PLUMED_WRAPPER_C_GENERIC2(long,long) \
+    __PLUMED_WRAPPER_C_GENERIC2(unsigned long,unsigned_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(long long,long_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(unsigned long long,unsigned_long_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(float,float) \
+    __PLUMED_WRAPPER_C_GENERIC2(double,double) \
+    __PLUMED_WRAPPER_C_GENERIC2(long double,long_double) \
+    __PLUMED_WRAPPER_C_GENERIC_EMPTY(FILE,FILE) \
+    default: plumed_cmd_void_c) \
+    (p,key,val,nelem,NULL)
+
+#define plumed_cmd_c11(p,key,val) plumed_cmdn(p,key,val,0)
+#define plumed_gcmd_c11(key,val) plumed_cmdn(plumed_global(),key,val,0)
+
+#define __PLUMED_WRAPPER_REDEFINE_CMD plumed_cmd_c11
+#define __PLUMED_WRAPPER_REDEFINE_GCMD plumed_gcmd_c11
+
+#else
+
+#define plumed_cmdn(p,key,val,nelem) plumed_cmd(p,key,val)
+
+#endif /*}*/
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+#define plumed_gcmdn(key,val,nelem) plumed_cmdn(plumed_global(),key,val,nelem)
+#endif /*}*/
+
+#endif /*}*/
 
 
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
