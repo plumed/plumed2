@@ -1610,7 +1610,7 @@ private:
   SafePtr(type_*ptr, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
     safe.ptr=ptr; \
     safe.nelem=nelem; \
-    safe.shape=const_cast<size_t*>(shape); \
+    safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
     safe.flags=flags_; \
     safe.opt=NULL; \
     buffer[0]='\0'; \
