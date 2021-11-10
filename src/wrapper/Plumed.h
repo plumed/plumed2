@@ -2323,7 +2323,13 @@ void plumed_cmd_cxx(plumed p,const char*key,T val) {
   PLMD::Plumed(p).cmd(key,val);
 }
 
+template<typename T>
+void plumed_cmdn_cxx(plumed p,const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+  PLMD::Plumed(p).cmd(key,val,nelem);
+}
+
 #define __PLUMED_WRAPPER_REDEFINE_CMD plumed_cmd_cxx
+#define plumed_cmdn plumed_cmdn_cxx
 
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 /**
@@ -2338,10 +2344,25 @@ void plumed_gcmd_cxx(const char*key,T val) {
   PLMD::Plumed::gcmd(key,val);
 }
 
+template<typename T>
+void plumed_gcmdn_cxx(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+  PLMD::Plumed::gcmd(key,val,nelem);
+}
+
 #define __PLUMED_WRAPPER_REDEFINE_GCMD plumed_gcmd_cxx
+#define plumed_gcmdn plumed_gcmdn_cxx
+
 #endif /*}*/
 
 __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
+
+#else
+
+#define plumed_cmdn(p,key,val,nelem) plumed_cmd(p,key,val)
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+#define plumed_gcmdn(key,val,nelem) plumed_gcmd(key,val)
+#endif /*}*/
 
 #endif /*}*/
 
