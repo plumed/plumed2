@@ -43,6 +43,25 @@
 #include "tools/TypesafePtr.h"
 
 
+static bool getenvTypesafeDebug() noexcept {
+  static const auto* res=std::getenv("PLUMED_TYPESAFE_DEBUG");
+  return res;
+}
+
+static void typesafeDebug(const char*key,plumed_safeptr_x safe) noexcept {
+  std::fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe.ptr,safe.nelem);
+  const size_t* shape=safe.shape;
+  if(shape) {
+    std::fprintf(stderr," (");
+    while(*shape!=0) {
+      std::fprintf(stderr," %zu",*shape);
+      shape++;
+    }
+    std::fprintf(stderr," )");
+  }
+  std::fprintf(stderr," %zx %p\n",safe.flags,safe.opt);
+}
+
 // create should never throw
 // in case of a problem, it logs the error and return a null pointer
 // when loaded by an interface >=2.5, this will result in a non valid plumed object.
@@ -70,6 +89,7 @@ extern "C" {
   static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr_x safe) {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     auto p=static_cast<PLMD::PlumedMain*>(plumed);
+    if(getenvTypesafeDebug()) typesafeDebug(key,safe);
     p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
   }
 }
@@ -91,6 +111,7 @@ extern "C" {
     try {
       plumed_massert(plumed,"trying to use a plumed object which is not initialized");
       auto p=static_cast<PLMD::PlumedMain*>(plumed);
+      if(getenvTypesafeDebug()) typesafeDebug(key,safe);
       p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
     } catch(const PLMD::ExceptionTypeError & e) {
       nothrow.handler(nothrow.ptr,20300,e.what(),nullptr);

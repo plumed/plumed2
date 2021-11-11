@@ -1345,18 +1345,6 @@ inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
 }
 
 /**
-  Retrieve PLUMED_TYPESAFE_DEBUG (internal utility).
-
-  This function should not be used by external programs. It is defined
-  as inline static so that it can store a static variable (for quicker access)
-  without adding a unique global symbol to a library including this header file.
-*/
-inline static bool PlumedGetenvTypesafeDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
-  static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_TYPESAFE_DEBUG");
-  return res;
-}
-
-/**
   C++ wrapper for \ref plumed.
 
   This class provides a C++ interface to PLUMED.
@@ -2242,22 +2230,6 @@ private:
     Private version of cmd. It is used here to avoid duplication of code between typesafe and not-typesafe versions
   */
   void cmd_priv(const char*key, SafePtr*safe=NULL, const void* unsafe=NULL) {
-    if(safe && PlumedGetenvTypesafeDebug()) {
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe->safe.ptr,safe->safe.nelem);
-      const __PLUMED_WRAPPER_STD size_t* shape=safe->safe.shape;
-      if(shape) {
-        __PLUMED_WRAPPER_STD fprintf(stderr," (");
-        const __PLUMED_WRAPPER_STD size_t* shape=safe->safe.shape;
-        while(*shape!=0) {
-          __PLUMED_WRAPPER_STD fprintf(stderr," %zu",*shape);
-          shape++;
-        }
-        __PLUMED_WRAPPER_STD fprintf(stderr," )");
-      }
-      /* %lx is for unsigned long that might be smaller than size_t.
-         I explicitly convert flags here to unsigned long to avoid cppcheck warnings */
-      __PLUMED_WRAPPER_STD fprintf(stderr," %lx %p\n",(unsigned long) safe->safe.flags,safe->safe.opt);
-    }
     NothrowHandler h;
     h.code=0;
     plumed_nothrow_handler nothrow= {&h,nothrow_handler};
