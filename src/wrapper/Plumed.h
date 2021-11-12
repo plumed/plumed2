@@ -340,6 +340,11 @@
   - By compiling `Plumed.h` with `-D__PLUMED_WRAPPER_CXX_TYPESAFE=0`
   - By setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
 
+  Typechecks can also be enabled in the C interface (plumed_cmd). In particular:
+  - If the C interface is used in C++ code, they can be enabled by defining `-D__PLUMED_WRAPPER_CXX_BIND_C=1`.
+  - If the C interface is compiled used in C code and compiled with a C11 compiler, they can be
+    enabled using `-D__PLUMED_WRAPPER_C_TYPESAFE=1`.
+
 \section ReferencePlumedH-2-5 New in PLUMED 2.5
 
   The wrappers in PLUMED 2.5 have been completely rewritten with several improvements.
