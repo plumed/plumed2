@@ -86,7 +86,12 @@ void Function::apply()
 
   if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
 
-  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(0,f[i]);
+  if(at_least_one_forced>0) {
+     unsigned k=0;
+     for(unsigned i=0; i<noa; ++i) {
+         if( getPntrToArgument(i)->getRank()==0 ) { getPntrToArgument(i)->addForce(0,f[k]); k++; }
+     }
+  }
 }
 
 }

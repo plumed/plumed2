@@ -82,23 +82,23 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   ActionWithInputGrid(ao)
 {
   parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=gridobject.getDimension() && gspacing.size()!=gridobject.getDimension() ) error("GRID_BIN or GRID_SPACING must be set");
-  if( nbin.size()==gridobject.getDimension() ) {
+  if( nbin.size()!=getGridObject().getDimension() && gspacing.size()!=getGridObject().getDimension() ) error("GRID_BIN or GRID_SPACING must be set");
+  if( nbin.size()==getGridObject().getDimension() ) {
     log.printf("  number of bins in grid %d", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) log.printf(", %d", nbin[i]);
     log.printf("\n");
-  } else if( gspacing.size()==gridobject.getDimension() ) {
+  } else if( gspacing.size()==getGridObject().getDimension() ) {
     log.printf("  spacing for bins in grid %f", gspacing[0]);
     for(unsigned i=1; i<gspacing.size(); ++i) log.printf(", %d", gspacing[i]);
     log.printf("\n");
   }
 
   // Need this for creation of tasks
-  std::vector<bool> ipbc( gridobject.getDimension() ); for(unsigned i=0; i<ipbc.size(); ++i) ipbc[i] = gridobject.isPeriodic(i);
+  std::vector<bool> ipbc( getGridObject().getDimension() ); for(unsigned i=0; i<ipbc.size(); ++i) ipbc[i] = getGridObject().isPeriodic(i);
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( gridobject.getDimension() ); 
+  std::vector<unsigned> shape( getGridObject().getDimension() ); 
   if( getPntrToArgument(0)->isTimeSeries() ) addValue( shape );  
   else addValueWithDerivatives( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
@@ -110,7 +110,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
 }
 
 void InterpolateGrid::finishOutputSetup() {
-  gridcoords.setBounds( gridobject.getMin(), gridobject.getMax(), nbin, gspacing );
+  gridcoords.setBounds( getGridObject().getMin(), getGridObject().getMax(), nbin, gspacing );
   getPntrToOutput(0)->setShape( gridcoords.getNbin(true) );
   for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) addTaskToList(i);
 }

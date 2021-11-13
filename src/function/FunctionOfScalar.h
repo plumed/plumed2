@@ -23,6 +23,7 @@
 #define __PLUMED_function_FunctionOfScalar_h
 
 #include "Function.h"
+#include "tools/Matrix.h"
 
 namespace PLMD {
 namespace function {
@@ -38,6 +39,8 @@ class FunctionOfScalar : public Function {
 private:
 /// The function that is being computed
   T myfunc;
+/// Are we on the first step
+  bool firststep;
 public:
   explicit FunctionOfScalar(const ActionOptions&);
   virtual ~FunctionOfScalar() {}
@@ -60,7 +63,8 @@ void FunctionOfScalar<T>::registerKeywords(Keywords& keys) {
 template <class T>
 FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   Action(ao),
-  Function(ao)
+  Function(ao),
+  firststep(true)
 {
   myfunc.read( this ); 
   // Get the names of the components
@@ -93,8 +97,9 @@ void FunctionOfScalar<T>::turnOnDerivatives() {
 
 template <class T>
 void FunctionOfScalar<T>::calculate() {
-  std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0;i<args.size();++i) args[i]=getPntrToArgument(i)->get();
-  std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), getNumberOfArguments() );
+  if( firststep ) { myfunc.setup( this ); firststep=false; } unsigned argstart = myfunc.getArgStart();
+  std::vector<double> args( getNumberOfArguments() - argstart ); for(unsigned i=argstart;i<getNumberOfArguments();++i) args[i-argstart]=getPntrToArgument(i)->get();
+  std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), args.size() );
   myfunc.calc( this, args, vals, derivatives );
   for(unsigned i=0;i<vals.size();++i) getPntrToOutput(i)->set(vals[i]);
   if( doNotCalculateDerivatives() ) return;

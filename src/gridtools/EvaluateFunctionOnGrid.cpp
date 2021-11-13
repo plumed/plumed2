@@ -20,120 +20,54 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "ActionWithInputGrid.h"
+#include "function/FunctionShortcut.h"
+#include "function/FunctionOfScalar.h"
+#include "function/FunctionOfVector.h"
+#include "EvaluateGridFunction.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class EvaluateFunctionOnGrid : public ActionWithInputGrid {
-private:
-  unsigned nderivatives;
-  std::vector<double> forcesToApply;
+class EvaluateFunctionOnGrid : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit EvaluateFunctionOnGrid(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() const ;
-  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
-  void finishOutputSetup(){}
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void apply();
+  static void registerKeywords(Keywords&);
+  explicit EvaluateFunctionOnGrid(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(EvaluateFunctionOnGrid,"EVALUATE_FUNCTION_FROM_GRID")
+typedef function::FunctionOfScalar<EvaluateGridFunction> ScalarEvalGrid;
+PLUMED_REGISTER_ACTION(ScalarEvalGrid,"EVALUATE_FUNCTION_FROM_GRID_SCALAR")
+typedef function::FunctionOfVector<EvaluateGridFunction> VectorEvalGrid;
+PLUMED_REGISTER_ACTION(VectorEvalGrid,"EVALUATE_FUNCTION_FROM_GRID_VECTOR")
 
-void EvaluateFunctionOnGrid::registerKeywords( Keywords& keys ){
-  ActionWithInputGrid::registerKeywords( keys );
-  keys.addFlag("ZERO_OUTSIDE_GRID_RANGE",false,"if we are asked to evaluate the function for a number that is outside the range of the grid set it to zero");
+void EvaluateFunctionOnGrid::registerKeywords(Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  keys.add("numbered","ARG","the input to this function");
+  keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  EvaluateGridFunction ii; ii.registerKeywords( keys );
 }
 
 EvaluateFunctionOnGrid::EvaluateFunctionOnGrid(const ActionOptions&ao):
 Action(ao),
-ActionWithInputGrid(ao)
-{ 
-  Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
-  std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() ); std::string gtype;
-  std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
-  std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-  act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
+ActionShortcut(ao)
+{
+  // Get the grid that we are evaluating here
+  std::vector<std::string> gridn(1); parse("ARG",gridn[0]); 
+  std::vector<Value*> gridv; ActionWithArguments::interpretArgumentList( gridn, plumed.getActionSet(), this, gridv );
+  // Now get the arguments
+  std::vector<unsigned> ind( gridv[0]->getRank() ), nbin( gridv[0]->getRank() ); std::string gtype;
+  std::vector<double> spacing( gridv[0]->getRank() ), xx( gridv[0]->getRank() ); std::vector<bool> pbc( gridv[0]->getRank() );
+  std::vector<std::string> argn( gridv[0]->getRank() ), min( gridv[0]->getRank() ), max( gridv[0]->getRank() );
+  (gridv[0]->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
+  // Now use this information to create a gridobject
   if( gtype=="fibonacci" ) error("cannot interpolate on fibonacci sphere");
-  // Arg ends must be setup once more
-  arg_ends.resize(0); arg_ends.push_back(1); 
-  for(unsigned i=0;i<gval->getRank();++i) arg_ends.push_back( 2+i );
-  // Retreive values with these arguments
-  std::vector<Value*> argv; ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, argv ); 
-  // Now check that arguments make sense
-  for(unsigned i=1;i<argv.size();++i) {
-      if( argv[0]->getRank()!=argv[i]->getRank() ) error("mismatched ranks for arguments");
-      for(unsigned j=0;j<argv[0]->getRank();++j) {
-          if( argv[0]->getShape()[j]!=argv[i]->getShape()[j] ) error("mismatched shapes for arguments");
-      } 
-  }
-  // Now re-request the arguments 
-  std::vector<Value*> req_arg; req_arg.push_back( getPntrToArgument(0) );  
-  log.printf("  arguments for grid are");
-  for(unsigned i=0;i<argv.size();++i) {
-      log.printf(" %s", argv[i]->getName().c_str() );  
-      req_arg.push_back( argv[i] );
-  }
-  log.printf("\n"); requestArguments( req_arg, true, 1 );
-  parseFlag("ZERO_OUTSIDE_GRID_RANGE",set_zero_outside_range);
-  if( set_zero_outside_range ) log.printf("  function is zero outside grid range \n");
-
-  // Make a task list
-  createTasksFromArguments();
-  // Get the number of derivatives
-  nderivatives = getNumberOfArguments() - 1;
-  if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(1);
-  forcesToApply.resize( nderivatives );
-  // Create value for this function
-  std::vector<unsigned> shape(0);
-  if( argv[0]->getRank()>0 ) {
-      shape.resize( argv[0]->getRank() );
-      for(unsigned i=0;i<shape.size();++i) shape[i]=argv[0]->getShape()[i];
-      addValue( shape );
-  } else addValueWithDerivatives( shape ); 
-  setNotPeriodic();
+  // Now get the actual values we are using
+  std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, vals );
+  if( vals.size()==0 ) error("found no input arguments to function");
+  std::string allargs = gridn[0]; for(unsigned i=0; i<argn.size(); ++i) allargs += "," + argn[i]; 
+  function::FunctionShortcut<int>::createAction( this, vals, allargs );
 }
 
-unsigned EvaluateFunctionOnGrid::getNumberOfDerivatives() const {
-  return nderivatives;
-}
-
-void EvaluateFunctionOnGrid::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
-  if( firststep ) setupGridObject();
-}
-
-void EvaluateFunctionOnGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
-  unsigned nargs = getNumberOfArguments() - 1, ostrn = getPntrToOutput(0)->getPositionInStream();
-  std::vector<double> args( nargs ), der( nargs ); retrieveArguments( myvals, args, 1 );
-  // Evaluate function
-  double func = getFunctionValueAndDerivatives( args, der ); myvals.addValue( ostrn, func );
-  // And derivatives
-  if( doNotCalculateDerivatives() ) return;
-  // Set the final derivatives
-  if( actionInChain() ) {
-    for(unsigned j=0; j<nargs; ++j) {
-      unsigned istrn = getArgumentPositionInStream(j+1, myvals);
-      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-        unsigned kind=myvals.getActiveIndex(istrn,k);
-        myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, der[j]*myvals.getDerivative( istrn, kind ) );
-        myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
-      }
-    }
-    return;
-  } 
-  for(unsigned i=0;i<nargs;++i) { 
-      if( getPntrToArgument(i+1)->getRank()>0 ) error("non-chained function has not been implemented here");
-      myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); 
-  }
-}
-
-void EvaluateFunctionOnGrid::apply() {
-  if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 1, forcesToApply, fstart );
-}
 
 }
 }

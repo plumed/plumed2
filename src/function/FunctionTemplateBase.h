@@ -54,6 +54,8 @@ public:
   virtual bool zeroRank() const { return false; }
   virtual void setPeriodicityForOutputs( ActionWithValue* action );
   virtual void setPrefactor( ActionWithArguments* action, const double pref ) {}
+  virtual unsigned getArgStart() const { return 0; }
+  virtual void setup( const ActionWithArguments* action ) {}
   virtual void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const = 0;
 };
 

@@ -40,7 +40,7 @@ ActionWithIntegral::ActionWithIntegral(const ActionOptions&ao):
 
 void ActionWithIntegral::finishOutputSetup() {
   // Retrieve the volume of the grid (for integration)
-  volume = gridobject.getCellVolume();
+  volume = getCellVolume(); // gridobject.getCellVolume();
   // as we have to evaluate the function at each grid points
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
   plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1);

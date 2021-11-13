@@ -25,7 +25,6 @@
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "FunctionOfVector.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -39,6 +38,7 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionShortcut(const ActionOptions&);
+  static void createAction( ActionShortcut* action, const std::vector<Value*>& vals, const std::string& allargs );
 };
 
 template <class T>
@@ -65,23 +65,28 @@ ActionShortcut(ao)
   std::string allargs=args[0]; for(unsigned i=1;i<args.size();++i) allargs += "," + args[i];
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments to function");
+  createAction( this, vals, allargs );
+}
+
+template <class T>
+void FunctionShortcut<T>::createAction( ActionShortcut* action, const std::vector<Value*>& vals, const std::string& allargs ) {
   unsigned maxrank=vals[0]->getRank(); bool isgrid=false;
   for(unsigned i=0; i<vals.size(); ++i) {
       if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) isgrid=true;
       if( vals[i]->getRank()>maxrank ) maxrank=vals[i]->getRank();
   }
   if( isgrid ) {
-      if( actionRegister().check( getName() + "_GRID") ) readInputLine( getShortcutLabel() + ": " + getName() + "_GRID ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
-      else plumed_merror("there is no action registered that allows you to do " + getName() + " with functions on a grid");
+      if( actionRegister().check( action->getName() + "_GRID") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_GRID ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with functions on a grid");
   } else if( maxrank==0 ) {
-      if( actionRegister().check( getName() + "_SCALAR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
-      else plumed_merror("there is no action registered that allows you to do " + getName() + " with scalars"); 
+      if( actionRegister().check( action->getName() + "_SCALAR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_SCALAR ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with scalars"); 
   } else if( maxrank==1 ) {
-      if( actionRegister().check( getName() + "_VECTOR") ) readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
-      else plumed_merror("there is no action registered that allows you to do " + getName() + " with vectors");
+      if( actionRegister().check( action->getName() + "_VECTOR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_VECTOR ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with vectors");
   } else if( maxrank==2  ) {
-      if( actionRegister().check( getName() + "_MATRIX") ) readInputLine( getShortcutLabel() + ": " + getName() + "_MATRIX ARG=" + allargs + " " + convertInputLineToString() + " CALLER=" + getCaller() );
-      else plumed_merror("there is no action registered that allows you to do " + getName() + " with matrices");
+      if( actionRegister().check( action->getName() + "_MATRIX") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_MATRIX ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with matrices");
   } else plumed_error();
 }
 

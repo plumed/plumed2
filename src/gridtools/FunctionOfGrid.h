@@ -82,11 +82,12 @@ nderivatives(0)
 {
   if( getNumberOfArguments()==0 ) error("found no arguments");
   bool foundgrid=false; std::vector<double> gspacing; std::vector<unsigned> nbin; std::vector<bool> pbc;
-  unsigned npoints=0; std::string gtype; std::vector<std::string> gargn, min, max; double volume;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  unsigned argstart=myfunc.getArgStart(); unsigned npoints=0; 
+  std::string gtype; std::vector<std::string> gargn, min, max; double volume;
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
         foundgrid=true; npoints=getPntrToArgument(i)->getNumberOfValues();
-        nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments();
+        nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments() - argstart;
         gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
         min.resize( getPntrToArgument(i)->getRank() ); max.resize( getPntrToArgument(i)->getRank() );
         gargn.resize( getPntrToArgument(i)->getRank() ); pbc.resize( getPntrToArgument(i)->getRank() );
@@ -102,7 +103,7 @@ nderivatives(0)
   std::vector<unsigned> shape( min.size() ); std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
   std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
   if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+  for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
     if( getPntrToArgument(j)->getRank()!=0 ) {
       if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
       (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
@@ -145,25 +146,25 @@ unsigned FunctionOfGrid<T>::getNumberOfDerivatives() const {
 
 template <class T>
 void FunctionOfGrid<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> args( getNumberOfArguments() ); 
-  for(unsigned i=0;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()==0 ) args[i]=getPntrToArgument(i)->get();
-      else args[i] = getPntrToArgument(i)->get(current);
+  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments() - argstart ); 
+  for(unsigned i=argstart;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) args[i-argstart]=getPntrToArgument(i)->get();
+      else args[i-argstart] = getPntrToArgument(i)->get(current);
   }
   // Calculate the function and its derivatives
-  std::vector<double> vals(1); Matrix<double> derivatives( 1, getNumberOfArguments() );
+  std::vector<double> vals(1); Matrix<double> derivatives( 1, getNumberOfArguments()-argstart );
   myfunc.calc( this, args, vals, derivatives ); unsigned np = myvals.getTaskIndex();
   // And set the values and derivatives
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   myvals.addValue( ostrn, vals[0] ); 
   if( !myfunc.zeroRank() ) {  
       // Add the derivatives for a grid
-      for(unsigned j=0;j<getNumberOfArguments();++j) {
+      for(unsigned j=argstart;j<getNumberOfArguments();++j) {
           // We store all the derivatives of all the input values - i.e. the grid points these are used in apply
-          myvals.addDerivative( ostrn, getPntrToOutput(0)->getRank()+j, derivatives(0,j) );
+          myvals.addDerivative( ostrn, getPntrToOutput(0)->getRank()+j-argstart, derivatives(0,j-argstart) );
           // And now we calculate the derivatives of the value that is stored on the grid correctly so that we can interpolate functions 
           if( getPntrToArgument(j)->getRank()!=0 ) {
-              for(unsigned k=0; k<getPntrToArgument(j)->getRank(); ++k) myvals.addDerivative( ostrn, k, derivatives(0,j)*getPntrToArgument(j)->getGridDerivative( np, k ) );
+              for(unsigned k=0; k<getPntrToArgument(j)->getRank(); ++k) myvals.addDerivative( ostrn, k, derivatives(0,j-argstart)*getPntrToArgument(j)->getGridDerivative( np, k ) );
           }   
       }
       for(unsigned j=0; j<nderivatives; ++j) myvals.updateIndex( ostrn, j );
@@ -186,13 +187,14 @@ void FunctionOfGrid<T>::gatherStoredValue( const unsigned& valindex, const unsig
 
 template <class T>
 void FunctionOfGrid<T>::reshapeOutput() {
-  plumed_assert( firststep ); unsigned npoints=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  plumed_assert( firststep ); myfunc.setup( this ); 
+  unsigned npoints=0, argstart=myfunc.getArgStart();
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { npoints=getPntrToArgument(i)->getNumberOfValues(); break; }
   }
   if( getPntrToOutput(0)->getNumberOfValues()!=npoints ) {
       std::vector<unsigned> shape;
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
          if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
              unsigned dim=getPntrToArgument(i)->getShape().size();
              shape.resize(dim); for(unsigned j=0;j<dim;++j) shape[j]=getPntrToArgument(i)->getShape()[j];
@@ -241,15 +243,15 @@ void FunctionOfGrid<T>::apply() {
   }
  
   // Work out how to deal with arguments
-  unsigned nscalars=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  unsigned nscalars=0, argstart=myfunc.getArgStart();
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==0 ) { nscalars++; }
   }
   
   std::vector<double> totv(nscalars,0);
   for(unsigned i=0; i<getFullNumberOfTasks(); ++i) { 
     nscalars=0;
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+    for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
       double fforce = getPntrToOutput(0)->getForce(i);
       if( getPntrToArgument(j)->getRank()==0 ) {
         totv[nscalars] += fforce*getPntrToOutput(0)->getGridDerivative( i, getPntrToOutput(0)->getRank()+j ); nscalars++;
@@ -260,7 +262,7 @@ void FunctionOfGrid<T>::apply() {
     }
   }
   nscalars=0; 
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()==0 ) { getPntrToArgument(i)->addForce( 0, totv[nscalars] ); nscalars++; }
   }
 }

@@ -149,12 +149,12 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   }
   if( n!=(getPntrToArgument(0)->getRank()-1) ) error("output of grid is not understood");
 
-  std::vector<bool> ipbc( gridobject.getDimension()-1 );
-  for(unsigned i=0; i<gdirs.size(); ++i) ipbc[i] = gridobject.isPeriodic(gdirs[i]);
+  std::vector<bool> ipbc( getGridObject().getDimension()-1 );
+  for(unsigned i=0; i<gdirs.size(); ++i) ipbc[i] = getGridObject().isPeriodic(gdirs[i]);
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( gridobject.getDimension()-1 ); 
+  std::vector<unsigned> shape( getGridObject().getDimension()-1 ); 
   addValueWithDerivatives( shape ); setNotPeriodic();
   getPntrToOutput(0)->alwaysStoreValues();
 }
@@ -163,8 +163,8 @@ void FindContourSurface::finishOutputSetup() {
   std::vector<double> fspacing; std::vector<unsigned> snbins( gridcoords.getDimension() );
   std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );
   for(unsigned i=0; i<gdirs.size(); ++i) {
-    smin[i]=gridobject.getMin()[gdirs[i]]; smax[i]=gridobject.getMax()[gdirs[i]];
-    snbins[i]=gridobject.getNbin(false)[gdirs[i]];
+    smin[i]=getGridObject().getMin()[gdirs[i]]; smax[i]=getGridObject().getMax()[gdirs[i]];
+    snbins[i]=getGridObject().getNbin(false)[gdirs[i]];
   }
   gridcoords.setBounds( smin, smax, snbins, fspacing );
   getPntrToOutput(0)->setShape( gridcoords.getNbin(true) );
@@ -179,8 +179,8 @@ void FindContourSurface::finishOutputSetup() {
   }
 
   // Set the direction in which to look for the contour
-  direction.resize( gridobject.getDimension(), 0 );
-  direction[dir_n] = 0.999999999*gridobject.getGridSpacing()[dir_n];
+  direction.resize( getGridObject().getDimension(), 0 );
+  direction[dir_n] = 0.999999999*getGridObject().getGridSpacing()[dir_n];
 }
 
 void FindContourSurface::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -200,7 +200,7 @@ void FindContourSurface::getInfoForGridHeader( std::string& gtype, std::vector<s
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
     argn[i] = gnames[i];
     double gmin, gmax;
-    if( gridobject.getMin().size()>0 ) {
+    if( getGridObject().getMin().size()>0 ) {
       Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
       Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
     }
@@ -214,7 +214,7 @@ void FindContourSurface::getGridPointIndicesAndCoordinates( const unsigned& ind,
 }
 
 void FindContourSurface::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
-  if( coords.size()!=gridobject.getDimension() ) coords.resize( gridobject.getDimension() );
+  if( coords.size()!=getGridObject().getDimension() ) coords.resize( getGridObject().getDimension() );
   std::vector<double> point( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( ind, point );
   for(unsigned i=0; i<gdirs.size(); ++i) coords[gdirs[i]]=point[i]; coords[dir_n] = getPntrToOutput(0)->get(ind);
 }
@@ -250,27 +250,27 @@ void FindContourSurface::jobsAfterLoop() {
 
 void FindContourSurface::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minv=0, minp;
-  std::vector<unsigned> bins_n( gridobject.getNbin(false) ); unsigned shiftn=current;
-  std::vector<unsigned> ind( gridobject.getDimension() ); std::vector<double> point( gridobject.getDimension() );
+  std::vector<unsigned> bins_n( getGridObject().getNbin(false) ); unsigned shiftn=current;
+  std::vector<unsigned> ind( getGridObject().getDimension() ); std::vector<double> point( getGridObject().getDimension() );
 #ifndef DNDEBUG
   std::vector<unsigned> oind( gridcoords.getDimension() ); gridcoords.getIndices( current, oind );
 #endif
   for(unsigned i=0; i<bins_n[dir_n]; ++i) {
 #ifndef DNDEBUG
-    std::vector<unsigned> base_ind( gridobject.getDimension() ); gridobject.getIndices( shiftn, base_ind );
+    std::vector<unsigned> base_ind( getGridObject().getDimension() ); getGridObject().getIndices( shiftn, base_ind );
     for(unsigned j=0; j<gdirs.size(); ++j) plumed_dbg_assert( base_ind[gdirs[j]]==oind[j] );
 #endif
     // Ensure inactive grid points are ignored
     //if( ingrid->inactive( shiftn ) ) { shiftn += ingrid->getStride()[dir_n]; continue; }
     // Get the index of the current grid point
-    gridobject.getIndices( shiftn, ind );
+    getGridObject().getIndices( shiftn, ind );
     // Exit if we are at the edge of the grid
-    if( !gridobject.isPeriodic(dir_n) && (ind[dir_n]+1)==bins_n[dir_n] ) {
-      shiftn += gridobject.getStride()[dir_n]; continue;
+    if( !getGridObject().isPeriodic(dir_n) && (ind[dir_n]+1)==bins_n[dir_n] ) {
+      shiftn += getGridObject().getStride()[dir_n]; continue;
     }
 
     // Ensure points with inactive neighbours are ignored
-    gridobject.getNeighbors( ind, ones, num_neighbours, neighbours );
+    getGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
     bool cycle=false;
     // for(unsigned j=0; j<num_neighbours; ++j) {
     //   if( ingrid->inactive( neighbours[j]) ) { cycle=true; break; }
@@ -280,17 +280,17 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
     // Now get the function value at two points
     double val1=getFunctionValue( shiftn ) - contour; double val2;
     if( (ind[dir_n]+1)==bins_n[dir_n] ) val2 = getFunctionValue( current ) - contour;
-    else val2=getFunctionValue( shiftn + gridobject.getStride()[dir_n] ) - contour;
+    else val2=getFunctionValue( shiftn + getGridObject().getStride()[dir_n] ) - contour;
 
     // Check if the minimum is bracketed
     if( val1*val2<0 ) {
-      gridobject.getGridPointCoordinates( shiftn, point ); findContour( direction, point );
+      getGridObject().getGridPointCoordinates( shiftn, point ); findContour( direction, point );
       minp=point[dir_n]; nfound++; break;
     }
 
 
     // This moves us on to the next point
-    shiftn += gridobject.getStride()[dir_n];
+    shiftn += getGridObject().getStride()[dir_n];
   }
   if( nfound==0 ) {
     std::string num; Tools::convert( getStep(), num );

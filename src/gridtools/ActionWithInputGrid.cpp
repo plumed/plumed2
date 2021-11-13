@@ -22,6 +22,7 @@
 #include "ActionWithInputGrid.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/Matrix.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -30,64 +31,32 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.add("compulsory","INTERPOLATION_TYPE","spline","the method to use for interpolation.  Can be spline or floor.");
+  EvaluateGridFunction ii; ii.registerKeywords( keys );  
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  my_interpolator( getPntrToArgument(0), gridobject ),
   firststep(true),
   set_zero_outside_range(false)
 {
   if( getNumberOfArguments()!=1 ) error("should be exactly one argument to this action");
   if( getPntrToArgument(0)->getRank()==0 || (!getPntrToArgument(0)->isTimeSeries() && !getPntrToArgument(0)->hasDerivatives()) ) error("input to this action should be a grid");
 
-  unsigned dimension = getPntrToArgument(0)->getRank();
-  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
-  std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
-  if( gtype=="flat" ) gridobject.setup( "flat", ipbc, 0, 0.0 );
-  else if( gtype=="fibonacci" ) gridobject.setup( "fibonacci", ipbc, nbin[0], spacing[0] );
-  else plumed_merror("unknown grid type");
-
-  std::string itype; parse("INTERPOLATION_TYPE",itype);
-  if( itype=="spline" ) interpolation_type=spline;
-  else if( itype=="floor" ) {
-    interpolation_type=floor;
-    for(unsigned j=0;j<dimension;++j) if( !getPntrToArgument(0)->isTimeSeries() && ipbc[j] ) error("floor interepolation doesn't work with periodic variables");
-  } else error("type " + itype + " of interpolation is not defined");
-  log.printf("  generating off grid points using %s interpolation \n", itype.c_str() );
+  my_interpolator.read( this );
 }
 
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-  plumed_dbg_assert( gridobject.getGridType()=="flat" ); 
-  if( set_zero_outside_range && !gridobject.inbounds( x ) ) return 0.0;
-  double value;
-
-  // loop over neighbors
-  if( interpolation_type==spline ) {
-      value = my_interpolator.splineInterpolation( x, der );
-  } else if ( interpolation_type==floor ) {
-      unsigned dimension = gridobject.getDimension(); std::vector<unsigned> indices(dimension); 
-      gridobject.getIndices( x, indices ); unsigned nn = gridobject.getIndex(indices); 
-      if( getPntrToArgument(0)->isTimeSeries() && !gridobject.inbounds(x) ) nn = gridobject.getNbin(false)[0]-1;
-      value = getFunctionValue( nn ); if( getPntrToArgument(0)->isTimeSeries() ) return value;
-      for(unsigned j=0; j<dimension; ++j) der[j] = getPntrToArgument(0)->getGridDerivative( nn, j ); 
-  }
-  return value;
+  std::vector<double> value(1); Matrix<double> derivatives( 1, der.size() );
+  my_interpolator.calc( this, x, value, derivatives );
+  for(unsigned i=0; i<der.size(); ++i) der[i] = derivatives(0,i);
+  return value[0]; 
 }
 
 void ActionWithInputGrid::setupGridObject() {
   plumed_assert( firststep ); 
-  if( gridobject.getGridType()=="flat" ) {
-    unsigned dimension = getPntrToArgument(0)->getRank();
-    std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
-    std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-    (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
-    gridobject.setBounds( min, max, nbin, spacing );
-  }
+  my_interpolator.setup( this );
 }
 
 void ActionWithInputGrid::doTheCalculation() {

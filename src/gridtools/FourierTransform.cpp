@@ -161,18 +161,18 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 }
 
 void FourierTransform::finishOutputSetup() {
-  std::vector<double> fspacing; std::vector<unsigned> snbins( gridobject.getDimension() );
-  std::vector<std::string> smin( gridobject.getDimension() ), smax( gridobject.getDimension() );
-  for(unsigned i=0; i<gridobject.getDimension(); ++i) {
-    smin[i]=gridobject.getMin()[i]; smax[i]=gridobject.getMax()[i];
+  std::vector<double> fspacing; std::vector<unsigned> snbins( getGridObject().getDimension() );
+  std::vector<std::string> smin( getGridObject().getDimension() ), smax( getGridObject().getDimension() );
+  for(unsigned i=0; i<getGridObject().getDimension(); ++i) {
+    smin[i]=getGridObject().getMin()[i]; smax[i]=getGridObject().getMax()[i];
     // Compute k-grid extents
-    double dmin, dmax; snbins[i]=gridobject.getNbin(false)[i];
+    double dmin, dmax; snbins[i]=getGridObject().getNbin(false)[i];
     Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
     dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
     Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
   }
   gridcoords.setBounds( smin, smax, snbins, fspacing );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( getGridObject().getNbin(true) );
 }
 
 void FourierTransform::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -237,7 +237,7 @@ void FourierTransform::runTheCalculation() {
   }
 
   // Save FT data to output grid
-  std::vector<unsigned> N_out_data ( gridobject.getNbin(true) );
+  std::vector<unsigned> N_out_data ( getGridObject().getNbin(true) );
   std::vector<unsigned> out_ind ( getPntrToArgument(0)->getRank() );
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) {
     gridcoords.getIndices( i, out_ind );

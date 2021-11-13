@@ -64,7 +64,11 @@ void Function::setDerivative(int i,double d) {
 
 inline
 unsigned Function::getNumberOfDerivatives() const {
-  return getNumberOfArguments();
+  unsigned narg=0;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) narg++;
+  }
+  return narg;
 }
 
 inline

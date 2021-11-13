@@ -43,14 +43,14 @@ Gradient::Gradient(const ActionOptions&ao):
   Action(ao),
   ActionWithIntegral(ao)
 {
-  if( gridobject.getDimension()!=1 ) error("gradient should only be used on one dimensional grids");
+  if( getGridObject().getDimension()!=1 ) error("gradient should only be used on one dimensional grids");
 }
 
 void Gradient::performTask( const unsigned& current, MultiValue& myvals ) const {
   unsigned jval=0; double diff=0;
-  if ( gridobject.isPeriodic(0) && current==gridobject.getNbin(false)[0]-1 ) {
+  if ( getGridObject().isPeriodic(0) && current==getGridObject().getNbin(false)[0]-1 ) {
     diff = getFunctionValue(current) - getFunctionValue(0); jval = 0;
-  } else if( current<gridobject.getNbin(false)[0] ) {
+  } else if( current<getGridObject().getNbin(false)[0] ) {
     diff = getFunctionValue(current) - getFunctionValue(current+1); jval = current + 1;
   }
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), diff*diff );

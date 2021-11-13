@@ -132,8 +132,8 @@ FindContour::FindContour(const ActionOptions&ao):
 }
 
 void FindContour::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getRank()*gridobject.getNumberOfPoints(); ++i) addTaskToList( i );
-  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*gridobject.getNumberOfPoints();
+  for(unsigned i=0; i<getPntrToArgument(0)->getRank()*getNumberOfPoints(); ++i) addTaskToList( i );
+  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*getNumberOfPoints();
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( shape );
 }
 
@@ -142,15 +142,15 @@ void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::st
   Value* gval=getPntrToArgument(0); actionsThatSelectTasks.push_back( getLabel() );
   std::vector<unsigned> ind( gval->getRank() );
   std::vector<unsigned> ones( gval->getRank(), 1 );
-  std::vector<unsigned> nbin( gridobject.getNbin( false ) );
+  std::vector<unsigned> nbin( getGridObject().getNbin( false ) );
   unsigned num_neighbours; std::vector<unsigned> neighbours;
-  for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) {
+  for(unsigned i=0; i<getNumberOfPoints(); ++i) {
     // Ensure inactive grid points are ignored
     // if( ingrid->inactive(i) ) continue;    // Must add back inactive grid points
 
     // Get the index of the current grid point
-    gridobject.getIndices( i, ind );
-    gridobject.getNeighbors( ind, ones, num_neighbours, neighbours );
+    getGridObject().getIndices( i, ind );
+    getGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
     bool cycle=false;
     ///   for(unsigned j=0; j<num_neighbours; ++j) {
     ///     if( ingrid->inactive( neighbours[j]) ) { cycle=true; break; }
@@ -162,12 +162,12 @@ void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::st
     bool edge=false;
     for(unsigned j=0; j<gval->getRank(); ++j) {
       // Make sure we don't search at the edge of the grid
-      if( !gridobject.isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
+      if( !getGridObject().isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
       else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
       else ind[j]+=1;
       double val2=getFunctionValue( ind ) - contour;
       if( val1*val2<0 ) tflags[ gval->getRank()*i + j ] = 1;
-      if( gridobject.isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
+      if( getGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
       else ind[j]-=1;
     }
   }
@@ -177,12 +177,12 @@ void FindContour::performTask( const unsigned& current, MultiValue& myvals ) con
   // Retrieve the initial grid point coordinates
   unsigned gpoint = std::floor( current / getPntrToArgument(0)->getRank() );
   std::vector<double> point( getPntrToArgument(0)->getRank() );
-  gridobject.getGridPointCoordinates( gpoint, point );
+  getGridObject().getGridPointCoordinates( gpoint, point );
 
   // Retrieve the direction we are searching for the contour
   unsigned gdir = current%(getPntrToArgument(0)->getRank() );
   std::vector<double> direction( getPntrToArgument(0)->getRank(), 0 );
-  direction[gdir] = 0.999999999*gridobject.getGridSpacing()[gdir];
+  direction[gdir] = 0.999999999*getGridObject().getGridSpacing()[gdir];
 
   // Now find the contour
   findContour( direction, point );

@@ -25,7 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "GridCoordinatesObject.h"
-#include "Interpolator.h"
+#include "EvaluateGridFunction.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -34,14 +34,15 @@ class ActionWithInputGrid :
   public ActionWithValue,
   public ActionWithArguments {
 private:
-  enum {spline,floor} interpolation_type;
-  Interpolator my_interpolator;
+  EvaluateGridFunction my_interpolator;
   void doTheCalculation();
 protected:
   bool firststep;
   bool set_zero_outside_range;
-  GridCoordinatesObject gridobject;
   void setupGridObject();
+  double getCellVolume() const ;
+  unsigned getNumberOfPoints() const ;
+  const GridCoordinatesObject & getGridObject() const ;
   double getFunctionValue( const unsigned& ipoint ) const ;
   double getFunctionValue( const std::vector<unsigned>& ip ) const ;
   double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
@@ -52,10 +53,10 @@ public:
   virtual void finishOutputSetup() = 0;
   virtual void jobsAfterLoop() {}
   virtual void runTheCalculation() { plumed_error(); }
-  void calculate() override;
+  virtual void calculate() override;
   virtual void apply() override {};
-  void update();
-  void runFinalJobs();
+  virtual void update();
+  virtual void runFinalJobs() override;
 };
 
 inline
@@ -67,12 +68,27 @@ double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
 
 inline
 double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
-  return getFunctionValue( gridobject.getIndex(ip) );
+  return getFunctionValue( my_interpolator.gridobject.getIndex(ip) );
 }
 
 inline
 unsigned ActionWithInputGrid::getNumberOfDerivatives() const {
   return getPntrToArgument(0)->getShape().size();
+}
+
+inline
+double ActionWithInputGrid::getCellVolume() const {
+  return my_interpolator.gridobject.getCellVolume();
+}
+
+inline
+unsigned ActionWithInputGrid::getNumberOfPoints() const {
+ return my_interpolator.gridobject.getNumberOfPoints();
+}
+
+inline 
+const GridCoordinatesObject & ActionWithInputGrid::getGridObject() const {
+ return my_interpolator.gridobject;
 }
 
 }

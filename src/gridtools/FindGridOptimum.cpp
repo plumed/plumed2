@@ -88,7 +88,7 @@ double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>&
   // We normalise the derivatives here and set them so that the linesearch is done over the cell that we know 
   // in the grid that we know the minimum is inside
   double norm = 0; for(unsigned i=0;i<der.size();++i) norm += der[i]*der[i];
-  norm = sqrt(norm); for(unsigned i=0;i<der.size();++i) der[i] = gridobject.getGridSpacing()[i]*der[i] / norm;
+  norm = sqrt(norm); for(unsigned i=0;i<der.size();++i) der[i] = getGridObject().getGridSpacing()[i]*der[i] / norm;
   if( domin ) return val;
   // If we are looking for a maximum
   for(unsigned i=0;i<der.size();++i) der[i] = -der[i];

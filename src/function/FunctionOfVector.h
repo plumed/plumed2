@@ -38,6 +38,8 @@ public ActionWithValue,
 public ActionWithArguments
 {
 private:
+/// This makes sure that things are done to setup the underlying function in the first step
+  bool firststep;
 /// The forces that we get from the values
   std::vector<double> forcesToApply;
 /// The function that is being computed
@@ -82,6 +84,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao),
+firststep(true),
 nderivatives(getNumberOfScalarArguments())
 {
   // Get the shape of the output
@@ -115,7 +118,8 @@ nderivatives(getNumberOfScalarArguments())
             if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
             else if( getNumberOfArguments()==1 ) addValue( shape ); 
             else { 
-               for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+               unsigned argstart=myfunc.getArgStart();
+               for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
                    if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i], shape ); 
                    else addComponent( getPntrToArgument(i)->getName() + components[i], shape ); 
                }
@@ -125,7 +129,8 @@ nderivatives(getNumberOfScalarArguments())
     } 
   }
   // Check if this is a timeseries
-  for(unsigned i=0; i<getNumberOfArguments();++i) {
+  unsigned argstart=myfunc.getArgStart();
+  for(unsigned i=argstart; i<getNumberOfArguments();++i) {
     if( getPntrToArgument(i)->isTimeSeries() ) { 
         for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent();
         break;
@@ -134,8 +139,8 @@ nderivatives(getNumberOfScalarArguments())
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // Check if we can put the function in a chain
-  bool doNotChain=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  bool doNotChain=false; 
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
       CollectFrames* ab=dynamic_cast<CollectFrames*>( getPntrToArgument(i)->getPntrToAction() );
       if( ab && ab->hasClear() ) { doNotChain=true; getPntrToArgument(i)->buildDataStore( getLabel() ); } 
       // No chains if we are using a sum or a mean
@@ -144,7 +149,7 @@ nderivatives(getNumberOfScalarArguments())
           if(as) doNotChain=true;
       }  
   }
-  if( myfunc.doWithTasks() && !doNotChain && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  if( myfunc.doWithTasks() && !doNotChain && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(myfunc.getArgStart()); 
 }
 
 template <class T>
@@ -160,21 +165,21 @@ unsigned FunctionOfVector<T>::getNumberOfDerivatives() const {
 
 template <class T>
 void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> args( getNumberOfArguments() );
+  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments()-argstart);
   if( actionInChain() ) {
-      for(unsigned i=0;i<getNumberOfArguments();++i) {
-          if(  getPntrToArgument(i)->getRank()==0 ) args[i] = getPntrToArgument(i)->get();
-          else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
-          else args[i] = getPntrToArgument(i)->get( myvals.getTaskIndex() );
+      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
+          if(  getPntrToArgument(i)->getRank()==0 ) args[i-argstart] = getPntrToArgument(i)->get();
+          else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i-argstart] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
+          else args[i-argstart] = getPntrToArgument(i)->get( myvals.getTaskIndex() );
       }
   } else {
-      for(unsigned i=0;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==1 ) args[i]=getPntrToArgument(i)->get(current);
-          else args[i] = getPntrToArgument(i)->get();
+      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getRank()==1 ) args[i-argstart]=getPntrToArgument(i)->get(current);
+          else args[i-argstart] = getPntrToArgument(i)->get();
       }
   } 
   // Calculate the function and its derivatives
-  std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), getNumberOfArguments() );
+  std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), args.size() );
   myfunc.calc( this, args, vals, derivatives );
   // And set the values
   for(unsigned i=0;i<vals.size();++i) myvals.addValue( getPntrToOutput(i)->getPositionInStream(), vals[i] );
@@ -183,8 +188,8 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
 
   // And now compute the derivatives
   if( actionInChain() ) {
-      for(unsigned j=0;j<getNumberOfArguments();++j) {
-          unsigned istrn = getArgumentPositionInStream( j, myvals );
+      for(unsigned j=0;j<args.size();++j) {
+          unsigned istrn = getArgumentPositionInStream( argstart+j, myvals );
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);
               for(unsigned i=0;i<getNumberOfComponents();++i) {
@@ -208,8 +213,8 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
       }
   } else {
       unsigned base=0;
-      for(unsigned j=0;j<getNumberOfArguments();++j) { 
-          if( getPntrToArgument(j)->getRank()==1 ) {
+      for(unsigned j=0;j<args.size();++j) { 
+          if( getPntrToArgument(argstart+j)->getRank()==1 ) {
               for(unsigned i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getPntrToOutput(i)->getPositionInStream(); 
                   myvals.addDerivative( ostrn, base+current, derivatives(i,j) ); 
@@ -222,15 +227,15 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
                   myvals.updateIndex( ostrn, base );
               }
           }
-          base += getPntrToArgument(j)->getNumberOfValues();
+          base += getPntrToArgument(argstart+j)->getNumberOfValues();
       }
   }
 }
 
 template <class T>
 unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
-  unsigned nelements=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  unsigned nelements=0, argstart=myfunc.getArgStart();
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
       plumed_assert( getPntrToArgument(i)->getRank()<2 );
       if( getPntrToArgument(i)->getRank()==1 ) {
           if( nelements>0 ) { 
@@ -247,9 +252,11 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
 
 template <class T>
 void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  // Make sure everything is setup
+  if( firststep ) { myfunc.setup( this ); firststep=false; }
   // If we have a time series then resize the task list so this action does all the required tasks
-  plumed_assert( myfunc.doWithTasks() ); unsigned nstart = getFullNumberOfTasks(), ndata = 0;
-  for(unsigned i=0;i<getNumberOfArguments();++i) {
+  plumed_assert( myfunc.doWithTasks() ); unsigned argstart=myfunc.getArgStart(), nstart = getFullNumberOfTasks(), ndata = 0;
+  for(unsigned i=argstart;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues();
   }
   if( nstart<ndata ) {
@@ -264,7 +271,7 @@ void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector
       myfunc.buildTaskList( this, actionsThatSelectTasks );
   } else {
       bool safeToChain=true, atLeastOneRank=false;
-      for(unsigned i=0;i<getNumberOfArguments();++i) {
+      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
           if( getPntrToArgument(i)->getRank()>0 ) atLeastOneRank=true;
           Action* myact = getPntrToArgument(i)->getPntrToAction();
           if( myact ) {
@@ -327,7 +334,7 @@ void FunctionOfVector<T>::apply() {
   if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
   
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( myfunc.getArgStart(), forcesToApply, ss );
 }
 
 }
