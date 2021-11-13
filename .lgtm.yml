@@ -9,4 +9,4 @@ extraction:
         - libopenmpi-dev
     configure:
       command:
-        - ./configure --enable-modules=all
+        - ./configure --enable-modules=all --disable-asmjit

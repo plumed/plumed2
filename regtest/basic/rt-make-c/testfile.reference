@@ -1,0 +1,6 @@
+stopflag should be 0: 0
+isEnergyNeeded should be 1: 1
+isEnergyNeeded should be 0: 0
+stopflag should be 0: 0
+stopflag should be 1: 1
+bias: 3712.500000

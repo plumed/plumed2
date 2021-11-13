@@ -5,3 +5,4 @@ ignore:
   - src/lepton
   - src/molfile
   - src/asmjit
+  - src/xdrfile

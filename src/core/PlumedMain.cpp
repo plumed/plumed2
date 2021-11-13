@@ -384,7 +384,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *val.get<int*>()=8;
+        val.set(int(8));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -548,8 +548,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) *val.get<int*>()=1;
-        else                       *val.get<int*>()=0;
+        if(atoms.isEnergyNeeded()) val.set(int(1));
+        else                       val.set(int(0));
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
@@ -559,7 +559,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        *val.get<int*>()=(actionRegister().check(words[1]) ? 1:0);
+        val.set(int(actionRegister().check(words[1]) ? 1:0));
         break;
       case cmd_setExtraCV:
         CHECK_NOTNULL(val,word);
@@ -939,7 +939,7 @@ void PlumedMain::update() {
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow) {
-    if(stopFlag) (*stopFlag.get<int*>())=1;
+    if(stopFlag) stopFlag.set(int(1));
     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }
 

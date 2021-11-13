@@ -225,7 +225,7 @@ BEGINFILE{
 # DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface
 # DOC: since one can directly declare a `PlumedMain` object.
         if(!(module in outer_modules) && isarray(used_modules[module]) && ("wrapper" in used_modules[module]))
-           error("used_wrapper_module","wrapped module should not be used except in main")
+           error("used_wrapper_module","wrapped module should not be used except in main or with anonymous namespace")
       }
     }
   }
@@ -282,6 +282,14 @@ BEGINFILE{
     if($1=="/**") in_doxygen=1
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
+# detect special wrapper options
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION ")) defined_wrapper_implementation=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION  *1 *$")) defined_wrapper_implementation=1;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_EXTERN ")) defined_wrapper_extern_zero=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_EXTERN  *0 *$")) defined_wrapper_extern_zero=1;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE ")) defined_wrapper_cxx_anonymous_namespace=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE *1 *$")) defined_wrapper_cxx_anonymous_namespace=1;
+
 # check direct inclusion of headers that would bypass module dependencies
     if(module && match($0,"^# *include +\"\\.\\.")) {
       included_module_name=$0;
@@ -296,8 +304,13 @@ BEGINFILE{
 # DOC: since this would obviously create no problem.
 # DOC: This would simplify life when moving files from a directory to another.
       if(module != included_module_name) # ignore case where module is the same
-      if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0)
-        error("include_dots","wrong include. Module '" included_module_name "' is not used.");
+      if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0) {
+        if((included_module_name=="wrapper" && defined_wrapper_implementation && defined_wrapper_extern_zero && defined_wrapper_implementation)) {
+          information("include_anonymous_wrapper")
+        } else {
+          error("include_dots","wrong include. Module '" included_module_name "' is not used.");
+        }
+      }
     }
 
 # check if there is anything behind copyright and preprocessor commands

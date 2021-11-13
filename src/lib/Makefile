@@ -447,6 +447,7 @@ ifeq ($(PLUMED_INSTALL),Install)
 	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_INCLUDEDIR-$(includedir)}\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_HTMLDIR=$(htmldir)}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=\"\$${PLUMED_PROGRAM_NAME-$(program_name)}\"" >> $@
+	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 else
 	@echo "export PLUMED_IS_INSTALLED=no" >> $@
@@ -454,6 +455,7 @@ else
 	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/src/include\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_ROOT}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=plumed" >> $@
+	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 endif
 	chmod a+x $@
@@ -522,7 +524,7 @@ ifeq ($(make_static_archive),yes)
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 	@echo "PLUMED_FORTRAN= \"$(libdir)/$(program_name)/fortran/plumed.f90\"" >> $@
-	@echo "PLUMED_FORTRAN08= \"$(libdir)/$(program_name)/fortran/plumed.f90\" \"$(libdir)/$(program_name)/fortran/plumed_f08.f90\"" >> $@
+	@echo "PLUMED_FORTRAN08= \"$(libdir)/$(program_name)/fortran/plumed_f08.f90\"" >> $@
 else
 Plumed.inc:
 	@echo Building Plumed.inc
@@ -537,7 +539,7 @@ endif
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
 	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
 	@echo "PLUMED_FORTRAN= "$(realpath .)/../../fortran/plumed.f90 >> $@
-	@echo "PLUMED_FORTRAN08= "$(realpath .)/../../fortran/plumed.f90 $(realpath .)/../../fortran/plumed_f08.f90 >> $@
+	@echo "PLUMED_FORTRAN08= "$(realpath .)/../../fortran/plumed_f08.f90 >> $@
 endif
 
 $(PLUMED_LIBDIR)Plumed.cmake: $(PLUMED_LIBDIR)Plumed.inc

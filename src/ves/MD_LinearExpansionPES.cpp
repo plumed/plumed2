@@ -141,7 +141,7 @@ public:
 private:
   size_t dim;
   std::string dim_string_prefix;
-  LinearBasisSetExpansion* potential_expansion_pntr;
+  std::unique_ptr<LinearBasisSetExpansion> potential_expansion_pntr;
   //
   double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
   double calc_temp( const std::vector<Vector>& );
@@ -177,8 +177,7 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
 MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
-  dim_string_prefix("dim"),
-  potential_expansion_pntr(NULL)
+  dim_string_prefix("dim")
 {
   inputdata=ifile; //commandline;
 }
@@ -214,8 +213,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   Random random;
   unsigned int stepWrite=1000;
 
-  PLMD::PlumedMain* plumed=NULL;
-  PLMD::PlumedMain* plumed_bf=NULL;
+  std::unique_ptr<PLMD::PlumedMain> plumed;
 
   size_t replicas;
   unsigned int coresPerReplica;
@@ -318,16 +316,21 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     error("problem with initial_position keyword, you need to give either one value or a value for each replica.");
   }
 
-
-  plumed_bf = new PLMD::PlumedMain;
-  unsigned int nn=1;
+  auto deleter=[](FILE* f) { fclose(f); };
   FILE* file_dummy = fopen("/dev/null","w+");
+  plumed_assert(file_dummy);
+  // call fclose when file_dummy_deleter goes out of scope
+  std::unique_ptr<FILE,decltype(deleter)> file_dummy_deleter(file_dummy,deleter);
+  // Note: this should be declared before plumed_bf to make sure the file is closed after plumed_bf has been destroyed
+
+  auto plumed_bf = Tools::make_unique<PLMD::PlumedMain>();
+  unsigned int nn=1;
   plumed_bf->cmd("setNatoms",&nn);
   plumed_bf->cmd("setLog",file_dummy);
   plumed_bf->cmd("init",&nn);
   std::vector<BasisFunctions*> basisf_pntrs(dim);
   std::vector<std::string> basisf_keywords(dim);
-  std::vector<Value*> args(dim);
+  std::vector<std::unique_ptr<Value>> args(dim);
   std::vector<bool> periodic(dim);
   std::vector<double> interval_min(dim);
   std::vector<double> interval_max(dim);
@@ -345,7 +348,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     basisf_keywords[i] = bf_keyword;
     plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
     basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
-    args[i] = new Value(NULL,dim_string_prefix+is,false);
+    args[i] = Tools::make_unique<Value>(nullptr,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
@@ -353,8 +356,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     interval_range[i] = basisf_pntrs[i]->intervalMax()-basisf_pntrs[i]->intervalMin();
   }
   Communicator comm_dummy;
-  CoeffsVector* coeffs_pntr = new CoeffsVector("pot.coeffs",args,basisf_pntrs,comm_dummy,false);
-  potential_expansion_pntr = new LinearBasisSetExpansion("potential",1.0/temp,comm_dummy,args,basisf_pntrs,coeffs_pntr);
+  auto coeffs_pntr = Tools::make_unique<CoeffsVector>("pot.coeffs",Tools::unique2raw(args),basisf_pntrs,comm_dummy,false);
+  potential_expansion_pntr = Tools::make_unique<LinearBasisSetExpansion>("potential",1.0/temp,comm_dummy,Tools::unique2raw(args),basisf_pntrs,coeffs_pntr.get());
 
   std::string template_coeffs_fname="";
   parse("template_coeffs_file",template_coeffs_fname);
@@ -425,8 +428,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       std::string is; Tools::convert(i+1,is);
       std::vector<std::string> proj_arg(1);
       proj_arg[0] = dim_string_prefix+is;
-      FesWeight* Fw = new FesWeight(1/temp);
-      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw);
+      auto Fw = Tools::make_unique<FesWeight>(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw.get());
       proj_grid.setMinToZero();
 
       std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
@@ -435,7 +438,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       ofile_potential_proj.open(output_potential_proj_fname);
       proj_grid.writeToFile(ofile_potential_proj);
       ofile_potential_proj.close();
-      delete Fw;
     }
   }
 
@@ -506,7 +508,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
 
-  plumed=new PLMD::PlumedMain;
+  plumed=Tools::make_unique<PLMD::PlumedMain>();
 
 
 
@@ -580,6 +582,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   potential=calc_energy(positions,forces); double ttt=calc_temp(velocities);
 
   FILE* fp=fopen(stats_filename.c_str(),"w+");
+  // call fclose when fp_deleter goes out of scope
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
   double conserved = potential+1.5*ttt+therm_eng;
   //std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   if( intra.Get_rank()==0 ) {
@@ -666,16 +671,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     }
   }
 
-  if(plumed) {delete plumed;}
-  if(plumed_bf) {delete plumed_bf;}
-  if(potential_expansion_pntr) {delete potential_expansion_pntr;}
-  delete coeffs_pntr;
-  for(unsigned int i=0; i<args.size(); i++) {delete args[i];}
-  args.clear();
   //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
   //printf("Rank: %d, Size: %d, MultiSimCommRank: %d, MultiSimCommSize: %d \n", pc.Get_rank(), pc.Get_size(), multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
-  fclose(fp);
-  fclose(file_dummy);
 
   return 0;
 }

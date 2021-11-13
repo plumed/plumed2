@@ -110,7 +110,7 @@ int OFile::printf(const char*fmt,...) {
     int newlen=buflen;
     while(newlen<=r+actual_buffer_length) newlen*=2;
     auto newbuf=Tools::make_unique<char[]>(newlen);
-    memmove(newbuf.get(),buffer.get(),buflen);
+    std::memmove(newbuf.get(),buffer.get(),buflen);
     for(int k=buflen; k<newlen; k++) newbuf[k]=0;
     buffer=std::move(newbuf);
     buflen=newlen;
@@ -127,14 +127,14 @@ int OFile::printf(const char*fmt,...) {
 // newline is only searched in the just added portion:
   char*psearch=p1+actual_buffer_length;
   actual_buffer_length+=r;
-  while((p2=strchr(psearch,'\n'))) {
+  while((p2=std::strchr(psearch,'\n'))) {
     if(linePrefix.length()>0) llwrite(linePrefix.c_str(),linePrefix.length());
     llwrite(p1,p2-p1+1);
     actual_buffer_length-=(p2-p1)+1;
     p1=p2+1;
     psearch=p1;
   };
-  if(buffer.get()!=p1) memmove(buffer.get(),p1,actual_buffer_length);
+  if(buffer.get()!=p1) std::memmove(buffer.get(),p1,actual_buffer_length);
   return r;
 }
 
@@ -300,7 +300,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
         else std::fclose(fff);
       }
       int check=rename(fname.c_str(),backup.c_str());
-      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
     }
   }
 }
@@ -359,7 +359,7 @@ OFile& OFile::rewind() {
     std::string file=fname.substr(found+1);
     std::string backup=directory+backstring +".last."+file;
     int check=rename(fname.c_str(),backup.c_str());
-    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
   }
 
   if(comm) comm->Barrier();

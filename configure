@@ -738,7 +738,6 @@ enable_subprocess
 enable_getcwd
 enable_execinfo
 enable_gsl
-enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
 enable_fftw
@@ -1439,7 +1438,6 @@ Optional Features:
   --enable-getcwd         enable search for getcwd function, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
-  --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
@@ -3144,24 +3142,6 @@ else
   case "yes" in
              (yes) gsl=true ;;
              (no)  gsl=false ;;
-  esac
-
-fi
-
-
-
-xdrfile=
-# Check whether --enable-xdrfile was given.
-if test "${enable_xdrfile+set}" = set; then :
-  enableval=$enable_xdrfile; case "${enableval}" in
-             (yes) xdrfile=true ;;
-             (no)  xdrfile=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-xdrfile" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) xdrfile=true ;;
-             (no)  xdrfile=false ;;
   esac
 
 fi
@@ -8608,145 +8588,6 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GSL" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GSL" >&2;}
   fi
-fi
-
-if test $xdrfile == true ; then
-
-    found=ko
-    __PLUMED_HAS_XDRFILE=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "xdrfile/xdrfile_xtc.h" "ac_cv_header_xdrfile_xdrfile_xtc_h" "$ac_includes_default"
-if test "x$ac_cv_header_xdrfile_xdrfile_xtc_h" = xyes; then :
-
-
-  if test "${libsearch}" == true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing write_xtc" >&5
-$as_echo_n "checking for library containing write_xtc... " >&6; }
-if ${ac_cv_search_write_xtc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char write_xtc ();
-int
-main ()
-{
-return write_xtc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' xdrfile; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_write_xtc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_write_xtc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_write_xtc+:} false; then :
-
-else
-  ac_cv_search_write_xtc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_write_xtc" >&5
-$as_echo "$ac_cv_search_write_xtc" >&6; }
-ac_res=$ac_cv_search_write_xtc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing write_xtc" >&5
-$as_echo_n "checking for library containing write_xtc... " >&6; }
-if ${ac_cv_search_write_xtc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char write_xtc ();
-int
-main ()
-{
-return write_xtc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_write_xtc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_write_xtc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_write_xtc+:} false; then :
-
-else
-  ac_cv_search_write_xtc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_write_xtc" >&5
-$as_echo "$ac_cv_search_write_xtc" >&6; }
-ac_res=$ac_cv_search_write_xtc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found == ok ; then
-       $as_echo "#define __PLUMED_HAS_XDRFILE 1" >>confdefs.h
-
-       __PLUMED_HAS_XDRFILE=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&2;}
-    fi
-
 fi
 
 if test $boost_graph == true ; then

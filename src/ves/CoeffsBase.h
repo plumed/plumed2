@@ -98,7 +98,7 @@ public:
   //
   explicit CoeffsBase(
     const std::string&,
-    std::vector<Value*>&,
+    const std::vector<Value*>&,
     std::vector<BasisFunctions*>&,
     const bool use_iteration_counter=false);
   //

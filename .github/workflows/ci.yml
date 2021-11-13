@@ -54,7 +54,6 @@ jobs:
         sudo apt-get install -y gsl-bin
         sudo apt-get install -y libgsl0-dev
         sudo apt-get install -y ccache
-        ./.travis/install.xdrfile
     - name: Install system boost
       if: ${{ ! contains( matrix.variant, '-debug-' ) }}
       run: |
@@ -171,7 +170,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 2.5
+        ./.travis/install.cppcheck 2.6.1
     - name: Build astyle
       run: |
         make -j 4 -C astyle
@@ -208,7 +207,7 @@ jobs:
         variant: [ "" , "+allmodules" ]
         # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
     env:
-      PYVERS: "py36 py37"
+      PYVERS: "py37 py38"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2

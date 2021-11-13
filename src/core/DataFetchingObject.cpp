@@ -80,7 +80,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims.template get<long*>()[0]=1;
+    dims.set(long(1));
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -101,7 +101,7 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims.template get<long*>()[0]=1;
+    dims.set(long(1));
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -144,7 +144,7 @@ void DataFetchingObjectTyped<T>::finishDataGrab() {
   for(const auto & p : myvalues ) {
     auto val=data.find(p->getName() + " ");
     if( data.find(p->getName() + " ")!=data.end() ) {
-      *val->second.template get<T*>() = static_cast<T>( p->get() );
+      val->second.set(static_cast<T>( p->get() ));
     }
     if( data.find(p->getName() + " derivatives")!=data.end() ) {
       plumed_merror("not implemented yet");

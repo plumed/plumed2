@@ -1,14 +1,14 @@
 /**
-\page master-ISDD-2 Master ISDD tutorial 2020: Metadynamics simulations with PLUMED
+\page master-ISDD-2 Master ISDD tutorial 2021: Metadynamics simulations with PLUMED
 
-\section master-ISDD-2-aims Aims
+\section master-ISDD-2-aims Aim
 
 The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Universite' de Paris on November 25th, 2020.
+at Universite' de Paris on October 26th, 2021.
 
-\section master-ISDD-2-objectives Learning Outcomes 
+\section master-ISDD-2-objectives Objectives 
 
 Once this tutorial is completed users will be able to:
 
@@ -34,7 +34,7 @@ tar xvzf master-ISDD-2.tar.gz
 Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
 it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
 
-\note This tutorial has been tested with PLUMED version 2.6.2 and GROMACS version 2019.6.
+\note This tutorial has been tested with PLUMED version 2.7.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 
@@ -447,12 +447,12 @@ We use a bash loop to test block sizes ranging from 1 to 1000:
 # Arguments of do_block_fes.py
 # - input file with CV value and weight for each frame of the trajectory: phi.weight
 # - number of CVs: 1
-# - CV range (min, max): (-3.141593, 3.018393)
+# - CV range (min, max): (-3.141593, 3.141593)
 # - # points in output free energy: 51
 # - kBT (kJoule/mol): 2.494339
 # - Block size: 1<=i<=1000 (every 10)
 # 
-for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.018393 51 2.494339 $i; done
+for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.141593 51 2.494339 $i; done
 \endverbatim 
 
 For each value of block size `N`, you will obtain a separate `fes.N.dat` file, containing the value
@@ -485,7 +485,7 @@ of the block that exceeds the correlation between data points (Fig. \ref master-
 \anchor master-ISDD-2-block-phi 
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
-What can we learn from this analysis about the convergence of the metadynamics simulation?
+__What can we learn from this analysis about the convergence of the metadynamics simulation?__
 
 \section master-ISDD-2-conclusions Conclusions
 

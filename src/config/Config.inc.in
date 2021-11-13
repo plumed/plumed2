@@ -93,6 +93,7 @@ std::string getPlumedProgramName() {
 
 std::string getEnvCommand() {
   return "env PLUMED_ROOT=\""+getPlumedRoot()+"\""+
+         " env PLUMED_VERSION=\""+getVersionLong()+"\""+
          " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
          " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
          " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
@@ -162,14 +163,6 @@ bool hasExternalMolfile() {
 
 bool hasZlib() {
 #if __PLUMED_HAS_ZLIB
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool hasXdrfile() {
-#if __PLUMED_HAS_XDRFILE
   return true;
 #else
   return false;
