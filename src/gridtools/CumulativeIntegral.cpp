@@ -20,7 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ActionWithInputGrid.h"
+#include "function/FunctionTemplateBase.h"
+#include "FunctionOfGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS CUMULATIVE_INTEGRAL
 /*
@@ -34,69 +35,31 @@ Calculate a cumulative integral of a function using the trapesium rule.
 namespace PLMD {
 namespace gridtools {
 
-class CumulativeIntegral : public ActionWithInputGrid {
+class CumulativeIntegral : public function::FunctionTemplateBase {
 private:
-  double xspace;
+  double spacing;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit CumulativeIntegral(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() const ;
-  void finishOutputSetup();
-  void performTask( const unsigned& current, MultiValue& myvals ) const {}
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const ; 
+  void registerKeywords( Keywords& keys ) override {}
+  void read( ActionWithArguments* action ) override;
+  bool doWithTasks() const override { return false; }
+  void setPrefactor( ActionWithArguments* action, const double pref ) override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-PLUMED_REGISTER_ACTION(CumulativeIntegral,"CUMULATIVE_INTEGRAL")
+typedef FunctionOfGrid<CumulativeIntegral> CumInt;
+PLUMED_REGISTER_ACTION(CumInt,"CUMULATIVE_INTEGRAL")
 
-void CumulativeIntegral::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+void CumulativeIntegral::read( ActionWithArguments* action ) {
+  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to this action");
 }
 
-CumulativeIntegral::CumulativeIntegral(const ActionOptions&ao):
-  Action(ao),
-  ActionWithInputGrid(ao)
-{
-  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a function on a grid");
-  // Now create the shape
-  std::vector<unsigned> shape( getNumberOfArguments() );
-  for(unsigned i=0;i<shape.size();++i) shape[i] = getPntrToArgument(0)->getShape()[i];
-  // Retrieve information about the grid
-  std::vector<std::string> argn( shape.size() ), min( shape.size() ), max( shape.size() ); std::string gtype;
-  std::vector<unsigned> nbin( shape.size() ); std::vector<double> spacing( shape.size() ); std::vector<bool> ipbc( shape.size() );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false ); 
-  if( gtype!="flat" ) error("grid should be flat - does not work with spherical grids");
-  for(unsigned i=1;i<getNumberOfArguments();++i) {
-      std::vector<std::string> iargn( shape.size() ), imin( shape.size() ), imax( shape.size() ); 
-      std::vector<unsigned> inbin( shape.size() ); std::vector<double> ispacing( shape.size() ); std::vector<bool> iipbc( shape.size() );
-      (getPntrToArgument(i)->getPntrToAction())->getInfoForGridHeader( gtype, iargn, imin, imax, inbin, ispacing, iipbc, false );
-      if( gtype!="flat" ) error("grid should be flat - does not work with spherical grids");
-      for(unsigned j=0;j<shape.size();++j) {
-          if( iargn[j]!=argn[j] || imin[j]!=min[j] || imax[j]!=max[j] || inbin[j]!=nbin[j] || ispacing[j]!=spacing[j] || iipbc[j]!=ipbc[j] ) {
-              error("mismatch between grid containing components of vectors for integration"); 
-          }
-      }
-  }
-  plumed_assert( shape.size()==1 );   // Higher dimensions not implemented yet
-  // And create the value 
-  addValueWithDerivatives( shape ); xspace=spacing[0];
-  // Turn off all parallelization
-  runInSerial(); runWithoutOpenMP();
-}
+void CumulativeIntegral::setPrefactor( ActionWithArguments* action, const double pref ) {
+  spacing=pref;
+} 
 
-void CumulativeIntegral::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
-}
-
-unsigned CumulativeIntegral::getNumberOfDerivatives() const {
-  return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
-}
-
-void CumulativeIntegral::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                                            const unsigned& bufstart, std::vector<double>& buffer ) const { 
-  if( code==0 ) return;
-  Value* argv=getPntrToArgument(0); plumed_dbg_assert( bufstart + (1+getNumberOfDerivatives())*code < buffer.size() ); 
-  buffer[ bufstart + (1+getNumberOfDerivatives())*code ] = buffer[ bufstart + (1+getNumberOfDerivatives())*(code-1) ] + (argv->get(code-1) + argv->get(code))*xspace / 2.; 
+void CumulativeIntegral::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  plumed_assert( args.size()==vals.size() ); vals[0]=0;
+  for(unsigned i=1; i<vals.size(); ++i) vals[i] = vals[i-1] + (args[i-1]+args[i])*spacing / 2.;
 }
 
 }

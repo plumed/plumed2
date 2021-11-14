@@ -24,6 +24,7 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "function/Custom.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
@@ -45,6 +46,8 @@ private:
   std::vector<double> forcesToApply;
 /// Function for setting up the output
   void reshapeOutput();
+/// Function for running a calculation on the whole grid
+  void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
 public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfGrid(const ActionOptions&);
@@ -68,8 +71,7 @@ template <class T>
 void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); keys.use("ARG");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
-  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  T tfunc; tfunc.registerKeywords( keys );
+  T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 template <class T>
@@ -122,10 +124,12 @@ nderivatives(0)
   myfunc.read( this );
   // Check we are not calculating an integral
   if( myfunc.zeroRank() ) { 
-      firststep=false; myfunc.setPrefactor( this, volume ); 
+      firststep=false; 
       shape.resize(0); forcesToApply.resize( npoints ); nderivatives=npoints; 
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
   } 
+  // This sets the prefactor to the volume which converts integrals to sums
+  myfunc.setPrefactor( this, volume );
   // Check that derivatives are available 
   if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
   // Get the names of the components
@@ -203,8 +207,24 @@ void FunctionOfGrid<T>::reshapeOutput() {
       }
       plumed_assert( shape.size()>0 ); getPntrToOutput(0)->setShape( shape ); 
   }
-  for(unsigned j=0; j<getPntrToOutput(0)->getNumberOfValues(); ++j) addTaskToList(j);
+  if( myfunc.doWithTasks() ) {
+      for(unsigned j=0; j<getPntrToOutput(0)->getNumberOfValues(); ++j) addTaskToList(j);
+  }
   firststep=false;
+}
+
+template <class T>
+void FunctionOfGrid<T>::runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f ) {
+  unsigned nv = arg->getNumberOfValues(); std::vector<double> args( nv );
+  for(unsigned i=0;i<nv;++i) args[i] = arg->get(i);
+  std::vector<double> vals( nv ); Matrix<double> derivatives( arg->getRank(), nv );
+  ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(action); plumed_assert( aa ); f.calc( aa, args, vals, derivatives );
+  for(unsigned i=0;i<vals.size();++i) action->copyOutput(0)->set( i, vals[i] );
+  // Return if we are not computing derivatives
+  if( action->doNotCalculateDerivatives() ) return;
+  for(unsigned i=0; i<nv; ++i) {
+      for(unsigned j=0; j<arg->getRank(); ++j) action->copyOutput(0)->setGridDerivative( i, j, derivatives(j,i) );
+  }
 }
 
 template <class T>
@@ -212,21 +232,30 @@ void FunctionOfGrid<T>::calculate() {
   // This is done if we are calculating a function of multiple cvs
   if( !skipUpdate() ) return;
   if( firststep ) reshapeOutput();
-  runAllTasks();
+  // This is done if we are calculating a function of multiple cvs
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  // This is used if we are doing sorting actions on a single vector
+  else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
 
 template <class T>
 void FunctionOfGrid<T>::update() {
   if( skipUpdate() ) return;
   if( firststep ) reshapeOutput();
-  runAllTasks();
+  // This is done if we are calculating a function of multiple cvs
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  // This is used if we are doing sorting actions on a single vector
+  else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
   
 template <class T>
 void FunctionOfGrid<T>::runFinalJobs() {
   if( skipUpdate()  ) return;
   if( firststep ) reshapeOutput(); 
-  runAllTasks();
+  // This is done if we are calculating a function of multiple cvs
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  // This is used if we are doing sorting actions on a single vector
+  else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
 
 template <class T>
