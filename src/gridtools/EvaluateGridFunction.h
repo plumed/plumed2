@@ -49,7 +49,23 @@ public:
   unsigned getArgStart() const override { return 1; }
   void setup( const ActionWithArguments* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override ;
+/// Get the vector containing the minimum value of the grid in each dimension
+  std::vector<std::string> getMin() const ;
+/// Get the vector containing the maximum value of the grid in each dimension
+  std::vector<std::string> getMax() const ;
+/// Get the periodicity of the grid
+  std::vector<bool> getPbc() const ;
 };
+
+inline
+std::vector<std::string> EvaluateGridFunction::getMin() const {
+  return gridobject.getMin();
+}
+
+inline
+std::vector<std::string> EvaluateGridFunction::getMax() const {
+  return gridobject.getMax();
+}
 
 }
 }

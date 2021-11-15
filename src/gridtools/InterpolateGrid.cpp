@@ -19,10 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "EvaluateGridFunction.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*
@@ -51,11 +53,15 @@ DUMPGRID GRID=ii FILE=histo.dat
 namespace PLMD {
 namespace gridtools {
 
-class InterpolateGrid : public ActionWithInputGrid {
+class InterpolateGrid : 
+public ActionWithValue, 
+public ActionWithArguments {
 private:
+  bool firststep;
   std::vector<unsigned> nbin;
   std::vector<double> gspacing;
-  GridCoordinatesObject gridcoords;
+  EvaluateGridFunction input_grid;
+  GridCoordinatesObject output_grid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
@@ -63,7 +69,11 @@ public:
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  void finishOutputSetup();
+  unsigned getNumberOfDerivatives() const override;
+  void calculate() override;
+  void update() override;
+  void runFinalJobs() override;
+  void apply() override;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -72,35 +82,44 @@ public:
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
 void InterpolateGrid::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  EvaluateGridFunction ii; ii.registerKeywords( keys );
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao)
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  firststep(true)
 {
-  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=getGridObject().getDimension() && gspacing.size()!=getGridObject().getDimension() ) error("GRID_BIN or GRID_SPACING must be set");
-  if( nbin.size()==getGridObject().getDimension() ) {
+  if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
+  if( getPntrToArgument(0)->getRank()==0 || (!getPntrToArgument(0)->hasDerivatives() && !getPntrToArgument(0)->isTimeSeries()) ) error("input to this action should be a grid");
+
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); unsigned dimension = getPntrToArgument(0)->getRank();
+  if( nbin.size()!=dimension && gspacing.size()!=dimension ) error("GRID_BIN or GRID_SPACING must be set");
+  if( nbin.size()==dimension ) {
     log.printf("  number of bins in grid %d", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) log.printf(", %d", nbin[i]);
     log.printf("\n");
-  } else if( gspacing.size()==getGridObject().getDimension() ) {
+  } else if( gspacing.size()==dimension ) {
     log.printf("  spacing for bins in grid %f", gspacing[0]);
     for(unsigned i=1; i<gspacing.size(); ++i) log.printf(", %d", gspacing[i]);
     log.printf("\n");
   }
 
+  // Create the input grid
+  input_grid.read( this );
   // Need this for creation of tasks
-  std::vector<bool> ipbc( getGridObject().getDimension() ); for(unsigned i=0; i<ipbc.size(); ++i) ipbc[i] = getGridObject().isPeriodic(i);
-  gridcoords.setup( "flat", ipbc, 0, 0.0 );
+  output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( getGridObject().getDimension() ); 
+  std::vector<unsigned> shape( dimension, 0 ); 
   if( getPntrToArgument(0)->isTimeSeries() ) addValue( shape );  
   else addValueWithDerivatives( shape );
+
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
   } else {
@@ -109,10 +128,28 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   getPntrToOutput(0)->alwaysStoreValues();
 }
 
-void InterpolateGrid::finishOutputSetup() {
-  gridcoords.setBounds( getGridObject().getMin(), getGridObject().getMax(), nbin, gspacing );
-  getPntrToOutput(0)->setShape( gridcoords.getNbin(true) );
-  for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) addTaskToList(i);
+unsigned InterpolateGrid::getNumberOfDerivatives() const {
+  return getPntrToArgument(0)->getRank();
+}
+
+void InterpolateGrid::calculate() {
+  if( firststep ) {
+      input_grid.setup(this); output_grid.setBounds( input_grid.getMin(), input_grid.getMax(), nbin, gspacing );
+      getPntrToOutput(0)->setShape( output_grid.getNbin(true) );
+      for(unsigned i=0; i<output_grid.getNumberOfPoints(); ++i) addTaskToList(i);
+      firststep=false;
+  }
+  plumed_assert( !actionInChain() ); runAllTasks();
+}
+
+void InterpolateGrid::update() {
+  if( skipUpdate() ) return;
+  calculate();
+}
+  
+void InterpolateGrid::runFinalJobs() {
+  if( skipUpdate() ) return;
+  calculate();
 }
 
 void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -130,24 +167,24 @@ void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std:
     else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
   if( !firststep ) { 
-    std::vector<unsigned> nn( gridcoords.getNbin( false ) );
+    std::vector<unsigned> nn( output_grid.getNbin( false ) );
     for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
-      if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
+      if( output_grid.getGridSpacing().size()>0 ) spacing[i]=units*output_grid.getGridSpacing()[i];
       nbin[i]=nn[i];
     }
   }
 }
 
 void InterpolateGrid::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
-  gridcoords.getGridPointCoordinates( ind, indices, coords );
+  output_grid.getGridPointCoordinates( ind, indices, coords );
 }
 
 void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> pos( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( current, pos );
-  std::vector<double> der( gridcoords.getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
-  unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); myvals.setValue( ostrn, val );
+  std::vector<double> pos( output_grid.getDimension() ); output_grid.getGridPointCoordinates( current, pos );
+  std::vector<double> val(1); Matrix<double> der( 1, output_grid.getDimension() ); input_grid.calc( this, pos, val, der );
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); myvals.setValue( ostrn, val[0] );
   if( getPntrToOutput(0)->isTimeSeries() ) return ;
-  for(unsigned i=0; i<gridcoords.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); }
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der(0,i) ); myvals.updateIndex( ostrn, i ); }
 }
 
 void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -156,7 +193,13 @@ void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigne
   unsigned istart = bufstart + (1+getNumberOfDerivatives())*code; 
   if( getPntrToOutput(0)->isTimeSeries() ) istart = bufstart + code;
   buffer[istart] += myvals.get( ostrn ); if( getPntrToOutput(0)->isTimeSeries() ) return ;
-  for(unsigned i=0; i<gridcoords.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
+}
+
+void InterpolateGrid::apply() {
+  if( !doNotCalculateDerivatives() ) return; 
+
+  if( getPntrToOutput(0)->forcesWereAdded() ) error("cannot added forces on interpolated grid");
 }
 
 }

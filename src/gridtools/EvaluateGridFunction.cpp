@@ -48,6 +48,12 @@ void EvaluateGridFunction::setupGridBounds( Value* values, GridCoordinatesObject
   gridobject.setBounds( min, max, nbin, spacing );
 }
 
+std::vector<bool> EvaluateGridFunction::getPbc() const {
+  std::vector<bool> ipbc( gridobject.getDimension() ); 
+  for(unsigned i=0; i<ipbc.size(); ++i) ipbc[i] = gridobject.isPeriodic(i);
+  return ipbc;
+}
+
 void EvaluateGridFunction::read( ActionWithArguments* action ) {
   if( !action->getPntrToArgument(0)->isTimeSeries() ) {
       if( action->getPntrToArgument(0)->getRank()==0 || !action->getPntrToArgument(0)->hasDerivatives() ) action->error("should have one grid as input to this action");
