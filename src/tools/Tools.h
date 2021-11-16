@@ -50,6 +50,16 @@ const double kBoltzmann(0.0083144621);
 /// PI
 const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
+const double dp2cutoff(6.25);
+
+const double dp2cutoffA(1.0015057029257692); // 1.0/(1-std::exp(-dp2cutoff))
+const double dp2cutoffB(-0.0015057029257691547); // -std::exp(-DP2CUTOFF)/(1-std::exp(-DP2CUTOFF))
+
+inline static bool dp2cutoffNoStretch() {
+  static const auto* res=std::getenv("PLUMED_DP2CUTOFF_NOSTRETCH");
+  return res;
+}
+
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools {

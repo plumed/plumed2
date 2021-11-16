@@ -37,8 +37,6 @@
 #include <unistd.h>
 #endif
 
-#define DP2CUTOFF 6.25
-
 namespace PLMD {
 namespace bias {
 
@@ -481,6 +479,9 @@ private:
   std::vector<double> nlist_center_;
   std::vector<double> nlist_dev2_;
 
+  double stretchA=1.0;
+  double stretchB=0.0;
+
   static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
@@ -621,6 +622,10 @@ MetaD::MetaD(const ActionOptions& ao):
   nlist_update_(false),
   nlist_steps_(0)
 {
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
   // parse the flexible hills
   std::string adaptiveoption;
   adaptiveoption="NONE";
@@ -1566,11 +1571,11 @@ std::vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
     for(unsigned i=0; i<ncv; i++) {
-      cutoff.push_back(std::sqrt(2.0*DP2CUTOFF)*std::abs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
+      cutoff.push_back(std::sqrt(2.0*dp2cutoff)*std::abs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval)));
     }
   } else {
     for(unsigned i=0; i<ncv; ++i) {
-      cutoff.push_back(std::sqrt(2.0*DP2CUTOFF)*hill.sigma[i]);
+      cutoff.push_back(std::sqrt(2.0*dp2cutoff)*hill.sigma[i]);
     }
   }
 
@@ -1755,7 +1760,7 @@ double MetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& hi
   }
 
   double bias=0.0;
-  if(dp2<DP2CUTOFF) bias=hill.height*std::exp(-dp2);
+  if(dp2<dp2cutoff) bias=hill.height*(stretchA*std::exp(-dp2)+stretchB);
 
   return bias;
 }
@@ -1806,17 +1811,18 @@ double MetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, cons
         }
       }
     }
-    if(dp2<DP2CUTOFF) {
+    if(dp2<dp2cutoff) {
       bias=hill.height*std::exp(-dp2);
       if(!int_der) {
         for(unsigned i=0; i<ncv; i++) {
           double tmp=0.0;
           for(unsigned j=0; j<ncv; j++) tmp += dp_[j]*mymatrix(i,j)*bias;
-          der[i]-=tmp;
+          der[i]-=tmp*stretchA;
         }
       } else {
         for(unsigned i=0; i<ncv; i++) der[i]=0.;
       }
+      bias=stretchA*bias+hill.height*stretchB;
     }
   } else {
     for(unsigned i=0; i<ncv; i++) {
@@ -1824,13 +1830,14 @@ double MetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, cons
       dp2+=dp_[i]*dp_[i];
     }
     dp2*=0.5;
-    if(dp2<DP2CUTOFF) {
+    if(dp2<dp2cutoff) {
       bias=hill.height*std::exp(-dp2);
       if(!int_der) {
-        for(unsigned i=0; i<ncv; i++) der[i]-=bias*dp_[i]*hill.invsigma[i];
+        for(unsigned i=0; i<ncv; i++) der[i]-=bias*dp_[i]*hill.invsigma[i]*stretchA;
       } else {
         for(unsigned i=0; i<ncv; i++) der[i]=0.;
       }
+      bias=stretchA*bias+hill.height*stretchB;
     }
   }
 
@@ -2257,7 +2264,7 @@ void MetaD::updateNlist()
         const double d=difference(i,getArgument(i),hills_[k].center[i])/hills_[k].sigma[i];
         dist2+=d*d;
       }
-      if(dist2<=nlist_param_[0]*DP2CUTOFF) private_flat_nl.push_back(hills_[k]);
+      if(dist2<=nlist_param_[0]*dp2cutoff) private_flat_nl.push_back(hills_[k]);
     }
     #pragma omp critical
     local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());

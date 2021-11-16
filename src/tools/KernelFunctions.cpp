@@ -93,6 +93,10 @@ slightly less that one because of the truncation of a function that should have 
 //+ENDPLUMEDOC
 
 KernelFunctions::KernelFunctions( const std::string& input ) {
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
   std::vector<std::string> data=Tools::getWords(input);
   std::string name=data[0];
   data.erase(data.begin());
@@ -122,6 +126,10 @@ KernelFunctions::KernelFunctions( const std::string& input ) {
 }
 
 KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
   setData( at, sig, type, mtype, w );
 }
 
@@ -132,6 +140,10 @@ KernelFunctions::KernelFunctions( const KernelFunctions* in ):
   width(in->width),
   height(in->height)
 {
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
 }
 
 void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
@@ -176,7 +188,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
     } else if( ktype==truncatedgaussian ) {
       // This makes it so the gaussian integrates to one over the range over which it has support
-      const double DP2CUTOFF=sqrt(6.25);
+      const double DP2CUTOFF=sqrt(dp2cutoff);
       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 ) * pow( 0.5 * ( erf(DP2CUTOFF) - erf(-DP2CUTOFF) ), ncv);
     } else if( ktype==uniform || ktype==triangular ) {
       if( ncv%2==1 ) {
@@ -256,8 +268,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 }
 
 double KernelFunctions::getCutoff( const double& width ) const {
-  const double DP2CUTOFF=6.25;
-  if( ktype==gaussian || ktype==truncatedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
+  if( ktype==gaussian || ktype==truncatedgaussian ) return sqrt(2.0*dp2cutoff)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;
   else plumed_merror("No valid kernel type");
@@ -357,7 +368,16 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   }
   double kderiv, kval;
   if(ktype==gaussian || ktype==truncatedgaussian) {
-    kval=height*std::exp(-0.5*r2); kderiv=-kval;
+    if(0.5*r2>dp2cutoff) {
+      kval=0.0;
+      kderiv=0.0;
+    } else {
+      kval=height*std::exp(-0.5*r2); kderiv=-kval;
+      if(ktype==gaussian) {
+        kval=stretchA*kval+height*stretchB;
+        kderiv*=stretchA;
+      }
+    }
   } else {
     double r=sqrt(r2);
     if(ktype==triangular) {
@@ -377,6 +397,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     kderiv*=height / r ;
   }
   for(unsigned i=0; i<ndim(); ++i) derivatives[i]*=kderiv;
+
   if(doInt) {
     if((pos[0]->get() <= lowI_ || pos[0]->get() >= uppI_) && usederiv ) for(unsigned i=0; i<ndim(); ++i)derivatives[i]=0;
   }

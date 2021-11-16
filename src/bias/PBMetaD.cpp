@@ -37,8 +37,6 @@
 #include <unistd.h>
 #endif
 
-#define DP2CUTOFF 6.25
-
 namespace PLMD {
 namespace bias {
 
@@ -273,6 +271,9 @@ private:
   bool  do_select_;
   unsigned select_value_;
   unsigned current_value_;
+
+  double stretchA=1.0;
+  double stretchB=0.0;
 
   void   readGaussians(unsigned iarg, IFile*);
   void   writeGaussian(unsigned iarg, const Gaussian&, OFile*);
@@ -871,9 +872,9 @@ std::vector<unsigned> PBMetaD::getGaussianSupport(unsigned iarg, const Gaussian&
   double cutoff;
   if(hill.multivariate) {
     double maxautoval=1./hill.sigma[0];
-    cutoff=std::sqrt(2.0*DP2CUTOFF*maxautoval);
+    cutoff=std::sqrt(2.0*dp2cutoff*maxautoval);
   } else {
-    cutoff=std::sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+    cutoff=std::sqrt(2.0*dp2cutoff)*hill.sigma[0];
   }
 
   if(doInt_[iarg]) {
@@ -934,20 +935,22 @@ double PBMetaD::evaluateGaussian(unsigned iarg, const std::vector<double>& cv, c
   if(hill.multivariate) {
     double dp  = difference(iarg, hill.center[0], pcv[0]);
     double dp2 = 0.5 * dp * dp * hill.sigma[0];
-    if(dp2<DP2CUTOFF) {
+    if(dp2<dp2cutoff) {
       bias = hill.height*std::exp(-dp2);
       if(der && !isOutOfInt) {
-        der[0] += -bias * dp * hill.sigma[0];
+        der[0] += -bias * dp * hill.sigma[0] * stretchA;
       }
+      bias=stretchA*bias+hill.height*stretchB;
     }
   } else {
     double dp  = difference(iarg, hill.center[0], pcv[0]) * hill.invsigma[0];
     double dp2 = 0.5 * dp * dp;
-    if(dp2<DP2CUTOFF) {
+    if(dp2<dp2cutoff) {
       bias = hill.height*std::exp(-dp2);
       if(der && !isOutOfInt) {
-        der[0] += -bias * dp * hill.invsigma[0];
+        der[0] += -bias * dp * hill.invsigma[0] * stretchA;
       }
+      bias=stretchA*bias+hill.height*stretchB;
     }
   }
 

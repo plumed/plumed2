@@ -45,6 +45,8 @@ private:
   void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
+  double stretchA=1.0;
+  double stretchB=0.0;
 public:
   explicit KernelFunctions( const std::string& input );
   KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
