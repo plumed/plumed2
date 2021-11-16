@@ -7,6 +7,5 @@ rr: SPHERICAL_EXPANSION ...
                 "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 0.4}},
                 "radial_contribution": {"type": "GTO"} 
               }
-  NFEATURES=27
 ...
 PRINT ARG=rr FILE=soap.matx STRIDE=1 FMT=%8.4f

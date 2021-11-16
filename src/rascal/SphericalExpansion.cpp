@@ -124,7 +124,6 @@ void RascalSpherical<T>::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionAtomistic::registerKeywords(keys); ActionWithValue::registerKeywords(keys);
   keys.add("numbered","SPECIES","the atoms in each species type"); keys.reset_style("SPECIES","atoms");
   keys.add("compulsory","HYPERPARAMS","the json input for the librascal hyperparameters");
-  keys.add("compulsory","NFEATURES","the number of features that are being calculated with rascal");
 }
 
 template <class T>
@@ -187,7 +186,7 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   // Request the atoms and check we have read in everything
   requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size() + 9 ); 
   // Setup a matrix to hold the soap vectors
-  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); parse("NFEATURES",shape[1]); 
+  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); shape[1]=200; 
   addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   checkRead();
 }
