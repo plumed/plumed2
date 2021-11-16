@@ -30,7 +30,7 @@ Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
 \f[
   \Delta u_{\mathbf{s}_i}(\mathbf{s})=\sum_j^{\text{dim}}\frac{([s]_j-[s_i]_j)^2}{2\sigma^2}\, .
 \f]
-The Gaussian umbrellas are placed along a line, from MIN_CV to MAX_CV.
+The Gaussian umbrellas are placed along a line, from CV_MIN to CV_MAX.
 The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use \ref ECV_UMBRELLAS_FILE.
 The unbiased fluctuations in the basin usually are a reasonable guess for the value of SIGMA.
 The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.
@@ -40,14 +40,14 @@ If you think the placed umbrellas will not cover the whole unbiased probability 
 See also Appendix B of Ref.\cite Invernizzi2020unified for more details on these last two options.
 
 The flag LOWER_HALF_ONLY modifies the ECVs so that they are set to zero when \f$\mathbf{s}>\mathbf{s}_i\f$, as in \ref LOWER_WALLS.
-This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat target distribution.
+This can be useful e.g. when the CV used is the \ref ENERGY and one wants to sample a broad range of high energy values, similar to \ref ECV_MULTITHERMAL but with a flat energy distribution as target.
 By pushing only from below one can avoid too extreme forces that could crash the simulation.
 
 \par Examples
 
 \plumedfile
 cv: DISTANCE ATOMS=1,2
-ecv: ECV_UMBRELLAS_LINE ARG=cv MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5 SPACING=1.5
+ecv: ECV_UMBRELLAS_LINE ARG=cv CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5 SPACING=1.5
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 \endplumedfile
 
@@ -56,10 +56,10 @@ For example the following code will sample a whole 2D region of cv1 and cv2.
 
 \plumedfile
 cv1: DISTANCE ATOMS=1,2
-ecv2: ECV_UMBRELLAS_LINE ARG=cv1 MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
+ecv2: ECV_UMBRELLAS_LINE ARG=cv1 CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5
 
 cv2: DISTANCE ATOMS=3,4
-ecv1: ECV_UMBRELLAS_LINE ARG=cv2 MIN_CV=13.8 MAX_CV=21.4 SIGMA=4.3
+ecv1: ECV_UMBRELLAS_LINE ARG=cv2 CV_MIN=13.8 CV_MAX=21.4 SIGMA=4.3
 
 opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500
 \endplumedfile
@@ -99,8 +99,8 @@ void ECVumbrellasLine::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","MIN_CV","the minimum of the CV range to be explored");
-  keys.add("compulsory","MAX_CV","the maximum of the CV range to be explored");
+  keys.add("compulsory","CV_MIN","the minimum of the CV range to be explored");
+  keys.add("compulsory","CV_MAX","the maximum of the CV range to be explored");
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");
   keys.add("compulsory","SPACING","1","the distance between umbrellas, in units of SIGMA");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
@@ -127,17 +127,17 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
 
 //set umbrellas
   parse("SIGMA",sigma_);
-  std::vector<double> min_cv;
-  std::vector<double> max_cv;
-  parseVector("MIN_CV",min_cv);
-  parseVector("MAX_CV",max_cv);
-  plumed_massert(min_cv.size()==getNumberOfArguments(),"wrong number of MIN_CVs");
-  plumed_massert(max_cv.size()==getNumberOfArguments(),"wrong number of MAX_CVs");
+  std::vector<double> cv_min;
+  std::vector<double> cv_max;
+  parseVector("CV_MIN",cv_min);
+  parseVector("CV_MAX",cv_max);
+  plumed_massert(cv_min.size()==getNumberOfArguments(),"wrong number of CV_MINs");
+  plumed_massert(cv_max.size()==getNumberOfArguments(),"wrong number of CV_MAXs");
   double spacing;
   parse("SPACING",spacing);
   double length=0;
   for(unsigned j=0; j<getNumberOfArguments(); j++)
-    length+=std::pow(max_cv[j]-min_cv[j],2);
+    length+=std::pow(cv_max[j]-cv_min[j],2);
   length=std::sqrt(length);
   unsigned sizeUmbrellas=1+std::round(length/(sigma_*spacing));
   centers_.resize(getNumberOfArguments()); //centers_[cv][umbrellas]
@@ -147,18 +147,18 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
     centers_[j].resize(sizeUmbrellas);
     if(sizeUmbrellas>1)
       for(unsigned k=0; k<sizeUmbrellas; k++)
-        centers_[j][k]=min_cv[j]+k*(max_cv[j]-min_cv[j])/(sizeUmbrellas-1);
+        centers_[j][k]=cv_min[j]+k*(cv_max[j]-cv_min[j])/(sizeUmbrellas-1);
     else
-      centers_[j][0]=(min_cv[j]+max_cv[j])/2.;
+      centers_[j][0]=(cv_min[j]+cv_max[j])/2.;
     if(getPntrToArgument(j)->isPeriodic())
     {
       double min,max;
       std::string min_str,max_str;
       getPntrToArgument(j)->getDomain(min,max);
       getPntrToArgument(j)->getDomain(min_str,max_str);
-      plumed_massert(min_cv[j]>=min,"ARG "+std::to_string(j)+": MIN_CV cannot be smaller than the periodic bound "+min_str);
-      plumed_massert(max_cv[j]<=max,"ARG "+std::to_string(j)+": MAX_CV cannot be greater than the periodic bound "+max_str);
-      if(min_cv[j]==min && max_cv[j]==max)
+      plumed_massert(cv_min[j]>=min,"ARG "+std::to_string(j)+": CV_MIN cannot be smaller than the periodic bound "+min_str);
+      plumed_massert(cv_max[j]<=max,"ARG "+std::to_string(j)+": CV_MAX cannot be greater than the periodic bound "+max_str);
+      if(cv_min[j]==min && cv_max[j]==max)
         full_period++;
     }
   }
@@ -190,19 +190,35 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
 
 void ECVumbrellasLine::calculateECVs(const double * cv)
 {
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  if(lower_only_)
   {
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
     {
-      const unsigned kk=k-P0_contribution_;
-      const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
-      if(lower_only_ && dist_jk>=0)
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
       {
-        ECVs_[j][k]=0;
-        derECVs_[j][k]=0;
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
+        if(dist_jk>=0)
+        {
+          ECVs_[j][k]=0;
+          derECVs_[j][k]=0;
+        }
+        else
+        {
+          ECVs_[j][k]=0.5*std::pow(dist_jk,2);
+          derECVs_[j][k]=dist_jk/sigma_;
+        }
       }
-      else
+    }
+  }
+  else
+  {
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+    {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
       {
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigma_; //PBC might be present
         ECVs_[j][k]=0.5*std::pow(dist_jk,2);
         derECVs_[j][k]=dist_jk/sigma_;
       }

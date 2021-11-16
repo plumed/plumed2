@@ -51,7 +51,7 @@ It is equivalent to the following:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 SET_ALL_TEMPS=300,500,1000
+ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 TEMP_SET_ALL=300,500,1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 \endplumedfile
 
