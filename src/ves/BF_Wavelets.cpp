@@ -89,7 +89,7 @@ There are two different ways to specify the number of used basis functions imple
 You can either specify the scale or alternatively a fixed number of basis function.
 
 Coming from the multiresolution aspect of wavelets, you can set the scale of the father wavelets, i.e. the largest scale used for approximation.
-This can be done with the FUNCTIION_LENGTH keyword.
+This can be done with the FUNCTION_LENGTH keyword.
 It should be given in the same units as the used CV and specifies the length (of the domain interval) of the individual father wavelet functions.
 
 Alternatively a fixed number of basis functions for the bias expansion can be specified with the NUM_BF keyword, which will set the scale automatically to match the desired number of functions.
