@@ -58,6 +58,11 @@ The basis functions are given by
   f_i(x) &= \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
 \f}
 
+When the Gaussians are used for a periodic CV (with the PERIODIC keyword),
+the sub-intervals are chosen in the same way, but only \f$N+1\f$ functions
+are required to fill it (the ones at the boundary coincide and the ones outside
+can be omitted).
+
 It is possible to specify the width \f$\sigma\f$ (i.e. the standard deviation)
 of the Gaussians using the WIDTH keyword.
 By default it is set to the sub-intervall length.

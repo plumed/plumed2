@@ -57,6 +57,11 @@ On the borders of each of these sub-intervalls the mean \f$\mu_i\f$ of a spline 
 
 The total number of basis functions is \f$\text{ORDER}+4\f$ as the constant \f$f_{0}(x)=1\f$, as well as the two splines with means just outside the interval are also included.
 
+When the splines are used for a periodic CV (with the PERIODIC keyword),
+the sub-intervals are chosen in the same way, but only \f$\text{ORDER}+1\f$ functions
+are required to fill it (the ones at the boundary coincide and the ones outside
+can be omitted).
+
 
 \par Examples
 The bias is expanded with cubic B splines in the intervall from 0.0 to 10.0 specifying an order of 20.

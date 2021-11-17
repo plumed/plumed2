@@ -111,6 +111,11 @@ The number of basis functions is then not easily determinable a priori but will 
 Additionally the starting point (leftmost defined point) of the individual basis functions is printed.
 
 
+With the PERIODIC keyword the basis set can also be used to bias periodic CVs.
+Then the shift between the functions will be chosen such that the function at the left border and right border coincide.
+If the FUNCTION_LENGTH keyword is used together with PERIODIC, a smaller length might be chosen to satisfy this requirement.
+
+
 \par Grid
 
 The values of the wavelet function are generated on a grid.
@@ -166,7 +171,7 @@ BF_WAVELETS ...
 \endplumedfile
 
 
-Alternatively you can also specify the number of basis functions. Here we specify the usage of 40 Sym10 wavelet functions. We also used a custom minimum size for the grid and want it to be printed to a file with a specific format.
+Alternatively you can also specify the number of basis functions. Here we specify the usage of 40 Sym10 wavelet functions. We also used a custom minimum size for the grid and want it to be printed to a file with a specific numerical format.
 \plumedfile
 BF_WAVELETS ...
  ORDER=10
