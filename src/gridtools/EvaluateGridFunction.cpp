@@ -68,6 +68,8 @@ void EvaluateGridFunction::read( ActionWithArguments* action ) {
   if( itype=="spline" ) { 
       interpolation_type=spline;
       spline_interpolator=Tools::make_unique<Interpolator>( action->getPntrToArgument(0), gridobject );
+  } else if( itype=="linear" ) {
+    interpolation_type=linear;  
   } else if( itype=="floor" ) {
     interpolation_type=floor;
     for(unsigned j=0;j<action->getPntrToArgument(0)->getRank();++j) {
@@ -88,7 +90,23 @@ void EvaluateGridFunction::calc( const ActionWithArguments* action, const std::v
       std::vector<double> der( dimension );
       vals[0] =  spline_interpolator->splineInterpolation( args, der );
       for(unsigned j=0; j<dimension; ++j) derivatives(0,j) = der[j];
-  } else {
+  } else if( interpolation_type==linear ) {
+      Value* values=action->getPntrToArgument(0); std::vector<double> xfloor(dimension);
+      std::vector<unsigned> indices(dimension), nindices(dimension), ind(dimension); 
+      gridobject.getIndices( args, indices ); unsigned nn=gridobject.getIndex(args);
+      gridobject.getGridPointCoordinates( nn, nindices, xfloor ); 
+      double y1 = values->get(nn); vals[0] = y1;
+      for(unsigned i=0; i<args.size(); ++i) {
+          int x0=1; if(nindices[i]==indices[i]) x0=0;
+          double ddx=gridobject.getGridSpacing()[i];
+          double X = fabs((args[i]-xfloor[i])/ddx-(double)x0);
+          for(unsigned j=0; j<args.size();++j) ind[j] = indices[j];
+          if( gridobject.isPeriodic(i) && (ind[i]+1)==gridobject.getNbin(false)[i] ) ind[i]=0;
+          else ind[i] = ind[i] + 1;
+          vals[0] += ( values->get( gridobject.getIndex(ind) ) - y1 )*X;
+          derivatives(0,i) = ( values->get( gridobject.getIndex(ind) ) - y1 ) / ddx;
+      }
+  } else if( interpolation_type==floor ) {
       Value* values=action->getPntrToArgument(0); std::vector<unsigned> indices(dimension); 
       gridobject.getIndices( args, indices ); unsigned nn = gridobject.getIndex(indices);
       if( values->isTimeSeries() && !gridobject.inbounds(args) ) nn = gridobject.getNbin(false)[0]-1;
@@ -101,7 +119,35 @@ void EvaluateGridFunction::calc( const ActionWithArguments* action, const std::v
       if( !values->isTimeSeries() ) {
           for(unsigned j=0; j<dimension; ++j) derivatives(0,j) = values->getGridDerivative( nn, j );
       }
-  }
+  } else plumed_error();
+}
+
+void EvaluateGridFunction::applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const {
+  unsigned dimension = gridobject.getDimension();
+  if( interpolation_type==spline ) {
+      action->error("can't apply forces on values interpolated using splines");
+  } else if( interpolation_type==linear ) {
+      Value* values=action->getPntrToArgument(0); std::vector<double> xfloor(dimension);
+      std::vector<unsigned> indices(dimension), nindices(dimension), ind(dimension);
+      gridobject.getIndices( args, indices ); unsigned nn=gridobject.getIndex(args);
+      gridobject.getGridPointCoordinates( nn, nindices, xfloor );
+      for(unsigned i=0; i<args.size(); ++i) {
+          int x0=1; if(nindices[i]==indices[i]) x0=0;
+          double ddx=gridobject.getGridSpacing()[i];
+          double X = fabs((args[i]-xfloor[i])/ddx-(double)x0);
+          for(unsigned j=0; j<args.size();++j) ind[j] = indices[j];
+          if( gridobject.isPeriodic(i) && (ind[i]+1)==gridobject.getNbin(false)[i] ) ind[i]=0;
+          else ind[i] = ind[i] + 1;
+          forcesToApply[nn] += force*(1-X); forcesToApply[gridobject.getIndex(ind)] += X*force;  
+      }
+  } else if( interpolation_type==floor ) {
+      Value* values=action->getPntrToArgument(0); std::vector<unsigned> indices(dimension);
+      gridobject.getIndices( args, indices ); unsigned nn = gridobject.getIndex(indices);
+      if( values->isTimeSeries() && !gridobject.inbounds(args) ) nn = gridobject.getNbin(false)[0]-1;
+      if( values->isTimeSeries() && nn==values->getShape()[0] ) forcesToApply[nn-1] += force; 
+      else forcesToApply[nn] += force; 
+  } else plumed_error();
+
 }
 
 }

@@ -57,9 +57,10 @@ class InterpolateGrid :
 public ActionWithValue, 
 public ActionWithArguments {
 private:
-  bool firststep;
+  bool firststep, midpoints;
   std::vector<unsigned> nbin;
   std::vector<double> gspacing;
+  std::vector<double> forcesToApply;
   EvaluateGridFunction input_grid;
   GridCoordinatesObject output_grid;
 public:
@@ -77,6 +78,7 @@ public:
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -84,6 +86,7 @@ PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 void InterpolateGrid::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   EvaluateGridFunction ii; ii.registerKeywords( keys );
@@ -98,9 +101,11 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
   if( getPntrToArgument(0)->getRank()==0 || (!getPntrToArgument(0)->hasDerivatives() && !getPntrToArgument(0)->isTimeSeries()) ) error("input to this action should be a grid");
 
-  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); unsigned dimension = getPntrToArgument(0)->getRank();
-  if( nbin.size()!=dimension && gspacing.size()!=dimension ) error("GRID_BIN or GRID_SPACING must be set");
-  if( nbin.size()==dimension ) {
+  parseFlag("MIDPOINTS",midpoints); parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); unsigned dimension = getPntrToArgument(0)->getRank();
+  if( !midpoints && nbin.size()!=dimension && gspacing.size()!=dimension ) error("MIDPOINTS, GRID_BIN or GRID_SPACING must be set");
+  if( midpoints ) {
+    log.printf("  evaluating function at midpoints of cells in input grid\n");
+  } else if( nbin.size()==dimension ) {
     log.printf("  number of bins in grid %d", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) log.printf(", %d", nbin[i]);
     log.printf("\n");
@@ -134,10 +139,25 @@ unsigned InterpolateGrid::getNumberOfDerivatives() const {
 
 void InterpolateGrid::calculate() {
   if( firststep ) {
-      input_grid.setup(this); output_grid.setBounds( input_grid.getMin(), input_grid.getMax(), nbin, gspacing );
+      input_grid.setup(this); 
+      if( midpoints ) {
+          nbin.resize( getPntrToOutput(0)->getRank() );
+          std::vector<std::string> str_min( input_grid.getMin() ), str_max(input_grid.getMax() ); 
+          for(unsigned i=0; i<nbin.size(); ++i) {
+              double max, min; Tools::convert( str_min[i], min ); Tools::convert( str_max[i], max ); 
+              min += 0.5*input_grid.getGridSpacing()[i];
+              if( input_grid.getPbc()[i] ) {
+                  nbin[i] = input_grid.getNbin()[i]; max += 0.5*input_grid.getGridSpacing()[i];
+              } else {
+                  nbin[i] = input_grid.getNbin()[i] - 1; max -= 0.5*input_grid.getGridSpacing()[i];
+              }
+              Tools::convert( min, str_min[i] ); Tools::convert( max, str_max[i] );
+          }
+          output_grid.setBounds( str_min, str_max, nbin,  gspacing );
+      } else output_grid.setBounds( input_grid.getMin(), input_grid.getMax(), nbin, gspacing );
       getPntrToOutput(0)->setShape( output_grid.getNbin(true) );
       for(unsigned i=0; i<output_grid.getNumberOfPoints(); ++i) addTaskToList(i);
-      firststep=false;
+      forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues() ); firststep=false;
   }
   plumed_assert( !actionInChain() ); runAllTasks();
 }
@@ -197,9 +217,15 @@ void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigne
 }
 
 void InterpolateGrid::apply() {
-  if( !doNotCalculateDerivatives() ) return; 
+  if( doNotCalculateDerivatives() ) return; 
 
-  if( getPntrToOutput(0)->forcesWereAdded() ) error("cannot added forces on interpolated grid");
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss; 
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
+}
+
+void InterpolateGrid::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  std::vector<double> pos(output_grid.getDimension()); double ff = getPntrToOutput(0)->getForce(itask); 
+  output_grid.getGridPointCoordinates( itask, pos ); input_grid.applyForce( 0, pos, ff, forces );
 }
 
 }

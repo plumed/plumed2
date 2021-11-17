@@ -124,8 +124,7 @@ nderivatives(0)
   myfunc.read( this );
   // Check we are not calculating an integral
   if( myfunc.zeroRank() ) { 
-      firststep=false; 
-      shape.resize(0); forcesToApply.resize( npoints ); nderivatives=npoints; 
+      shape.resize(0); forcesToApply.resize( npoints ); 
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
   } 
   // This sets the prefactor to the volume which converts integrals to sums
@@ -145,6 +144,7 @@ nderivatives(0)
 
 template <class T>
 unsigned FunctionOfGrid<T>::getNumberOfDerivatives() const {
+  if( myfunc.zeroRank() ) return getPntrToArgument(0)->getNumberOfValues();
   return nderivatives;
 }
 
@@ -196,7 +196,7 @@ void FunctionOfGrid<T>::reshapeOutput() {
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { npoints=getPntrToArgument(i)->getNumberOfValues(); break; }
   }
-  if( getPntrToOutput(0)->getNumberOfValues()!=npoints ) {
+  if( !myfunc.zeroRank() && getPntrToOutput(0)->getNumberOfValues()!=npoints ) {
       std::vector<unsigned> shape;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
          if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
@@ -207,8 +207,9 @@ void FunctionOfGrid<T>::reshapeOutput() {
       }
       plumed_assert( shape.size()>0 ); getPntrToOutput(0)->setShape( shape ); 
   }
-  if( myfunc.doWithTasks() ) {
-      for(unsigned j=0; j<getPntrToOutput(0)->getNumberOfValues(); ++j) addTaskToList(j);
+  if( myfunc.doWithTasks() && getFullNumberOfTasks()<npoints ) {
+      if( myfunc.zeroRank() ) { getPntrToOutput(0)->resizeDerivatives( npoints ); forcesToApply.resize( npoints ); } 
+      for(unsigned j=getFullNumberOfTasks(); j<npoints; ++j) addTaskToList(j);
   }
   firststep=false;
 }
@@ -263,7 +264,7 @@ void FunctionOfGrid<T>::apply() {
   if( doNotCalculateDerivatives() ) return;
           
   if( !getPntrToOutput(0)->forcesWereAdded() ) return ;  
- 
+
   // This applies forces for the integral
   if( myfunc.zeroRank() ) { 
       std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;

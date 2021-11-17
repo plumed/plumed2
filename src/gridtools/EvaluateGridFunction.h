@@ -36,7 +36,7 @@ private:
 /// How should we set the value of this function outside the range
    bool set_zero_outside_range;
 /// How are we doing interpolation
-   enum {spline,floor} interpolation_type;
+   enum {spline,linear,floor} interpolation_type;
 /// This does the interpolating
   std::unique_ptr<Interpolator> spline_interpolator; 
 public: 
@@ -55,6 +55,12 @@ public:
   std::vector<std::string> getMax() const ;
 /// Get the periodicity of the grid
   std::vector<bool> getPbc() const ;
+/// Get the number of grid points in each direction
+  std::vector<unsigned> getNbin() const ;
+/// Get the grid spacing
+  const std::vector<double>& getGridSpacing() const ;
+/// This is used to apply forces in interpolate
+  void applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const ;
 };
 
 inline
@@ -66,6 +72,16 @@ inline
 std::vector<std::string> EvaluateGridFunction::getMax() const {
   return gridobject.getMax();
 }
+
+inline
+std::vector<unsigned> EvaluateGridFunction::getNbin() const {
+  return gridobject.getNbin(false);
+}
+
+inline
+const std::vector<double>& EvaluateGridFunction::getGridSpacing() const {
+  return gridobject.getGridSpacing();
+} 
 
 }
 }

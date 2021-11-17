@@ -73,7 +73,8 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_conv_t2: MATHEVAL ARG1=" + getShortcutLabel() + "_rdf ARG2=" + ref_name + "_x2 FUNC=(1-x)*y PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_conv: MATHEVAL ARG1=" + getShortcutLabel() + "_conv_t1 ARG2=" + getShortcutLabel() + "_conv_t2 FUNC=x+y PERIODIC=NO");
   // Now integrate using trapezium rule
-  readInputLine( getShortcutLabel() + "_int: TRAPEZIUM_RULE ARG=" + getShortcutLabel() + "_conv"); 
+  readInputLine( getShortcutLabel() + "_midp: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_conv INTERPOLATION_TYPE=linear MIDPOINTS"); // First interpolate onto midpoints
+  readInputLine( getShortcutLabel() + "_int: INTEGRATE_GRID ARG=" + getShortcutLabel() + "_midp PERIODIC=NO"); // And then integrate
   // And multiply by final normalizing constant
   std::string norm_str; 
   if( dens.length()>0 ) norm_str = "FUNC=-2*pi*x*" + dens;
