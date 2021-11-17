@@ -312,15 +312,15 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   std::string error_in_input2(" could not be read correctly");
 
 //set kbt_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
+  const double kB=plumed.getAtoms().getKBoltzmann();
   kbt_=plumed.getAtoms().getKbT();
   double temp=-1;
   parse("TEMP",temp);
   if(temp>0)
   {
-    if(kbt_>0 && std::abs(kbt_-Kb*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/Kb);
-    kbt_=Kb*temp;
+    if(kbt_>0 && std::abs(kbt_-kB*temp)>1e-4)
+      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/kB);
+    kbt_=kB*temp;
   }
   plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
 
@@ -473,7 +473,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
   if(wStateStride_>0)
-    plumed_massert(wStateStride_>=stride_,"STATE_WSTRIDE is in units of MD steps, thus it is suggested to use a multiple of PACE");
+    plumed_massert(wStateStride_>=(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus it is suggested to use a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -781,7 +781,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   }
 
 //printing some info
-  log.printf("  temperature = %g\n",kbt_/Kb);
+  log.printf("  temperature = %g\n",kbt_/kB);
   log.printf("  beta = %g\n",1./kbt_);
   log.printf("  depositing new kernels with PACE = %u\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);

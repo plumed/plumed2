@@ -116,8 +116,7 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
           }
           *ptr=0; ptr++;
         }
-        int ret=run(argc,&vvv[0],in,out,comm);
-        *val.get<int*>()=ret;
+        val.set(int(run(argc,&vvv[0],in,out,comm)));
       }
       break;
     default:
@@ -165,7 +164,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(a=="--has-zlib") {
       return (config::hasZlib()?0:1);
     } else if(a=="--has-xdrfile") {
-      return (config::hasXdrfile()?0:1);
+      return 0; // always ok
     } else if(a=="--is-installed") {
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi") {

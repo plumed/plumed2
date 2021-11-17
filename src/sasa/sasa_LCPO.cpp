@@ -775,7 +775,7 @@ void SASA_LCPO::calculate() {
       derivatives[i][0] = 0.;
       derivatives[i][1] = 0.;
       derivatives[i][2] = 0.;
-      if ( LCPOparam[i].size()>0) {
+      if ( LCPOparam[i].size()>1) {
         if (LCPOparam[i][1]>0.0) {
           Aij = 0.0;
           Aijk = 0.0;
@@ -924,7 +924,7 @@ void SASA_LCPO::calculate() {
       derivatives[i][1] = 0.;
       derivatives[i][2] = 0.;
 
-      if ( LCPOparam[i].size()>0) {
+      if ( LCPOparam[i].size()>1) {
         if (LCPOparam[i][1]>0.0) {
           Aij = 0.0;
           Aijk = 0.0;

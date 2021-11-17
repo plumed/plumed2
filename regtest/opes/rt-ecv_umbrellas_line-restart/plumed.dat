@@ -7,12 +7,13 @@ psi: TORSION ATOMS=7,9,15,17
 ecv: ECV_UMBRELLAS_LINE ...
   ARG=phi,psi
   TEMP=300
-  MIN_CV=-2.5,2.5
-  MAX_CV=1,-1
+  CV_MIN=-2.5,2.5
+  CV_MAX=1,-1
   SIGMA=0.18
   SPACING=1.5
   BARRIER=100
   ADD_P0
+  LOWER_HALF_ONLY #never add this keword upon restart! this is for regtest only
 ...
 opes: OPES_EXPANDED FMT={% f} ARG=ecv.* PACE=2 OBSERVATION_STEPS=10 PRINT_STRIDE=10
 

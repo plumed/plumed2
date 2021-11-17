@@ -59,7 +59,7 @@ Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimatio
 \plumedfile
 # simulate multiple temperatures, as in parallel tempering
 ene: ENERGY
-ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=1000
+ecv: ECV_MULTITHERMAL ARG=ene TEMP_MAX=1000
 opes: OPES_EXPANDED ARG=ecv.* PACE=500
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
 \endplumedfile
@@ -72,8 +72,8 @@ The OPES_EXPANDED bias will create a multidimensional target grid to sample all 
 ene: ENERGY
 dst: DISTANCE ATOMS=1,2
 
-ecv1: ECV_MULTITHERMAL ARG=ene SET_ALL_TEMPS=200,300,500,1000
-ecv2: ECV_UMBRELLAS_LINE ARG=dst MIN_CV=1.2 MAX_CV=4.3 SIGMA=0.5
+ecv1: ECV_MULTITHERMAL ARG=ene TEMP_SET_ALL=200,300,500,1000
+ecv2: ECV_UMBRELLAS_LINE ARG=dst CV_MIN=1.2 CV_MAX=4.3 SIGMA=0.5
 opes: OPES_EXPANDED ARG=ecv1.*,ecv2.* PACE=500 OBSERVATION_STEPS=1
 
 PRINT FILE=COLVAR STRIDE=500 ARG=ene,dst,opes.bias
@@ -89,16 +89,16 @@ vol: VOLUME
 ecv_mtp: ECV_MULTITHERMAL_MULTIBARIC ...
   ARG=ene,vol
   TEMP=300
-  MIN_TEMP=200
-  MAX_TEMP=800
+  TEMP_MIN=200
+  TEMP_MAX=800
   PRESSURE=0.06022140857*1000 #1 kbar
-  MIN_PRESSURE=0
-  MAX_PRESSURE=0.06022140857*2000 #2 kbar
+  PRESSURE_MIN=0
+  PRESSURE_MAX=0.06022140857*2000 #2 kbar
 ...
 
 cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
-ecv_umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 MIN_CV=0.1,0.1 MAX_CV=1.5,1.5 SIGMA=0.2 BARRIER=70
+ecv_umb: ECV_UMBRELLAS_LINE ARG=cv1,cv2 TEMP=300 CV_MIN=0.1,0.1 CV_MAX=1.5,1.5 SIGMA=0.2 BARRIER=70
 
 opes: OPES_EXPANDED ARG=(ecv_.*) PACE=500 WALKERS_MPI PRINT_STRIDE=1000
 
@@ -240,7 +240,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
   if(wStateStride_>0)
-    plumed_massert(wStateStride_>stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
+    plumed_massert(wStateStride_>(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -726,6 +726,12 @@ void OPESexpanded::init_pntrToECVsClass()
 
 void OPESexpanded::init_linkECVs()
 {
+  //TODO It should be possible to make all of this more straightforward (and probably also faster):
+  //     - get rid of index_k_, making it trivial for each ECV
+  //     - store the ECVs_ and derECVs_ vectors here as a contiguous vector, and use pointers in the ECV classes
+  //     Some caveats:
+  //     - ECVmultiThermalBaric has a nontrivial index_k_ to avoid duplicates. use duplicates instead
+  //     - can the ECVs be MPI parallel or it's too complicated?
   plumed_massert(deltaF_size_>0,"must set deltaF_size_ before calling init_linkECVs()");
   if(NumParallel_==1)
     deltaF_.resize(deltaF_size_);

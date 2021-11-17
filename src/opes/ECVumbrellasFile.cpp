@@ -73,6 +73,7 @@ class ECVumbrellasFile :
 private:
   double barrier_;
   unsigned P0_contribution_;
+  bool lower_only_;
 
   std::vector< std::vector<double> > centers_;
   std::vector< std::vector<double> > sigmas_;
@@ -101,6 +102,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys)
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
+  keys.addFlag("LOWER_HALF_ONLY",false,"use only the lower half of each umbrella potentials");
 }
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
@@ -123,6 +125,7 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 //set barrier_
   barrier_=std::numeric_limits<double>::infinity();
   parse("BARRIER",barrier_);
+  parseFlag("LOWER_HALF_ONLY",lower_only_);
 
 //set umbrellas
   std::string umbrellasFileName;
@@ -176,18 +179,44 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
     log.printf("  guess for free energy BARRIER = %g\n",barrier_);
   if(P0_contribution_==1)
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
+  if(lower_only_)
+    log.printf(" -- LOWER_HALF_ONLY: the ECVs are set to zero for values of the CV above the respective center\n");
 }
 
 void ECVumbrellasFile::calculateECVs(const double * cv)
 {
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  if(lower_only_)
   {
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
     {
-      const unsigned kk=k-P0_contribution_;
-      const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
-      ECVs_[j][k]=0.5*std::pow(dist_jk,2);
-      derECVs_[j][k]=dist_jk/sigmas_[j][kk];
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
+      {
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
+        if(dist_jk>=0)
+        {
+          ECVs_[j][k]=0;
+          derECVs_[j][k]=0;
+        }
+        else
+        {
+          ECVs_[j][k]=0.5*std::pow(dist_jk,2);
+          derECVs_[j][k]=dist_jk/sigmas_[j][kk];
+        }
+      }
+    }
+  }
+  else
+  {
+    for(unsigned j=0; j<getNumberOfArguments(); j++)
+    {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
+      {
+        const unsigned kk=k-P0_contribution_;
+        const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
+        ECVs_[j][k]=0.5*std::pow(dist_jk,2);
+        derECVs_[j][k]=dist_jk/sigmas_[j][kk];
+      }
     }
   }
 }

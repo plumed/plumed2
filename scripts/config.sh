@@ -18,10 +18,10 @@ Options:
 
 Examples:
 
-Check if plumed as xdrfile enabled
-> plumed config has xdrfile
-Check if plumed as xdrfile AND zlib enabled
-> plumed config has xdrfile zlib
+Check if plumed as dlopen enabled
+> plumed config has dlopen
+Check if plumed as dlopen AND zlib enabled
+> plumed config has dlopen zlib
 Check if plumed as module colvar active
 > plumed config module colvar
 "
