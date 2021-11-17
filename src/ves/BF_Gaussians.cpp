@@ -162,7 +162,7 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
     values[i] = exp(-0.5*pow(dist*inv_sigma_,2.0));
     derivs[i] = -values[i] * (dist)*pow(inv_sigma_,2.0);
   }
-  if(!inside_range) {for (auto& d: derivs){d=0.0;}}
+  if(!inside_range) {for (auto& d: derivs) {d=0.0;}}
 }
 
 
