@@ -15,3 +15,8 @@ The following people have contributed to this software:
 - Pablo Piaggi
   - added TD_MULTICANONICAL 
   - added TD_MULTITHERMAL_MULTIBARIC
+
+- Benjamin Pampel
+  - added BF_WAVELETS
+  - added BF_CUBIC_B_SPLINES
+  - added BF_GAUSSIANS
