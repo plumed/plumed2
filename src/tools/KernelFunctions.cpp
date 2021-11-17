@@ -304,7 +304,7 @@ std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx
   plumed_assert( ndim()==dx.size() );
   std::vector<unsigned> support( dx.size() );
   std::vector<double> vv=getContinuousSupport( );
-  for(unsigned i=0; i<dx.size(); ++i) support[i]=static_cast<unsigned>(ceil( vv[i]/dx[i] ));
+  for(unsigned i=0; i<dx.size(); ++i) support[i]=static_cast<unsigned>(floor( vv[i]/dx[i] ));
   return support;
 }
 
@@ -368,15 +368,10 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   }
   double kderiv, kval;
   if(ktype==gaussian || ktype==truncatedgaussian) {
-    if(0.5*r2>dp2cutoff) {
-      kval=0.0;
-      kderiv=0.0;
-    } else {
-      kval=height*std::exp(-0.5*r2); kderiv=-kval;
-      if(ktype==gaussian) {
-        kval=stretchA*kval+height*stretchB;
-        kderiv*=stretchA;
-      }
+    kval=height*std::exp(-0.5*r2); kderiv=-kval;
+    if(ktype==gaussian) {
+      kval=stretchA*kval+height*stretchB;
+      kderiv*=stretchA;
     }
   } else {
     double r=sqrt(r2);
