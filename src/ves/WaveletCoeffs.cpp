@@ -962,7 +962,7 @@ std::vector<double> WaveletGrid::getFilterCoefficients(const unsigned order, con
           };
       break;
     default:
-      plumed_merror("Specified order currently not implemented");
+      plumed_merror("Wavelets: Specified order currently not implemented");
     }
   }
 
