@@ -67,6 +67,11 @@ However, notice that depending on the system this might not be the optimal choic
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
+If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
+To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS, as in the example below.
+This allows one to define a custom target distribution by adding an extrenal bias potential equal to the desired target free energy (e.g.~using \ref BIASVALUE and \ref CUSTOM) and setting BIASFACTOR=inf.
+Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALL or \ref UPPER_WALL) added to restrain the CVs range.
+
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
@@ -77,7 +82,7 @@ Multiple walkers are supported only with MPI communication, via the keyword WALK
 \par Examples
 
 Several examples can be found on the <a href="https://www.plumed-nest.org/browse.html">PLUMED-NEST website</a>, by searching for the OPES keyword.
-The following \ref opes-metad can also be useful to get started with the method.
+The \ref opes-metad can also be useful to get started with the method.
 
 The following is a minimal working example:
 
@@ -97,10 +102,10 @@ opes: OPES_METAD ...
   FILE=Kernels.data
   TEMP=300
   ARG=phi,psi
-  SIGMA=0.15,0.15
   PACE=500
   BARRIER=50
-  BIASFACTOR=inf
+  SIGMA=0.15,0.15
+  SIGMA_MIN=0.01,0.01
   STATE_RFILE=Restart.data
   STATE_WFILE=State.data
   STATE_WSTRIDE=500*100
@@ -112,6 +117,28 @@ opes: OPES_METAD ...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 \endplumedfile
 
+Finally, an example of how to define a custom target distribution different from the well-tempered one.
+Here we chose to focus more on the transition state, that is around \f$\phi=0\f$.
+Our target distribution is a Gaussian centered there, thus the target free energy we want to sample is a parabola, \f$F^{\text{tg}}(\mathbf{s})=-\beta \log p^{\text{tg}}(\mathbf{s})\f$.
+
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+Ftg_func: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
+Ftg: BIASVALUE ARG=Ftg_func
+
+opes: OPES_METAD ...
+  ARG=phi,Ftg.bias
+  PACE=500
+  BARRIER=50
+  SIGMA=0.2
+  BIASFACTOR=inf
+  EXTRA_BIAS
+...
+
+PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=phi,Ftg.bias,opes.bias
+\endplumedfile
+
+Notice that in order to reweight for the unbiased \f$P(\mathbf{s})\f$ during postprocessing, the total bias `Ftg.bias+opes.bias` must be used.
 
 */
 //+ENDPLUMEDOC
@@ -184,6 +211,8 @@ private:
   double old_KDEnorm_;
   std::vector<kernel> delta_kernels_;
 
+  bool extra_bias_;
+
   OFile stateOfile_;
   int wStateStride_;
   bool storeOldStates_;
@@ -226,7 +255,7 @@ This goes at the expenses of a possibly slower convergence of the reweight estim
 It is useful to look around when you have no idea of the BARRIER, or if you want to quickly test the effectiveness of a new CV, and see if it is degenerate or not.
 
 Like \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with an on-the-fly compression algorithm.
-The only difference is that it does not perfom reweight, since it estimates the sampled distribution and not the unbiased one.
+The only difference is that it does not perform reweighting, since it estimates the sampled distribution and not the unbiased one.
 
 \par Examples
 
@@ -281,6 +310,8 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
+  if(!mode::explore)
+    keys.addFlag("EXTRA_BIAS",false,"interpret the last ARG as an extra bias that will be added to the OPES one when reweighting");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -307,6 +338,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
   , work_(0)
+  , extra_bias_(false)
 {
   std::string error_in_input1("Error in input in action "+getName()+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
@@ -323,6 +355,17 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     kbt_=Kb*temp;
   }
   plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+
+//fix the CV number if extra bias is used
+  if(!mode::explore)
+  {
+    parseFlag("EXTRA_BIAS", extra_bias_);
+    if(extra_bias_)
+    {
+      plumed_massert(ncv_>1,"you must add at the end of the ARG list the action containing the EXTRA_BIAS");
+      ncv_-=1; //the extra bias is not a CV
+    }
+  }
 
 //other compulsory input
   parse("PACE",stride_);
@@ -783,6 +826,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //printing some info
   log.printf("  temperature = %g\n",kbt_/Kb);
   log.printf("  beta = %g\n",1./kbt_);
+  if(extra_bias_)
+    log.printf(" -- EXTRA_BIAS: the bias '%s' will be taken into account for internal reweighting\n",getPntrToArgument(ncv_)->getName().c_str());
   log.printf("  depositing new kernels with PACE = %u\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
@@ -892,6 +937,8 @@ void OPESmetad<mode>::calculate()
   const double prob=getProbAndDerivatives(cv,der_prob);
   current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
   setBias(current_bias_);
+  if(extra_bias_)
+    current_bias_+=getArgument(ncv_);
   for(unsigned i=0; i<ncv_; i++)
     setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
 
@@ -1173,6 +1220,8 @@ void OPESmetad<mode>::update()
       const double prob=getProbAndDerivatives(center,dummy);
       const double new_bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
       work_+=new_bias-current_bias_;
+      if(extra_bias_)
+        work_-=getArgument(ncv_);
       getPntrToComponent("work")->set(work_);
     }
   }
