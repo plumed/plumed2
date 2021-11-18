@@ -125,6 +125,9 @@ Using the GRIDSIZE keyword a lower bound for the number of grid points can be sp
 By default at least 1,000 grid points are used.
 Function values in between grid points are calculated by linear interpolation.
 
+\par Optimization notes
+
+To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the VES_LINEAR_EXPANSION (set it to a small value, e.g. 1e-6)
 
 \par Examples
 
