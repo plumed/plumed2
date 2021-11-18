@@ -482,6 +482,15 @@ private:
   double stretchA=1.0;
   double stretchB=0.0;
 
+  bool noStretchWarningDone=false;
+
+  void noStretchWarning() {
+    if(!noStretchWarningDone) {
+      log<<"\nWARNING: you are using a HILLS file with Gaussian kernels, PLUMED 2.8 uses stretched Gaussians by default\n";
+    }
+    noStretchWarningDone=true;
+  }
+
   static void registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys);
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
@@ -2107,6 +2116,11 @@ bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector
     // scan for kerneltype
     std::string ktype="stretched-gaussian";
     if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+    if( ktype=="gaussian" ) {
+      noStretchWarning();
+    } else if( ktype!="stretched-gaussian") {
+      error("non Gaussian kernels are not supported in MetaD");
+    }
     // scan for multivariate label: record the actual file position so to eventually rewind
     std::string sss;
     ifile->scanField("multivariate",sss);
