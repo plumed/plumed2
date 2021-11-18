@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,10 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
-
-
-using namespace std;
-
 
 namespace PLMD {
 namespace bias {
@@ -101,7 +97,7 @@ BiasValue::BiasValue(const ActionOptions&ao):
   checkRead();
   // add one bias for each argument
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string ss=getPntrToArgument(i)->getName()+"_bias";
+    std::string ss=getPntrToArgument(i)->getName()+"_bias";
     addComponent(ss); componentIsNotPeriodic(ss);
   }
 }

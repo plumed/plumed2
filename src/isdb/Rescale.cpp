@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,10 +29,7 @@
 #include "core/Value.h"
 #include "tools/File.h"
 #include "tools/Random.h"
-#include <cmath>
 #include <ctime>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -120,17 +117,17 @@ PRINT FILE=COLVAR ARG=* STRIDE=100
 class Rescale : public bias::Bias
 {
   // gamma parameter
-  vector<double> gamma_;
+  std::vector<double> gamma_;
   double         w0_;
   double         biasf_;
-  vector<double> bias_;
-  vector<double> expo_;
-  vector<unsigned> shared_;
+  std::vector<double> bias_;
+  std::vector<double> expo_;
+  std::vector<unsigned> shared_;
   unsigned nores_;
   // bias
   unsigned int   Biasstride_;
   unsigned int   Biaspace_;
-  string         Biasfilename_;
+  std::string         Biasfilename_;
   bool           first_bias_;
   OFile          Biasfile_;
   // temperature in kbt
@@ -144,10 +141,10 @@ class Rescale : public bias::Bias
   unsigned nrep_;
   unsigned replica_;
   // selector
-  string selector_;
+  std::string selector_;
 
   // Monte Carlo
-  void doMonteCarlo(unsigned igamma, double oldE, vector<double> args, vector<double> bargs);
+  void doMonteCarlo(unsigned igamma, double oldE, std::vector<double> args, std::vector<double> bargs);
   unsigned proposeMove(unsigned x, unsigned xmin, unsigned xmax);
   bool doAccept(double oldE, double newE);
   // read and print bias
@@ -218,7 +215,7 @@ Rescale::Rescale(const ActionOptions&ao):
   if(nores_>0 && nores_!=nbin) error("The number of non scaled arguments must be equal to either 0 or the number of bins");
 
   // maximum value of rescale
-  vector<double> max_rescale;
+  std::vector<double> max_rescale;
   parseVector("MAX_RESCALE", max_rescale);
   // check dimension of max_rescale
   if(max_rescale.size()!=(getNumberOfArguments()-nores_))
@@ -234,7 +231,7 @@ Rescale::Rescale(const ActionOptions&ao):
     // bias grid
     bias_.push_back(0.0);
     // gamma ladder
-    double gamma = exp( static_cast<double>(i) / static_cast<double>(nbin-1) * std::log(igamma_max) );
+    double gamma = std::exp( static_cast<double>(i) / static_cast<double>(nbin-1) * std::log(igamma_max) );
     gamma_.push_back(gamma);
   }
   // print bias to file
@@ -245,7 +242,7 @@ Rescale::Rescale(const ActionOptions&ao):
   // by default they are all shared
   for(unsigned i=0; i<getNumberOfArguments(); ++i) shared_.push_back(1);
   // share across replicas or not
-  vector<unsigned> not_shared;
+  std::vector<unsigned> not_shared;
   parseVector("NOT_SHARED", not_shared);
   // and change the non-shared
   for(unsigned i=0; i<not_shared.size(); ++i) {
@@ -311,7 +308,7 @@ Rescale::~Rescale()
 void Rescale::read_bias()
 {
 // open file
-  std::unique_ptr<IFile> ifile(new IFile);
+  auto ifile=Tools::make_unique<IFile>();
   ifile->link(*this);
   if(ifile->FileExist(Biasfilename_)) {
     ifile->open(Biasfilename_);
@@ -320,10 +317,10 @@ void Rescale::read_bias()
     while(ifile->scanField("MD_time",MDtime)) {
       for(unsigned i=0; i<bias_.size(); ++i) {
         // convert i to string
-        stringstream ss;
+        std::stringstream ss;
         ss << i;
         // label
-        string label = "b" + ss.str();
+        std::string label = "b" + ss.str();
         // read entry
         ifile->scanField(label, bias_[i]);
       }
@@ -363,13 +360,13 @@ bool Rescale::doAccept(double oldE, double newE)
   } else {
     // otherwise extract random number
     double s = static_cast<double>(rand()) / RAND_MAX;
-    if( s < exp(-delta) ) { accept = true; }
+    if( s < std::exp(-delta) ) { accept = true; }
   }
   return accept;
 }
 
 void Rescale::doMonteCarlo(unsigned igamma, double oldE,
-                           vector<double> args, vector<double> bargs)
+                           std::vector<double> args, std::vector<double> bargs)
 {
   double oldB, newB;
 
@@ -430,10 +427,10 @@ void Rescale::print_bias(long int step)
   Biasfile_.printField("MD_time", MDtime);
   for(unsigned i=0; i<bias_.size(); ++i) {
     // convert i to string
-    stringstream ss;
+    std::stringstream ss;
     ss << i;
     // label
-    string label = "b" + ss.str();
+    std::string label = "b" + ss.str();
     // print entry
     Biasfile_.printField(label, bias_[i]);
   }
@@ -446,7 +443,7 @@ void Rescale::calculate()
   unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // collect data from other replicas
-  vector<double> all_args(getNumberOfArguments(), 0.0);
+  std::vector<double> all_args(getNumberOfArguments(), 0.0);
   // first calculate arguments
   for(unsigned i=0; i<all_args.size(); ++i) {
     double arg = getArgument(i);
@@ -461,11 +458,11 @@ void Rescale::calculate()
   }
 
   // now separate terms that should be rescaled
-  vector<double> args;
+  std::vector<double> args;
   if(getNumberOfArguments()-nores_>0) args.resize(getNumberOfArguments()-nores_);
   for(unsigned i=0; i<args.size(); ++i)  args[i]  = all_args[i];
   // and terms that should not
-  vector<double> bargs;
+  std::vector<double> bargs;
   if(nores_>0) bargs.resize(nores_);
   for(unsigned i=0; i<bargs.size(); ++i) bargs[i] = all_args[i+args.size()];
 
@@ -505,7 +502,7 @@ void Rescale::calculate()
     unsigned igamma = static_cast<unsigned>(plumed.passMap[selector_]);
     // add "Gaussian"
     double kbDT = kbt_ * ( biasf_ - 1.0 );
-    bias_[igamma] += w0_ * exp(-bias_[igamma] / kbDT);
+    bias_[igamma] += w0_ * std::exp(-bias_[igamma] / kbDT);
   }
 
   // print bias

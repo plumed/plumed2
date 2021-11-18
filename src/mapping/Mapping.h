@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,7 +62,7 @@ protected:
   std::vector<double> fframes;
 /// Get the number of frames in the path
   unsigned getNumberOfReferencePoints() const;
-/// Finish the setup of the referenceValuePack by transfering atoms and args
+/// Finish the setup of the referenceValuePack by transferring atoms and args
   void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
   double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;

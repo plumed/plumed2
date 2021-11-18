@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2019,2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,7 +27,6 @@
 #include <csignal>
 #endif
 
-using namespace std;
 namespace PLMD {
 
 /// Retrieve PLUMED_ENABLE_SIGNALS.
@@ -97,7 +96,7 @@ Subprocess::Subprocess(const std::string & cmd) {
   }
 // PARENT::
   default:
-    this->pid.reset(new SubprocessPid(pid));
+    this->pid=Tools::make_unique<SubprocessPid>(pid);
     if(close(pc[0])<0) plumed_error()<<"error closing file";
     if(close(cp[1])<0) plumed_error()<<"error closing file";
     fpc=pc[1];

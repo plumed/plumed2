@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,10 +26,6 @@
 #include "reference/MultiDomainRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
-#include <memory>
-
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -47,9 +43,6 @@ public:
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
-
-
-using namespace std;
 
 //+PLUMEDOC DCOLVAR MULTI_RMSD
 /*
@@ -101,7 +94,7 @@ the positions of the atoms in the reference file and their instantaneous
 position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
-MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
+MULTI_RMSD REFERENCE=file1.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
 The following tells plumed to calculate the RMSD distance between the positions of
@@ -109,7 +102,7 @@ the atoms in the domains of reference the reference structure and their instanta
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
 \plumedfile
-MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+MULTI_RMSD REFERENCE=file1.pdb TYPE=MULTI-DRMSD
 \endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
@@ -159,9 +152,9 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals),nopbc(false)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
-  string type;
+  std::string type;
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);

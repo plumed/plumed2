@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -65,7 +65,7 @@ public:
 /// Also understands the following strings:
 /// ps, ns, fs, and atomic.
   void setTime(const std::string &);
-/// Set lengh units from string.
+/// Set length units from string.
 /// Also understands the following strings:
 /// nm, A, um, and Bohr.
   void setLength(const std::string &);
@@ -79,7 +79,7 @@ public:
 /// Set time units from double.
 /// Should be specified in units of ps (e.g. 0.001 means fs)
   void setTime(double);
-/// Set lenght units from double.
+/// Set length units from double.
 /// Should be specified in units of nm (e.g. 0.1 means A)
   void setLength(double);
 /// Set charge units from double.

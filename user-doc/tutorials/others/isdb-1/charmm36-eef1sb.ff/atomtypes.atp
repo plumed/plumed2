@@ -160,7 +160,7 @@ CG3RC1     12.01100 ; bridgehead in bicyclic systems containing at least one 5-m
   FGA2     18.99800 ; aliphatic fluorine, difluoro
   FGA3     18.99800 ; aliphatic fluorine, trifluoro
   FGP1     18.99800 ; anionic F, for ALF4 AlF4-
-  FGR1     18.99800 ; aromatic flourine
+  FGR1     18.99800 ; aromatic fluorine
      H      1.00800 ; polar H
     HA      1.00800 ; nonpolar H
    HA1      1.00800 ; alkane, CH, new LJ params (see toppar_all22_prot_aliphatic_c27.str)

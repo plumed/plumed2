@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/Exception.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace vatom {
@@ -54,7 +52,7 @@ PRINT ARG=d1
 class Ghost:
   public ActionWithVirtualAtom
 {
-  vector<double> coord;
+  std::vector<double> coord;
 public:
   explicit Ghost(const ActionOptions&ao);
   void calculate() override;
@@ -72,7 +70,7 @@ Ghost::Ghost(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=3) error("ATOMS should contain a list of three atoms");
 
@@ -88,8 +86,8 @@ Ghost::Ghost(const ActionOptions&ao):
 
 void Ghost::calculate() {
   Vector pos;
-  vector<Tensor> deriv(getNumberOfAtoms());
-  vector<Vector> n;
+  std::vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Vector> n;
 
 // first versor
   Vector n01 = delta(getPosition(0), getPosition(1));

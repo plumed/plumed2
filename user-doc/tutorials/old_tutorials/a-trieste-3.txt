@@ -267,7 +267,7 @@ uw: UPPER_WALLS ARG=d KAPPA=1000 AT=2.5
 __FILL__
 #dumpit
 __FILL__
-# calcualte the weights from the constant bias
+# calculate the weights from the constant bias
 __FILL__
 #accumulate the unbiased histogram
 __FILL__
@@ -356,7 +356,7 @@ EXTERNAL ARG=d FILE=__FILL__ LABEL=ff
 __FILL__
 #dumpit
 __FILL__
-# calcualte the weights from the constant bias
+# calculate the weights from the constant bias
 __FILL__
 #accumulate the unbiased histogram
 __FILL__
@@ -384,7 +384,7 @@ gnuplot and add a bias using an analytical function of a collective variable wit
 As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
 
 \plumedfile
-#SETTINGS MOLFILE=user-doc/tutorials/trieste-3/aladip/aladip.pdb
+#SETTINGS MOLFILE=user-doc/tutorials/old_tutorials/trieste-3/aladip/aladip.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 phi: TORSION ATOMS=@phi-2

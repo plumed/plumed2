@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,10 +27,6 @@
 #include "core/ActionRegister.h"
 #include <cstdio>
 #include <string>
-#include <vector>
-#include <iostream>
-
-using namespace std;
 
 namespace PLMD {
 namespace cltools {
@@ -58,7 +54,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit kt(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
-  string description()const override {
+  std::string description()const override {
     return "print out the value of kT at a particular temperature";
   }
 };

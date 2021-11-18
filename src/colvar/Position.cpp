@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/Pbc.h"
-
-#include <string>
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -106,7 +101,7 @@ Position::Position(const ActionOptions&ao):
   scaled_components(false),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOM",atoms);
   if(atoms.size()!=1)
     error("Number of specified atoms should be 1");

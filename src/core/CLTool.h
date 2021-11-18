@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,7 +80,7 @@ protected:
 /// Find out whether one of the command line flags is present or not
   void parseFlag(const std::string&key,bool&t);
 /// Crash the command line tool with an error
-  void error(const std::string& msg);
+  [[noreturn]] void error(const std::string& msg);
   template<class T>
   bool parseVector(const std::string&key,std::vector<T>&t);
 public:
@@ -104,7 +104,7 @@ bool CLTool::parse(const std::string&key,T&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if(keywords.style(key,"compulsory") ) {
     if(inputData.count(key)==0) error("missing data for keyword " + key);
-    bool check=Tools::convert(inputData[key],t);
+    bool check=Tools::convertNoexcept(inputData[key],t);
     if(!check) error("data input for keyword " + key + " has wrong type");
     return true;
   }
@@ -143,10 +143,13 @@ bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
   T val;
   if ( keywords.style(key,"compulsory") && t.size()==0 ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
+      if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_merror("ERROR in keyword "+key+ " has weird default value" );
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        // GB: before it was like this, but clearly if t.size()==0 this was not doing anything
+        // for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        t.resize(1);
+        t[0]=val;
       }
     } else {
       plumed_merror("keyword " + key + " is compulsory for this action");

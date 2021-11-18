@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathMSDBase.h"
 #include "core/PlumedMain.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -121,7 +119,7 @@ PathMSD::PathMSD(const ActionOptions&ao):
 
   double i=1.;
   for(unsigned it=0 ; it<nframes ; ++it) {
-    vector<double> v; v.push_back(i);
+    std::vector<double> v; v.push_back(i);
     indexvec.push_back(v); i+=1.;
   }
 }

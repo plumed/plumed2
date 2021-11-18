@@ -8,6 +8,7 @@
 !/analysis
 !/annfunc
 !/basic
+!/core
 !/crystallization
 !/dimred
 !/eds
@@ -26,6 +27,9 @@
 !/isdb
 !/ves
 !/funnel
+!/opes
+!/tools
+!/sasa
 # These files we just want to ignore completely
 tmp
 report.txt

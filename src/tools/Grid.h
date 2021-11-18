@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,7 @@
 #include <map>
 #include <cmath>
 #include <memory>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -74,12 +75,12 @@ public:
 // we use a size_t here
 // should be 8 bytes on all 64-bit machines
 // and more portable than "unsigned long long"
-  typedef size_t index_t;
+  typedef std::size_t index_t;
 // to restore old implementation (unsigned) use the following instead:
 // typedef unsigned index_t;
 /// Maximum dimension (exaggerated value).
 /// Can be used to replace local std::vectors with std::arrays (allocated on stack).
-  static constexpr size_t maxdim=64;
+  static constexpr std::size_t maxdim=64;
 protected:
   std::string funcname;
   std::vector<std::string> argnames;

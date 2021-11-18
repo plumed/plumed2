@@ -1,0 +1,15 @@
+#: set types = ["integer","real"]
+#: set kinds = { "integer":["c_int","c_short","c_long"], "real":["c_float","c_double"] }
+#: set maxrank = 4
+
+#:def ranksuffix(RANK)
+$:'' if RANK == 0 else '(' + ':' + ',:' * (RANK - 1) + ')'
+#:enddef ranksuffix
+
+#:def cname(name)
+$:name.replace("c_","")
+#:enddef cname
+
+#:def contiguous(RANK)
+$:'' if RANK == 0 else 'contiguous,'
+#:enddef contiguous

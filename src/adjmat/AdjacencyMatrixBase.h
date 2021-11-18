@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,7 +41,7 @@ private:
 /// This is the vessel that stores the adjacency matrix
   AdjacencyMatrixVessel* mat;
 /// This is used within AdjacencyMatrixVessel to recalculate matrix elements
-/// whcih is useful when we are operating with lowmem
+/// which is useful when we are operating with lowmem
   void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
 /// Finish the setup of the matrix
   void finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms );

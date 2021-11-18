@@ -1,5 +1,5 @@
 
-.PHONY: all clean lib install uninstall install-html astyle
+.PHONY: all clean lib install uninstall install-html astyle nmcheck
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
@@ -52,5 +52,8 @@ help:
 astyle:
 	$(MAKE) -C ../astyle
 	./astyle.sh
+
+nmcheck:
+	maketools/nmcheck */*.o
 
 

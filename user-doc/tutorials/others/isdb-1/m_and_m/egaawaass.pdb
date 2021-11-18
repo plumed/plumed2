@@ -1,7 +1,3 @@
-TITLE     Getting the Right Output Means no Artefacts in Calculating Stuff
-REMARK    THIS IS A SIMULATION BOX
-CRYST1   29.091    8.453   22.280  90.00  90.00  90.00 P 1           1
-MODEL        1
 ATOM      1  N   GLU     1      45.820  37.490   8.040  1.00  0.00            
 ATOM      2  H1  GLU     1      46.150  38.030   7.270  1.00  0.00            
 ATOM      3  H2  GLU     1      45.120  38.010   8.540  1.00  0.00            
@@ -114,4 +110,3 @@ ATOM    109  C   SER     9      21.840  30.440  25.780  1.00  0.00
 ATOM    110  OXT SER     9      22.550  29.580  26.310  1.00  0.00            
 ATOM    111  O   SER     9      20.910  30.570  26.120  1.00  0.00            
 TER
-ENDMDL

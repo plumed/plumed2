@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,19 +24,27 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-#include <string>
-#include <cmath>
-
 namespace PLMD {
 namespace colvar {
 
 //+PLUMEDOC COLVAR EXTRACV
 /*
-XX
+Allow PLUMED to use collective variables computed in the MD engine.
+
+This feature requires the MD engine to use special instructions to pass to PLUMED the value of
+some pre-computed collective variable. Check the documentation of the MD code to find out which
+collective variables can be computed and passed to PLUMED. These variables can then be accessed by
+name using the EXTRACV action.
 
 \par Examples
 
-XX
+This example takes the lambda variable pre-computed in GROMACS and apply to it a restraint to keep
+it close to the value 3.
+\plumedfile
+l: EXTRACV NAME=lambda
+RESTRAINT ARG=l KAPPA=10 AT=3
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC
@@ -52,10 +60,6 @@ public:
   unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
-
-
-using namespace std;
-
 
 PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 

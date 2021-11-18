@@ -156,6 +156,9 @@ Warnings:
   unnoticed errors in the final results.
 - Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
   GROMACS is going to change nstlist automatically, be sure that it still divides replex.
+  Only if you are sure that you patched GROMACS using PLUMED version 2.7 or later,
+  you can assume that GROMACS will automatically adjust the nstlist so as to be compatible with
+  replex. See \issue{579}.
 - It seems that when using multiple processes per replica it is necessary to switch off
   dynamic load balancing (`-dlb no`) otherwise the simulation could crash randomly,
   see \issue{410}.

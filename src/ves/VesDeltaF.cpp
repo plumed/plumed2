@@ -72,36 +72,46 @@ However, as discussed in Ref. \cite Invernizzi2019vesdeltaf, a better estimate o
 The following performs the optimization of the free energy difference between two metastable basins:
 
 \plumedfile
-VES_DELTA_F ...
-  LABEL=ves
+cv: DISTANCE ATOMS=1,2
+ves: VES_DELTA_F ...
   ARG=cv
   TEMP=300
-  FILE_F0=../fesA.data
-  FILE_F1=../fesB.data
+  FILE_F0=fesA.data
+  FILE_F1=fesB.data
   BIASFACTOR=10.0
   M_STEP=0.1
   AV_STRIDE=500
   PRINT_STRIDE=100
-... VES_DELTA_F
-
+...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 \endplumedfile
 
 The local FES files can be obtained as described in Sec. 4.2 of Ref. \cite Invernizzi2019vesdeltaf, i.e. for example:
 - run 4 independent metad runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. \ref COMMITTOR)
 - \verbatim cat HILLS* > all_HILLS \endverbatim
-- \verbatim plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min -1 --max 1 --bin 100 \endverbatim
+- \verbatim plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100 \endverbatim
 - \verbatim awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
 
-The header of the file should be similar to the following:
+The header of both FES files must be identical, and should be similar to the following:
 
-\verbatim
+\auxfile{fesA.data}
 #! FIELDS cv file.free der_cv
-#! SET min_cv -1
+#! SET min_cv 0
 #! SET max_cv 1
 #! SET nbins_cv  100
 #! SET periodic_cv false
-\endverbatim
+0 1000 0
+[ ... ]
+\endauxfile
+\auxfile{fesB.data}
+#! FIELDS cv file.free der_cv
+#! SET min_cv 0
+#! SET max_cv 1
+#! SET nbins_cv  100
+#! SET periodic_cv false
+0 1000 0
+[ ... ]
+\endauxfile
 
 */
 //+ENDPLUMEDOC

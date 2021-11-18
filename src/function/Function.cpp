@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,6 @@
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
 
-using namespace std;
 namespace PLMD {
 namespace function {
 
@@ -69,7 +68,7 @@ void Function::apply()
   const unsigned ncp=getNumberOfComponents();
   const unsigned cgs=comm.Get_size();
 
-  vector<double> f(noa,0.0);
+  std::vector<double> f(noa,0.0);
 
   unsigned stride=1;
   unsigned rank=0;
@@ -81,8 +80,8 @@ void Function::apply()
   unsigned at_least_one_forced=0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
   {
-    vector<double> omp_f(noa,0.0);
-    vector<double> forces(noa);
+    std::vector<double> omp_f(noa,0.0);
+    std::vector<double> forces(noa);
     #pragma omp for reduction( + : at_least_one_forced)
     for(unsigned i=rank; i<ncp; i+=stride) {
       if(getPntrToComponent(i)->applyForce(forces)) {

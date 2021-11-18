@@ -236,22 +236,13 @@ In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "
 notice that these commands depend on the lepton library that is included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
-As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED. In order to enable it
-it is sufficient to use a specific flag in configure:
-\verbatim
-./configure --enable-asmjit
-make
-make install
-\endverbatim
-
-You are done!
-
-Once ASMJIT has been configured, you can disable it at runtime setting the environment variable
+As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED.
+As of PLUMED 2.8, ASMJIT is enabled by default on supported architectures (X86/X64).
+You can disable it at runtime setting the environment variable
 `PLUMED_USE_ASMJIT`:
 \verbatim
 export PLUMED_USE_ASMJIT=no
 \endverbatim
-
 
 In some case using a custom expression is almost as fast as using a hard-coded
 function. For instance, with an input that contained the following lines:

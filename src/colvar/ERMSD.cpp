@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,9 +31,6 @@
 #include "tools/PDB.h"
 #include "tools/ERMSD.h"
 #include "core/Atoms.h"
-#include <iostream>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -106,7 +103,7 @@ eRMSD1: ERMSD REFERENCE=reference.pdb ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@
 class ERMSD : public Colvar {
 
 
-  vector<Vector> derivs;
+  std::vector<Vector> derivs;
   PLMD::ERMSD ermsd;
   bool pbc;
 
@@ -131,7 +128,7 @@ void ERMSD::registerKeywords(Keywords& keys) {
 ERMSD::ERMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao), pbc(true)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
   double cutoff=2.4;
   parse("CUTOFF",cutoff);
@@ -141,10 +138,10 @@ ERMSD::ERMSD(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  vector<AtomNumber> atoms_;
+  std::vector<AtomNumber> atoms_;
   parseAtomList("ATOMS",atoms_);
 
-  vector<unsigned> pairs_;
+  std::vector<unsigned> pairs_;
   parseVector("PAIRS",pairs_);
   checkRead();
 
@@ -165,7 +162,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
   // store target_ distance
-  vector <Vector> reference_positions;
+  std::vector <Vector> reference_positions;
   unsigned natoms = atoms_.size();
   log.printf("Read %u atoms\n",natoms);
 
@@ -212,9 +209,6 @@ void ERMSD::calculate() {
   for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}
 
   setBoxDerivativesNoPbc();
-
-//setBoxDerivatives(virial);
-
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,9 +27,6 @@
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
-
-using namespace std;
-
 namespace PLMD {
 namespace colvar {
 
@@ -46,9 +43,6 @@ public:
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
-
-
-using namespace std;
 
 //+PLUMEDOC DCOLVAR RMSD
 /*
@@ -181,9 +175,9 @@ RMSD::RMSD(const ActionOptions&ao):
   squared(false),
   nopbc(false)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
-  string type;
+  std::string type;
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);

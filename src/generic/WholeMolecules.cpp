@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,13 +28,12 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
+#include "tools/Tree.h"
 
 #include <vector>
 #include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -105,9 +104,10 @@ class WholeMolecules:
   public ActionPilot,
   public ActionAtomistic
 {
-  vector<vector<AtomNumber> > groups;
-  bool doref;
-  vector<Vector> refs;
+  std::vector<std::vector<AtomNumber> > groups;
+  std::vector<std::vector<AtomNumber> > roots;
+  std::vector<Vector> refs;
+  bool doemst, addref;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -129,60 +129,93 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("ADDREFERENCE", false, "Set this flag if you want to define a reference position for the first atom of each entity");
-  keys.add("numbered", "REF", "Add reference position for first atom of each entity");
+  keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
+  keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  doref(false)
+  doemst(false), addref(false)
 {
-  vector<AtomNumber> merge;
+  // parse optional flags
+  parseFlag("EMST", doemst);
+  parseFlag("ADDREFERENCE", addref);
+
+  // create groups from ENTITY
   for(int i=0;; i++) {
-    vector<AtomNumber> group;
+    std::vector<AtomNumber> group;
     parseAtomList("ENTITY",i,group);
     if( group.empty() ) break;
-    log.printf("  atoms in entity %d : ",i);
-    for(unsigned j=0; j<group.size(); ++j) log.printf("%d ",group[j].serial() );
-    log.printf("\n");
     groups.push_back(group);
-    merge.insert(merge.end(),group.begin(),group.end());
-  }
-  // read reference position of first atom of each entity
-  parseFlag("ADDREFERENCE", doref);
-  if(doref) {
-    for(int i=0; i<groups.size(); ++i) {
-      vector<double> ref;
-      parseNumberedVector("REF",i,ref);
-      refs.push_back(Vector(ref[0],ref[1],ref[2]));
-      log.printf("  reference position in entity %d : %lf %lf %lf\n",i,ref[0],ref[1],ref[2]);
-    }
   }
 
   // Read residues to align from MOLINFO
-  vector<string> resstrings; parseVector("RESIDUES",resstrings);
+  std::vector<std::string> resstrings; parseVector("RESIDUES",resstrings);
   if( resstrings.size()>0 ) {
     if( resstrings.size()==1 ) {
       if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
     }
-    string moltype; parse("MOLTYPE",moltype);
-    if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
-    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-    if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+    std::string moltype; parse("MOLTYPE",moltype);
+    if(moltype.length()==0) error("Found RESIDUES keyword without specification of the molecule - use MOLTYPE");
+    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if( !moldat ) error("MOLINFO is required to use RESIDUES");
     std::vector< std::vector<AtomNumber> > backatoms;
-    moldat[0]->getBackbone( resstrings, moltype, backatoms );
+    moldat->getBackbone( resstrings, moltype, backatoms );
     for(unsigned i=0; i<backatoms.size(); ++i) {
-      log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
-      for(unsigned j=0; j<backatoms[i].size(); ++j) log.printf("%d ",backatoms[i][j].serial() );
-      log.printf("\n");
       groups.push_back( backatoms[i] );
-      merge.insert(merge.end(),backatoms[i].begin(),backatoms[i].end());
     }
   }
 
-  if(groups.size()==0) error("no atom found for WHOLEMOLECULES!");
+  // check number of groups
+  if(groups.size()==0) error("no atoms found for WHOLEMOLECULES!");
+
+  // if using PDBs reorder atoms in groups based on proximity in PDB file
+  if(doemst) {
+    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if( !moldat ) error("MOLINFO is required to use EMST");
+    // initialize tree
+    Tree tree = Tree(moldat);
+    // cycle on groups and reorder atoms
+    for(unsigned i=0; i<groups.size(); ++i) {
+      groups[i] = tree.getTree(groups[i]);
+      // store root atoms
+      roots.push_back(tree.getRoot());
+    }
+  } else {
+    // fill root vector with previous atom in groups
+    for(unsigned i=0; i<groups.size(); ++i) {
+      std::vector<AtomNumber> root;
+      for(unsigned j=0; j<groups[i].size()-1; ++j) root.push_back(groups[i][j]);
+      // store root atoms
+      roots.push_back(root);
+    }
+  }
+
+  // adding reference if needed
+  if(addref) {
+    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if( !moldat ) error("MOLINFO is required to use ADDREFERENCE");
+    for(unsigned i=0; i<groups.size(); ++i) {
+      // add reference position of first atom in entity
+      refs.push_back(moldat->getPosition(groups[i][0]));
+    }
+  }
+
+  // print out info
+  for(unsigned i=0; i<groups.size(); ++i) {
+    log.printf("  atoms in entity %d : ",i);
+    for(unsigned j=0; j<groups[i].size(); ++j) log.printf("%d ",groups[i][j].serial() );
+    log.printf("\n");
+    if(addref) log.printf("     with reference position : %lf %lf %lf\n",refs[i][0],refs[i][1],refs[i][2]);
+  }
+
+  // collect all atoms
+  std::vector<AtomNumber> merge;
+  for(unsigned i=0; i<groups.size(); ++i) {
+    merge.insert(merge.end(),groups[i].begin(),groups[i].end());
+  }
 
   checkRead();
   Tools::removeDuplicates(merge);
@@ -192,33 +225,19 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  if(doref) {
-    #pragma omp parallel num_threads(OpenMP::getNumThreads())
-    {
-      #pragma omp for nowait
-      for(unsigned i=0; i<groups.size(); ++i) {
-        Vector & first (modifyGlobalPosition(groups[i][0]));
-        first = refs[i]+pbcDistance(refs[i],first);
-        for(unsigned j=0; j<groups[i].size()-1; ++j) {
-          const Vector & first (getGlobalPosition(groups[i][j]));
-          Vector & second (modifyGlobalPosition(groups[i][j+1]));
-          second=first+pbcDistance(first,second);
-        }
-      }
+  for(unsigned i=0; i<groups.size(); ++i) {
+    if(addref) {
+      Vector & first (modifyGlobalPosition(groups[i][0]));
+      first = refs[i]+pbcDistance(refs[i],first);
     }
-  } else {
-    for(unsigned i=0; i<groups.size(); ++i) {
-      for(unsigned j=0; j<groups[i].size()-1; ++j) {
-        const Vector & first (getGlobalPosition(groups[i][j]));
-        Vector & second (modifyGlobalPosition(groups[i][j+1]));
-        second=first+pbcDistance(first,second);
-      }
+    for(unsigned j=0; j<groups[i].size()-1; ++j) {
+      const Vector & first (getGlobalPosition(roots[i][j]));
+      Vector & second (modifyGlobalPosition(groups[i][j+1]));
+      second=first+pbcDistance(first,second);
     }
   }
 }
 
 
-
 }
-
 }

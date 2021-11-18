@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,10 +25,8 @@
 #include "h36.h"
 #include <cstdio>
 #include <iostream>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "Tensor.h"
-
-using namespace std;
 
 //+PLUMEDOC INTERNAL pdbreader
 /*
@@ -94,6 +92,11 @@ ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
 However notice that many extra atoms with zero weight might slow down the calculation, so
 removing lines is better than setting their weights to zero.
 In addition, weights for alignment need not to be equivalent to weights for displacement.
+Starting with PLUMED 2.7, if all the weights are set to zero they will be normalized to be equal to the
+inverse of the number of involved atoms. This means that it will be possible to use files with
+the weight columns set to zero obtaining a meaningful result. In previous PLUMED versions,
+setting all weights to zero was resulting in an error instead.
+
 
 \par Systems with more than 100k atoms
 
@@ -252,7 +255,6 @@ std::string PDB::getAtomName(AtomNumber a)const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Name of atom " + num + " not found" );
-    return "";
   } else return atomsymb[p->second];
 }
 
@@ -261,7 +263,6 @@ unsigned PDB::getResidueNumber(AtomNumber a)const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-    return 0;
   } else return residue[p->second];
 }
 
@@ -270,7 +271,6 @@ std::string PDB::getResidueName(AtomNumber a) const {
   if(p==number2index.end()) {
     std::string num; Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-    return "";
   } else return residuenames[p->second];
 }
 
@@ -282,35 +282,35 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   //cerr<<file<<endl;
   bool file_is_alive=false;
   if(naturalUnits) scale=1.0;
-  string line;
+  std::string line;
   fpos_t pos; bool between_ters=true;
   while(Tools::getline(fp,line)) {
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) line.push_back(' ');
-    string record=line.substr(0,6);
-    string serial=line.substr(6,5);
-    string atomname=line.substr(12,4);
-    string residuename=line.substr(17,3);
-    string chainID=line.substr(21,1);
-    string resnum=line.substr(22,4);
-    string x=line.substr(30,8);
-    string y=line.substr(38,8);
-    string z=line.substr(46,8);
-    string occ=line.substr(54,6);
-    string bet=line.substr(60,6);
-    string BoxX=line.substr(6,9);
-    string BoxY=line.substr(15,9);
-    string BoxZ=line.substr(24,9);
-    string BoxA=line.substr(33,7);
-    string BoxB=line.substr(40,7);
-    string BoxG=line.substr(47,7);
+    std::string record=line.substr(0,6);
+    std::string serial=line.substr(6,5);
+    std::string atomname=line.substr(12,4);
+    std::string residuename=line.substr(17,3);
+    std::string chainID=line.substr(21,1);
+    std::string resnum=line.substr(22,4);
+    std::string x=line.substr(30,8);
+    std::string y=line.substr(38,8);
+    std::string z=line.substr(46,8);
+    std::string occ=line.substr(54,6);
+    std::string bet=line.substr(60,6);
+    std::string BoxX=line.substr(6,9);
+    std::string BoxY=line.substr(15,9);
+    std::string BoxZ=line.substr(24,9);
+    std::string BoxA=line.substr(33,7);
+    std::string BoxB=line.substr(40,7);
+    std::string BoxG=line.substr(47,7);
     Tools::trim(record);
     if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END") { file_is_alive=true;  break;}
     if(record=="ENDMDL") { file_is_alive=true;  break;}
     if(record=="REMARK") {
-      vector<string> v1;  v1=Tools::getWords(line.substr(6));
+      std::vector<std::string> v1;  v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
     }
     if(record=="CRYST1") {
@@ -321,27 +321,29 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
       BoxXYZ*=scale;
-      double cosA=cos(BoxABG[0]*pi/180.);
-      double cosB=cos(BoxABG[1]*pi/180.);
-      double cosG=cos(BoxABG[2]*pi/180.);
-      double sinG=sin(BoxABG[2]*pi/180.);
+      double cosA=std::cos(BoxABG[0]*pi/180.);
+      double cosB=std::cos(BoxABG[1]*pi/180.);
+      double cosG=std::cos(BoxABG[2]*pi/180.);
+      double sinG=std::sin(BoxABG[2]*pi/180.);
       for (unsigned i=0; i<3; i++) {Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;}
       Box[0][0]=BoxXYZ[0];
       Box[1][0]=BoxXYZ[1]*cosG;
       Box[1][1]=BoxXYZ[1]*sinG;
       Box[2][0]=BoxXYZ[2]*cosB;
       Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
-      Box[2][2]=sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
+      Box[2][2]=std::sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
-      AtomNumber a; unsigned resno;
+      AtomNumber a;
+      unsigned resno=0; // GB: when resnum string is not present, we set res number to zero
       double o,b;
       Vector p;
       {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
+        while(trimmed.length()<5) trimmed = std::string(" ") + trimmed;
         const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
@@ -350,7 +352,13 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         a.setSerial(result);
       }
 
-      Tools::convert(resnum,resno);
+      // allow skipping residue number
+      {
+        auto trimmed=resnum;
+        Tools::trim(trimmed);
+        if(trimmed.length()>0) Tools::convert(trimmed,resno);
+      }
+
       Tools::convert(occ,o);
       Tools::convert(bet,b);
       Tools::convert(x,p[0]);
@@ -431,7 +439,6 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found" );
-  return "";
 }
 
 std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
@@ -440,7 +447,6 @@ std::string PDB::getResidueName(const unsigned& resnum,const std::string& chaini
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found in chain " + chainid );
-  return "";
 }
 
 
@@ -450,7 +456,6 @@ AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigne
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
-  return numbers[0]; // This is to stop compiler errors
 }
 
 AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const {
@@ -459,7 +464,6 @@ AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const
   }
   std::string num; Tools::convert( resnum, num );
   plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
-  return numbers[0]; // This is to stop compiler errors
 }
 
 std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
@@ -492,6 +496,15 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
   plumed_merror("Not enough residues in pdb input file");
 }
 
+std::string PDB::getChainID(AtomNumber a) const {
+  const auto p=number2index.find(a);
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Chain for atom " + num + " not found" );
+  }
+  return chain[p->second];
+}
+
 bool PDB::checkForResidue( const std::string& name ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residuenames[i]==name ) return true;
@@ -506,10 +519,15 @@ bool PDB::checkForAtom( const std::string& name ) const {
   return false;
 }
 
+bool PDB::checkForAtom( AtomNumber a ) const {
+  const auto p=number2index.find(a);
+  return (p!=number2index.end());
+}
+
 Log& operator<<(Log& ostr, const PDB&  pdb) {
   char buffer[1000];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
-    sprintf(buffer,"ATOM %3d %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
+    std::sprintf(buffer,"ATOM %3d %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
     ostr<<buffer;
   }
   return ostr;
@@ -529,7 +547,7 @@ std::string PDB::getMtype() const {
   return mtype;
 }
 
-void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
+void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
   if( argnames.size()>0 ) {
     ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
     for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );

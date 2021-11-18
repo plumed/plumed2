@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -184,7 +184,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   plumed_assert( myvalue_vessel && myderiv_vessel ); resizeFunctions();
 
   // Create the vector of values that holds the position
-  for(unsigned i=0; i<3; ++i) pval.emplace_back( new Value() );
+  for(unsigned i=0; i<3; ++i) pval.emplace_back( Tools::make_unique<Value>() );
 }
 
 unsigned DistanceFromContour::getNumberOfQuantities() const {

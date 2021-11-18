@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,7 +46,7 @@ class ActionWithArguments:
   bool lockRequestArguments;
 protected:
 /// This changes the arg keyword in the pdb file
-  void expandArgKeywordInPDB( PDB& pdb );
+  void expandArgKeywordInPDB( const PDB& pdb );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 #ifndef __PLUMED_core_MDAtoms_h
 #define __PLUMED_core_MDAtoms_h
 
+#include "tools/TypesafePtr.h"
 #include "tools/Tensor.h"
 #include "tools/Vector.h"
 #include "tools/AtomNumber.h"
@@ -57,27 +58,27 @@ public:
 /// Get the size of MD-real
   virtual unsigned getRealPrecision()const=0;
 /// Set a pointer to the mass array in the MD code
-  virtual void setm(void*m)=0;
+  virtual void setm(const TypesafePtr & m)=0;
 /// Set a pointer to the charge array in the MD code
-  virtual void setc(void*m)=0;
+  virtual void setc(const TypesafePtr & m)=0;
 /// Set a pointer to the box array (3x3) in the MD code
-  virtual void setBox(void*)=0;
+  virtual void setBox(const TypesafePtr &)=0;
 /// Set a pointer to the positions array in the MD code
-  virtual void setp(void*p)=0;
+  virtual void setp(const TypesafePtr & p)=0;
 /// Set a pointer to the virial array (3x3) in the MD code
-  virtual void setVirial(void*)=0;
+  virtual void setVirial(const TypesafePtr &)=0;
 /// Set a pointer to the forces array in the MD code
-  virtual void setf(void*f)=0;
+  virtual void setf(const TypesafePtr & f)=0;
 /// Set a pointer to the position array in the MD code
-  virtual void setp(void*p,int i)=0;
+  virtual void setp(const TypesafePtr & p,int i)=0;
 /// Set a pointer to the force array in the MD code
-  virtual void setf(void*f,int i)=0;
+  virtual void setf(const TypesafePtr & f,int i)=0;
 /// Set internal and MD units
   virtual void setUnits(const Units& units,const Units& MDUnits)=0;
 /// Convert a pointer to an MD-real to a double
-  virtual void MD2double(const void*,double&)const=0;
+  virtual void MD2double(const TypesafePtr &,double&)const=0;
 /// Convert a double to a pointer to an MD-real
-  virtual void double2MD(const double&,void*)const=0;
+  virtual void double2MD(const double&,const TypesafePtr &)const=0;
 
   virtual Vector getMDforces(const unsigned index)const=0;
 /// Retrieve box as a plumed Tensor
@@ -110,9 +111,9 @@ public:
   virtual void rescaleForces(const std::vector<int>&index,double factor)=0;
 
 /// Set a pointer to an extra CV.
-  virtual void setExtraCV(const std::string &name,void*p)=0;
+  virtual void setExtraCV(const std::string &name,const TypesafePtr& p)=0;
 /// Set a pointer to an extra CV force.
-  virtual void setExtraCVForce(const std::string &name,void*p)=0;
+  virtual void setExtraCVForce(const std::string &name,const TypesafePtr & p)=0;
 /// Retrieve the value of an extra CV.
   virtual double getExtraCV(const std::string &name)=0;
 /// Update the value of an extra CV force.

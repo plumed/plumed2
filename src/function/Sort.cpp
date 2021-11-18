@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,12 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
 #include "Function.h"
-
-#include <cmath>
-#include <algorithm>
-#include <utility>
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -80,7 +74,7 @@ Sort::Sort(const ActionOptions&ao):
   Function(ao)
 {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string s;
+    std::string s;
     Tools::convert(i+1,s);
     if(getPntrToArgument(i)->isPeriodic())
       error("Cannot sort periodic values (check argument "+s+")");
@@ -92,14 +86,14 @@ Sort::Sort(const ActionOptions&ao):
 }
 
 void Sort::calculate() {
-  vector<pair<double,int> > vals(getNumberOfArguments());
+  std::vector<std::pair<double,int> > vals(getNumberOfArguments());
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     vals[i].first=getArgument(i);
 // In this manner I remember from which argument the component depends:
     vals[i].second=i;
   }
 // STL sort sorts based on first element (value) then second (index)
-  sort(vals.begin(),vals.end());
+  std::sort(vals.begin(),vals.end());
   for(int i=0; i<getNumberOfComponents(); ++i) {
     Value* v=getPntrToComponent(i);
     v->set(vals[i].first);

@@ -60,7 +60,7 @@ CoeffsVector::CoeffsVector(
 
 CoeffsVector::CoeffsVector(
   const std::string& label,
-  std::vector<Value*>& args,
+  const std::vector<Value*>& args,
   std::vector<BasisFunctions*>& basisf,
   Communicator& cc,
   const bool use_iteration_counter):
@@ -769,7 +769,7 @@ void CoeffsVector::writeDataToFile(OFile& ofile, const std::vector<CoeffsVector*
     coeffs_datalabels[k] = coeffsvecSet[k]->getDataLabel();
   }
   //
-  char* s1 = new char[20];
+  std::vector<char> s1(20);
   std::vector<unsigned int> indices(numdim);
   std::vector<std::string> ilabels(numdim);
   for(unsigned int k=0; k<numdim; k++) {
@@ -779,13 +779,13 @@ void CoeffsVector::writeDataToFile(OFile& ofile, const std::vector<CoeffsVector*
   for(size_t i=0; i<numcoeffs; i++) {
     indices=coeffsvecSet[0]->getIndices(i);
     for(unsigned int k=0; k<numdim; k++) {
-      sprintf(s1,int_fmt.c_str(),indices[k]);
-      ofile.printField(ilabels[k],s1);
+      std::sprintf(s1.data(),int_fmt.c_str(),indices[k]);
+      ofile.printField(ilabels[k],s1.data());
     }
     for(unsigned int l=0; l<numvec; l++) {
       ofile.fmtField(" "+output_fmt).printField(coeffs_datalabels[l],coeffsvecSet[l]->getValue(i));
     }
-    sprintf(s1,int_fmt.c_str(),i); ofile.printField(field_index,s1);
+    std::sprintf(s1.data(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
     if(print_coeffs_descriptions) { ofile.printField(field_description,"  "+coeffs_descriptions[i]);}
     ofile.printField();
   }
@@ -794,7 +794,6 @@ void CoeffsVector::writeDataToFile(OFile& ofile, const std::vector<CoeffsVector*
   ofile.printf("%s\n",str_separate.c_str());
   ofile.printf("\n");
   ofile.printf("\n");
-  delete [] s1;
 }
 
 

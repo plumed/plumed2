@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,6 +34,7 @@ class ActionShortcut :
   public virtual Action {
 private:
   std::string shortcutlabel;
+  std::vector<std::string> savedInputLines;
 protected:
   const std::string & getShortcutLabel() const ;
 public:
@@ -46,6 +47,8 @@ public:
   void calculate() override {}
 /// Do nothing.
   void apply() override {}
+/// Get the lines of the shortcut that were read in
+  std::vector<std::string> getSavedInputLines() const ;
 };
 
 }

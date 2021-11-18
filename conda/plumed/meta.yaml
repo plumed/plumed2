@@ -22,15 +22,12 @@ requirements:
     - {{ compiler('cxx') }}
     - llvm-openmp  # [osx]
     - make
-# xxd is provided by package vim and used during build
-    - vim  # [linux]
   host:
     - fftw
     - gsl
     - libblas
     - liblapack
     - llvm-openmp  # [osx]
-    - xdrfile
     - zlib
   run:
     - gawk
@@ -41,7 +38,7 @@ test:
     - plumed info --root
     - plumed info --long-version
     - plumed-patch -h
-    - plumed config has external_blas external_lapack fftw gsl xdrfile zlib
+    - plumed config has external_blas external_lapack fftw gsl zlib
     - $PREFIX/lib/plumed/plumed-runtime -h
     - test -f $PREFIX/lib/libplumed$SHLIB_EXT
     - test -f $PREFIX/lib/libplumedWrapper.a

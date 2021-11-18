@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,8 +27,6 @@
 
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace multicolvar {
@@ -142,7 +140,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   parse("R_POWER", r_power);
   if(r_power > 0) {
     log.printf("  Multiplying switching function by r^%d\n", r_power);
-    double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * pow(rcut*0.9999, r_power);
+    double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * std::pow(rcut*0.9999, r_power);
     log.printf("  You will have a discontinuous jump of %f to 0 near the cutoff of your switching function. "
                "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
   }
@@ -168,7 +166,7 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
       if(r_power > 0) {
-        d = sqrt(d2); raised = pow( d, r_power - 1 );
+        d = std::sqrt(d2); raised = std::pow( d, r_power - 1 );
         accumulateSymmetryFunction( 1, i, sw * raised * d,
                                     (dfunc * d * raised + sw * r_power * raised / d) * distance,
                                     (-dfunc * d * raised - sw * r_power * raised / d) * Tensor(distance, distance),

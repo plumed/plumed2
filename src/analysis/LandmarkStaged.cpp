@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,7 +99,7 @@ void LandmarkStaged::selectLandmarks() {
   std::vector<double> weights( m, 0 );
   voronoiAnalysis( fpslandmarks, weights, poly_assign );
 
-  //Calulate total weight of voronoi polyhedras
+  //Calculate total weight of voronoi polyhedras
   double vweight=0; for(unsigned i=0; i<m; i++) vweight += exp( -weights[i] / gamma );
 
   std::vector<bool> selected(N, false); unsigned ncount=0;

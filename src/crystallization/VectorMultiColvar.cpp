@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,7 +59,7 @@ void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp ) {
 }
 
 void VectorMultiColvar::doNotCalculateDirector() {
-  store_director=false;    // Need a sanity check in here  so that you don't use the same instance of Q4 to calcualte vectors and directors
+  store_director=false;    // Need a sanity check in here so that you don't use the same instance of Q4 to calculate vectors and directors
 }
 
 double VectorMultiColvar::compute( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const {

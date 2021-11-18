@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,8 +29,6 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 #endif
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -91,6 +89,7 @@ In addition, and only for analysis purposes, the same RDCs each single conformat
 using a Single Value Decomposition algorithm, then averaged and again compared with the experimental data.
 
 \plumedfile
+#SETTINGS NREPLICAS=2
 RDC ...
 GYROM=-72.5388
 SCALE=0.001
@@ -119,10 +118,9 @@ ATOMS5=92,93 COUPLING5=-9.152
 LABEL=svd
 ... RDC
 
-esvd: ENSEMBLE ARG=svd.*
+esvd: ENSEMBLE ARG=(svd\.rdc-.*)
 
 st_svd: STATS ARG=esvd.* PARAMETERS=8.17,-8.271,-10.489,-9.871,-9.152
-
 
 PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 \endplumedfile
@@ -180,7 +178,7 @@ private:
   double         Const;
   double         mu_s;
   double         scale;
-  vector<double> coupl;
+  std::vector<double> coupl;
   bool           svd;
   bool           pbc;
 
@@ -262,7 +260,7 @@ RDC::RDC(const ActionOptions&ao):
   else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
 
   // Read in the atoms
-  vector<AtomNumber> t, atoms;
+  std::vector<AtomNumber> t, atoms;
   for(int i=1;; ++i ) {
     parseAtomList("ATOMS", i, t );
     if( t.empty() ) break;
@@ -306,7 +304,7 @@ RDC::RDC(const ActionOptions&ao):
   if(svd&&!addexp) error("with SVD you need to set the COUPLING values");
 
 
-  // Ouput details of all contacts
+  // Output details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
   for(unsigned i=0; i<ndata; ++i) {
     log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());
@@ -385,7 +383,7 @@ void RDC::do_svd()
   gsl_vector_set_zero(bc.get());
 
   unsigned index=0;
-  vector<double> dmax(coupl.size());
+  std::vector<double> dmax(coupl.size());
   for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
     Vector  distance;
     if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
@@ -449,7 +447,7 @@ void RDC::calculate()
 
   const double max  = -Const*scale*mu_s;
   const unsigned N=getNumberOfAtoms();
-  vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
+  std::vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
   /* RDC Calculations and forces */
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -462,7 +460,7 @@ void RDC::calculate()
       if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
       else    distance   = delta(getPosition(r),getPosition(r+1));
       const double d2    = distance.modulo2();
-      const double ind   = 1./sqrt(d2);
+      const double ind   = 1./std::sqrt(d2);
       const double ind2  = 1./d2;
       const double ind3  = ind2*ind;
       const double x2    = distance[0]*distance[0]*ind2;
@@ -480,7 +478,7 @@ void RDC::calculate()
       dRDC[index][1] *= prod_xy;
       dRDC[index][2] *= prod_z;
 
-      string num; Tools::convert(index,num);
+      std::string num; Tools::convert(index,num);
       Value* val=getPntrToComponent("rdc-"+num);
       val->set(rdc);
       if(!getDoScore()) {

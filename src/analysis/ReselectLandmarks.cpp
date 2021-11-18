@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,7 +63,7 @@ ReselectLandmarks::ReselectLandmarks( const ActionOptions& ao ):
   if( !mylandmarks ) error("input to LANDMARKS is not a landmark selection action");
   nlandmarks = mylandmarks->nlandmarks;
 
-  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between ammount of landmark class and base class");
+  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between amount of landmark class and base class");
 }
 
 void ReselectLandmarks::selectLandmarks() {

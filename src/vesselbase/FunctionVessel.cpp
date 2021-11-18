@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -74,7 +74,7 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
 }
 
 double FunctionVessel::calcTransform( const double&, double& ) const {
-  plumed_error(); return 1.0;
+  plumed_error();
 }
 
 void FunctionVessel::finish( const std::vector<double>& buffer ) {

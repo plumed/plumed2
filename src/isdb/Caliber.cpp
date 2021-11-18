@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include <fstream>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -96,9 +94,9 @@ public:
   void calculate();
   static void registerKeywords( Keywords& keys );
 private:
-  vector<double> time;
-  vector< vector<double> > var;
-  vector< vector<double> > dvar;
+  std::vector<double> time;
+  std::vector< std::vector<double> > var;
+  std::vector< std::vector<double> > dvar;
   double   mult;
   double   scale_;
   bool     master;
@@ -109,17 +107,17 @@ private:
   int  nregres_zero_;
   // force constant
   unsigned optsigmamean_stride_;
-  vector<double> sigma_mean2_;
-  vector< vector<double> > sigma_mean2_last_;
-  vector<Value*> x0comp;
-  vector<Value*> kcomp;
-  vector<Value*> mcomp;
+  std::vector<double> sigma_mean2_;
+  std::vector< std::vector<double> > sigma_mean2_last_;
+  std::vector<Value*> x0comp;
+  std::vector<Value*> kcomp;
+  std::vector<Value*> mcomp;
   Value* valueScale;
 
-  void get_sigma_mean(const double fact, const vector<double> &mean);
-  void replica_averaging(const double fact, vector<double> &mean);
+  void get_sigma_mean(const double fact, const std::vector<double> &mean);
+  void replica_averaging(const double fact, std::vector<double> &mean);
   double getSpline(const unsigned iarg);
-  void do_regression_zero(const vector<double> &mean);
+  void do_regression_zero(const std::vector<double> &mean);
 };
 
 PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
@@ -149,7 +147,7 @@ Caliber::Caliber(const ActionOptions&ao):
   optsigmamean_stride_(0)
 {
   parse("KAPPA",mult);
-  string filename;
+  std::string filename;
   parse("FILE",filename);
   if( filename.length()==0 ) error("No external variable file was specified");
   unsigned averaging=0;
@@ -233,13 +231,13 @@ Caliber::Caliber(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Capelli, Tiana, Camilloni, J Chem Phys, 148, 184114");
 }
 
-void Caliber::get_sigma_mean(const double fact, const vector<double> &mean)
+void Caliber::get_sigma_mean(const double fact, const std::vector<double> &mean)
 {
   const unsigned narg = getNumberOfArguments();
   const double dnrep = static_cast<double>(nrep_);
 
   if(sigma_mean2_last_[0].size()==optsigmamean_stride_) for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[i].erase(sigma_mean2_last_[i].begin());
-  vector<double> sigma_mean2_now(narg,0);
+  std::vector<double> sigma_mean2_now(narg,0);
   if(master) {
     for(unsigned i=0; i<narg; ++i) {
       double tmp = getArgument(i)-mean[i];
@@ -255,7 +253,7 @@ void Caliber::get_sigma_mean(const double fact, const vector<double> &mean)
   }
 }
 
-void Caliber::replica_averaging(const double fact, vector<double> &mean)
+void Caliber::replica_averaging(const double fact, std::vector<double> &mean)
 {
   const unsigned narg = getNumberOfArguments();
   if(master) {
@@ -280,12 +278,12 @@ double Caliber::getSpline(const unsigned iarg)
     double grid=var[iarg][ipoint];
     double dder=dvar[iarg][ipoint];
     double yy=0.;
-    if(fabs(grid)>0.0000001) yy=-dder/grid;
+    if(std::abs(grid)>0.0000001) yy=-dder/grid;
 
     int x0=1;
     if(ipoint==tindex) x0=0;
 
-    double X=fabs((getTime()-time[tindex])/deltat-(double)x0);
+    double X=std::abs((getTime()-time[tindex])/deltat-(double)x0);
     double X2=X*X;
     double X3=X2*X;
     double C=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*deltat;
@@ -295,7 +293,7 @@ double Caliber::getSpline(const unsigned iarg)
   return value;
 }
 
-void Caliber::do_regression_zero(const vector<double> &mean)
+void Caliber::do_regression_zero(const std::vector<double> &mean)
 {
 // parameters[i] = scale_ * mean[i]: find scale_ with linear regression
   double num = 0.0;
@@ -317,8 +315,8 @@ void Caliber::calculate()
   const double dnrep = static_cast<double>(nrep_);
   const double fact = 1.0/dnrep;
 
-  vector<double> mean(narg,0);
-  vector<double> dmean_x(narg,fact);
+  std::vector<double> mean(narg,0);
+  std::vector<double> dmean_x(narg,fact);
   replica_averaging(fact, mean);
   if(optsigmamean_stride_>0) get_sigma_mean(fact, mean);
 

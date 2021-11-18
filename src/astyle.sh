@@ -17,6 +17,7 @@ test "$dir" = blas && continue
 test "$dir" = molfile && continue
 test "$dir" = lepton && continue
 test "$dir" = asmjit && continue
+test "$dir" = xdrfile && continue
 
 cd $dir
 

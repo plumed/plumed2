@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,7 +79,7 @@ void DimensionalityReductionBase::performAnalysis() {
   dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
-  // Retreive the projections from the previous calculation
+  // Retrieve the projections from the previous calculation
   if( dimredbase ) {
     std::vector<double> newp( nlow ); double w;
     for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,8 +22,6 @@
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
 
-using namespace std;
-
 namespace PLMD {
 
 void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
@@ -35,10 +33,9 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  boxDerivatives(3)
+  index(atoms.addVirtualAtom(this))
 {
-  index=atoms.addVirtualAtom(this);
-  log.printf("  serial associated to this virtual atom is %u\n",index.serial());
+  log<<"  serial associated to this virtual atom is "<<index.serial()<<"\n";
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom() {
@@ -77,9 +74,8 @@ void ActionWithVirtualAtom::setGradients() {
   }
 }
 
-void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
+void ActionWithVirtualAtom::setBoxDerivatives(const std::array<Tensor,3> &d) {
   boxDerivatives=d;
-  plumed_assert(d.size()==3);
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
@@ -88,7 +84,7 @@ void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
 }
 
 void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
-  std::vector<Tensor> bd(3);
+  std::array<Tensor,3> bd;
   for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) for(unsigned k=0; k<3; k++) {
 // Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
 // Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions

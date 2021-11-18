@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "ActionAtomistic.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "SetupMolInfo.h"
+#include "GenericMolInfo.h"
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
@@ -32,8 +32,6 @@
 #include "Atoms.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
-
-using namespace std;
 
 namespace PLMD {
 
@@ -58,7 +56,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
+void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -101,8 +99,8 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     plumed_massert(a,"only Actions with a value can be differentiated");
   }
 
-  const int nval=a->getNumberOfComponents();
-  const int natoms=getNumberOfAtoms();
+  const size_t nval=a->getNumberOfComponents();
+  const size_t natoms=getNumberOfAtoms();
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
   std::vector<Vector> savedPositions(natoms);
@@ -156,7 +154,7 @@ void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumbe
 
 void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t) {
   plumed_massert( keywords.style(key,"atoms") || keywords.style(key,"hidden"), "keyword " + key + " should be registered as atoms");
-  vector<string> strings;
+  std::vector<std::string> strings;
   if( num<0 ) {
     parseVector(key,strings);
     if(strings.empty()) return;
@@ -166,11 +164,11 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   interpretAtomList( strings, t );
 }
 
-void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
+void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0; i<strings.size(); ++i) {
     AtomNumber atom;
-    bool ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+    bool ok=Tools::convertNoexcept(strings[i],atom); // this is converting strings to AtomNumbers
     if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
@@ -186,10 +184,11 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
         for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
         ok=true;
       } else {
-        vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-        if( moldat.size()>0 ) {
-          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
-          ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end());
+        auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+        if( moldat ) {
+          std::vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
         } else {
           error("atoms specified using @ symbol but no MOLINFO was available");
         }
@@ -220,22 +219,21 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
   }
 }
 
-
 void ActionAtomistic::retrieveAtoms() {
   pbc=atoms.pbc;
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
   if(donotretrieve) return;
   chargesWereSet=atoms.chargesWereSet();
-  const vector<Vector> & p(atoms.positions);
-  const vector<double> & c(atoms.charges);
-  const vector<double> & m(atoms.masses);
+  const std::vector<Vector> & p(atoms.positions);
+  const std::vector<double> & c(atoms.charges);
+  const std::vector<double> & m(atoms.masses);
   for(unsigned j=0; j<indexes.size(); j++) positions[j]=p[indexes[j].index()];
   for(unsigned j=0; j<indexes.size(); j++) charges[j]=c[indexes[j].index()];
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
 }
 
-void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ) {
+void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned ind) {
   if(donotforce) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
     forces[i][0]=forcesToApply[ind]; ind++;
@@ -256,8 +254,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
 
 void ActionAtomistic::applyForces() {
   if(donotforce) return;
-  vector<Vector>   & f(atoms.forces);
-  Tensor           & v(atoms.virial);
+  std::vector<Vector>& f(atoms.forces);
+  Tensor& v(atoms.virial);
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
@@ -267,13 +265,13 @@ void ActionAtomistic::applyForces() {
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
-  for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
+  for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
   forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
 }
 
 
-void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
+void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
 

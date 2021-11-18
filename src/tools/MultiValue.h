@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,9 +22,10 @@
 #ifndef __PLUMED_tools_MultiValue_h
 #define __PLUMED_tools_MultiValue_h
 
-#include <vector>
 #include "Exception.h"
 #include "DynamicList.h"
+#include <vector>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -48,8 +49,8 @@ private:
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
 public:
-  MultiValue( const unsigned&, const unsigned& );
-  void resize( const unsigned&, const unsigned& );
+  MultiValue( const std::size_t&, const std::size_t& );
+  void resize( const std::size_t&, const std::size_t& );
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();

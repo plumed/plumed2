@@ -1,0 +1,6 @@
+testHy36encode
+result= A1T5
+testHy36decodeWidth4
+result= 12345
+testHy36decodeWidth5
+result= 0

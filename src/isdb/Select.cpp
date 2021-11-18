@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,6 @@
 #include "function/Function.h"
 #include "function/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -69,7 +66,7 @@ PRINT ARG=pbactive STRIDE=100 FILE=COLVAR
 
 class Select : public function::Function
 {
-  string selector_;
+  std::string selector_;
 
 public:
   explicit Select(const ActionOptions&);

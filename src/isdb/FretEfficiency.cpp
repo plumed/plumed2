@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,6 @@
 
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -104,7 +102,7 @@ FretEfficiency::FretEfficiency(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=2)
     error("Number of specified atoms should be 2");
@@ -138,7 +136,7 @@ void FretEfficiency::calculate() {
   const double dist_mod=distance.modulo();
   const double inv_dist_mod=1.0/dist_mod;
 
-  const double ratiosix=pow(dist_mod/R0_,6);
+  const double ratiosix=std::pow(dist_mod/R0_,6);
   const double fret_eff = 1.0/(1.0+ratiosix);
 
   const double der = -6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;

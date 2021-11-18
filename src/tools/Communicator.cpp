@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "AtomNumber.h"
 #include <cstdlib>
 #include <cstring>
-
-using namespace std;
 
 namespace PLMD {
 
@@ -82,21 +80,21 @@ Communicator::~Communicator() {
 #endif
 }
 
-void Communicator::Set_comm(void*val) {
+void Communicator::Set_comm(const TypesafePtr & val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  if(val) Set_comm(*(MPI_Comm*)val);
+  if(val) Set_comm(*(const MPI_Comm*)val.get<const void*>());
 #else
   (void) val;
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
-void Communicator::Set_fcomm(void*val) {
+void Communicator::Set_fcomm(const TypesafePtr & val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
-    MPI_Comm comm=MPI_Comm_f2c(*(MPI_Fint*)val);
+    MPI_Comm comm=MPI_Comm_f2c(*(const MPI_Fint*)val.get<const void*>());
     Set_comm(comm);
   }
 #else
@@ -187,7 +185,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
     plumed_assert(rc);
     plumed_assert(rc[0]==in.size);
     plumed_assert(di);
-    if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
+    if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
   }
 #else
   plumed_assert(in.nbytes==out.nbytes);
@@ -195,7 +193,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
   plumed_assert(rc);
   plumed_assert(rc[0]==in.size);
   plumed_assert(di);
-  if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,in.size*in.nbytes);
+  if(s) std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
 #endif
 }
 
@@ -209,12 +207,12 @@ void Communicator::Allgather(ConstData in,Data out) {
   } else {
     plumed_assert(in.nbytes==out.nbytes);
     plumed_assert(in.size==out.size);
-    if(s) std::memcpy(r,s,in.size*in.nbytes);
+    if(s) std::memcpy(r,s,size_t(in.size)*in.nbytes);
   }
 #else
   plumed_assert(in.nbytes==out.nbytes);
   plumed_assert(in.size==out.size);
-  if(s) std::memcpy(r,s,in.size*in.nbytes);
+  if(s) std::memcpy(r,s,size_t(in.size)*in.nbytes);
 #endif
 }
 
@@ -231,10 +229,6 @@ void Communicator::Recv(Data data,int source,int tag,Status&status) {
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
-
-
-
-
 
 void Communicator::Barrier()const {
 #ifdef __PLUMED_HAS_MPI
@@ -275,6 +269,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+template<> MPI_Datatype Communicator::getMPIType<long double>()   { return MPI_LONG_DOUBLE;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_Datatype();}
@@ -283,8 +278,8 @@ template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype()
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<long double>() { return MPI_Datatype();}
 #endif
-
 
 void Communicator::Split(int color,int key,Communicator&pc)const {
 #ifdef __PLUMED_HAS_MPI

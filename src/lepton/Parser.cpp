@@ -38,7 +38,7 @@
  * Biological Structures at Stanford, funded under the NIH Roadmap for        *
  * Medical Research, grant U54 GM072970. See https://simtk.org.               *
  *                                                                            *
- * Portions copyright (c) 2009-2015 Stanford University and the Authors.      *
+ * Portions copyright (c) 2009-2019 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
@@ -356,50 +356,53 @@ Operation* Parser::getOperatorOperation(const std::string& name) {
 
 Operation* Parser::getFunctionOperation(const std::string& name, const map<string, CustomFunction*>& customFunctions) {
 
-    const static map<string, Operation::Id> opMap ={
-        { "sqrt" , Operation::SQRT },
-        { "exp" , Operation::EXP },
-        { "log" , Operation::LOG },
-        { "sin" , Operation::SIN },
-        { "cos" , Operation::COS },
-        { "sec" , Operation::SEC },
-        { "csc" , Operation::CSC },
-        { "tan" , Operation::TAN },
-        { "cot" , Operation::COT },
-        { "asin" , Operation::ASIN },
-        { "acos" , Operation::ACOS },
-        { "atan" , Operation::ATAN },
-        { "sinh" , Operation::SINH },
-        { "cosh" , Operation::COSH },
-        { "tanh" , Operation::TANH },
-        { "erf" , Operation::ERF },
-        { "erfc" , Operation::ERFC },
-        { "step" , Operation::STEP },
-        { "delta" , Operation::DELTA },
-        { "nandelta" , Operation::NANDELTA },
-        { "square" , Operation::SQUARE },
-        { "cube", Operation::CUBE },
-        { "recip" , Operation::RECIPROCAL },
-        { "min" , Operation::MIN },
-        { "max" , Operation::MAX },
-        { "abs" , Operation::ABS },
-        { "floor" , Operation::FLOOR },
-        { "ceil" , Operation::CEIL },
-        { "select" , Operation::SELECT },
-        { "acot" , Operation::ACOT },
-        { "asec" , Operation::ASEC },
-        { "acsc" , Operation::ACSC },
-        { "coth" , Operation::COTH },
-        { "sech" , Operation::SECH },
-        { "csch" , Operation::CSCH },
-        { "asinh" , Operation::ASINH },
-        { "acosh" , Operation::ACOSH },
-        { "atanh" , Operation::ATANH },
-        { "acoth" , Operation::ACOTH },
-        { "asech" , Operation::ASECH },
-        { "acsch" , Operation::ACSCH },
-        { "atan2" , Operation::ATAN2 },
-    };
+    const static map<string, Operation::Id> opMap = []() {
+        map<string, Operation::Id> opMap;
+        opMap["sqrt"] = Operation::SQRT;
+        opMap["exp"] = Operation::EXP;
+        opMap["log"] = Operation::LOG;
+        opMap["sin"] = Operation::SIN;
+        opMap["cos"] = Operation::COS;
+        opMap["sec"] = Operation::SEC;
+        opMap["csc"] = Operation::CSC;
+        opMap["tan"] = Operation::TAN;
+        opMap["cot"] = Operation::COT;
+        opMap["asin"] = Operation::ASIN;
+        opMap["acos"] = Operation::ACOS;
+        opMap["atan"] = Operation::ATAN;
+        opMap["atan2"] = Operation::ATAN2;
+        opMap["sinh"] = Operation::SINH;
+        opMap["cosh"] = Operation::COSH;
+        opMap["tanh"] = Operation::TANH;
+        opMap["erf"] = Operation::ERF;
+        opMap["erfc"] = Operation::ERFC;
+        opMap["step"] = Operation::STEP;
+        opMap["delta"] = Operation::DELTA;
+        opMap["nandelta"] = Operation::NANDELTA;
+        opMap["square"] = Operation::SQUARE;
+        opMap["cube"] = Operation::CUBE;
+        opMap["recip"] = Operation::RECIPROCAL;
+        opMap["min"] = Operation::MIN;
+        opMap["max"] = Operation::MAX;
+        opMap["abs"] = Operation::ABS;
+        opMap["floor"] = Operation::FLOOR;
+        opMap["ceil"] = Operation::CEIL;
+        opMap["select"] = Operation::SELECT;
+        opMap["acot"] = Operation::ACOT;
+        opMap["asec"] = Operation::ASEC;
+        opMap["acsc"] = Operation::ACSC;
+        opMap["coth"] = Operation::COTH;
+        opMap["sech"] = Operation::SECH;
+        opMap["csch"] = Operation::CSCH;
+        opMap["asinh"] = Operation::ASINH;
+        opMap["acosh"] = Operation::ACOSH;
+        opMap["atanh"] = Operation::ATANH;
+        opMap["acoth"] = Operation::ACOTH;
+        opMap["asech"] = Operation::ASECH;
+        opMap["acsch"] = Operation::ACSCH;
+        opMap["atan2"] = Operation::ATAN2;
+        return opMap;
+    }();
     string trimmed = name.substr(0, name.size()-1);
 
     // First check custom functions.
@@ -438,6 +441,8 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
             return new Operation::Acos();
         case Operation::ATAN:
             return new Operation::Atan();
+        case Operation::ATAN2:
+            return new Operation::Atan2();
         case Operation::SINH:
             return new Operation::Sinh();
         case Operation::COSH:
@@ -496,8 +501,6 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
             return new Operation::Asech();
         case Operation::ACSCH:
             return new Operation::Acsch();
-        case Operation::ATAN2:
-            return new Operation::Atan2();
         default:
             throw Exception("unknown function");
     }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <cstddef>
 #include "Vessel.h"
 
 namespace PLMD {
@@ -47,9 +48,9 @@ private:
 /// have to store when using lowmem option
   unsigned max_lowmem_stash;
 /// The size of the vector we are computing
-  unsigned vecsize;
+  std::size_t vecsize;
 /// The amount of data per vector element
-  unsigned nspace;
+  std::size_t nspace;
 /// The currently active values
 //  std::vector<unsigned> active_val;
 /// The active derivative elements

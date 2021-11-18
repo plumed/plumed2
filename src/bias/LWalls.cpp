@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,10 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
-
-
-using namespace std;
-
 
 namespace PLMD {
 namespace bias {
@@ -137,7 +133,7 @@ void LWalls::calculate() {
     if( lscale < 0.) {
       const double k=kappa[i];
       const double exponent=exp[i];
-      double power = pow( lscale, exponent );
+      double power = std::pow( lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
       ene += k * power;
       totf2 += f * f;

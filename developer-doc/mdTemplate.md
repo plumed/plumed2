@@ -214,6 +214,10 @@ plumed_cmd(plumedmain,"setRestart",&res);                      // Pointer to an 
 // This is valid only if API VERSION > 3
 plumed_cmd(plumedmain,"readInputLine","d: DISTANCE ATOMS=1,2");// Read a single input line directly from a string
 
+// This is valid only if API VERSION > 7
+plumed_cmd(plumedmain,"readInputLines","d: DISTANCE ATOMS=1,2\n"
+                                       "PRINT ARG=d");         // Read a multiple lines directly from a string. Allows comments and continuation lines.
+
 // Calls to do the actual initialization (all the above commands must appear before this call)
 plumed_cmd(plumedmain,"init",NULL);                            // Do all the initialization of plumed
 plumed_cmd(plumedmain,"read",read);                            // Read the plumed input.  N.B. This is called during init and so this call is only required in special cases. 
@@ -275,7 +279,7 @@ plumed_cmd(plumedmain,"shareData",NULL);                     // Request all the 
 
 // Some extra calls that might come in handy
 plumed_cmd(plumedmain,"createFullList",&n);                  // Create a list containing of all the atoms plumed is using to do calculations (return the number of atoms in n)
-plumed_cmd(plumedmain,"getFullList",&list);                  // Return a list (in list) containing all the indices plumed is using to do calculations
+plumed_cmd(plumedmain,"getFullList",&list);                  // Return a list (in list) containing all the indices plumed is using to do calculations. list should be `const int*`
 plumed_cmd(plumedmain,"clearFullList",NULL);                 // Clear the list of all the atoms that plumed is using to do calculations
 plumed_cmd(plumedmain,"clear",clear);                        // Clear and delete all the pointers inside plumed.
 \endverbatim

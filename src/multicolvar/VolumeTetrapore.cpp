@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -174,7 +174,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
       unitname="nm";
     }
     boxfile.link(*this);
-    boxfile.open( boxfname.c_str() );
+    boxfile.open( boxfname );
     log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }
 
@@ -213,8 +213,8 @@ void VolumeTetrapore::setupRegions() {
   Vector truep = crossProduct( cross, bisector );
 
   // These are our true vectors 45 degrees from bisector
-  bi = cos(pi/4.0)*bisector + sin(pi/4.0)*truep;
-  perp = cos(pi/4.0)*bisector - sin(pi/4.0)*truep;
+  bi = std::cos(pi/4.0)*bisector + std::sin(pi/4.0)*truep;
+  perp = std::cos(pi/4.0)*bisector - std::sin(pi/4.0)*truep;
 
   // And the lengths of the various parts average distance to opposite corners of tetetrahedron
   len_bi = dotProduct( d1, bi ); double len_bi2 = dotProduct( d2, bi ); unsigned lbi=1;
@@ -310,8 +310,8 @@ void VolumeTetrapore::setupRegions() {
 
   // Now convert these to the derivatives of the true axis
   for(unsigned i=0; i<3; ++i) {
-    dbi[i] = cos(pi/4.0)*dbisector[i] + sin(pi/4.0)*dtruep[i];
-    dperp[i] = cos(pi/4.0)*dbisector[i] - sin(pi/4.0)*dtruep[i];
+    dbi[i] = std::cos(pi/4.0)*dbisector[i] + std::sin(pi/4.0)*dtruep[i];
+    dperp[i] = std::cos(pi/4.0)*dbisector[i] - std::sin(pi/4.0)*dtruep[i];
   }
 
   // Ensure that all lengths are positive

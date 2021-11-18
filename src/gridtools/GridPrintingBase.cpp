@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@ void GridPrintingBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  The default "
            "value of 0 ensures that the grid is only output at the end of the trajectory");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
-  keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
+  keys.add("compulsory","REPLICA","0","the replica for which you would like to output this information");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
@@ -62,15 +62,13 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   } else {
     log.printf("\n");
   }
-  std::vector<std::string> rep_data; parseVector("REPLICA",rep_data);
-  if( rep_data.size()==1 ) {
-    if( rep_data[0]=="all" ) output_for_all_replicas=true;
-    else {
-      preps.resize(1); Tools::convert( rep_data[0], preps[0] );
-    }
-  } else {
-    preps.resize( rep_data.size() );
-    for(unsigned i=0; i<rep_data.size(); ++i) Tools::convert( rep_data[i], preps[i] );
+  std::string rep_data; parse("REPLICA",rep_data);
+  if( rep_data=="all" ) output_for_all_replicas=true;
+  else { preps.resize(1); Tools::convert( rep_data, preps[0] ); }
+  if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
+  else {
+    log.printf("  outputting data for replicas ");
+    for(unsigned i=0; i<preps.size(); ++i) log.printf("%d ", preps[i] );
   }
 }
 

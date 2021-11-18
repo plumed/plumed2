@@ -1,0 +1,64 @@
+#! FIELDS time phi psi sigma_phi sigma_psi height
+#! SET action OPES_METAD_state
+#! SET biasfactor  8.018158
+#! SET epsilon  0.000105
+#! SET kernel_cutoff  4.280338
+#! SET compression_threshold  1.500000
+#! SET zed  1.058769
+#! SET sum_weights  9.315420
+#! SET sum_weights2  9.546944
+#! SET counter  23
+#! SET adaptive_counter  60
+#! SET sigma0_phi_0  1.074577
+#! SET av_cv_phi_0  -1.764106
+#! SET av_M2_phi_0  156.689542
+#! SET sigma0_psi_0  1.129505
+#! SET av_cv_psi_0  1.353056
+#! SET av_M2_psi_0  178.789629
+#! SET sigma0_phi_1  1.074577
+#! SET av_cv_phi_1  -1.764106
+#! SET av_M2_phi_1  156.689542
+#! SET sigma0_psi_1  1.129505
+#! SET av_cv_psi_1  1.353056
+#! SET av_M2_psi_1  178.789629
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+ 20.000000 -2.924821 2.862176 0.547264 0.580817 7.178288
+ 20.000000 -2.477331 0.987304 0.442982 0.462836 12.410057
+ 20.000000 -1.131077 0.951968 0.509320 0.546015 20.718487
+ 20.000000 1.478705 -1.341386 0.586658 0.620932 0.042527
+ 20.000000 -2.131678 1.893253 0.439685 0.467154 4.846068
+#! FIELDS time phi psi sigma_phi sigma_psi height
+#! SET action OPES_METAD_state
+#! SET biasfactor  8.018158
+#! SET epsilon  0.000105
+#! SET kernel_cutoff  4.280338
+#! SET compression_threshold  1.500000
+#! SET zed  1.426249
+#! SET sum_weights  21.239734
+#! SET sum_weights2  36.550712
+#! SET counter  31
+#! SET adaptive_counter  80
+#! SET sigma0_phi_0  1.074577
+#! SET av_cv_phi_0  -0.881329
+#! SET av_M2_phi_0  198.797349
+#! SET sigma0_psi_0  1.129505
+#! SET av_cv_psi_0  0.891687
+#! SET av_M2_psi_0  226.818461
+#! SET sigma0_phi_1  1.074577
+#! SET av_cv_phi_1  -0.881329
+#! SET av_M2_phi_1  198.797349
+#! SET sigma0_psi_1  1.129505
+#! SET av_cv_psi_1  0.891687
+#! SET av_M2_psi_1  226.818461
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+ 40.000000 -2.924821 2.862176 0.547264 0.580817 7.178288
+ 40.000000 -2.477331 0.987304 0.442982 0.462836 12.410057
+ 40.000000 -1.157709 1.034538 0.399945 0.483510 122.224692
+ 40.000000 1.478705 -1.341386 0.447980 0.475700 0.148219
+ 40.000000 -2.131678 1.893253 0.439685 0.467154 4.846068

@@ -33,8 +33,10 @@
 !/maze
 !/molfile
 !/multicolvar
+!/opes
 !/python
 !/pamm
+!/piv
 !/reference
 !/secondarystructure
 !/setup
@@ -47,7 +49,9 @@
 !/release.sh
 !/astyle.sh
 !/funnel
-
+!/fisst
+!/sasa
+!/xdrfile
 
 # And just ignore these files
 *.xxd

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -103,8 +103,8 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 
   std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) );
-  for(unsigned i=0; i<3; ++i) { pos.emplace_back(new Value()); pos[i]->setNotPeriodic(); }
+  kernel=Tools::make_unique<KernelFunctions>( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 );
+  for(unsigned i=0; i<3; ++i) { pos.emplace_back(Tools::make_unique<Value>()); pos[i]->setNotPeriodic(); }
   std::vector<double> csupport( kernel->getContinuousSupport() );
   double maxs = csupport[0];
   for(unsigned i=1; i<csupport.size(); ++i) {

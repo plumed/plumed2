@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,7 +80,7 @@ class RMSD
   bool positions_center_is_calculated;
   bool positions_center_is_removed;
 // calculates the center from the position provided
-  Vector calculateCenter(std::vector<Vector> &p,std::vector<double> &w) {
+  Vector calculateCenter(const std::vector<Vector> &p,const std::vector<double> &w) {
     plumed_massert(p.size()==w.size(),"mismatch in dimension of position/align arrays while calculating the center");
     unsigned n; n=p.size();
     Vector c; c.zero();
@@ -88,12 +88,12 @@ class RMSD
     return c;
   };
 // removes the center for the position provided
-  void removeCenter(std::vector<Vector> &p, Vector &c) {
+  void removeCenter(std::vector<Vector> &p, const Vector &c) {
     unsigned n; n=p.size();
     for(unsigned i=0; i<n; i++)p[i]-=c;
   };
 // add center
-  void addCenter(std::vector<Vector> &p, Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
+  void addCenter(std::vector<Vector> &p, const Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
 
 public:
 /// Constructor
@@ -138,8 +138,8 @@ public:
       const std::vector<Vector> & positions,
       const std::vector<Vector> & reference,
       std::vector<Vector>  & derivatives,
-      Tensor & rotationPosClose,
-      Tensor & rotationRefClose,
+      const Tensor & rotationPosClose,
+      const Tensor & rotationRefClose,
       std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
       bool squared=false)const;
 
@@ -246,13 +246,13 @@ public:
 ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions
   double calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, const bool squared=false   );
 ///calculate with close structure, i.e. approximate the RMSD without expensive computation of rotation matrix by reusing saved rotation matrices from previous iterations
-  double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared=false   );
+  double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared=false   );
 /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
-  static  Tensor getMatrixFromDRot(Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
+  static  Tensor getMatrixFromDRot(const Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
     Tensor t;
-    t[0][0]=drotdpos[0][0][i][a]; t[0][1]=drotdpos[0][1][i][a]; t[0][2]=drotdpos[0][2][i][a];
-    t[1][0]=drotdpos[1][0][i][a]; t[1][1]=drotdpos[1][1][i][a]; t[1][2]=drotdpos[1][2][i][a];
-    t[2][0]=drotdpos[2][0][i][a]; t[2][1]=drotdpos[2][1][i][a]; t[2][2]=drotdpos[2][2][i][a];
+    t[0][0]=drotdpos(0,0)[i][a]; t[0][1]=drotdpos(0,1)[i][a]; t[0][2]=drotdpos(0,2)[i][a];
+    t[1][0]=drotdpos(1,0)[i][a]; t[1][1]=drotdpos(1,1)[i][a]; t[1][2]=drotdpos(1,2)[i][a];
+    t[2][0]=drotdpos(2,0)[i][a]; t[2][1]=drotdpos(2,1)[i][a]; t[2][2]=drotdpos(2,2)[i][a];
     return t;
   };
 };
@@ -332,7 +332,7 @@ public:
   // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
   void doCoreCalc(bool safe,bool alEqDis, bool only_rotation=false);
   // do calculation with close structure data structures
-  void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01);
+  void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01);
   // retrieve the distance if required after doCoreCalc
   double getDistance(bool squared);
   // retrieve the derivative of the distance respect to the position

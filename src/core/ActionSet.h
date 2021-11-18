@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -69,6 +69,12 @@ public:
 /// Only classes that can be dynamic casted to T are reported
   template <class T>
   std::vector<std::string> getLabelVector() const;
+/// Extract pointer to last action of type T located before
+/// action. If action is not in ActionSet or if there is no action of type T
+/// returns NULL.
+/// Typically to be used as selectLatest<Type>(this);
+  template <class T>
+  T selectLatest(const Action*action)const;
 };
 
 /////
@@ -120,6 +126,17 @@ std::vector<std::string> ActionSet::getLabelVector() const {
     if(dynamic_cast<T>(p.get())) outlist.push_back(p->getLabel());
   };
   return  outlist;
+}
+
+template <class T>
+T ActionSet::selectLatest(const Action*action) const {
+  T t=nullptr;
+  for(const auto & p : (*this)) {
+    if(p.get()==action) return t;
+    T r=dynamic_cast<T>(p.get());
+    if(r) t=r;
+  }
+  return t;
 }
 
 

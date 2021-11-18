@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,7 +99,7 @@ protected:
 /// Return the numerical label
   int getNumericalLabel() const ;
 /// Report an error
-  void error(const std::string& errmsg);
+  [[noreturn]] void error(const std::string& errmsg);
 /// Parse something from the input
   template<class T>
   void parse(const std::string&key, T&t);
@@ -161,7 +161,7 @@ void Vessel::parse(const std::string&key, T&t ) {
   bool found=Tools::parse(line,key,t); std::string def;
   if ( !found && keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,def) ) {
-      plumed_massert( def.length()!=0 && Tools::convert(def,t), "default value is dubious");
+      plumed_massert( def.length()!=0 && Tools::convertNoexcept(def,t), "default value is dubious");
     } else {
       error("keyword " + key + " is comulsory for this vessel");
     }
@@ -187,7 +187,7 @@ void Vessel::parseVector(const std::string&key,std::vector<T>&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
+      if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_merror("weird default value for keyword " + key );
       } else {
         for(unsigned i=0; i<t.size(); ++i) t[i]=val;

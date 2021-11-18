@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,8 +31,6 @@
 #include <vector>
 #include <string>
 #include <limits>
-
-using namespace std;
 
 namespace PLMD {
 namespace multicolvar {
@@ -410,11 +408,11 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
     if( allthirdblockintasks ) {
       decoder.resize(2); plumed_assert( ablocks.size()==3 );
       // Check if number of atoms is too large
-      if( pow( double(nblock), 2.0 )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+      if( std::pow( double(nblock), 2.0 )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
     } else {
       decoder.resize( ablocks.size() );
       // Check if number of atoms is too large
-      if( pow( double(nblock), double(ablocks.size()) )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
+      if( std::pow( double(nblock), double(ablocks.size()) )>std::numeric_limits<unsigned>::max() ) error("number of atoms in groups is too big for PLUMED to handle");
     }
     unsigned code=1; for(unsigned i=0; i<decoder.size(); ++i) { decoder[decoder.size()-1-i]=code; code *= nblock; }
   } else if( !usespecies ) {
@@ -434,7 +432,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
       for(unsigned i=0; i<nat1; ++i) addTaskToList(i);
       ablocks[0].resize( nat2 );
       for(unsigned i=0; i<nat2; ++i) {
-        bool found=false; unsigned inum;
+        bool found=false; unsigned inum=0;
         for(unsigned j=0; j<nat1; ++j) {
           if( atom_lab[nat1+i].first>0 && atom_lab[j].first>0 ) {
             if( atom_lab[nat1+i].first==atom_lab[j].first &&
@@ -957,7 +955,7 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   if( !matsums ) {
     for(unsigned i=0; i<myatoms.getNumberOfAtoms(); ++i) {
       if( atom_lab[myatoms.getIndex(i)].first==0 ) continue;
-      // Only need to do first two atoms for thigns like TopologyMatrix, HbondMatrix, Bridge and so on
+      // Only need to do first two atoms for things like TopologyMatrix, HbondMatrix, Bridge and so on
       if( allthirdblockintasks && i>1 ) break;
       unsigned mmc = atom_lab[myatoms.getIndex(i)].first - 1;
       weight *= mybasedata[mmc]->retrieveWeightWithIndex( atom_lab[myatoms.getIndex(i)].second );

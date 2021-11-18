@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
-
-#include <string>
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -148,10 +143,7 @@ Gyration::Gyration(const ActionOptions&ao):
   log<<"\n";
 
   log.printf("  atoms involved : ");
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
-    log.printf("%d ",atoms[i].serial());
-  }
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
 
   if(nopbc) {
@@ -184,7 +176,7 @@ void Gyration::calculate() {
   com /= totmass;
 
   double rgyr=0.;
-  vector<Vector> derivatives( getNumberOfAtoms() );
+  std::vector<Vector> derivatives( getNumberOfAtoms() );
   Tensor virial;
 
   if(rg_type==RADIUS||rg_type==TRACE) {
@@ -205,7 +197,7 @@ void Gyration::calculate() {
     }
     double fact;
     if(rg_type==RADIUS) {
-      rgyr = sqrt(rgyr/totmass);
+      rgyr = std::sqrt(rgyr/totmass);
       fact = 1./(rgyr*totmass);
     } else {
       rgyr = 2.*rgyr;
@@ -266,26 +258,26 @@ void Gyration::calculate() {
   }
   //calculate determinant of transformation matrix
   double det = determinant(transf);
-  // trasformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
+  // transformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
   if(det<0) {
     for(unsigned j=0; j<3; j++) transf[j][2]=-transf[j][2];
     det = -det;
   }
-  if(fabs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n");
+  if(std::abs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n");
   switch(rg_type) {
   case GTPC_1:
   case GTPC_2:
   case GTPC_3:
   {
     int pc_index = rg_type-2; //index of principal component
-    rgyr=sqrt(princ_comp[pc_index]/totmass);
+    rgyr=std::sqrt(princ_comp[pc_index]/totmass);
     double rm = rgyr*totmass;
     if(rm>1e-6) prefactor[pc_index]=1.0/rm; //some parts of derivate
     break;
   }
   case GYRATION_3:        //the smallest principal radius of gyration
   {
-    rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
+    rgyr=std::sqrt((princ_comp[1]+princ_comp[2])/totmass);
     double rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[1]=1.0/rm;
@@ -295,7 +287,7 @@ void Gyration::calculate() {
   }
   case GYRATION_2:       //the midle principal radius of gyration
   {
-    rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
+    rgyr=std::sqrt((princ_comp[0]+princ_comp[2])/totmass);
     double rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]=1.0/rm;
@@ -305,7 +297,7 @@ void Gyration::calculate() {
   }
   case GYRATION_1:      //the largest principal radius of gyration
   {
-    rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
+    rgyr=std::sqrt((princ_comp[0]+princ_comp[1])/totmass);
     double rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]=1.0/rm;
@@ -315,7 +307,7 @@ void Gyration::calculate() {
   }
   case ASPHERICITY:
   {
-    rgyr=sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass);
+    rgyr=std::sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass);
     double rm = rgyr*totmass;
     if (rm>1e-6) {
       prefactor[0]= 1.0/rm;
@@ -326,7 +318,7 @@ void Gyration::calculate() {
   }
   case ACYLINDRICITY:
   {
-    rgyr=sqrt((princ_comp[1]-princ_comp[2])/totmass);
+    rgyr=std::sqrt((princ_comp[1]-princ_comp[2])/totmass);
     double rm = rgyr*totmass;
     if (rm>1e-6) {  //avoid division by zero
       prefactor[1]= 1.0/rm;

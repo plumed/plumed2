@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 
 namespace PLMD {
@@ -72,8 +72,8 @@ OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
   mypdb.setArgumentNames( my_input_data->getArgumentNames() );
 
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.empty() ) warning("PDB output files do not have atom types unless you use MOLDATA");
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( ! moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
 
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
@@ -82,12 +82,10 @@ OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
 
 void OutputPDBFile::performAnalysis() {
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-  SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+  auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
-  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
+  afile.open( filename ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
   for(unsigned j=0; j<getNumberOfDataPoints(); ++j) {
     afile.printf("DESCRIPTION: analysis data from calculation done by %s at time %f \n",getLabel().c_str(),getTime() );
     if( dissimilaritiesWereSet() ) afile.printf("REMARK %s \n", getDissimilarityInstruction().c_str() );

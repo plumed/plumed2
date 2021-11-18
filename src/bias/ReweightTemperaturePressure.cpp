@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2019,2020 The plumed team
+   Copyright (c) 2019-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,7 +63,7 @@ where \f$\langle \cdot \rangle_{\xi,V}\f$ is a mean value in the biased ensemble
 Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action \f$ w (\mathbf{R},\mathcal{V}) \f$ together with the weights of \ref REWEIGHT_BIAS (see the examples below).
 
 The bias potential \f$ V(\mathbf{s}) \f$ can be constructed with \ref METAD using \ref ENERGY as a CV \cite mich+04prl.
-More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-arXiv-2019 within \ref VES.
+More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-JCP-2019 within \ref VES.
 In the latter algorithms the interval of temperatures and pressures in which the trajectory can be reweighted is chosen explicitly.
 
 \par Examples
@@ -71,7 +71,6 @@ In the latter algorithms the interval of temperatures and pressures in which the
 We consider the 4 cases described above.
 
 The following input can be used to postprocess a molecular dynamics trajectory of a system of 1000 particles run at 500 K and constant volume using a static bias potential.
-We read from a file COLVAR the potential energy, a distance, and the value of the bias potential and calculate the ensemble average of the distance at 300 K.
 
 \plumedfile
 energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
@@ -91,6 +90,16 @@ avg_dist: AVERAGE ARG=distance LOGWEIGHTS=bias_weights,temp_press_weights
 PRINT ARG=avg_dist FILE=COLVAR_REWEIGHT STRIDE=1
 \endplumedfile
 
+Clearly, in performing the analysis above we would read from the potential energy, a distance, and the value of the bias potential from a COLVAR file like the one shown below.  We would then be able
+to calculate the ensemble average of the distance at 300 K.
+
+\auxfile{COLVAR}
+#! FIELDS time energy volume mybias.bias distance
+ 10000.000000 -13133.769283 7.488921 63.740530 0.10293
+ 10001.000000 -13200.239722 7.116548 36.691988 0.16253
+ 10002.000000 -13165.108850 7.202273 44.408815 0.17625
+\endauxfile
+
 The next three inputs can be used to postprocess a molecular dynamics trajectory of a system of 1000 particles run at 500 K and 1 bar using a static bias potential.
 
 We read from a file COLVAR the potential energy, the volume, and the value of the bias potential and calculate the ensemble average of the (particle) density at 300 K and 1 bar (the simulation temperature was 500 K).
@@ -101,12 +110,12 @@ volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
 # Shift energy and volume (to avoid numerical issues)
-rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
+rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
 
 # Weights
 bias_weights: REWEIGHT_BIAS TEMP=500 ARG=mybias.bias
-temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=500 REWEIGHT_TEMP=300 PRESSURE=0.06022140857 ENERGY=renergy VOLUME=rvolume
+temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=500 REWEIGHT_TEMP=300 PRESSURE=0.06022140857 ENERGY=renergy VOLUME=rvol
 
 # Ensemble average of the volume at 300 K
 avg_vol: AVERAGE ARG=volume LOGWEIGHTS=bias_weights,temp_press_weights
@@ -123,7 +132,7 @@ volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
 # Shift volume (to avoid numerical issues)
-rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
+rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
 
 # Weights
 bias_weights: REWEIGHT_BIAS TEMP=500 ARG=mybias.bias
@@ -146,12 +155,12 @@ volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
 # Shift energy and volume (to avoid numerical issues)
-rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
+rvol: COMBINE ARG=volume PARAMETERS=7.8 PERIODIC=NO
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
 
 # Weights
 bias_weights: REWEIGHT_BIAS TEMP=500 ARG=mybias.bias
-temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=500 REWEIGHT_TEMP=300 PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 ENERGY=renergy VOLUME=rvolume
+temp_press_weights: REWEIGHT_TEMP_PRESS TEMP=500 REWEIGHT_TEMP=300 PRESSURE=0.06022140857 REWEIGHT_PRESSURE=180.66422571 ENERGY=renergy VOLUME=rvol
 
 # Ensemble average of the volume at 300 K and 300 MPa
 avg_vol: AVERAGE ARG=volume LOGWEIGHTS=bias_weights,temp_press_weights

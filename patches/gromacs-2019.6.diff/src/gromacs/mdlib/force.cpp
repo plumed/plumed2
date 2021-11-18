@@ -284,7 +284,7 @@ void do_force_lowlevel(t_forcerec           *fr,
 
     if (fepvals->sc_alpha != 0)
 
-    /* even though coulomb part is linear, we already added it, beacuse we
+    /* even though coulomb part is linear, we already added it, because we
        need to go through the vdw calculation anyway */
     {
         enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];

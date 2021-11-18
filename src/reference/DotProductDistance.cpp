@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 #include "MetricRegister.h"
 #include "ArgumentOnlyDistance.h"
 #include "core/Value.h"
+#include <limits>
 
 namespace PLMD {
 
@@ -49,6 +50,7 @@ double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> 
   double dot=0.0;
   for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
   for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
+  if(dot==0.0) dot=std::numeric_limits<double>::min();
   return -log(dot);
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,12 +28,10 @@
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
 
-#include <string>
-#include <cmath>
 #include <map>
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
@@ -44,8 +42,6 @@
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
 #endif
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -124,16 +120,16 @@ private:
   bool                       serial;
   bool                       gpu;
   int                        deviceid;
-  vector<unsigned>           atoi;
-  vector<double>             q_list;
-  vector<double>             FF_rank;
-  vector<vector<double> >    FF_value;
-  vector<vector<float> >     FFf_value;
+  std::vector<unsigned>           atoi;
+  std::vector<double>             q_list;
+  std::vector<double>             FF_rank;
+  std::vector<std::vector<double> >    FF_value;
+  std::vector<std::vector<float> >     FFf_value;
 
-  void calculate_gpu(vector<Vector> &deriv);
-  void calculate_cpu(vector<Vector> &deriv);
-  void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
-  double calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
+  void calculate_gpu(std::vector<Vector> &deriv);
+  void calculate_cpu(std::vector<Vector> &deriv);
+  void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
+  double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -170,7 +166,7 @@ SAXS::SAXS(const ActionOptions&ao):
   gpu(false),
   deviceid(0)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   const unsigned size = atoms.size();
 
@@ -222,49 +218,49 @@ SAXS::SAXS(const ActionOptions&ao):
   parse("WATERDENS", rho);
 
   double Iq0=0;
-  vector<vector<long double> > FF_tmp;
+  std::vector<std::vector<long double> > FF_tmp;
   atoi.resize(size);
   if(!atomistic&&!martini) {
-    //read in parameter vector
-    vector<vector<long double> > parameter;
+    //read in parameter std::vector
+    std::vector<std::vector<long double> > parameter;
     parameter.resize(size);
     ntarget=0;
     for(unsigned i=0; i<size; ++i) {
       if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
       ntarget++;
     }
-    if( ntarget!=size ) error("found wrong number of parameter vectors");
-    FF_tmp.resize(numq,vector<long double>(size));
+    if( ntarget!=size ) error("found wrong number of parameter std::vectors");
+    FF_tmp.resize(numq,std::vector<long double>(size));
     for(unsigned i=0; i<size; ++i) {
       atoi[i]=i;
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*powl(static_cast<long double>(q_list[k]),j);
+          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
     }
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
   } else if(martini) {
-    //read in parameter vector
-    FF_tmp.resize(numq,vector<long double>(NMARTINI));
-    vector<vector<long double> > parameter;
+    //read in parameter std::vector
+    FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
+    std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
     getMartiniSFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*powl(static_cast<long double>(q_list[k]),j);
+          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
     }
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[atoi[i]][0];
   } else if(atomistic) {
-    FF_tmp.resize(numq,vector<long double>(NTT));
+    FF_tmp.resize(numq,std::vector<long double>(NTT));
     Iq0=calculateASF(atoms, FF_tmp, rho);
   }
   double scale_int = Iq0*Iq0;
 
-  vector<double> expint;
+  std::vector<double> expint;
   expint.resize( numq );
   ntarget=0;
   for(unsigned i=0; i<numq; ++i) {
@@ -289,13 +285,13 @@ SAXS::SAXS(const ActionOptions&ao):
     unsigned n_atom_types=size;
     if(atomistic) n_atom_types=NTT;
     else if(martini) n_atom_types=NMARTINI;
-    FF_value.resize(n_atom_types,vector<double>(numq));
+    FF_value.resize(n_atom_types,std::vector<double>(numq));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<n_atom_types; i++) FF_value[i][k] = static_cast<double>(FF_tmp[k][i])/sqrt(scale_int);
       for(unsigned i=0; i<size; i++) FF_rank[k] += FF_value[atoi[i]][k]*FF_value[atoi[i]][k];
     }
   } else {
-    FFf_value.resize(numq,vector<float>(size));
+    FFf_value.resize(numq,std::vector<float>(size));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; i++) {
         FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/sqrt(scale_int);
@@ -358,7 +354,7 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXS::calculate_gpu(vector<Vector> &deriv)
+void SAXS::calculate_gpu(std::vector<Vector> &deriv)
 {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   const unsigned size = getNumberOfAtoms();
@@ -372,7 +368,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
 
   // on gpu only the master rank run the calculation
   if(comm.Get_rank()==0) {
-    vector<float> posi;
+    std::vector<float> posi;
     posi.resize(3*size);
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for (unsigned i=0; i<size; i++) {
@@ -401,7 +397,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // size,size,1,1
     af::array dist_sqrt = af::sqrt(square);
-    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter becasue this are multiplied by zero)
+    // replace the zero of square with one to avoid nan in the derivatives (the number does not matter because this are multiplied by zero)
     af::replace(square,!(af::iszero(square)),1.);
     // size,size,3,1
     xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);
@@ -447,7 +443,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
   comm.Bcast(sum, 0);
 
   for(unsigned k=0; k<numq; k++) {
-    string num; Tools::convert(k,num);
+    std::string num; Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
     val->set(sum[k]);
     if(getDoScore()) setCalcData(k, sum[k]);
@@ -459,7 +455,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
 #endif
 }
 
-void SAXS::calculate_cpu(vector<Vector> &deriv)
+void SAXS::calculate_cpu(std::vector<Vector> &deriv)
 {
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
@@ -471,7 +467,7 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
     rank   = 0;
   }
 
-  vector<double> sum(numq,0);
+  std::vector<double> sum(numq,0);
   unsigned nt=OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
@@ -488,8 +484,8 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
           double FFF = 2.*FF_value[atoi[i]][k]*FF_value[atoi[j]][k];
-          double tsq = sin(qdist)/qdist;
-          double tcq = cos(qdist);
+          double tsq = std::sin(qdist)/qdist;
+          double tcq = std::cos(qdist);
           double tmp = FFF*(tcq-tsq);
           Vector dd  = c_distances*tmp;
           if(nt>1) {
@@ -518,7 +514,7 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
 
   for (unsigned k=0; k<numq; k++) {
     sum[k]+=FF_rank[k];
-    string num; Tools::convert(k,num);
+    std::string num; Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
     val->set(sum[k]);
     if(getDoScore()) setCalcData(k, sum[k]);
@@ -529,10 +525,10 @@ void SAXS::calculate()
 {
   if(pbc) makeWhole();
 
-  const unsigned size = getNumberOfAtoms();
-  const unsigned numq = q_list.size();
+  const size_t size = getNumberOfAtoms();
+  const size_t numq = q_list.size();
 
-  vector<Vector> deriv(numq*size);
+  std::vector<Vector> deriv(numq*size);
   if(gpu) calculate_gpu(deriv);
   else calculate_cpu(deriv);
 
@@ -547,7 +543,7 @@ void SAXS::calculate()
     Tensor deriv_box;
     Value* val;
     if(!getDoScore()) {
-      string num; Tools::convert(k,num);
+      std::string num; Tools::convert(k,num);
       val=getPntrToComponent("q-"+num);
       for(unsigned i=0; i<size; i++) {
         setAtomsDerivatives(val, i, deriv[kdx+i]);
@@ -569,7 +565,7 @@ void SAXS::update() {
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
+void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
 {
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
@@ -1635,12 +1631,12 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
   parameter[DT_TE5].push_back(4.44636600);
   parameter[DT_TE5].push_back(-0.79467800);
 
-  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
-      string Aname = moldat[0]->getAtomName(atoms[i]);
-      string Rname = moldat[0]->getResidueName(atoms[i]);
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
       if(Rname=="ALA") {
         if(Aname=="BB") {
           atoi[i]=ALA_BB;
@@ -1970,9 +1966,9 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
   }
 }
 
-double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho)
+double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
 {
-  map<string, unsigned> AA_map;
+  std::map<std::string, unsigned> AA_map;
   AA_map["H"] = H;
   AA_map["C"] = C;
   AA_map["N"] = N;
@@ -1980,13 +1976,13 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
   AA_map["P"] = P;
   AA_map["S"] = S;
 
-  vector<vector<double> > param_a;
-  vector<vector<double> > param_b;
-  vector<double> param_c;
-  vector<double> param_v;
+  std::vector<std::vector<double> > param_a;
+  std::vector<std::vector<double> > param_b;
+  std::vector<double> param_c;
+  std::vector<double> param_v;
 
-  param_a.resize(NTT, vector<double>(5));
-  param_b.resize(NTT, vector<double>(5));
+  param_a.resize(NTT, std::vector<double>(5));
+  param_b.resize(NTT, std::vector<double>(5));
   param_c.resize(NTT);
   param_v.resize(NTT);
 
@@ -2026,14 +2022,14 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
   param_a[S][3] = 1.58630; param_b[S][3] = 56.1720;
   param_a[S][4] = 0.0;     param_b[S][4] = 1.0;
 
-  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
   double Iq0=0.;
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
     for(unsigned i=0; i<NTT; i++) {
-      const double volr = pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
+      const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
       // cycle over q
       for(unsigned k=0; k<q_list.size(); ++k) {
         const double q = q_list[k];
@@ -2041,16 +2037,16 @@ double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long do
         FF_tmp[k][i] = param_c[i];
         // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
         for(unsigned j=0; j<4; j++) {
-          FF_tmp[k][i] += param_a[i][j]*exp(-param_b[i][j]*s*s);
+          FF_tmp[k][i] += param_a[i][j]*std::exp(-param_b[i][j]*s*s);
         }
         // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
-        FF_tmp[k][i] -= rho*param_v[i]*exp(-volr*q*q);
+        FF_tmp[k][i] -= rho*param_v[i]*std::exp(-volr*q*q);
       }
     }
     // cycle over the atoms to assign the atom type and calculate I0
     for(unsigned i=0; i<atoms.size(); ++i) {
       // get atom name
-      string name = moldat[0]->getAtomName(atoms[i]);
+      std::string name = moldat->getAtomName(atoms[i]);
       char type;
       // get atom type
       char first = name.at(0);

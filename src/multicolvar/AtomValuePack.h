@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,7 +92,7 @@ public:
 ///
   void updateDynamicList();
 ///
-  void addComDerivatives( const int&, const Vector&, CatomPack& );
+  void addComDerivatives( const int&, const Vector&, const CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
 ///

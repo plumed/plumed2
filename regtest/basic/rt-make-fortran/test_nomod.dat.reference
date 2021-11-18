@@ -1,0 +1,13 @@
+stopflag should be 0    0
+isEnergyNeeded should be 1    1
+isEnergyNeeded should be 0    0
+stopflag should be 0    0
+stopflag should be 1    1
+bias 3712.5000
+convert should be 5    5.0000
+stopflag should be 0    0
+isEnergyNeeded should be 1    1
+isEnergyNeeded should be 0    0
+stopflag should be 0    0
+stopflag should be 1    1
+bias 3712.5000

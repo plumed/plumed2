@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
+#include "bias/ReweightBase.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/Atoms.h"
@@ -82,6 +83,29 @@ the set-points and minimizing the virial. See \cite Amirkulova2019Recent for det
 are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
 which is almost always the case.
 
+\par Weighting
+
+EDS computes means and variances as part of its algorithm. If you are
+also using a biasing method like metadynamics, you may wish to remove
+the effect of this bias in your EDS computations so that EDS works on
+the canonical values (reweighted).  For example, you may be using
+metadynamics to bias a dihedral angle to enhance sampling and be using
+EDS to set the average distance between two particular atoms. Specifically:
+
+plumedfile
+# set-up metadnyamics
+t: TORSION ATOMS=1,2,3,4
+md: METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500 TEMP=300
+# compute bias weights
+bias: REWEIGHT_METAD TEMP=300
+# now do EDS on distance while removing effect of metadynamics
+d: DISTANCE ATOMS=4,7
+eds: EDS ARG=d CENTER=3.0 PERIOD=100 TEMP=300 LOGWEIGHTS=bias
+
+This is an approximation though because EDS uses a finte sample to get means/variances.
+At the end of a run, you should ensure this approach worked and indeed your
+reweighted CV matches the target value.
+
 \par Examples
 
 The following input for a harmonic oscillator of two beads will
@@ -95,7 +119,7 @@ dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
 #bias mean and variance
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
@@ -117,7 +141,7 @@ dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
 #add the option to write to a restart file
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=checkpoint.eds
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0 OUT_RESTART=checkpoint.eds
 \endplumedfile
 
 The first few lines of the restart file that is output if we run a calculation with one CV will look something like this:
@@ -139,7 +163,7 @@ Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
@@ -160,7 +184,7 @@ Read in a previous restart file and continue the bias, but use the mean from the
 \plumedfile
 d1: DISTANCE ATOMS=1,2
 
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds MEAN
 \endplumedfile
 
 
@@ -175,6 +199,7 @@ private:
   const unsigned int ncvs_;
   std::vector<double> center_;
   std::vector<Value*> center_values_;
+  ReweightBase* logweights_; // weights to use if reweighting averages
   std::vector<double> scale_;
   std::vector<double> current_coupling_; //actually current coupling
   std::vector<double> set_coupling_; //what our coupling is ramping up to. Equal to current_coupling when gathering stats
@@ -210,6 +235,7 @@ private:
   bool b_lm_;
   bool b_virial_;
   bool b_update_virial_;
+  bool b_weights_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -219,6 +245,8 @@ private:
   double lm_mixing_par_;
   double virial_scaling_;
   double pseudo_virial_sum_; //net virial for all cvs in current period
+  double max_logweight_; // maximum observed max logweight for period
+  double wsum_; // sum of weights thus far
   Random rand_;
   Value* value_force2_;
   Value* value_pressure_;
@@ -268,7 +296,7 @@ void EDS::registerKeywords(Keywords& keys) {
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
   keys.add("optional","VIRIAL","Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
-
+  keys.add("optional", "LOGWEIGHTS", "Add weights to use for computing statistics. For example, if biasing with metadynamics.");
   keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
 
@@ -320,6 +348,7 @@ EDS::EDS(const ActionOptions&ao):
   b_write_restart_(false),
   b_lm_(false),
   b_virial_(false),
+  b_weights_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
@@ -329,10 +358,13 @@ EDS::EDS(const ActionOptions&ao):
   lm_mixing_par_(0.1),
   virial_scaling_(0.),
   pseudo_virial_sum_(0.0),
+  max_logweight_(0.0),
+  wsum_(0.0),
   value_force2_(NULL)
 {
   double temp=-1.0;
   bool b_mean=false;
+  std::vector<Value*> wvalues;
 
   addComponent("force2");
   componentIsNotPeriodic("force2");
@@ -347,6 +379,7 @@ EDS::EDS(const ActionOptions&ao):
 
   parseVector("CENTER",center_);
   parseArgumentList("CENTER_ARG",center_values_);
+  parseArgumentList("LOGWEIGHTS", wvalues);
   parseVector("BIAS_SCALE", scale_);
   parseVector("RANGE",max_coupling_range_);
   parseVector("FIXED",target_coupling_);
@@ -392,7 +425,13 @@ EDS::EDS(const ActionOptions&ao):
     log.printf("  EDS will use fixed centers\n");
   }
 
-
+  // check for weights
+  if(wvalues.size() > 1) {
+    error("LOGWEIGHTS can only support one weight set. Please only pass one action");
+  } else if(wvalues.size() == 1) {
+    logweights_ = dynamic_cast<ReweightBase*> (wvalues[0]->getPntrToAction());
+    b_weights_ = true;
+  }
 
   log.printf("  setting scaling:");
   if(scale_.size() > 0  && scale_.size() < ncvs_) {
@@ -448,6 +487,7 @@ EDS::EDS(const ActionOptions&ao):
       auto a = dynamic_cast<ActionAtomistic*>(getPntrToArgument(i)->getPntrToAction());
       if(!a)
         error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. Offending action: " + getPntrToArgument(i)->getPntrToAction()->getName());
+      // cppcheck-suppress nullPointerRedundantCheck
       if(!(a->getPbc().isOrthorombic()))
         log.printf("  WARNING: EDS Virial should have a orthorombic cell\n");
     }
@@ -703,7 +743,6 @@ void EDS::writeOutRestart() {
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
       out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
-
   }
   out_restart_.printField();
 }
@@ -740,12 +779,29 @@ void EDS::apply_bias() {
 }
 
 void EDS::update_statistics()  {
-  double s;
-  double N = fmax(1,update_calls_);
+  double s, N, w = 1.0;
   std::vector<double> deltas(ncvs_);
-  //Welford, West, and Hanso online variance method
+
+  // update weight max, if necessary
+  if(b_weights_) {
+    w = logweights_->getLogWeight();
+    if(max_logweight_ < w) {
+      // we have new max. Need to shift existing values
+      wsum_ *= exp(max_logweight_ - w);
+      max_logweight_ = w;
+    }
+    // convert to weight
+    w = exp(w - max_logweight_);
+    wsum_ += w;
+    N = wsum_;
+  } else {
+    N = fmax(1,update_calls_);
+  }
+
+  // Welford, West, and Hanso online variance method
+  // with weights (default =  1.0)
   for(unsigned int i = 0; i < ncvs_; ++i)  {
-    deltas[i] = difference(i,means_[i],getArgument(i));
+    deltas[i] = difference(i,means_[i],getArgument(i)) * w;
     means_[i] += deltas[i]/N;
     if(!b_covar_ && !b_lm_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
@@ -779,6 +835,11 @@ void EDS::reset_statistics() {
       pseudo_virial_[i] = 0;
     pseudo_virial_sum_ = 0;
   }
+  if(b_weights_) {
+    wsum_ = 0;
+    max_logweight_ = 0;
+  }
+
 }
 
 void EDS::calc_lm_step_size() {
@@ -889,7 +950,6 @@ void EDS::update_bias()
           //scale^2 here is to align units
           step_size_[i] -= 2 * scale_[i] * scale_[i] * virial_scaling_ * pseudo_virial_sum_ * pseudo_virial_sum_ / set_coupling_[i];
       }
-      std::cout << step_size_[i] << std::endl;
       if(step_size_[i] == 0)
         continue;
 
@@ -897,7 +957,6 @@ void EDS::update_bias()
       step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
       coupling_accum_[i] += step_size_[i] * step_size_[i];
 
-      std::cout << step_size_[i] <<  " " << coupling_accum_[i] << std::endl;
       //equation 5 in White and Voth, JCTC 2014
       //no negative sign because it's in step_size
       set_coupling_[i] += step_size_[i] * max_coupling_range_[i] / sqrt(coupling_accum_[i]);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,11 +59,11 @@ std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type,
   vesselbase::VesselOptions dar( da, keys );
   std::unique_ptr<GridVessel> grid;
   if( type=="histogram" ) {
-    grid.reset( new HistogramOnGrid(dar) );
+    grid=Tools::make_unique<HistogramOnGrid>(dar);
   } else if( type=="average" ) {
-    grid.reset( new AverageOnGrid(dar) );
+    grid=Tools::make_unique<AverageOnGrid>(dar);
   } else if( type=="grid" ) {
-    grid.reset( new GridVessel(dar) );
+    grid=Tools::make_unique<GridVessel>(dar);
   } else {
     plumed_merror("no way to create grid of type " + type );
   }

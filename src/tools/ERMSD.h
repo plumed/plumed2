@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,6 +29,7 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -40,8 +41,8 @@ class ERMSD {
   //std::map< std::pair <unsigned,unsigned> , double> targets;
   //unsigned natoms;
   std::vector<Vector4d> reference_mat;
-  unsigned natoms;
-  unsigned nresidues;
+  std::size_t natoms;
+  std::size_t nresidues;
   std::vector<std::pair <unsigned,unsigned> > pairs;
   double cutoff;
 

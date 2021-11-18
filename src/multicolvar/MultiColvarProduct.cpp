@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -75,7 +75,7 @@ double MultiColvarProduct::compute( const unsigned& tindex, AtomValuePack& myato
     dot *= tval[1];
   }
   if( !doNotCalculateDerivatives() ) {
-    myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    std::vector<double> cc(2);
     for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
       getInputData( i, false, myatoms, cc ); cc[1] = dot / cc[1];
       MultiValue& myder=getInputDerivatives( i, false, myatoms );

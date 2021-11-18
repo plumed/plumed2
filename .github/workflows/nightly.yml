@@ -1,0 +1,37 @@
+name: Nightly builds
+on: 
+  schedule:
+   - cron: "30 17 * * 0"
+
+jobs:
+  conda:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest , macos-latest]
+        branch: [v2.6, v2.7, master]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ matrix.branch }}
+    - name: Install conda
+      run: |
+          curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
+          source ./conda-ci install
+          source ./conda-ci install-conda-build
+    - name: Build
+      run: |
+        source activate base
+        export VERSION=
+        BRANCH=${{ matrix.branch }}
+        if test "$BRANCH" = master ; then VERSION=2.99.$(date +%y%m%d) ; fi
+        if [[ "$BRANCH" =~ ^v2.[0-9]+$ ]] ; then VERSION=${BRANCH#v}.$(date +%y%m%d) ; fi
+        make -C conda
+    - name: Deploy
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+      run: |
+        source activate base
+        export CONDA_LABEL=nightly
+        make -C conda upload

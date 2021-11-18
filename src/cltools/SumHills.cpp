@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,8 +34,6 @@
 #include "tools/File.h"
 #include "core/Value.h"
 #include "tools/Matrix.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace cltools {
@@ -191,10 +189,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CLToolSumHills(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc) override;
-  string description()const override;
+  std::string description()const override;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist
-  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_);
+  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_);
 };
 
 void CLToolSumHills::registerKeywords( Keywords& keys ) {
@@ -224,36 +222,36 @@ CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
   inputdata=commandline;
 }
 
-string CLToolSumHills::description()const { return "sum the hills with  plumed"; }
+std::string CLToolSumHills::description()const { return "sum the hills with  plumed"; }
 
 int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 
 // Read the hills input file name
-  vector<string> hillsFiles;
+  std::vector<std::string> hillsFiles;
   bool dohills;
   dohills=parseVector("--hills",hillsFiles);
 // Read the histogram file
-  vector<string> histoFiles;
+  std::vector<std::string> histoFiles;
   bool dohisto;
   dohisto=parseVector("--histo",histoFiles);
 
   plumed_massert(dohisto || dohills,"you should use --histo or/and --hills command");
 
-  vector< vector<string> > vcvs;
-  vector<string> vpmin;
-  vector<string> vpmax;
-  string lowI_, uppI_;
+  std::vector< std::vector<std::string> > vcvs;
+  std::vector<std::string> vpmin;
+  std::vector<std::string> vpmax;
+  std::string lowI_, uppI_;
   if(dohills) {
     // parse it as it was a restart
     bool vmultivariate;
     findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_);
   }
 
-  vector< vector<string> > hcvs;
-  vector<string> hpmin;
-  vector<string> hpmax;
+  std::vector< std::vector<std::string> > hcvs;
+  std::vector<std::string> hpmin;
+  std::vector<std::string> hpmax;
 
-  vector<std::string> sigma;
+  std::vector<std::string> sigma;
   if(dohisto) {
     bool hmultivariate;
     findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
@@ -271,9 +269,9 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 
   // now put into a neutral vector
 
-  vector< vector<string> > cvs;
-  vector<string> pmin;
-  vector<string> pmax;
+  std::vector< std::vector<std::string> > cvs;
+  std::vector<std::string> pmin;
+  std::vector<std::string> pmax;
 
   if(dohills) {
     cvs=vcvs;
@@ -289,23 +287,23 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 
   // setup grids
   unsigned grid_check=0;
-  vector<std::string> gmin(cvs.size());
+  std::vector<std::string> gmin(cvs.size());
   if(parseVector("--min",gmin)) {
     if(gmin.size()!=cvs.size() && gmin.size()!=0) plumed_merror("not enough values for --min");
     grid_check++;
   }
-  vector<std::string> gmax(cvs.size() );
+  std::vector<std::string> gmax(cvs.size() );
   if(parseVector("--max",gmax)) {
     if(gmax.size()!=cvs.size() && gmax.size()!=0) plumed_merror("not enough values for --max");
     grid_check++;
   }
-  vector<std::string> gbin(cvs.size());
+  std::vector<std::string> gbin(cvs.size());
   bool grid_has_bin; grid_has_bin=false;
   if(parseVector("--bin",gbin)) {
     if(gbin.size()!=cvs.size() && gbin.size()!=0) plumed_merror("not enough values for --bin");
     grid_has_bin=true;
   }
-  vector<std::string> gspacing(cvs.size());
+  std::vector<std::string> gspacing(cvs.size());
   bool grid_has_spacing; grid_has_spacing=false;
   if(parseVector("--spacing",gspacing)) {
     if(gspacing.size()!=cvs.size() && gspacing.size()!=0) plumed_merror("not enough values for --spacing");
@@ -324,7 +322,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   plumed.cmd(ss,&nn);
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm());
   plumed.cmd("init",&nn);
-  vector <bool> isdone(cvs.size(),false);
+  std::vector <bool> isdone(cvs.size(),false);
   for(unsigned i=0; i<cvs.size(); i++) {
     if(!isdone[i]) {
       isdone[i]=true;
@@ -393,7 +391,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   }
   unsigned ncv=cvs.size();
   std::vector<std::string> actioninput;
-  vector<std::string> idw;
+  std::vector<std::string> idw;
   // check if the variables to be used are correct
   if(parseVector("--idw",idw)) {
     for(unsigned i=0; i<idw.size(); i++) {
@@ -408,7 +406,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       if(!found)plumed_merror("variable "+idw[i]+" is not found in the bunch of cvs: revise your --idw option" );
     }
     plumed_massert( idw.size()<=cvs.size(),"the number of variables to be integrated should be at most equal to the total number of cvs  ");
-    // in this case you neeed a beta factor!
+    // in this case you need a beta factor!
   }
 
   std::string kt; kt=std::string("1.");// assign an arbitrary value just in case that idw.size()==cvs.size()
@@ -534,7 +532,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_) {
+bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
   IFile ifile;
   ifile.allowIgnoredFields();
   std::vector<std::string> fields;

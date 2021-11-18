@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,6 @@
 
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace multicolvar {
@@ -146,9 +144,9 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
 
   // Calculate value
   const double diff = phi2 - phi1;
-  const double value = 0.5*(1.+cos(diff));
+  const double value = 0.5*(1.+std::cos(diff));
   // Derivatives wrt phi1
-  const double dval = 0.5*sin(diff);
+  const double dval = 0.5*std::sin(diff);
   dd10 *= dval;
   dd11 *= dval;
   dd12 *= dval;

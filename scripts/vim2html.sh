@@ -24,7 +24,7 @@ Options can be:
 --annotate-syntax Reports annotated syntax on output.
                   Also reports non-annotated regions on stderr
 --pdf             To produce a pdf file with syntax highlighting.
---crop            Crop the pdf file to the only written part. Usefull to insert the pdf in a LaTex file as image.
+--crop            Crop the pdf file to the only written part. Useful to insert the pdf in a LaTex file as image.
 --fs              Specify the fontsize of the pdf output.
 --colors          Specify the color palette. Allowed values are: default/ac
 EOF
@@ -165,7 +165,7 @@ if [ "$pdf" = "yes" ]; then
   if [ -n "$outputfile" ] ; then
     cp $output $outputfile
   else
-    echo "You should specify an output file if using pdf opton!"
+    echo "You should specify an output file if using pdf option!"
     exit 1;
   fi
 else

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -151,7 +151,7 @@ public:
   void parseFlag(const std::string&key,bool&t);
 
 /// Crash calculation and print documentation
-  void error( const std::string & msg ) const;
+  [[noreturn]] void error( const std::string & msg ) const;
 
 /// Issue a warning
   void warning( const std::string & msg );
@@ -321,7 +321,7 @@ void Action::parse(const std::string&key,T&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,t) ) {
+      if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       }
@@ -371,7 +371,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
+      if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       } else {

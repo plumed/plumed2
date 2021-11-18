@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,10 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
 #include "Function.h"
-
 #include "lepton/Lepton.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -167,12 +164,12 @@ class Custom :
 {
   lepton::CompiledExpression expression;
   std::vector<lepton::CompiledExpression> expression_deriv;
-  vector<string> var;
-  string func;
-  vector<double> values;
-  vector<char*> names;
-  vector<double*> lepton_ref;
-  vector<double*> lepton_ref_deriv;
+  std::vector<std::string> var;
+  std::string func;
+  std::vector<double> values;
+  std::vector<char*> names;
+  std::vector<double*> lepton_ref;
+  std::vector<double*> lepton_ref_deriv;
 public:
   explicit Custom(const ActionOptions&);
   void calculate() override;

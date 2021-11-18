@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,8 @@
 #include "Action.h"
 #include "ActionWithValue.h"
 #include "Value.h"
+#include "tools/Tools.h"
+#include "tools/TypesafePtr.h"
 
 namespace PLMD {
 
@@ -32,23 +34,22 @@ template <class T>
 class DataFetchingObjectTyped : public DataFetchingObject {
 private:
 /// A map containing the data we are grabbing
-  std::map<std::string,T*> data;
+  std::map<std::string,TypesafePtr> data;
 public:
   explicit DataFetchingObjectTyped(PlumedMain&plumed);
   ~DataFetchingObjectTyped() {}
-  void setData( const std::string& key, const std::string& type, void* outval ) override;
+  void setData( const std::string& key, const std::string& type, const TypesafePtr & outval ) override;
   void finishDataGrab() override;
 };
 
 std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, PlumedMain& p) {
   if(n==sizeof(double)) {
-    return std::unique_ptr<DataFetchingObjectTyped<double>>(new DataFetchingObjectTyped<double>(p));
+    return Tools::make_unique<DataFetchingObjectTyped<double>>(p);
   } else  if(n==sizeof(float)) {
-    return std::unique_ptr<DataFetchingObjectTyped<float>>(new DataFetchingObjectTyped<float>(p));
+    return Tools::make_unique<DataFetchingObjectTyped<float>>(p);
   }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
-  return NULL;
 }
 
 DataFetchingObject::DataFetchingObject(PlumedMain&p):
@@ -68,7 +69,7 @@ ActionWithValue* DataFetchingObject::findAction( const ActionSet& a, const std::
   return a.selectWithLabel<ActionWithValue*>( aname );
 }
 
-void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
+void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & dims ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
@@ -79,7 +80,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims[0]=1;
+    dims.set(long(1));
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -89,7 +90,7 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
   }
 }
 
-void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims ) {
+void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, const std::string& type, const TypesafePtr & dims ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
 
@@ -100,7 +101,7 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims[0]=1;
+    dims.set(long(1));
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -117,13 +118,13 @@ DataFetchingObjectTyped<T>::DataFetchingObjectTyped(PlumedMain&p):
 }
 
 template <class T>
-void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, void* outval ) {
+void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::string& type, const TypesafePtr & outval ) {
   plumed_assert( Tools::getWords(key,"\t\n ,").size()==1 );
   plumed_massert( key.find("*")==std::string::npos, "cannot use wildcards in python interface");
   plumed_massert( !data.count(key + " " + type), "already collecting this data elsewhere");
   // Add the space to store the data to the data map
-  T* f=static_cast<T*>(outval);
-  data.insert(std::pair<std::string,T*>(key + " " + type,f));
+  T* f=outval.get<T*>();
+  data.insert(std::pair<std::string,TypesafePtr>(key + " " + type,f));
 
   // Find the appropriate action and store value containing quantity of interest
   ActionWithValue* myv = DataFetchingObject::findAction( plumed.getActionSet(), key );
@@ -141,9 +142,9 @@ template <class T>
 void DataFetchingObjectTyped<T>::finishDataGrab() {
   // Run over all values and collect data
   for(const auto & p : myvalues ) {
-    T* val = static_cast<T*>( data.find(p->getName() + " ")->second );
+    auto val=data.find(p->getName() + " ");
     if( data.find(p->getName() + " ")!=data.end() ) {
-      val[0] = static_cast<T>( p->get() );
+      val->second.set(static_cast<T>( p->get() ));
     }
     if( data.find(p->getName() + " derivatives")!=data.end() ) {
       plumed_merror("not implemented yet");

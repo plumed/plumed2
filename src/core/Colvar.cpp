@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 namespace PLMD {
 
 Colvar::Colvar(const ActionOptions&ao):
@@ -43,7 +42,7 @@ void Colvar::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
-void Colvar::requestAtoms(const vector<AtomNumber> & a) {
+void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
   plumed_massert(!isEnergy,"request atoms should not be called if this is energy");
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
@@ -52,7 +51,7 @@ void Colvar::requestAtoms(const vector<AtomNumber> & a) {
 }
 
 void Colvar::apply() {
-  vector<Vector>&   f(modifyForces());
+  std::vector<Vector>&   f(modifyForces());
   Tensor&           v(modifyVirial());
   const unsigned    nat=getNumberOfAtoms();
   const unsigned    ncp=getNumberOfComponents();
@@ -71,9 +70,9 @@ void Colvar::apply() {
   if(!isEnergy && !isExtraCV) {
     #pragma omp parallel num_threads(nt)
     {
-      vector<Vector> omp_f(fsz);
-      Tensor         omp_v;
-      vector<double> forces(3*nat+9);
+      std::vector<Vector> omp_f(fsz);
+      Tensor              omp_v;
+      std::vector<double> forces(3*nat+9);
       #pragma omp for
       for(unsigned i=rank; i<ncp; i+=stride) {
         if(getPntrToComponent(i)->applyForce(forces)) {
@@ -106,10 +105,10 @@ void Colvar::apply() {
     }
 
   } else if( isEnergy ) {
-    vector<double> forces(1);
+    std::vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   } else if( isExtraCV ) {
-    vector<double> forces(1);
+    std::vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
   }
 }

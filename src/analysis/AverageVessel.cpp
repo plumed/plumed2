@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,12 +46,12 @@ void AverageVessel::accumulate( const double& weight, const double& val ) {
   if( domain.size()==2 ) {
     // Average with Berry Phase
     double tval = 2*pi*( val - domain[0] ) / ( domain[1] - domain[0] );
-    addDataElement( 0, weight*sin(tval) ); addDataElement( 1, weight*cos(tval) );
+    addDataElement( 0, weight*std::sin(tval) ); addDataElement( 1, weight*std::cos(tval) );
   } else addDataElement( 0, weight*val );
 }
 
 double AverageVessel::getAverage() const {
-  if( domain.size()==2 ) return domain[0] + (( domain[1] - domain[0] )*atan2( getDataElement(0), getDataElement(1) ) / (2*pi));
+  if( domain.size()==2 ) return domain[0] + (( domain[1] - domain[0] )*std::atan2( getDataElement(0), getDataElement(1) ) / (2*pi));
   return getDataElement(0);
 }
 

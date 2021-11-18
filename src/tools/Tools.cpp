@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,40 +32,83 @@
 #include <unistd.h>
 #endif
 
-using namespace std;
+#include <iomanip>
+
 namespace PLMD {
 
 template<class T>
-bool Tools::convertToAny(const string & str,T & t) {
-  istringstream istr(str.c_str());
+bool Tools::convertToAny(const std::string & str,T & t) {
+  std::istringstream istr(str.c_str());
   bool ok=static_cast<bool>(istr>>t);
   if(!ok) return false;
-  string remaining;
+  std::string remaining;
   istr>>remaining;
   return remaining.length()==0;
 }
 
-bool Tools::convert(const string & str,int & t) {
-  return convertToAny(str,t);
+bool Tools::convertNoexcept(const std::string & str,int & t) {
+  return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,long int & t) {
-  return convertToAny(str,t);
+bool Tools::convertNoexcept(const std::string & str,long int & t) {
+  return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,unsigned & t) {
-  return convertToAny(str,t);
+bool Tools::convertNoexcept(const std::string & str,unsigned & t) {
+  return convertToInt(str,t);
 }
 
-bool Tools::convert(const string & str,AtomNumber &a) {
+bool Tools::convertNoexcept(const std::string & str,long unsigned & t) {
+  return convertToInt(str,t);
+}
+
+bool Tools::convertNoexcept(const std::string & str,AtomNumber &a) {
+  // Note: AtomNumber's are NOT converted as int, so as to
+  // avoid using lepton conversions.
   unsigned i;
-  bool r=convert(str,i);
+  bool r=convertToAny(str,i);
   if(r) a.setSerial(i);
   return r;
 }
 
 template<class T>
-bool Tools::convertToReal(const string & str,T & t) {
+bool Tools::convertToInt(const std::string & str,T & t) {
+  // First try standard conversion
+  if(convertToAny(str,t)) return true;
+  // Then use lepton
+  try {
+    double r=lepton::Parser::parse(str).evaluate(lepton::Constants());
+
+    // now sanity checks on the resulting number
+
+    // it should not overflow the requested int type:
+    // (see https://stackoverflow.com/a/526092)
+    if(r>std::nextafter(std::numeric_limits<T>::max(), 0)) return false;
+    if(r<std::nextafter(std::numeric_limits<T>::min(), 0)) return false;
+
+    // do the actual conversion
+    auto tmp=static_cast<T>(std::round(r));
+
+    // it should be *very close* to itself if converted back to double
+    double diff= r-static_cast<double>(tmp);
+    if(diff*diff > 1e-20) return false;
+    // this is to accomodate small numerical errors and allow e.g. exp(log(7)) to be integer
+
+    // it should be change if incremented or decremented by one (see https://stackoverflow.com/a/43656140)
+    if(r == static_cast<double>(tmp-1)) return false;
+    if(r == static_cast<double>(tmp+1)) return false;
+
+    // everything is fine, then store in t
+    t=tmp;
+    return true;
+  } catch(const PLMD::lepton::Exception& exc) {
+  }
+  return false;
+}
+
+
+template<class T>
+bool Tools::convertToReal(const std::string & str,T & t) {
   if(convertToAny(str,t)) return true;
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi; return true;
@@ -80,7 +123,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");
     if(str.substr(pi_start)!="PI") return false;
-    istringstream nstr(str.substr(0,pi_start));
+    std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
     if(!ok) return false;
     t=ff*pi;
@@ -89,7 +132,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   } else if( str.find("pi")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("pi");
     if(str.substr(pi_start)!="pi") return false;
-    istringstream nstr(str.substr(0,pi_start));
+    std::istringstream nstr(str.substr(0,pi_start));
     T ff=0.0; bool ok=static_cast<bool>(nstr>>ff);
     if(!ok) return false;
     t=ff*pi;
@@ -102,42 +145,42 @@ bool Tools::convertToReal(const string & str,T & t) {
   return false;
 }
 
-bool Tools::convert(const string & str,float & t) {
+bool Tools::convertNoexcept(const std::string & str,float & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,double & t) {
+bool Tools::convertNoexcept(const std::string & str,double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,long double & t) {
+bool Tools::convertNoexcept(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
-bool Tools::convert(const string & str,string & t) {
+bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   t=str;
   return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis) {
-  plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
+std::vector<std::string> Tools::getWords(const std::string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
+  plumed_massert(std::strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
   if(!separators) separators=" \t\n";
-  const string sep(separators);
+  const std::string sep(separators);
   char openpar=parenthesis[0];
   char closepar;
   if(openpar=='(') closepar=')';
   if(openpar=='[') closepar=']';
   if(openpar=='{') closepar='}';
-  vector<string> words;
-  string word;
+  std::vector<std::string> words;
+  std::string word;
   int parenthesisLevel=0;
   if(parlevel) parenthesisLevel=*parlevel;
   for(unsigned i=0; i<line.length(); i++) {
     bool found=false;
     bool onParenthesis=false;
-    if(line[i]==openpar || line[i]==closepar) onParenthesis=true;
+    if( (line[i]==openpar || line[i]==closepar) && delete_parenthesis ) onParenthesis=true;
     if(line[i]==closepar) {
       parenthesisLevel--;
       plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
@@ -161,24 +204,24 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
-  string line("");
+bool Tools::getParsedLine(IFile& ifile,std::vector<std::string> & words, bool trimcomments) {
+  std::string line("");
   words.clear();
   bool stat;
   bool inside=false;
   int parlevel=0;
   bool mergenext=false;
   while((stat=ifile.getline(line))) {
-    trimComments(line);
+    if(trimcomments) trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line,NULL,&parlevel);
+    std::vector<std::string> w=getWords(line,NULL,&parlevel,"{",trimcomments);
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
         if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
-        w.clear();
+        w.clear(); if(!trimcomments) words.push_back("...");
       } else if(*(w.end()-1)=="...") {
         inside=true;
         w.erase(w.end()-1);
@@ -192,6 +235,8 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     }
     mergenext=(parlevel>0);
     if(!inside)break;
+    if(!trimcomments && parlevel==0) words.push_back("@newline");
+    else if(!trimcomments) words[words.size()-1] += " @newline";
   }
   plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;
@@ -199,7 +244,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
 }
 
 
-bool Tools::getline(FILE* fp,string & line) {
+bool Tools::getline(FILE* fp,std::string & line) {
   line="";
   const int bufferlength=1024;
   char buffer[bufferlength];
@@ -207,7 +252,7 @@ bool Tools::getline(FILE* fp,string & line) {
   for(int i=0; i<bufferlength; i++) buffer[i]='\0';
   while((ret=fgets(buffer,bufferlength,fp))) {
     line.append(buffer);
-    unsigned ss=strlen(buffer);
+    unsigned ss=std::strlen(buffer);
     if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
@@ -215,12 +260,12 @@ bool Tools::getline(FILE* fp,string & line) {
   return ret;
 }
 
-void Tools::trim(string & s) {
+void Tools::trim(std::string & s) {
   size_t n=s.find_last_not_of(" \t");
   s=s.substr(0,n+1);
 }
 
-void Tools::trimComments(string & s) {
+void Tools::trimComments(std::string & s) {
   size_t n=s.find_first_of("#");
   s=s.substr(0,n);
 }
@@ -232,14 +277,14 @@ bool Tools::caseInSensStringCompare(const std::string & str1, const std::string 
   }));
 }
 
-bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
+bool Tools::getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep) {
   s.clear();
   for(auto p=line.begin(); p!=line.end(); ++p) {
     if((*p).length()==0) continue;
-    string x=(*p).substr(0,key.length());
+    std::string x=(*p).substr(0,key.length());
     if(caseInSensStringCompare(x,key)) {
       if((*p).length()==key.length())return false;
-      string tmp=(*p).substr(key.length(),(*p).length());
+      std::string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
       s=tmp;
       const std::string multi("@replicas:");
@@ -256,34 +301,34 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s) {
-  vector<string> news;
+  std::vector<std::string> news;
   for(const auto & p :s) {
     news.push_back(p);
     size_t dash=p.find("-");
-    if(dash==string::npos) continue;
+    if(dash==std::string::npos) continue;
     int first;
-    if(!Tools::convert(p.substr(0,dash),first)) continue;
+    if(!Tools::convertToAny(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
     size_t colon=p.substr(dash+1).find(":");
-    if(colon!=string::npos) {
-      if(!Tools::convert(p.substr(dash+1).substr(0,colon),second) ||
-          !Tools::convert(p.substr(dash+1).substr(colon+1),stride)) continue;
+    if(colon!=std::string::npos) {
+      if(!Tools::convertToAny(p.substr(dash+1).substr(0,colon),second) ||
+          !Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      if(!Tools::convert(p.substr(dash+1),second)) continue;
+      if(!Tools::convertToAny(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second) {
       plumed_massert(stride>0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first; i<=second; i+=stride) {
-        string ss;
+        std::string ss;
         convert(i,ss);
         news.push_back(ss);
       }
     } else {
       plumed_massert(stride<0,"interpreting ranges "+ p + ", stride should be positive");
       for(int i=first; i>=second; i+=stride) {
-        string ss;
+        std::string ss;
         convert(i,ss);
         news.push_back(ss);
       }
@@ -292,9 +337,9 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
   s=news;
 }
 
-void Tools::interpretLabel(vector<string>&s) {
+void Tools::interpretLabel(std::vector<std::string>&s) {
   if(s.size()<2)return;
-  string s0=s[0];
+  std::string s0=s[0];
   unsigned l=s0.length();
   if(l<1) return;
   if(s0[l-1]==':') {
@@ -304,9 +349,9 @@ void Tools::interpretLabel(vector<string>&s) {
   std::transform(s[0].begin(), s[0].end(), s[0].begin(), ::toupper);
 }
 
-vector<string> Tools::ls(const string&d) {
+std::vector<std::string> Tools::ls(const std::string&d) {
   DIR*dir;
-  vector<string> result;
+  std::vector<std::string> result;
   if ((dir=opendir(d.c_str()))) {
 #if defined(__PLUMED_HAS_READDIR_R)
     struct dirent ent;
@@ -319,7 +364,7 @@ vector<string> Tools::ls(const string&d) {
       res=readdir(dir);
 #endif
       if(!res) break;
-      if(string(res->d_name)!="." && string(res->d_name)!="..") result.push_back(res->d_name);
+      if(std::string(res->d_name)!="." && std::string(res->d_name)!="..") result.push_back(res->d_name);
     }
     closedir (dir);
   }
@@ -338,7 +383,7 @@ std::string Tools::extension(const std::string&s) {
   if(n!=std::string::npos && n+1<s.length() && n+5>=s.length()) {
     ext=s.substr(n+1);
     if(ext.find("/")!=std::string::npos) ext="";
-    string base=s.substr(0,n);
+    std::string base=s.substr(0,n);
     if(base.length()==0) ext="";
     if(base.length()>0 && base[base.length()-1]=='/') ext="";
   }
@@ -346,11 +391,11 @@ std::string Tools::extension(const std::string&s) {
 }
 
 double Tools::bessel0( const double& val ) {
-  if (fabs(val)<3.75) {
+  if (std::abs(val)<3.75) {
     double y = Tools::fastpow( val/3.75, 2 );
     return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
   }
-  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  double ax=std::abs(val), y=3.75/ax, bx=std::exp(ax)/std::sqrt(ax);
   ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
   return ax*bx;
 }
@@ -386,11 +431,11 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path) {
 
 Tools::DirectoryChanger::~DirectoryChanger() {
 #ifdef __PLUMED_HAS_CHDIR
-  if(strlen(cwd)==0) return;
+  if(std::strlen(cwd)==0) return;
   int ret=chdir(cwd);
 // we cannot put an assertion here (in a destructor) otherwise cppcheck complains
 // we thus just report the problem
-  if(ret!=0) fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
+  if(ret!=0) std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
 #endif
 }
 

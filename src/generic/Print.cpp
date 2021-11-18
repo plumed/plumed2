@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,8 +22,6 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -71,9 +69,9 @@ class Print :
   public ActionPilot,
   public ActionWithArguments
 {
-  string file;
+  std::string file;
   OFile ofile;
-  string fmt;
+  std::string fmt;
 // small internal utility
 /////////////////////////////////////////
 // these are crazy things just for debug:
@@ -82,7 +80,7 @@ class Print :
   int rotate;
   int rotateCountdown;
   int rotateLast;
-  vector<Value*> rotateArguments;
+  std::vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
   void calculate() override {}
@@ -138,8 +136,8 @@ Print::Print(const ActionOptions&ao):
   if(rotate>0) {
     rotateCountdown=rotate;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
-    vector<Value*> a(1,rotateArguments[0]);
-    requestArguments(vector<Value*>(1,rotateArguments[0]));
+    std::vector<Value*> a(1,rotateArguments[0]);
+    requestArguments(std::vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;
   }
 /////////////////////////////////////////
@@ -157,7 +155,7 @@ void Print::prepare() {
       rotateCountdown=rotate;
       rotateLast++;
       rotateLast%=rotateArguments.size();
-      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+      requestArguments(std::vector<Value*>(1,rotateArguments[rotateLast]));
     }
   }
 /////////////////////////////////////////

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -81,7 +81,7 @@ std::string getVersion();
 /// E.g. "2.2.3"
 std::string getVersionLong();
 
-/// Return the git PLUMED verion
+/// Return the git PLUMED version
 /// E.g. "c5badb091cd30"
 std::string getVersionGit();
 
@@ -107,7 +107,6 @@ bool hasExternalMolfile();
 
 bool hasZlib();
 
-bool hasXdrfile();
 }
 }
 

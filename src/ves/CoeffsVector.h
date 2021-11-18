@@ -67,7 +67,7 @@ public:
   //
   explicit CoeffsVector(
     const std::string&,
-    std::vector<Value*>&,
+    const std::vector<Value*>&,
     std::vector<BasisFunctions*>&,
     Communicator&,
     const bool use_counter=false);

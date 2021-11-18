@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "tools/File.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -58,8 +56,8 @@ class DumpDerivatives :
   public ActionPilot,
   public ActionWithArguments
 {
-  string file;
-  string fmt;
+  std::string file;
+  std::string fmt;
   OFile of;
 public:
   void calculate() override {}

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -148,7 +146,7 @@ Group::Group(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);

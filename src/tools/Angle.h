@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ namespace PLMD {
 /// inside the Angle class, we can remove it later and write compute as
 /// a static function.
 class Angle {
-// still empty, but may accomodate some options in the future
+// still empty, but may accommodate some options in the future
 public:
 /// Compute the angle between vectors v1 and v2
   double compute(const Vector& v1,const Vector& v2)const;
