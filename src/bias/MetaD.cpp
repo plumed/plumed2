@@ -1454,7 +1454,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
   for(unsigned i=0; i<ncv; ++i) {
     file.printField(getPntrToArgument(i),hill.center[i]);
   }
-  hillsOfile_.printField("kerneltype","gaussian");
+  hillsOfile_.printField("kerneltype","stretched-gaussian");
   if(hill.multivariate) {
     hillsOfile_.printField("multivariate","true");
     Matrix<double> mymatrix(ncv,ncv);
@@ -2105,7 +2105,7 @@ bool MetaD::scanOneHill(IFile* ifile, std::vector<Value>& tmpvalues, std::vector
       center[i]=tmpvalues[i].get();
     }
     // scan for kerneltype
-    std::string ktype="gaussian";
+    std::string ktype="stretched-gaussian";
     if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     // scan for multivariate label: record the actual file position so to eventually rewind
     std::string sss;

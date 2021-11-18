@@ -1,6 +1,6 @@
 #! FIELDS time sum_abs sigma_sum_abs height biasf
 #! SET multivariate false
-#! SET kerneltype gaussian
+#! SET kerneltype stretched-gaussian
      2.00000     0.23880     0.04000     0.41667    25.00000
      4.00000     0.25455     0.04000     0.41410    25.00000
      6.00000     0.20824     0.04000     0.41319    25.00000

@@ -811,7 +811,7 @@ void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
 
-  ofile->printField("kerneltype","gaussian");
+  ofile->printField("kerneltype","stretched-gaussian");
   if(hill.multivariate) {
     ofile->printField("multivariate","true");
     double lower = std::sqrt(1./hill.sigma[0]);
@@ -1156,7 +1156,7 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, std::vector<Value> &tmpva
       }
     }
     center[0]=tmpvalues[0].get();
-    std::string ktype="gaussian";
+    std::string ktype="stretched-gaussian";
     if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
 
     std::string sss;
