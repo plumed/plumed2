@@ -35,7 +35,7 @@ namespace ves {
 Adaptive moment estimation (ADAM) optimizer.
 
 \attention
-__This optimizer is still experimental. In particular, restarting does not work. We recommend to use \ref OPT_AVERAGED_SGD for now__.
+__This optimizer is still experimental and not fully documented. The syntax might change. Restarting does not work. We recommend to use \ref OPT_AVERAGED_SGD for now__.
 
 
 \par Examples
