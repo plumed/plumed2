@@ -58,7 +58,7 @@ void Vessel::registerKeywords( Keywords& keys ) {
 std::string Vessel::transformName( const std::string& name ) {
   std::string tlabel=name;
   // Convert to lower case
-  std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), tolower );
+  std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), [](unsigned char c) { return std::tolower(c); } );
   // Remove any underscore characters (as these are reserved)
   for(unsigned i=0;; ++i) {
     std::size_t num=tlabel.find_first_of("_");

@@ -119,7 +119,7 @@ Gradient::Gradient(const ActionOptions&ao):
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();
-  std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
+  std::transform( functype.begin(), functype.end(), functype.begin(), [](unsigned char c) { return std::tolower(c); } );
   log.printf("  calculating gradient of %s in %s direction \n",functype.c_str(), direction.c_str() );
   log<<"  Bibliography:"<<plumed.cite("Giberti, Tribello and Parrinello, J. Chem. Theory Comput., 9, 2526 (2013)")<<"\n";
 
