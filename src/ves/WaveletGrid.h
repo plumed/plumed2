@@ -22,7 +22,6 @@
 #ifndef __PLUMED_ves_WaveletGrid_h
 #define __PLUMED_ves_WaveletGrid_h
 
-#include "../lapack/lapack.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
