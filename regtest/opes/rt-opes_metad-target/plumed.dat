@@ -2,7 +2,7 @@
 
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-Ftg: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
+Ftg: CUSTOM ARG=phi PERIODIC=NO FUNC=x^2
 bias: BIASVALUE ARG=Ftg
 
 opes: OPES_METAD ...
@@ -17,7 +17,7 @@ opes: OPES_METAD ...
   EXTRA_BIAS
 ...
 
-PRINT FMT=%g STRIDE=5 FILE=Colvar.data ARG=phi,psi,Ftg,opes.bias,opes.rct,opes.neff,opes.nker,opes.work
+PRINT FMT=%g STRIDE=5 FILE=COLVAR ARG=phi,psi,Ftg,opes.bias,opes.rct,opes.neff,opes.nker,opes.work
 
 ENDPLUMED
 

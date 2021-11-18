@@ -69,7 +69,7 @@ However, this should be useful only in very specific cases.
 
 If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
 To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS, as in the example below.
-This allows one to define a custom target distribution by adding an extrenal bias potential equal to the desired target free energy (e.g.~using \ref BIASVALUE and \ref CUSTOM) and setting BIASFACTOR=inf.
+This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
 Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALL or \ref UPPER_WALL) added to restrain the CVs range.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
