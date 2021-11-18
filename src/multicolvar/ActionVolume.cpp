@@ -45,7 +45,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();
-  std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
+  std::transform( functype.begin(), functype.end(), functype.begin(), [](unsigned char c) { return std::tolower(c); } );
   log.printf("  calculating %s inside region of insterest\n",functype.c_str() );
 
   parseFlag("OUTSIDE",not_in); sigma=0.0;

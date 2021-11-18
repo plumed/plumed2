@@ -115,7 +115,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   plumed_assert( !exists(k) && !reserved(k) );
   std::string fd, lowkey=k;
   // Convert to lower case
-  std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+  std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) { return std::tolower(c); });
 // Remove any underscore characters
   for(unsigned i=0;; ++i) {
     std::size_t num=lowkey.find_first_of("_");
@@ -150,7 +150,7 @@ void Keywords::reserveFlag( const std::string & k, const bool def, const std::st
   std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
-  std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+  std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) { return std::tolower(c); });
   fd=defstr + d;
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
