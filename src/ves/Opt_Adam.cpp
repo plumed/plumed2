@@ -32,7 +32,10 @@ namespace ves {
 
 //+PLUMEDOC VES_OPTIMIZER OPT_ADAM
 /*
-Adaptive moment estimation (adam) optimizer.
+Adaptive moment estimation (ADAM) optimizer.
+
+\attention
+__This optimizer is still experimental. In particular, restarting does not work. We recommend to use \ref OPT_AVERAGED_SGD for now__.
 
 
 \par Examples
