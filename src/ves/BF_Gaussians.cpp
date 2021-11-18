@@ -68,6 +68,12 @@ It was found that performance can be typically improved with a smaller value (ar
 The optimization procedure then adjusts the heigths of the individual Gaussians.
 To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the VES_LINEAR_EXPANSION (set it to a small value, e.g. 1e-6)
 
+As an example two adjacent basis functions (with the mentioned width choice of 75% of the sub-interval length) can be seen below.
+The full basis consists of shifted Gaussians in the full specified interval.
+
+\image html ves_basisf-gaussians.png
+
+
 Exemplary
 
 \par Examples

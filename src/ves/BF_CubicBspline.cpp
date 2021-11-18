@@ -52,16 +52,23 @@ The full basis consists of equidistant splines at positions \f$\mu_i\f$ which ar
 
 Note that the distance between individual splines cannot be chosen freely but is equal to the width: \f$\mu_{i+1} = \mu_{i} + \sigma\f$.
 
+
 The ORDER keyword of the basis set determines the number of equally sized sub-intervalls to be used.
 On the borders of each of these sub-intervalls the mean \f$\mu_i\f$ of a spline function is placed.
 
 The total number of basis functions is \f$\text{ORDER}+4\f$ as the constant \f$f_{0}(x)=1\f$, as well as the two splines with means just outside the interval are also included.
+
+As an example two adjacent basis functions can be seen below.
+The full basis consists of shifted splines in the full specified interval.
+
+\image html ves_basisf-splines.png
 
 When the splines are used for a periodic CV (with the PERIODIC keyword),
 the sub-intervals are chosen in the same way, but only \f$\text{ORDER}+1\f$ functions
 are required to fill it (the ones at the boundary coincide and the ones outside
 can be omitted).
 
+To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the VES_LINEAR_EXPANSION (set it to a small value, e.g. 1e-6)
 
 \par Examples
 The bias is expanded with cubic B splines in the intervall from 0.0 to 10.0 specifying an order of 20.
