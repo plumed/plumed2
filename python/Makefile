@@ -24,7 +24,7 @@ all:
 else
 
 all:
-	@echo Python support was not configure
+	@echo Python support was not configured
 
 endif
 
