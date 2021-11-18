@@ -32,7 +32,7 @@ namespace ves {
 Gaussian basis functions.
 
 \attention
-__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do for orthogonal bases__.
+__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do form orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
 bounded interval.
@@ -63,8 +63,18 @@ can be omitted).
 It is possible to specify the width \f$\sigma\f$ (i.e. the standard deviation)
 of the Gaussians using the WIDTH keyword.
 By default it is set to the sub-intervall length.
+It was found that performance can be typically improved with a smaller value (around 75 % of the sub-interval length), although a too small overlap will prevent the basis set from working correctly at all.
 
 The optimization procedure then adjusts the heigths of the individual Gaussians.
+To avoid 'blind' optimization of the basis functions outside the currently sampled area, it is often beneficial to use the OPTIMIZATION_THRESHOLD keyword of the VES_LINEAR_EXPANSION (set it to a small value, e.g. 1e-6)
+
+As an example two adjacent basis functions (with the mentioned width choice of 75% of the sub-interval length) can be seen below.
+The full basis consists of shifted Gaussians in the full specified interval.
+
+\image html ves_basisf-gaussians.png
+
+
+Exemplary
 
 \par Examples
 
