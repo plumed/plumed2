@@ -81,31 +81,31 @@ bf: BF_CUBIC_B_SPLINES MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 */
 //+ENDPLUMEDOC
 
-class BF_CubicBspline : public BasisFunctions {
+class BF_CubicBsplines : public BasisFunctions {
   double spacing_;
   double inv_spacing_;
   double inv_normfactor_;
   double spline(const double, double&) const;
 public:
   static void registerKeywords( Keywords&);
-  explicit BF_CubicBspline(const ActionOptions&);
+  explicit BF_CubicBsplines(const ActionOptions&);
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 
-PLUMED_REGISTER_ACTION(BF_CubicBspline,"BF_CUBIC_B_SPLINES")
+PLUMED_REGISTER_ACTION(BF_CubicBsplines,"BF_CUBIC_B_SPLINES")
 
 // See DOI 10.1007/s10614-007-9092-4 for more information;
 
 
-void BF_CubicBspline::registerKeywords(Keywords& keys) {
+void BF_CubicBsplines::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","NORMALIZATION","the normalization factor that is used to normalize the basis functions by dividing the values. By default it is 2.");
   keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
-BF_CubicBspline::BF_CubicBspline(const ActionOptions&ao):
+BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
   setIntrinsicInterval(intervalMin(),intervalMax());
@@ -136,7 +136,7 @@ BF_CubicBspline::BF_CubicBspline(const ActionOptions&ao):
 }
 
 
-void BF_CubicBspline::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
+void BF_CubicBsplines::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   // plumed_assert(values.size()==numberOfBasisFunctions());
   // plumed_assert(derivs.size()==numberOfBasisFunctions());
   inside_range=true;
@@ -159,7 +159,7 @@ void BF_CubicBspline::getAllValues(const double arg, double& argT, bool& inside_
 }
 
 
-double BF_CubicBspline::spline(const double arg, double& deriv) const {
+double BF_CubicBsplines::spline(const double arg, double& deriv) const {
   double value=0.0;
   double x=arg;
   // derivative of abs(x);
