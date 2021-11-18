@@ -32,10 +32,7 @@ namespace ves {
 Gaussian basis functions.
 
 \attention
-__These basis functions are still experimental and should not be used in
-conventional biasing simulations__.
-Instead you should use orthogonal basis functions like Legendre or Chebyshev
-polynomials.
+__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do for orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
 bounded interval.

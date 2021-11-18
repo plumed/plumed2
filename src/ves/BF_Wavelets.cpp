@@ -36,7 +36,7 @@ namespace ves {
 
 //+PLUMEDOC VES_BASISF BF_WAVELETS
 /*
-Daubechies Wavelets as basis functions.
+Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 

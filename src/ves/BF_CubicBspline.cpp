@@ -30,12 +30,12 @@ namespace ves {
 
 //+PLUMEDOC VES_BASISF BF_CUBIC_B_SPLINES
 /*
-A basis using cubic B spline functions according to \cite habermann_multidimensional_2007 .
+Cubic B spline basis functions.
 
 \attention
-__These basis functions do not form orthogonal bases__.
+__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do for orthogonal bases__.
 
-The mathematical expression of the individual splines is given by
+A basis using cubic B spline functions according to \cite habermann_multidimensional_2007. The mathematical expression of the individual splines is given by
 \f{align*}{
   h\left(x\right) =
   \begin{cases}
