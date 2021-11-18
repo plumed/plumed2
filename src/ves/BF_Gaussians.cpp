@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace ves {
 
-//+PLUMEDOC VES_BASISF BF_GAUSSIAN
+//+PLUMEDOC VES_BASISF BF_GAUSSIANS
 /*
 Gaussian basis functions.
 
