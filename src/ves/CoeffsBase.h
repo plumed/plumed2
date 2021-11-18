@@ -174,6 +174,7 @@ public:
   void resetOutputFmt() {output_fmt_="%30.16e";}
   std::string getOutputFmt() const {return output_fmt_;}
   //
+  void replaceLabelString(const std::string&, const std::string&);
 protected:
   void setupBasisFunctionsInfo();
   void resizeIndices(const std::vector<unsigned int>&);
