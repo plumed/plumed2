@@ -64,10 +64,12 @@ Because no analytic formula for these wavelets exist, they are instead construct
 The method of construction is close to the "Vector cascade algorithm" described in \cite strang_wavelets_1997 .
 The needed filter coefficients of the scaling function are hardcoded, and were previously generated via a python script.
 Currently the "maximum phase" type (Db) and the "least asymmetric" (Sym) type are implemented.
+We recommend to use Symlets.
 
-As an example the two Db8 wavelet functions can be seen below
+As an example two adjacent basis functions of both Sym8 (ORDER=8, TYPE=SYMLET) and Db8 (ORDER=8, TYPE=DAUBECHIES) is shown in the figure.
+The full basis consists of shifted wavelets in the full specified interval.
 
-\image html ves-basisf-db8.png
+\image html ves_basisf-wavelets.png
 
 
 \par Specify the wavelet type

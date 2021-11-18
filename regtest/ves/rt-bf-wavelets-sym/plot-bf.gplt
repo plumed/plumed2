@@ -1,0 +1,30 @@
+set terminal pngcairo size 1700,600 enhanced font 'Verdana,18'
+set output "basisf-wavelets.png"
+
+set xlabel "x"
+set ylabel "f(x)"
+
+set xr [-2.5:2.5]
+set xtics 1
+set mxtics 2
+
+unset key
+
+set xzeroaxis
+
+set yr [-0.65:1.25]
+set ytics 0.5
+set mytics 2
+
+set multiplot layout 1,2
+
+set key top right title "Sym8"
+plot \
+     'bf.values.data.reference' u 1:17 w l lw 4 lt 2 notitle ,\
+     ''                         u 1:16 w l lw 4 lt 1 notitle ,\
+
+set key top right title "Db8"
+
+plot \
+     '../rt-bf-wavelets-db/bf.values.data.reference' u 1:21 w l lw 4 lt 2 notitle ,\
+     ''                         u 1:20 w l lw 4 lt 1 notitle ,\
