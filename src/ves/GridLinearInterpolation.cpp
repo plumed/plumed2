@@ -196,7 +196,6 @@ std::vector<std::vector<unsigned>> GridLinearInterpolation::getAdjacentIndices(G
   for (unsigned i=0; i<dimension; ++i) {
     std::vector<unsigned> temp_indices(2);
     //
-    double x = arg[i];
     double grid_dx = grid_pntr->getDx()[i];
     double grid_min; Tools::convert( grid_pntr->getMin()[i], grid_min);
     double xtoindex = (arg[i]-grid_min)/grid_dx;
