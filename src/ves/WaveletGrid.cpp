@@ -102,14 +102,14 @@ std::vector<Matrix<double>> WaveletGrid::setupMatrices(const std::vector<double>
 
 std::vector<double> WaveletGrid::calcIntegerValues(const Matrix<double> &M, const int deriv) {
   // corresponding eigenvalue of the matrix
-  double eigenvalue = pow(0.5, deriv);
+  double eigenvalue = std::pow(0.5, deriv);
   std::vector<double> values = getEigenvector(M, eigenvalue);
 
   // normalization of the eigenvector
   double normfactor = 0.;
   // i=0 is always 0; for derivs > 1 an additional factorial would have to be added
   for (unsigned i=1; i<values.size(); ++i) {
-    normfactor += values[i] * pow(-i, deriv);
+    normfactor += values[i] * std::pow(-i, deriv);
   }
   normfactor = 1/normfactor;
   for (auto& value : values) {
