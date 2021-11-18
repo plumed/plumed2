@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -196,7 +196,6 @@ std::vector<std::vector<unsigned>> GridLinearInterpolation::getAdjacentIndices(G
   for (unsigned i=0; i<dimension; ++i) {
     std::vector<unsigned> temp_indices(2);
     //
-    double x = arg[i];
     double grid_dx = grid_pntr->getDx()[i];
     double grid_min; Tools::convert( grid_pntr->getMin()[i], grid_min);
     double xtoindex = (arg[i]-grid_min)/grid_dx;

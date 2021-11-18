@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -36,7 +36,7 @@ namespace ves {
 
 //+PLUMEDOC VES_BASISF BF_WAVELETS
 /*
-Daubechies Wavelets as basis functions.
+Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
@@ -89,7 +89,7 @@ There are two different ways to specify the number of used basis functions imple
 You can either specify the scale or alternatively a fixed number of basis function.
 
 Coming from the multiresolution aspect of wavelets, you can set the scale of the father wavelets, i.e. the largest scale used for approximation.
-This can be done with the FUNCTIION_LENGTH keyword.
+This can be done with the FUNCTION_LENGTH keyword.
 It should be given in the same units as the used CV and specifies the length (of the domain interval) of the individual father wavelet functions.
 
 Alternatively a fixed number of basis functions for the bias expansion can be specified with the NUM_BF keyword, which will set the scale automatically to match the desired number of functions.

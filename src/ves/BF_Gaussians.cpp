@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -27,10 +27,12 @@
 namespace PLMD {
 namespace ves {
 
-//+PLUMEDOC VES_BASISF BF_GAUSSIAN
+//+PLUMEDOC VES_BASISF BF_GAUSSIANS
 /*
 Gaussian basis functions.
 
+\attention
+__These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do form orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
 bounded interval.
@@ -161,7 +163,7 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
     values[i] = exp(-0.5*pow(dist*inv_sigma_,2.0));
     derivs[i] = -values[i] * (dist)*pow(inv_sigma_,2.0);
   }
-  if(!inside_range) {for (auto& d: derivs){d=0.0;}}
+  if(!inside_range) {for (auto& d: derivs) {d=0.0;}}
 }
 
 

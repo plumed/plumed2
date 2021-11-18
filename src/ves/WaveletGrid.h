@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -19,10 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ves_WaveletsGrid_h
-#define __PLUMED_ves_WaveletsGrid_h
+#ifndef __PLUMED_ves_WaveletGrid_h
+#define __PLUMED_ves_WaveletGrid_h
 
-#include "../lapack/lapack.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
