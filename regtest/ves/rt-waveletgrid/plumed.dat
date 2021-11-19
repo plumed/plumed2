@@ -2,6 +2,14 @@
 
 arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME
 
+# This regtest is only to test that the 
+# wavelet coeffs are preserved. 
+# The accuracy of the printout is reduced to 
+# WAVELET_FILE_FMT=%13.2f to avoid numerical 
+# issues on Github Actions. If you want to plot
+# the wavelets, you should increase the accuracy 
+# of the printout. 
+
 BF_WAVELETS ...
  ORDER=4
  TYPE=DAUBECHIES
