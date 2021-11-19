@@ -103,7 +103,9 @@ void OutputBasisFunctions::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_MAX","the maximum of the grid for writing the basis function values and derivatives. By default it is the maximum of the interval on which the basis functions are defined.");
   keys.add("optional","FILE_VALUES","filename of the file on which the basis function values are written. By default it is BF_LABEL.values.data.");
   keys.add("optional","FILE_DERIVS","filename of the file on which the basis function derivatives are written. By default it is BF_LABEL.derivs.data.");
-  keys.add("optional","FORMAT_VALUES_DERIVS","the numerical format of the basis function values and derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","FORMAT_VALUES_DERIVS","the numerical format of the basis function values and derivatives written to file. By default it is %15.8f.\n. You can also use FORMAT_VALUES and FORMAT_DERIVS to give the numerical formats separately.");
+  keys.add("optional","FORMAT_VALUES","the numerical format of the basis function derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","FORMAT_DERIVS","the numerical format of the basis function values written to file. By default it is %15.8f.\n");
   keys.add("optional","FILE_TARGETDIST_AVERAGES","filename of the file on which the averages over the target distributions are written. By default it is BF_LABEL.targetdist-averages.data.");
   keys.add("optional","FORMAT_TARGETDIST_AVERAGES","the numerical format of the target distribution averages written to file. By default it is %15.8f.\n");
   keys.add("optional","FILE_TARGETDIST","filename of the files on which the target distributions are written. By default it is BF_LABEL.targetdist-#.data.");
@@ -143,6 +145,11 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
 
   std::string fmt_values_derivs = "%15.8f";
   parse("FORMAT_VALUES_DERIVS",fmt_values_derivs);
+  std::string fmt_values = fmt_values_derivs;
+  std::string fmt_derivs = fmt_values_derivs;
+  parse("FORMAT_VALUES",fmt_values);
+  parse("FORMAT_DERIVS",fmt_derivs);
+
   std::string fmt_targetdist_aver = "%15.8f";
   parse("FORMAT_TARGETDIST_AVERAGES",fmt_targetdist_aver);
 
@@ -172,7 +179,7 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
   ofile_derivs.link(*this);
   ofile_derivs.enforceBackup();
   ofile_derivs.open(fname_derives);
-  bf_pntrs[0]->writeBasisFunctionsToFile(ofile_values,ofile_derivs,min_str,max_str,nbins,ignore_periodicity,fmt_values_derivs,numerical_deriv);
+  bf_pntrs[0]->writeBasisFunctionsToFile(ofile_values,ofile_derivs,min_str,max_str,nbins,ignore_periodicity,fmt_values,fmt_derivs,numerical_deriv);
   ofile_values.close();
   ofile_derivs.close();
   //
