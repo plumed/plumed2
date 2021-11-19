@@ -1,6 +1,6 @@
 #! FIELDS time d2 sigma_d2_d2 height biasf
 #! SET multivariate true
-#! SET kerneltype gaussian
+#! SET kerneltype stretched-gaussian
 #! SET lower_int                       0
 #! SET upper_int                       8
                   0.005      1.203184354540843                    0.1                  0.625                      5
