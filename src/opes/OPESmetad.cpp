@@ -68,9 +68,9 @@ You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
 If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
-To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS, as in the example below.
+To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS_ARG, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
-Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALLS or \ref UPPER_WALLS) added to restrain the CVs range.
+Another possible usage of EXTRA_BIAS_ARG is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALLS or \ref UPPER_WALLS) added to restrain the CVs range.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
@@ -125,7 +125,7 @@ Ftg_func: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
 Ftg: BIASVALUE ARG=Ftg_func
 opes: OPES_METAD ...
   ARG=phi,Ftg.bias
-  EXTRA_BIAS
+  EXTRA_BIAS_ARG
   PACE=500
   BARRIER=50
   SIGMA=0.2
@@ -144,7 +144,6 @@ class OPESmetad : public bias::Bias {
 
 private:
   bool isFirstStep_;
-  bool afterCalculate_;
   unsigned NumOMP_;
   unsigned NumParallel_;
   unsigned rank_;
@@ -168,7 +167,6 @@ private:
   double epsilon_;
   double sum_weights_;
   double sum_weights2_;
-  double current_bias_;
 
   bool no_Zed_;
   double Zed_;
@@ -307,7 +305,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   if(!mode::explore)
-    keys.addFlag("EXTRA_BIAS",false,"interpret the last ARG as an extra bias that will be added to the OPES one when reweighting");
+    keys.addFlag("EXTRA_BIAS_ARG",false,"interpret the last ARG as an extra bias that will be added to the OPES one when reweighting");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -329,7 +327,6 @@ template <class mode>
 OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
-  , afterCalculate_(false)
   , counter_(1)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
@@ -355,10 +352,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //fix the CV number if extra bias is used
   if(!mode::explore)
   {
-    parseFlag("EXTRA_BIAS", extra_bias_);
+    parseFlag("EXTRA_BIAS_ARG", extra_bias_);
     if(extra_bias_)
     {
-      plumed_massert(ncv_>1,"you must add at the end of the ARG list the action containing the EXTRA_BIAS");
+      plumed_massert(ncv_>1,"you must add at the end of the ARG list the action value containing the extra bias");
       ncv_-=1; //the extra bias is not a CV
     }
   }
@@ -823,7 +820,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   log.printf("  temperature = %g\n",kbt_/Kb);
   log.printf("  beta = %g\n",1./kbt_);
   if(extra_bias_)
-    log.printf(" -- EXTRA_BIAS: the bias '%s' will be taken into account for internal reweighting\n",getPntrToArgument(ncv_)->getName().c_str());
+    log.printf(" -- EXTRA_BIAS_ARG: the bias '%s' will be taken into account for internal reweighting\n",getPntrToArgument(ncv_)->getName().c_str());
   log.printf("  depositing new kernels with PACE = %u\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
@@ -931,14 +928,10 @@ void OPESmetad<mode>::calculate()
 //set bias and forces
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
-  current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
-  setBias(current_bias_);
-  if(extra_bias_)
-    current_bias_+=getArgument(ncv_);
+  const double bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
+  setBias(bias);
   for(unsigned i=0; i<ncv_; i++)
     setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
-
-  afterCalculate_=true;
 }
 
 template <class mode>
@@ -971,15 +964,15 @@ void OPESmetad<mode>::update()
 //do update
   if(getStep()%stride_==0)
   {
-    plumed_massert(afterCalculate_,"OPESmetad::update() must be called after OPESmetad::calculate() to work properly");
-    afterCalculate_=false; //if needed implementation can be changed to avoid this
-
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
 
     //get new kernel height
-    double height=std::exp(current_bias_/kbt_); //this assumes that calculate() always runs before update()
+    double log_weight=getOutputQuantity(0)/kbt_; //first value is always the current bias
+    if(extra_bias_)
+      log_weight+=getArgument(ncv_)/kbt_; //the extra bias contributes to the weight
+    double height=std::exp(log_weight);
 
     //update sum_weights_ and neff
     double sum_heights=height;
@@ -1075,7 +1068,7 @@ void OPESmetad<mode>::update()
 
     //add new kernel(s)
     if(NumWalkers_==1)
-      addKernel(height,center,sigma,current_bias_/kbt_);
+      addKernel(height,center,sigma,log_weight);
     else
     {
       std::vector<double> all_height(NumWalkers_,0.0);
@@ -1087,7 +1080,7 @@ void OPESmetad<mode>::update()
         multi_sim_comm.Allgather(height,all_height);
         multi_sim_comm.Allgather(center,all_center);
         multi_sim_comm.Allgather(sigma,all_sigma);
-        multi_sim_comm.Allgather(current_bias_/kbt_,all_logweight);
+        multi_sim_comm.Allgather(log_weight,all_logweight);
       }
       comm.Bcast(all_height,0);
       comm.Bcast(all_center,0);
@@ -1215,9 +1208,7 @@ void OPESmetad<mode>::update()
       std::vector<double> dummy(ncv_); //derivatives are not actually needed
       const double prob=getProbAndDerivatives(center,dummy);
       const double new_bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
-      work_+=new_bias-current_bias_;
-      if(extra_bias_)
-        work_-=getArgument(ncv_);
+      work_+=new_bias-getOutputQuantity(0);
       getPntrToComponent("work")->set(work_);
     }
   }
