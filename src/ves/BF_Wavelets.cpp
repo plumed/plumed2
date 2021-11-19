@@ -123,7 +123,7 @@ If the FUNCTION_LENGTH keyword is used together with PERIODIC, a smaller length 
 The values of the wavelet function are generated on a grid.
 Using the cascade algorithm results in doubling the grid values for each iteration.
 This means that the grid size will always be a power of two multiplied by the number of coefficients (\f$ 2*\text{ORDER} -1\f$) for the specified wavelet.
-Using the GRIDSIZE keyword a lower bound for the number of grid points can be specified.
+Using the MIN_GRID_SIZE keyword a lower bound for the number of grid points can be specified.
 By default at least 1,000 grid points are used.
 Function values in between grid points are calculated by linear interpolation.
 
@@ -184,7 +184,7 @@ BF_WAVELETS ...
  MINIMUM=0.0
  MAXIMUM=4.0
  NUM_BF=40
- GRID_SIZE=500
+ MIN_GRID_SIZE=500
  DUMP_WAVELET_GRID
  WAVELET_FILE_FMT=%11.4f
  LABEL=bf
