@@ -35,10 +35,11 @@ The internal energy \f$U\f$ of of the system should be used as ARG.
 In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
 If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
 
-By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps.
-Otherwise you can manually set this number with STEPS_TEMP.
-In both cases the steps will have a geometric distriution in the temperature, thus uniform in beta.
-For more fine controll you can use the keywork SET_ALL_TEMPS and explicitly provide each temperature.
+By defauly the needed steps in temperatures are automatically guessed from few initial unbiased MD steps, as descibed in \cite Invernizzi2020unified.
+Otherwise you can manually set this number with TEMP_STEPS.
+In both cases the steps will be geometrically spaced in temperature.
+Use instead the keyword NO_GEOM_SPACING for a linear spacing in the inverse temperature (beta), that typically increases the focus on lower temperatures.
+Finally, you can use instead the keyword TEMP_SET_ALL and explicitly provide each temperature.
 
 You can reweight the resulting simulation at any temperature in the chosen range, using e.g. \ref REWEIGHT_TEMP_PRESS.
 A similar target distribution can be sampled using \ref TD_MULTICANONICAL.
@@ -50,7 +51,7 @@ Fixed volume, multicanonical simulation:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 MIN_TEMP=300 MAX_TEMP=800
+ecv: ECV_MULTITHERMAL ARG=ene TEMP=300 TEMP_MIN=300 TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
@@ -58,17 +59,17 @@ which, if your MD code passes the temperature to PLUMED, is equivalent to:
 
 \plumedfile
 ene: ENERGY
-ecv: ECV_MULTITHERMAL ARG=ene MAX_TEMP=800
+ecv: ECV_MULTITHERMAL ARG=ene TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
-If instead the pressure is fixed and the volume changes, you must calculate the internal energy first, \f$U=E+pV\f$
+If instead the pressure is fixed and the volume changes, you shuld calculate the internal energy first, \f$U=E+pV\f$
 
 \plumedfile
 ene: ENERGY
 vol: VOLUME
 intEne: CUSTOM PERIODIC=NO ARG=ene,vol FUNC=x+0.06022140857*y
-ecv: ECV_MULTITHERMAL ARG=intEne MAX_TEMP=800
+ecv: ECV_MULTITHERMAL ARG=intEne TEMP_MAX=800
 opes: OPES_EXPANDED ARG=ecv.intEne PACE=500
 \endplumedfile
 
@@ -82,10 +83,9 @@ class ECVmultiCanonical :
 {
 private:
   bool todoAutomatic_;
-  double beta0_;
-  std::vector<double> beta_;
+  bool geom_spacing_;
   std::vector<double> ECVs_;
-  std::vector<double> derECVs_;
+  std::vector<double> derECVs_; //(beta_k-beta0) or (temp0/temp_k-1)/kbt
   void initECVs();
 
 public:
@@ -106,92 +106,92 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys)
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the internal energy of the system. If volume is fixed it is calculated by the \\ref ENERGY colvar");
-  keys.add("optional","MIN_TEMP","the minimum of the temperature range");
-  keys.add("optional","MAX_TEMP","the maximum of the temperature range");
-  keys.add("optional","STEPS_TEMP","the number of steps in temperature");
-  keys.add("optional","SET_ALL_TEMPS","manually set all the temperatures");
+  keys.add("optional","TEMP_MIN","the minimum of the temperature range");
+  keys.add("optional","TEMP_MAX","the maximum of the temperature range");
+  keys.add("optional","TEMP_STEPS","the number of steps in temperature");
+  keys.add("optional","TEMP_SET_ALL","manually set all the temperatures");
+  keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
 }
 
 ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   : Action(ao)
   , ExpansionCVs(ao)
   , todoAutomatic_(false)
-  , beta0_(1./kbt_)
 {
   plumed_massert(getNumberOfArguments()==1,"only the internal energy should be given as ARG");
 
-//set temp0 and beta0_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  double temp0=kbt_/Kb;
+//set temp0
+  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
 
 //parse temp range
-  double min_temp=-1;
-  double max_temp=-1;
-  parse("MIN_TEMP",min_temp);
-  parse("MAX_TEMP",max_temp);
-  unsigned steps_temp=0;
-  parse("STEPS_TEMP",steps_temp);
+  double temp_min=-1;
+  double temp_max=-1;
+  parse("TEMP_MIN",temp_min);
+  parse("TEMP_MAX",temp_max);
+  unsigned temp_steps=0;
+  parse("TEMP_STEPS",temp_steps);
   std::vector<double> temps;
-  parseVector("SET_ALL_TEMPS",temps);
+  parseVector("TEMP_SET_ALL",temps);
+  parseFlag("NO_GEOM_SPACING",geom_spacing_);
+  geom_spacing_=!geom_spacing_;
 
   checkRead();
 
 //set the intermediate temperatures
   if(temps.size()>0)
   {
-    plumed_massert(steps_temp==0,"cannot set both STEPS_TEMP and SET_ALL_TEMPS");
-    plumed_massert(min_temp==-1 && max_temp==-1,"cannot set both SET_ALL_TEMPS and MIN/MAX_TEMP");
+    plumed_massert(temp_steps==0,"cannot set both TEMP_STEPS and TEMP_SET_ALL");
+    plumed_massert(temp_min==-1 && temp_max==-1,"cannot set both TEMP_SET_ALL and TEMP_MIN/MAX");
     plumed_massert(temps.size()>=2,"set at least 2 temperatures");
-    min_temp=temps[0];
-    max_temp=temps[temps.size()-1];
-    beta_.resize(temps.size());
-    for(unsigned k=0; k<beta_.size(); k++)
+    temp_min=temps[0];
+    temp_max=temps[temps.size()-1];
+    derECVs_.resize(temps.size());
+    for(unsigned k=0; k<derECVs_.size(); k++)
     {
-      beta_[k]=1./(Kb*temps[k]);
-      if(k<beta_.size()-1)
-        plumed_massert(temps[k]<=temps[k+1],"SET_ALL_TEMPS must be properly ordered");
+      derECVs_[k]=(temp0/temps[k]-1.)/kbt_;
+      if(k<derECVs_.size()-1)
+        plumed_massert(temps[k]<=temps[k+1],"TEMP_SET_ALL must be properly ordered");
     }
   }
   else
-  { //get MIN_TEMP and MAX_TEMP
-    plumed_massert(min_temp!=-1 || max_temp!=-1,"MIN_TEMP, MAX_TEMP or both, should be set");
-    if(min_temp==-1)
+  { //get TEMP_MIN and TEMP_MAX
+    plumed_massert(temp_min!=-1 || temp_max!=-1,"TEMP_MIN, TEMP_MAX or both, should be set");
+    if(temp_min==-1)
     {
-      min_temp=temp0;
-      log.printf("  no MIN_TEMP provided, using MIN_TEMP=TEMP\n");
+      temp_min=temp0;
+      log.printf("  no TEMP_MIN provided, using TEMP_MIN=TEMP\n");
     }
-    if(max_temp==-1)
+    if(temp_max==-1)
     {
-      max_temp=temp0;
-      log.printf("  no MAX_TEMP provided, using MAX_TEMP=TEMP\n");
+      temp_max=temp0;
+      log.printf("  no TEMP_MAX provided, using TEMP_MAX=TEMP\n");
     }
-    plumed_massert(max_temp>=min_temp,"MAX_TEMP should be bigger than MIN_TEMP");
-    beta_.resize(2);
-    beta_[0]=1./(Kb*min_temp); //ordered temp, inverted beta
-    beta_[1]=1./(Kb*max_temp);
-    if(min_temp==max_temp && steps_temp==0)
-      steps_temp=1;
-    if(steps_temp>0)
-      setSteps(beta_,steps_temp,"TEMP");
+    plumed_massert(temp_max>=temp_min,"TEMP_MAX should be bigger than TEMP_MIN");
+    derECVs_.resize(2);
+    derECVs_[0]=(temp0/temp_min-1.)/kbt_;
+    derECVs_[1]=(temp0/temp_max-1.)/kbt_;
+    if(temp_min==temp_max && temp_steps==0)
+      temp_steps=1;
+    if(temp_steps>0)
+      derECVs_=getSteps(derECVs_[0],derECVs_[1],temp_steps,"TEMP",geom_spacing_,1./kbt_);
     else
       todoAutomatic_=true;
   }
   const double tol=1e-3; //if temp is taken from MD engine it might be numerically slightly different
-  if(temp0<(1-tol)*min_temp || temp0>(1+tol)*max_temp)
+  if(temp0<(1-tol)*temp_min || temp0>(1+tol)*temp_max)
     log.printf(" +++ WARNING +++ running at TEMP=%g which is outside the chosen temperature range\n",temp0);
 
 //print some info
-  log.printf("  targeting a temperature range from MIN_TEMP=%g to MAX_TEMP=%g\n",min_temp,max_temp);
+  log.printf("  targeting a temperature range from TEMP_MIN=%g to TEMP_MAX=%g\n",temp_min,temp_max);
+  if(!geom_spacing_)
+    log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
 }
 
 void ECVmultiCanonical::calculateECVs(const double * ene)
 {
-  for(unsigned k=0; k<beta_.size(); k++)
-  {
-    const double diff_k=(beta_[k]-beta0_);
-    ECVs_[k]=diff_k*ene[0];
-    derECVs_[k]=diff_k;
-  }
+  for(unsigned k=0; k<derECVs_.size(); k++)
+    ECVs_[k]=derECVs_[k]*ene[0];
+// derivatives never change: derECVs_k=(beta_k-beta0)
 }
 
 const double * ECVmultiCanonical::getPntrToECVs(unsigned j)
@@ -211,12 +211,12 @@ const double * ECVmultiCanonical::getPntrToDerECVs(unsigned j)
 std::vector<std::string> ECVmultiCanonical::getLambdas() const
 {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
-  std::vector<std::string> lambdas(beta_.size());
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  for(unsigned k=0; k<beta_.size(); k++)
+  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
+  std::vector<std::string> lambdas(derECVs_.size());
+  for(unsigned k=0; k<derECVs_.size(); k++)
   {
     std::ostringstream subs;
-    subs<<1./(Kb*beta_[k]);
+    subs<<temp0/(derECVs_[k]*kbt_+1); //temp_k
     lambdas[k]=subs.str();
   }
   return lambdas;
@@ -226,11 +226,10 @@ void ECVmultiCanonical::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_,"this should not happen");
-  totNumECVs_=beta_.size();
-  ECVs_.resize(beta_.size());
-  derECVs_.resize(beta_.size());
+  totNumECVs_=derECVs_.size();
+  ECVs_.resize(derECVs_.size());
   isReady_=true;
-  log.printf("  *%4lu temperatures for %s\n",beta_.size(),getName().c_str());
+  log.printf("  *%4lu temperatures for %s\n",derECVs_.size(),getName().c_str());
 }
 
 void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
@@ -241,9 +240,9 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
     std::vector<double> obs_ene(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
     for(unsigned t=0; t<obs_ene.size(); t++)
       obs_ene[t]=all_obs_cvs[t*ncv+index_j];
-    const unsigned steps_temp=estimateSteps(beta_[0]-beta0_,beta_[1]-beta0_,obs_ene,"TEMP");
+    const unsigned temp_steps=estimateNumSteps(derECVs_[0],derECVs_[1],obs_ene,"TEMP");
     log.printf("    (spacing is in beta, not in temperature)\n");
-    setSteps(beta_,steps_temp,"TEMP");
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],temp_steps,"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_=false;
   }
   initECVs();
@@ -256,7 +255,7 @@ void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
   if(todoAutomatic_)
   {
-    setSteps(beta_,lambdas.size(),"TEMP");
+    derECVs_=getSteps(derECVs_[0],derECVs_[1],lambdas.size(),"TEMP",geom_spacing_,1./kbt_);
     todoAutomatic_=false;
   }
   std::vector<std::string> myLambdas=getLambdas();

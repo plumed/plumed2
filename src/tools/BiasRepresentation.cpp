@@ -137,7 +137,7 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile)
     ifile->scanField(names[i],cc[i]);
   }
   double h=1.0;
-  return Tools::make_unique<KernelFunctions>(cc,histosigma,"gaussian","DIAGONAL",h);
+  return Tools::make_unique<KernelFunctions>(cc,histosigma,"stretched-gaussian","DIAGONAL",h);
 }
 
 void BiasRepresentation::pushKernel( IFile *ifile ) {
