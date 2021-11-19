@@ -223,8 +223,29 @@ EOF
         make exe-fortran 1>out 2> err
       fi
     fi
-  elif test "$plumed_language" = c ; then
-    make exe-c 1>out 2> err
+  elif test "$plumed_language" = c || test "$plumed_language" = c11 ; then
+    if test "$plumed_language" = c11 ; then
+      cat > __test_c11.c << EOF
+#ifdef __STDC_VERSION__
+#if __STDC_VERSION__ < 201112L
+error
+#endif
+#else
+error
+#endif
+int f(int a){
+  return a;
+}
+EOF
+      if make test-c11 2>err | grep SUCCESS=YES 1> /dev/null ; then
+        make exe-c 1>out 2> err
+      else
+          echo "NOT_APPLICABLE (CC does not support c11)"
+          exit 0
+      fi
+    else
+      make exe-c 1>out 2> err
+    fi
   else
     make exe 1>out 2> err
   fi

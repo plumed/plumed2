@@ -1,7 +1,3 @@
-// this turns on typecheck for plumed_cmd and plumed_gcmd
-// it is temporarily off by default, we enable typechecks in this test
-#define __PLUMED_WRAPPER_CXX_BIND_C 1
-
 #include "plumed/wrapper/Plumed.h"
 #include "plumed/tools/Exception.h"
 #include <fstream>

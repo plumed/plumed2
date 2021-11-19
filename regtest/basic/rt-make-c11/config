@@ -1,5 +1,5 @@
 type=make
-plumed_language=c
+plumed_language=c11
 
 function plumed_regtest_after(){
 # this should be empty since _ and __ names are not used
