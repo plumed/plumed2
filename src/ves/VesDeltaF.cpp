@@ -100,8 +100,7 @@ The header of both FES files must be identical, and should be similar to the fol
 #! SET max_cv 1
 #! SET nbins_cv  100
 #! SET periodic_cv false
-0 1000 0
-[ ... ]
+0 0 0
 \endauxfile
 \auxfile{fesB.data}
 #! FIELDS cv file.free der_cv
@@ -109,8 +108,7 @@ The header of both FES files must be identical, and should be similar to the fol
 #! SET max_cv 1
 #! SET nbins_cv  100
 #! SET periodic_cv false
-0 1000 0
-[ ... ]
+0 0 0
 \endauxfile
 
 */

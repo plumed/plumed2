@@ -70,7 +70,7 @@ However, this should be useful only in very specific cases.
 If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
 To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
-Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALL or \ref UPPER_WALL) added to restrain the CVs range.
+Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALLS or \ref UPPER_WALLS) added to restrain the CVs range.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
@@ -97,7 +97,6 @@ Another more articulated one:
 \plumedfile
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-
 opes: OPES_METAD ...
   FILE=Kernels.data
   TEMP=300
@@ -113,28 +112,25 @@ opes: OPES_METAD ...
   WALKERS_MPI
   NLIST
 ...
-
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 \endplumedfile
 
 Finally, an example of how to define a custom target distribution different from the well-tempered one.
 Here we chose to focus more on the transition state, that is around \f$\phi=0\f$.
-Our target distribution is a Gaussian centered there, thus the target free energy we want to sample is a parabola, \f$F^{\text{tg}}(\mathbf{s})=-\beta \log p^{\text{tg}}(\mathbf{s})\f$.
+Our target distribution is a Gaussian centered there, thus the target free energy we want to sample is a parabola, \f$F^{\text{tg}}(\mathbf{s})=-\frac{1}{\beta} \log [p^{\text{tg}}(\mathbf{s})]\f$.
 
 \plumedfile
 phi: TORSION ATOMS=5,7,9,15
 Ftg_func: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
 Ftg: BIASVALUE ARG=Ftg_func
-
 opes: OPES_METAD ...
   ARG=phi,Ftg.bias
+  EXTRA_BIAS
   PACE=500
   BARRIER=50
   SIGMA=0.2
   BIASFACTOR=inf
-  EXTRA_BIAS
 ...
-
 PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=phi,Ftg.bias,opes.bias
 \endplumedfile
 
