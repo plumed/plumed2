@@ -68,9 +68,9 @@ You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
 If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
-To do so, one has to add the value of the bias potential at the end of ARG and add the flag EXTRA_BIAS_ARG, as in the example below.
+To do so, one has to add the value of the extra bias at the end of the ARG list and use the flag EXTRA_BIAS_ARG, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
-Another possible usage of EXTRA_BIAS_ARG is to make sure that OPES_METAD does not push against a wall (see \ref LOWER_WALLS or \ref UPPER_WALLS) added to restrain the CVs range.
+Another possible usage of EXTRA_BIAS_ARG is to make sure that OPES_METAD does not push against another fixed bias added to restrain the CVs range.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
@@ -305,7 +305,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   if(!mode::explore)
-    keys.addFlag("EXTRA_BIAS_ARG",false,"interpret the last ARG as an extra bias that will be added to the OPES one when reweighting");
+    keys.addFlag("EXTRA_BIAS_ARG",false,"interpret the last ARG as an extra bias that will be included when reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
