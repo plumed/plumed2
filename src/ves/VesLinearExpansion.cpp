@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -426,9 +426,11 @@ void VesLinearExpansion::calculate() {
     bf_values[0]=1.0;
   }
   double totalForce2 = 0.0;
-  for(unsigned int k=0; k<nargs_; k++) {
-    setOutputForce(k,forces[k]);
-    totalForce2 += forces[k]*forces[k];
+  if(all_values_inside) {
+    for(unsigned int k=0; k<nargs_; k++) {
+      setOutputForce(k,forces[k]);
+      totalForce2 += forces[k]*forces[k];
+    }
   }
 
   setBias(bias);

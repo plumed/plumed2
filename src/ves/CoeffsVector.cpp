@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -263,6 +263,14 @@ CoeffsVector operator*(const CoeffsVector& coeffsvector, const double scalef) {
 }
 
 
+void CoeffsVector::multiplyWithValues(const std::vector<double>& values) {
+  plumed_massert( data.size()==values.size(), "Incorrect size");
+  for(size_t i=0; i<data.size(); i++) {
+    data[i]*=values[i];
+  }
+}
+
+
 CoeffsVector& CoeffsVector::operator*=(const CoeffsVector& other_coeffsvector) {
   plumed_massert(data.size()==other_coeffsvector.getSize(),"Coeffs vectors do not have the same size");
   for(size_t i=0; i<data.size(); i++) {
@@ -274,6 +282,22 @@ CoeffsVector& CoeffsVector::operator*=(const CoeffsVector& other_coeffsvector) {
 
 CoeffsVector CoeffsVector::operator*(const CoeffsVector& other_coeffsvector) const {
   return CoeffsVector(*this)*=other_coeffsvector;
+}
+
+
+CoeffsVector operator*(const std::vector<double>& values, const CoeffsVector& coeffsvector) {
+  return coeffsvector*values;
+}
+
+
+CoeffsVector& CoeffsVector::operator*=(const std::vector<double>& values) {
+  multiplyWithValues(values);
+  return *this;
+}
+
+
+CoeffsVector operator*(const CoeffsVector& coeffsvector, const std::vector<double>& values) {
+  return CoeffsVector(coeffsvector)*=values;
 }
 
 

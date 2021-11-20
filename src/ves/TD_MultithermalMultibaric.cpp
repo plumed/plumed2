@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -250,14 +250,14 @@ void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {
 TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
   threshold_(5.0),
-  epsilon_(10.0),
   min_temp_(0.0),
   max_temp_(1000.0),
   min_press_(0.0),
   max_press_(1000.0),
+  epsilon_(10.0),
+  smoothening_(true),
   steps_temp_(20),
-  steps_pressure_(20),
-  smoothening_(true)
+  steps_pressure_(20)
 {
   log.printf("  Multithermal-multibaric target distribution");
   log.printf("\n");

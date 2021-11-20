@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -187,7 +187,7 @@ public:
   void printInfo() const;
   //
   void getMultipleValue(const std::vector<double>&, std::vector<double>&, std::vector<std::vector<double> >&, std::vector<std::vector<double> >&, const bool numerical_deriv=false) const;
-  void writeBasisFunctionsToFile(OFile&, OFile&, const std::string& min_in, const std::string& max_in, unsigned int nbins=1000, const bool ignore_periodicity=false, const std::string& output_fmt="%15.8f", const bool numerical_deriv=false) const;
+  void writeBasisFunctionsToFile(OFile&, OFile&, const std::string& min_in, const std::string& max_in, unsigned int nbins=1000, const bool ignore_periodicity=false, const std::string& output_fmt_values="%15.8f", const std::string& output_fmt_derivs="%15.8f", const bool numerical_deriv=false) const;
 };
 
 

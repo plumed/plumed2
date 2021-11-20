@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -497,6 +497,19 @@ bool CoeffsBase::getIterationCounterAndTimeFromFile(IFile& ifile) {
     iteration_opt=(unsigned int) iter_tmp;
   }
   return field_found;
+}
+
+
+// replace string in Label, if old string was not found simply add the new string to the label
+void CoeffsBase::replaceLabelString(const std::string& oldstring, const std::string& newstring) {
+  std::string label = getLabel();
+  if(label.find(oldstring)!=std::string::npos) {
+    label.replace(label.find(oldstring), std::string(oldstring).length(), newstring);
+  }
+  else {
+    label += "_" + newstring;
+  }
+  setLabels(label);
 }
 
 

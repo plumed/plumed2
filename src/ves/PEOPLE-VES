@@ -5,13 +5,19 @@ except from where explicitly indicated.
 
 Authors of this software are:
 
-- Omar Valsson
+- Omar Valsson (Github: @valsson)
 
 The following people have contributed to this software: 
 
-- Michele Invernizzi
+- Michele Invernizzi (Github: @invemichele)
   - added VES_DELTA_F
   
-- Pablo Piaggi
+- Pablo Piaggi (Github: @PabloPiaggi)
   - added TD_MULTICANONICAL 
   - added TD_MULTITHERMAL_MULTIBARIC
+
+- Benjamin Pampel (Github: @bpampel)
+  - added BF_WAVELETS
+  - added BF_CUBIC_B_SPLINES
+  - added BF_GAUSSIANS
+  - added BF_ADAM

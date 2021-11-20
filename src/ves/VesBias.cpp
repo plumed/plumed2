@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -76,7 +76,8 @@ VesBias::VesBias(const ActionOptions&ao):
   bias_cutoff_active_(false),
   bias_cutoff_value_(0.0),
   bias_current_max_value(0.0),
-  calc_reweightfactor_(false)
+  calc_reweightfactor_(false),
+  optimization_threshold_(0.0)
 {
   log.printf("  VES bias, please read and cite ");
   log << plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
@@ -220,6 +221,9 @@ VesBias::VesBias(const ActionOptions&ao):
     }
   }
 
+  if(keywords.exists("OPTIMIZATION_THRESHOLD")) {
+    parse("OPTIMIZATION_THRESHOLD",optimization_threshold_);
+  }
 
 }
 
@@ -256,6 +260,7 @@ void VesBias::registerKeywords( Keywords& keys ) {
   keys.reserve("numbered","PROJ_ARG","arguments for doing projections of the FES or the target distribution.");
   //
   keys.reserveFlag("CALC_REWEIGHT_FACTOR",false,"enable the calculation of the reweight factor c(t). You should also give a stride for updating the reweight factor in the optimizer by using the REWEIGHT_FACTOR_STRIDE keyword if the coefficients are updated.");
+  keys.add("optional","OPTIMIZATION_THRESHOLD","Threshold value to turn off optimization of localized basis functions.");
 
 }
 
@@ -415,6 +420,15 @@ void VesBias::updateGradientAndHessian(const bool use_mwalkers_mpi) {
     Gradient(k).setValues( TargetDistAverages(k) - sampled_averages[k] );
     Hessian(k) = computeCovarianceFromAverages(k);
     Hessian(k) *= getBeta();
+
+    if(optimization_threshold_ != 0.0) {
+      for(size_t c_id=0; c_id < sampled_averages[k].size(); ++c_id) {
+        if(fabs(sampled_averages[k][c_id]) < optimization_threshold_) {
+          Gradient(k).setValue(c_id, 0.0);
+          Hessian(k).setValue(c_id, c_id, 0.0);
+        }
+      }
+    }
     //
     Gradient(k).activate();
     Hessian(k).activate();
