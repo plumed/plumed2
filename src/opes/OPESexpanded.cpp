@@ -113,7 +113,6 @@ class OPESexpanded : public bias::Bias {
 
 private:
   bool isFirstStep_;
-  bool afterCalculate_;
   unsigned NumOMP_;
   unsigned NumParallel_;
   unsigned rank_;
@@ -140,7 +139,6 @@ private:
   std::vector<double> deltaF_;
   std::vector<double> diff_;
   double rct_;
-  double current_bias_;
 
   std::vector<double> all_deltaF_;
   std::vector<int> all_size_;
@@ -209,7 +207,6 @@ void OPESexpanded::registerKeywords(Keywords& keys)
 OPESexpanded::OPESexpanded(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
-  , afterCalculate_(false)
   , counter_(0)
   , ncv_(getNumberOfArguments())
   , deltaF_size_(0)
@@ -240,7 +237,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   if(wStateStride_!=0 || storeOldStates_)
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
   if(wStateStride_>0)
-    plumed_massert(wStateStride_>(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
+    plumed_massert(wStateStride_>=(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus should be a multiple of PACE");
   if(stateFileName.length()>0 && wStateStride_==0)
     wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
 
@@ -579,12 +576,10 @@ void OPESexpanded::calculate()
   }
 
 //set bias and forces
-  current_bias_=-kbt_*(diffMax+std::log(sum/deltaF_size_));
-  setBias(current_bias_);
+  const double bias=-kbt_*(diffMax+std::log(sum/deltaF_size_));
+  setBias(bias);
   for(unsigned j=0; j<ncv_; j++)
     setOutputForce(j,kbt_*der_sum_cv[j]/sum);
-
-  afterCalculate_=true;
 }
 
 void OPESexpanded::update()
@@ -614,11 +609,9 @@ void OPESexpanded::update()
     }
 
     //update averages
-    //since current_bias_ is used, calculate() must always run before update()
-    plumed_massert(afterCalculate_,"OPESexpanded::update() must be called after OPESexpanded::calculate() to work properly");
-    afterCalculate_=false;
+    const double current_bias=getOutputQuantity(0); //the first value is always the bias
     if(NumWalkers_==1)
-      updateDeltaF(current_bias_);
+      updateDeltaF(current_bias);
     else
     {
       std::vector<double> cvs(ncv_);
@@ -628,7 +621,7 @@ void OPESexpanded::update()
       std::vector<double> all_cvs(NumWalkers_*ncv_);
       if(comm.Get_rank()==0)
       {
-        multi_sim_comm.Allgather(current_bias_,all_bias);
+        multi_sim_comm.Allgather(current_bias,all_bias);
         multi_sim_comm.Allgather(cvs,all_cvs);
       }
       comm.Bcast(all_bias,0);
@@ -679,7 +672,7 @@ void OPESexpanded::update()
         comm.Sum(sum);
       const double new_bias=-kbt_*(diffMax+std::log(sum/deltaF_size_));
       //accumulate work
-      work_+=new_bias-current_bias_;
+      work_+=new_bias-current_bias;
       getPntrToComponent("work")->set(work_);
     }
   }
