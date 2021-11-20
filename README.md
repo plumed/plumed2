@@ -102,8 +102,6 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 * Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
 * [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
 * [Zlib library](http://zlib.net/) to use compressed data files.
-* [Xdrfile library](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library) to have read/write access to gromacs
-  trajectory files.
 * [Doxygen](http:://www.doxygen.org) to build user manual. Doxygen might need the following packages:
   * Latex to build the pdf user manual.
   * [Graphviz](http://www.graphviz.org) to show class hierarchy in
