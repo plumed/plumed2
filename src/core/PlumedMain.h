@@ -65,6 +65,7 @@ class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
 class TypesafePtr;
+class IFile;
 
 /**
 Main plumed object.
@@ -249,7 +250,12 @@ public:
     Read an input file.
     \param str name of the file
   */
-  void readInputFile(std::string str);
+  void readInputFile(const std::string & str);
+  /**
+    Read an input file.
+    \param ifile
+  */
+  void readInputFile(IFile & ifile);
   /**
     Read an input string.
     \param str name of the string
