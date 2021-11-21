@@ -270,7 +270,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     plumed_massert(out==stdout,"shell tools can only work on stdin");
     std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1; j<argc; j++) cmd+=std::string(" ")+argv[j];
-    int r=system(cmd.c_str());
+    int r=std::system(cmd.c_str());
 // this is necessary since system seems to return numbers which are multiple
 // of 256. this would make the interpretation by the shell wrong
 // I just return 1 in case of failure and 0 in case of success

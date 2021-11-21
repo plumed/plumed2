@@ -972,7 +972,7 @@ void PlumedMain::load(const std::string& ss) {
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
-        int ret=system(cmd.c_str());
+        int ret=std::system(cmd.c_str());
         if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
