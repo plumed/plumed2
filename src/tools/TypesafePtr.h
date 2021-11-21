@@ -33,6 +33,7 @@
 #include <array>
 #include <cstring>
 #include <type_traits>
+#include <climits>
 
 namespace PLMD {
 
@@ -164,7 +165,8 @@ public:
 /// 5: FILE
 /// 0x100: unsigned
   __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(void,1)
-  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(char,3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(char,(CHAR_MIN==0)*0x100+3)
+  __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(signed char,3)
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned char,0x100+3)
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(short,3)
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(unsigned short,0x100+3)

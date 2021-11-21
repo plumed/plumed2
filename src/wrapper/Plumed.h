@@ -684,10 +684,10 @@
 #include <cstddef> /* size_t */
 #include <cstring> /* memcpy */
 #else
-#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h> /* FILE */
+#include <limits.h> /* CHAR_MIN */
 #endif
 
 /**
@@ -1178,8 +1178,9 @@ __PLUMED_WRAPPER_C_END
 /// 5: FILE
 /// 0x100: unsigned
 __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(void,void,1)
-__PLUMED_WRAPPER_C_TYPESAFE_SIZED(char,char,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(char,char,(CHAR_MIN==0)*0x100+3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned char,unsigned_char,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(signed char,signed_char,0x100+3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(short,short,3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned short,unsigned_short,0x100+3)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(int,int,3)
@@ -1197,6 +1198,7 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
     __PLUMED_WRAPPER_C_GENERIC_EMPTY(flavor,void,void) \
     __PLUMED_WRAPPER_C_GENERIC2(flavor,char,char) \
     __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned char,unsigned_char) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,signed char,signed_char) \
     __PLUMED_WRAPPER_C_GENERIC2(flavor,short,short) \
     __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned short,unsigned_short) \
     __PLUMED_WRAPPER_C_GENERIC2(flavor,int,int) \
@@ -1219,6 +1221,7 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
     size_t *: plumed_cmdns_inner(cmds,val), \
     char: plumed_cmdns_inner(cmdn,val), \
     unsigned char: plumed_cmdns_inner(cmdn,val), \
+    signed char: plumed_cmdns_inner(cmdn,val), \
     short: plumed_cmdns_inner(cmdn,val), \
     unsigned short: plumed_cmdns_inner(cmdn,val), \
     int: plumed_cmdns_inner(cmdn,val), \
@@ -1334,12 +1337,14 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <cstring> /* strncat strlen */
 #include <cstdio> /* fprintf */
 #include <cassert> /* assert */
+#include <climits> /* CHAR_MIN */
 #else
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <limits.h>
 #endif
 
 #include <exception> /* exception bad_exception */
@@ -1818,8 +1823,9 @@ private:
 /// 5: FILE
 /// 0x100: unsigned
     __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1)
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3)
-    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,(CHAR_MIN==0)*0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(signed char,0x100+3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3)
     __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3)
