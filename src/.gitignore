@@ -13,10 +13,12 @@
 !/colvar
 !/config
 !/core
+!/contour
 !/clusters
 !/dimred
 !/drr
 !/eds
+!/fourier
 !/function
 !/generic
 !/gridtools

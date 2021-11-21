@@ -61,6 +61,8 @@ public:
   const std::vector<double>& getGridSpacing() const ;
 /// This is used to apply forces in interpolate
   void applyForce( const ActionWithArguments* action, const std::vector<double>& args, const double& force, std::vector<double>& forcesToApply ) const ;
+/// This gets the grid object
+  const GridCoordinatesObject & getGridObject() const ;
 };
 
 inline
@@ -81,6 +83,11 @@ std::vector<unsigned> EvaluateGridFunction::getNbin() const {
 inline
 const std::vector<double>& EvaluateGridFunction::getGridSpacing() const {
   return gridobject.getGridSpacing();
+}
+
+inline
+const GridCoordinatesObject & EvaluateGridFunction::getGridObject() const {
+ return gridobject;
 } 
 
 }

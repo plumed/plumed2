@@ -22,21 +22,42 @@
 #include "ContourFindingBase.h"
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
 void ContourFindingBase::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
+  gridtools::EvaluateGridFunction gg; gg.registerKeywords(keys);
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  firststep(true),
   mymin(this)
 {
-  parse("CONTOUR",contour);
+  parse("CONTOUR",contour); function.read( this );
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
+
+void ContourFindingBase::calculate() {
+  if( firststep ) { function.setup( this ); finishOutputSetup(); firststep=false; }
+  runAllTasks();
+}                         
+
+void ContourFindingBase::update() {
+  if( skipUpdate() ) return;
+  calculate();
+}
+  
+void ContourFindingBase::runFinalJobs() {
+  if( skipUpdate() ) return;
+  calculate();            
+}                         
+                          
+void ContourFindingBase::apply() {}
 
 }
 }

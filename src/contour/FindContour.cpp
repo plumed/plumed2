@@ -88,16 +88,15 @@ FIND_CONTOUR GRID=dens CONTOUR=0.5 FILE=mycontour.xyz
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
 class FindContour : public ContourFindingBase {
 private:
-  bool firsttime;
   unsigned gbuffer;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
-  void finishOutputSetup();
+  void finishOutputSetup() override;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override; 
   void performTask( const unsigned& current, MultiValue& myvals ) const override;
   void jobsAfterLoop();
@@ -113,8 +112,7 @@ void FindContour::registerKeywords( Keywords& keys ) {
 
 FindContour::FindContour(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao),
-  firsttime(true)
+  ContourFindingBase(ao)
 {
   parse("BUFFER",gbuffer);
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
@@ -132,8 +130,8 @@ FindContour::FindContour(const ActionOptions&ao):
 }
 
 void FindContour::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getRank()*getNumberOfPoints(); ++i) addTaskToList( i );
-  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*getNumberOfPoints();
+  for(unsigned i=0; i<getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList( i );
+  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( shape );
 }
 
@@ -144,7 +142,8 @@ void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::st
   std::vector<unsigned> ones( gval->getRank(), 1 );
   std::vector<unsigned> nbin( getGridObject().getNbin( false ) );
   unsigned num_neighbours; std::vector<unsigned> neighbours;
-  for(unsigned i=0; i<getNumberOfPoints(); ++i) {
+  unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+  for(unsigned i=0; i<npoints; ++i) {
     // Ensure inactive grid points are ignored
     // if( ingrid->inactive(i) ) continue;    // Must add back inactive grid points
 
@@ -158,14 +157,14 @@ void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::st
     ///   if( cycle ) continue;
 
     // Get the value of a point on the grid
-    double val1=getFunctionValue( i ) - contour;
+    double val1=getPntrToArgument(0)->get( i ) - contour;
     bool edge=false;
     for(unsigned j=0; j<gval->getRank(); ++j) {
       // Make sure we don't search at the edge of the grid
       if( !getGridObject().isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
       else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
       else ind[j]+=1;
-      double val2=getFunctionValue( ind ) - contour;
+      double val2=getPntrToArgument(0)->get( getGridObject().getIndex(ind) ) - contour;
       if( val1*val2<0 ) tflags[ gval->getRank()*i + j ] = 1;
       if( getGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
       else ind[j]-=1;

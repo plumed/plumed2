@@ -19,24 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_ContourFindingBase_h
-#define __PLUMED_gridtools_ContourFindingBase_h
+#ifndef __PLUMED_contour_ContourFindingBase_h
+#define __PLUMED_contour_ContourFindingBase_h
 
-#include "ActionWithInputGrid.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "tools/RootFindingBase.h"
+#include "gridtools/EvaluateGridFunction.h"
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
-class ContourFindingBase : public ActionWithInputGrid {
+class ContourFindingBase : 
+public ActionWithValue,
+public ActionWithArguments
+{
 private:
+/// Is the the first step of the simulation
+  bool firststep;
 /// This is the object that does the root finding
   RootFindingBase<ContourFindingBase> mymin;
+/// This holds the input grid
+  gridtools::EvaluateGridFunction function;
 protected:
 /// Where you would like to find the contour
   double contour;
 /// Find a contour along line specified by direction
   void findContour( const std::vector<double>& direction, std::vector<double>& point ) const ;
+/// Get the grid object
+  const gridtools::GridCoordinatesObject& getGridObject() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContourFindingBase(const ActionOptions&ao);
@@ -44,6 +55,12 @@ public:
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
 /// Overwrite not needed stuff
   unsigned getNumberOfDerivatives() const override { return 0; }
+/// This resizes everything during startup
+  virtual void finishOutputSetup() = 0;  
+  void calculate() override;
+  void apply() override;
+  void update() override;
+  void runFinalJobs() override;
 };
 
 inline
@@ -53,7 +70,14 @@ void ContourFindingBase::findContour( const std::vector<double>& direction, std:
 
 inline
 double ContourFindingBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
-  return getFunctionValueAndDerivatives( x, der ) - contour;
+  std::vector<double> vals(1); Matrix<double> deriva( 1, x.size() ); function.calc( this, x, vals, deriva ); 
+  for(unsigned i=0; i<der.size(); ++i) der[i] = deriva(0,i);
+  return vals[0] - contour;
+}
+
+inline 
+const gridtools::GridCoordinatesObject& ContourFindingBase::getGridObject() const {
+ return function.getGridObject();
 }
 
 }

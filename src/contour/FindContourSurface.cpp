@@ -84,27 +84,26 @@ DUMPGRID GRID=ss2 FILE=contour2.dat FMT=%8.4f STRIDE=1
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
 class FindContourSurface : public ContourFindingBase {
 private:
-  bool firsttime;
   unsigned dir_n;
   unsigned gbuffer;
   std::vector<unsigned> ones;
   std::vector<unsigned> gdirs;
   std::vector<double> direction;
   std::vector<std::string> gnames;
-  GridCoordinatesObject gridcoords;
+  gridtools::GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
-  void finishOutputSetup();
+  void finishOutputSetup() override;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const override ;
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const override;
+  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const override;
   unsigned getNumberOfDerivatives() const override;
   void performTask( const unsigned& current, MultiValue& myvals ) const override;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -123,7 +122,6 @@ void FindContourSurface::registerKeywords( Keywords& keys ) {
 FindContourSurface::FindContourSurface(const ActionOptions&ao):
   Action(ao),
   ContourFindingBase(ao),
-  firsttime(true),
   ones(getPntrToArgument(0)->getRank(),1)
 {
   if( getPntrToArgument(0)->getRank()<2 ) error("cannot find dividing surface if input grid is one dimensional");
@@ -278,9 +276,9 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
     // if( cycle ) { shiftn += ingrid->getStride()[dir_n]; continue; }
 
     // Now get the function value at two points
-    double val1=getFunctionValue( shiftn ) - contour; double val2;
-    if( (ind[dir_n]+1)==bins_n[dir_n] ) val2 = getFunctionValue( current ) - contour;
-    else val2=getFunctionValue( shiftn + getGridObject().getStride()[dir_n] ) - contour;
+    double val1=getPntrToArgument(0)->get( shiftn ) - contour; double val2;
+    if( (ind[dir_n]+1)==bins_n[dir_n] ) val2 = getPntrToArgument(0)->get( current ) - contour;
+    else val2=getPntrToArgument(0)->get( shiftn + getGridObject().getStride()[dir_n] ) - contour;
 
     // Check if the minimum is bracketed
     if( val1*val2<0 ) {

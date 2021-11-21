@@ -106,13 +106,13 @@ GRID_TO_XYZ GRID=sc FILE=mysurface.xyz UNITS=A
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
 class FindSphericalContour : public ContourFindingBase {
 private:
   unsigned nbins, npoints;
   double min, max;
-  GridCoordinatesObject gridcoords;
+  gridtools::GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);

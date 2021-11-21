@@ -21,14 +21,16 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <iostream>
 #include <complex>
-#include "ActionWithInputGrid.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "gridtools/GridCoordinatesObject.h"
 #ifdef __PLUMED_HAS_FFTW
 #include <fftw3.h> // FFTW interface
 #endif
 
 namespace PLMD {
-namespace gridtools {
+namespace fourier {
 
 //+PLUMEDOC GRIDANALYSIS FOURIER_TRANSFORM
 /*
@@ -66,33 +68,38 @@ FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1
 //+ENDPLUMEDOC
 
 
-class FourierTransform : public ActionWithInputGrid {
+class FourierTransform : 
+public ActionWithValue,
+public ActionWithArguments {
 private:
+  bool firsttime;
   std::string output_type;
   std::vector<std::string> gname;
   bool real_output, store_norm;
   std::vector<int> fourier_params;
-  GridCoordinatesObject gridcoords;
+  gridtools::GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
-  void finishOutputSetup();
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
 #ifndef __PLUMED_HAS_FFTW
-  void runTheCalculation() override {}
+  void calculate() override {}
 #else
-  void runTheCalculation() override;
+  void calculate() override;
 #endif
+  unsigned getNumberOfDerivatives() const override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
 
 void FourierTransform::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid. Possible values are: ABS = compute the complex modulus of Fourier coefficients (DEFAULT); NORM = compute the norm (i.e. ABS^2) of Fourier coefficients; COMPLEX = store the FFTW complex output on the grid (as a vector).");
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
@@ -103,7 +110,9 @@ void FourierTransform::registerKeywords( Keywords& keys ) {
 
 FourierTransform::FourierTransform(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  firsttime(true),
   real_output(true),
   store_norm(false),
   fourier_params(2)
@@ -160,19 +169,8 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 #endif
 }
 
-void FourierTransform::finishOutputSetup() {
-  std::vector<double> fspacing; std::vector<unsigned> snbins( getGridObject().getDimension() );
-  std::vector<std::string> smin( getGridObject().getDimension() ), smax( getGridObject().getDimension() );
-  for(unsigned i=0; i<getGridObject().getDimension(); ++i) {
-    smin[i]=getGridObject().getMin()[i]; smax[i]=getGridObject().getMax()[i];
-    // Compute k-grid extents
-    double dmin, dmax; snbins[i]=getGridObject().getNbin(false)[i];
-    Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
-    dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
-    Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
-  }
-  gridcoords.setBounds( smin, smax, snbins, fspacing );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( getGridObject().getNbin(true) );
+unsigned FourierTransform::getNumberOfDerivatives() const {
+  return 0;
 }
 
 void FourierTransform::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -199,7 +197,22 @@ void FourierTransform::getGridPointAsCoordinate( const unsigned& ind, const bool
 }
 
 #ifdef __PLUMED_HAS_FFTW
-void FourierTransform::runTheCalculation() {
+void FourierTransform::calculate() {
+   if( firstime ) {
+       std::vector<double> fspacing; std::vector<unsigned> snbins( getGridObject().getDimension() );
+       std::vector<std::string> smin( getGridObject().getDimension() ), smax( getGridObject().getDimension() );
+       for(unsigned i=0; i<getGridObject().getDimension(); ++i) {
+         smin[i]=getGridObject().getMin()[i]; smax[i]=getGridObject().getMax()[i];
+         // Compute k-grid extents
+         double dmin, dmax; snbins[i]=getGridObject().getNbin(false)[i];
+         Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
+         dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
+         Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
+       }
+       gridcoords.setBounds( smin, smax, snbins, fspacing ); firsttime=false;
+       for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( getGridObject().getNbin(true) );
+   }
+  
   // *** CHECK CORRECT k-GRID BOUNDARIES ***
   //log<<"Real grid boundaries: \n"
   //    <<"  min_x: "<<mygrid->getMin()[0]<<"  min_y: "<<mygrid->getMin()[1]<<"\n"
