@@ -346,6 +346,11 @@ case "$action" in
       exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
+    for file in $PLUMED_PREPLUMED_IGNORE;
+    do
+      PREPLUMED=$(echo "$PREPLUMED" | grep -v "$file")
+    done
+
     if ! test "$PREPLUMED" ; then
       echo "ERROR: I cannot find any .preplumed file. There is nothing to save."
       exit 1
