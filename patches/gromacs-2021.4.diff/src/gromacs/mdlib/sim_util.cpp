@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,6 +134,12 @@ using gmx::InteractionLocality;
 using gmx::RVec;
 using gmx::SimulationWorkload;
 using gmx::StepWorkload;
+
+/* PLUMED */
+#include "../../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+/* END PLUMED */
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
@@ -1231,7 +1237,7 @@ void do_force(FILE*                               fplog,
     bool gmx_used_in_debug haveCopiedXFromGpu = false;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
-            || haveHostPmePpComms || haveHostHaloExchangeComms))
+            || haveHostPmePpComms || haveHostHaloExchangeComms || simulationWork.computeMuTot))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         haveCopiedXFromGpu = true;
@@ -1573,6 +1579,13 @@ void do_force(FILE*                               fplog,
     {
         const int start = 0;
 
+        if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
+        {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
         /* Calculate total (local) dipole moment in a temporary common array.
          * This makes it possible to sum them over nodes faster.
          */
@@ -1768,6 +1781,14 @@ void do_force(FILE*                               fplog,
                                      enerd, box, lambda.data(), as_rvec_array(dipoleData.muStateAB),
                                      stepWork, ddBalanceRegionHandler);
     }
+
+    /* PLUMED */
+    if(plumedswitch){
+      int plumedNeedsEnergy;
+      plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      if(!plumedNeedsEnergy) plumed_cmd(plumedmain,"performCalc",nullptr);
+    }
+    /* END PLUMED */ 
 
     wallcycle_stop(wcycle, ewcFORCE);
 
