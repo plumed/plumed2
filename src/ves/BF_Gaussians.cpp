@@ -74,8 +74,6 @@ The full basis consists of shifted Gaussians in the full specified interval.
 \image html ves_basisf-gaussians.png
 
 
-Exemplary
-
 \par Examples
 
 The bias is expanded with Gaussian functions in the intervall from 0.0 to
