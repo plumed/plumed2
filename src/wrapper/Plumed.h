@@ -634,12 +634,16 @@
 /* Allow using noexcept, explicit, and override with C++11 compilers */
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
+#define __PLUMED_WRAPPER_CXX_NORETURN [[ noreturn ]]
 #define __PLUMED_WRAPPER_CXX_EXPLICIT explicit
 #define __PLUMED_WRAPPER_CXX_OVERRIDE override
+#define __PLUMED_WRAPPER_CXX_NULLPTR  nullptr
 #else
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT throw()
+#define __PLUMED_WRAPPER_CXX_NORETURN
 #define __PLUMED_WRAPPER_CXX_EXPLICIT
 #define __PLUMED_WRAPPER_CXX_OVERRIDE
+#define __PLUMED_WRAPPER_CXX_NULLPTR  NULL
 #endif
 
 /* Macros for anonymous namespace */
@@ -1425,7 +1429,7 @@ class Plumed {
     Rethrow the exception based on the information saved in the NothrowHandler.
   */
 
-  static void rethrow(const NothrowHandler&h) {
+  __PLUMED_WRAPPER_CXX_NORETURN static void rethrow(const NothrowHandler&h) {
     /* The interpretation of the codes should be kept in sync with core/PlumedMainInitializer.cpp */
     /* check if we are using a full string or a fixes size buffer */
     const char* msg=(h.exception_buffer[0]?h.exception_buffer:h.what.c_str());
@@ -1498,7 +1502,7 @@ class Plumed {
     Only std exceptions are handled, though some of them are thrown as special
     Plumed exceptions in order to be attached a message.
   */
-  static void rethrow() {
+  __PLUMED_WRAPPER_CXX_NORETURN static void rethrow() {
     try {
       throw;
     } catch(const ::std::bad_exception & e) {
@@ -1716,15 +1720,15 @@ private:
     char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      safe.ptr=NULL;
+      safe.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
       safe.nelem=0;
-      safe.shape=NULL;
+      safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
       safe.flags=0x10000*2;
-      safe.opt=NULL;
+      safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
       buffer[0]='\0';
     }
 
-    SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=NULL) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe=safe;
       buffer[0]='\0';
       if(nelem>0) this->safe.nelem=nelem;
@@ -1752,7 +1756,7 @@ private:
     safe.nelem=nelem; \
     safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
     safe.flags=flags_; \
-    safe.opt=NULL; \
+    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
     buffer[0]='\0'; \
   }
 
@@ -1780,9 +1784,9 @@ private:
     (void) shape; \
     safe.ptr=buffer; \
     safe.nelem=1; \
-    safe.shape=NULL; \
+    safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR; \
     safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
-    safe.opt=NULL; \
+    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
     __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
   }
 
@@ -2234,7 +2238,7 @@ private:
   /**
     Private version of cmd. It is used here to avoid duplication of code between typesafe and not-typesafe versions
   */
-  void cmd_priv(const char*key, SafePtr*safe=NULL, const void* unsafe=NULL) {
+  void cmd_priv(const char*key, SafePtr*safe=__PLUMED_WRAPPER_CXX_NULLPTR, const void* unsafe=__PLUMED_WRAPPER_CXX_NULLPTR) {
     NothrowHandler h;
     h.code=0;
     plumed_nothrow_handler nothrow= {&h,nothrow_handler};
@@ -2284,10 +2288,10 @@ public:
   template<typename T>
   void cmd(const char*key,T val) {
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
-    SafePtr s(val,0,NULL);
+    SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(key,&s);
 #else
-    cmd_priv(key,NULL,&val);
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,&val);
 #endif
   }
 
@@ -2303,10 +2307,10 @@ public:
   template<typename T>
   void cmd(const char*key,T* val) {
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
-    SafePtr s(val,0,NULL);
+    SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(key,&s);
 #else
-    cmd_priv(key,NULL,val);
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
 #endif
   }
 
@@ -2327,7 +2331,7 @@ public:
     SafePtr s(val,0,shape);
     cmd_priv(key,&s);
 #else
-    cmd_priv(key,NULL,val);
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
 #endif
   }
 
@@ -2345,12 +2349,12 @@ public:
              the maximum index interpreting the array as flattened.
   */
   template<typename T>
-  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape=NULL) {
+  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) {
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s(val,nelem,shape);
     cmd_priv(key,&s);
 #else
-    cmd_priv(key,NULL,val);
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
 #endif
   }
 
@@ -2681,7 +2685,7 @@ typedef struct {
 } plumed_symbol_table_type;
 
 /* Utility to convert function pointers to pointers, just for the sake of printing them */
-#define __PLUMED_CONVERT_FPTR(ptr,fptr) { ptr=NULL; __PLUMED_WRAPPER_STD memcpy(&ptr,&fptr,(sizeof(fptr)>sizeof(ptr)?sizeof(ptr):sizeof(fptr))); }
+#define __PLUMED_CONVERT_FPTR(ptr,fptr) { ptr=__PLUMED_WRAPPER_CXX_NULLPTR; __PLUMED_WRAPPER_STD memcpy(&ptr,&fptr,(sizeof(fptr)>sizeof(ptr)?sizeof(ptr):sizeof(fptr))); }
 
 #define __PLUMED_GETENV __PLUMED_WRAPPER_STD getenv
 #define __PLUMED_FPRINTF __PLUMED_WRAPPER_STD fprintf
@@ -2711,7 +2715,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
       __PLUMED_FPRINTF(stderr,"%p) +++\n",tmpptr);
     }
   }
-  return NULL;
+  return __PLUMED_WRAPPER_CXX_NULLPTR;
 }
 __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #endif
@@ -2732,14 +2736,14 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   char* pc;
   __PLUMED_WRAPPER_STD size_t strlenpath;
   FILE* fp;
-  pathcopy=NULL;
-  p=NULL;
-  pc=NULL;
+  pathcopy=__PLUMED_WRAPPER_CXX_NULLPTR;
+  p=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pc=__PLUMED_WRAPPER_CXX_NULLPTR;
   strlenpath=0;
   fp=__PLUMED_WRAPPER_STD fopen(path,"r");
   if(!fp) {
     __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",path);
-    return NULL;
+    return __PLUMED_WRAPPER_CXX_NULLPTR;
   }
   __PLUMED_WRAPPER_STD fclose(fp);
   dlerror();
@@ -2766,7 +2770,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       if(!fp) {
         __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",pathcopy);
         __PLUMED_FREE(pathcopy);
-        return NULL;
+        return __PLUMED_WRAPPER_CXX_NULLPTR;
       }
       __PLUMED_WRAPPER_STD fclose(fp);
       dlerror();
@@ -2804,11 +2808,11 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
   plumed_symbol_table_type* table_ptr;
   void* tmpptr;
   char* debug;
-  functions.create=NULL;
-  functions.cmd=NULL;
-  functions.finalize=NULL;
-  table_ptr=NULL;
-  tmpptr=NULL;
+  functions.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  functions.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  functions.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+  table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  tmpptr=__PLUMED_WRAPPER_CXX_NULLPTR;
   /*
     Notice that as of PLUMED 2.5 we ignore self registrations.
     Pointers are searched in the form of a single pointer to a structure, which
@@ -2849,10 +2853,10 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     if(!functions.create) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_create not found +++\n");
     if(!functions.cmd) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_cmd not found +++\n");
     if(!functions.finalize) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_finalize not found +++\n");
-    f->create=NULL;
-    f->cmd=NULL;
-    f->finalize=NULL;
-    if(table) *table=NULL;
+    f->create=__PLUMED_WRAPPER_CXX_NULLPTR;
+    f->cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+    f->finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+    if(table) *table=__PLUMED_WRAPPER_CXX_NULLPTR;
   }
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -2920,16 +2924,16 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   */
   plumed_symbol_table_type* ptr=plumed_symbol_table_reexport();
   if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=ptr;
-  if(handle) *handle=NULL;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
   if(functions) *functions=ptr->functions;
 #elif ! defined(__PLUMED_HAS_DLOPEN)
   /*
     When dlopen is not available, we hard code them to NULL
   */
   __PLUMED_FPRINTF(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
-  plumed_plumedmain_function_holder g= {NULL,NULL,NULL};
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=NULL;
-  if(handle) *handle=NULL;
+  plumed_plumedmain_function_holder g= {__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR};
+  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
   if(functions) *functions=g;
 #else
   /*
@@ -2941,15 +2945,15 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   void* p;
   char* debug;
   int dlopenmode;
-  g.create=NULL;
-  g.cmd=NULL;
-  g.finalize=NULL;
+  g.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  g.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  g.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
   path=__PLUMED_GETENV("PLUMED_KERNEL");
-  p=NULL;
+  p=__PLUMED_WRAPPER_CXX_NULLPTR;
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
   dlopenmode=0;
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=NULL;
-  if(handle) *handle=NULL;
+  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
 #ifdef __PLUMED_DEFAULT_KERNEL
   /*
     This variable allows a default path for the kernel to be hardcoded.
@@ -3030,14 +3034,14 @@ plumed_implementation* plumed_malloc_pimpl() {
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",(void*)pimpl);
 #endif
-  pimpl->dlhandle=NULL;
+  pimpl->dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
   pimpl->dlclose=0;
   pimpl->used_plumed_kernel=0;
-  pimpl->functions.create=NULL;
-  pimpl->functions.cmd=NULL;
-  pimpl->functions.finalize=NULL;
-  pimpl->table=NULL;
-  pimpl->p=NULL;
+  pimpl->functions.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->functions.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->functions.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->table=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->p=__PLUMED_WRAPPER_CXX_NULLPTR;
   return pimpl;
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -3144,7 +3148,7 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   plumed_implementation* pimpl;
   /* handler */
   void* dlhandle;
-  dlhandle=NULL;
+  dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
   if(path) dlhandle=plumed_attempt_dlopen(path,mode);
   /* a NULL handle implies the file could not be loaded */
   if(dlhandle) {
@@ -3232,9 +3236,9 @@ void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     if(pimpl->used_plumed_kernel) {
-      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.",NULL);
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.",__PLUMED_WRAPPER_CXX_NULLPTR);
     } else {
-      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.",NULL);
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.",__PLUMED_WRAPPER_CXX_NULLPTR);
     }
     return;
   }
@@ -3254,8 +3258,8 @@ void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_ha
   safe.ptr=val;
   safe.flags=0;
   safe.nelem=0;
-  safe.shape=NULL;
-  safe.opt=NULL;
+  safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
+  safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
   plumed_cmd_safe_nothrow(p,key,safe,nothrow);
 }
 __PLUMED_WRAPPER_C_END
@@ -3355,7 +3359,7 @@ __PLUMED_WRAPPER_EXTERN_C_BEGIN
 
 /* we declare a Plumed_g_main object here, in such a way that it is always available */
 
-static plumed plumed_gmain= {NULL};
+static plumed plumed_gmain= {__PLUMED_WRAPPER_CXX_NULLPTR};
 
 plumed plumed_global(void) {
   return plumed_gmain;
@@ -3363,7 +3367,7 @@ plumed plumed_global(void) {
 
 void plumed_gcreate(void) {
   /* should be created once */
-  assert(plumed_gmain.p==NULL);
+  assert(plumed_gmain.p==__PLUMED_WRAPPER_CXX_NULLPTR);
   plumed_gmain=plumed_create();
 }
 
@@ -3378,7 +3382,7 @@ void plumed_gcmd_safe(const char*key,plumed_safeptr safe) {
 
 void plumed_gfinalize(void) {
   plumed_finalize(plumed_gmain);
-  plumed_gmain.p=NULL;
+  plumed_gmain.p=__PLUMED_WRAPPER_CXX_NULLPTR;
 }
 
 int plumed_ginitialized(void) {
@@ -3439,7 +3443,7 @@ plumed plumed_f2c(const char*c) {
   /*
      needed to avoid cppcheck warning on uninitialized p
   */
-  p.p=NULL;
+  p.p=__PLUMED_WRAPPER_CXX_NULLPTR;
   cc=(unsigned char*)&p.p;
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);
