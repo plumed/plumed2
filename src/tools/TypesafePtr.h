@@ -228,7 +228,6 @@ private:
   T* get_priv(std::size_t nelem, const std::size_t* shape, bool byvalue) const {
 
     if(typesafePtrSkipCheck()) return (T*) ptr;
-    typedef typename std::remove_const<T>::type T_noconst;
     typedef typename std::remove_pointer<T>::type T_noptr;
     if(flags==0) return (T*) ptr; // no check
     auto size=flags&0xffff;
@@ -245,7 +244,7 @@ private:
       if(std::is_floating_point<T_noptr>::value && (type!=is_floating_point)) {
         throw ExceptionTypeError() <<"This command expects a floating point type. Received a " << type_str() << " instead"<<extra_msg();
       }
-      if(std::is_same<std::remove_const<FILE>,T_noconst>::value && (type!=is_file)) {
+      if(std::is_same<FILE,typename std::remove_const<T_noptr>::type>::value && (type!=is_file)) {
         throw ExceptionTypeError() <<"This command expects a FILE. Received a " << type_str() << " instead"<<extra_msg();
       }
     }
