@@ -1341,6 +1341,11 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <functional> /* bad_function_call */
 #endif
 
+#if __cplusplus > 199711L
+#include <array> /* array */
+#include <initializer_list> /* initializer_list */
+#endif
+
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
 
@@ -1945,6 +1950,13 @@ public:
     global().cmd(key,val,shape);
   }
 
+#if __cplusplus > 199711L
+  template<typename T>
+  static void gcmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+    global().cmd(key,val,shape);
+  }
+#endif
+
   /**
      Finalize global-plumed
   */
@@ -2331,6 +2343,25 @@ public:
 #endif
   }
 
+#if __cplusplus > 199711L
+  template<typename T>
+  void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    std::array<std::size_t,5> shape_;
+    unsigned j=0;
+    for(auto i : shape) {
+      shape_[j]=i;
+      j++;
+    }
+    shape_[j]=0;
+    SafePtr s(val,0,&shape_[0]);
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
+#endif
+  }
+#endif
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed

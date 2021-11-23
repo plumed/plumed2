@@ -136,7 +136,7 @@ int main(){
 
   Plumed* plumed=new Plumed;
 
-  int natoms=10;
+  unsigned natoms=10;
 
   std::vector<double> positions(3*natoms,0.0);
   for(unsigned i=0;i<natoms;i++) positions[i]=i/10.0;
@@ -171,9 +171,9 @@ int main(){
 
   for(int step=0;step<10;step++){
     plumed->cmd("setStep",&step);
-    plumed->cmd("setPositions",&positions[0],3*positions.size());
-    plumed->cmd("setBox",&box[0],9);
-    plumed->cmd("setForces",&forces[0],3*forces.size());
+    plumed->cmd("setPositions",&positions[0],{natoms,3});
+    plumed->cmd("setBox",&box[0],{3,3});
+    plumed->cmd("setForces",&forces[0],forces.size());
     plumed->cmd("setVirial",&virial[0],9);
     plumed->cmd("setMasses",&masses[0],masses.size());
 // first compute using modified positions:
