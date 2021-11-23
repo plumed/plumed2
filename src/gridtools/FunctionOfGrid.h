@@ -44,6 +44,8 @@ private:
   unsigned nderivatives;
 /// Forces if we are doing the integral
   std::vector<double> forcesToApply;
+/// Get the volume and the number of points on the grid
+  void getVolumeAndPoints( double& volume, unsigned& npoints, std::vector<unsigned>& shape );
 /// Function for setting up the output
   void reshapeOutput();
 /// Function for running a calculation on the whole grid
@@ -83,43 +85,9 @@ firststep(true),
 nderivatives(0)
 {
   if( getNumberOfArguments()==0 ) error("found no arguments");
-  bool foundgrid=false; std::vector<double> gspacing; std::vector<unsigned> nbin; std::vector<bool> pbc;
-  unsigned argstart=myfunc.getArgStart(); unsigned npoints=0; 
-  std::string gtype; std::vector<std::string> gargn, min, max; double volume;
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
-        foundgrid=true; npoints=getPntrToArgument(i)->getNumberOfValues();
-        nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments() - argstart;
-        gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
-        min.resize( getPntrToArgument(i)->getRank() ); max.resize( getPntrToArgument(i)->getRank() );
-        gargn.resize( getPntrToArgument(i)->getRank() ); pbc.resize( getPntrToArgument(i)->getRank() );
-        (getPntrToArgument(i)->getPntrToAction())->getInfoForGridHeader( gtype, gargn, min, max, nbin, gspacing, pbc, false );
-        if( gtype=="flat" ) {
-            volume=1; for(unsigned j=0;j<gspacing.size();++j) volume *= gspacing[j];
-        } else volume=4*pi/ static_cast<double>( npoints );
-        break;
-    }
-  }
-  if( !foundgrid ) error("found no grid in input");
-  // Now check that all grids have the same size
-  std::vector<unsigned> shape( min.size() ); std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
-  std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
-  if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
-  for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-    if( getPntrToArgument(j)->getRank()!=0 ) {
-      if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
-      (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
-      if( gtype!=ggtype ) error("mismatch between grid types");
-      for(unsigned k=0;k<min.size();++k) {
-          if( min[k]!=gmin[k] ) error("mismatch between input grid domains");
-          if( max[k]!=gmax[k] ) error("mismatch between input grid domains");
-          if( pbc[k]!=gpbc[k] ) error("mismatch between input grid domains");
-          if( nbin[k]!=gnbin[k] ) error("mismatch between input grid domains");
-      }
-      // Make sure elements of shape are set correctly
-      std::vector<unsigned> ss( getPntrToArgument(j)->getShape() ); for(unsigned i=0;i<ss.size();++i) shape[i]=ss[i];   
-    } 
-  }
+  // Get the volume and the number of points
+  double volume; unsigned npoints; std::vector<unsigned> shape;
+  getVolumeAndPoints( volume, npoints, shape );
   // Read the input and do some checks
   myfunc.read( this );
   // Check we are not calculating an integral
@@ -140,6 +108,48 @@ nderivatives(0)
   } else error("functions of grid should only output one grid");
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
+}
+
+template <class T>
+void FunctionOfGrid<T>::getVolumeAndPoints( double& volume, unsigned& npoints, std::vector<unsigned>& shape ) {
+  bool foundgrid=false; std::vector<double> gspacing; std::vector<unsigned> nbin; std::vector<bool> pbc;
+  npoints = 0; unsigned argstart=myfunc.getArgStart(); std::string gtype; std::vector<std::string> gargn, min, max;
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
+        foundgrid=true; npoints=getPntrToArgument(i)->getNumberOfValues();
+        nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments() - argstart;
+        gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
+        min.resize( getPntrToArgument(i)->getRank() ); max.resize( getPntrToArgument(i)->getRank() );
+        gargn.resize( getPntrToArgument(i)->getRank() ); pbc.resize( getPntrToArgument(i)->getRank() );
+        (getPntrToArgument(i)->getPntrToAction())->getInfoForGridHeader( gtype, gargn, min, max, nbin, gspacing, pbc, false );
+        if( getName()=="SUM_GRID" ) {
+            volume=1;
+        } else if( gtype=="flat" ) {
+            volume=1; for(unsigned j=0;j<gspacing.size();++j) volume *= gspacing[j];
+        } else volume=4*pi/ static_cast<double>( npoints );
+        break;
+    }
+  }
+  if( !foundgrid ) error("found no grid in input");
+  // Now check that all grids have the same size
+  shape.resize( min.size() ); std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
+  std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
+  if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
+  for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+    if( getPntrToArgument(j)->getRank()!=0 ) {
+      if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
+      (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
+      if( gtype!=ggtype ) error("mismatch between grid types");
+      for(unsigned k=0;k<min.size();++k) {
+          if( min[k]!=gmin[k] ) error("mismatch between input grid domains");
+          if( max[k]!=gmax[k] ) error("mismatch between input grid domains");
+          if( pbc[k]!=gpbc[k] ) error("mismatch between input grid domains");
+          if( nbin[k]!=gnbin[k] ) error("mismatch between input grid domains");
+      }
+      // Make sure elements of shape are set correctly
+      std::vector<unsigned> ss( getPntrToArgument(j)->getShape() ); for(unsigned i=0;i<ss.size();++i) shape[i]=ss[i];
+    }
+  }
 }
 
 template <class T>
@@ -192,19 +202,9 @@ void FunctionOfGrid<T>::gatherStoredValue( const unsigned& valindex, const unsig
 template <class T>
 void FunctionOfGrid<T>::reshapeOutput() {
   plumed_assert( firststep ); myfunc.setup( this ); 
-  unsigned npoints=0, argstart=myfunc.getArgStart();
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { npoints=getPntrToArgument(i)->getNumberOfValues(); break; }
-  }
+  unsigned npoints=0; double volume; std::vector<unsigned> shape;
+  getVolumeAndPoints( volume, npoints, shape ); myfunc.setPrefactor( this, volume );
   if( !myfunc.zeroRank() && getPntrToOutput(0)->getNumberOfValues()!=npoints ) {
-      std::vector<unsigned> shape;
-      for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-         if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
-             unsigned dim=getPntrToArgument(i)->getShape().size();
-             shape.resize(dim); for(unsigned j=0;j<dim;++j) shape[j]=getPntrToArgument(i)->getShape()[j];
-             break;
-         }
-      }
       plumed_assert( shape.size()>0 ); getPntrToOutput(0)->setShape( shape ); 
   }
   if( myfunc.doWithTasks() && getFullNumberOfTasks()<npoints ) {

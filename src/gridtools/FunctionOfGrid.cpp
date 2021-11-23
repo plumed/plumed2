@@ -28,6 +28,7 @@ namespace PLMD {
 namespace gridtools {
 
 typedef FunctionOfGrid<function::Sum> GridSum;
+PLUMED_REGISTER_ACTION(GridSum,"SUM_GRID")
 PLUMED_REGISTER_ACTION(GridSum,"INTEGRATE_GRID")
 typedef FunctionOfGrid<function::Custom> GridCustom;
 PLUMED_REGISTER_ACTION(GridCustom,"CUSTOM_GRID")

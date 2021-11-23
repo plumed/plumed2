@@ -27,7 +27,7 @@ namespace PLMD {
 namespace gridtools {
 
 void EvaluateGridFunction::registerKeywords( Keywords& keys ){
-  keys.add("compulsory","INTERPOLATION_TYPE","spline","the method to use for interpolation.  Can be spline or floor.");
+  keys.add("compulsory","INTERPOLATION_TYPE","spline","the method to use for interpolation.  Can be spline, linear, ceiling or floor.");
   keys.addFlag("ZERO_OUTSIDE_GRID_RANGE",false,"if we are asked to evaluate the function for a number that is outside the range of the grid set it to zero");
 }
 
@@ -72,9 +72,8 @@ void EvaluateGridFunction::read( ActionWithArguments* action ) {
     interpolation_type=linear;  
   } else if( itype=="floor" ) {
     interpolation_type=floor;
-    for(unsigned j=0;j<action->getPntrToArgument(0)->getRank();++j) {
-       if( !action->getPntrToArgument(0)->isTimeSeries() && gridobject.isPeriodic(j) ) action->error("floor interepolation doesn't work with periodic variables");
-    }
+  } else if( itype=="ceiling" ) {
+    interpolation_type=ceiling;
   } else action->error("type " + itype + " of interpolation is not defined");
   action->log.printf("  generating off grid points using %s interpolation \n", itype.c_str() );
 }
@@ -119,6 +118,17 @@ void EvaluateGridFunction::calc( const ActionWithArguments* action, const std::v
       if( !values->isTimeSeries() ) {
           for(unsigned j=0; j<dimension; ++j) derivatives(0,j) = values->getGridDerivative( nn, j );
       }
+  } else if( interpolation_type==ceiling ) {
+      Value* values=action->getPntrToArgument(0); std::vector<unsigned> indices(dimension);
+      gridobject.getIndices( args, indices ); 
+      for(unsigned i=0; i<indices.size(); ++i) {
+          if( gridobject.isPeriodic(i) && (indices[i]+1)==gridobject.getNbin(false)[i] ) indices[i]=0;
+          else indices[i] = indices[i] + 1;
+      }
+      unsigned nn = gridobject.getIndex(indices); vals[0] = values->get( nn );
+      if( !values->isTimeSeries() ) {
+          for(unsigned j=0; j<dimension; ++j) derivatives(0,j) = values->getGridDerivative( nn, j );
+      }
   } else plumed_error();
 }
 
@@ -145,7 +155,15 @@ void EvaluateGridFunction::applyForce( const ActionWithArguments* action, const 
       gridobject.getIndices( args, indices ); unsigned nn = gridobject.getIndex(indices);
       if( values->isTimeSeries() && !gridobject.inbounds(args) ) nn = gridobject.getNbin(false)[0]-1;
       if( values->isTimeSeries() && nn==values->getShape()[0] ) forcesToApply[nn-1] += force; 
-      else forcesToApply[nn] += force; 
+      else forcesToApply[nn] += force;
+  } else if( interpolation_type==ceiling ) {
+      Value* values=action->getPntrToArgument(0); std::vector<unsigned> indices(dimension);
+      gridobject.getIndices( args, indices ); 
+      for(unsigned i=0; i<indices.size(); ++i) {
+          if( gridobject.isPeriodic(i) && (indices[i]+1)==gridobject.getNbin(false)[i] ) indices[i]=0;
+          else indices[i] = indices[i] + 1;
+      }
+      unsigned nn = gridobject.getIndex(indices); forcesToApply[nn] += force; 
   } else plumed_error();
 
 }

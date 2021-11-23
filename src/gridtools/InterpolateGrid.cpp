@@ -121,7 +121,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( dimension, 0 ); 
+  std::vector<unsigned> shape( dimension, 1 ); 
   if( getPntrToArgument(0)->isTimeSeries() ) addValue( shape );  
   else addValueWithDerivatives( shape );
 
