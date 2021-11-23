@@ -121,8 +121,8 @@ Our target distribution is a Gaussian centered there, thus the target free energ
 
 \plumedfile
 phi: TORSION ATOMS=5,7,9,15
-Ftg_func: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
-Ftg: BIASVALUE ARG=Ftg_func
+FtgValue: CUSTOM ARG=phi PERIODIC=NO FUNC=(x/0.4)^2
+Ftg: BIASVALUE ARG=FtgValue
 opes: OPES_METAD ...
   ARG=phi,Ftg.bias
   EXTRA_BIAS_ARG
@@ -415,7 +415,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     {
       plumed_massert(Tools::convertNoexcept(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
       if(mode::explore)
-        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader F_t(s)=1/gamma*F(s)
+        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader Ftg(s)=1/gamma*F(s)
     }
   }
   parseVector("SIGMA_MIN",sigma_min_);
