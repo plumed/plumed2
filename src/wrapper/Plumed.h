@@ -2680,11 +2680,16 @@ typedef struct {
   version=2, cmd_nothrow.
 
   This function accepts an extra argument `plumed_nothrow_handler*handler`.
-  In case an exception is thrown withint plumed, it just calls `handler->handler(handler->ptr,code,message,opt)` and return.
+  In case an exception is thrown within plumed, it just calls `handler->handler(handler->ptr,code,message,opt)` and return.
   An alternative would have been to install an error handler (with a call to cmd("setErrorHandler")). However, the cost
   of doing it everytime Plumed::cmd is called is too high. On the other hand, installing it only at object construction
   is very risky since and object created in that way would not report any error if manipulated from the C interface.
   So, it looks like this is the only possibility.
+
+  version=3, cmd_safe and cmd_safe_nothrow
+
+  These are functions that accept a plumed_safeptr object, which can carry information about the passed type and size.
+  Since new information should be passed at every cmd call, this can only be obtained by adding new cmd calls.
 
 */
 typedef struct {
