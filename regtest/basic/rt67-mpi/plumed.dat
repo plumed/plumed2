@@ -14,6 +14,7 @@ METAD ...
  GRID_MAX=pi,pi
  GRID_BIN=150,150
  CALC_RCT
+ FMT=%12.8f
 ... METAD
 
 PRINT ...
