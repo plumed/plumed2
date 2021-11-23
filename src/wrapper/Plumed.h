@@ -1205,6 +1205,7 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
 #define plumed_cmd_3args(p,key,val) plumed_cmdns_inner(cmdn,val) (p,key,val,0)
 
 #define plumed_cmd_4args(p,key,val,X) _Generic((X), \
+    const size_t *: plumed_cmdns_inner(cmds,val), \
     size_t *: plumed_cmdns_inner(cmds,val), \
     int: plumed_cmdns_inner(cmdn,val), \
     unsigned int: plumed_cmdns_inner(cmdn,val), \
