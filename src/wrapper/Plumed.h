@@ -1232,10 +1232,8 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
     unsigned long long: plumed_cmdns_inner(cmdn,val) \
     ) (p,key,val,X)
 
-#define plumed_cmd_5args(p,key,val,nelem,shape) plumed_cmdns_inner(cmdns,val) (p,key,val,nelem,shape)
-
-#define __PLUMED_WRAPPER_C_GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
-#define plumed_cmd_c11(...) __PLUMED_WRAPPER_C_GET_MACRO(__VA_ARGS__, plumed_cmd_5args, plumed_cmd_4args, plumed_cmd_3args, plumed_cmd_2args)(__VA_ARGS__)
+#define __PLUMED_WRAPPER_C_GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
+#define plumed_cmd_c11(...) __PLUMED_WRAPPER_C_GET_MACRO(__VA_ARGS__, plumed_cmd_4args, plumed_cmd_3args, plumed_cmd_2args)(__VA_ARGS__)
 
 #define plumed_gcmd_c11(...) plumed_cmd(plumed_global(),__VA_ARGS__)
 
@@ -1963,18 +1961,6 @@ public:
   static void gcmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
     global().cmd(key,val,shape);
   }
-  /**
-     Send a command to global-plumed
-      \param key The name of the command to be executed
-      \param val The argument.
-      \param nelem Number of elements in the passed array, for typechecking.
-      \param shape The shape of the argument.
-     \note Equivalent to plumed_gcmd()
-  */
-  template<typename T>
-  static void gcmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) {
-    global().cmd(key,val,nelem,shape);
-  }
 
   /**
      Finalize global-plumed
@@ -2367,18 +2353,16 @@ public:
       \param key The name of the command to be executed
       \param val The argument, passed by pointer.
       \param nelem The number of elements passed.
-      \param shape A zero-terminated array containing the shape of the data.
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
       \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
-             the type of the argument is checked. If shape is passed, it is also
-             checked that PLUMED access only compatible indexes. nelem is used to check
+             the type of the argument is checked.  nelem is used to check
              the maximum index interpreting the array as flattened.
   */
   template<typename T>
-  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) {
+  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
 #if __PLUMED_WRAPPER_CXX_TYPESAFE
-    SafePtr s(val,nelem,shape);
+    SafePtr s(val,nelem,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(key,&s);
 #else
     cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
@@ -2483,8 +2467,8 @@ void plumed_cmd_cxx(plumed p,const char*key,T val) {
 }
 
 template<typename T>
-void plumed_cmd_cxx(plumed p,const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem,__PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) {
-  PLMD::Plumed(p).cmd(key,val,nelem,shape);
+void plumed_cmd_cxx(plumed p,const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+  PLMD::Plumed(p).cmd(key,val,nelem);
 }
 
 template<typename T>
@@ -2513,8 +2497,8 @@ void plumed_gcmd_cxx(const char*key,T val) {
 }
 
 template<typename T>
-void plumed_gcmd_cxx(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem,__PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) {
-  PLMD::Plumed::gcmd(key,val,nelem,shape);
+void plumed_gcmd_cxx(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+  PLMD::Plumed::gcmd(key,val,nelem);
 }
 
 template<typename T>
