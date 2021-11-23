@@ -462,12 +462,16 @@
   1: Enable typesafe C interface (default)
   0: Disable typesafe C interface
 
-  Only used in declarations. Requires C11 _Generic, and so it is automatically
-  disabled with C++ and pre C11 compilers.
+  Only used in declarations. Requires C11 _Generic and variadic macros, and so it is
+  disabled by default with C++ and pre C11 compilers.
 */
 
 #ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
 #define __PLUMED_WRAPPER_C_TYPESAFE 1
+#else
+#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#endif
 #endif
 
 /*
@@ -604,23 +608,6 @@
 #ifndef __cplusplus
 #undef __PLUMED_WRAPPER_CXX_STD
 #define __PLUMED_WRAPPER_CXX_STD 0
-#endif
-
-/* In C++, disable generics */
-#ifdef __cplusplus
-#undef __PLUMED_WRAPPER_C_TYPESAFE
-#define __PLUMED_WRAPPER_C_TYPESAFE 0
-#endif
-
-/* In C < C11, disable generics */
-#ifdef __STDC_VERSION__
-#if __STDC_VERSION__ < 201112L
-#undef __PLUMED_WRAPPER_C_TYPESAFE
-#define __PLUMED_WRAPPER_C_TYPESAFE 0
-#endif
-#else
-#undef __PLUMED_WRAPPER_C_TYPESAFE
-#define __PLUMED_WRAPPER_C_TYPESAFE 0
 #endif
 
 /* Set prefix for stdlib functions */
