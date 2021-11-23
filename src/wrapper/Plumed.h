@@ -2449,12 +2449,12 @@ void plumed_cmd_cxx(plumed p,const char*key,T val) {
 }
 
 template<typename T>
-void plumed_cmd_cxx(plumed p,const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+void plumed_cmd_cxx(plumed p,const char*key,T val, __PLUMED_WRAPPER_STD size_t nelem) {
   PLMD::Plumed(p).cmd(key,val,nelem);
 }
 
 template<typename T>
-void plumed_cmd_cxx(plumed p,const char*key,T val,__PLUMED_WRAPPER_STD size_t* shape) {
+void plumed_cmd_cxx(plumed p,const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape) {
   PLMD::Plumed(p).cmd(key,val,shape);
 }
 
@@ -2479,12 +2479,12 @@ void plumed_gcmd_cxx(const char*key,T val) {
 }
 
 template<typename T>
-void plumed_gcmd_cxx(const char*key,T val,__PLUMED_WRAPPER_STD size_t nelem) {
+void plumed_gcmd_cxx(const char*key,T val, __PLUMED_WRAPPER_STD size_t nelem) {
   PLMD::Plumed::gcmd(key,val,nelem);
 }
 
 template<typename T>
-void plumed_gcmd_cxx(const char*key,T val,__PLUMED_WRAPPER_STD size_t* shape) {
+void plumed_gcmd_cxx(const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape) {
   PLMD::Plumed::gcmd(key,val,shape);
 }
 
