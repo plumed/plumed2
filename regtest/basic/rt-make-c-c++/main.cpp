@@ -52,8 +52,10 @@ int main(int argc,char*argv[]) {
   plumed_cmd(p,"readInputLine","PRINT ARG=p.*,r.* FILE=testme2");
   itmp=1;
   plumed_cmd(p,"setStep",&itmp);
-  plumed_cmd(p,"setPositions",positions,30);
-  plumed_cmd(p,"setForces",forces,30);
+  const size_t shape1[3]={10,3,0};
+  plumed_cmd(p,"setPositions",positions,shape1);
+  size_t shape2[3]={10,3,0};
+  plumed_cmd(p,"setForces",forces,shape2);
   plumed_cmd(p,"setMasses",masses,10);
   plumed_cmd(p,"setBox",&box[0][0],9);
   plumed_cmd(p,"setVirial",&virial[0][0],9);
