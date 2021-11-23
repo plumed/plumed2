@@ -1219,11 +1219,6 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
 
 #define plumed_cmd_4args(p,key,val,X) _Generic((X), \
     size_t *: plumed_cmdns_inner(cmds,val), \
-    char: plumed_cmdns_inner(cmdn,val), \
-    unsigned char: plumed_cmdns_inner(cmdn,val), \
-    signed char: plumed_cmdns_inner(cmdn,val), \
-    short: plumed_cmdns_inner(cmdn,val), \
-    unsigned short: plumed_cmdns_inner(cmdn,val), \
     int: plumed_cmdns_inner(cmdn,val), \
     unsigned int: plumed_cmdns_inner(cmdn,val), \
     long: plumed_cmdns_inner(cmdn,val), \
