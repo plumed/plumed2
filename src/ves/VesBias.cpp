@@ -227,7 +227,7 @@ VesBias::VesBias(const ActionOptions&ao):
       plumed_merror("OPTIMIZATION_THRESHOLD should be a postive value");
     }
     if(optimization_threshold_!=0.0) {
-      log.printf("  Employing a threshold value of %f for optimization of localized basis functions.\n",optimization_threshold_);
+      log.printf("  Employing a threshold value of %e for optimization of localized basis functions.\n",optimization_threshold_);
     }
   }
 
