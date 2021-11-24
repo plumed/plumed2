@@ -34,6 +34,7 @@
 #include <cstring>
 #include <type_traits>
 #include <climits>
+#include <initializer_list>
 
 namespace PLMD {
 
