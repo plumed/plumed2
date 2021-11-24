@@ -554,8 +554,8 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
-  for(int i=0; i<m; ++i) {
-    int j=0;
+  for(unsigned i=0; i<m; ++i) {
+    unsigned j=0;
     for(j=0; j<n; j++) if(evec(i,j)*evec(i,j)>1e-14) break;
     if(j<n) if(evec(i,j)<0.0) for(j=0; j<n; j++) evec(i,j)*=-1;
   }

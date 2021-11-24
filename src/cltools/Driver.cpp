@@ -597,8 +597,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::vector<real> numder;
 
 // variables to test particle decomposition
-  int pd_nlocal;
-  int pd_start;
+  int pd_nlocal=0;
+  int pd_start=0;
 // variables to test random decomposition (=domain decomposition)
   std::vector<int>  dd_gatindex;
   std::vector<int>  dd_g2l;
@@ -606,7 +606,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::vector<real> dd_charges;
   std::vector<real> dd_forces;
   std::vector<real> dd_coordinates;
-  int dd_nlocal;
+  int dd_nlocal=0;
 // random stream to choose decompositions
   Random rnd;
 

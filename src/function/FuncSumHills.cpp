@@ -91,7 +91,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
       (*log)<<"  opening file "<<filenames[beingread]<<"\n";
       ff->open(filenames[beingread]); isopen=true;
     }
-    int n;
+    int n=0;
     while(true) {
       bool fileisover=true;
       while(scanOneHill(br,ff)) {
