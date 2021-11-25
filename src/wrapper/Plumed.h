@@ -1204,15 +1204,11 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
 
 #define plumed_cmd_3args(p,key,val) plumed_cmdns_inner(cmdn,val) (p,key,val,0)
 
-#define plumed_cmd_4args(p,key,val,X) _Generic((X), \
+/* ((X)+(size_t)0): for pointers, no op; for integers, convert to size_t */
+#define plumed_cmd_4args(p,key,val,X) _Generic(((X)+(size_t)0), \
     const size_t *: plumed_cmdns_inner(cmds,val), \
     size_t *: plumed_cmdns_inner(cmds,val), \
-    int: plumed_cmdns_inner(cmdn,val), \
-    unsigned int: plumed_cmdns_inner(cmdn,val), \
-    long: plumed_cmdns_inner(cmdn,val), \
-    unsigned long: plumed_cmdns_inner(cmdn,val), \
-    long long: plumed_cmdns_inner(cmdn,val), \
-    unsigned long long: plumed_cmdns_inner(cmdn,val) \
+    size_t: plumed_cmdns_inner(cmdn,val) \
     ) (p,key,val,X)
 
 #define __PLUMED_WRAPPER_C_GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
