@@ -13,9 +13,27 @@ int main(int argc,char*argv[]) {
   double bias;
   unsigned i,j;
   FILE* log;
+  FILE* errors;
+  plumed_error error;
+
+  errors=fopen("error_codes","w");
 
   plumed_gcreate();
   plumed_gcmd("setNatoms",1*10);
+  plumed_gcmd("init",0);
+  plumed_gfinalize();
+
+  plumed_gcreate();
+  plumed_gcmd("setNatoms",1.0*10,&error);
+  if(error.code) {
+    fprintf(errors,"%d\n",error.code);
+    plumed_error_finalize(error);
+  }
+  plumed_gcmd("initx",&error);
+  if(error.code) {
+    fprintf(errors,"%d\n",error.code);
+    plumed_error_finalize(error);
+  }
   plumed_gcmd("init",0);
   plumed_gfinalize();
 
@@ -58,6 +76,11 @@ int main(int argc,char*argv[]) {
   plumed_cmd(p,"setForces",forces,shape2);
   plumed_cmd(p,"setMasses",masses,10);
   plumed_cmd(p,"setBox",&box[0][0],9);
+  plumed_cmd(p,"setVirial",&virial[0][0],8,&error);
+  if(error.code) {
+    fprintf(errors,"%d\n",error.code);
+    plumed_error_finalize(error);
+  }
   plumed_cmd(p,"setVirial",&virial[0][0],9);
   fprintf(log,"stopflag should be 0: %d\n",stopflag);
   fprintf(log,"isEnergyNeeded should be 1: %d\n",ene);
@@ -70,6 +93,7 @@ int main(int argc,char*argv[]) {
   fprintf(log,"bias: %lf\n",bias);
 
   fclose(log);
+  fclose(errors);
   plumed_finalize(p);
 
   free(positions);
