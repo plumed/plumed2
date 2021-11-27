@@ -31,16 +31,17 @@ void EvaluateGridFunction::registerKeywords( Keywords& keys ){
   keys.addFlag("ZERO_OUTSIDE_GRID_RANGE",false,"if we are asked to evaluate the function for a number that is outside the range of the grid set it to zero");
 }
 
-void EvaluateGridFunction::setupGridObject( Value* values, GridCoordinatesObject& gridobject ) { 
-  ActionWithValue* act=values->getPntrToAction();
+void EvaluateGridFunction::setupGridObject( const ActionWithArguments* action, Value* values, std::vector<std::string>& argn, GridCoordinatesObject& gridobject ) { 
+  ActionWithValue* act=values->getPntrToAction(); argn.resize( values->getRank() );
   std::vector<unsigned> ind( values->getRank() ), nbin( values->getRank() ); std::string gtype;
   std::vector<double> spacing( values->getRank() ), xx( values->getRank() ); std::vector<bool> pbc( values->getRank() );
-  std::vector<std::string> argn( values->getRank() ), min( values->getRank() ), max( values->getRank() );
+  std::vector<std::string> min( values->getRank() ), max( values->getRank() );
   act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
   gridobject.setup( "flat", pbc, 0, 0.0 );
+  if( gtype=="fibonacci" ) action->error("cannot interpolate on fibonacci sphere");
 }
 
-void EvaluateGridFunction::setupGridBounds( Value* values, GridCoordinatesObject& gridobject ) {
+void EvaluateGridFunction::setupGridBounds( const ActionWithArguments* action, Value* values, GridCoordinatesObject& gridobject ) {
   unsigned dimension = values->getRank();
   std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
@@ -59,8 +60,7 @@ void EvaluateGridFunction::read( ActionWithArguments* action ) {
       if( action->getPntrToArgument(0)->getRank()==0 || !action->getPntrToArgument(0)->hasDerivatives() ) action->error("should have one grid as input to this action");
   }
   // Now use this information to create a gridobject
-  setupGridObject( action->getPntrToArgument(0), gridobject );
-  // if( gtype=="fibonacci" ) action->error("cannot interpolate on fibonacci sphere");
+  std::vector<std::string> argn; setupGridObject( action, action->getPntrToArgument(0), argn, gridobject );
   parseFlag(action,"ZERO_OUTSIDE_GRID_RANGE",set_zero_outside_range);
   if( set_zero_outside_range ) action->log.printf("  function is zero outside grid range \n");
   // Get the type of interpolation that we are doing
@@ -79,7 +79,7 @@ void EvaluateGridFunction::read( ActionWithArguments* action ) {
 }
 
 void EvaluateGridFunction::setup( const ActionWithArguments* action ) {
-  setupGridBounds( action->getPntrToArgument(0), gridobject );
+  setupGridBounds( action, action->getPntrToArgument(0), gridobject );
 }
 
 void EvaluateGridFunction::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

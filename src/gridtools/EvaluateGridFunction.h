@@ -29,7 +29,6 @@ namespace PLMD {
 namespace gridtools {
 
 class EvaluateGridFunction : public function::FunctionTemplateBase {
-friend class ActionWithInputGrid;
 private:
 /// Holds the information on the grid
    GridCoordinatesObject gridobject;
@@ -41,9 +40,9 @@ private:
   std::unique_ptr<Interpolator> spline_interpolator; 
 public: 
 /// This is used to setup the input gridobject with the grid data from values
-  static void setupGridObject( Value* values, GridCoordinatesObject& gridobject );
+  static void setupGridObject( const ActionWithArguments* action, Value* values, std::vector<std::string>& argn, GridCoordinatesObject& gridobject );
 /// This is used to setup the input gridobject's bounds with the grid data from values
-  static void setupGridBounds( Value* values, GridCoordinatesObject& gridobject );
+  static void setupGridBounds( const ActionWithArguments* action, Value* values, GridCoordinatesObject& gridobject );
   void registerKeywords( Keywords& keys ) override ;
   void read( ActionWithArguments* action ) override ;
   unsigned getArgStart() const override { return 1; }
