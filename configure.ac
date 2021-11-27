@@ -960,7 +960,7 @@ then
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"${prefix}/lib:$LIBRARY_PATH\""
       else
         AC_MSG_WARN([-R option seems not working, disabling rpath])
       fi
