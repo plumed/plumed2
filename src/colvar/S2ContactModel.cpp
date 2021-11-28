@@ -24,6 +24,7 @@
 #include "tools/NeighborList.h"
 #include "tools/Communicator.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 
 #include <string>
@@ -195,10 +196,18 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
 
   requestAtoms(nl->getFullAtomList());
 
+
+  log.printf("  NMR S2 contact model CV, please read and cite ");
+  log << plumed.cite("Palazzesi, Valsson, and Parrinello, J. Phys. Chem. Lett. 8, 4752 (2017) - DOI:10.1021/acs.jpclett.7b01770");
+
   if(modeltype_==methyl) {
+    log << plumed.cite("Ming and Bruschweiler, J. Biomol. NMR, 29, 363 (2004) - DOI:10.1023/B:JNMR.0000032612.70767.35");
+    log.printf("\n");
     log.printf("  calculation of methyl order parameter using atom %d \n",methyl_atom[0].serial());
   }
   else if(modeltype_==nh) {
+    log << plumed.cite("Zhang and Bruschweiler, J. Am. Chem. Soc. 124, 12654 (2002) - DOI:10.1021/ja027847a");
+    log.printf("\n");
     log.printf("  calculation of NH order parameter using atoms %d and %d\n",nh_atoms[0].serial(),nh_atoms[1].serial());
   }
   log.printf("  heavy atoms used in the calculation (%u in total):\n",static_cast<unsigned int>(heavy_atoms.size()));
