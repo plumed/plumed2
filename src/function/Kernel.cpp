@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
-#include "setup/ReadReferenceCluster.h"
+#include "core/ActionWithValue.h"
 #include "tools/IFile.h"
 
 #include <cmath>
