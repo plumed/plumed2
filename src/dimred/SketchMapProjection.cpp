@@ -62,7 +62,7 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   std::vector<std::string> pnames; parseVector("PROPERTY",pnames); 
   std::string weights; parse("WEIGHT",weights); pnames.push_back( weights );
   // Now create fixed vectors using some sort of reference action
-  mapping::Path::readPropertyData( refname, "", pnames, this );
+  for(unsigned i=0; i<pnames.size(); ++i) readInputLine( pnames[i] + ": CONSTANT_VALUE FILE=" + refname + " NAME=" + pnames[i] );
   // Normalise the vector of weights
   readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights );
   readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG1=" + getShortcutLabel() + "_wsum ARG2=" +  weights + " FUNC=y/x PERIODIC=NO");

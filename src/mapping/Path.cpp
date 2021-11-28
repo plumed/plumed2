@@ -136,7 +136,14 @@ Path::Path( const ActionOptions& ao ):
   // Now compte zpath variable
   readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
   // Now get coefficients for properies for spath
-  readPropertyData( refname, "_ref", pnames, this );
+  if( pnames.size()>0 ) {
+      for(unsigned i=0;i<pnames.size();++i) readInputLine( pnames[i] + "_ref: CONSTANT_VALUE FILE=" + refname + " NAME=" + pnames[i] );
+  } else {
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_weights" );
+      unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
+      for(unsigned i=1;i<nfram;++i) { std::string num; Tools::convert( i+1, num ); indices += "," +num; }
+      readInputLine( getShortcutLabel() + "_ind: CONSTANT_VALUE " + indices );
+  }
   // Now create COMBINE objects to compute numerator of path
   for(unsigned i=0;i<properties.size();++i) {
       if( pnames.size()>0 ) {
@@ -149,32 +156,6 @@ Path::Path( const ActionOptions& ao ):
           readInputLine( getShortcutLabel() + "_s: CUSTOM ARG1=" + getShortcutLabel() + "_numer ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
       }
   }
-}
-
-void Path::readPropertyData( const std::string& refname, const std::string& refstr, const std::vector<std::string>& pnames, ActionShortcut* action ) { 
-  std::vector<std::string> properties( pnames.size() ); if( pnames.size()==0 ) properties.resize(1);
-  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; FILE* fp=std::fopen(refname.c_str(),"r");
-  while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
-      // Break if we are done
-      if( !do_read ) break ;
-      // This creates the coefficients
-      if( pnames.size()>0 ) {
-          double pval; std::string propstr;
-          for(unsigned i=0; i<pnames.size(); ++i) {
-              if( !mypdb.getArgumentValue(pnames[i], pval) ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
-              Tools::convert( pval, propstr ); 
-              if( nfram==0 ) { properties[i] += propstr; } else { properties[i] += "," + propstr; }
-          }
-      } else {
-          std::string propstr; Tools::convert( nfram+1, propstr ); 
-          if( nfram==0 ) { properties[0] += propstr; } else { properties[0] += "," + propstr; }
-      }
-      nfram++;
-  }
-  if( pnames.size()>0 ) {
-      for(unsigned i=0;i<pnames.size();++i) action->readInputLine( pnames[i] + refstr + ": CONSTANT_VALUE VALUES=" + properties[i] );
-  } else action->readInputLine( action->getShortcutLabel() + "_ind: CONSTANT_VALUE VALUES=" + properties[0] );
 }
 
 std::string Path::fixArgumentName( const std::string& argin ) {
