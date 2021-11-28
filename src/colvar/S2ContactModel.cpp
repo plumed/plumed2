@@ -56,7 +56,7 @@ Model taken from 10.1021/ja027847a and 10.1023/B:JNMR.0000032612.70767.35
 class S2ContactModel : public Colvar {
   bool pbc_;
   bool serial_;
-  NeighborList* nl;
+  std::unique_ptr<NeighborList> nl;
   bool invalidateList;
   bool firsttime;
   //
@@ -104,7 +104,6 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc_(true),
   serial_(false),
-  nl(NULL),
   invalidateList(true),
   firsttime(true),
   r_eff_(0.0),
@@ -186,11 +185,12 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
   addValueWithDerivatives();
   setNotPeriodic();
 
+  bool dopair=false;
   if(doneigh) {
-    nl= new NeighborList(main_atoms,heavy_atoms,false,false,pbc_,getPbc(),comm,nl_cut,nl_st);
+    nl=Tools::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm,nl_cut,nl_st);
   }
   else {
-    nl= new NeighborList(main_atoms,heavy_atoms,false,false,pbc_,getPbc(),comm);
+    nl=Tools::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm);
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -234,7 +234,6 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
 }
 
 S2ContactModel::~S2ContactModel() {
-  delete nl;
 }
 
 void S2ContactModel::prepare() {
