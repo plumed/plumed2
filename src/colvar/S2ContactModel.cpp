@@ -187,10 +187,10 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
   setNotPeriodic();
 
   if(doneigh) {
-    nl= new NeighborList(main_atoms,heavy_atoms,false,pbc_,getPbc(),nl_cut,nl_st);
+    nl= new NeighborList(main_atoms,heavy_atoms,false,false,pbc_,getPbc(),comm,nl_cut,nl_st);
   }
   else {
-    nl= new NeighborList(main_atoms,heavy_atoms,false,pbc_,getPbc());
+    nl= new NeighborList(main_atoms,heavy_atoms,false,false,pbc_,getPbc(),comm);
   }
 
   requestAtoms(nl->getFullAtomList());
