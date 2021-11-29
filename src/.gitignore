@@ -52,6 +52,7 @@
 !/fisst
 !/sasa
 !/xdrfile
+!/s2cm
 
 # And just ignore these files
 *.xxd
