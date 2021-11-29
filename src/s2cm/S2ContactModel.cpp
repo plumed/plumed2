@@ -1,7 +1,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    Copyright (c) 2021 Omar Valsson
 
-   This file is part of S2 contact model module 
+   This file is part of S2 contact model module
 
    The S2 contact model module is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -35,7 +35,7 @@ namespace colvar {
 
 //+PLUMEDOC S2CM_COLVAR S2CM
 /*
-S2 contact model CV used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers. 
+S2 contact model CV used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers.
 
 \par Examples
 
