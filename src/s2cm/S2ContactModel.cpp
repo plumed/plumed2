@@ -33,7 +33,7 @@ namespace colvar {
 
 //
 
-//+PLUMEDOC S2CM_COLVAR S2_CONTACT_MODEL
+//+PLUMEDOC S2CM_COLVAR S2CM
 /*
 S2 contact model
 
@@ -78,7 +78,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(S2ContactModel,"S2_CONTACT_MODEL")
+PLUMED_REGISTER_ACTION(S2ContactModel,"S2CM")
 
 void S2ContactModel::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
