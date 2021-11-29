@@ -645,8 +645,8 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 
   std::size_t num2=name.find_first_of("_");
   if( num2!=std::string::npos ) {
-      char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
-      plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
+    char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
+    plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
   }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
