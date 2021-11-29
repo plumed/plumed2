@@ -1,0 +1,4 @@
+plumed_modules=s2cm
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --mf_pdb Ching2.pdb --box 100.0,100.0,100.0"
