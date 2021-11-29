@@ -644,7 +644,10 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
   std::size_t num2=name.find_first_of("_");
-  if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
+  if( num2!=std::string::npos ) {
+      char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
+      plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
+  }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
