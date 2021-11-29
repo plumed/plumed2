@@ -9540,7 +9540,7 @@ fi
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
       else
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: -R option seems not working, disabling rpath" >&5
 $as_echo "$as_me: WARNING: -R option seems not working, disabling rpath" >&2;}
