@@ -384,7 +384,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(8));
+        val.set(int(9));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
