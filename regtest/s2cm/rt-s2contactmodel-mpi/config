@@ -1,4 +1,4 @@
-plumed_modules=ves
+plumed_modules=s2cm
 mpiprocs=4
 type=driver
 # this is to test a different name

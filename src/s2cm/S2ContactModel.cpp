@@ -1,26 +1,23 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2021 The plumed team
-   (see the PEOPLE file at the root of the distribution for a list of names)
+   Copyright (c) 2021 Omar Valsson
 
-   See http://www.plumed.org for more information.
+   This file is part of S2 contact model module 
 
-   This file is part of plumed, version 2.
-
-   plumed is free software: you can redistribute it and/or modify
+   The S2 contact model module is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
-   plumed is distributed in the hope that it will be useful,
+   The S2 contact model module is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   along with the S2 contact model module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "Colvar.h"
+#include "colvar/Colvar.h"
 #include "tools/NeighborList.h"
 #include "tools/Communicator.h"
 #include "core/ActionRegister.h"
@@ -36,7 +33,7 @@ namespace colvar {
 
 //
 
-//+PLUMEDOC COLVAR S2_CONTACT_MODEL
+//+PLUMEDOC S2CM_COLVAR S2_CONTACT_MODEL
 /*
 NMR S2 contact model
 
