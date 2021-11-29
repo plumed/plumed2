@@ -21,4 +21,4 @@ Currently, all features of the S2 contact model module are included in a single 
 
 \page S2CMMODColvar CVs Documentation
 
-@S2CM_COLVAR@
+@S2CMMOD_COLVAR@
