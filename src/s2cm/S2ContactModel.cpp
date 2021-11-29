@@ -35,9 +35,7 @@ namespace colvar {
 
 //+PLUMEDOC S2CM_COLVAR S2CM
 /*
-S2 contact model
-
-Model taken from 10.1021/ja027847a and 10.1023/B:JNMR.0000032612.70767.35
+S2 contact model CV used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers. 
 
 \par Examples
 
