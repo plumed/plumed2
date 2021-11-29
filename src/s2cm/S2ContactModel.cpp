@@ -28,7 +28,7 @@
 #include <cmath>
 
 namespace PLMD {
-namespace colvar {
+namespace s2cm {
 
 
 //
