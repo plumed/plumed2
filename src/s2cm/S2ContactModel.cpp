@@ -35,7 +35,7 @@ namespace colvar {
 
 //+PLUMEDOC S2CM_COLVAR S2_CONTACT_MODEL
 /*
-NMR S2 contact model
+S2 contact model
 
 Model taken from 10.1021/ja027847a and 10.1023/B:JNMR.0000032612.70767.35
 
