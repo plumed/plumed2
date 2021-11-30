@@ -433,7 +433,7 @@ rm automatic/*.txte
 
 rm -f *PP.txt *PP.md
 
-keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
+keywords=`grep "@[A-Z0-9_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
 
 for f in *.txt *.md
 do
@@ -458,7 +458,7 @@ do
 done
 rm -f *."$extension"e
 
-grep -Ev '^ *@[A-Z:_]*@ *$' ${file}PP.$extension > tmp;
+grep -Ev '^ *@[A-Z0-9:_]*@ *$' ${file}PP.$extension > tmp;
 mv tmp ${file}PP.$extension
 
 done
