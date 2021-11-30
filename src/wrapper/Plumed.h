@@ -1204,15 +1204,11 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
 
 #define plumed_cmd_3args(p,key,val) plumed_cmdns_inner(cmdn,val) (p,key,val,0)
 
-#define plumed_cmd_4args(p,key,val,X) _Generic((X), \
+/* ((X)+(size_t)0): for pointers, no op; for integers, convert to size_t */
+#define plumed_cmd_4args(p,key,val,X) _Generic(((X)+(size_t)0), \
     const size_t *: plumed_cmdns_inner(cmds,val), \
     size_t *: plumed_cmdns_inner(cmds,val), \
-    int: plumed_cmdns_inner(cmdn,val), \
-    unsigned int: plumed_cmdns_inner(cmdn,val), \
-    long: plumed_cmdns_inner(cmdn,val), \
-    unsigned long: plumed_cmdns_inner(cmdn,val), \
-    long long: plumed_cmdns_inner(cmdn,val), \
-    unsigned long long: plumed_cmdns_inner(cmdn,val) \
+    size_t: plumed_cmdns_inner(cmdn,val) \
     ) (p,key,val,X)
 
 #define __PLUMED_WRAPPER_C_GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
@@ -1339,6 +1335,11 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <future> /* future_category */
 #include <memory> /* bad_weak_ptr */
 #include <functional> /* bad_function_call */
+#endif
+
+#if __cplusplus > 199711L
+#include <array> /* array */
+#include <initializer_list> /* initializer_list */
 #endif
 
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
@@ -1945,6 +1946,13 @@ public:
     global().cmd(key,val,shape);
   }
 
+#if __cplusplus > 199711L
+  template<typename T>
+  static void gcmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+    global().cmd(key,val,shape);
+  }
+#endif
+
   /**
      Finalize global-plumed
   */
@@ -2331,6 +2339,25 @@ public:
 #endif
   }
 
+#if __cplusplus > 199711L
+  template<typename T>
+  void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    std::array<std::size_t,5> shape_;
+    unsigned j=0;
+    for(auto i : shape) {
+      shape_[j]=i;
+      j++;
+    }
+    shape_[j]=0;
+    SafePtr s(val,0,&shape_[0]);
+    cmd_priv(key,&s);
+#else
+    cmd_priv(key,__PLUMED_WRAPPER_CXX_NULLPTR,val);
+#endif
+  }
+#endif
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed
