@@ -186,8 +186,12 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   // Return if we are not computing derivatives
   if( doNotCalculateDerivatives() ) return;
 
-  // And now compute the derivatives
-  if( actionInChain() ) {
+  // And now compute the derivatives 
+  // Second condition here is only not true if actionInChain()==True if
+  // input arguments the only non-constant objects in input are scalars.
+  // In that case we can use the non chain version to calculate the derivatives
+  // with respect to the scalar.
+  if( actionInChain() && arg_deriv_starts.size()>0 ) {
       for(unsigned j=0;j<args.size();++j) {
           unsigned istrn = getArgumentPositionInStream( argstart+j, myvals );
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {

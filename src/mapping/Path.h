@@ -33,9 +33,11 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   static void registerInputFileKeywords( Keywords& keys );
-  static void readInputFrames( std::string& mytype, std::string& refname, const bool& geometric, 
-                               ActionShortcut* action, std::vector<std::string>& refactions );
-  static unsigned getNumberOfFramesAndMetric( const std::string& mtype, const std::string& reffile, std::string& metric );
+  static void readArgumentFromPDB( const std::string& argname, const std::string& lab, const std::string& fname, PlumedMain& plmd, const unsigned number=0 );
+  static void readPropertyInformation( const std::vector<std::string>& pnames, const std::string& lab, const std::string& refname, ActionShortcut* action );
+  static Value* getValueWithLabel( ActionShortcut* action, const std::string& name );
+  static void readInputFrames( const std::vector<std::string>& argnames, std::string& refname, const bool& geometric, 
+                               ActionShortcut* action, std::string& refargs, std::string& metric );
   explicit Path(const ActionOptions&);
 };
 

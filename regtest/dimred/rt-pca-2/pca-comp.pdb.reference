@@ -1,8 +1,10 @@
 # PCA AT STEP 546 TIME 546.000000 
-REMARK pca_average1=0.9663   
-REMARK pca_average2=0.4730   
+REMARK ARG=c1,c2 
+REMARK c1=0.9663   c2=0.4730   
 END
-REMARK pca_eig.vecs-1.1=0.7142   pca_eig.vecs-1.2=0.6999   
+REMARK ARG=c1,c2 
+REMARK c1=0.7142   c2=0.6999   
 END
-REMARK pca_eig.vecs-2.1=0.6999   pca_eig.vecs-2.2=-0.7142  
+REMARK ARG=c1,c2 
+REMARK c1=0.6999   c2=-0.7142  
 END

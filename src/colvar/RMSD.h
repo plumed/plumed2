@@ -22,34 +22,52 @@
 #ifndef __PLUMED_colvar_RMSD_h
 #define __PLUMED_colvar_RMSD_h
 
-#include "Colvar.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "tools/RMSD.h"
 
 namespace PLMD {
+
+class ActionShortcut;
+
 namespace colvar {
 
-class RMSD : public Colvar {
+class RMSD : 
+public ActionWithArguments,
+public ActionWithValue {
 private:
-  bool fixed_reference;
-  Tensor rot;
-  Matrix<std::vector<Vector> > DRotDPos;
-  std::vector<Vector> pos, der, direction, centeredpos, centeredreference;
+  bool firsttime, fixed_reference;
   bool squared;
-  bool nopbc;
   bool displacement;
   bool norm_weights;
   std::string type;
   std::vector<double> align,displace,sqrtdisplace;
-  PLMD::RMSD myrmsd;
-  std::vector<Vector> forcesToApply;
-  void setReferenceConfiguration();
+  std::vector<PLMD::RMSD> myrmsd;
+  std::vector<double> forcesToApply;
+  void setReferenceConfiguration( const unsigned& jconf );
 public:
   explicit RMSD(const ActionOptions&);
-  virtual void calculate() override;
+  unsigned getNumberOfDerivatives() const override;
+  unsigned getNumberOfColumns() const override;
+  void calculate() override;
+  void performTask( const unsigned& task_index, MultiValue& myvals ) const override;
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void apply() override;
   static void registerRMSD(Keywords& keys );
   static void registerKeywords(Keywords& keys);
+  static void createReferenceConfiguration( const std::string& lab, const std::string& input, PlumedMain& plumed, const unsigned number=0 ); 
+  static void createPosVector( const std::string& lab, const PDB& pdb, ActionShortcut* action );
 };
+
+inline
+unsigned RMSD::getNumberOfDerivatives() const {
+  return 3*align.size();
+}
+
+inline 
+unsigned RMSD::getNumberOfColumns() const {
+  return 3*align.size();  
+}
 
 }
 }

@@ -66,9 +66,6 @@ friend class ActionShortcut;
 /// Label of the Action, as set with LABEL= in the plumed.dat file.
   std::string label;
 
-/// Label of the object that calls this action to be calculated
-  std::string caller;
-
 /// Directive line.
 /// This line is progressively erased during Action construction
 /// so as to check if all the present keywords are correct.
@@ -244,9 +241,6 @@ public:
 /// Returns the name
   const std::string & getName()const;
 
-/// Get the object that calls this action
-  const std::string & getCaller()const;
-
 /// Set action to active
   virtual void activate();
 
@@ -311,11 +305,6 @@ const std::string & Action::getLabel()const {
 inline
 const std::string & Action::getName()const {
   return name;
-}
-
-inline
-const std::string & Action::getCaller()const {
-  return caller;
 }
 
 template<class T>

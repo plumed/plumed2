@@ -2,7 +2,7 @@ t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
 
 # Test with euclidean distances in torsion space
-pp: GPATH ARG=t1,t2 TYPE=EUCLIDEAN REFERENCE=epath.pdb
+pp: GPATH ARG=t1,t2 REFERENCE=epath.pdb
 
 # Test with rmsd distances 
 p2: GPATH TYPE=OPTIMAL-FAST REFERENCE=all.pdb 

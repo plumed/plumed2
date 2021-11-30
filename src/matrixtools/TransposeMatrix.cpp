@@ -63,7 +63,9 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
 
 std::vector<unsigned> TransposeMatrix::getMatrixShapeForFinalTasks() {
   std::vector<unsigned> shape(2);
-  if( getPntrToArgument(0)->getRank()==1 ) {
+  if( getPntrToArgument(0)->getRank()==0 ) {
+     shape.resize(0);
+  } else if( getPntrToArgument(0)->getRank()==1 ) {
      shape[0]=1;
      shape[1]=getPntrToArgument(0)->getShape()[0]; 
   } else {
@@ -88,7 +90,7 @@ unsigned TransposeMatrix::getNumberOfColumns() const {
 
 void TransposeMatrix::completeMatrixOperations() {
   // Retrieve the non-zero pairs
-  if( getPntrToArgument(0)->getRank()==1 || getPntrToOutput(0)->getRank()==1 ) {
+  if( getPntrToArgument(0)->getRank()<=1 || getPntrToOutput(0)->getRank()==1 ) {
       unsigned nv=getPntrToArgument(0)->getNumberOfValues();
       for(unsigned i=0; i<nv; ++i) getPntrToOutput(0)->set( i, getPntrToArgument(0)->get(i) );
   } else {
@@ -103,7 +105,7 @@ void TransposeMatrix::completeMatrixOperations() {
 void TransposeMatrix::apply() {
   // Apply force on the matrix
   if( getPntrToOutput(0)->forcesWereAdded() ) {
-      if( getPntrToArgument(0)->getRank()==1 || getPntrToOutput(0)->getRank()==1 ) {
+      if( getPntrToArgument(0)->getRank()<=1 || getPntrToOutput(0)->getRank()==1 ) {
           unsigned nv=getPntrToArgument(0)->getNumberOfValues();
           for(unsigned i=0; i<nv; ++i) getPntrToArgument(0)->addForce( i, getPntrToOutput(0)->getForce(i) );
       } else applyForceOnMatrix(0);

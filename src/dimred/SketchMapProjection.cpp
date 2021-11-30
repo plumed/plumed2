@@ -56,13 +56,14 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   ActionShortcut(ao)
 {
   // Use path to read in the projections
-  std::string mtype, refname; std::vector<std::string> refactions;
-  mapping::Path::readInputFrames( mtype, refname, false, this, refactions );
+  std::string refname, refactions, metric;
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
+  mapping::Path::readInputFrames( argnames, refname, false, this, refactions, metric );
   // And read in the data that we want on the projections
   std::vector<std::string> pnames; parseVector("PROPERTY",pnames); 
   std::string weights; parse("WEIGHT",weights); pnames.push_back( weights );
   // Now create fixed vectors using some sort of reference action
-  for(unsigned i=0; i<pnames.size(); ++i) readInputLine( pnames[i] + ": CONSTANT_VALUE FILE=" + refname + " NAME=" + pnames[i] );
+  for(unsigned i=0; i<pnames.size(); ++i) mapping::Path::readArgumentFromPDB( pnames[i], pnames[i], refname, plumed ); 
   // Normalise the vector of weights
   readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights );
   readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG1=" + getShortcutLabel() + "_wsum ARG2=" +  weights + " FUNC=y/x PERIODIC=NO");

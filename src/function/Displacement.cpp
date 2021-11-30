@@ -24,7 +24,6 @@
 #include "core/ActionSet.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionWithValue.h"
-#include "setup/SetupReferenceBase.h"
 
 namespace PLMD {
 namespace function {

@@ -1,41 +1,61 @@
 # PATH AT STEP 50 TIME 50.000000 
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=1.2247   d1.y=-0.7208  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=1.0685   d1.y=-0.5406  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.9123   d1.y=-0.3604  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.7562   d1.y=-0.1802  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.6000   d1.y=0.0000   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.3691   d1.y=-0.0597  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.1307   d1.y=-0.0637  
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.0379  d1.y=0.1048   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.0364  d1.y=0.3433   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=0.0385   d1.y=0.5696   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.0753  d1.y=0.7792   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.2315  d1.y=0.9594   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.3877  d1.y=1.1396   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.5438  d1.y=1.3198   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.7000  d1.y=1.5000   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-0.8562  d1.y=1.6802   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-1.0123  d1.y=1.8604   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-1.1685  d1.y=2.0406   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-1.3247  d1.y=2.2208   
 END
+REMARK ARG=d1.x,d1.y 
 REMARK d1.x=-1.4808  d1.y=2.4010   
 END

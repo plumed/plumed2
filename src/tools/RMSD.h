@@ -108,7 +108,7 @@ public:
   void setType(const std::string & mytype);
 /// set reference coordinates, remove the com by using uniform weights
   void setReference(const std::vector<Vector> & reference);
-  std::vector<Vector> getReference();
+  std::vector<Vector> getReference() const;
 /// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value
   void setAlign(const std::vector<double> & align, bool normalize_weights=true, bool remove_center=true);
   std::vector<double> getAlign();

@@ -130,7 +130,7 @@ void VStack::update() {
 
 void VStack::calculate() {
   // Everything is done elsewhere
-  if( actionInChain() ) return;
+  if( actionInChain() || skipCalculate() ) return;
   // Run all the tasks
   runAllTasks();
 }

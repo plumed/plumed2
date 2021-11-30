@@ -118,16 +118,16 @@ PCA::PCA( const ActionOptions& ao ) :
   ActionShortcut(ao)
 {
   // Read in the data set we are doing PCA for
-  std::string arg; parse("ARG",arg);
+  std::string arg; parse("ARG",arg); std::vector<std::string> argnames;
   AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg);
   if( !mydata ) error("input to PCA should be a COLLECT_FRAMES or COLLECT_REPLICAS object");
   std::string argstr; unsigned anum=1; bool hasargs=false;
   for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
       std::string thislab = mydata->copyOutput(i)->getName();
       if( thislab.find(".logweights")==std::string::npos && thislab.find(".pos")==std::string::npos ) {
-          std::string num; Tools::convert( anum, num ); 
+          std::string num; Tools::convert( anum, num );
           // Average for component
-          std::size_t dot = thislab.find("."); std::string datalab = thislab.substr(dot+1);
+          std::size_t dot = thislab.find("."); std::string datalab = thislab.substr(dot+1); argnames.push_back( datalab );
           // This calculates the average
           readInputLine( getShortcutLabel() + "_average" + num + ": AVERAGE ARG=" + datalab + mydata->getStrideClearAndWeights() );
           // This calculates the centered data vector
@@ -180,19 +180,31 @@ PCA::PCA( const ActionOptions& ao ) :
   if( filename.length()>0 ) {
       if( filename.find(".pdb")==std::string::npos ) error("output file for PCA should be a PDB");
       std::string fmt; parse("FMT",fmt); if( fmt.length()==0 ) fmt="%f";
-      std::string atstr, avlist;
       if( hasargs ) {
-         avlist = " CONFIG1=" + getShortcutLabel() + "_average1"; 
-         for(unsigned i=1;i<anum-1;++i) { std::string num; Tools::convert( i+1, num ); avlist += "," + getShortcutLabel() + "_average" + num; }
-         if( mydata->getNumberOfAtoms()>0 ) avlist = "," + getShortcutLabel() + "_average_atoms";
+          std::string argstr, labstr; if( mydata->getNumberOfAtoms()>0 ) error("cannot mix arguments and atoms in PCA"); 
+          for(unsigned i=0; i<argnames.size();++i) {
+              std::string num; Tools::convert( i+1, num ); std::string cat_str = getShortcutLabel() + "_catarg" + num + ": CONCATENATE ARG1=" + getShortcutLabel() + "_average" + num;
+              for(unsigned j=0; j<ndim; ++j) { 
+                  std::string lnum, jnum; Tools::convert( j+2, lnum ); Tools::convert( j+1, jnum ); 
+                  readInputLine( getShortcutLabel() + "_select" +  jnum + "_" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_eig.vecs-" + jnum + " COMPONENTS=" + num );              
+                  cat_str += " ARG" + lnum + "=" + getShortcutLabel() + "_select" +  jnum + "_" + num; 
+              }
+              readInputLine( cat_str ); 
+              if( i==0 ) { argstr = getShortcutLabel() + "_catarg" + num; labstr = argnames[i]; } 
+              else { argstr += "," + getShortcutLabel() + "_catarg" + num; labstr += "," + argnames[i]; }
+          }
+          readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + " ARG=" + argstr + " ARG_NAMES=" + labstr );
+      } else {
+          std::string argstr = "ARG1=" + getShortcutLabel() + "_average_atoms"; 
+          for(unsigned i=0;i<ndim;++i) {
+              std::string lnum, num; Tools::convert( i+2, lnum ); Tools::convert( i+1, num );   
+              argstr += " ARG" + lnum + "=" + getShortcutLabel() + "_eig.vecs-" + num;
+          }
+          readInputLine( getShortcutLabel() + "_pcaout: HSTACK " + argstr ); 
+          std::vector<AtomNumber> indices( mydata->getAbsoluteIndexes() ); std::string str_ind; Tools::convert( indices[0].serial(), str_ind ); 
+          for(unsigned i=1; i<indices.size(); ++i) { std::string num; Tools::convert( indices[i].serial(), num ); str_ind += "," + num; }
+          readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + " ARG=" + getShortcutLabel() + "_pcaout ATOM_INDICES=" + str_ind );
       }
-      if( mydata->getNumberOfAtoms()>0 ) atstr = " CONFIG1=" + getShortcutLabel() + "_average_atoms";
-      std::string eiglist; 
-      for(unsigned i=0;i<ndim;++i) {
-          std::string lnum, num; Tools::convert( i+2, lnum ); Tools::convert( i+1, num ); 
-          eiglist += " CONFIG" + lnum + "=" + getShortcutLabel() + "_eig.vecs-" + num;
-      } 
-      readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + atstr + avlist + " " + eiglist );
   }
   // And calculate the projections of the stored data on to the PCA vectors
   for(unsigned i=0;i<ndim;++i) {

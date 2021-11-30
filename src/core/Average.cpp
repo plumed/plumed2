@@ -177,7 +177,8 @@ void Average::accumulate( const std::vector<std::vector<Vector> >& dir  ) {
           atoms.setVatomMass( mygroup[i], align[i] ); atoms.setVatomCharge( mygroup[i], displace[i] );
           Vector pos = getReferencePosition(i) + displacements[i] / val->getNorm();
           atoms.setVatomPosition( mygroup[i], pos );
-          for(unsigned k=0;k<3;++k) val->set( 3*i + k, val->getNorm()*pos[k] );
+          double mynorm=val->getNorm(); if( normalization==t ) mynorm += cweight; else if(normalization==ndata ) mynorm += 1.0;
+          for(unsigned k=0;k<3;++k) val->set( 3*i + k, mynorm*pos[k] );
       } 
   } 
 

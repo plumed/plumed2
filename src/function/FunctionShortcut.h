@@ -76,16 +76,16 @@ void FunctionShortcut<T>::createAction( ActionShortcut* action, const std::vecto
       if( vals[i]->getRank()>maxrank ) maxrank=vals[i]->getRank();
   }
   if( isgrid ) {
-      if( actionRegister().check( action->getName() + "_GRID") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_GRID ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      if( actionRegister().check( action->getName() + "_GRID") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_GRID ARG=" + allargs + " " + action->convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with functions on a grid");
   } else if( maxrank==0 ) {
-      if( actionRegister().check( action->getName() + "_SCALAR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_SCALAR ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      if( actionRegister().check( action->getName() + "_SCALAR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_SCALAR ARG=" + allargs + " " + action->convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with scalars"); 
   } else if( maxrank==1 ) {
-      if( actionRegister().check( action->getName() + "_VECTOR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_VECTOR ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      if( actionRegister().check( action->getName() + "_VECTOR") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_VECTOR ARG=" + allargs + " " + action->convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with vectors");
   } else if( maxrank==2  ) {
-      if( actionRegister().check( action->getName() + "_MATRIX") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_MATRIX ARG=" + allargs + " " + action->convertInputLineToString() + " CALLER=" + action->getCaller() );
+      if( actionRegister().check( action->getName() + "_MATRIX") ) action->readInputLine( action->getShortcutLabel() + ": " + action->getName() + "_MATRIX ARG=" + allargs + " " + action->convertInputLineToString() );
       else plumed_merror("there is no action registered that allows you to do " + action->getName() + " with matrices");
   } else plumed_error();
 }

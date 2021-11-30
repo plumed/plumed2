@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionWithValue.h" 
 
 namespace PLMD {
 namespace function {
@@ -47,10 +50,18 @@ ActionShortcut(ao)
   std::string arg1, arg2; parse("ARG1",arg1); parse("ARG2",arg2); 
   // Vectors are in rows here
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
-  // So vectors are in columns here
-  readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
+  // Get the action that computes the differences
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff"); plumed_assert( av );
+  // Check if squared 
   bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
-  readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() + "_diff ARG2=" + getShortcutLabel() + "_diffT");
+  // Deal with an annoying corner case when displacement has a single argument
+  if( av->copyOutput(0)->getRank()==0 ) { 
+     readInputLine( olab + ": CUSTOM ARG=" + getShortcutLabel() + "_diff FUNC=x*x PERIODIC=NO"); 
+  } else {
+     // Notice that the vectors are in the columns here
+     readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
+     readInputLine( olab + ": DOT DIAGONAL_ELEMENTS_ONLY ARG1=" + getShortcutLabel() + "_diff ARG2=" + getShortcutLabel() + "_diffT");
+  }
   if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }
 

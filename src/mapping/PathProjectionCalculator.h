@@ -24,7 +24,7 @@
 
 #include "core/Value.h"
 #include "core/PlumedMain.h"
-#include "setup/SetupReferenceBase.h"
+#include "tools/Keywords.h"
 
 namespace PLMD {
 namespace mapping {
@@ -33,23 +33,17 @@ class PathProjectionCalculator {
 private:
   Value* mypath_obj;
   PlumedMain metric;
-  std::vector<double> masses;
-  std::vector<double> charges;
-  std::vector<Vector> positions;
-  std::vector<Vector> forces;
   std::vector<double> data;
-  std::vector<setup::SetupReferenceBase*> reference_frames; 
+  std::vector<Value*> refargs;
 /// Compute the vector connecting two of the frames in the path
-  void computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box );
+  void computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito );
 public:
   static void registerKeywords( Keywords& keys );
   PathProjectionCalculator( Action* act );
 /// Get the number of frames in the path 
   unsigned getNumberOfFrames() const ;
-/// Get the label of the reference frame
-  std::string getReferenceLabel( const unsigned& iframe ) const ;
 /// Get the displacement between two reference frames
-  void getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace );
+  void getDisplaceVector( const unsigned& ifrom, const unsigned& ito, std::vector<double>& displace );
 /// Transfer data in and out of the reference configurations (used for reparamerization)
   void getReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos ) const ;
   void setReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos );

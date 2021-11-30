@@ -20,8 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathProjectionCalculator.h"
-#include "core/ActionSet.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
 #include <string.h>
 
 namespace PLMD {
@@ -29,7 +30,7 @@ namespace mapping {
 
 void PathProjectionCalculator::registerKeywords(Keywords& keys) {
   keys.add("compulsory","METRIC","the method to use for computing the displacement vectors between the reference frames");
-  keys.add("compulsory","REFFRAMES","labels for actions that contain reference coordinates for each point on the path");
+  keys.add("compulsory","REFERENCE","labels for actions that contain reference coordinates for each point on the path");
 }
 
 PathProjectionCalculator::PathProjectionCalculator( Action* act ):
@@ -46,30 +47,27 @@ mypath_obj(NULL)
   // Check that the input is a matrix
   if( mypath_obj ) if( mypath_obj->getRank()!=2 ) act->error("the input to this action should be a matrix");
   // Get the labels for the reference points
-  unsigned natoms, nargs; std::vector<std::string> reflabs; act->parseVector("REFFRAMES", reflabs );
-  if( mypath_obj ) if( reflabs.size()!=mypath_obj->getShape()[0] ) act->error("mismatch for number of reference frames");
-  for(unsigned i=0;i<reflabs.size();++i) {
-      setup::SetupReferenceBase* rv = act->plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( reflabs[i] );
-      if( !rv ) act->error("input " + reflabs[i] + " is not a READ_CONFIG action");
-      reference_frames.push_back( rv ); unsigned tatoms, targs; rv->getNatomsAndNargs( tatoms, targs );
-      if( i==0 ) { natoms=tatoms; nargs=targs; }
-      else if( natoms!=tatoms || nargs!=targs ) act->error("mismatched reference configurations");
+  std::vector<std::string> reference_data; act->parseVector("REFERENCE", reference_data);
+  for(unsigned i=0; i<reference_data.size(); ++i) {
+      ActionWithValue* av = act->plumed.getActionSet().selectWithLabel<ActionWithValue*>( reference_data[i] );
+      if( !av || av->getName()!="CONSTANT_VALUE" ) act->error("input " + reference_data[i] + " is not a CONSTANT_VALUE action");
+      Value* myval = av->copyOutput(0); refargs.push_back( myval );
+      if( myval->getRank()==2 && reference_data.size()!=1 ) act->error("should only be one matrix in input to path projection object");
+      if( myval->getRank()>0 && myval->getShape()[0]!=refargs[0]->getShape()[0] ) act->error("mismatch in number of reference frames in input to reference_data"); 
   }
   // Create a plumed main object to compute distances between reference configurations
   int s=sizeof(double);
   metric.cmd("setRealPrecision",&s);
   metric.cmd("setNoVirial");
   metric.cmd("setMDEngine","plumed");
-  int nat=2*natoms; metric.cmd("setNatoms",&nat);
-  positions.resize(nat); masses.resize(nat); forces.resize(nat); charges.resize(nat);
-  if( nargs>0 ) {
-      std::string str_nargs; Tools::convert( nargs, str_nargs ); std::string period_str=" PERIODIC=NO";
-      if( mypath_obj && mypath_obj->isPeriodic() ) { std::string min, max; mypath_obj->getDomain( min, max ); period_str=" PERIODIC=" + min + "," + max; }
-      metric.cmd("createValue arg1: PUT SHAPE=" + str_nargs + period_str);
-      metric.cmd("createValue arg2: PUT SHAPE=" + str_nargs + period_str);
-  }
+  int nat=0; metric.cmd("setNatoms",&nat);
+  unsigned nargs=refargs.size(); if( refargs[0]->getRank()==2 ) nargs = refargs[0]->getShape()[1];
+  std::string str_nargs; Tools::convert( nargs, str_nargs ); std::string period_str=" PERIODIC=NO";
+  if( mypath_obj && mypath_obj->isPeriodic() ) { std::string min, max; mypath_obj->getDomain( min, max ); period_str=" PERIODIC=" + min + "," + max; }
+  metric.cmd("createValue arg1: PUT SHAPE=" + str_nargs + period_str);
+  metric.cmd("createValue arg2: PUT SHAPE=" + str_nargs + period_str);
   double tstep=1.0; metric.cmd("setTimestep",&tstep);
-  std::string inp; act->parse("METRIC",inp); const char* cinp=inp.c_str();
+  std::string inp; act->parse("METRIC",inp); inp += " ARG1=arg2 ARG2=arg1"; const char* cinp=inp.c_str();
   std::vector<std::string> input=Tools::getWords(inp);
   if( input.size()==1 && !actionRegister().check(input[0]) ) {
       metric.cmd("setPlumedDat",cinp); metric.cmd("init");
@@ -93,49 +91,40 @@ mypath_obj(NULL)
 }
 
 unsigned PathProjectionCalculator::getNumberOfFrames() const {
-  return reference_frames.size();
+  return refargs[0]->getShape()[0];
 }
 
-void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box ) {
-  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata1, valdata2;
-  if( reference_frames[ifrom]->getNumberOfComponents()>0 ) {
-      Value* myval1 = reference_frames[ifrom]->copyOutput(0); unsigned nvals = myval1->getSize();
-      valdata1.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata1[i] = myval1->get(i);
-      metric.cmd("setValue arg1", &valdata1[0] );
-  }
-  reference_frames[ifrom]->getAtomsFromReference( 0, masses, charges, positions );
-  if( reference_frames[ito]->getNumberOfComponents()>0 ) {
-      Value* myval2 = reference_frames[ito]->copyOutput(0); unsigned nvals = myval2->getSize();
-      valdata2.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata2[i] = myval2->get(i); 
-      metric.cmd("setValue arg2", &valdata2[0] );
-  }
-  reference_frames[ito]->getAtomsFromReference( positions.size()/2, masses, charges, positions );
-  if( positions.size()>0 ) {
-      metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
-      metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
-      metric.cmd("setBox",&box[0][0]); 
-  }
+void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito ) {
+  int step = 1; metric.cmd("setStep",&step); 
+  std::vector<double> valdata1( data.size() ), valdata2( data.size() );
+  getReferenceConfiguration( ito, valdata2 ); getReferenceConfiguration( ifrom, valdata1 );
+  metric.cmd("setValue arg1", &valdata1[0] ); 
+  metric.cmd("setValue arg2", &valdata2[0] );
   metric.cmd("calc");
 }
 
-void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace ) {
+void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const unsigned& ito, std::vector<double>& displace ) {
   if( displace.size()!=data.size() ) displace.resize( data.size() );
-  computeVectorBetweenFrames( ifrom, ito, box ); for(unsigned i=0;i<data.size();++i) displace[i] = data[i]; 
-}
-
-std::string PathProjectionCalculator::getReferenceLabel( const unsigned& iframe ) const {
-  return reference_frames[iframe]->getLabel();
+  computeVectorBetweenFrames( ifrom, ito ); for(unsigned i=0;i<data.size();++i) displace[i] = data[i]; 
 }
 
 void PathProjectionCalculator::getReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos ) const {
   if( refpos.size()!=data.size() ) refpos.resize( data.size() );
-  reference_frames[iframe]->getReferenceConfiguration( refpos );
-}
+  if( refargs[0]->getRank()==2 ) {
+      for(unsigned i=0; i<refpos.size(); ++i) refpos[i] = refargs[0]->get( iframe*refpos.size() + i ); 
+  } else {
+      for(unsigned i=0; i<refpos.size(); ++i) refpos[i] = refargs[i]->get(iframe);
+  }
+} 
 
 void PathProjectionCalculator::setReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos ) {
   plumed_dbg_assert( refpos.size()==data.size() );
-  reference_frames[iframe]->setReferenceConfiguration( refpos );
-}
+  if( refargs[0]->getRank()==2 ) {
+      for(unsigned i=0; i<refpos.size(); ++i) refargs[0]->set( iframe*refpos.size() + i, refpos[i] ); 
+  } else {
+      for(unsigned i=0; i<refpos.size(); ++i) refargs[i]->set( iframe, refpos[i] );
+  }
+} 
 
 }
 }

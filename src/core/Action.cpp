@@ -50,7 +50,6 @@ ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
 void Action::registerKeywords( Keywords& keys ) {
   plumed_assert( keys.size()==0 );
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
-  keys.add("hidden", "CALLER", "the action from which this command is run - usually this is plumedmain");
   keys.reserve("optional","UPDATE_FROM","Only update this action from this time");
   keys.reserve("optional","UPDATE_UNTIL","Only update this action until this time");
   keys.reserve("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
@@ -59,7 +58,6 @@ void Action::registerKeywords( Keywords& keys ) {
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
-  caller("plumedmain"),
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
   active(false),
@@ -81,7 +79,6 @@ Action::Action(const ActionOptions&ao):
   comm.Bcast(replica_index,0);
 
   if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
-  if ( keywords.exists("CALLER") ) { parse("CALLER",caller); }
 
   if(label.length()==0) {
     std::string s; Tools::convert(plumed.getActionSet().size(),s);

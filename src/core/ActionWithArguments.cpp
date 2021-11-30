@@ -24,7 +24,6 @@
 #include "ActionToPutData.h"
 #include "ActionAtomistic.h"
 #include "ActionSetup.h"
-#include "ParallelPlumedActions.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -282,7 +281,6 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
         if( arguments[i]->isConstant() || as ) { arguments[i]->buildDataStore( getLabel() ); } else { storing=true; break; }
     }
     if( !arguments[i]->isConstant() ) { allconstant=false; }
-    if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }
   if( allconstant ) storing=true;
   std::string fullname,name;
@@ -544,7 +542,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
         }
         arg_ends.push_back( arg.size() ); log.printf("\n");
         if( i==1 ) narg = nargt;
-        else if( narg!=nargt && getName()!="CONCATENATE" && getName()!="MATHEVAL" && getName()!="CUSTOM" && getName()!="DIFFERENCE" && getName()!="DOT" && getName()!="TORSIONS_MATRIX" ) {
+        else if( narg!=nargt && getName()!="CONCATENATE" && getName()!="MATHEVAL" && getName()!="CUSTOM" && getName()!="DIFFERENCE" && getName()!="DOT" && getName()!="TORSIONS_MATRIX" && getName()!="RMSD_CALC" ) {
            error("mismatch between number of arguments specified for different numbered ARG values");
         }
       }
@@ -722,8 +720,6 @@ void ActionWithArguments::setForceOnScalarArgument(const unsigned n, const doubl
 
 void ActionWithArguments::setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av ) {
   plumed_dbg_massert( start<=forces.size(), "not enough forces have been saved" );
-  ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( av );
-  if( pp ) pp->setForcesOnPlumedActions( forces, start ); 
   ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( av );
   if( aarg ) aarg->setForcesOnArguments( 0, forces, start );
   ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( av );

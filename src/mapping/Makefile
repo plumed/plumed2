@@ -1,4 +1,4 @@
-USE=core tools cltools function setup 
+USE=core tools colvar cltools function setup 
 
 # generic makefile
 include ../maketools/make.module

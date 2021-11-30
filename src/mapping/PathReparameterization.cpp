@@ -19,6 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "core/ActionWithValue.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -81,7 +82,6 @@ path_projector(this)
 {
   parse("MAXCYLES",maxcycles); parse("TOL",TOL); 
   log.printf("  running till change is less than %f or until there have been %d optimization cycles \n", TOL, maxcycles);
-  for(unsigned i=0;i<path_projector.getNumberOfFrames();++i) log.printf("  %dth reference configuration is in action %s \n", i, path_projector.getReferenceLabel(i).c_str() );
   len.resize( path_projector.getNumberOfFrames()  ); sumlen.resize( path_projector.getNumberOfFrames() ); sfrac.resize( path_projector.getNumberOfFrames() );
   std::vector<unsigned> fixed; parseVector("FIXED",fixed);
   if( fixed.size()==1 ) {
@@ -110,8 +110,7 @@ bool PathReparameterization::loopEnd( const int& index, const int& end, const in
 }
 
 double PathReparameterization::computeSpacing( const unsigned& ifrom, const unsigned& ito ) {
-  Tensor box( plumed.getAtoms().getPbc().getBox() );
-  path_projector.getDisplaceVector( ifrom, ito, box, data ); 
+  path_projector.getDisplaceVector( ifrom, ito, data ); 
   double length=0; for(unsigned i=0;i<data.size();++i) length += data[i]*data[i]; 
   return sqrt( length );
 }
@@ -158,7 +157,6 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
     }
 
     // Now compute positions of new nodes in path
-    Tensor box( plumed.getAtoms().getPbc().getBox() );
     for(int i=istart+incr; loopEnd(i,cfin,incr)==false; i+=incr) {
       int k = istart;
       while( !((sumlen[k] < sfrac[i]) && (sumlen[k+incr]>=sfrac[i])) ) {
@@ -171,7 +169,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
       // Copy the reference configuration to the row of a matrix
       path_projector.getReferenceConfiguration( k, data );
       for(unsigned j=0;j<data.size();++j) newmatrix(i,j) = data[j]; 
-      path_projector.getDisplaceVector( k, k+incr, box, data );
+      path_projector.getDisplaceVector( k, k+incr, data );
       // Shift the reference configuration by this ammount
       for(unsigned j=0;j<data.size();++j) newmatrix(i,j) += dr*data[j];
     }

@@ -157,7 +157,7 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
          if(ab) { ab->task_start = task_counts[k]; k++; } 
      }
      // Recalculate the action
-     if( p->isActive() && p->getCaller()=="plumedmain" ) {
+     if( p->isActive() ) {
          ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
          if(av) { 
            av->clearInputForces(); av->clearDerivatives();

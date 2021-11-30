@@ -635,14 +635,10 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
 
-  // Check if we need to store stuff
-  bool matrix=wasperformed;
-  for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ) { matrix=false; break; }
-  }
-  if( matrix ) {
+  if( wasperformed ) {
     unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
     for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ) continue;
       unsigned matindex = values[i]->getPositionInMatrixStash();;
       if( values[i]->hasForce ) {
         unsigned sind = values[i]->streampos, find = col_stash_index;

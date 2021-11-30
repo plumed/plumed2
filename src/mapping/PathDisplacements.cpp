@@ -23,6 +23,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "tools/Matrix.h"
 #include "PathProjectionCalculator.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
@@ -179,8 +180,7 @@ void PathDisplacements::update() {
   unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; } 
 
   // Calculate the dot product of v1 with v2
-  Tensor box( plumed.getAtoms().getPbc().getBox() );
-  path_projector.getDisplaceVector( ifrom, ito, box, displace_v );
+  path_projector.getDisplaceVector( ifrom, ito, displace_v );
   double v2v2=0, v1v2=0; unsigned kclose1 = iclose1*ncols;
   for(unsigned i=0;i<displace_v.size();++i) { v2v2 += displace_v[i]*displace_v[i]; v1v2 += displace_v[i]*getPntrToArgument(0)->get(kclose1+i); }
 

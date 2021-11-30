@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/PDB.h"
+#include "RMSD.h"
 
 using namespace std;
 
@@ -61,27 +62,22 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string reference; parse("REFERENCE",reference);
+  std::string reference; parse("REFERENCE",reference); 
   // Create the reference object
-  readInputLine( getShortcutLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
+  RMSD::createReferenceConfiguration( getShortcutLabel() + "_ref", reference, plumed, 1 ); 
+  // Create the object that holds the atomic positions by reading the first frame
+  FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb; if(!fp) error("could not open reference file " + reference );
+  bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) plumed_merror("missing file " + reference );
+  RMSD::createPosVector( getShortcutLabel() + "_pos", pdb, this );
   // And now create the rmsd object
-  std::string rmsd_line =  getShortcutLabel() + ": RMSD_CALC DISPLACEMENT SQUARED REFERENCE_ATOMS=" + getShortcutLabel() + "_ref";
-  // Read the reference pdb file
-  FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb;
-  if(!fp) error("could not open reference file " + reference );
-  bool do_read=pdb.readFromFilepointer(fp,false,0.1);
-  if( !do_read ) plumed_merror("missing file " + reference );
-  // Get the atom numbers
-  std::vector<AtomNumber> at_ind( pdb.getAtomNumbers() );
-  std::string atnum; Tools::convert( at_ind[0].serial(), atnum ); rmsd_line += " ATOMS=" + atnum;
-  for(unsigned i=1;i<at_ind.size();++i){ Tools::convert( at_ind[i].serial(), atnum ); rmsd_line += "," + atnum; }
+  std::string rmsd_line =  getShortcutLabel() + ": RMSD_CALC DISPLACEMENT SQUARED ARG2=" + getShortcutLabel() + "_ref ARG1=" + getShortcutLabel() + "_pos";
+  // Now create the RMSD object
+  std::string mtype; parse("TYPE",mtype); readInputLine( rmsd_line + " TYPE=" + mtype );
+  // Get the displace stuff
   std::vector<double> displace( pdb.getBeta() ); double dtot = 0;
   for(unsigned i=0;i<displace.size();++i) dtot += displace[i];
-  for(unsigned i=0;i<displace.size();++i) displace[i] = displace[i] / dtot;
-  // Now create the RMSD object
-  std::string mtype; parse("TYPE",mtype); bool nopbc; parseFlag("NOPBC",nopbc);
-  if( nopbc ) readInputLine( rmsd_line + " NOPBC TYPE=" + mtype );
-  else readInputLine( rmsd_line + " TYPE=" + mtype );
+  for(unsigned i=0;i<displace.size();++i) displace[i] = displace[i] / dtot;  
+
   // Now read in the directions and create matheval objects to compute the pca components
   unsigned nfram=1;
   while( do_read ) {
@@ -114,10 +110,8 @@ PCAVars::PCAVars( const ActionOptions& ao ):
         }
         // Read in eigenvector
         readInputLine( getShortcutLabel() + "_peig-" + num + ": CONSTANT_VALUE VALUES=" + pvec );
-        // Multiply displacement by eigevector  
-        readInputLine( getShortcutLabel() + "_vprod-" + num + ": CUSTOM ARG1=" + getShortcutLabel() + "_peig-" + num + " ARG2=" + getShortcutLabel() + ".disp FUNC=x*y PERIODIC=NO");
-        // And sum displacement times vector
-        readInputLine( getShortcutLabel()  + "_eig-" + num + ": SUM ARG=" + getShortcutLabel() + "_vprod-" + num + " PERIODIC=NO");
+        // And calculate dot product
+        readInputLine( getShortcutLabel()  + "_eig-" + num + ": DOT DIAGONAL_ELEMENTS_ONLY ARG2=" + getShortcutLabel() + "_peig-" + num + " ARG1=" + getShortcutLabel() + ".disp");
     } else { break; }
   }
   std::fclose(fp);

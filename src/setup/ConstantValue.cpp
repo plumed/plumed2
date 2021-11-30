@@ -23,7 +23,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
-#include "tools/PDB.h"
 
 using namespace std;
 
@@ -50,8 +49,7 @@ void ConstantValue::registerKeywords( Keywords& keys ) {
   keys.add("optional","FILE","an input file containing the matrix");
   keys.add("compulsory","NROWS","0","the number of rows in your input matrix");
   keys.add("compulsory","NCOLS","0","the number of columns in your matrix");
-  keys.add("optional","VALUES","the elements of your matrix");
-  keys.add("optional","NAME","if you are reading in a pdb file the name of the variable you would like to read");
+  keys.add("optional","VALUES","the numbers that are in your constant value");
 }
 
 ConstantValue::ConstantValue(const ActionOptions&ao):
@@ -59,20 +57,9 @@ ConstantValue::ConstantValue(const ActionOptions&ao):
   ActionSetup(ao),
   ActionWithValue(ao)
 {
-  std::string fname, vname; parse("FILE",fname); parse("NAME",vname); 
+  std::string fname, vname; parse("FILE",fname); 
   std::vector<unsigned> shape; std::vector<double> vals;
-  if( vname.length()>0 ) {
-      if( fname.length()==0 ) error("if using NAME option then you need to specify a pdb input file");
-      FILE* fp=fopen(fname.c_str(),"r"); bool do_read=true; double fake_unit=0.1;
-      if(!fp) error("could not open reference file " + fname);
-      while ( do_read ) {
-         PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
-         if( !do_read) break ; double val; 
-         if( !mypdb.getArgumentValue(vname,val) ) error("did not find argument " + vname + " in file named " + fname );
-         vals.push_back( val );
-      }
-      shape.resize(1); shape[0] = vals.size();
-  } else if( fname.length()>0 ) {
+  if( fname.length()>0 ) {
        IFile mfile; mfile.open(fname);
        // Read in first line
        std::vector<std::string> words; unsigned nline=0;

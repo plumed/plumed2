@@ -39,39 +39,22 @@ PLUMED_REGISTER_ACTION(GeometricPathShortcut,"GPATH")
 void GeometricPathShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
-  keys.addFlag("UNFIX_FRAMES",false,"allows us to not fix frames for paths");
 }
 
 GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::vector<std::string> refactions; std::string mtype, refname;
+  std::string reference_data; std::string refname, metric;
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
   // Create list of reference configurations that PLUMED will use
-  Path::readInputFrames( mtype, refname, true, this, refactions );
+  Path::readInputFrames( argnames, refname, true, this, reference_data, metric );
   // Now get coordinates on spath
-  std::string pname, coord_str, ref_str; parse("PROPERTY",pname); 
-  FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
-  while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
-      if( !do_read ) break ;
-
-      if( nfram==0 ) { ref_str = " REFFRAMES=" + refactions[nfram]; } else { ref_str += "," + refactions[nfram]; }
-      if( pname.length()>0 ) {
-          double pval; std::string propstr;
-          if( !mypdb.getArgumentValue(pname, pval) ) plumed_merror("could not find property named " + pname + " in input file " + refname );
-          Tools::convert( pval, propstr ); 
-          if( nfram==0 ) { coord_str = "COORDINATES=" + propstr; } else { coord_str += "," + propstr; }
-      } else {
-          std::string propstr; Tools::convert( nfram+1, propstr );
-          if( nfram==0 ) { coord_str = "COORDINATES=" + propstr; } else { coord_str += "," + propstr; }
-      }
-      nfram++;
-  }
-  // Now setup action to compute distances between configurations
-  std::string metric; unsigned nn = Path::getNumberOfFramesAndMetric( mtype, refname, metric );
-  // Create action that computes the geometric path variables
-  readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + coord_str + ref_str + metric ); 
+  std::vector<std::string> pnames; parseVector("PROPERTY",pnames); Path::readPropertyInformation( pnames, getShortcutLabel(), refname, this );
+  // Create action that computes the geometric path variablesa
+  std::string propstr = getShortcutLabel() + "_ind"; if( pnames.size()>0 ) propstr = pnames[0] + "_ref";
+  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "}"); 
+  else readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "}");
 }
 
 

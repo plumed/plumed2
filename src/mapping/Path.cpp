@@ -24,7 +24,7 @@
 #include "core/ActionWithValue.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "setup/DRMSD.h"
+#include "colvar/RMSD.h"
 #include "tools/PDB.h"
 
 namespace PLMD {
@@ -114,6 +114,7 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
            "\\ref dists");
   keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 Path::Path( const ActionOptions& ao ):
@@ -125,8 +126,9 @@ Path::Path( const ActionOptions& ao ):
   if( getName()=="PATH") { properties.resize(1); }
   else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
   // Create list of reference configurations that PLUMED will use
-  std::string mtype, refname; std::vector<std::string> refactions;
-  readInputFrames( mtype, refname, false, this, refactions );
+  std::string refname, refargs, metric; 
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
+  readInputFrames( argnames, refname, false, this, refargs, metric );
   // Now create all other parts of the calculation
   std::string lambda; parse("LAMBDA",lambda);
   // Now create MATHEVAL object to compute exponential functions
@@ -136,14 +138,7 @@ Path::Path( const ActionOptions& ao ):
   // Now compte zpath variable
   readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
   // Now get coefficients for properies for spath
-  if( pnames.size()>0 ) {
-      for(unsigned i=0;i<pnames.size();++i) readInputLine( pnames[i] + "_ref: CONSTANT_VALUE FILE=" + refname + " NAME=" + pnames[i] );
-  } else {
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_weights" );
-      unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
-      for(unsigned i=1;i<nfram;++i) { std::string num; Tools::convert( i+1, num ); indices += "," +num; }
-      readInputLine( getShortcutLabel() + "_ind: CONSTANT_VALUE " + indices );
-  }
+  readPropertyInformation( pnames, getShortcutLabel(), refname, this );
   // Now create COMBINE objects to compute numerator of path
   for(unsigned i=0;i<properties.size();++i) {
       if( pnames.size()>0 ) {
@@ -164,156 +159,94 @@ std::string Path::fixArgumentName( const std::string& argin ) {
   return argout;
 }
 
-void Path::readInputFrames( std::string& mtype, std::string& refname, const bool& geometric, 
-                            ActionShortcut* action, std::vector<std::string>& refactions ) {
-  std::vector<std::string> argnames; action->parseVector("ARG",argnames); std::vector<double> coeff;
-  action->parse("TYPE",mtype); bool unfix=false; 
-  if( action->getName()=="GPATH" ) action->parseFlag("UNFIX_FRAMES",unfix); 
-  if( argnames.size()>0 && mtype=="OPTIMAL-FAST" ) mtype="EUCLIDEAN";
-  if( mtype=="EUCLIDEAN") action->parseVector("COEFFICIENTS",coeff);
+void Path::readArgumentFromPDB( const std::string& argname, const std::string& lab, const std::string& fname, PlumedMain& plmd, const unsigned number ) {
+  FILE* fp=std::fopen(fname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; // N.B. units don't matter as we are not reading positions
+  if(!fp) plumed_merror("could not open reference file " + fname); std::string strvals; unsigned nframes=0;
 
-  action->parse("REFERENCE",refname); std::string unfix_str; if(unfix) unfix_str = " UNFIX";
-  std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
-  FILE* fp=std::fopen(refname.c_str(),"r"); std::string scut_lab = action->getShortcutLabel();
-  if(!fp) action->error("could not open reference file " + refname );
-  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; std::string argstr; 
-  if( argnames.size()>0 ) {
-      argstr=" ARG=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) argstr += "," + argnames[i];
+  while ( do_read ) {
+     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+     if( !do_read ) break ; double val;
+     if( !mypdb.getArgumentValue(argname,val) ) plumed_merror("did not find argument " + argname + " in file named " + fname );
+     if( nframes+1==number || number==0 ) {
+         if( strvals.length()==0 ) Tools::convert( val, strvals ); 
+         else { std::string rnum; Tools::convert( val, rnum ); strvals += "," + rnum; }
+     }
+     nframes++;
   }
-  while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
-      // Break if we are done
-      if( !do_read ) break ;
-      std::string num, stri; Tools::convert( nfram+1, num );
-      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr + unfix_str );
-      if( argnames.size()>1 ) {
-          for(unsigned i=0; i<argnames.size(); ++i) {
-              std::string cnum; Tools::convert( i+1, cnum ); 
-              action->readInputLine( scut_lab + "_ref" + num + "_" + fixArgumentName(argnames[i]) + ": SELECT_COMPONENTS ARG=" + scut_lab + "_ref" + num + " COMPONENTS=" + cnum );
-          }
-      }
-
-      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
-          if( nfram==0 ) {
-              indices.resize( mypdb.getAtomNumbers().size() );
-              for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
-              alig.resize( mypdb.getOccupancy().size() );
-              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
-              disp.resize( mypdb.getBeta().size() );
-              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i]; 
-          } else {
-              if( indices.size()!=mypdb.getAtomNumbers().size() ) plumed_merror("mismatch between numbers of atoms in frames of path");
-              for(unsigned i=0;i<indices.size();++i) {
-                  if( indices[i]!=mypdb.getAtomNumbers()[i] ) plumed_merror("mismatch between atom numbers in frames of path");
-                  if( alig[i]!=mypdb.getOccupancy()[i] ) plumed_merror("mismatch between occupancies in frames of path");
-                  if( disp[i]!=mypdb.getBeta()[i] ) plumed_merror("mismatch between beta values in frames of path");
-              }
-          }
-          refactions.push_back( scut_lab + "_ref" + num );
-      } else if( mtype.find("DRMSD")!=std::string::npos ) {
-          distances_str = setup::DRMSD::getDistancesString( action->plumed, scut_lab + "_ref" + num, mtype );
-          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
-          refactions.push_back( scut_lab + "_refv" + num );
-      } else if( argnames.size()==0 ) {
-          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
-          refactions.push_back( scut_lab + "_refv" + num );
-      } else {
-          refactions.push_back( scut_lab + "_ref" + num ); 
-      }
-      nfram++; if( refactions.size()!=nfram ) action->error("mismatch between number of reference action labels and number of frames");
-  }
-  unsigned nquantities=0;
-  if( mtype!="OPTIMAL-FAST" && mtype!="OPTIMAL" && mtype!="SIMPLE" && mtype!="EUCLIDEAN" ) { 
-      if( mtype.find("DRMSD")!=std::string::npos ) action->readInputLine( scut_lab + "_instantaneous: DISTANCE " + distances_str );
-      else action->readInputLine( scut_lab + "_instantaneous: " + mtype );
-      ActionWithValue* aval = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( scut_lab + "_instantaneous" );
-      nquantities = aval->copyOutput(0)->getNumberOfValues();
-  }
-  // Now create PLUMED object that computes all distances
-  std::string ref_line =  scut_lab + "_data: PLUMED_VECTOR ";
-  for(unsigned i=0;i<nfram;++i) {
-      std::string num; Tools::convert(i+1, num );
-      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-          ref_line += " INPUT" + num + "={RMSD_CALC REFERENCE_ATOMS=" + scut_lab + "_ref" + num;
-          if( geometric ) ref_line += " DISPLACEMENT";
-          std::string atnum; Tools::convert( indices[0].serial(), atnum ); ref_line += " ATOMS=" + atnum;
-          for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); ref_line += "," + atnum; } 
-          // Get the align values 
-          std::string anum; Tools::convert( alig[0], anum ); ref_line += " ALIGN=" + anum;
-          for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); ref_line += "," + anum; }
-          // Get the displace values
-          std::string dnum; Tools::convert( disp[0], dnum ); ref_line += " DISPLACE=" + dnum;
-          for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); ref_line += "," + dnum; }
-          // Set the type
-          ref_line += " TYPE=" + mtype + " SQUARED}";
-      } else {
-          ref_line += "INPUT" + num + "={"; 
-          if( mtype!="EUCLIDEAN" ) {
-            ref_line += scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + scut_lab + "_instantaneous ARG2=" + refactions[i];
-          } else {
-            ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( refactions[i] );
-            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues();
-            if( argnames.size()==1 ) ref_line += scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + argnames[0] + " ARG2=" + refactions[i];
-            else { 
-                for(unsigned j=0; j<argnames.size(); ++j) {
-                    ref_line += scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[j]) + ": DIFFERENCE ARG1=" + argnames[j] + " ARG2=" + refactions[i] + "_" + fixArgumentName(argnames[j]) + " ; ";
-                }
-                ref_line += scut_lab + "_diff" + num + ": CONCATENATE ARG=" + scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[0]); 
-                for(unsigned j=1;j<argnames.size();++j) ref_line += "," + scut_lab + "_diff" + num + "_" + fixArgumentName(argnames[j]); 
-            }
-          }
-          if( coeff.size()>0 ) {
-              if( geometric ) action->error("having coefficients with geometric path makes no sense");
-              if( coeff.size()!=nquantities ) action->error("mismatch between number of coefficients and number of values");
-              std::string str_coeff; Tools::convert( coeff[0], str_coeff); 
-              ref_line +=  "; " + scut_lab + "_coeff" + num + ": CONSTANT_VALUE VALUES=" + str_coeff;
-              for(unsigned i=1;i<nquantities;++i) { Tools::convert( coeff[i], str_coeff); ref_line += "," + str_coeff; } 
-              ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " ARG2=" + scut_lab + "_coeff" + num + " FUNC=y*y*x*x PERIODIC=NO";
-          } else if( !geometric ) ref_line += "; " + scut_lab + "_diff_sq" + num + ": CUSTOM ARG1=" + scut_lab + "_diff" + num + " FUNC=x*x PERIODIC=NO";
-          if( mtype=="DRMSD" && !geometric ) ref_line += "; MEAN ARG=" + scut_lab + "_diff_sq" + num + " PERIODIC=NO } "; 
-          else if( !geometric ) ref_line += "; SUM ARG=" + scut_lab + "_diff_sq" + num + " PERIODIC=NO } "; 
-          else ref_line += "} ";
-      } 
-  }
-  action->readInputLine( ref_line ); 
+  plumed_assert( strvals.length()>0 ); plmd.readInputLine( lab + ": CONSTANT_VALUE VALUES=" + strvals );
 }
 
-unsigned Path::getNumberOfFramesAndMetric( const std::string& mtype, const std::string& reffile, std::string& metric ) {
-  std::vector<AtomNumber> indices; std::vector<double> alig, disp; 
-  FILE* fp=std::fopen(reffile.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nframes = 0;
-  while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
-      if( !do_read ) break ;
-      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-          indices.resize( mypdb.getAtomNumbers().size() );
-          for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
-          alig.resize( mypdb.getOccupancy().size() );
-          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i]; 
-          disp.resize( mypdb.getBeta().size() );
-          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
-      }
-      nframes++;
-  }   
-  // Now setup action to compute distances between configurations
-  if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-      std::string atnum; Tools::convert( indices[0].serial(), atnum ); metric  = " METRIC={RMSD_CALC REFERENCE_ATOMS=" + atnum;
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert(indices[i].serial(), atnum); metric += "," + atnum; }
-      unsigned natoms=indices[0].serial();
-      for(unsigned i=1;i<indices.size();++i) {
-          if( indices[i].serial()>natoms ) natoms = indices[i].serial();
-      }
-      Tools::convert( natoms+indices[0].serial(), atnum ); metric += " ATOMS=" + atnum;
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert(natoms+indices[i].serial(), atnum); metric += "," + atnum; }
-      std::string anum; Tools::convert( alig[0], anum ); metric += " ALIGN=" + anum;
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); metric += "," + anum; }
-      // Get the displace values
-      std::string dnum; Tools::convert( disp[0], dnum ); metric += " DISPLACE=" + dnum;
-      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); metric += "," + dnum; }
-      metric += " TYPE=" + mtype + " DISPLACEMENT}";
+void Path::readPropertyInformation( const std::vector<std::string>& pnames, const std::string& lab, const std::string& refname, ActionShortcut* action ) {
+  if( pnames.size()>0 ) {
+      for(unsigned i=0;i<pnames.size();++i) readArgumentFromPDB( pnames[i], pnames[i] + "_ref", refname, action->plumed ); 
   } else {
-      metric = " METRIC={DIFFERENCE ARG1=arg2 ARG2=arg1}";
+      ActionWithValue* av=action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( lab + "_data" );
+      unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
+      for(unsigned i=1;i<nfram;++i) { std::string num; Tools::convert( i+1, num ); indices += "," + num; }
+      action->readInputLine( lab + "_ind: CONSTANT_VALUE " + indices );
+  }    
+}
+
+Value* Path::getValueWithLabel( ActionShortcut* action, const std::string& name ) {
+  std::size_t dot=name.find("."); ActionWithValue* vv=action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
+  if( !vv ) action->error("cannot find value with name " + name );
+  if( dot==std::string::npos ) return vv->copyOutput(0);
+  if( !vv->exists(name) ) action->error("cannot find value with name " + name );
+  return vv->copyOutput( name );
+}
+
+void Path::readInputFrames( const std::vector<std::string>& argnames, std::string& refname, const bool& geometric, 
+                            ActionShortcut* action, std::string& refargs, std::string& metric ) {
+  action->parse("REFERENCE",refname); 
+
+  if( argnames.size()>0 ) {
+     // Check that all args are scalars
+     for(unsigned i=0; i<argnames.size(); ++i) {
+         if( getValueWithLabel( action, argnames[i] )->getRank()>0 ) action->error("arguments in path must be scalars and not vectors or matrices");
+     }
+     // Create the list of reference values for each argument
+     for(unsigned i=0; i<argnames.size(); ++i) {
+         if( i==0 ) refargs = fixArgumentName(argnames[i]) + "_ref"; else refargs += "," + fixArgumentName(argnames[i]) + "_ref";
+         readArgumentFromPDB( argnames[i], fixArgumentName(argnames[i]) + "_ref", refname, action->plumed );
+     }
+     // Turn the vectors containing the arganems into comma separated lists
+     std::string full_args=argnames[0], full_ref=fixArgumentName(argnames[0]) + "_ref";
+     for(unsigned i=1;i<argnames.size(); ++i) { full_args += "," + argnames[i]; full_ref += "," + fixArgumentName(argnames[i]) + "_ref"; }
+     std::string comname="EUCLIDEAN_DISTANCE SQUARED"; std::string coeffstr; action->parse("COEFFICIENTS",coeffstr); 
+     if( coeffstr.length()>0 ) {
+         action->readInputLine( action->getShortcutLabel() + "_coeff: CONSTANT_VALUE VALUES=" + coeffstr );
+         action->readInputLine( action->getShortcutLabel() + "_coeff2: CUSTOM ARG=" + action->getShortcutLabel() + "_coeff FUNC=x*x PERIODIC=NO");
+         comname = "NORMALIZED_EUCLIDEAN_DISTANCE SQUARED METRIC=" + action->getShortcutLabel() + "_coeff2";
+     }
+     // We have to calculate the displacements if we are doing a geometric path
+     if( geometric ) { metric = "DIFFERENCE"; comname = "DISPLACEMENT"; }
+     // And evaluate the Euclidean distance from this set of reference points
+     action->readInputLine( action->getShortcutLabel() + "_data: " + comname + " ARG1=" + full_args + " ARG2=" + full_ref ); 
+     return;
   }
-  return nframes;
+  std::string mtype; action->parse("TYPE",mtype);
+  if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
+     // Read the reference positions in from the input file
+     refargs = action->getShortcutLabel() + "_ref"; colvar::RMSD::createReferenceConfiguration( refargs, refname, action->plumed ); 
+     // Now create the vector that contains the atoms
+     FILE* fp=std::fopen(refname.c_str(),"r"); if(!fp) action->error("could not open reference file " + refname );
+     double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit); 
+     colvar::RMSD::createPosVector( action->getShortcutLabel() + "_pos", mypdb, action );
+     // Create align and displace
+     std::string num, align_str, displace_str; Tools::convert( mypdb.getOccupancy()[0], align_str ); Tools::convert( mypdb.getBeta()[0], displace_str );
+     for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getOccupancy()[j], num ); align_str += "," + num; Tools::convert( mypdb.getBeta()[0], num ); displace_str += "," + num; }
+     // And create the RMSD object
+     std::string unfix_str; if( action->getName()=="ADAPTIVE_PATH" ) unfix_str = " UNFIX"; 
+     std::string comname = "RMSD_CALC SQUARED " + unfix_str; if( geometric ) { comname = "RMSD_CALC DISPLACEMENT " + unfix_str; metric = comname + " TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str; }
+     action->readInputLine( action->getShortcutLabel() + "_data: " + comname + " TYPE=" + mtype + " ARG1=" + action->getShortcutLabel() + "_pos ARG2=" + action->getShortcutLabel() + "_ref ALIGN=" + align_str + " DISPLACE=" + displace_str ); 
+     return;
+  }
+  if( mtype.find("DRMSD")!=std::string::npos ) {
+     if( geometric ) action->error("DRMSD not available with GPATH shortcut");
+     action->readInputLine( action->getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + mtype + " REFERENCE=" + refname );
+     return;
+  }
+  action->error("metric type " + mtype + " has not been implemented");
 }
 
 }

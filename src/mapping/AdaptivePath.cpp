@@ -110,38 +110,45 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  // Create the geometric path object to compute distances
-  std::string reffile, mtype; parse("REFERENCE",reffile); parse("TYPE",mtype);
-  std::vector<std::string> argnames; parseVector("ARG",argnames); std::string additional_input="";
-  if( argnames.size()>0 ) {
-      additional_input=" ARG=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) additional_input += "," + argnames[i];
-      if( mtype=="OPTIMAL_FAST" ) mtype="EUCLIDEAN";
-  }
-  std::string pname; parse("PROPERTY",pname);
-  if( pname.length()>0 ) additional_input += " PROPERTY=" + pname;
-  readInputLine( getShortcutLabel() + ": GPATH UNFIX_FRAMES REFERENCE=" + reffile + " TYPE=" + mtype + additional_input );
-
-  // Get the number of frames in the path
-  std::string metric; unsigned nframes = Path::getNumberOfFramesAndMetric( mtype, reffile, metric );
+  // Read in the arguments
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
+  std::string reference_data; std::string refname, metric;
+  // Create list of reference configurations that PLUMED will use
+  Path::readInputFrames( argnames, refname, true, this, reference_data, metric );
+  // Now get coordinates on spath
+  std::vector<std::string> pnames; parseVector("PROPERTY",pnames); Path::readPropertyInformation( pnames, getShortcutLabel(), refname, this );
+  // Create action that computes the geometric path variablesa
+  std::string propstr = getShortcutLabel() + "_ind"; if( pnames.size()>0 ) propstr = pnames[0] + "_ref";
+  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "}");
+  else readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "}");
 
   // Create the object to accumulate the average path displacements
-  std::string update, halflife; parse("HALFLIFE",halflife); parse("UPDATE",update);
-  std::string refframes = " REFFRAMES=" + getShortcutLabel() + "_ref1"; 
-  for(unsigned i=1;i<nframes;++i){ std::string num; Tools::convert(i+1,num); refframes += "," + getShortcutLabel() + "_ref" + num; }
-  readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data HALFLIFE=" + halflife + " CLEAR=" + update + metric + refframes );
+  std::string update, halflife; parse("HALFLIFE",halflife); parse("UPDATE",update); std::string refframes = " REFERENCE=" + getShortcutLabel() + "_pos"; 
+  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={" + metric + "} REFERENCE=" + reference_data );
+  else readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data.disp HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={" + metric + "} REFERENCE=" + reference_data );
 
   // Create the object to update the path
   std::string fixedn; parse("FIXED",fixedn);
-  if( fixedn.length()>0 ) readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + metric + refframes );
-  else readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp STRIDE=" + update + metric + refframes );
+  if( fixedn.length()>0 ) readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " METRIC={" + metric + "} REFERENCE=" + reference_data );
+  else readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp STRIDE=" + update + " METRIC=" + metric + "} REFERENCE=" + reference_data );
 
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);
   if( wfilename.length()>0 ) {
+      // This just gets the atom numbers for output
+      std::string atomstr;
+      if( argnames.size()==0 ) {
+          FILE* fp=std::fopen(refname.c_str(),"r"); double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+          std::string num; Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
+          for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getAtomNumbers()[j].serial(), num ); atomstr += "," + num; }
+      } 
+
       if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
       std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt); 
-      for(unsigned i=0;i<nframes;++i) { std::string num; Tools::convert( i+1, num ); pframes += " CONFIG" + num + "=" + getShortcutLabel() + "_ref" + num; }
-      readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + pframes );
+      if( argnames.size()>0 ) {
+          std::string argstr = argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argstr += "," + argnames[i]; 
+          readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ARG_NAMES=" + argstr );
+      } else readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ATOM_INDICES=" + atomstr );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }

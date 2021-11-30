@@ -22,6 +22,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
 #include "PathProjectionCalculator.h"
 
 namespace PLMD {
@@ -29,7 +30,6 @@ namespace mapping {
 
 class GeometricPath : public ActionWithValue, public ActionWithArguments {
 private:
-  std::vector<double> pcoords;
   std::vector<double> forcesToApply;
   PathProjectionCalculator path_projector;
 public:
@@ -45,8 +45,7 @@ PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
 void GeometricPath::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); 
   ActionWithArguments::registerKeywords(keys); keys.use("ARG"); PathProjectionCalculator::registerKeywords(keys);
-  keys.add("compulsory","COORDINATES","a vector of coordinates describing the position of each point along the path.  The default "
-           "is to place these coordinates at 1, 2, 3, ...");
+  keys.add("compulsory","PROPERTY","the coordinates we are projecting these points onto");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
@@ -61,8 +60,9 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   done_over_stream=false; plumed_assert( !actionInChain() );
   if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
   // Get the coordinates in the low dimensional space
-  pcoords.resize( getPntrToArgument(0)->getShape()[0] ); parseVector("COORDINATES", pcoords );
-  for(unsigned i=0;i<pcoords.size();++i) log.printf("  projecting frame read in by action %s at %f \n", path_projector.getReferenceLabel(i).c_str(), pcoords[i] );
+  std::string pcoord; parse("PROPERTY", pcoord ); log.printf("  projecting onto vector of coordinates in %s \n", pcoord.c_str() ); 
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( pcoord ); plumed_assert( av );
+  std::vector<Value*> args( getArguments() ); args.push_back( av->copyOutput(0) ); requestArguments( args, false );
   // Create the values to store the output
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
@@ -96,16 +96,15 @@ void GeometricPath::calculate() {
   unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; }
 
   // And calculate projection of vector connecting current point to closest frame on vector connecting nearest two frames
-  Tensor box( plumed.getAtoms().getPbc().getBox() ); std::vector<double> displace;
-  path_projector.getDisplaceVector( ifrom, ito, box, displace );
+  std::vector<double> displace; path_projector.getDisplaceVector( ifrom, ito, displace );
   double v2v2=0, v1v2=0; k=ncols*iclose1;
   for(unsigned i=0;i<displace.size();++i) { v2v2 += displace[i]*displace[i]; v1v2 += displace[i]*getPntrToArgument(0)->get(k+i); }
 
   // This computes s value
-  double spacing = pcoords[iclose1] - pcoords[iclose2];
+  double spacing = getPntrToArgument(1)->get(iclose1) - getPntrToArgument(1)->get(iclose2);
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   double dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
-  double path_s = pcoords[iclose1] + spacing * dx;
+  double path_s = getPntrToArgument(1)->get(iclose1) + spacing * dx;
   Value* sp = getPntrToComponent(0); sp->set( path_s );
   if( !doNotCalculateDerivatives() ) {
       for(unsigned i=0;i<ncols;++i) {
@@ -115,7 +114,7 @@ void GeometricPath::calculate() {
   } 
 
   // This computes z value
-  path_projector.getDisplaceVector( iclose2, iclose1, box, displace ); double v4v4=0, proj=0; k=ncols*iclose1; 
+  path_projector.getDisplaceVector( iclose2, iclose1, displace ); double v4v4=0, proj=0; k=ncols*iclose1; 
   for(unsigned i=0;i<displace.size();++i) { v4v4 += displace[i]*displace[i]; proj += displace[i]*getPntrToArgument(0)->get(k+i); }
   double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj; path_z = sqrt(path_z);
   Value* zp = getPntrToComponent(1); zp->set( path_z );

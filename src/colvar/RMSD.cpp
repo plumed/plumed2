@@ -20,8 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "RMSD.h"
+#include "tools/PDB.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSetup.h"
+#include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -151,35 +155,90 @@ void RMSD::registerRMSD(Keywords& keys ) {
 }
 
 void RMSD::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
-  keys.add("atoms","REFERENCE_ATOMS","the atom numbers for the reference configuration");
-  keys.add("atoms","ATOMS","the atom numbers that you would like to consider");
+  Action::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); ActionWithValue::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
   keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
+  keys.addFlag("UNFIX",false,"this is used by adaptive path to make sure that the reference structures for the RMSD are kept up to date");
   RMSD::registerRMSD( keys );
   keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
 }
 
+void RMSD::createReferenceConfiguration( const std::string& lab, const std::string& input, PlumedMain& plumed, const unsigned number ) {
+  FILE* fp=std::fopen(input.c_str(),"r"); bool do_read=true; std::vector<double> vals;
+  if(!fp) plumed_merror("could not open reference file " + input); unsigned natoms=0, nframes=0;
+   
+  while ( do_read ) {
+     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+     if( !do_read && nframes>0 ) break ;
+
+     if( natoms==0 ) natoms = mypdb.getPositions().size();
+     else if( mypdb.getPositions().size()!=natoms ) plumed_merror("mismatch between sizes of reference configurations");
+
+     if( nframes+1==number || number==0 ) {
+         std::vector<double> align( mypdb.getOccupancy() ); 
+         double asum=0; for(unsigned i=0;i<align.size();++i) asum += align[i];
+         if( asum>epsilon ) {
+             double iasum = 1 / asum; for(unsigned i=0;i<align.size();++i) align[i] *= iasum;
+         } else {
+             double iasum = 1 / mypdb.size(); for(unsigned i=0;i<align.size();++i) align[i] = iasum;
+         }
+         Vector center; center.zero(); for(unsigned i=0;i<mypdb.getPositions().size();++i) center += align[i]*mypdb.getPositions()[i];       
+
+         for(unsigned i=0; i<mypdb.getPositions().size(); ++i) {
+             for(unsigned j=0; j<3; ++j) vals.push_back( mypdb.getPositions()[i][j] - center[j] );
+         }
+     }
+     nframes++;
+  }
+  std::fclose(fp); std::string rnum; plumed_assert( vals.size()>0 );
+  Tools::convert( vals[0], rnum ); std::string valstr = " VALUES=" + rnum; 
+  for(unsigned i=1; i<vals.size();++i) { Tools::convert( vals[i], rnum ); valstr += "," + rnum; }    
+  if( number==0 && nframes>1 ) {
+      std::string nc, nr; Tools::convert( nframes, nr ); Tools::convert( 3*natoms, nc ); 
+      plumed.readInputLine( lab + ": CONSTANT_VALUE NROWS=" + nr + " NCOLS=" + nc + valstr );
+  } else plumed.readInputLine( lab + ": CONSTANT_VALUE" + valstr );
+}
+
+void RMSD::createPosVector( const std::string& lab, const PDB& pdb, ActionShortcut* action ) { 
+  std::vector<AtomNumber> anum( pdb.getAtomNumbers() ); 
+  std::string num; Tools::convert( anum[0].serial(), num ); std::string pos_line = lab + ": POS2VECTOR ATOMS=" + num; 
+  for(unsigned i=1; i<anum.size(); ++i) { Tools::convert( anum[i].serial(), num ); pos_line += "," + num; }
+  bool nopbc; action->parseFlag("NOPBC",nopbc); if(nopbc) pos_line += " NOPBC"; action->readInputLine( pos_line );
+}
+
 RMSD::RMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  fixed_reference(true),
-  DRotDPos(3,3),
+  Action(ao),
+  ActionWithArguments(ao),
+  ActionWithValue(ao),
+  firsttime(true),
   squared(false),
-  nopbc(false),
   displacement(false)
 {
+  if( getNumberOfArguments()!=2 ) error("there should be exactly two arguments for this action");
   // Check for shorcut 
-  std::vector<AtomNumber> atoms_ref, atoms_conf;
-  bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
-  parseAtomList("REFERENCE_ATOMS",atoms_ref); parseAtomList("ATOMS",atoms_conf);
-  align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
-  displace.resize( atoms_ref.size() ); parseVector("DISPLACE",displace);
+  unsigned natoms, ntasks; bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
+  if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(1)->getRank()==1 ) {
+      natoms = getPntrToArgument(1)->getShape()[0] / 3; ntasks=1; myrmsd.resize(1);
+  } else if( getPntrToArgument(0)->getRank()==2 ) {
+      if( getPntrToArgument(1)->getRank()!=1 ) error("if first argument is a matrix second argument should be a vector");
+      natoms = getPntrToArgument(1)->getShape()[0] / 3; ntasks = getPntrToArgument(0)->getShape()[0]; myrmsd.resize(1);
+      if( getPntrToArgument(0)->getShape()[1]!=3*natoms ) error("mismatch between numbers of pos and reference");
+  } else {
+      if( getPntrToArgument(1)->getRank()!=2 ) error("if first argument is a vector second argument should be a matrix");
+      if( getPntrToArgument(0)->getRank()!=1 ) error("if first argument is a matrix second argument should be vector");
+      natoms = getPntrToArgument(0)->getShape()[0] / 3; ntasks = getPntrToArgument(1)->getShape()[0]; myrmsd.resize(ntasks);
+      if( getPntrToArgument(1)->getShape()[1]!=3*natoms ) error("mismatch between numbers of in pos and reference");
+  }
+  // Request the arguments
+  requestArguments( getArguments(), false ); bool unfix; parseFlag("UNFIX",unfix);
+  fixed_reference = getPntrToArgument(1)->getName()=="CONSTANT_VALUE" && !unfix;
+  align.resize( natoms ); parseVector("ALIGN",align);
+  displace.resize( natoms ); parseVector("DISPLACE",displace);
 
   type.assign("SIMPLE"); parse("TYPE",type);
-  parseFlag("SQUARED",squared); parseFlag("NOPBC",nopbc); parseFlag("DISPLACEMENT",displacement);
+  parseFlag("SQUARED",squared); parseFlag("DISPLACEMENT",displacement);
 
-  if( atoms_ref.size()!=atoms_conf.size() ) error("size mismatch between reference atoms and atoms involved");
   double wa=0, wd=0; sqrtdisplace.resize( displace.size() );
   for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
 
@@ -187,163 +246,168 @@ RMSD::RMSD(const ActionOptions&ao):
       double iwa = 1. / wa; 
       for(unsigned i=0; i<align.size(); ++i) align[i] *= iwa; 
   } else {
-      double iwa = 1. / atoms_ref.size();
+      double iwa = 1. / natoms;
       for(unsigned i=0; i<align.size(); ++i) align[i] = iwa; 
   } 
   if( wd>epsilon ) {
       if( unorm ) { wd = 1; } double iwd = 1. / wd; 
       for(unsigned i=0; i<align.size(); ++i) displace[i] *= iwd; 
   } else {
-      double iwd = 1. / atoms_ref.size();
+      double iwd = 1. / natoms;
       for(unsigned i=0; i<align.size(); ++i) displace[i] = iwd;
   }
   for(unsigned i=0; i<align.size(); ++i) sqrtdisplace[i] = sqrt(displace[i]);
+  forcesToApply.resize( 3*natoms ); 
 
   if( displacement ) {
-     std::vector<unsigned> shape(1); shape[0] = 3*atoms_conf.size();
-     addComponent( "disp", shape ); componentIsNotPeriodic("disp");
-     addComponentWithDerivatives( "dist" ); componentIsNotPeriodic("dist");
-     getPntrToComponent(0)->alwaysStoreValues();
-     forcesToApply.resize( atoms_conf.size() );
+     std::vector<unsigned> shape0(2), shape1(1); shape1[0] = shape0[0] = ntasks; shape0[1] = getPntrToArgument(0)->getShape()[0];
+     addComponent( "disp", shape0 ); componentIsNotPeriodic("disp");
+     if( ntasks==1 ) addComponentWithDerivatives( "dist" ); else addComponent( "dist", shape1 ); 
+     componentIsNotPeriodic("dist");
   } else {
-     addValueWithDerivatives(); setNotPeriodic();
+     if( ntasks==1 ) addValueWithDerivatives(); 
+     else { std::vector<unsigned> shape(1); shape[0]=ntasks; addValue( shape ); }
+     setNotPeriodic(); 
   }
-
-  std::vector<AtomNumber> myatoms( atoms_ref );
-  for(unsigned i=0;i<atoms_conf.size();++i) myatoms.push_back( atoms_conf[i] );
-  requestAtoms( myatoms ); pos.resize( atoms_ref.size() ); der.resize( atoms_ref.size() );
-  direction.resize( atoms_ref.size() ); ; centeredpos.resize( atoms_ref.size() ); 
-  centeredreference.resize( atoms_ref.size() );
-
-  // Determine if the reference configuration is fixed
-  for(unsigned i=0;i<atoms_conf.size();++i) {
-      if( atoms.isVirtualAtom(atoms_ref[i]) ) {
-          ActionSetup* as = dynamic_cast<ActionSetup*>( atoms.getVirtualAtomsAction(atoms_ref[i]) );
-          if( !as ) fixed_reference=false;
-      } else fixed_reference=false;
-  }
+  for(unsigned i=0;i<ntasks;++i) addTaskToList(i);
 
   // Print information to screen
-  log.printf("  calculating RMSD distance between two sets of %d atoms\n", getNumberOfAtoms() / 2);
-  if( fixed_reference ) {
-      // Check atoms in configuration we are measuring distance from are not in reference group
-      for(unsigned i=0;i<atoms_conf.size();++i) {
-          for(unsigned j=0;j<atoms_ref.size();++j) {
-              if( atoms_conf[i]==atoms_ref[j] ) error("atom out of range");
-          }
-      }
-      ActionSetup* as = dynamic_cast<ActionSetup*>( atoms.getVirtualAtomsAction(atoms_ref[0]) );
-      log.printf("  reference configuration is fixed and was read in by action with label %s \n", as->getLabel().c_str() );
-      retrieveAtoms(); setReferenceConfiguration();
-  }
+  if( ntasks==1 ) log.printf("  calculating RMSD distance between two sets of %d atoms in vectors %s and %s\n", natoms, getPntrToArgument(1)->getName().c_str(), getPntrToArgument(0)->getName().c_str() );
+  else if( getPntrToArgument(1)->getRank()==2 ) log.printf("  calculating RMSD distance of %d sets of atom positions in matrix with label %s from the %d atoms positions in vector with label %s \n", ntasks, getPntrToArgument(1)->getName().c_str(), natoms, getPntrToArgument(0)->getName().c_str()  );
+  else log.printf("  calculating RMSD distance of %d atom positions in vector with label %s from %d sets of atom positions in matrix with label %s \n", natoms, getPntrToArgument(1)->getName().c_str(), ntasks, getPntrToArgument(0)->getName().c_str() );
+  if( fixed_reference ) log.printf("  reference configuration is fixed\n");
 
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
   else      log.printf("  using periodic boundary conditions\n");
 }
 
-void RMSD::setReferenceConfiguration() {
-  if( !fixed_reference && !nopbc ) makeWhole( 0, pos.size() );
-  for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(i);
-
-  Vector center;
-  for(unsigned i=0; i<pos.size(); ++i) center+=pos[i]*align[i];
+void RMSD::setReferenceConfiguration( const unsigned& jconf ) {
+  unsigned natoms = getPntrToArgument(1)->getShape()[0] / 3; 
+  if( getPntrToArgument(1)->getRank()==2 ) natoms = getPntrToArgument(1)->getShape()[1] / 3;
+  Vector center; std::vector<Vector> pos( natoms );
+  for(unsigned i=0; i<pos.size(); ++i) { 
+      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(1)->get( 3*pos.size()*jconf + 3*i + j ); 
+      center+=pos[i]*align[i];
+  }
   for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
-  myrmsd.clear(); myrmsd.set(align,displace,pos,type,true,norm_weights);
+  myrmsd[jconf].clear(); myrmsd[jconf].set(align,displace,pos,type,true,norm_weights);
 }
 
 // calculator
 void RMSD::calculate() {
   // Align reference configuration and set rmsd data
-  if( !fixed_reference ) setReferenceConfiguration();
-  // Make the molecule whole
-  if( !nopbc ) makeWhole( pos.size(), getNumberOfAtoms() );
-  // Retrieve instantaneous configuration
-  for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
+  if( !fixed_reference || firsttime ) {
+      for(unsigned i=0; i<myrmsd.size();++i) setReferenceConfiguration(i);
+      firsttime=false;
+  }
+  // Now calculate all the RMSD values
+  runAllTasks();
+}
 
+bool RMSD::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  // Do not perform the loop here with a loop over other matrix elements
+  if( controller!=getLabel() ) return false;
+
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); unsigned jarg = index2 - getFullNumberOfTasks();
+  unsigned iatom = jarg / 3, icomp = jarg%3; std::vector<Vector>& pos( myvals.getFirstAtomVector() ); myvals.addValue( ostrn, pos[iatom][icomp] );
+  if( !doNotCalculateDerivatives() ) { myvals.addDerivative( ostrn, jarg, 1.0 ); myvals.updateIndex( ostrn, jarg ); }
+
+  return true;
+}
+
+void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
+  // Get the index of the rmsd we are calculating
+  unsigned rmsdno=0, structno=0, natoms = getPntrToArgument(0)->getShape()[0] / 3;
+  if( getPntrToArgument(0)->getRank()==2 ) natoms = getPntrToArgument(0)->getShape()[1] / 3;
+ 
+  if( getFullNumberOfTasks()>1 && myrmsd.size()>1 ) rmsdno=task_index;
+  else if( getFullNumberOfTasks()>1 ) structno=task_index;  
+
+  // Retrieve instantaneous configuration
+  std::vector<Vector>& pos( myvals.getFirstAtomVector() ); std::vector<Vector>& der( myvals.getSecondAtomVector() );
+  if( pos.size()!=natoms ) pos.resize( natoms ); if( der.size()!=natoms ) der.resize( natoms ); 
+  for(unsigned i=0;i<pos.size();++i) {
+      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(0)->get( 3*natoms*structno + 3*i + j );
+  }
+
+  // Calculate RMSD distance
+  double r; unsigned ostrn;
   if( displacement ) {
       // Calculate RMSD displacement 
-      double d; 
-      if(type=="SIMPLE") { 
-         d = myrmsd.simpleAlignment( align, displace, pos, myrmsd.getReference(), der, direction, squared );
+      std::vector<Vector> direction( natoms ); Value* dval = getPntrToOutput(0);
+      if(type=="SIMPLE") {
+         r = myrmsd[rmsdno].simpleAlignment( align, displace, pos, myrmsd[rmsdno].getReference(), der, direction, squared );
+         // Notice that we can adjust the forces here because we are parallelilising the apply loop over the RMSD values we are calculating
+         if( dval->forcesWereAdded() ) {
+             Vector comforce; comforce.zero();
+             for(unsigned i=0; i<natoms; i++) {
+                 for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*dval->getForce( task_index*3*natoms + 3*i+k);
+             } 
+             for(unsigned i=0; i<natoms; i++) {
+                 for(unsigned k=0; k<3; ++k) dval->addForce( task_index*3*natoms + 3*i+k, -comforce[k] );
+             }
+         }
       } else {
-         d = myrmsd.calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
-         for(unsigned i=0;i<direction.size();++i) direction[i] = sqrtdisplace[i]*( direction[i] - myrmsd.getReference()[i] );
+         Tensor rot; Matrix<std::vector<Vector> > DRotDPos(3,3); std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
+         r = myrmsd[rmsdno].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
+         for(unsigned i=0;i<direction.size();++i) direction[i] = sqrtdisplace[i]*( direction[i] - myrmsd[rmsdno].getReference()[i] );
+         // Notice that we can adjust the forces here because we are parallelilising the apply loop over the RMSD values we are calculating
+         if( dval->forcesWereAdded() ) {
+             Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( natoms ); Vector v1; v1.zero();
+             for(unsigned n=0; n<natoms; n++) { 
+                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( task_index*3*natoms + 3*n + k ); 
+                  v1+=prefactor*matmul(trot,ff);
+             }
+             // Notice that we use centreredreference here to accumulate the true forces
+             for(unsigned n=0; n<natoms; n++) { 
+                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( task_index*3*natoms + 3*n + k ); 
+                  centeredreference[n] = sqrtdisplace[n]*( matmul(trot,ff) - v1 );
+             }
+             for(unsigned a=0; a<3; a++) {
+                 for(unsigned b=0; b<3; b++) {
+                     for(unsigned i=0; i<natoms; i++) {
+                         double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*dval->getForce( task_index*3*natoms + 3*m+a );
+                         centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
+                     }
+                 }
+             }
+             // Now subtract the current force and add on the true force
+             for(unsigned n=0; n<natoms; n++) {
+                 for(unsigned k=0; k<3; ++k) dval->addForce( task_index*3*natoms + 3*n+k, centeredreference[n][k]-dval->getForce( task_index*3*natoms + 3*n + k ) );
+             }
+         }
       }
-      Value* val=getPntrToComponent(0);
-      for(unsigned i=0;i<pos.size();++i) {
-          val->set( 3*i+0, direction[i][0] ); val->set( 3*i+1, direction[i][1] ); val->set( 3*i+2, direction[i][2] );
-      }
-      // Set the value of the derivatives
-      Value* vv = getPntrToComponent(1); vv->set(d); unsigned n=0; Tensor virial; virial.zero();
-      for(unsigned i=pos.size(); i<getNumberOfAtoms(); i++){ 
-          setAtomsDerivatives( vv, i, der[n] ); virial -= Tensor( pos[n], der[n] ); n++; 
+      for(unsigned i=0; i<pos.size(); ++i) {
+          unsigned base = getFullNumberOfTasks() + 3*i;
+          for(unsigned j=0; j<3; ++j) { 
+              pos[i][j] = direction[i][j]; 
+              // This ensures that the matrix element is gathered
+              runTask( getLabel(), myvals.getTaskIndex(), task_index, base+j, myvals ); 
+              // Now clear only elements that are not accumulated over whole row 
+              clearMatrixElements( myvals );
+          } 
       } 
-      setBoxDerivatives( vv, virial );
+      // Set the value that we are outputting on
+      ostrn = getPntrToOutput(1)->getPositionInStream();
   } else {
-      // Calculate RMSD distance
-      double r=myrmsd.calculate( pos, der, squared );
-      // Set value and derivatives
-      setValue(r); unsigned n=0; Tensor virial; virial.zero();
-      for(unsigned i=pos.size(); i<getNumberOfAtoms(); i++){ 
-          setAtomsDerivatives( i, der[n] ); virial -= Tensor( pos[n], der[n] ); n++; 
-      }
-      // And finish by working out virial
-      setBoxDerivatives( virial );
+      r=myrmsd[rmsdno].calculate( pos, der, squared ); ostrn = getPntrToOutput(0)->getPositionInStream();
+  }
+  myvals.setValue( ostrn, r ); if( doNotCalculateDerivatives() ) return; 
+
+  for(unsigned i=0; i<natoms; i++){ 
+      for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( ostrn, 3*i+j, der[i][j] ); myvals.updateIndex( ostrn, 3*i+j ); } 
   }
 }
 
 void RMSD::apply() {
-  // This ensures forces are applied to dist component
-  Colvar::apply();
-  // If we have not calculated a displacement we are done
-  if( !displacement ) return ;
-  // Check if forces have been applied to displacement
-  if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
-
-  Value* dval=getPntrToComponent(0); 
-  if( type=="SIMPLE" ) {
-      Vector comforce; comforce[0];
-      for(unsigned i=0; i<pos.size(); i++) {
-          for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*dval->getForce(3*i+k);
-      } 
-      for(unsigned i=0; i<pos.size(); i++) {
-          forcesToApply[i][0] = dval->getForce( 3*i+0 ) - comforce[0];
-          forcesToApply[i][1] = dval->getForce( 3*i+1 ) - comforce[1];
-          forcesToApply[i][2] = dval->getForce( 3*i+2 ) - comforce[2];
-      }
-  } else {
-      Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( pos.size() ); Vector v1; v1.zero();
-      for(unsigned n=0; n<pos.size(); n++) { 
-          Vector ff; ff[0] = dval->getForce( 3*n+0 ); ff[1] = dval->getForce( 3*n+1 ); ff[2] = dval->getForce( 3*n+2 );
-          v1+=prefactor*matmul(trot,ff);
-      }
-      for(unsigned i=0; i<pos.size(); i++) { 
-          Vector ff; ff[0] = dval->getForce( 3*i+0 ); ff[1] = dval->getForce( 3*i+1 ); ff[2] = dval->getForce( 3*i+2 );
-          forcesToApply[i] = sqrtdisplace[i]*( matmul(trot,ff) - v1 );
-      }
-      for(unsigned a=0; a<3; a++) {
-        for(unsigned b=0; b<3; b++) {
-          for(unsigned i=0; i<pos.size(); i++) {
-            double tmp1=0.; for(unsigned m=0; m<pos.size(); m++) tmp1+=centeredpos[m][b]*dval->getForce( 3*m+a );
-            forcesToApply[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
-          }
-        }
-      }
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); 
+  //  We need a clever trick to get the forces in this special case because of a curiosity in ActionWithValue 
+  if( displacement ) {
+      if( getPntrToComponent(1)->getRank()==0 && getPntrToComponent(1)->forcesWereAdded() ) getPntrToComponent(1)->applyForce( forcesToApply ); 
   }
-  // Make the structure whole
-  if( !nopbc ) makeWhole( pos.size(), getNumberOfAtoms() );
-  // Retrieve instantaneous configuration
-  for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
-
-  // Tensor& v(modifyVirial()); 
-  Tensor v; v.zero(); std::vector<Vector>& f(modifyForces()); unsigned n=pos.size();
-  for(unsigned i=0; i<pos.size(); i++) {
-      f[n][0] += forcesToApply[i][0]; f[n][1] += forcesToApply[i][1]; f[n][2] += forcesToApply[i][2]; n++; 
-      v -= Tensor( pos[i], forcesToApply[i] );
-  }
-  addVirial(v);
+  unsigned mm=0; if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, mm );
 }
 
 }

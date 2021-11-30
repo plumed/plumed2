@@ -50,7 +50,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
 
 void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std::string& min, const std::string& max ) {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-  if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
+     if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
   }
   std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); unsigned noutput = getNumberOfArguments() / 2;
   bool zero_diag=false; if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);

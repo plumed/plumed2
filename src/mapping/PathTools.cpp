@@ -28,7 +28,8 @@
 #include "core/ActionSet.h"
 #include "core/Value.h"
 #include "core/PlumedMain.h"
-#include "setup/SetupReferenceBase.h"
+#include "colvar/RMSD.h"
+#include "Path.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -110,7 +111,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PathTools(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
-  void printLambda( const std::string& mtype, const std::string& argstr, const std::string& ofile );
+  void printLambda( const std::string& mtype, const std::vector<std::string>& argstr, const std::string& ofile );
   std::string description()const {
     return "print out a description of the keywords for an action in html";
   }
@@ -159,34 +160,19 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string ifilename; parse("--path",ifilename);
   std::string ofmt; parse("--arg-fmt",ofmt);
   std::string ofilename; parse("--out",ofilename);
-  std::string argstr; parse("--arg",argstr);
+  std::vector<std::string> argstr; parseVector("--arg",argstr);
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
-    FILE* fp=fopen(ifilename.c_str(),"r");
-    bool do_read=true; unsigned nfram=0;
-    std::vector<double> alig, disp; std::vector<AtomNumber> indices;
-    while (do_read) {
-      PDB mypdb;
-      // Read the pdb file
-      do_read=mypdb.readFromFilepointer(fp,false,0.1);
-      if( do_read ) {
-          std::string num; Tools::convert( nfram+1, num ); nfram++;
-          std::string iinput = "ref_" + num + ": READ_CONFIG REFERENCE=" + ifilename + " NUMBER=" + num;
-          if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
-          const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
-          if( nfram==1 ) {
-              indices.resize( mypdb.getAtomNumbers().size() );
-              for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
-              alig.resize( mypdb.getOccupancy().size() );
-              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
-              disp.resize( mypdb.getBeta().size() );
-              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
-          }
-      }
-    }
-    std::string reparam_str = "REPARAMETERIZE_PATH REFFRAMES=ref_1"; 
-    for(unsigned i=1;i<nfram;++i){ std::string num; Tools::convert(i+1,num); reparam_str += ",ref_" + num; } 
-    std::vector<unsigned> fixed; parseVector("--fixed",fixed);
+    FILE* fp=fopen(ifilename.c_str(),"r"); PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
+    std::vector<double> alig( mypdb.getOccupancy() ), disp( mypdb.getBeta() ); std::vector<AtomNumber> indices( mypdb.getAtomNumbers() );
+    // Count the number of frames in the input file
+    unsigned nfram=1; while ( do_read ) { if( !mypdb.readFromFilepointer(fp,false,0.1) ) break; nfram++; }
+    if( argstr.size()>0 ) {
+        for(unsigned i=0; i<argstr.size(); ++i ) Path::readArgumentFromPDB( argstr[i], argstr[i], ifilename, plmd );
+    } else colvar::RMSD::createReferenceConfiguration( "data", ifilename, plmd );
+    std::string reparam_str = "REPARAMETERIZE_PATH REFERENCE="; 
+    if( argstr.size()>0 ) { reparam_str += argstr[0]; for(unsigned i=0; i<argstr.size(); ++i ) reparam_str += "," + argstr[i]; }
+    else { reparam_str += "data"; } std::vector<unsigned> fixed; parseVector("--fixed",fixed);
     if( fixed.size()==1 ) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
       fixed.resize(2); fixed[0]=1; fixed[1]=nfram;
@@ -199,30 +185,22 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     reparam_str += " FIXED=" + fix1 + "," + fix2;
     std::string tol; parse("--tolerance",tol); reparam_str += " TOL=" + tol; 
 // Now create the metric object
-    reparam_str += " METRIC={";
+    reparam_str += " METRIC=";
     if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-        std::string atnum; Tools::convert( indices[0].serial(), atnum ); 
-        reparam_str += "RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=" + atnum;
-        for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); reparam_str += "," + atnum; }       
-        natoms=indices[0].serial(); 
-        for(unsigned i=1;i<indices.size();++i) {
-          if( indices[i].serial()>natoms ) natoms = indices[i].serial();
-        }
-        Tools::convert( natoms+indices[0].serial(), atnum ); reparam_str += " ATOMS=" + atnum;
-        for(unsigned i=1;i<alig.size();++i){ Tools::convert( natoms + indices[i].serial(), atnum ); reparam_str += "," + atnum; }  
+        reparam_str += "{RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype;
         // Get the align values 
         std::string anum; Tools::convert( alig[0], anum ); reparam_str += " ALIGN=" + anum;
         for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); reparam_str += "," + anum; }
         // Get the displace values
         std::string dnum; Tools::convert( disp[0], dnum ); reparam_str += " DISPLACE=" + dnum;
         for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); reparam_str += "," + dnum; }
+        reparam_str += "}";
     } else if( mtype=="EUCLIDEAN" ) {
-        reparam_str += "DIFFERENCE ARG1=arg2 ARG2=arg1";
+        reparam_str += "DIFFERENCE";
     } else {
        // Add functionality to read plumed input here
        plumed_merror("metric type " + mtype + " has not been implemented");
     }
-    reparam_str += "}";
 
     // Now do the reparameterization
     const char* icinp= reparam_str.c_str(); plmd.cmd("readInputLine",icinp);
@@ -231,11 +209,12 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
     // And print the final reference configurations
     std::string pinput="PRINT STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt;
-    for(unsigned i=0;i<nfram;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=ref_" + num; }
+    if( argstr.size()>0 ) { 
+        pinput += " ARG=" + argstr[0]; for(unsigned i=1; i<argstr.size(); ++i ) pinput += "," + argstr[i];
+    } else { std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ARG=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; } } 
     const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
     Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
-    ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction );
-    aact->retrieveAtoms(); paction->update();
+    paction->update();
 
     // Ouput data on spacings
     printLambda( mtype, argstr, ofilename );
@@ -251,21 +230,34 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
           "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
-// Read initial frame
-  std::string iinput = "start: READ_CONFIG REFERENCE=" + istart;
-  if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
-  const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
-
-// Read final frame
-  std::string finput = "end: READ_CONFIG REFERENCE=" + iend;
-  if( argstr.length()>0 ) finput += " READ_ARG=" + argstr;
-  const char* fcinp=finput.c_str(); plmd.cmd("readInputLine",fcinp);
+  std::vector<double> start_pos( argstr.size() ), end_pos( argstr.size() ); std::vector<AtomNumber> indices;
+  if( argstr.size()>0 ) {
+     for(unsigned i=0; i<argstr.size(); ++i ) {
+         Path::readArgumentFromPDB( argstr[i], argstr[i] + "_start", istart, plmd ); long srank; plmd.cmd("getDataRank " + argstr[i] + "_start", &srank ); 
+         if( srank!=0 ) error("should only be one frame in input pdb"); std::vector<long> sshape( 1 ); plmd.cmd("getDataShape " + argstr[i] + "_start", &sshape[0] ); 
+         plmd.cmd("setMemoryForData " + argstr[i] + "_start", &start_pos[i] ); 
+         Path::readArgumentFromPDB( argstr[i], argstr[i] + "_end", iend, plmd ); long erank; plmd.cmd("getDataRank " + argstr[i] + "_end", &erank ); 
+         if( erank!=0 ) error("should only be one frame in input pdb"); std::vector<long> eshape( 1 ); plmd.cmd("getDataShape " + argstr[i] + "_end", &eshape[0] ); 
+         plmd.cmd("setMemoryForData " + argstr[i] + "_end", &end_pos[i] );
+     }
+  } else {
+     colvar::RMSD::createReferenceConfiguration( "start", istart, plmd ); 
+     FILE* fp=fopen(istart.c_str(),"r"); PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,0.1); 
+     indices.resize( mypdb.getAtomNumbers().size() ); for(unsigned i=0; i<indices.size(); ++i) indices[i] = mypdb.getAtomNumbers()[i];
+     long srank; plmd.cmd("getDataRank start", &srank ); if( srank!=1 ) error("should only be one frame in input pdb");
+     std::vector<long> sshape( srank ); plmd.cmd("getDataShape start", &sshape[0] ); start_pos.resize( sshape[0] ); 
+     plmd.cmd("setMemoryForData start", &start_pos[0] ); 
+     colvar::RMSD::createReferenceConfiguration( "end", iend, plmd ); 
+     long erank; plmd.cmd("getDataRank end", &erank ); if( erank!=1 ) error("should only be one frame in input pdb");
+     std::vector<long> eshape( erank ); plmd.cmd("getDataShape end", &eshape[0] ); end_pos.resize( eshape[0] ); 
+     plmd.cmd("setMemoryForData end", &end_pos[0] );
+  }
 
 // Now create the metric object
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
       PDB pdb; pdb.read(istart,false,0.1); 
       std::vector<double> alig( pdb.getOccupancy() ), disp( pdb.getBeta() );
-      std::string minput = "RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=start ATOMS=end";
+      std::string minput = "d: RMSD_CALC DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " ARG2=start ARG1=end";
       // Get the align values 
       std::string anum; Tools::convert( alig[0], anum ); minput += " ALIGN=" + anum;
       for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); minput += "," + anum; }
@@ -273,9 +265,12 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       std::string dnum; Tools::convert( disp[0], dnum ); minput += " DISPLACE=" + dnum;
       for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); minput += "," + dnum; }   
       const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp); 
+      std::string tinput = "TRANSPOSE ARG=d.disp"; const char* tcinp=tinput.c_str(); plmd.cmd("readInputLine",tcinp);
   } else if( mtype=="EUCLIDEAN" ) {
-      std::string minput = "DIFFERENCE ARG1=end ARG2=start";
-      const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp);
+      std::string end_args="ARG1=" + argstr[0] + "_end", start_args="ARG2=" + argstr[0] + "_start";
+      for(unsigned i=1;i<argstr.size(); ++i ) { end_args += "," + argstr[i] + "_end"; start_args += "," + argstr[i] + "_start"; }
+      std::string minput = "d: DISPLACEMENT " + end_args + " " + start_args; const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp);
+      std::string tinput = "TRANSPOSE ARG=d"; const char* tcinp=tinput.c_str(); plmd.cmd("readInputLine",tcinp); 
   } else {
      // Add functionality to read plumed input here
      plumed_merror("metric type " + mtype + " has not been implemented");
@@ -299,46 +294,54 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // And calculate the displacement
   plmd.cmd("calc");
 
+  // Now read in the initial frame
+
   // Now create frames
-  double delr = 1.0 / static_cast<double>( nbetween ); unsigned nframes=0;
+  double delr = 1.0 / static_cast<double>( nbetween ); std::vector<std::vector<double> > allframes; std::vector<double> frame( displacement.size() );
   for(int i=0; i<nbefore; ++i) {
-      std::string num; Tools::convert( nframes+1, num ); nframes++;
-      std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + istart;
-      if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
-      const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr); 
-      setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
-      sb->displaceReferenceConfiguration( -i*delr, displacement );
+      for(unsigned j=0; j<frame.size(); ++j) frame[j] = start_pos[j] - i*delr*displacement[j];
+      allframes.push_back( frame );
   }
   for(unsigned i=1; i<nbetween; ++i) {
-    std::string num; Tools::convert( nframes+1, num ); nframes++;
-    std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + istart;
-    if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
-    const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr); 
-    setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
-    sb->displaceReferenceConfiguration( i*delr, displacement );
+    for(unsigned j=0; j<frame.size(); ++j) frame[j] = start_pos[j] + i*delr*displacement[j];
+    allframes.push_back( frame );
   }
   for(unsigned i=0; i<nafter; ++i) {
-    std::string num; Tools::convert( nframes+1, num ); nframes++;
-    std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + iend;
-    if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
-    const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr);
-    setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
-    sb->displaceReferenceConfiguration( i*delr, displacement );
+    for(unsigned j=0; j<frame.size(); ++j) frame[j] = end_pos[j] + i*delr*displacement[j];
+    allframes.push_back( frame );
   }
-
   // This prints out our final reference configurations
   std::string pinput="PRINT STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt; 
-  for(unsigned i=0;i<nframes;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=frame" + num; }
+  if( argstr.size()>0 ) {
+      for(unsigned i=0; i<argstr.size(); ++i) {
+          std::string rnum; Tools::convert( allframes[0][i], rnum ); 
+          std::string inpt = argstr[i] + ": CONSTANT_VALUE VALUES=" + rnum; 
+          for(unsigned j=1; j<allframes.size(); ++j) { Tools::convert( allframes[j][i], rnum ); inpt += "," + rnum; }
+          const char* icinp=inpt.c_str(); plmd.cmd("readInputLine",icinp);
+          if( i==0 ) pinput += " ARG=" + argstr[i]; else pinput += "," + argstr[i];
+      }
+  } else {
+      std::string nc; Tools::convert( frame.size(), nc );
+      std::string nr; Tools::convert( allframes.size(), nr );
+      std::string rnum; Tools::convert( allframes[0][0], rnum ); 
+      std::string inpt = "atom_data: CONSTANT_VALUE NROWS=" + nr + " NCOLS=" + nc + " VALUES=" + rnum; 
+      for(unsigned i=0;i<allframes.size();++i) {
+          for(unsigned j=0; j<allframes[i].size(); ++j) { 
+              if( i==0 && j==0 ) continue; Tools::convert( allframes[i][j], rnum ); inpt += "," + rnum; 
+          }
+      } 
+      const char* icinp=inpt.c_str(); plmd.cmd("readInputLine",icinp); std::string num; Tools::convert( indices[0].serial(), num );
+      pinput += " ARG=atom_data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }  
+  }
   const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp); 
   Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
-  ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction ); 
-  aact->retrieveAtoms(); paction->update();
+  paction->update();
   // And output suggestions on the value of Lambda
   printLambda( mtype, argstr, ofilename );
   return 0;
 }
 
-void PathTools::printLambda( const std::string& mtype, const std::string& argstr, const std::string& ofile ) {
+void PathTools::printLambda( const std::string& mtype, const std::vector<std::string>& argstr, const std::string& ofile ) {
   // Create a PLUMED object
   PlumedMain plmd; int s=sizeof(double);
   plmd.cmd("setRealPrecision",&s);
@@ -359,18 +362,17 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
   while (do_read ) {
     PDB mypdb;
       // Read the pdb file
-      do_read=mypdb.readFromFilepointer(fp,false,0.1);
-      if( do_read ) {
-          std::string num; Tools::convert( nfram+1, num ); nfram++;
-          std::string iinput = "ref_" + num + ": READ_CONFIG REFERENCE=" + ofile + " NUMBER=" + num;
-          if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
-          const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
-          if( nfram==1 ) {
-              alig.resize( mypdb.getOccupancy().size() );
-              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
-              disp.resize( mypdb.getBeta().size() );
-              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
-          }
+      do_read=mypdb.readFromFilepointer(fp,false,0.1); if( !do_read ) break;
+      std::string num; Tools::convert( nfram+1, num ); nfram++; std::string iinput;
+      if( argstr.size()>0 ) { 
+         for(unsigned i=0; i<argstr.size(); ++i ) Path::readArgumentFromPDB( argstr[i], "ref_" + num + "_" + argstr[i], ofile, plmd, nfram );
+      } else colvar::RMSD::createReferenceConfiguration( "ref_" + num, ofile, plmd, nfram );
+
+      if( nfram==1 ) {
+          alig.resize( mypdb.getOccupancy().size() );
+          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
+          disp.resize( mypdb.getBeta().size() );
+          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
       }
     }
     // Now create the objects to measure the distances between the frames
@@ -378,7 +380,7 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
     for(unsigned j=1;j<nfram;++j) {
         std::string istr, jstr; Tools::convert( j, istr); Tools::convert( j+1, jstr );
         if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-            std::string dstring = "d" + istr + ": RMSD_CALC TYPE=" + mtype + " REFERENCE_ATOMS=ref_" + istr +  " ATOMS=ref_" + jstr;
+            std::string dstring = "d" + istr + ": RMSD_CALC TYPE=" + mtype + " ARG2=ref_" + istr +  " ARG1=ref_" + jstr;
             // Get the align values 
             std::string anum; Tools::convert( alig[0], anum ); dstring += " ALIGN=" + anum;
             for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); dstring += "," + anum; }
@@ -387,21 +389,10 @@ void PathTools::printLambda( const std::string& mtype, const std::string& argstr
             for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); dstring += "," + dnum; }
             const char* icinp=dstring.c_str(); plmd.cmd("readInputLine",icinp);
         } else if( mtype=="EUCLIDEAN" ) {
-            // Difference between args
-            std::string diff_string = "diff" + istr + ": DIFFERENCE ARG1=ref_" + istr +  " ARG2=ref_" + jstr;
-            const char* icinp=diff_string.c_str(); plmd.cmd("readInputLine",icinp);
-            // Retrieve number of quantities so we can make the powers vector
-            ActionWithValue* aval = plmd.getActionSet().selectWithLabel<ActionWithValue*>( "diff" + istr );
-            unsigned nquantities = aval->copyOutput(0)->getShape()[0];
-            // SQUARES OF DIFFERENCES
-            std::string diff_string2 = "diff" + istr + "_2: CUSTOM ARG1=diff" + istr + " FUNC=x*x PERIODIC=NO";
-            const char* icinp2=diff_string2.c_str(); plmd.cmd("readInputLine",icinp2);
-            // SUM THEM
-            std::string comb_string = "comb" + istr + ": SUM ARG=diff" + istr + "_2 PERIODIC=NO";
-            const char* icinp3=comb_string.c_str(); plmd.cmd("readInputLine",icinp3);
-            // SQUARE ROOT
-            std::string fstr = "d" + istr + ": MATHEVAL ARG=comb" + istr + " FUNC=sqrt(x) PERIODIC=NO";
-            const char* icinp4=fstr.c_str(); plmd.cmd("readInputLine",icinp4); 
+            std::string end_args="ARG1=ref_" + istr + "_" + argstr[0], start_args="ARG2=ref_" + jstr + "_" + argstr[0];
+            for(unsigned i=1;i<argstr.size(); ++i ) { end_args += ",ref_" + istr + "_" + argstr[i]; start_args += ",ref_" + jstr + "_" + argstr[i]; }
+            std::string fstr = "d" + istr + ": EUCLIDEAN_DISTANCE " + end_args + " " + start_args; 
+            const char* icinp=fstr.c_str(); plmd.cmd("readInputLine",icinp);  
         } else {
             plumed_merror("metric type " + mtype + " has not been implemented");
         }
