@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2021 Omar Valsson
+   Copyright (c) 2017-2021 Omar Valsson
 
    This file is part of S2 contact model module
 
@@ -33,7 +33,7 @@ namespace s2cm {
 
 //
 
-//+PLUMEDOC S2CM_COLVAR S2CM
+//+PLUMEDOC S2CMMOD_COLVAR S2CM
 /*
 S2 contact model CV used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers.
 
