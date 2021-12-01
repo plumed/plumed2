@@ -519,6 +519,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
+        val.get<int*>(); // just check type and discard pointer
         stopFlag=val.copy();
         break;
       case cmd_getExchangesFlag:

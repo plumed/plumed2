@@ -85,9 +85,11 @@ public:
   void setf(const TypesafePtr & f,int i) override;
   void setUnits(const Units&,const Units&) override;
   void setExtraCV(const std::string &name,const TypesafePtr & p) override {
+    p.get<T>(); // just check type and discard pointer
     extraCV[name]=p.copy();
   }
   void setExtraCVForce(const std::string &name,const TypesafePtr & p) override {
+    p.get<T*>(); // just check type and discard pointer
     extraCVForce[name]=p.copy();
   }
   double getExtraCV(const std::string &name) override {
@@ -312,6 +314,7 @@ unsigned MDAtomsTyped<T>::getRealPrecision()const {
 
 template <class T>
 void MDAtomsTyped<T>::setp(const TypesafePtr & pp) {
+  pp.get<const T*>(); // just check type and discard pointer
   p=pp.copy();
   px=TypesafePtr();
   py=TypesafePtr();
@@ -320,12 +323,14 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp) {
 
 template <class T>
 void MDAtomsTyped<T>::setBox(const TypesafePtr & pp) {
+  pp.get<const T*>({3,3}); // just check type and size and discard pointer
   box=pp.copy();
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::setf(const TypesafePtr & ff) {
+  ff.get<T*>(); // just check type and discard pointer
   f=ff.copy();
   fx=TypesafePtr();
   fy=TypesafePtr();
@@ -335,6 +340,7 @@ void MDAtomsTyped<T>::setf(const TypesafePtr & ff) {
 template <class T>
 void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
   p=TypesafePtr();
+  pp.get<const T*>(); // just check type and discard pointer
   if(i==0)px=pp.copy();
   if(i==1)py=pp.copy();
   if(i==2)pz=pp.copy();
@@ -342,13 +348,15 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
 
 template <class T>
 void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
-  virial=pp.get<T*>({3,3});
+  pp.get<T*>({3,3}); // just check type and size and discard pointer
+  virial=pp.copy();
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::setf(const TypesafePtr & ff,int i) {
   f=TypesafePtr();;
+  ff.get<T*>(); // just check type and discard pointer
   if(i==0)fx=ff.copy();
   if(i==1)fy=ff.copy();
   if(i==2)fz=ff.copy();
@@ -356,11 +364,13 @@ void MDAtomsTyped<T>::setf(const TypesafePtr & ff,int i) {
 
 template <class T>
 void MDAtomsTyped<T>::setm(const TypesafePtr & m) {
+  m.get<const T*>(); // just check type and discard pointer
   this->m=m.copy();
 }
 
 template <class T>
 void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
+  c.get<const T*>(); // just check type and discard pointer
   this->c=c.copy();
 }
 
