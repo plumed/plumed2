@@ -342,7 +342,7 @@ void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
 
 template <class T>
 void MDAtomsTyped<T>::setVirial(const TypesafePtr & pp) {
-  virial=pp.get<T*>({3,3});
+  virial=pp.copy();
 }
 
 
