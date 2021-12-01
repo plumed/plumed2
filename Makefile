@@ -83,7 +83,7 @@ clean: $(SUBDIRSCLEAN)
 	rm -f *~ */*~ */*/*~
 
 $(SUBDIRSCLEAN): %.clean:
-	$(MAKE) -C $* clean
+	[ ! -e $* ] || $(MAKE) -C $* clean
 
 distclean: fullclean
 
