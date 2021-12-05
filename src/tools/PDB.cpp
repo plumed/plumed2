@@ -356,7 +356,16 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       {
         auto trimmed=resnum;
         Tools::trim(trimmed);
-        if(trimmed.length()>0) Tools::convert(trimmed,resno);
+        if(trimmed.length()>0) {
+          int result;
+          while(trimmed.length()<4) trimmed = std::string(" ") + trimmed;
+          const char* errmsg = h36::hy36decode(4, trimmed.c_str(),trimmed.length(), &result);
+          if(errmsg) {
+            std::string msg(errmsg);
+            plumed_merror(msg);
+          }
+          resno=result;
+        }
       }
 
       Tools::convert(occ,o);
@@ -567,23 +576,39 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {
       std::array<char,6> at;
-      const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-      plumed_assert(msg==nullptr) << msg;
-      at[5]=0;
-      ofile.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   &at[0], i,
+      {
+        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
+        plumed_assert(msg==nullptr) << msg;
+        at[5]=0;
+      }
+      std::array<char,5> res;
+      {
+        const char* msg = h36::hy36encode(4,i,&res[0]);
+        plumed_assert(msg==nullptr) << msg;
+        res[4]=0;
+      }
+      ofile.printf("ATOM  %s  X   RES  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   &at[0], &res[0],
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );
     }
   } else {
     for(unsigned i=0; i<positions.size(); ++i) {
       std::array<char,6> at;
-      const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-      plumed_assert(msg==nullptr) << msg;
-      at[5]=0;
-      ofile.printf("ATOM  %s %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+      {
+        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
+        plumed_assert(msg==nullptr) << msg;
+        at[5]=0;
+      }
+      std::array<char,5> res;
+      {
+        const char* msg = h36::hy36encode(4,mymoldat->getResidueNumber(numbers[i]),&res[0]);
+        plumed_assert(msg==nullptr) << msg;
+        res[4]=0;
+      }
+      ofile.printf("ATOM  %s %-4s %3s  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                    &at[0], mymoldat->getAtomName(numbers[i]).c_str(),
-                   mymoldat->getResidueName(numbers[i]).c_str(), mymoldat->getResidueNumber(numbers[i]),
+                   mymoldat->getResidueName(numbers[i]).c_str(), &res[0],
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );
     }
