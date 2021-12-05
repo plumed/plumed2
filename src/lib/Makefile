@@ -101,9 +101,9 @@ endif
 # check if bindir and libdir are consistent.
 # notice that this is not required yet but if we later we want
 # to use $ORIGIN based rpaths this would be needed
-ifneq ($(dir $(bindir)),$(dir $(libdir)))
-  $(error bindir and libdir are not consistent, please set them as subdirectories of the same directory)
-endif
+#ifneq ($(dir $(bindir)),$(dir $(libdir)))
+#  $(error bindir $(bindir) and libdir $(libdir) are not consistent, please set them as subdirectories of the same directory)
+#endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
