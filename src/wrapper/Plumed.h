@@ -2796,6 +2796,10 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     strlenpath=__PLUMED_WRAPPER_STD strlen(path);
     pathcopy=(char*) __PLUMED_MALLOC(strlenpath+1);
+    if(!pathcopy) {
+      __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
+      __PLUMED_WRAPPER_STD abort();
+    }
     __PLUMED_WRAPPER_STD strncpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
