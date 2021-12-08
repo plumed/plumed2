@@ -238,6 +238,7 @@ int f(int a){
 }
 EOF
       if make test-c11 2>err | grep SUCCESS=YES 1> /dev/null ; then
+        rm __test_c11.c
         make exe-c 1>out 2> err
       else
           echo "NOT_APPLICABLE (CC does not support c11)"
