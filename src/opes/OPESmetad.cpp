@@ -38,7 +38,7 @@ It does so by reweighting via kernel density estimation the unbiased distributio
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
 The bias at step \f$n\f$ is
 \f[
-V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{\tilde{P}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{P_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
 \f]
 See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 
@@ -240,16 +240,18 @@ This OPES_METAD_EXPLORE action samples the well-tempered target distribution, th
 While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
 The bias at step \f$n\f$ is
 \f[
-V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{\tilde{P}^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{p^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
 \f]
 See Ref.\cite future_paper for a complete description of the method.
 
 Compared to \ref OPES_METAD, OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
 This goes at the expenses of a possibly slower convergence of the reweight estimate.
-It is useful to look around when you have no idea of the BARRIER, or if you want to quickly test the effectiveness of a new CV, and see if it is degenerate or not.
+OPES_METAD_EXPLORE can be useful useful when simulating a new system with an unknown BARRIER, or if for quickly testing the effectiveness of a new CV that might be degenerate.
 
-Like \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with an on-the-fly compression algorithm.
+Similarly to \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with the same on-the-fly compression algorithm.
 The only difference is that it does not perform reweighting, since it estimates the sampled distribution and not the unbiased one.
+
+All the options of \ref OPES_METAD are also available in OPES_METAD_EXPLORE, except for those that modify the target distribution, since only a well-tempered target is allowedin this case.
 
 \par Examples
 
