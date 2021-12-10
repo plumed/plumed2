@@ -162,7 +162,7 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   // Create structure object.  This will be used to pass information to rascal
   structure["cell"]={{0,0,0},{0,0,0},{0,0,0}}; structure["pbc"]={true,true,true};
   // Now read in atoms that we are using
-  std::vector<AtomNumber> catoms, all_atoms; parseAtomList("SPECIES",all_atoms);
+  std::vector<AtomNumber> catoms, all_atoms; parseAtomList("SPECIES",all_atoms); unsigned nspecies=0;
   if( all_atoms.size()==0 ) {
       std::vector<AtomNumber> t; 
       for(int i=1;; ++i ) {
@@ -175,9 +175,10 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
               structure["positions"].push_back( std::vector<double>(3) );
               all_atoms.push_back( t[j] ); 
           }
-          log.printf("\n"); t.resize(0);
+          log.printf("\n"); t.resize(0); nspecies++;
       }     
   } else {
+      nspecies = 1;
       for(unsigned j=0; j<all_atoms.size(); ++j) {
           structure["numbers"].push_back( 1 );
           structure["positions"].push_back( std::vector<double>(3) );
@@ -186,7 +187,7 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   // Request the atoms and check we have read in everything
   requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size() + 9 ); 
   // Setup a matrix to hold the soap vectors
-  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); shape[1]=200; 
+  std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); shape[1]=representation->get_num_coefficients( nspecies ); 
   addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   checkRead();
 }
@@ -244,7 +245,7 @@ void RascalSpherical<T>::apply() {
 
   // Now lets get the gradients
   auto && soap_vector_gradients{*manager->template get_property<PropGrad_t>(representation->get_gradient_name())};
-  auto keys = soap_vector_gradients.get_keys(); math::Matrix_t gradients = soap_vector_gradients.get_features_gradient(keys);
+  math::Matrix_t gradients = soap_vector_gradients.get_features_gradient(); 
 
   // Apply the forces on the atoms
   Value* outval=getPntrToOutput(0); std::vector<unsigned> shape( outval->getShape() );
