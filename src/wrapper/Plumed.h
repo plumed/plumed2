@@ -1204,8 +1204,7 @@ __PLUMED_WRAPPER_C_END
 #if __PLUMED_WRAPPER_C_TYPESAFE /*{*/
 
 #define __PLUMED_WRAPPER_C_TYPESAFE_INNER(type_,typen_,flags_) \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdnse_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, const size_t* shape,plumed_error* error) { \
+  static inline void plumed_cmdnse_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, const size_t* shape,plumed_error* error) { \
     plumed_safeptr safe; \
     plumed_nothrow_handler nothrow; \
     safe.ptr=ptr; \
@@ -1222,24 +1221,19 @@ __PLUMED_WRAPPER_C_END
       plumed_cmd_safe(p,key,safe); \
     } \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdne_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, plumed_error* error) { \
+  static inline void plumed_cmdne_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, plumed_error* error) { \
     plumed_cmdnse_ ## typen_(p,key,ptr,nelem,NULL,error); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdse_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape, plumed_error* error) { \
+  static inline void plumed_cmdse_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape, plumed_error* error) { \
     plumed_cmdnse_ ## typen_(p,key,ptr,0,shape,error); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdn_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem) { \
+  static inline void plumed_cmdn_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem) { \
     plumed_cmdnse_ ## typen_(p,key,ptr,nelem,NULL,NULL); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmds_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape) { \
+  static inline void plumed_cmds_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape) { \
     plumed_cmdnse_ ## typen_(p,key,ptr,0,shape,NULL); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmde_ ## typen_(plumed p,const char*key,type_*ptr, plumed_error* error) { \
+  static inline void plumed_cmde_ ## typen_(plumed p,const char*key,type_*ptr, plumed_error* error) { \
     plumed_cmdnse_ ## typen_(p,key,ptr,0,NULL,error); \
   }
 
@@ -1255,8 +1249,7 @@ __PLUMED_WRAPPER_C_END
 
 #define __PLUMED_WRAPPER_C_TYPESAFE_SIZED(type,type_,code) \
   __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,sizeof(type)) \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdnse_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, const size_t* shape, plumed_error* error) { \
+  static inline void plumed_cmdnse_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, const size_t* shape, plumed_error* error) { \
     plumed_safeptr safe; \
     plumed_nothrow_handler nothrow; \
     (void) nelem; \
@@ -1275,24 +1268,19 @@ __PLUMED_WRAPPER_C_END
       plumed_cmd_safe(p,key,safe); \
     } \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdne_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, plumed_error* error) {  \
+  static inline void plumed_cmdne_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, plumed_error* error) {  \
     plumed_cmdnse_ ## type_ ## _v(p,key,val,nelem,NULL,error); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdse_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape, plumed_error* error) {  \
+  static inline void plumed_cmdse_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape, plumed_error* error) {  \
     plumed_cmdnse_ ## type_ ## _v(p,key,val,0,shape,error); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmdn_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem) {  \
+  static inline void plumed_cmdn_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem) {  \
     plumed_cmdnse_ ## type_ ## _v(p,key,val,nelem,NULL,NULL); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmds_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape) {  \
+  static inline void plumed_cmds_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape) {  \
     plumed_cmdnse_ ## type_ ## _v(p,key,val,0,shape,NULL); \
   } \
-  __PLUMED_WRAPPER_STATIC_INLINE \
-  void plumed_cmde_ ## type_ ## _v(plumed p,const char*key,type val, plumed_error* error) {  \
+  static inline void plumed_cmde_ ## type_ ## _v(plumed p,const char*key,type val, plumed_error* error) {  \
     plumed_cmdnse_ ## type_ ## _v(p,key,val,0,NULL,error); \
   }
 
@@ -1334,7 +1322,7 @@ __PLUMED_WRAPPER_C_TYPESAFE_SIZED(double,double,4)
 __PLUMED_WRAPPER_C_TYPESAFE_SIZED(long double,long_double,4)
 __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
 
-__PLUMED_WRAPPER_STATIC_INLINE void plumed_cmd_null_e(plumed p,const char*key,plumed_error* error,int ignore) {
+static inline void plumed_cmd_null_e(plumed p,const char*key,plumed_error* error,int ignore) {
   (void) ignore;
   plumed_cmde_void_p(p,key,NULL,error);
 }
