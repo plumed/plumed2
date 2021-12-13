@@ -618,6 +618,7 @@
 #endif
 
 /* Allow using noexcept, explicit, and override with C++11 compilers */
+#ifdef __cplusplus /*{*/
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
 #define __PLUMED_WRAPPER_CXX_NORETURN [[ noreturn ]]
@@ -631,6 +632,13 @@
 #define __PLUMED_WRAPPER_CXX_OVERRIDE
 #define __PLUMED_WRAPPER_CXX_NULLPTR  NULL
 #endif
+#else
+#define __PLUMED_WRAPPER_CXX_NOEXCEPT
+#define __PLUMED_WRAPPER_CXX_NORETURN
+#define __PLUMED_WRAPPER_CXX_EXPLICIT
+#define __PLUMED_WRAPPER_CXX_OVERRIDE
+#define __PLUMED_WRAPPER_CXX_NULLPTR  NULL
+#endif /*}*/
 
 /* static inline, for to avoid compiler warnings */
 #if defined(__cplusplus) || __STDC_VERSION__>=199901L
@@ -808,7 +816,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) {
 
 /** Finalize error - should be called when an error is raised to avoid leaks */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) {
-  if(!error.bad_exception)
+  if(error.what && !error.bad_exception)
     /** in C++ we use new/delete to allow having a const char* what */
 #ifdef __cplusplus
     delete [] error.what;
@@ -818,7 +826,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) {
 }
 
 /** Callback (for internal usage) */
-__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const char*what,const void* opt) {
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const char*what,const void* opt) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   plumed_error* error;
   __PLUMED_WRAPPER_STD size_t len;
   const void** options;
@@ -830,7 +838,11 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   error->error_code=0;
   len=__PLUMED_WRAPPER_STD strlen(what);
 #ifdef __cplusplus
-  what_tmp=new char[len+1];
+  try {
+    what_tmp=new char[len+1]; // could throw
+  } catch(...) {
+    what_tmp=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
 #else
   what_tmp=malloc(len+1);
 #endif
@@ -1556,7 +1568,7 @@ class Plumed {
     to a char, identifying the type of argument passed, and an arbitrary object.
     Currently used to (optionally) pass error_code.
   */
-  static void nothrow_handler(void*ptr,int code,const char*what,const void* opt) {
+  static void nothrow_handler(void*ptr,int code,const char*what,const void* opt) __PLUMED_WRAPPER_CXX_NOEXCEPT {
     NothrowHandler* h=static_cast<NothrowHandler*>(ptr);
     h->code=code;
     h->exception_buffer[0]='\0';
@@ -1570,7 +1582,12 @@ class Plumed {
     if(code==10000 || (code>=11000 && code<12000)) {
       __PLUMED_WRAPPER_STD strncat(h->exception_buffer,what,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
     } else {
-      h->what=what;
+      try {
+        h->what=what; // could throw
+      } catch(...) {
+        __PLUMED_WRAPPER_STD strncat(h->exception_buffer,"cannot allocate error object",__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+        h->code=11500; // bad_exception
+      }
     }
 
     /* interpret optional arguments */
