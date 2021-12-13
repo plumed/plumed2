@@ -802,21 +802,21 @@ typedef struct {
   /** error code for system_error */
   int error_code;
   /** message could not be allocated */
-  int bad_exception;
+  int bad_alloc;
 } plumed_error;
 
 /** Initialize error (for internal usage) */
-__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) {
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   if(!error) return;
   error->code=0;
   error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->error_code=0;
-  error->bad_exception=0;
+  error->bad_alloc=0;
 }
 
 /** Finalize error - should be called when an error is raised to avoid leaks */
-__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) {
-  if(error.what && !error.bad_exception)
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  if(error.what && !error.bad_alloc)
     /** in C++ we use new/delete to allow having a const char* what */
 #ifdef __cplusplus
     delete [] error.what;
@@ -848,8 +848,8 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
 #endif
   if(!what_tmp) {
     error->what="cannot allocate error object";
-    error->code=11500;
-    error->bad_exception=1;
+    error->code=11400;
+    error->bad_alloc=1;
     return;
   }
   __PLUMED_WRAPPER_STD strncpy(what_tmp,what,len+1);
@@ -1586,7 +1586,7 @@ class Plumed {
         h->what=what; // could throw
       } catch(...) {
         __PLUMED_WRAPPER_STD strncat(h->exception_buffer,"cannot allocate error object",__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
-        h->code=11500; // bad_exception
+        h->code=11400; // bad_alloc
       }
     }
 
