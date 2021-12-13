@@ -273,6 +273,7 @@ PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
+PLUMED_CONFIG_ENABLE([popen],[search for popen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
@@ -776,6 +777,10 @@ fi
 
 if test $getcwd == true ; then
   PLUMED_CHECK_PACKAGE([unistd.h],[getcwd],[__PLUMED_HAS_GETCWD])
+fi
+
+if test $popen == true ; then
+  PLUMED_CHECK_PACKAGE([cstdio],[popen],[__PLUMED_HAS_POPEN])
 fi
 
 if test $execinfo == true ; then
