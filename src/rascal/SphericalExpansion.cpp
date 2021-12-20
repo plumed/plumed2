@@ -99,6 +99,8 @@ private:
   json adaptors;
 /// This is the structure object that is passed between PLUMED and librascal
   json structure;
+/// Tempory vector used to store the number of neighbours in apply
+  std::vector<unsigned> neigh;
 /// This is a vector containing the forces that act on the system
   std::vector<double> forcesToApply;
 /// This is the representation that is being computed using librascal
@@ -185,7 +187,7 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
       }
   }
   // Request the atoms and check we have read in everything
-  requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size() + 9 ); 
+  requestAtoms(all_atoms); forcesToApply.resize( 3*all_atoms.size() + 9 ); neigh.resize( all_atoms.size() );
   // Setup a matrix to hold the soap vectors
   std::vector<unsigned> shape(2); shape[0]=all_atoms.size(); shape[1]=representation->get_num_coefficients( nspecies ); 
   addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
@@ -246,14 +248,32 @@ void RascalSpherical<T>::apply() {
   // Now lets get the gradients
   auto && soap_vector_gradients{*manager->template get_property<PropGrad_t>(representation->get_gradient_name())};
   math::Matrix_t gradients = soap_vector_gradients.get_features_gradient(); 
+  // This gets information on the neighbour lists from librascal
+  Eigen::Matrix<int, Eigen::Dynamic, 5> ninfo = manager->get_gradients_info();
+  // Determine the number of neighbours for each of the environments
+  std::fill(neigh.begin(),neigh.end(),0); for(unsigned i=0;i<ninfo.rows();++i) neigh[ ninfo(i,1) ]++;
 
   // Apply the forces on the atoms
-  Value* outval=getPntrToOutput(0); std::vector<unsigned> shape( outval->getShape() );
+  Value* outval=getPntrToOutput(0); std::vector<unsigned> shape( outval->getShape() ); unsigned base=0;
+  // Loop over environments (atoms)
   for(unsigned i=0; i<shape[0]; ++i) {
+      // Loop over features
       for(unsigned j=0; j<shape[1];++j) {
+          // Get the force on the jth feature in the ith environment.
           double ff = outval->getForce( i*shape[1] + j );
-          for(unsigned k=0; k<3; ++k) forcesToApply[3*i+k] += ff*gradients(3*i+k,j);
+          // Loop over neighbours in ith environment
+          for(unsigned k=0; k<neigh[i]; ++k) {
+              // Loop over x, y, z
+              for(unsigned n=0;n<3;++n) {
+                  // This is the force to add to the central atom  
+                  forcesToApply[ 3*i+n ] -= ff*gradients(3*(base+k)+n,j);
+                  // This is the force to add to the neighbour atom.
+                  forcesToApply[ 3*ninfo(base+k,2) + n ] += ff*gradients(3*(base+k)+n,j);
+              }
+          }
       }
+      // And this is some book keeping to make sure we are navigating gradients and info correctly
+      base = base + neigh[i];
   }
   unsigned start=0; setForcesOnAtoms( forcesToApply, start );
 }

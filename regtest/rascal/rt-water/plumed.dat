@@ -1,0 +1,7 @@
+LOAD FILE=GAP.cpp
+gg: GAP SPECIES2=1-192:3 SPECIES1=2-192:3,3-192:3 FILE=water.json 
+
+# PRINT ARG=gg_soap FILE=soap.matx STRIDE=1 FMT=%8.4f
+# PRINT ARG=gg_prod FILE=prod.matx STRIDE=1 FMT=%8.4f 
+# PRINT ARG=gg_vprod FILE=vprod STRIDE=1 FMT=%8.4f
+PRINT ARG=gg FILE=energy STRIDE=1 FMT=%8.4f
