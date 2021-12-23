@@ -244,14 +244,16 @@ V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{p^{\text{WT}}_n(\math
 \f]
 See Ref.\cite future_paper for a complete description of the method.
 
+Intuitively, while \ref OPES_METAD aims at quickly converging the reweighted free energy, OPES_METAD_EXPLORE aims at quickly sampling the target well-tempered distriution.
+Given enough simulation time, both will converge to the same bias potential but they do so in a qualitatively different way.
 Compared to \ref OPES_METAD, OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
-This goes at the expenses of a possibly slower convergence of the reweight estimate.
-OPES_METAD_EXPLORE can be useful useful when simulating a new system with an unknown BARRIER, or if for quickly testing the effectiveness of a new CV that might be degenerate.
+This goes at the expenses of a typically slower convergence of the reweight estimate.
+OPES_METAD_EXPLORE can be useful e.g.~for simulating a new system with an unknown BARRIER, or for quickly testing the effectiveness of a new CV that might be degenerate.
 
 Similarly to \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with the same on-the-fly compression algorithm.
-The only difference is that it does not perform reweighting, since it estimates the sampled distribution and not the unbiased one.
+The only difference is that the kernels are not weighted, since it estimates the sampled distribution and not the reweighted unbiased one.
 
-All the options of \ref OPES_METAD are also available in OPES_METAD_EXPLORE, except for those that modify the target distribution, since only a well-tempered target is allowedin this case.
+All the options of \ref OPES_METAD are also available in OPES_METAD_EXPLORE, except for those that modify the target distribution, since only a well-tempered target is allowed in this case.
 
 \par Examples
 
