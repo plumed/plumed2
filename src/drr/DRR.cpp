@@ -363,7 +363,7 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
     pGrad = fopen(gradname.c_str(), "w");
     pCount = fopen(countname.c_str(), "w");
   }
-  
+
   char *buffer1, *buffer2;
   buffer1 = (char *)malloc((sizeof(double)) * sampleSize * ndims);
   buffer2 = (char *)malloc((sizeof(double)) * sampleSize * ndims);

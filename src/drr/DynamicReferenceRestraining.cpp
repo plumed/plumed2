@@ -303,11 +303,9 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addFlag("TEXTOUTPUT", false, "use text output for grad and count files "
                "instead of boost::serialization binary "
                "output");
-  keys.addFlag("MERGEHISTORYFILES", false, "output one history file containing "
-               "results at different time rather than "
-               "multiple one-frame files. Also, historic"
-               ".drrstate files are not generated. Only "
-               "available when textOutput is on ");
+  keys.addFlag("MERGEHISTORYFILES", false, "output all historic results "
+               "to a single file rather than multiple .drrstate files. "
+               "This option is effective only when textOutput is on.");
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
@@ -733,7 +731,7 @@ void DynamicReferenceRestraining::calculate() {
         const string filename =
           outputprefix + ".another.drrstate";
         save(filename, step_now);
-        const string textfilename = 
+        const string textfilename =
           mergeHistoryFiles ? (outputprefix + ".hist") : (outputprefix + "." + std::to_string(step_now));
         ABFGrid.writeAll(textfilename, mergeHistoryFiles);
         if (useCZARestimator) {
