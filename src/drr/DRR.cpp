@@ -351,13 +351,19 @@ void DRRForceGrid::write1DPMF(string filename) const {
   fclose(ppmf);
 }
 
-void DRRForceGrid::writeAll(const string &filename) const {
+void DRRForceGrid::writeAll(const string &filename, bool addition) const {
   string countname = filename + suffix + ".count";
   string gradname = filename + suffix + ".grad";
   vector<double> pos(ndims, 0);
   FILE *pGrad, *pCount;
-  pGrad = fopen(gradname.c_str(), "w");
-  pCount = fopen(countname.c_str(), "w");
+  if (addition) {
+    pGrad = fopen(gradname.c_str(), "a");
+    pCount = fopen(countname.c_str(), "a");
+  } else {
+    pGrad = fopen(gradname.c_str(), "w");
+    pCount = fopen(countname.c_str(), "w");
+  }
+
   char *buffer1, *buffer2;
   buffer1 = (char *)malloc((sizeof(double)) * sampleSize * ndims);
   buffer2 = (char *)malloc((sizeof(double)) * sampleSize * ndims);
@@ -503,11 +509,15 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   return result;
 }
 
-void CZAR:: writeZCount(const string &filename) const {
+void CZAR:: writeZCount(const string &filename, bool addition) const {
   string countname = filename + ".zcount";
   vector<double> pos(ndims, 0);
   FILE *pCount;
-  pCount = fopen(countname.c_str(), "w");
+  if (addition) {
+    pCount = fopen(countname.c_str(), "a");
+  } else {
+    pCount = fopen(countname.c_str(), "w");
+  }
   char *buffer;
   buffer = (char *)malloc((sizeof(double)) * sampleSize * ndims);
   setvbuf(pCount, buffer, _IOFBF, (sizeof(double)) * sampleSize * ndims);
