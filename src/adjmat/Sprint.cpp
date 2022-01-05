@@ -44,7 +44,7 @@ other and if they have similar orientations.
 
 This example input calculates the 7 SPRINT coordinates for a 7 atom cluster of Lennard-Jones
 atoms and prints their values to a file.  In this input the SPRINT coordinates are calculated
-in the manner described in ?? so two atoms are adjacent if they are within a cutoff:
+in the manner described in \cite Pietrucci2011 so two atoms are adjacent if they are within a cutoff:
 
 \plumedfile
 DENSITY SPECIES=1-7 LABEL=d1
@@ -111,7 +111,7 @@ void Sprint::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
-                          "the smallest sprint coordinate will be labeled <em>label</em>.coord-1, "
+                          "the smallest sprint coordinate will be labeled <em>label</em>.coord-0, "
                           "the second smallest will be labelled <em>label</em>.coord-1 and so on");
 }
 
