@@ -4,6 +4,12 @@ if test -n "$PLUMED_PREPEND_PATH" ; then
   PATH="$PLUMED_PREPEND_PATH:$PATH"
 fi
 
+if test -n "$PLUMED_MAKE" ; then
+  make="$PLUMED_MAKE"
+else
+  make=make
+fi
+
 export valgrind=env
 
 for opt in ${*}
