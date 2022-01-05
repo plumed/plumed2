@@ -34,7 +34,7 @@ namespace opes {
 On-the-fly probability enhanced sampling (\ref OPES "OPES") with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
-Such ensembles can be sampled via methods like replica exchange, or this OPES_EXPANDED bias action.
+Such ensembles can be sampled via methods like replica exchange, or this \ref OPES_EXPANDED bias action.
 A typical example is a mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
 In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs), \f$\Delta u_\lambda(\mathbf{x})\f$.
@@ -52,7 +52,7 @@ Its value is also needed for restarting a simulation.
 You can store the instantaneous \f$\Delta F_n(\lambda)\f$ estimates also in a more readable format using STATE_WFILE and STATE_WSTRIDE.
 Restart can be done either from a DELTAFS file or from a STATE_RFILE, it is equivalent.
 
-Contrary to \ref OPES_METAD, OPES_EXPANDED does not use kernel density estimation.
+Contrary to \ref OPES_METAD, \ref OPES_EXPANDED does not use kernel density estimation.
 
 \par Examples
 
@@ -65,7 +65,7 @@ PRINT FILE=COLVAR STRIDE=500 ARG=ene,opes.bias
 \endplumedfile
 
 You can easily combine multiple ECVs.
-The OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
+The \ref OPES_EXPANDED bias will create a multidimensional target grid to sample all the combinations.
 
 \plumedfile
 # simulate multiple temperatures while biasing a CV

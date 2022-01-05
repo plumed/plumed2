@@ -540,7 +540,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify temp");
-  keys.addFlag("CALC_WORK",false,"calculate the work done by the bias between each update");
+  keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.add("optional","RECT","list of bias factors for all the replicas");
   keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(\\f$k_B\\f$T*DAMPFACTOR)");
   for (size_t i = 0; i < n_tempering_options_; i++) {
