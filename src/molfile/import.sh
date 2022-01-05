@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 # A script to import a subset of molfile plugins into plumed2's tree
 

@@ -436,7 +436,7 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
            $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.cmake.runtime $(PLUMED_LIBDIR)Plumed.cmake.shared
 
 $(PLUMED_SCRIPTS_EXE):
-	@echo "#! /bin/bash" > $@
+	@echo "#! /usr/bin/env bash" > $@
 	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
 # The logic implemented here should be the same as in config/Config.inc.in
 # Please keep them consistent

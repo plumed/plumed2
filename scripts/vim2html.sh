@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 VIMFILE="$PLUMED_ROOT/vim/syntax/plumed.vim"
 

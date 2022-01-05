@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 {
 echo "#ifndef __PLUMED_config_version_h"
