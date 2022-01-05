@@ -1,6 +1,6 @@
 
 test:
-	@../../scripts/run
+	@env PLUMED_MAKE=$(MAKE) ../../scripts/run
 
 reset:
 	../../scripts/reset

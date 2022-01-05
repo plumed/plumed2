@@ -4,6 +4,12 @@ if test -n "$PLUMED_PREPEND_PATH" ; then
   PATH="$PLUMED_PREPEND_PATH:$PATH"
 fi
 
+if test -n "$PLUMED_MAKE" ; then
+  make="$PLUMED_MAKE"
+else
+  make=make
+fi
+
 export valgrind=env
 
 for opt in ${*}
@@ -189,7 +195,7 @@ case "$type" in
   else
     export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
   fi
-  make exe 1>out 2> err
+  "$make" exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
 (plumed)
