@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 if test -z "$GIT_TOKEN" ; then
   echo "No GIT_TOKEN, cannot push"

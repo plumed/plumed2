@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 if [ "$1" = --description ] ; then
   echo "create a new collective variable from a template"

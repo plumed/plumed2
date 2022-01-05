@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # vim:ft=python
 PYTHON_BIN="${PYTHON_BIN-python}"
 PLUMED_PYTHON_BIN="${PLUMED_PYTHON_BIN-${PYTHON_BIN}}"

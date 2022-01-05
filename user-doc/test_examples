@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 infile=$1
 haseg=`grep endplumedfile $infile | wc -l | awk '{print $1}'`

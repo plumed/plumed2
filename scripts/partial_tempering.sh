@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # vim:ft=awk
 if [ "$1" = --description ] ; then
   echo "scale parameters in a gromacs topology to implement solute or partial tempering"
