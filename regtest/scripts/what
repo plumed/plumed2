@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 if test -n "$PLUMED_PREPEND_PATH" ; then
   PATH="$PLUMED_PREPEND_PATH:$PATH"

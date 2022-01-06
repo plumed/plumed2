@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 if [[ $(uname) == "Linux" ]]; then
 # STATIC_LIBS is a PLUMED specific option and is required on Linux for the following reason:

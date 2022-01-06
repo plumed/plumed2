@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 if [ "$1" = --description ] ; then
   echo "compile a .cpp file into a shared library"

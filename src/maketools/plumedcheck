@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # vim: ft=awk
 
 # DOC: \page Plumedcheck Validating syntax with plumedcheck

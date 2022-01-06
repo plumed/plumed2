@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # first argument is name of txt file to be updated
 file="$1"

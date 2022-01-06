@@ -191,7 +191,7 @@ public:
   /// Write count file
 //   void writeCount(string filename) const;
   /// Write necessary output file in one function (.grad and .count)
-  void writeAll(const string &filename) const;
+  void writeAll(const string &filename, bool addition = false) const;
   /// Output divergence (.div) (experimental)
   void writeDivergence(const string &filename) const;
   /// merge windows
@@ -339,7 +339,7 @@ public:
   double getkbt() const { return kbt; }
   void setkbt(double p_kbt) { kbt = p_kbt; }
   static CZAR mergewindow(const CZAR &cWA, const CZAR &cWB);
-  void writeZCount(const string &filename) const;
+  void writeZCount(const string &filename, bool addition = false) const;
   ~CZAR() {}
 
 private:

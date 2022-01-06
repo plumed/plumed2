@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 
 cd ../../src

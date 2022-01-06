@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # This script generates a Portfile in science/plumed
 # Currently the portfile is aimed at testing the currect git hash

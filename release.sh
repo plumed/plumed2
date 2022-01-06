@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # use this script to make a new release
 # just type ./release.sh
