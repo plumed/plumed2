@@ -36,8 +36,8 @@ namespace colvar {
 //+PLUMEDOC COLVAR GHBFIX
 /*
 Calculate the GHBFIX interaction energy among GROUPA and GROUPB
-using a potential defined in Kührová et al., Computer Folding of RNA Tetraloops: Identification of Key Force
-Field Deficiencies, JCTC, 2016. Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
+using a potential defined in Kührová et al., Improving the performance of the AMBER RNA force field by
+tuning the hydrogen-bonding interactions, JCTC, 2019. Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
 
 This collective variable can be used to analyze hydrogen bond interactions, or to generate bias potentials.
 Notice that the value of the GHBFIX is returned in plumed units (see \ref UNITS), if not specified differently via ENERGY_UNITS.
