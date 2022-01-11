@@ -31,18 +31,18 @@ namespace opes {
 /*
 On-the-fly probability enhanced sampling (\ref OPES "OPES") with metadynamics-like target distribution \cite Invernizzi2020rethinking.
 
-This OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
-By default OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
-Similarly to \ref METAD, OPES_METAD optimizes the bias on-the-fly, with a given PACE.
+This \ref OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+By default \ref OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
+Similarly to \ref METAD, \ref OPES_METAD optimizes the bias on-the-fly, with a given PACE.
 It does so by reweighting via kernel density estimation the unbiased distribution in the CV space, \f$P(\mathbf{s})\f$.
 A compression algorithm is used to prevent the number of kernels from growing linearly with the simulation time.
 The bias at step \f$n\f$ is
 \f[
-V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{\tilde{P}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+V_n(\mathbf{s}) = (1-1/\gamma)\frac{1}{\beta}\log\left(\frac{P_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
 \f]
 See Ref.\cite Invernizzi2020rethinking for a complete description of the method.
 
-As an intuitive picture, rather than gradually filling the metastable basins, OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
+As an intuitive picture, rather than gradually filling the metastable basins, \ref OPES_METAD quickly tries to get a coarse idea of the full free energy surface (FES), and then slowly refines its details.
 It has a fast initial exploration phase, and then becomes extremely conservative and does not significantly change the shape of the deposited bias any more, reaching a regime of quasi-static bias.
 For this reason, it is possible to use standard umbrella sampling reweighting (see \ref REWEIGHT_BIAS) to analyse the trajectory.
 At <a href="https://github.com/invemichele/opes/tree/master/postprocessing">this link</a> you can find some python scripts that work in a similar way to \ref sum_hills, but the preferred way to obtain a FES with OPES is via reweighting (see \ref opes-metad).
@@ -50,12 +50,12 @@ The estimated \f$c(t)\f$ is printed for reference only, since it should converge
 This \f$c(t)\f$ should NOT be used for reweighting.
 Similarly, the \f$Z_n\f$ factor is printed only for reference, and it should converge when no new region of the CV-space is explored.
 
-Notice that OPES_METAD is more sensitive to degenerate CVs than \ref METAD.
-If the employed CVs map different metastable basins onto the same CV-space region, then OPES_METAD will remain stuck rather than completely reshaping the bias.
+Notice that \ref OPES_METAD is more sensitive to degenerate CVs than \ref METAD.
+If the employed CVs map different metastable basins onto the same CV-space region, then \ref OPES_METAD will remain stuck rather than completely reshaping the bias.
 This can be useful to diagnose problems with your collective variable.
 If it is not possible to improve the set of CVs and remove this degeneracy, then you might instead consider to use \ref OPES_METAD_EXPLORE or \ref METAD.
 In this way you will be able to obtain an estimate of the FES, but be aware that you most likely will not reach convergence and thus this estimate will be subjected to systematic errors (see e.g. Fig.3 in \cite Pietrucci2017review).
-On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using OPES_METAD instead of \ref METAD \cite Invernizzi2020rethinking.
+On the contrary, if your CVs are not degenerate but only suboptimal, you should converge faster by using \ref OPES_METAD instead of \ref METAD \cite Invernizzi2020rethinking.
 
 The parameter BARRIER should be set to be at least equal to the highest free energy barrier you wish to overcome.
 If it is much lower than that, you will not cross the barrier, if it is much higher, convergence might take a little longer.
@@ -67,10 +67,10 @@ However, notice that depending on the system this might not be the optimal choic
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
-If another bias potential is used besides OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
+If another bias potential is used besides \ref OPES_METAD, it is possible to take into account also for it during the internal reweighting for estimating \f$P(\mathbf{s})\f$.
 To do so, one has to add the value of the extra bias at the end of the ARG list and use the flag EXTRA_BIAS_ARG, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
-Another possible usage of EXTRA_BIAS_ARG is to make sure that OPES_METAD does not push against another fixed bias added to restrain the CVs range.
+Another possible usage of EXTRA_BIAS_ARG is to make sure that \ref OPES_METAD does not push against another fixed bias added to restrain the CVs range.
 
 Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
@@ -236,20 +236,24 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 /*
 On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite future_paper .
 
-This OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
-While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
+This \ref OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, \ref OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
 The bias at step \f$n\f$ is
 \f[
-V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{\tilde{P}^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
+V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{p^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
 \f]
 See Ref.\cite future_paper for a complete description of the method.
 
-Compared to \ref OPES_METAD, OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
-This goes at the expenses of a possibly slower convergence of the reweight estimate.
-It is useful to look around when you have no idea of the BARRIER, or if you want to quickly test the effectiveness of a new CV, and see if it is degenerate or not.
+Intuitively, while \ref OPES_METAD aims at quickly converging the reweighted free energy, \ref OPES_METAD_EXPLORE aims at quickly sampling the target well-tempered distriution.
+Given enough simulation time, both will converge to the same bias potential but they do so in a qualitatively different way.
+Compared to \ref OPES_METAD, \ref OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
+This goes at the expenses of a typically slower convergence of the reweight estimate.
+\ref OPES_METAD_EXPLORE can be useful e.g.~for simulating a new system with an unknown BARRIER, or for quickly testing the effectiveness of a new CV that might be degenerate.
 
-Like \ref OPES_METAD, also OPES_METAD_EXPLORE uses a kernel density estimation with an on-the-fly compression algorithm.
-The only difference is that it does not perform reweighting, since it estimates the sampled distribution and not the unbiased one.
+Similarly to \ref OPES_METAD, also \ref OPES_METAD_EXPLORE uses a kernel density estimation with the same on-the-fly compression algorithm.
+The only difference is that the kernels are not weighted, since it estimates the sampled distribution and not the reweighted unbiased one.
+
+All the options of \ref OPES_METAD are also available in \ref OPES_METAD_EXPLORE, except for those that modify the target distribution, since only a well-tempered target is allowed in this case.
 
 \par Examples
 
@@ -276,7 +280,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
-  keys.add("compulsory","SIGMA","ADAPTIVE","the initial widths of the kernels. If not set, adaptive sigma will be used and the ADAPTIVE_SIGMA_STRIDE should be set");
+  keys.add("compulsory","SIGMA","ADAPTIVE","the initial widths of the kernels. If not set, adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE");
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
@@ -293,7 +297,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","NLIST_PARAMETERS","( default=3.0,0.5 ) the two cutoff parameters for the kernels neighbor list");
   keys.addFlag("NLIST",false,"use neighbor list for kernels summation, faster but experimental");
   keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
-  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as simulation goes on. Can be added in a RESTART, to keep in check the number of compressed kernels");
+  keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
 //kernels and state files
@@ -315,7 +319,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
 
 //output components
   keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat as no new CV-space region is explored");
+  keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat once no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
