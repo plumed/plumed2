@@ -217,6 +217,7 @@ private:
   bool isRestart;
   bool useCZARestimator;
   bool useUIestimator;
+  bool mergeHistoryFiles;
   bool textoutput;
   bool withExternalForce;
   bool withExternalFict;
@@ -302,6 +303,9 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addFlag("TEXTOUTPUT", false, "use text output for grad and count files "
                "instead of boost::serialization binary "
                "output");
+  keys.addFlag("MERGEHISTORYFILES", false, "output all historic results "
+               "to a single file rather than multiple .drrstate files. "
+               "This option is effective only when textOutput is on.");
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
@@ -349,7 +353,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useCZARestimator(true), useUIestimator(false), textoutput(false),
-    withExternalForce(false), withExternalFict(false),
+    withExternalForce(false), withExternalFict(false), mergeHistoryFiles(false),
     reflectingWall(getNumberOfArguments(), 0),
     maxFactors(getNumberOfArguments(), 1.0)
 {
@@ -386,6 +390,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseFlag("NOCZAR", noCZAR);
 //   noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseFlag("TEXTOUTPUT", textoutput);
+  parseFlag("MERGEHISTORYFILES", mergeHistoryFiles);
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
   parseVector("EXTTEMP", etemp);
@@ -722,17 +727,21 @@ void DynamicReferenceRestraining::calculate() {
       }
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
-      const string filename =
-        outputprefix + "." + std::to_string(step_now) + ".drrstate";
-      save(filename, step_now);
       if (textoutput) {
+        const string filename =
+          outputprefix + ".another.drrstate";
+        save(filename, step_now);
         const string textfilename =
-          outputprefix + "." + std::to_string(step_now);
-        ABFGrid.writeAll(textfilename);
+          mergeHistoryFiles ? (outputprefix + ".hist") : (outputprefix + "." + std::to_string(step_now));
+        ABFGrid.writeAll(textfilename, mergeHistoryFiles);
         if (useCZARestimator) {
-          CZARestimator.writeAll(textfilename);
-          CZARestimator.writeZCount(textfilename);
+          CZARestimator.writeAll(textfilename, mergeHistoryFiles);
+          CZARestimator.writeZCount(textfilename, mergeHistoryFiles);
         }
+      } else {
+        const string filename =
+          outputprefix + "." + std::to_string(step_now) + ".drrstate";
+        save(filename, step_now);
       }
     }
     if (getCPT()) {
