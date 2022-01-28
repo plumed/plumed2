@@ -81,7 +81,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) {
           aaa=mypdb.getAtomNumbers();
-          log.printf("  found %z atoms in input \n",aaa.size());
+          log.printf("  found %zu atoms in input \n",aaa.size());
           log.printf("  with indices : ");
           for(unsigned i=0; i<aaa.size(); ++i) {
             if(i%25==0) log<<"\n";
