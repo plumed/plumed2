@@ -107,9 +107,9 @@ Additional information can be found in the several review papers on metadynamics
 
 \section masterclass-22-1-install Setting up the software
 
-The users can refer to the procedure introduced in \ref masterclass-21-1 and \ref masterclass-21-3 to install the required software.
-It is suggested that an optimized version of [GROMACS](https://urldefense.com/v3/__https://www.gromacs.org__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjcXtG6Q6Q$ ) is properly installed since the exercises will also 
-require a simulation as input. Please remember to activate the module for the FM as reported [here](https://urldefense.com/v3/__https://www.plumed.org/doc-v2.7/user-doc/html/_f_u_n_n_e_l_m_o_d.html__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjfKRFCULA$ ).
+For this masterclass you will need to install GROMACS and PLUMED. The easiest way is to use conda and to follow the instructions that
+are reported in [this repository](https://github.com/plumed/masterclass-2022).
+You might prefer to install an optimized version of [GROMACS](https://www.gromacs.org). Please remember to activate the module for the FM as reported [here](https://www.plumed.org/doc-v2.7/user-doc/html/_f_u_n_n_e_l_m_o_d.html).
 
 Please also install a working version of VMD that will be used together with two graphical user interfaces (GUIs) to create the 
 PLUMED input file and analyse the results during the exercises. More information to download and install VMD can be found [here](https://urldefense.com/v3/__https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjcS4lt5Wg$ ).
