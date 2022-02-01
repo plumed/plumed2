@@ -38,7 +38,7 @@ PLUMED allows to accurately compute binding free energies, thus allowing us to t
 binding pathways. The FM is a variant of Metadynamics, which enhances the sampling of ligand binding/unbinding towards its molecular target 
 through the use of a funnel-shaped restraint. The latter is constructed as an external potential that limits the sampling of the ligand to the 
 binding pocket and a slim region in the solvent, accelerating convergence and avoiding wasting time in sampling useless unbound states.
-In the following we will learn how to use PLUMED to perform a FM simulation following the FM Advanced Protocol (FMAP) \cite raniolo2020ligand. 
+In the following, we will learn how to use PLUMED to perform a FM simulation following the FM Advanced Protocol (FMAP) \cite raniolo2020ligand. 
 Below it is reported a recap of the basic metadynamics theory.
 
 \hidden{Summary of theory}
@@ -108,14 +108,14 @@ Additional information can be found in the several review papers on metadynamics
 \section masterclass-22-1-install Setting up the software
 
 The users can refer to the procedure introduced in \ref masterclass-21-1 and \ref masterclass-21-3 to install the required software.
-It is suggested that an optimized version of [GROMACS](https://www.gromacs.org) is properly installed since the exercises will also 
-require a simulation as input. Please remember to activate the module for the FM as reported [here](https://www.plumed.org/doc-v2.7/user-doc/html/_f_u_n_n_e_l_m_o_d.html).
+It is suggested that an optimized version of [GROMACS](https://urldefense.com/v3/__https://www.gromacs.org__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjcXtG6Q6Q$ ) is properly installed since the exercises will also 
+require a simulation as input. Please remember to activate the module for the FM as reported [here](https://urldefense.com/v3/__https://www.plumed.org/doc-v2.7/user-doc/html/_f_u_n_n_e_l_m_o_d.html__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjfKRFCULA$ ).
 
 Please also install a working version of VMD that will be used together with two graphical user interfaces (GUIs) to create the 
-PLUMED input file and analyse the results during the exercises. More information to download and install VMD can be found [here](https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD).
+PLUMED input file and analyse the results during the exercises. More information to download and install VMD can be found [here](https://urldefense.com/v3/__https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjcS4lt5Wg$ ).
 
-The GUIs require the tcl tooltip library, which is not implemented in the software. You can download the library from its [github] (https://github.com/tcltk/tklib/tree/master/modules/tooltip)
-repository. You should also download the GUIs themselves, which can be found in the folder funnel_gui in their [github](https://github.com/limresgrp/FMAP_v1) repository.
+The GUIs require the tcl tooltip library, which is not implemented in the software. You can download the library from its [github] (https://urldefense.com/v3/__https://github.com/tcltk/tklib/tree/master/modules/tooltip__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjdjVqfv7Q$ )
+repository. You should also download the GUIs themselves, which can be found in the folder funnel_gui in their [github](https://urldefense.com/v3/__https://github.com/limresgrp/FMAP_v1__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjcW4qWTdg$ ) repository.
 No further installation is necessary, but in order to source the GUI the following command must always precede:
 
 \verbatim
@@ -136,7 +136,7 @@ You can find a detailed version of the procedure in the FMAP protocol paper \cit
 \section masterclass-22-1-resources Resources
 
 The data needed to conduct the exercise shoulb be generated with VMD and a molecular dynamics engine.
-In case of problems in generating the requested data, an example can be found in [Zenodo](https://zenodo.org/record/3697115#.Yel3YBPMLqs).
+In case of problems in generating the requested data, an example can be found in [Zenodo](https://urldefense.com/v3/__https://zenodo.org/record/3697115*.Yel3YBPMLqs__;Iw!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjf-rhSD7w$ ).
 Inside you will find:
 - `FMAP_procedure.pdf`: a pdf resuming all the steps in FMAP;
 - `README.md`: a file containing general information about installation and setup;
@@ -158,7 +158,7 @@ However, we strongly suggest to create new data in order to experience first-han
 All the compulsory files for the system of interest can be found in a dedicated repository:
 
 \verbatim
-git clone https://github.com/h2nch2co2h/masterclass-22-1
+git clone https://urldefense.com/v3/__https://github.com/h2nch2co2h/masterclass-22-1__;!!JFdNOqOXpB6UZW0!5EfB0TJhERKqbpAZkthEJ26sJdWBk3eNszx0bFHN-PJIwapwRt2bmG6-2UZz0MjRBjc4DcsOEA$ 
 \endverbatim
 
 This repositoy contains 2 folders:
@@ -175,7 +175,7 @@ focus in the estimate of the binding free energy. Additional information about c
 in the lowest binding pathway will also be provided.
 
 \anchor masterclass-22-1-system
-\image html masterclass-22-1-system.png "Benzamidine-trypsin system" width=30%
+\image html masterclass-22-1-system.png "Benzamidine-trypsin system" width=60%
 
 \section masterclass-22-1-ex Exercises
 
@@ -364,7 +364,7 @@ ffs_tk
 \endverbatim
 
 \anchor masterclass-22-1-ffs
-\image html masterclass-22-1-ffs.png "Interface of ffs.tcl" width=30%
+\image html masterclass-22-1-ffs.png "Interface of ffs.tcl" width=60%
 
 The user can immediately see that all options are on the right of the interface and most of the space is occupied by the central canvas that
 is used to plot graphs. As previously said, let's try generating FES files starting from the HILLS file created during the production run.
@@ -389,10 +389,10 @@ Each and every FES can provide a value for the binding free energy with respect 
 energy with the following formula:
 
 \f[
-\Delta G_b = -1/\beta ln(C_0 \pi r_{cyl}^2) \int_bound e^{-\beta(W(z)-W_{ref})} dz,
+\Delta G_b = -1/\beta ln(C_0 \pi r_{cyl}^2) \int_{bound} e^{-\beta(W(z)-W_{ref})} dz,
 \f]
 
-with C0 being the standard concentration of 1 M for all reacting molecules, \beta the inverse of the Boltzmann constant multiplied by 
+with C0 being the standard concentration of 1 M for all reacting molecules, \f$ \beta \f$ the inverse of the Boltzmann constant multiplied by 
 the temperature in Kelvin, W(z) the value of the potential mean force (PMF) in the bound poses, and Wref the PMF in the unbound region. 
 
 If you used fps.lp as your CV of selection for metadynamics then you are set. Otherwise, the user is requested to reweight with respect to
@@ -512,7 +512,7 @@ This ends the exercise.
 \subsection masterclass-22-1-ex-4 Bonus exercise 4: Infrequent Metadynamics
 
 This bonus exercise will give an idea on how to proceed if a more thorough study of the kinetic is in order. We will only see one application starting from
-the absolute minimum of our benzamidine-trypsin system, but potentially all minima extracted from the last point of \ref masterclass-22-1-ex-3 should be studied.
+the absolute minimum of our benzamidine-trypsin system, but potentially all minima extracted from the last point of \ref masterclass-22-1-ex-3 could be studied.
 
 In order to correctly identify a transition state and estimate the barrier connecting two basins, we must not compromise it by adding bias.
 This is a delicate procedure since we still would like to speed up the sampling but up to the point when the system could jump from one state to the other on
@@ -535,7 +535,7 @@ GRID_WSTRIDE=50000000
 PRINT FILE=COLVAR STRIDE=4000 ARG=*
 \endplumedfile
 
-In this input, the distance between an atom of the protein and one of the ligand will be a good enough CV to determine the jump between different metastable states. 
+In this input, the distance between an atom of the protein and one of the ligand will be a reliable CV to determine the jump between different metastable states. 
 This kind of simulations should be run in batches in order to gather enough statistics. Considering the low amount of bias introduced, this could seem as a big
 sink of computational power, but consider that the simulations will be interrupted as soon as we see the transition of interest.
 
@@ -543,24 +543,24 @@ However, let's see an example to better understand what to do. In \ref mastercla
 run for the benzamidine-trypsin system starting from the absolute minimum.
 
 \anchor masterclass-22-1-infr
-\image html masterclass-22-1-infr.png "Graph of distance with respect to simulation time" 
+\image html masterclass-22-1-infr.png "Graph of distance with respect to simulation time" width 60%
 
 Although the simulation lasted around 65 ns, our point of interest lies at around 22 ns (orange line), when we have a clear change in the sampling of the distance.
-In this case, the state of absolute minimum has been abandoned following the addition of the external potential. We can measure the added bias up to that point
-by looking at the HILLS file. This information is important because, although low, the infrequent Metadynamics provide an acceleration booster to the simulation
-that must be estimated in order to extract the unbiased time for the transition.
+Here, the absolute minimum was left thanks to the metadynamics bias added. We can measure the added bias up to that point by looking at the HILLS file. This 
+information is important because, albeit low, the infrequent Metadynamics provides an acceleration booster to the simulation that must be estimated in order 
+to extract the unbiased time for the transition.
 
-The acceleration factor is approximated by the following formula:
+The acceleration factor can be calculated using the following formula:
 
 \f[
 \alpha = <e^{\beta V(s,t)}>,
 \f]
 
-where s is the collective variable of choice, \beta is the inverse of the Boltzmann constant multiplied the temperature in Kelvin, and V(s,t) is the bias felt
-at time t of transition \ref PRL230602. Rescaling the transition time by this term will yield the real transition time that one would expect from an unbiased
+where s is the collective variable of choice, \f$ \beta \f$ is the inverse of the Boltzmann constant multiplied the temperature in Kelvin, and V(s,t) is the bias felt
+at time t of transition \cite PRL230602. Rescaling the transition time by this term will yield the real transition time that one would expect from an unbiased
 simulation. But how to obtain the characteristic transition time of the system starting from corrected transition times?
 
-The easiest way is to construct an empirical cumulative distribution function with the various corrected time values found in the independent replicas of infrequent
+One practical way is to construct an empirical cumulative distribution function with the various corrected time values found in the independent replicas of infrequent
 Metadynamics. This is done by plotting on the x axis the time and on the y axis the percentage of simulations that evolved from our starting state to another.
 This scatter plot must then be fitted by a theoretical cumulative distribution function, which has the following equation:
 
@@ -568,14 +568,14 @@ This scatter plot must then be fitted by a theoretical cumulative distribution f
 TCDF = 1 - exp(-t/\tau),
 \f]
 
-where t is our transition time and \tau is the characteristic transition time for the system of interest. The reliability of the fitting can be checked
+where t is our transition time and \f$ \tau \f$ is the characteristic transition time for the system of interest. The reliability of the fitting can be checked
 through the Kolmogorov-Smirnoff test.
 
-The value thus obtained corresponds to the time requested on average for the system to move from our minimum to another well-defined state (state P) \ref PRL230602.
+The value thus obtained corresponds to the time requested on average for the system to move from our minimum to another well-defined state (state P) \cite PRL230602.
 
 The same exercise can be done waiting for the ligand to leave the binding site, in which case we would be measuring the time requested for unbinding. The rate 
 constant between the bound and unbound states can be approximated by dividing the number of transitions between the two by the total time the system spent in 
-the bound state (corrected by the acceleration factor).
+the bound state (calculated using the metadynamics simulation time and the acceleration factor as reported above).
 
 This concludes the masterclass, thank you for your participation.
 
