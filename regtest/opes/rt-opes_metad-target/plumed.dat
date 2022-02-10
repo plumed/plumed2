@@ -6,8 +6,8 @@ Ftg: CUSTOM ARG=phi PERIODIC=NO FUNC=x^2
 bias: BIASVALUE ARG=Ftg
 
 opes: OPES_METAD ...
-  ARG=phi,Ftg
-  EXTRA_BIAS_ARG
+  ARG=phi
+  EXTRA_BIAS=Ftg
   PACE=5
   TEMP=300.0
   BARRIER=20
