@@ -72,7 +72,11 @@ To do so, one has to add those biases with the EXTRA_BIAS keyword, as in the exa
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
 Another possible usage of EXTRA_BIAS is to make sure that \ref OPES_METAD does not push against another fixed bias added to restrain the CVs range (e.g. \ref UPPER_WALLS).
 
-Restart can be done from a KERNELS file, but it might not be perfect (due to limited precision when printing kernels to file, or usage of adaptive SIGMA).
+Through the EXCLUDED_REGION keywork, it is possible to specify a region of CV space where no kernels will be deposited.
+This can be useful for example for making sure the bias does not modify the transition region, thus allowing for rate calculation.
+See below for an example of how to use this keyword.
+
+Restart can be done from a KERNELS file, but it might be not perfect (due to limited precision when printing kernels to file, or if adaptive SIGMA is used).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
@@ -115,7 +119,7 @@ opes: OPES_METAD ...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=phi,psi,opes.*
 \endplumedfile
 
-Finally, an example of how to define a custom target distribution different from the well-tempered one.
+Next is an example of how to define a custom target distribution different from the well-tempered one.
 Here we chose to focus more on the transition state, that is around \f$\phi=0\f$.
 Our target distribution is a Gaussian centered there, thus the target free energy we want to sample is a parabola, \f$F^{\text{tg}}(\mathbf{s})=-\frac{1}{\beta} \log [p^{\text{tg}}(\mathbf{s})]\f$.
 
@@ -135,6 +139,24 @@ PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=phi,Ftg.bias,opes.bias
 \endplumedfile
 
 Notice that in order to reweight for the unbiased \f$P(\mathbf{s})\f$ during postprocessing, the total bias `Ftg.bias+opes.bias` must be used.
+
+Finally, an example of how to use the EXCLUDED_REGION keyword.
+It expects a characteristic function that is different from zero in the region to be excluded.
+With the following input no kernel is deposited in the transition state region of alanine dipeptide, defined by the interval \f$\phi \in [-0.6, 0.7]\f$:
+
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+xx: CUSTOM PERIODIC=NO ARG=phi FUNC=step(x+0.6)-step(x-0.7)
+opes: OPES_METAD ...
+  ARG=phi,psi
+  PACE=500
+  BARRIER=30
+  EXCLUDED_REGION=xx
+  NLIST
+...
+PRINT FMT=%g STRIDE=500 FILE=COLVAR ARG=phi,psi,xx,opes.*
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -205,8 +227,7 @@ private:
   double old_KDEnorm_;
   std::vector<kernel> delta_kernels_;
 
-  bool check_exclusion_;
-  Value* exclude_region_;
+  Value* excluded_region_;
   std::vector<Value*> extra_biases_;
 
   OFile stateOfile_;
@@ -310,9 +331,9 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.add("optional","EXCLUDE_REGION","when the value of this argument is zero no kernels are deposited");
+  keys.add("optional","EXCLUDED_REGION","no kernels are deposited when the value of this argument is nonzero");
   if(!mode::explore)
-    keys.add("optional","EXTRA_BIAS","consider the presence of these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
+    keys.add("optional","EXTRA_BIAS","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -338,7 +359,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
   , work_(0)
-  , check_exclusion_(false)
+  , excluded_region_(NULL)
 {
   std::string error_in_input1("Error in input in action "+getName()+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
@@ -489,24 +510,23 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 
 //options involving extra arguments
   std::vector<Value*> args;
-  parseArgumentList("EXCLUDE_REGION",args);
+  parseArgumentList("EXCLUDED_REGION",args);
   if(args.size()>0)
   {
     plumed_massert(args.size()==1,"only one characteristic function for the region to be excluded is expected");
-    exclude_region_=args[0];
-    check_exclusion_=true;
+    excluded_region_=args[0];
   }
   if(!mode::explore)
     parseArgumentList("EXTRA_BIAS",extra_biases_);
-  if(check_exclusion_ || extra_biases_.size()>0)
+  if(excluded_region_!=NULL || extra_biases_.size()>0)
   { //add dependency from the extra arguments
     std::vector<Value*> all_arguments;
     for(unsigned i=0; i<ncv_; i++)
       all_arguments.push_back(getPntrToArgument(i));
     for(unsigned e=0; e<extra_biases_.size(); e++)
       all_arguments.push_back(extra_biases_[e]);
-    if(check_exclusion_)
-      all_arguments.push_back(exclude_region_);
+    if(excluded_region_!=NULL)
+      all_arguments.push_back(excluded_region_);
     requestArguments(all_arguments);
   }
 
@@ -843,6 +863,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
   if(std::isinf(biasfactor_))
     log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
+  if(excluded_region_!=NULL)
+    log.printf(" -- EXCLUDED_REGION: kernels will be deposited only when '%s' is equal to zero\n",excluded_region_->getName().c_str());
   if(extra_biases_.size()>0)
   {
     log.printf(" -- EXTRA_BIAS: reweighting also for");
@@ -987,13 +1009,8 @@ void OPESmetad<mode>::update()
       return; //do not apply bias before having measured sigma
   }
 
-//check for exclusion region
-  bool not_excluded=true;
-  if(getStep()%stride_==0 && check_exclusion_)
-    not_excluded=exclude_region_->get();
-
 //do update
-  if(getStep()%stride_==0 && not_excluded)
+  if(getStep()%stride_==0 && (excluded_region_==NULL || excluded_region_->get()==0))
   {
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
