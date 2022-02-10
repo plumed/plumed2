@@ -7,7 +7,7 @@ bias: BIASVALUE ARG=Ftg
 
 opes: OPES_METAD ...
   ARG=phi
-#  EXTRA_BIAS=Ftg
+  EXTRA_BIAS=Ftg
   PACE=5
   TEMP=300.0
   BARRIER=20
