@@ -205,6 +205,8 @@ private:
   double old_KDEnorm_;
   std::vector<kernel> delta_kernels_;
 
+  bool check_exclusion_;
+  Value* exclude_region_;
   std::vector<Value*> extra_biases_;
 
   OFile stateOfile_;
@@ -308,6 +310,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
+  keys.add("optional","EXCLUDE_REGION","when the value of this argument is zero no kernels are deposited");
   if(!mode::explore)
     keys.add("optional","EXTRA_BIAS","consider the presence of these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
@@ -335,6 +338,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
   , work_(0)
+  , check_exclusion_(false)
 {
   std::string error_in_input1("Error in input in action "+getName()+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
@@ -482,18 +486,28 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseFlag("RECURSIVE_MERGE_OFF",recursive_merge_off);
   recursive_merge_=!recursive_merge_off;
   parseFlag("CALC_WORK",calc_work_);
-  if(!mode::explore)
+
+//options involving extra arguments
+  std::vector<Value*> args;
+  parseArgumentList("EXCLUDE_REGION",args);
+  if(args.size()>0)
   {
+    plumed_massert(args.size()==1,"only one characteristic function for the region to be excluded is expected");
+    exclude_region_=args[0];
+    check_exclusion_=true;
+  }
+  if(!mode::explore)
     parseArgumentList("EXTRA_BIAS",extra_biases_);
-    if(extra_biases_.size()>0)
-    { //add dependency from the extra biases
-      std::vector<Value*> all_arguments;
-      for(unsigned i=0; i<ncv_; i++)
-        all_arguments.push_back(getPntrToArgument(i));
-      for(unsigned e=0; e<extra_biases_.size(); e++)
-        all_arguments.push_back(extra_biases_[e]);
-      requestArguments(all_arguments);
-    }
+  if(check_exclusion_ || extra_biases_.size()>0)
+  { //add dependency from the extra arguments
+    std::vector<Value*> all_arguments;
+    for(unsigned i=0; i<ncv_; i++)
+      all_arguments.push_back(getPntrToArgument(i));
+    for(unsigned e=0; e<extra_biases_.size(); e++)
+      all_arguments.push_back(extra_biases_[e]);
+    if(check_exclusion_)
+      all_arguments.push_back(exclude_region_);
+    requestArguments(all_arguments);
   }
 
 //kernels file
@@ -973,8 +987,13 @@ void OPESmetad<mode>::update()
       return; //do not apply bias before having measured sigma
   }
 
+//check for exclusion region
+  bool not_excluded=true;
+  if(getStep()%stride_==0 && check_exclusion_)
+    not_excluded=exclude_region_->get();
+
 //do update
-  if(getStep()%stride_==0)
+  if(getStep()%stride_==0 && not_excluded)
   {
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
