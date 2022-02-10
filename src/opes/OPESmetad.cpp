@@ -142,6 +142,7 @@ Notice that in order to reweight for the unbiased \f$P(\mathbf{s})\f$ during pos
 
 Finally, an example of how to use the EXCLUDED_REGION keyword.
 It expects a characteristic function that is different from zero in the region to be excluded.
+You can use \ref CUSTOM and a combination of the step function to define it.
 With the following input no kernel is deposited in the transition state region of alanine dipeptide, defined by the interval \f$\phi \in [-0.6, 0.7]\f$:
 
 \plumedfile
@@ -267,7 +268,7 @@ V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{p^{\text{WT}}_n(\math
 \f]
 See Ref.\cite Invernizzi2021explore for a complete description of the method.
 
-Intuitively, while \ref OPES_METAD aims at quickly converging the reweighted free energy, \ref OPES_METAD_EXPLORE aims at quickly sampling the target well-tempered distriution.
+Intuitively, while \ref OPES_METAD aims at quickly converging the reweighted free energy, \ref OPES_METAD_EXPLORE aims at quickly sampling the target well-tempered distribution.
 Given enough simulation time, both will converge to the same bias potential but they do so in a qualitatively different way.
 Compared to \ref OPES_METAD, \ref OPES_METAD_EXPLORE is more similar to \ref METAD, because it allows the bias to vary significantly, thus enhancing exploration.
 This goes at the expenses of a typically slower convergence of the reweight estimate.
@@ -331,7 +332,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.add("optional","EXCLUDED_REGION","no kernels are deposited when the value of this argument is nonzero");
+  keys.add("optional","EXCLUDED_REGION","kernels are not deposited when the action provided here has a nonzero value, see example above");
   if(!mode::explore)
     keys.add("optional","EXTRA_BIAS","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
@@ -513,7 +514,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseArgumentList("EXCLUDED_REGION",args);
   if(args.size()>0)
   {
-    plumed_massert(args.size()==1,"only one characteristic function for the region to be excluded is expected");
+    plumed_massert(args.size()==1,"only one characteristic function should define the region to be excluded");
     excluded_region_=args[0];
   }
   if(!mode::explore)
