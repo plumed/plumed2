@@ -515,20 +515,14 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   if(args.size()>0)
   {
     plumed_massert(args.size()==1,"only one characteristic function should define the region to be excluded");
+    requestExtraDependencies(args);
     excluded_region_=args[0];
   }
   if(!mode::explore)
+  {
     parseArgumentList("EXTRA_BIAS",extra_biases_);
-  if(excluded_region_!=NULL || extra_biases_.size()>0)
-  { //add dependency from the extra arguments
-    std::vector<Value*> all_arguments;
-    for(unsigned i=0; i<ncv_; i++)
-      all_arguments.push_back(getPntrToArgument(i));
-    for(unsigned e=0; e<extra_biases_.size(); e++)
-      all_arguments.push_back(extra_biases_[e]);
-    if(excluded_region_!=NULL)
-      all_arguments.push_back(excluded_region_);
-    requestArguments(all_arguments);
+    if(extra_biases_.size()>0)
+      requestExtraDependencies(extra_biases_);
   }
 
 //kernels file

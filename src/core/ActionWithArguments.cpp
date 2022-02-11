@@ -234,6 +234,24 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
   }
 }
 
+void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &extra) {
+  plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
+  std::string fullname;
+  std::string name;
+  for(unsigned i=0; i<extra.size(); i++) {
+    fullname=extra[i]->getName();
+    if(fullname.find(".")!=std::string::npos) {
+      std::size_t dot=fullname.find_first_of('.');
+      name=fullname.substr(0,dot);
+    } else {
+      name=fullname;
+    }
+    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
+    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+    addDependency(action);
+  }
+}
+
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false)
