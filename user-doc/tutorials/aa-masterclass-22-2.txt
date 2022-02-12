@@ -66,7 +66,7 @@ git clone https://github.com/plumed/masterclass-22-02.git
 
 The repository contains hills and colvar files, respectively, from 10 or 1 ns metadynamics simulations of
 alanine dipeptide in water calculated in Plumed. Other input data are available from
-[Zenodo](XXXX) but are not required in this tutorial. The repo contains:
+[Zenodo](https://doi.org/10.5281/zenodo.6056060) but are not required in this tutorial. The repo contains:
 - `HILLS.cv12` and `COLVAR.cv12` - hills and collective variable + bias report from metadynamics with phi and psi dihedral angles
 - `HILLS.cv1` and `COLVAR.cv1` - hills and collective variable + bias report from metadynamics with phi dihedral angle
 - `HILLS.cv2` and `COLVAR.cv2` - hills and collective variable + bias report from metadynamics with psi dihedral angle
