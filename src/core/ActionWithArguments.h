@@ -68,6 +68,7 @@ public:
   bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
   void requestArguments(const std::vector<Value*> &arg);
+  void requestExtraDependencies(const std::vector<Value*> &extra);
 /// Add forces to arguments (used in apply)
   void addForcesOnArguments( const std::vector<double>& forces );
 public:
