@@ -360,7 +360,7 @@ The functions for image saving can be used with regular expressions. This is
 useful for making movies. A movie of free energy evolution can be simply made
 by:
 \verbatim
-tfes<-fes(myhills12, tmax=50)
+tfes<-fes(myhills12, imax=50)
 png("snap%04d.png")
 plot(tfes, zlim=c(-200,0))
 for(i in 1:199) {
