@@ -862,10 +862,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     log.printf(" -- EXCLUDED_REGION: kernels will be deposited only when '%s' is equal to zero\n",excluded_region_->getName().c_str());
   if(extra_biases_.size()>0)
   {
-    log.printf(" -- EXTRA_BIAS: reweighting also for");
+    log.printf(" -- EXTRA_BIAS: ");
     for(unsigned e=0; e<extra_biases_.size(); e++)
-      log.printf(" %s",extra_biases_[e]->getName().c_str());
-    log.printf("\n");
+      log.printf("%s ",extra_biases_[e]->getName().c_str());
+    log.printf("will be reweighted\n");
   }
   if(adaptive_sigma_)
   {
