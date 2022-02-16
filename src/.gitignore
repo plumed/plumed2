@@ -53,6 +53,7 @@
 !/sasa
 !/xdrfile
 !/s2cm
+!/pytorch
 
 # And just ignore these files
 *.xxd
