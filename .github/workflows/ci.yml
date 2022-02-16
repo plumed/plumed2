@@ -75,7 +75,7 @@ jobs:
         python -c "import MDAnalysis" ;
         python -c "import mdtraj" ;
     - name: Install Libtorch
-      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # Note: libtorch library is not compiled with GLIBCXX_DEBUG
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }} && ${{ ! contains( matrix.variant, '-intel-' ) }} # Notes: (1) libtorch is not compiled with GLIBCXX_DEBUG (2) regtests for other functions fail on intel if libtorch is linked
       run: |
         # added by luigibonati
         wget https://download.pytorch.org/libtorch/lts/1.8/cpu/libtorch-cxx11-abi-shared-with-deps-1.8.2%2Bcpu.zip ;
