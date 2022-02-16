@@ -16,6 +16,10 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #ifdef __PLUMED_HAS_LIBTORCH
+// convert LibTorch version to string
+//#define STRINGIFY(x) #x
+//#define TOSTR(x) STRINGIFY(x)
+//#define LIBTORCH_VERSION TO_STR(TORCH_VERSION_MAJOR) "." TO_STR(TORCH_VERSION_MINOR) "." TO_STR(TORCH_VERSION_PATCH)
 
 #include "core/PlumedMain.h"
 #include "function/Function.h"
@@ -24,6 +28,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <torch/torch.h>
 #include <torch/script.h>
 
+#include <fstream>
 #include <cmath>
 
 using namespace std;
@@ -94,8 +99,22 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   try {
     _model = torch::jit::load(fname);
   }
+  //if an error is thrown check if the file exists or not
   catch (const c10::Error& e) {
-    error("Cannot load Pytorch model. Check that the model is present and that the version of Pytorch is compatible with the Libtorch linked to PLUMED.");
+    std::ifstream infile(fname);
+    bool exist = infile.good();
+    infile.close();
+    if (exist){
+      // print libtorch version
+      std::stringstream ss;
+      ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
+      std::string version;
+      ss >> version; // extract into the string.
+      plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script') and that the Pytorch version matches the LibTorch one ("+version+").");
+    }
+    else{
+      plumed_merror("The FILE: '"+fname+"' does not exist.");
+    }
   }
 
   checkRead();
