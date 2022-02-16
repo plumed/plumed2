@@ -679,6 +679,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -746,6 +747,7 @@ enable_python
 enable_af_ocl
 enable_af_cuda
 enable_af_cpu
+enable_libtorch
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -806,6 +808,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1058,6 +1061,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1195,7 +1207,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1348,6 +1360,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1448,6 +1461,7 @@ Optional Features:
   --enable-af_ocl         enable search for arrayfire_ocl, default: no
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
+  --enable-libtorch       enable search for libtorch, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -3293,6 +3307,24 @@ else
 fi
 
 
+
+libtorch=
+# Check whether --enable-libtorch was given.
+if test "${enable_libtorch+set}" = set; then :
+  enableval=$enable_libtorch; case "${enableval}" in
+             (yes) libtorch=true ;;
+             (no)  libtorch=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libtorch" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) libtorch=true ;;
+             (no)  libtorch=false ;;
+  esac
+
+fi
+
+ #added by luigibonati
 
 
 
@@ -9505,6 +9537,66 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
+    fi
+
+fi
+
+#added by luigibonati
+if test $libtorch == true ; then
+
+    found=ko
+    __PLUMED_HAS_LIBTORCH=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
+$as_echo_n "checking libtorch with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch without extra libs" >&5
+$as_echo_n "checking libtorch without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBTORCH 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBTORCH=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
+      LIBS="$save_LIBS"
     fi
 
 fi
