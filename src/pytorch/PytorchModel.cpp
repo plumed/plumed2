@@ -104,7 +104,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
     std::ifstream infile(fname);
     bool exist = infile.good();
     infile.close();
-    if (exist){
+    if (exist) {
       // print libtorch version
       std::stringstream ss;
       ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
@@ -112,7 +112,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
       ss >> version; // extract into the string.
       plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script') and that the Pytorch version matches the LibTorch one ("+version+").");
     }
-    else{
+    else {
       plumed_merror("The FILE: '"+fname+"' does not exist.");
     }
   }
