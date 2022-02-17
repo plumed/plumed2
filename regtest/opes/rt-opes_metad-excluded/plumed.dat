@@ -1,0 +1,21 @@
+# vim:ft=plumed
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+chi: CUSTOM PERIODIC=NO ARG=phi FUNC=step(x+2)-step(x)
+
+opes: OPES_METAD ...
+  ARG=phi,psi
+  PACE=5
+  TEMP=300.0
+  SIGMA=0.2,0.2
+  BARRIER=20
+  FMT=%f
+  NLIST
+  EXCLUDED_REGION=chi
+...
+
+PRINT FMT=%g STRIDE=5 FILE=COLVAR ARG=phi,psi,chi,opes.bias
+
+ENDPLUMED
+

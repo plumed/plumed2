@@ -289,6 +289,10 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         performCalcNoUpdate();
         break;
+      case cmd_performCalcNoForces:
+        CHECK_INIT(initialized,word);
+        performCalcNoForces();
+        break;
       case cmd_update:
         CHECK_INIT(initialized,word);
         update();
@@ -815,6 +819,11 @@ void PlumedMain::performCalcNoUpdate() {
   waitData();
   justCalculate();
   backwardPropagate();
+}
+
+void PlumedMain::performCalcNoForces() {
+  waitData();
+  justCalculate();
 }
 
 void PlumedMain::performCalc() {
