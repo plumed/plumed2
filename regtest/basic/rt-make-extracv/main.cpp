@@ -60,6 +60,21 @@ int main(){
     ofs<<"f_pre:";
     for(auto & f:forces) ofs<<" "<<f;
     ofs<<"\n";
+// thent compute using another modified positions, without updating forces
+    positions[0]=0.5;
+    extracv2=100;
+    for(auto & f:forces) f=0.0;
+    extracvf=0.0;
+    extracvf2=0.0;
+    plumed->cmd("prepareCalc");
+    plumed->cmd("performCalcNoForces");
+    plumed->cmd("getBias",&bias);
+    ofs<<"bias_pre: "<<bias<<"\n";
+    ofs<<"extracvf_pre: "<<extracvf<<"\n";
+    ofs<<"extracvf2_pre: "<<extracvf2<<"\n";
+    ofs<<"f_pre:";
+    for(auto & f:forces) ofs<<" "<<f;
+    ofs<<"\n";
 // then compute using regular positions:
     positions[0]=0;
     extracv2=0;

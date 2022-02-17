@@ -313,6 +313,11 @@ public:
   */
   void performCalcNoUpdate();
   /**
+    Perform the calculation without backpropagation nor update()
+    Shortcut for: waitData() + justCalculate()
+  */
+  void performCalcNoForces();
+  /**
     Complete PLUMED calculation.
     Shortcut for prepareCalc() + performCalc()
   */
