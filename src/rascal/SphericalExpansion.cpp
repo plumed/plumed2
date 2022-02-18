@@ -258,20 +258,21 @@ void RascalSpherical<T>::apply() {
   std::vector<unsigned> shape( outval->getShape() ); unsigned base=0;
   // Loop over environments (atoms)
   for(unsigned i=0; i<shape[0]; ++i) {
-      // Loop over features
-      for(unsigned j=0; j<shape[1];++j) {
-          // Get the force on the jth feature in the ith environment.
-          double ff = outval->getForce( i*shape[1] + j );
-          // Loop over neighbours in ith environment
-          for(unsigned k=0; k<neigh[i]; ++k) {
-              Vector force, dist = pbcDistance( getPosition(i), getPosition(ninfo(base+k,2)) );
+      // Loop over neighbours in ith environment
+      for(unsigned k=0; k<neigh[i]; ++k) {
+          // Get distance for calculation of virial contribution
+          Vector force, dist = pbcDistance( getPosition(i), getPosition(ninfo(base+k,2)) );
+          // Loop over features
+          for(unsigned j=0; j<shape[1];++j) {
+              // Get the force on the jth feature in the ith environment.
+              double ff = outval->getForce( i*shape[1] + j );
               // Loop over x, y, z
               for(unsigned n=0;n<3;++n) {
                   force[n] = ff*gradients(3*(base+k)+n,j); 
                   // This is the force to add to the central atom  
-                  forcesToApply[ 3*i+n ] -= force[n]; // ff*gradients(3*(base+k)+n,j);
+                  forcesToApply[ 3*i+n ] -= force[n];
                   // This is the force to add to the neighbour atom.
-                  forcesToApply[ 3*ninfo(base+k,2) + n ] += force[n]; // ff*gradients(3*(base+k)+n,j);
+                  forcesToApply[ 3*ninfo(base+k,2) + n ] += force[n];
               }
               vir -= Tensor(force,dist);
           }
