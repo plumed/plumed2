@@ -230,11 +230,5 @@ AtomNumber Group::getAtomIndex( const unsigned& ind ) const {
   plumed_assert( ind<atoms.size() ); return atoms[ind];
 }
 
-void Group::duplicate( const std::string& lab ) const {
-  std::string num; Tools::convert( atoms[0].serial(), num ); std::string grp_comm = lab + ": GROUP ATOMS=" + num;
-  for(unsigned i=1; i<atoms.size(); ++i) { Tools::convert( atoms[i].serial(), num ); grp_comm += "," + num; } 
-  plumed.readInputLine( grp_comm );
-}
-
 }
 

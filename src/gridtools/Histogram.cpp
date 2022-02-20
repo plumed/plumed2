@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KDE.h"
+#include "SphericalKDE.h"
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
@@ -192,28 +193,35 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 */
 //+ENDPLUMEDOC
 
+template<class T>
 class Histogram : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
+typedef Histogram<KDE> histo;
+PLUMED_REGISTER_ACTION(histo,"HISTOGRAM")
+typedef Histogram<SphericalKDE> Shisto;
+PLUMED_REGISTER_ACTION(Shisto,"SPHERICAL_HISTOGRAM")
 
-void Histogram::registerKeywords( Keywords& keys ) {
-  KDE::registerKeywords( keys );
+template <class T>
+void Histogram<T>::registerKeywords( Keywords& keys ) {
+  T::registerKeywords( keys );
   HistogramBase::histogramKeywords( keys );
   keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 
-Histogram::Histogram(const ActionOptions&ao):
+template <class T>
+Histogram<T>::Histogram(const ActionOptions&ao):
 Action(ao),
 ActionShortcut(ao)
 {
     // Parse the keymap
     std::map<std::string,std::string> keymap; HistogramBase::readHistogramKeywords( keymap, this ); 
     // Make the kde object
-    readInputLine( getShortcutLabel() + "_kde: KDE " + convertInputLineToString(), true ); 
+    std::string name="KDE"; if( getName().find("SPHERICAL")!=std::string::npos ) name = "SPHERICAL_KDE"; 
+    readInputLine( getShortcutLabel() + "_kde: " + name + " " + convertInputLineToString(), true ); 
     // And the averaging object
     HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
 }
