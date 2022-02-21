@@ -75,6 +75,7 @@ extern plumed plumedmain;
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "expanded_internal.h"
@@ -92,11 +93,38 @@ static void init_df_history_weights(df_history_t* dfhist, const t_expanded* expa
 
 /* Eventually should contain all the functions needed to initialize expanded ensemble
    before the md loop starts */
-void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist)
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist, const gmx::MDLogger& mdlog)
 {
     if (!bStateFromCP)
     {
         init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
+    }
+    if (plumedswitch)
+    {
+        if (ir->expandedvals->elamstats == elamstatsNO)
+        {
+            // No weight updating was chosen, use PLUMED weights
+            int plumedVersion=0;
+            plumed_cmd(plumedmain, "getApiVersion", &plumedVersion);
+            GMX_RELEASE_ASSERT(
+                    plumedVersion >= 8,
+                    "Please use PLUMED v2.8 or newer to use alchemical metadynamics with expanded ensemble");
+
+            GMX_LOG(mdlog.info).asParagraph().appendText(
+                    "You requested an expanded ensemble simulation with lmc-stats = no and activated PLUMED.\n"
+                    "As a result, this simulation will use the bias provided by PLUMED and ignore all\n"
+                    "expanded ensemble settings related to weight updates.\n"
+                    "If you want to use lambda weights updated by GROMACS in the expanded ensemble calculation,\n"
+                    "set lmc-stats != no.");
+        }
+        else
+        {
+            GMX_LOG(mdlog.info).asParagraph().appendText(
+                    "You requested an expanded ensemble simulation with lmc-stats != no and activated PLUMED.\n"
+                    "As a result, this simulation will use lambda weights managed by GROMACS and will not\n"
+                    "explicitly use the PLUMED bias in the expanded ensemble calculation.\n"
+                    "If you want to use the PLUMED bias as lambda weights, set lmc-stats = no.");
+        }
     }
 }
 
@@ -878,7 +906,7 @@ static int ChooseNewLambda(int               nlim,
     lamnew             = fep_state; /* so that there is a default setting -- stays the same */
 
     // Don't equilibrate weights when using Plumed
-    if (!plumedswitch)
+    if (!plumedswitch || expand->elamstats != elamstatsNO)
     {
     if (!EWL(expand->elamstats)) /* ignore equilibrating the weights if using WL */
     {
@@ -1191,8 +1219,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
     if (step % frequency == 0)
     {
         fprintf(outfile, "             MC-lambda information\n");
-        // Ignore Wang-Landau when using plumed
-        if (EWL(expand->elamstats) && (!(dfhist->bEquil)) && !plumedswitch)
+        if (EWL(expand->elamstats) && (!(dfhist->bEquil)))
         {
             fprintf(outfile, "  Wang-Landau incrementor is: %11.5g\n", dfhist->wl_delta);
         }
@@ -1244,8 +1271,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     fprintf(outfile, "%9.3f", simtemp->temperatures[ifep]);
                 }
             }
-            // No Wang-Landau when using Plumed
-            if (EWL(expand->elamstats) && (!plumedswitch)
+            if (EWL(expand->elamstats)
                 && (!(dfhist->bEquil))) /* if performing WL and still haven't equilibrated */
             {
                 if (expand->elamstats == elamstatsWL)
@@ -1463,7 +1489,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
         weighted_lamee[i] -= maxweighted;
     }
 
-    if (plumedswitch)
+    if (plumedswitch && expand->elamstats == elamstatsNO)
     {
         // Update weights at all lambda states with current values from Plumed.
         // For acceptance criterion, expanded ensemble is expecting the weight at
@@ -1474,7 +1500,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
             *realFepState = i;
             real bias = 0;
             plumed_cmd(plumedmain, "prepareCalc", nullptr);
-            plumed_cmd(plumedmain, "performCalcNoUpdate", nullptr);
+            plumed_cmd(plumedmain, "performCalcNoForces", nullptr);
             plumed_cmd(plumedmain, "getBias", &bias);
             bias /= expand->mc_temp * BOLTZ;
             if (i == 0)
@@ -1501,7 +1527,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
     }
     }
 
-    // Accept / reject is handled by GROMACS (with Plumed weights).
+    // Accept / reject is handled by GROMACS (possibly with Plumed weights).
     lamnew = ChooseNewLambda(nlim, expand, dfhist, fep_state, weighted_lamee, p_k,
                              ir->expandedvals->lmc_seed, step);
     /* if using simulated tempering, we need to adjust the temperatures */
