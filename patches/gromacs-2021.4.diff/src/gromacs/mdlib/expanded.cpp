@@ -107,7 +107,7 @@ void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_hist
             int plumedVersion=0;
             plumed_cmd(plumedmain, "getApiVersion", &plumedVersion);
             GMX_RELEASE_ASSERT(
-                    plumedVersion >= 8,
+                    plumedVersion >= 9,
                     "Please use PLUMED v2.8 or newer to use alchemical metadynamics with expanded ensemble");
 
             GMX_LOG(mdlog.info).asParagraph().appendText(
