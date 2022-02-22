@@ -464,7 +464,7 @@ void gmx::LegacySimulator::do_md()
             gmx_fatal(FARGS,
                       "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
         }
-        init_expanded_ensemble(startingBehavior != StartingBehavior::NewSimulation, ir, state->dfhist);
+        init_expanded_ensemble(startingBehavior != StartingBehavior::NewSimulation, ir, state->dfhist, mdlog);
     }
 
     if (MASTER(cr))
