@@ -40,7 +40,7 @@ def is_platform_mac():
     return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
-    copyfile("../VERSION","VERSION")
+    copyfile("../VERSION","PLUMED_VERSION")
     try:
         os.mkdir("include")
     except OSError:
@@ -53,7 +53,7 @@ if plumedname is None:
 
 plumedversion = os.getenv("plumed_version")
 if plumedversion is None:
-    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8").rstrip()
+    plumedversion = subprocess.check_output(['grep','-v','#','./PLUMED_VERSION']).decode("utf-8").rstrip()
 
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
