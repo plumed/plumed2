@@ -88,12 +88,12 @@ And here is the resulting \f$x\f$ trajectory.
 
 One can see that with metadynamics more transitions are present, especially in the initial part of the simulation.
 This is because the bias is changing quickly and can efficiently push the system through high free-energy pathways.
-Unfortunately, these out-of-equilibrium transitions cannot be efficiently reweighted and might lead to systematic errors.
+Unfortunately, these out-of-equilibrium transitions cannot be efficiently reweighted and might lead to a systematic error.
 
 \anchor opes-metad-fesMETAD
 \image html opes-metad-fesMETAD.png "Fig. 5: Free energy estimate obtained by (naively) reweighting the metadynamics simulation"
 
-To avoid these systematic errors, one must remove the part of the metadynamics simulation where the bias is not quasi-static.
+To avoid this systematic error, one must remove the part of the metadynamics simulation where the bias is not quasi-static.
 You can do so using the option `--skiprows` in the `FES_from_Reweighting.py` script.
 Removing an initial transient might be useful also for OPES simulations, in particular when the chosen `BARRIER` is much higher than the real one.
 
