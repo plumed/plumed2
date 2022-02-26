@@ -81,8 +81,8 @@ git clone https://github.com/invemichele/masterclass-22-03.git
 \endverbatim
 
 The repository contains all the data to run some short simulations, together with scripts to analyse them.
-It also contains some annotated Jupyter notebooks, that will guide us through this tutorial.
-They will be updated after lecture II.
+It also contains some annotated Jupyter notebooks, that will guide us through this tutorial. Most of the information can be found there, and this page is mainly meant as an overview of the content of the notebooks.
+The notebooks will be updated with all the solutions after lecture II.
 
 As done in some previous masterclass, we will play with a toy system, the small alanine dipeptide (ala2) molecule in vacuum.
 It has the advantage of being a well-known system, cheap to simulate and with a higher level of complexity compared to a 2D model potential as the one used in this other \ref opes-metad.
@@ -93,65 +93,115 @@ Here is its free energy surface (FES) as a function of the \f$\phi\f$ and \f$\ps
 
 \note All the exercises have been tested with PLUMED version 2.8.0 and GROMACS 2020.6
 
-\section masterclass-22-03-ex Exercises
+\section masterclass-22-03-ex-1 Exercise 1: Sampling expanded ensembles with OPES
 
-\subsection masterclass-22-03-ex-1 Exercise 1: Sampling expanded ensembles with OPES
+\subsection masterclass-22-03-ex-1-1 1.1 Multithermal simulations
 
 We start by using OPES to sample expanded ensembles.
-This is probably the least familiar use of adaptive-bias enhanced sampling for most of the PLUMED users.
+This probably is not a familiar application of adaptive-bias enhanced sampling for most of PLUMED users.
 
+The first example we consider is a multithermal simulation of alanine dipeptide. 
+One can use replica exchange to perform a parallel tempering simulation and sample the two metastable states of alanine dipeptide, as explained for instance in \ref belfast-7.
+Here instead, we want to sample the same multithermal distribution not by combining simulations at different temperatures, but by adding a bias potential to a single simulation.
 
-In this brief exercise, we will perform two 20 ns long standard MD simulations of alanine dipeptide 
-starting from the two main metastable states of this system.
-To keep things clean, the users are invited to run these two simulations in two separate sub-folders. 
-To run these simulations with GROMACS, please use the following commands:
+We choose 3 temperatures \f$T_0, T_1, T_2\f$, ranging from 300 K to 1000 K, and setup our GROMACS simulation to run at \f$T_0=300\f$ K.
+Our target distribution is then:
+\f[
+	p^{\text{tg}}(\mathbf{x})=\frac{1}{3}\left[\frac{e^{-\frac{1}{k_BT_0}U(\mathbf{x})}}{Z_0}+ \frac{e^{-\frac{1}{k_BT_1}U(\mathbf{x})}}{Z_1}+\frac{e^{-\frac{1}{k_BT_2}U(\mathbf{x})}}{Z_2}\right]
+\f]
+This can be rewritten highlighting \f$P(\mathbf{x})\f$
+\f[
+	p^{\text{tg}}(\mathbf{x})=P(\mathbf{x})\frac{1}{3}\left[1+ e^{-\left(\frac{1}{k_BT_1}-\frac{1}{k_BT_0}\right)U(\mathbf{x})}\frac{Z_0}{Z_1}+e^{-\left(\frac{1}{k_BT_2}-\frac{1}{k_BT_0}\right)U(\mathbf{x})}\frac{Z_0}{Z_2}\right]
+\f]
+and then using \f$\Delta F_i = -k_B T_0 \log \frac{Z_i}{Z_0}\f$:
+\f[
+	p^{\text{tg}}(\mathbf{x})=P(\mathbf{x})\frac{1}{3}\left[1+ e^{-\frac{1-T_0/T_1}{k_BT_0}U(\mathbf{x})+\frac{1}{k_BT_0}\Delta F_1}+e^{-\frac{1-T_0/T_2}{k_BT_0}U(\mathbf{x})+\frac{1}{k_BT_0}\Delta F_2}\right]
+\f]
+so we just need to know \f$\Delta F_1\f$ and \f$\Delta F_2\f$, and we can sample the target multithermal distribution by using the following bias:
+\f[
+  V(U) = - k_B T_0 \log \frac{1}{3}\left[1+ e^{-\frac{1-T_0/T_1}{k_BT_0}U(\mathbf{x})+\frac{1}{k_BT_0}\Delta F_1}+e^{-\frac{1-T_0/T_2}{k_BT_0}U(\mathbf{x})+\frac{1}{k_BT_0}\Delta F_2}\right]
+\f]
+that is a function only of the potential energy \f$U=U(\mathbf{x})\f$.
+In the OPES spirit, we estimate on-the-fly these free energy differences using a simple reweighting, and iteratively reach the target distribution.
 
-\verbatim
-# run this command in one directory
-gmx mdrun -s topolA.tpr -nsteps 10000000
-# and this in another one
-gmx mdrun -s topolB.tpr -nsteps 10000000
-\endverbatim
+The final bias expression is determined by these quantities \f$\frac{1-T_0/T_i}{k_BT_0}U(\mathbf{x})\f$, that we call \ref expansion_cv (ECVs).
+There are several types of expanded ensembles that might be of interest, and in order to sample them with OPES one simply needs to find the explicit form of the corresponding ECVs.
 
-After the simulations are completed, we can use PLUMED to monitor the behavior of the system.
-As learnt in \ref masterclass-21-1, PLUMED can compute and print collective variables (CVs) on a pre-calculated MD trajectory.
-Here, we will: 
-- create a PLUMED input file with a text editor;
-- run the PLUMED \ref driver utility;
-- visualize the output with the aid of a Jupyter notebook.
-
-Let's now prepare a PLUMED input file to calculate: 
-- the value of the backbone dihedral \f$ \phi \f$;
-- the value of the backbone dihedral \f$ \psi \f$.
-
-by completing the template below (whenever you see an highlighted \highlight{FILL} string, this is a string that you must replace!):
+Enough equations, here is the plumed input file we need to run this multithermal simulation:
 
 \plumedfile
-# Activate MOLINFO functionalities
-MOLINFO STRUCTURE=__FILL__
-# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
-# you should use MOLINFO shortcuts
-phi: TORSION ATOMS=__FILL__
-# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
-# here also you should to use MOLINFO shortcuts
-psi: TORSION ATOMS=__FILL__
-# Print the two collective variables on COLVAR file every step
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
+ene: ENERGY
+ecv: ECV_MULTITHERMAL ARG=ene TEMP_MIN=300 TEMP_MAX=1000 TEMP_STEPS=3
+opes: OPES_EXPANDED ARG=ecv.ene PACE=500
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver on the two MD trajectories as follows:
+We use the \ref OPES_EXPANDED bias action, with a multithermal expansion defined by the \ref ECV_MULTITHERMAL action.
+The resulting bias is a function of the potential energy, and is updated every 500 MD steps.
 
-\verbatim
-plumed driver --plumed plumed.dat --mf_xtc traj_comp.xtc
-\endverbatim
+In the notebook we show the shape of the resulting bias, how to check for convergence and how to reweight to estimate the free energy at different temperatures.
+We also explain a simple automatic procedure that is used to automatically set a reasonable number of temperature steps if TEMP_STEPS is not provided.
 
-The two `COLVAR` files can be analysed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
-This notebook allows you to import a `COLVAR` file produced by PLUMED and to generate the desired figures using the 
-`matplotlib` library. The users are invited to:
-- inspect the dynamics of the two backbone dihedrals in the two separate simulations;
-- calculate the fluctuations (standard deviation) of the two CVs in the different basins visited.
+\subsection masterclass-22-03-ex-1-2 1.2 Multiumbrella simulations
 
-<b>Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of the</b> \f$ \phi \f$ / \f$ \psi \f$ **space?** 
+Next we present another expanded ensemble that can also be sampled by replica exchange.
+We call it multiumbrella and it is composed by all the distributions sampled by a typical multiple windows umbrella sampling simulation.
+In this kind of umbrella sampling one chooses a CV and runs several simulation each one with a parabolic bias potentials at a different CV location (see \ref masterclass-21-3).
+We can use OPES to sample an expanded target distribution that is composed of all of these combined.
+In multiple windows umbrella sampling, the free energy difference between the windows is estimated during postprocessing (e.g. with WHAM), in OPES this is done on-the-fly at simulation time.
+
+The advantages of this is that choosing the number and location of the umbrellas becomes easier, and having a single longer simulation can also help with sampling orthogonal slow degrees of freedom.
+
+We choose as CV the \f$\phi\f$ angle.
+The ECVs we need for this type of expansion are the following:
+\f[
+  \Delta u_i = \frac{(\phi-\phi_i)^2}{2\sigma^2}\, ,
+\f]
+where \f$\phi_i\f$ are the fixed centers of the umbrellas and \f$\sigma\f$ determines their width.
+Usually in umbrella sampling another parameter is used, \f$k=1/\sqrt{\sigma}\f$, but we will see in the notebook why we made a different choice.
+
+The plumed input we will need might look like this:
+
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+ecv: ECV_UMBRELLAS_LINE ARG=phi CV_MIN=-pi CV_MAX=pi SIGMA=0.2
+opes: OPES_EXPANDED ARG=ecv.phi PACE=500
+\endplumedfile
+
+This will place umbrellas uniformly along \f$\phi\f$, each one separated by a distance of one \f$\sigma\f$.
+We can make them a less close to each with the keyword SPACING.
+We can also provide a guess of the maximum free energy BARRIER we would like to overcome, this can help speed up convergence.
+
+In the notebook we show what kind of sampling this input provides, and invite you to play around with the input, to get a sense of what each option does.
+We also take the chance to see the effect on the FES of the bandwidth parameter used in the kernel density estimation when doing reweighting e.g. with the \ref histogram function.
+
+
+\subsection masterclass-22-03-ex-1-3 1.3 Combined multithermal and multiumbrella simulations
+
+Another advantage of using OPES to sample expanded ensembles is that it makes it very easy to combine them.
+We want to show this by running a combined multithermal and multiumbrella simulation of alanine dipeptide.
+
+Using the multithermal expansion we where able to sample both metastable states, but not very efficienly.
+With the multiumbrella target distribution we have many transitions, but we sample only at 300 K.
+By combining these two expansions we obtain the best of both, with frequent transitions and an efficient reweighting over a whole range of temperatures.
+
+The drawback? We now might have to deal with hundreds of ECVs! 
+However, while in a replica exchange scheme each ECV requires its own replica, with OPES we are free to stick with just one, or choose any number of multiple walkers.
+
+The way we combine expansions is to create a grid with all possible combinations of temperature ECV and umbrella ECV, so if we have 10 ECVs for the temperature expansion and 20 for the multiumbrella one, we end up with 200 combined ECVs.
+This will become more clear once we look at the notebook and the simulation output.
+
+From the point of view of the plumed input things are quite straightforward.
+For a combined multithermal-multiumbrella simulation it should look similar to this one:
+
+\plumedfile
+ene: ENERGY
+ecv_mt: ECV_MULTITHERMAL ARG=ene TEMP_MIN=300 TEMP_MAX=1000
+phi: TORSION ATOMS=5,7,9,15
+ecv_mu: ECV_UMBRELLAS_LINE ARG=phi CV_MIN=-pi CV_MAX=pi SIGMA=0.2
+opes: OPES_EXPANDED ARG=ecv_mt.ene,ecv_mu.phi PACE=500
+\endplumedfile
+
+To fully appreciate the strength of combining these two different expansions, one can run the same simulations but using the \f$\psi\f$ angle instead of \f$\phi\f$.
 
 \subsection masterclass-22-03-ex-2 Exercise 2: OPES for metadynamics-like simulations
 
