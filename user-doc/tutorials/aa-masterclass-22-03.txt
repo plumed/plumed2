@@ -1,5 +1,5 @@
 /**
-\page masterclass-22-03 PLUMED Masterclass 22.3: OPES
+\page masterclass-22-03 PLUMED Masterclass 22.3: OPES method
 
 \authors Michele Invernizzi
 \date Fabruary 28, 2022
@@ -12,7 +12,7 @@ This Masterclass is an introduction to the \ref OPES method and its PLUMED imple
 
 Once this Masterclass is completed, users will be able to:
 
-- Perform OPES simulations and analize the results.
+- Perform OPES simulations and analyse the results.
 - Use \ref OPES_EXPANDED to sample different generalized ensembles
 - Test the effect of the various \ref OPES_METAD input options
 - Understand the typical use-case for \ref OPES_METAD_EXPLORE
@@ -23,7 +23,7 @@ We assume that you are familiar with PLUMED, metadynamics, umbrella sampling, an
 If you are not, the 2021 PLUMED Masterclass is a great place to start.
 In particular we suggest \ref masterclass-21-1, \ref masterclass-21-3, and \ref masterclass-21-4.
 
-\section masterclass-22-3-theory Overview of the theory
+\section masterclass-22-03-theory Overview of the theory
 
 The OPES method is an evolution of Metadynamics that also incorporates some of the ideas of the \ref VES method.
 OPES is designed to be simple to use and robust with respect to suboptimal collective variables.
@@ -55,7 +55,7 @@ A typical example is the temperature expanded ensemble, where each \f$ P_{\lambd
 This kind of target distribution can be defined via a set of expansion collective variables (ECVs).
 The action \ref OPES_EXPANDED can be used to sample this kind of target distributions.
 
-A metadynaics-like target distribution, is defined by its marginal over a set of collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
+A metadynamics-like target distribution, is defined by its marginal over a set of collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 A typical choice for this marginal distribution is the well-tempered one:
 \f[
   p^{\text{WT}}(\mathbf{s})=\left[P(\mathbf{s})\right]^{1/\gamma}\, ,
@@ -69,7 +69,7 @@ The actions \ref OPES_METAD and \ref OPES_METAD_EXPLORE can be used to sample th
 \section masterclass-22-03-install Setting up the software 
 
 For this Masterclass we will use GROMACS 2020.6 patched with PLUMED 2.8, with the OPES module and MPI enabled.
-The easiest way to install all the software needed is to use a conda enviroment as described [here](https://github.com/plumed/masterclass-2022).
+The easiest way to install all the software needed is to use a conda environment as described [here](https://github.com/plumed/masterclass-2022).
 
 \section masterclass-22-03-resources Resources
 
@@ -80,22 +80,26 @@ You can clone this repository locally on your machine with the usual command:
 git clone https://github.com/invemichele/masterclass-22-03.git
 \endverbatim
 
-The repository contains all the data to run some short simulations, together with scripts to analyze them.
+The repository contains all the data to run some short simulations, together with scripts to analyse them.
 It also contains some annotated Jupyter notebooks, that will guide us through this tutorial.
 They will be updated after lecture II.
 
 As done in some previous masterclass, we will play with a toy system, the small alanine dipeptide (ala2) molecule in vacuum.
 It has the advantage of being a well-known system, cheap to simulate and with a higher level of complexity compared to a 2D model potential as the one used in this other \ref opes-metad.
-It presents two main metastable basins, which can be identified by a very efficient collective variable (CV), the \f$\phi\f$ torsional angle.
+Ala2 has two main metastable basins which can be identified by a very efficient collective variable (CV), the \f$\phi\f$ torsional angle.
 Here is its free energy surface (FES) as a function of the \f$\phi\f$ and \f$\psi\f$ angles:
 
-\image html ala2_FES.png "Alanine dipeptide free energy surface."
+\image html masterclass-22-03-ala2_FES.png "Alanine dipeptide free energy surface."
 
 \note All the exercises have been tested with PLUMED version 2.8.0 and GROMACS 2020.6
 
 \section masterclass-22-03-ex Exercises
 
-\subsection masterclass-22-03-ex-1 Exercise 1: Familiarizing with alanine dipeptide
+\subsection masterclass-22-03-ex-1 Exercise 1: Sampling expanded ensembles with OPES
+
+We start by using OPES to sample expanded ensembles.
+This is probably the least familiar use of adaptive-bias enhanced sampling for most of the PLUMED users.
+
 
 In this brief exercise, we will perform two 20 ns long standard MD simulations of alanine dipeptide 
 starting from the two main metastable states of this system.
@@ -141,7 +145,7 @@ Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver on t
 plumed driver --plumed plumed.dat --mf_xtc traj_comp.xtc
 \endverbatim
 
-The two `COLVAR` files can be analyzed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
+The two `COLVAR` files can be analysed using the Jupyter notebook `plumed-pandas.ipynb` provided in the folder `notebooks`.
 This notebook allows you to import a `COLVAR` file produced by PLUMED and to generate the desired figures using the 
 `matplotlib` library. The users are invited to:
 - inspect the dynamics of the two backbone dihedrals in the two separate simulations;
@@ -149,7 +153,7 @@ This notebook allows you to import a `COLVAR` file produced by PLUMED and to gen
 
 <b>Are both simulations long enough to visit all the relevant conformations or instead they remain trapped in different regions of the</b> \f$ \phi \f$ / \f$ \psi \f$ **space?** 
 
-\subsection masterclass-22-03-ex-2 Exercise 2: My first metadynamics simulation 
+\subsection masterclass-22-03-ex-2 Exercise 2: OPES for metadynamics-like simulations
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -250,188 +254,6 @@ are two indications that the simulation __might__ have converged.
 \warning The two conditions listed above are necessary, but not sufficient to declare convergence. We will learn below how to
 perform a quantitative analysis of the convergence of a metadynamics simulation.
 
-\subsection masterclass-22-03-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation 
-
-In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
-the same variable directly from the metadynamics bias potential using the \ref sum_hills utility. 
-However, in many cases you might decide which variable should be analyzed _after_
-having performed a metadynamics simulation. For example,
-you might want to calculate the free energy as a function of CVs other than those
-biased during the metadynamics simulation, such as the dihedral \f$ \psi \f$.
-At variance with standard MD simulations, you cannot simply calculate histograms of other variables directly from your metadynamics trajectory, 
-because the presence of the metadynamics bias potential has altered the statistical weight of each frame. 
-To remove the effect of this bias and thus be able to calculate properties of the system in the unbiased ensemble, 
-you must reweight (unbias) your simulation.
-
-There are multiple ways to calculate the correct
-statistical weight of each frame in your metadynamics trajectory and thus to reweight your simulation. 
-For example:
-
-1. weights can be calculated by considering the time-dependence of the metadynamics bias
-   potential \cite Tiwary_jp504920s;
-2. weights can be calculated using the metadynamics bias potential obtained at the end of the
-   simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
-
-In this exercise we will use the second method, which is identical to the umbrella-sampling reweighting approach that you have already used in \ref masterclass-21-2 and \ref masterclass-21-3.
-In order to compute the weights we will use the \ref driver tool.
-
-First of all, you need to prepare a `plumed_reweight.dat` file that is identical to the one you used
-for running your metadynamics simulation except for a few modifications:
-- you need to add the keyword `RESTART=YES` to the \ref METAD command.
-This will make this action behave as if PLUMED was restarting, i.e. PLUMED will
-read from the `HILLS` file the Gaussians that have previously been accumulated;
-- you need to set the Gaussian `HEIGHT` to zero and the `PACE` to a large number.
-This will actually avoid adding new Gaussians (and even if they are added they will have
-zero height);
-- you need to modify the \ref PRINT statement so that you write every frame and that, in addition to `phi` and `psi`,
-you also write `metad.bias`;
-- you might also want to change the name of the output file to `COLVAR_REWEIGHT`.
-
-Here how the `plumed_reweight.dat` should look like:
-
-\plumedfile
-# Activate MOLINFO functionalities
-MOLINFO STRUCTURE=__FILL__
-
-__FILL__ # here goes the definitions of the phi and psi CVs
-
-# Activate well-tempered metadynamics in phi
-metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 10000000 time steps (never!), with initial height equal to 0.0 kJ/mol
-  PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
-# The bias factor and Gaussian width are the same as before
-  BIASFACTOR=__FILL__ SIGMA=__FILL__
-# Gaussians will be read from file and stored on grid
-# Make sure you specify the path the HILLS file produced in Exercise 2!
-  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
-# Say that METAD should be restarting (= reading an existing HILLS file)
-  RESTART=YES # <- this is the new stuff!
-...
-
-# Print out the values of phi, psi and the metadynamics bias potential
-# Make sure you print out the 3 variables in the specified order at every step
-PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this one!
-\endplumedfile
-
-Now you can run the \ref driver tool using this command:
-
-\verbatim
-plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
-\endverbatim
-
-where `traj_comp.xtc` is the metadynamics trajectory produced in \ref masterclass-22-03-ex-2. 
-Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
-this information was communicated by the MD code.
-
-As a result, PLUMED will produce a new `COLVAR_REWEIGHT` file with one additional column containing the
-metadynamics bias potential \f$ V(s) \f$ calculated using all the Gaussians deposited along the entire trajectory. 
-You can easily obtain the weight \f$ w \f$ of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
-(umbrella-sampling-like reweighting). At this point, you can read the `COLVAR_REWEIGHT` file using a python notebook and compute a weighted histogram
-or, alternatively, if you want PLUMED to do the weighted histograms for you, you can add the following
-lines at the end of the `plumed_reweight.dat` file and re-run PLUMED \ref driver:
-
-\plumedfile
-# Use the metadynamics bias as argument
-as: REWEIGHT_BIAS ARG=__FILL__
-
-# Calculate histograms of phi and psi dihedrals every 50 steps
-# using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
-# Look at the manual to understand the parameters of the HISTOGRAM action!
-hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
-hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as
-
-# Convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
-ffphi: CONVERT_TO_FES GRID=hhphi
-ffpsi: CONVERT_TO_FES GRID=hhpsi
-
-# Print out the free energies F(s) to file once the entire trajectory is processed 
-DUMPGRID GRID=ffphi FILE=ffphi.dat
-DUMPGRID GRID=ffpsi FILE=ffpsi.dat
-\endplumedfile
-
-You can now compare the free energies as a function of \f$ \phi \f$ calculated:
-1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref masterclass-22-03-ex-2; 
-2. using the reweighting procedure introduced in this exercise. 
-
-<b>Are the two free energies identical?</b>
-
-
-\subsection masterclass-22-03-ex-4 Exercise 4: Estimating the error in free energies using block-analysis 
-
-In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
-this quantity to calculate the correct statistical weight of each frame, which is needed to reweight the biased simulation.
-In this exercise, the user will learn how this information can be used to calculate the error in 
-the reconstructed free energies and assess whether the simulation is converged or not.
-
-Let's first:
-- calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` file obtained at the end of \ref masterclass-22-03-ex-3; 
-- print them in a file (called for example `phi.weight`) containing the value of the dihedral \f$ \phi \f$ and the corresponding (un-normalized) weight \f$ w \f$ for each frame of the metadynamics trajectory. 
-
-At this point we can apply the block-analysis technique (for more info about the theory, 
-have a look at \ref masterclass-21-2) to calculate the average free energy across the blocks
-and the error as a function of block size. For your convenience, the `do_block_fes.py` python
-script provided in the `data` directory of the `GitHub` repository of this Masterclass
- can be used to read the `phi.weight` file and produce the desired output.
-The users should properly choose the following input parameters:
-
-\verbatim
-# Arguments of do_block_fes.py
-# - FILE: input file with 2 colums containing the CV value and weight for each frame of the trajectory
-# - NCV: number of CVs
-# - MIN/MAX: CV range
-# - NBIN: # points in output free energy
-# - KBT: temperature in energy units (kJoule/mol)
-# - N: Block size
-# 
-python3 do_block_fes.py FILE NCV MIN MAX NBIN KBT N
-\endverbatim 
-
-and run the above script for different block sizes ranging from 1 to 1000.
-For each choice of block size, the script will produce an output file, which contains 3 colums:
-- the value of the \f$ \phi \f$ variable on a grid;
-- the free energy averaged across the blocks for each point of the grid;
-- the associated error for each point of the grid.
- 
-At this point, the users should:
-- calculate the average error across the free-energy profile, i.e. the grid points, for each block size chosen;
-- visualize this average error as a function of the block size.
-
-The users should verify that the error increases with the block size (why?) until it reaches a plateau when the dimension
-of the block exceeds the correlation time between data points. If a plateau is not observed, then the simulation
-is not converged yet and should be run a bit longer.
-
-<b>From this analysis, what can we say about the convergence of the metadynamics simulation performed in</b> \ref masterclass-22-03-ex-2 **?**
-
-\subsection masterclass-22-03-ex-5 Exercise 5: Recognizing good from bad CVs
-
-In the previous exercises, we have performed a metadynamics simulation on alanine dipeptide using the backbone dihedral \f$ \phi \f$ as CV.
-We have analyzed the simulation and noticed that:
-- under the effect of the bias potential, the system rapidly diffuses in the entire CV space;
-- the error in the reconstructed free energy calculated with block analysis rapidly reaches a plateau.
-
-These two observations indicate that our simulation is converged and that the dihedral \f$ \phi \f$ can be considered a _good_ CV.
-A good set of CVs for metadynamics should indeed:
-1. discriminate between the relevant metastable states of the system;
-2. include all the slow modes that characterize transitions between such states; 
-3. be as small as possible. 
-
-Identifying a priori a good set of CVs to describe a specific problem is far from trivial. In this exercise, the users will learn how to detect 
-potential problems in their choice of CV(s). Let's first perform additional 1D metadynamics simulations using one of the following CVs:
-- the dihedral \f$ \psi \f$;
-- the radius of gyration, defined on all the heavy atoms of the system;
-- the distance between Oxigen atom 6 and Hydrogen atom 8.
-
-The users are invited to prepare, for each of the CV listed above, a PLUMED input file to perform a 1D well-tempered metadynamics simulation, execute the simulation, and analyse the results in terms of:
-- diffusion of the system in the space of the dihedral \f$ \phi \f$
-- error analysis in the free energy as a function of \f$ \phi \f$
-
-and compare the results with the previous simulation in which \f$ \phi \f$ was used as the metadynamics CV. <b>Based on this analysis, can you discriminate between _good_ from _bad_ CVs?</b>
-
-To complete this exercise, the users should define and test a new CV that is either:
-- as good as the dihedral \f$ \phi \f$;
-- the worst possible CV to accelerate sampling and describe the two main conformational states of alanine dipeptide.
- 
-<b>Please post the results of your simulations on Slack!</b>
  
 \subsection masterclass-22-03-ex-6 Exercise 6: A 'real-life' application
 
@@ -482,4 +304,4 @@ particularly big, therefore using a large number of cores might be inefficient.
 
 link: @subpage masterclass-22-03 
 
-description: This Masterclass explains how to use PLUMED to run and analyze metadynamics simulations 
+description: This Masterclass shows how to use PLUMED to run and analyze OPES simulations 

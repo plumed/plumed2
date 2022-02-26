@@ -1,5 +1,5 @@
 /**
-\page masterclass-22-02 PLUMED Masterclass 22-02: Analysis of Plumed output by Metadynminer
+\page masterclass-22-02 PLUMED Masterclass 22.2: Analysis of Plumed output by Metadynminer
 \authors Vojtech Spiwok
 \date February 14, 2022
 
