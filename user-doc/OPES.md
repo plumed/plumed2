@@ -8,7 +8,7 @@ reference: \cite Invernizzi2020rethinking \cite Invernizzi2020unified
 
 ## Overview
 
-The OPES module contains the implementation of the on-the-fly probability enhanced sampling mehtod (OPES) \cite Invernizzi2020rethinking \cite Invernizzi2020unified.
+The OPES module contains the implementation of the on-the-fly probability enhanced sampling mehtod (OPES) \cite Invernizzi2020rethinking \cite Invernizzi2022explore \cite Invernizzi2020unified.
 
 The OPES method aims at sampling a given target distribution over the configuration space, \f$p^{\text{tg}}(\mathbf{x})\f$,
 different from the equilibrium Boltzmann distribution, \f$P(\mathbf{x})\propto e^{-\beta U(\mathbf{x})}\f$.
