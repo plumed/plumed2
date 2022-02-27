@@ -258,7 +258,7 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
 //+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2021explore .
+On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2022explore .
 
 This \ref OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, \ref OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
@@ -266,7 +266,7 @@ The bias at step \f$n\f$ is
 \f[
 V_n(\mathbf{s}) = (\gamma-1)\frac{1}{\beta}\log\left(\frac{p^{\text{WT}}_n(\mathbf{s})}{Z_n}+\epsilon\right)\, .
 \f]
-See Ref.\cite Invernizzi2021explore for a complete description of the method.
+See Ref.\cite Invernizzi2022explore for a complete description of the method.
 
 Intuitively, while \ref OPES_METAD aims at quickly converging the reweighted free energy, \ref OPES_METAD_EXPLORE aims at quickly sampling the target well-tempered distribution.
 Given enough simulation time, both will converge to the same bias potential but they do so in a qualitatively different way.
@@ -310,7 +310,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
-  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target \\f$p(\\mathbf{s})\\f$. ");
+  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target distribution. ");
   if(mode::explore)
     info_biasfactor+="Cannot be 'inf'";
   else
@@ -934,7 +934,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   if(mode::explore || adaptive_sigma_)
-    log<<plumed.cite("M. Invernizzi and M. Parrinello, preprint arXiv:2201.09950 (2021)");
+    log<<plumed.cite("M. Invernizzi and M. Parrinello, preprint arXiv:2201.09950 (2022)");
   log.printf("\n");
 }
 
