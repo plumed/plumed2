@@ -89,16 +89,16 @@ It has the advantage of being a well-known system, cheap to simulate and with a 
 Ala2 has two main metastable basins which can be identified by a very efficient collective variable (CV), the \f$\phi\f$ torsional angle.
 Here is its free energy surface (FES) as a function of the \f$\phi\f$ and \f$\psi\f$ angles:
 
-\image html masterclass-22-03-ala2_FES.png "Alanine dipeptide free energy surface."
+\image html masterclass-22-03-ala2_FES.png "Alanine dipeptide free energy surface along the Ramachandran angles."
 
 \note All the exercises have been tested with PLUMED version 2.8.0 and GROMACS 2020.6
 
 \section masterclass-22-03-ex-1 Exercise 1: Sampling expanded ensembles with OPES
 
-\subsection masterclass-22-03-ex-1-1 1.1 Multithermal simulations
-
 We start by using OPES to sample expanded ensembles.
 This probably is not a familiar application of adaptive-bias enhanced sampling for most of PLUMED users.
+
+\subsection masterclass-22-03-ex-1-1 1.1 Multithermal simulations
 
 The first example we consider is a multithermal simulation of alanine dipeptide. 
 One can use replica exchange to perform a parallel tempering simulation and sample the two metastable states of alanine dipeptide, as explained for instance in \ref belfast-7.
@@ -203,152 +203,78 @@ opes: OPES_EXPANDED ARG=ecv_mt.ene,ecv_mu.phi PACE=500
 
 To fully appreciate the strength of combining these two different expansions, one can run the same simulations but using the \f$\psi\f$ angle instead of \f$\phi\f$.
 
-\subsection masterclass-22-03-ex-2 Exercise 2: OPES for metadynamics-like simulations
+\section masterclass-22-03-ex-2 Exercise 2: OPES for metadynamics-like simulations
 
-In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
-as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
-Here you can find a sample `plumed.dat` file that you can use as a template.
+We now use OPES to perform biased simulations very similar to those of metadynamics.
+We will sample a well-tempered distribution along a chosen set of collective variables.
+
+\subsection masterclass-22-03-ex-2-1 2.1 Biasing a good CV
+
+We start by biasing the \f$\phi\f$ angle, which is known to be a good CV for alanine dipeptide.
+Here is how the FES along this CV looks like:
+
+\image html masterclass-22-03-ala2_FESphi.png "Alanine dipeptide free energy surface along one of its torsional angles."
+
+We use this simple example to get familiar with \ref OPES_METAD, its input parameter and output quantities.
+We also compare it with well-tempered metadynamics, and we start to see how this two methods differ.
+
+This also gives us the opportunity of using some of the postprocessing scripts for OPES.
+There is not yet a tool similar to `plumed sum_hills` for OPES, but we can obtain the same result with simple python scripts and by dumping the state of the simulation through the STATE_WFILE keyword.
+This STATE file contains the compressed kernels used by OPES at a given time to represent the probability distribution, and thus the bias.
+
+\subsection masterclass-22-03-ex-2-2 2.2 Biasing two good CVs
+
+Next we move to biasing both the Ramachandran angles of ala2.
+A minimal plumed input to to this is the following:
 
 \plumedfile
-# Activate MOLINFO functionalities
-MOLINFO STRUCTURE=__FILL__
-# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
-# you should use MOLINFO shortcuts 
-phi: TORSION ATOMS=__FILL__
-# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
-# here also you should to use MOLINFO shortcuts 
-psi: TORSION ATOMS=__FILL__
-# Activate well-tempered metadynamics in phi
-metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height 
-# equal to 1.2 kJ/mol and bias factor equal to 8
-  PACE=500 HEIGHT=1.2 BIASFACTOR=8
-# Gaussian width (sigma) should be chosen based on the CV fluctuations in unbiased run
-# try 1/2 or 1/3 of the estimated fluctuations
-  SIGMA=__FILL__
-# Gaussians will be written to file and also stored on grid
-  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
-...
-# Print both collective variables on COLVAR file every 10 steps
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+opes: OPES_METAD ARG=phi,psi PACE=500 BARRIER=40
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can run a 20 ns long metadynamics simulations starting from either of the two
-provided conformations, for example `topolA.tpr`. All you need to do is execute the following command:
+This give us a nice opportunity to visualize the kernel compression algorithm in action.
+We will also get an idea of the differences between \ref OPES_METAD and \ref OPES_METAD_EXPLORE methods.
+The plumed input will be basically identical:
 
-\verbatim
-gmx mdrun -s topolA.tpr -nsteps 10000000 -plumed plumed.dat 
-\endverbatim
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+opes: OPES_METAD_EXPLORE ARG=phi,psi PACE=500 BARRIER=40
+\endplumedfile
 
-During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
-The `COLVAR` file contains all the information specified by the \ref PRINT command, in this case
-the value of the backbone dihedrals \f$ \phi \f$ and \f$ \psi \f$  every 10 steps of simulation.
-The `HILLS` file contains a list of the Gaussian kernels deposited along the simulation.
+From here it should be easy to compare both OPES variants to metadynamics, maybe by running some longer simulations.
+We can also check the way the bias converges by focusing on the estimate of the free energy difference between the basins.
 
-Let's visualize the time series of the two collective variables. Take your time to inspect the behavior of the two CVs. 
-<b>What are the main differences with respect to the trajectory produced in</b> \ref masterclass-22-03-ex-1 **?** 
+\subsection masterclass-22-03-ex-2-3 2.3 Biasing more CVs: alanine tetrapeptide
 
-At this point, we can estimate the free energy as a function of the metadynamics CV directly from the metadynamics
-bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
-deposited during the simulation and stored in the `HILLS` file.  
-To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
+In order to experiment with more than two CVs, we have to introduce a new system, alanine tetrapeptide in vacuum (ala4).
+It is a bigger brother of ala2, with not one but three \f$\phi\f$ and \f$\psi\f$ torsional angles, that can be used to sample its 8 metastable basins.
 
-\verbatim
-plumed sum_hills --hills HILLS
-\endverbatim
+We can try to sample it with all tree methods, \ref METAD, \ref OPES_METAD, and \ref OPES_METAD_EXPLORE. 
+How will the respective input files look like?
 
-The command above generates a file called `fes.dat` in which the free-energy surface as function
-of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free-energy file,
-as well as the boundaries and bin size of the grid, by using the following \ref sum_hills options:
+We will first only run short simulations to see how quickly the CV space is sampled by the various methods.
+This is a good chance to appreciate the effect of the Z term in OPES, and see that in higher dimensions it plays an important role for speeding up exploration.
 
-\verbatim
---outfile - specify the outputfile for sumhills
---min - the lower bounds for the grid
---max - the upper bounds for the grid
---bin - the number of bins for the grid
---spacing - grid spacing, alternative to the number of bins
-\endverbatim 
+We can then also see the effect of changing the bias factor \f$\gamma\f$.
 
-To give a preliminary assessment of the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
-of simulation time. At convergence, the reconstructed profiles should be similar.
-The \ref sum_hills option `--stride` should be used to give an estimate of the free energy every `N` Gaussian kernels deposited, and
-the option `--mintozero` can be used to align the profiles by setting the global minimum to zero.
-If we use the following command line:
 
-\verbatim
-plumed sum_hills --hills HILLS --stride 200 --mintozero
-\endverbatim
+\subsection masterclass-22-03-ex-2-4 2.4 Biasing a suboptimal CV
 
-one free energy is calculated every 200 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
-Now, you can visualize the free-energy estimate as a function of simulation time and assess how it changed during the course
-of the simulation. In the last part of this 20 ns long metadynamics simulation, the free-energy estimate should not change
-significantly. 
+Finally, the most interesting scenario.
+We will bias ala2 using a suboptimal collective variable.
+We don't know much about this CV, one can think of it as the output of a machine learning procedure.
+Will we be able to calculate the FES as a function of this CV? How will the plumed input files look like?
+Here it would be nice to also have some error bars to our estimates.
 
-Looking at the time-evolution of the entire free-energy profile might not be straightforward. Therefore, what
-we usually do is focusing on a few metastable states, or local free-energy minima, and calculating their estimated
-free-energy difference as a function of time. In case of alanine dipeptide, this is rather easy since there are only
-two major states in the free-energy profile as a function of the CV \f$\phi\f$.
+We will discuss together the results of these simulations, and see how this CV was constructed.
 
-The users should now:
-- calculate from the estimate of the free energy \f$F(\phi)\f$ at a given simulation time, the difference in free energy between the two basins.
-In order to do this, you should define a reasonable interval around the two local free-energy minima and recall that the probability
-of this state is the integral of the probability  \f$ P(\phi)= exp(-F(\phi)/k_BT) \f$ in the chosen interval;
-- plot the estimated free-energy difference as a function of simulation time.
 
-These two observations:
-1. the system is diffusing rapidly in the entire CV space
-2. the estimated free energy does not significantly change as a function of time
+\section masterclass-22-03-con Conclusion
 
-are two indications that the simulation __might__ have converged. 
-
-\warning The two conditions listed above are necessary, but not sufficient to declare convergence. We will learn below how to
-perform a quantitative analysis of the convergence of a metadynamics simulation.
-
- 
-\subsection masterclass-22-03-ex-6 Exercise 6: A 'real-life' application
-
-In this last exercise, we will tackle a real-life biological problem: studying the conformational transition of a complex biological system.
-The system that we are going to study is the C-terminal domain (CTD) of the RfaH virulence factor from _Escherichia coli_. This part of the system,
-which we refer to as RfaH-CTD, undergoes a dramatic conformational transformation from β-barrel to α-helical, 
-which is stabilized by the N-terminal domain of the RfaH virulence factor (see Fig. \ref masterclass-22-03-RfaH-CTD-fig).
-
-\anchor masterclass-22-03-RfaH-CTD-fig 
-\image html RfaH-CTD.png "Structural transformation of the RfaH-CTD. Domain dissociation is triggered upon binding of the NTD (gray) to its target ops (operon polarity suppressor) element DNA, relieving the autoinhibited state and allowing the transformation of the CTD (colored) from an α-helical hairpin (A) towards a five-stranded β-barrel (B). Note that the NTD and CTD are connected by a linker that does not order within the crystals and therefore is not shown in the figure."
- 
-In the `data/RfaH-CTD` folder of the `GitHub` repository of this Masterclass, you will find:
-- two PDB files of RfaH-CTD in the α-helical and β-barrel states; 
-- a `topol.tpr` file, which is needed to perform a MD simulation of this sytem with GROMACS.
-
-The objective of this exercises are to:
-1. compute the free-energy difference between the α-helical and β-barrel states of RfaH-CTD (with error estimate);
-2. (optional) determine the structure and population of other metastable states, if present.
-
-In order to complete the exercise, the students should:
-- choose their own CVs (maximum 3) and perform a well-tempered metadynamics simulation. Any CV natively
-implemented in PLUMED (see \ref colvarintro) or defined by the users directly in the input file (see \ref CUSTOM) can be used;
-- monitor the \ref RMSD of the system from the two reference conformations during the course of the simulation;
-- analyze the results as done in the previous exercises (assessment of convergence and error analysis);
-- report the free energies (with error bar) as a function of the two \ref RMSD CVs calculated with respect to the reference PDBs;
-- (optional) report structure and population of the most signicant, i.e. populated, states.
-
-Please keep in mind that:
-- we are simulating the system using a simplified, structure-based potential, called [SMOG](https://smog-server.org). SMOG is significantly
-  less computational demanding than all-atoms, explicit solvent force fields. However, the simulation of this system might take a few hours,
-  so allocate enough time to complete this exercise;
-- some of the CVs or PLUMED functionalities might not work as hydrogen atoms are not present in the system. However, there
-is always a way around this, so be creative;
-- due to the nature of the force field, we are simulating at an unphysical temperature of 60K. Be ready to test large values of the `BIASFACTOR`.
-
-Finally, due to the special nature of the force field, please execute GROMACS using the following command:
-
-\verbatim
-gmx mdrun -plumed plumed.dat -ntomp 4 -noddcheck
-\endverbatim
-
-You can adjust the number of CPU cores you want to use (here 4, OpenMP parallelization), based on the available resources. The system is not
-particularly big, therefore using a large number of cores might be inefficient.
-
-<b>Please post the results of your simulations on Slack!</b>
+Hopefully this masterclass helped you to start playing around with the OPES method and get a sense of what it could be useful for.
+If you are still interested in testing it out and understand more, then you should check out the [PLUMED-NEST](https://www.plumed-nest.org/browse.html). Just search for "opes" and you will find several papers that use the method, and have uploaded all the input files necessary to reproduce the results.
 
 */
 
