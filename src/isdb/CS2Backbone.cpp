@@ -73,6 +73,10 @@ the chain identifier must be in the standard PDB format, together with the TER k
 Termini groups like ACE or NME should be removed from the TEMPLATE pdb because they are not recognized by
 CS2BACKBONE.
 
+Atoms indices in the TEMPLATE file should be numbered from 1 to N where N is the number of atoms used in ATOMS.
+This is not a problem for simple cases where atoms goes from 1 to N but is instead something to be carefull in case
+that a terminal group is removed from the PDB file.
+
 In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
 file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat),
 add only the files for the nuclei you need, but each file should include all protein residues.
