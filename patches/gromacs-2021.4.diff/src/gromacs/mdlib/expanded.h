@@ -50,9 +50,14 @@ struct t_mdatoms;
 struct t_simtemp;
 class t_state;
 
+namespace gmx
+{
+class MDLogger;
+} // namespace gmx
+
 void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, gmx_bool bInit);
 
-void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist);
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist, const gmx::MDLogger& mdlog);
 
 int ExpandedEnsembleDynamics(FILE*                 log,
                              const t_inputrec*     ir,

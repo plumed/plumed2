@@ -1,0 +1,13 @@
+#! FIELDS time phi sigma_phi height logweight
+#! SET action OPES_METAD_kernels
+#! SET biasfactor  8.018158
+#! SET epsilon  0.000105
+#! SET kernel_cutoff  4.280338
+#! SET compression_threshold  1.000000
+#! SET min_phi -pi
+#! SET max_phi pi
+ 10.000000 -2.131678 1.137144 0.001925 -6.196412
+ 15.000000 -2.924894 0.933410 28.724569 3.216914
+ 20.000000 -2.561349 0.726457 19.209212 2.563887
+ 30.000000 1.478705 0.670221 0.369106 -1.468746
+ 45.000000 -3.038789 0.579065 124.516907 4.206174
