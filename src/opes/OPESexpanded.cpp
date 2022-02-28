@@ -35,7 +35,7 @@ On-the-fly probability enhanced sampling (\ref OPES "OPES") with expanded ensemb
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
 Such ensembles can be sampled via methods like replica exchange, or this \ref OPES_EXPANDED bias action.
-A typical example is a mutlticanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
+A typical example is a multicanonical simulation, in which a whole range of temperatures is sampled instead of a single one.
 
 In oreder to define an expanded target ensemble we use \ref EXPANSION_CV "expansion collective variables" (ECVs), \f$\Delta u_\lambda(\mathbf{x})\f$.
 The bias at step \f$n\f$ is
