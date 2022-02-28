@@ -22,7 +22,7 @@ Once this Masterclass is completed, you will be able to:
 We assume that you are familiar with PLUMED, metadynamics, umbrella sampling, and replica exchange.
 If you are not, the 2021 PLUMED Masterclass is a great place to start.
 In particular we suggest \ref masterclass-21-1, \ref masterclass-21-3, and \ref masterclass-21-4.
-Reading the OPES papers is also recommended \cite Invernizzi2020rethinking \cite Invernizzi2021explore \cite Invernizzi2020unified.
+Reading the OPES papers is also recommended \cite Invernizzi2020rethinking \cite Invernizzi2022explore \cite Invernizzi2020unified.
 
 \section masterclass-22-03-theory Overview of the theory
 
@@ -30,7 +30,7 @@ The OPES method is an evolution of Metadynamics that also incorporates some of t
 OPES is designed to be simple to use and robust with respect to suboptimal collective variables.
 Compared to metadynamics, it is faster in converging to a quasi-static bias and it handles multi-dimensional collective variables more efficiently.
 
-The theory for the OPES method is presented in three separate papers \cite Invernizzi2020rethinking \cite Invernizzi2021explore \cite Invernizzi2020unified.
+The theory for the OPES method is presented in three separate papers \cite Invernizzi2020rethinking \cite Invernizzi2022explore \cite Invernizzi2020unified.
 A short overview can be found in the PLUMED documentation at \ref OPES, \ref OPES_EXPANDED, \ref OPES_METAD, and \ref OPES_METAD_EXPLORE.
 
 \hidden{Introduction to the theory}
@@ -216,7 +216,7 @@ To fully appreciate the strength of combining these two different expansions, on
 
 \section masterclass-22-03-ex-2 Exercise 2: OPES for metadynamics-like simulations
 
-We now use OPES to perform biased simulations very similar to those of metadynamics \cite Invernizzi2020rethinking \cite Invernizzi2021explore.
+We now use OPES to perform biased simulations very similar to those of metadynamics \cite Invernizzi2020rethinking \cite Invernizzi2022explore.
 We will sample a well-tempered distribution along a chosen set of collective variables.
 
 \subsection masterclass-22-03-ex-2-1 2.1 Biasing a good CV
