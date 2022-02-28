@@ -190,6 +190,10 @@ SUBROUTINE run_pwscf( exit_status )
      !
      IF ( tstress ) CALL stress( sigma )
      !
+     ! ... this is the right place for plugin forces:
+     !
+     CALL plugin_ext_forces()
+     !
      IF ( lmd .OR. lbfgs ) THEN
         !
         ! ... add information on this ionic step to xml file
@@ -224,9 +228,6 @@ SUBROUTINE run_pwscf( exit_status )
      CALL stop_clock( 'ions' ); !write(*,*)' stop ions' ; FLUSH(6)
      !
      ! ... send out forces to MM code in QM/MM run
-     ! ... this is the right place for plugin forces:
-     !
-     CALL plugin_ext_forces()
      !
      CALL qmmm_update_forces( force, rho%of_r, nspin, dfftp )
      !
