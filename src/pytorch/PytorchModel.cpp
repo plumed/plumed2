@@ -39,16 +39,23 @@ namespace pytorch {
 
 //+PLUMEDOC PYTORCH_FUNCTION PYTORCH_MODEL
 /*
-Load a Pytorch model compiled with TorchScript. The derivatives are set using native backpropagation in Pytorch.
+Load a PyTorch model compiled with TorchScript. 
+
+This can be either a trained model (e.g. a neural network) or a function defined in Python. In both cases the derivatives of the outputs with respect to the inputs are computed using the automatic differentiation (autograd) feature.
+
+By default it is assumed that the model is saved as: `model.ptc`, unless otherwise indicated by the `FILE` keyword. The function automatically checks for the number of output dimensions and creates a component for each of them, called *.node-i with i between 0 and N-1 for N outputs. 
+
+Note that this function is active only if LibTorch is linked against PLUMED. Please check the instructions in the \ref PYTORCH page.
 
 \par Examples
-Define a model that takes as inputs two distances d1 and d2.
+Load a model called `torch_model.ptc` that takes as input two dihedral angles phi and psi.
 
 \plumedfile
-model: PYTORCH_MODEL FILE=model.ptc ARG=d1,d2
+#SETTINGS AUXFILE=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+model: PYTORCH_MODEL FILE=torch_model.ptc ARG=phi,psi
 \endplumedfile
-
-The N nodes of the neural network are saved as "model.node-0", "model.node-1", ..., "model.node-(N-1)".
 
 */
 //+ENDPLUMEDOC
@@ -74,8 +81,8 @@ PLUMED_REGISTER_ACTION(PytorchModel,"PYTORCH_MODEL")
 void PytorchModel::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("optional","FILE","filename of the trained model");
-  keys.addOutputComponent("node", "default", "NN outputs");
+  keys.add("optional","FILE","filename of the PyTorch compiled model");
+  keys.addOutputComponent("node", "default", "model outputs");
 }
 
 // Auxiliary function to transform torch tensors in std vectors
@@ -141,7 +148,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   log.printf("Number of input: %d \n",_n_in);
   log.printf("Number of outputs: %d \n",_n_out);
   log.printf("  Bibliography: ");
-  log<<plumed.cite("L. Bonati, V. Rizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2998-3004 (2020)");
+  log<<plumed.cite("Bonati, Rizzi and Parrinello, J. Phys. Chem. Lett. 11, 2998-3004 (2020)");
   log.printf("\n");
 
 }
