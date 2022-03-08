@@ -520,7 +520,7 @@ bool PDB::checkForAtom( AtomNumber a ) const {
 Log& operator<<(Log& ostr, const PDB&  pdb) {
   char buffer[1000];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
-    sprintf(buffer,"ATOM %3d %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
+    sprintf(buffer,"ATOM %3u %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
     ostr<<buffer;
   }
   return ostr;
