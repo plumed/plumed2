@@ -61,7 +61,7 @@ jobs:
     - name: Install boost with debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
-        .travis/install.boost
+        .ci/install.boost
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
@@ -79,14 +79,14 @@ jobs:
       run: |
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        ./.travis/install.doxygen Release_1_8_17
+        .ci/install.doxygen Release_1_8_17
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        ./.travis/install.lcov v1.15
+        .ci/install.lcov v1.15
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -153,14 +153,14 @@ jobs:
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
-         ./.travis/push coverage
+         .ci/push coverage
          bash <(curl -s https://codecov.io/bash) > /dev/null
     - name: Push doc
       if: contains( matrix.variant, '-doc-' )
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
-         ./.travis/push doc
+         .ci/push doc
 
   codecheck:
     runs-on: ubuntu-18.04
@@ -171,7 +171,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 2.7
+        .ci/install.cppcheck 2.7
     - name: Build astyle
       run: |
         make -j 4 -C astyle
