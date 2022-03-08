@@ -3698,9 +3698,7 @@ void plumed_c2f(plumed p,char*c) {
     /*
       characters will range between '0' (ASCII 48) and 'o' (ASCII 111=48+63)
     */
-    /* cppcheck-suppress objectIndex */
     c[2*i]=cc[i]/64+48;
-    /* cppcheck-suppress objectIndex */
     c[2*i+1]=cc[i]%64+48;
   }
   for(; i<16; i++) {
@@ -3732,7 +3730,6 @@ plumed plumed_f2c(const char*c) {
     /*
       perform the reversed transform
     */
-    /* cppcheck-suppress objectIndex */
     cc[i]=(c[2*i]-48)*64 + (c[2*i+1]-48);
   }
   for(; i<16; i++) {

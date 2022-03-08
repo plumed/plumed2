@@ -192,7 +192,7 @@ public:
   std::string description()const override;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist
-  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_);
+  static bool findCvsAndPeriodic(const std::string & filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_);
 };
 
 void CLToolSumHills::registerKeywords( Keywords& keys ) {
@@ -532,7 +532,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
+bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
   IFile ifile;
   ifile.allowIgnoredFields();
   std::vector<std::string> fields;

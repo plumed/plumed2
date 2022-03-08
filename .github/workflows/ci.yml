@@ -182,7 +182,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 2.6.2
+        ./.travis/install.cppcheck 2.7
     - name: Build astyle
       run: |
         make -j 4 -C astyle
@@ -202,14 +202,14 @@ jobs:
       run: |
         make -C docker centos7
 
-  # We test on fedora34 to make sure we have compatibility with newer compilers (gcc 11)
-  fedora34:
+  # We test on fedora35 to make sure we have compatibility with newer compilers (gcc 11)
+  fedora35:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Build and run tests
       run: |
-        make -C docker fedora34
+        make -C docker fedora35
 
   macports:
     runs-on: macos-10.15

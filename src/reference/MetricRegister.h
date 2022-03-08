@@ -91,6 +91,7 @@ std::unique_ptr<T> MetricRegister::create( const std::string& type ) {
   conf.release();
 // notice that I should pass ptr here rather than conf.release(),
 // since the type is different
+// cppcheck-suppress returnDanglingLifetime
   return std::unique_ptr<T>(ptr);
 }
 

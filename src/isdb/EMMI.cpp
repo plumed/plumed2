@@ -224,9 +224,9 @@ private:
 // do MonteCarlo
   void doMonteCarlo();
 // read error file
-  std::vector<double> read_exp_errors(std::string errfile);
+  std::vector<double> read_exp_errors(const std::string & errfile);
 // read experimental overlaps
-  std::vector<double> read_exp_overlaps(std::string ovfile);
+  std::vector<double> read_exp_overlaps(const std::string & ovfile);
 // calculate model GMM weights and covariances
   std::vector<double> get_GMM_m(std::vector<AtomNumber> &atoms);
 // read data GMM file
@@ -935,7 +935,7 @@ void EMMI::doMonteCarlo()
   getPntrToComponent("sigma-"+num)->set(sigma_[nGMM]);
 }
 
-std::vector<double> EMMI::read_exp_errors(std::string errfile)
+std::vector<double> EMMI::read_exp_errors(const std::string & errfile)
 {
   int nexp, idcomp;
   double err;
@@ -971,7 +971,7 @@ std::vector<double> EMMI::read_exp_errors(std::string errfile)
   return exp_err;
 }
 
-std::vector<double> EMMI::read_exp_overlaps(std::string ovfile)
+std::vector<double> EMMI::read_exp_overlaps(const std::string & ovfile)
 {
   int idcomp;
   double ov;
