@@ -170,7 +170,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 2.6.2
+        ./.travis/install.cppcheck 2.7
     - name: Build astyle
       run: |
         make -j 4 -C astyle
