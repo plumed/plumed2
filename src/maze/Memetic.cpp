@@ -271,12 +271,6 @@ Memetic::Memetic(const ActionOptions& ao)
   checkRead();
 }
 
-Memetic::~Memetic() {
-  delete neighbor_list_;
-
-  members_.clear();
-}
-
 void Memetic::optimize() {
   Vector t = solve();
 

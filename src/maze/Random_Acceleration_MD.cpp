@@ -77,11 +77,6 @@ public:
   explicit Random_Acceleration_MD(const ActionOptions&);
 
   /**
-   * Destructor.
-   */
-  ~Random_Acceleration_MD();
-
-  /**
    * Registers PLMD keywords.
    *
    * @param[in] keys PLMD keywords
@@ -177,10 +172,6 @@ Random_Acceleration_MD::Random_Acceleration_MD(const ActionOptions& ao)
   addComponent("tdist");
   componentIsNotPeriodic("tdist");
   value_total_dist_ = getPntrToComponent("tdist");
-}
-
-Random_Acceleration_MD::~Random_Acceleration_MD() {
-  delete neighbor_list_;
 }
 
 void Random_Acceleration_MD::optimize() {

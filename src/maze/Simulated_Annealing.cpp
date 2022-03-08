@@ -89,11 +89,6 @@ public:
   explicit Simulated_Annealing(const ActionOptions& ao);
 
   /**
-   * Destructor.
-   */
-  ~Simulated_Annealing();
-
-  /**
    * Register PLMD keywords.
    *
    * @param[in] keys Keywords.
@@ -184,10 +179,6 @@ Simulated_Annealing::Simulated_Annealing(const ActionOptions& ao)
   start_step_0();
 
   checkRead();
-}
-
-Simulated_Annealing::~Simulated_Annealing() {
-  delete neighbor_list_;
 }
 
 void Simulated_Annealing::decrease_probability(unsigned int time) {
