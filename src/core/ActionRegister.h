@@ -63,7 +63,7 @@ public:
 /// \param kp A pointer to a function which returns the allowed keywords
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-  bool check(std::string action);
+  bool check(const std::string & action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
