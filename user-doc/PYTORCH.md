@@ -8,7 +8,9 @@ reference: \cite bonati2020data
 
 ## Overview 
 
-The PYTORCH module is an interface between PyTorch machine learning library and PLUMED. It implements the \ref PYTORCH_MODEL class, which is a subclass of `Function` class. `PYTORCH_MODEL` allows to load complex models defined in Python with the PyTorch machine learning library. This allows one to use the outputs of a neural network as collective variables, as presented in \cite bonati2020data and in \cite bonati2021deep. Furthermore, the \ref PYTORCH_MODEL outputs can also be used as inputs for other collective variables and for data analysis tools. 
+The PYTORCH module is an interface between PyTorch machine learning library and PLUMED. It implements the \ref PYTORCH_MODEL class, which is a subclass of `Function` class. `PYTORCH_MODEL` provide the ability to load models defined in Pytorch and compiled with <a href="https://pytorch.org/docs/stable/jit.html#"> TorchScript</a>. 
+
+For instance, this allows one to use the outputs of a neural network as collective variables, as done in \cite bonati2020data and in \cite bonati2021deep. Furthermore, the \ref PYTORCH_MODEL outputs can also be used as inputs for other collective variables and for data analysis tools. 
 
 ## Installation
 
@@ -16,7 +18,7 @@ This module is not installed by default. It requires the PyTorch C++ APIs (LibTo
 
 ### Download LibTorch C++ API library
 
-You can download the pre-built LibTorch library from their <a href="https://pytorch.org/get-started/locally/"> website</a>. The following instructions download the reccomended pre-built library (CPU, with C++11 ABI compatibility).
+You can download the pre-built LibTorch library from their <a href="https://pytorch.org/get-started/locally/"> website</a>. The following script downloads the recommended 1.8.2 LTS version (CPU, with C++11 ABI compatibility).
 
 \verbatim
 > wget https://download.pytorch.org/libtorch/lts/1.8/cpu/libtorch-cxx11-abi-shared-with-deps-1.8.2%2Bcpu.zip 
@@ -39,7 +41,7 @@ Remember to add the line `. ${LIBTORCH}/sourceme.sh` to your `~/.bashrc` or  `~/
 
 ### Configure PLUMED
 
-In order to install this module we need to (1) specify to look for the libtorch library (`--enable-libtorch`) and (2) enable the related module (`--enable-modules=pytorch` or also `--enable-modules=all`):
+In order to install the `PYTORCH` module when compiling PLUMED we need to (1) specify to look for the libtorch library (`--enable-libtorch`) and (2) enable the related module (`--enable-modules=pytorch` or also `--enable-modules=all`):
 
 \verbatim
 > ./configure --enable-cxx=14 \
@@ -61,7 +63,7 @@ Currently, all features of the PYTORCH module are included in a single function:
 
 ## Training CVs with PyTorch: the mlcvs package
 
-<a href="https://mlcvs.readthedocs.io/"> `mlcvs` </a> is a Python package for the design of different kinds of neural-networks based CVs. The CVs are optimized in Python and the resulting model is compiled  with TorchScript. This allows to read the model in PLUMED via the LibTorch C++ APIs.
+<a href="https://mlcvs.readthedocs.io/"> `mlcvs` </a> is a Python package for the design of different kinds of neural-networks based CVs, e.g. that discriminate between states \ref \cite bonati2020data or that approximate the slow dynamical modes of the system \cite bonati2021deep. The CVs are optimized in Python and the resulting model is compiled with TorchScript, in order to allowed the models to be employed without Python dependencies.
 
 ## Module Contents
 - \subpage PYTORCHFunction

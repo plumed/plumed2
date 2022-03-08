@@ -41,7 +41,7 @@ namespace pytorch {
 /*
 Load a PyTorch model compiled with TorchScript.
 
-This can be either a trained model (e.g. a neural network) or a function defined in Python. In both cases the derivatives of the outputs with respect to the inputs are computed using the automatic differentiation (autograd) feature.
+This can be a function defined in Python or a more complex model, such as a neural network optimized on a set of data. In both cases the derivatives of the outputs with respect to the inputs are computed using the automatic differentiation (autograd) feature of Pytorch.
 
 By default it is assumed that the model is saved as: `model.ptc`, unless otherwise indicated by the `FILE` keyword. The function automatically checks for the number of output dimensions and creates a component for each of them. The outputs are called node-i with i between 0 and N-1 for N outputs.
 
