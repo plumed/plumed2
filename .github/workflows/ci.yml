@@ -39,7 +39,7 @@ jobs:
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
-        # path required for nosetest:
+        # path required for pytest:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
         echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
@@ -67,7 +67,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install --user Cython
         pip install --user numpy
-        pip install --user nose
+        pip install --user pytest
         pip install --user six ;
         pip install --user pandas ;
         pip install --user mdtraj ;
@@ -139,7 +139,8 @@ jobs:
          make -C regtest checkfail
     - name: Run python tests
       run: |
-         nosetests -v -w python
+         cd python
+         pytest -v
     - name: Build doc
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
@@ -207,7 +208,7 @@ jobs:
         variant: [ "" , "+allmodules" ]
         # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
     env:
-      PYVERS: "py37 py38"
+      PYVERS: "py37 py38 py39 py310"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -235,10 +236,11 @@ jobs:
     - name: Run tests
       run: |
         sudo port -N -d test plumed ${{ matrix.variant }}
-        # NOT WORKING FOR SOME MACPORTS RELATED REASON - GB 28/01/2022
-        #for p in $PYVERS ; do
-        #  sudo port test $p-plumed
-        #done
+    - name: Run python tests
+      run: |
+        for p in $PYVERS ; do
+          sudo port test $p-plumed
+        done
 
   macsimple:
     runs-on: macos-10.15
