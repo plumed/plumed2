@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:35
 
 # note: at variance with centos7, here we have to explicitly install gcc
 RUN yum -y update \
