@@ -29,7 +29,7 @@ all:
 endif
 
 pip:
-	cp ../VERSION .
+	cp ../VERSION ./PLUMED_VERSION
 	mkdir -p include
 	cp ../src/wrapper/Plumed.h include/
 
@@ -44,6 +44,7 @@ pypi:
 	mkdir -p pypi/include
 	cp -r test pypi/
 	cp ../src/wrapper/Plumed.h pypi/include/
-	cp README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py ../VERSION pypi/
+	cp README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py pypi/
+	cp ../VERSION pypi/PLUMED_VERSION
 	cd pypi ; $(python_bin) setup.py sdist
 	echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
