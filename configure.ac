@@ -508,20 +508,20 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-  AC_MSG_CHECKING([whether dgemv can be linked with no library])
-  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
+  AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
     AC_MSG_RESULT([yes])
-    blas_found=nounderscore
+    blas_found=underscore
     ],[
     AC_MSG_RESULT([no])
     AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
-    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
+    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
       AC_MSG_RESULT([yes])
-      blas_found=underscore
+      blas_found=nounderscore
     ],[
       AC_MSG_RESULT([no])
-      PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore],[
-        PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+      PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore],[
+        PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore])
       ])
     ])
   ])
