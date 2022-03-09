@@ -63,7 +63,7 @@ void ActionRegister::add(std::string key,creator_pointer f,keywords_pointer k) {
   };
 }
 
-bool ActionRegister::check(std::string key) {
+bool ActionRegister::check(const std::string & key) {
   if(m.count(key)>0 && mk.count(key)>0) return true;
   return false;
 }

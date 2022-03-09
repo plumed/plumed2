@@ -100,9 +100,9 @@ public:
 ///
   void isAnalysis() { isatoms=false; }
 /// find out whether flag key is on or off by default.
-  bool getLogicalDefault( std::string key, bool& def ) const ;
+  bool getLogicalDefault(const std::string & key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
-  bool getDefaultValue( std::string key, std::string& def ) const ;
+  bool getDefaultValue(const std::string & key, std::string& def ) const ;
 /// Return the number of defined keywords
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action

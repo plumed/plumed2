@@ -223,7 +223,7 @@ void MovingRestraint::calculate() {
     aa=at[step.size()-1];
   } else {
     unsigned i=0;
-    for(i=1; i<step.size(); i++) if(now<step[i]) break;
+    for(i=1; i<step.size()-1; i++) if(now<step[i]) break;
     double c2=(now-step[i-1])/double(step[i]-step[i-1]);
     double c1=1.0-c2;
     for(unsigned j=0; j<narg; j++) kk[j]=(c1*kappa[i-1][j]+c2*kappa[i][j]);

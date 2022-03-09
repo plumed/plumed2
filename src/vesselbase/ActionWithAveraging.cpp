@@ -106,6 +106,7 @@ bool ActionWithAveraging::ignoreNormalization() const {
 }
 
 void ActionWithAveraging::setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks ) {
+  // cppcheck-suppress danglingLifetime
   myaverage=av_vessel.get();
   addVessel( std::move(av_vessel) );
   useRunAllTasks=usetasks; resizeFunctions();

@@ -60,7 +60,7 @@ void CLToolRegister::add(std::string key,creator_pointer f,keywords_pointer kf) 
   };
 }
 
-bool CLToolRegister::check(std::string key)const {
+bool CLToolRegister::check(const std::string & key)const {
   if(m.count(key)>0) return true;
   return false;
 }
