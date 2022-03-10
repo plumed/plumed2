@@ -14,7 +14,8 @@ For instance, this allows one to use the outputs of a neural network as collecti
 
 ## Installation
 
-This module is not installed by default. It requires the PyTorch C++ APIs (LibTorch) to be linked against PLUMED. Since the C++ APIs are still in beta stability phase, it is strongly suggested to use the 1.8.* LTS version of both PyTorch and LibTorch for compatibility. Please note that the instructions provided below might need to be adjusted to link different versions. Furthermore, note that if the versions of PyTorch and LibTorch do not match it might not be possible to correctly load the model. 
+This module is not installed by default. It requires the PyTorch C++ APIs (LibTorch) to be linked against PLUMED. Since these APIs are still in beta phase regarding stability, it is strongly suggested to use the 1.8.* LTS version of both PyTorch and LibTorch. Please note that if you want to link a different version it might be necessary to specify the required libraries within LIBS in configure. 
+Furthermore, note that if the versions of PyTorch and LibTorch do not match it might not be possible to correctly load the model. 
 
 ### Download LibTorch C++ API library
 
@@ -37,25 +38,21 @@ The location of the include and library files need to be exported in the environ
 > . ${LIBTORCH}/sourceme.sh
 \endverbatim
 
-Remember to add the line `. ${LIBTORCH}/sourceme.sh` to your `~/.bashrc` or  `~/.bash_profile` file. 
+Remember to source the `sourceme.sh` file in your `~/.bashrc` or  `~/.bash_profile` file. 
 
 ### Configure PLUMED
 
-In order to install the `PYTORCH` module when compiling PLUMED we need to (1) specify to look for the libtorch library (`--enable-libtorch`) and (2) enable the related module (`--enable-modules=pytorch` or also `--enable-modules=all`):
+In order to install the `PYTORCH` module when compiling PLUMED we need to (1) specify to look for libtorch (`--enable-libtorch`) and (2) enable the related module (`--enable-modules=pytorch` or also `--enable-modules=all`):
 
 \verbatim
-> ./configure --enable-cxx=14 \
-              --disable-external-lapack --disable-external-blas \
-              --enable-libtorch LIBS="-ltorch -lc10 -ltorch_cpu" \
-              --enable-modules=pytorch  
+> ./configure --enable-libtorch --enable-modules=pytorch  
 \endverbatim
 
 ### Notes about the linking of LibTorch
 
-- Due to a conflict with the BLAS/LAPACK libraries which are already contained in the LibTorch binaries, the search for other external libraries has to be disabled.
-- It appears that there is a conflict in using the intel compiler with the precompiled LibTorch library, while it works fine with gcc and clang.
-- If using the CUDA-enabled binaries `-ltorch_cuda -lc10_cuda` need to be added to LIBS (note: CUDA support is not enabled yet in the interface).
+- A compiler with C++14 support is required. 
 - If you want to use the pre-cxx11 ABI LibTorch binaries the following flag should be added to the configure: `CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"`.
+
 
 ## Usage
 
