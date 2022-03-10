@@ -2430,11 +2430,12 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # in the library. finally, we set the define flag
 
 
-# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library,multiple_libraries])
 # Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
 # Name is just a string used in the configure log
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
+# If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
 
 
 ##################################################################
@@ -2620,6 +2621,7 @@ else
   esac
 
 fi
+
 
 
 # Check whether --enable-cxx was given.
@@ -7575,9 +7577,14 @@ if test $rtld_default == true ; then
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
 $as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
@@ -7612,7 +7619,9 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_RTLD_DEFAULT 1" >>confdefs.h
@@ -7774,9 +7783,14 @@ if test $subprocess == true ; then
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
 $as_echo_n "checking subprocess with -l$testlib... " >&6; }
@@ -7834,7 +7848,9 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_SUBPROCESS 1" >>confdefs.h
@@ -8790,9 +8806,14 @@ if test $boost_graph == true ; then
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
 $as_echo_n "checking boost graph with -l$testlib... " >&6; }
@@ -8829,7 +8850,9 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_GRAPH 1" >>confdefs.h
@@ -8852,9 +8875,14 @@ if test $boost_serialization == true ; then
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with -l$testlib" >&5
 $as_echo_n "checking boost serialization with -l$testlib... " >&6; }
@@ -8889,7 +8917,9 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_SERIALIZATION 1" >>confdefs.h
@@ -9543,17 +9573,70 @@ fi
 
 #added by luigibonati
 if test $libtorch == true ; then
+  # enable c++14 support
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -std=c++14"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++14" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++14... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  # test program
 
     found=ko
     __PLUMED_HAS_LIBTORCH=no
     if test "${libsearch}" == true ; then
-      testlibs=""
+      testlibs=" torch_cpu c10 "
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "true" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
 $as_echo_n "checking libtorch with -l$testlib... " >&6; }
@@ -9587,7 +9670,9 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_LIBTORCH 1" >>confdefs.h

@@ -84,8 +84,7 @@ jobs:
         echo "LD_LIBRARY_PATH=$PWD/libtorch/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "CPATH=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$CPATH" >> $GITHUB_ENV
         echo "INCLUDE=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$INCLUDE" >> $GITHUB_ENV
-        echo "LIBS=$LIBS -ltorch -lc10 -ltorch_cpu" >> $GITHUB_ENV
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-cxx=14 --enable-libtorch" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |

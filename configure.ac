@@ -114,11 +114,12 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     fi
 ])
 
-# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library,multiple_libraries])
 # Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
 # Name is just a string used in the configure log
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
+# If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
 AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     found=ko
     $3=no
@@ -127,9 +128,14 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "$5" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         AC_MSG_CHECKING([$1 with -l$testlib])
         LIBS="-l$testlib $LIBS"
@@ -144,7 +150,9 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       AC_DEFINE([$3])
@@ -883,6 +891,9 @@ fi
 
 #added by luigibonati
 if test $libtorch == true ; then 
+  # enable c++14 support
+  PLUMED_CHECK_CXXFLAG([-std=c++14])
+  # test program
   PLUMED_CHECK_CXX_PACKAGE([libtorch],[
 #include <torch/torch.h>
 #include <torch/script.h>
@@ -890,7 +901,7 @@ int main() {
   torch::Tensor tensor = torch::rand({2, 3});
   return 0;
 }
-  ], [__PLUMED_HAS_LIBTORCH])
+  ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG
