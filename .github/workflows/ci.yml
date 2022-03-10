@@ -200,6 +200,15 @@ jobs:
       run: |
         make -C docker fedora35
 
+  # We test on rockylinux8 as well
+  rocky8:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and run tests
+      run: |
+        make -C docker rocky8
+
   macports:
     runs-on: macos-10.15
     strategy:
