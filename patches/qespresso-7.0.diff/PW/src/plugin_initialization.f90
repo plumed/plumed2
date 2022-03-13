@@ -13,7 +13,7 @@ SUBROUTINE plugin_initialization()
   USE kinds,            ONLY : DP
   USE io_files,         ONLY : tmp_dir
   !
-  USE plugin_flags
+  USE plugin_flags,     ONLY : use_plumed
   !
   USE ions_base,        ONLY : amass, ityp, nat
   !

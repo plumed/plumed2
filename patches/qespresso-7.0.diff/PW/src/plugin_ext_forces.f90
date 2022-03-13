@@ -15,7 +15,7 @@ SUBROUTINE plugin_ext_forces()
   USE io_global,        ONLY : stdout, ionode, ionode_id
   USE kinds,            ONLY : DP
   !
-  USE plugin_flags
+  USE plugin_flags,     ONLY : use_plumed
   !
   USE cell_base,        ONLY : alat, at
   USE ions_base,        ONLY : tau, nat,amass
