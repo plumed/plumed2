@@ -2,8 +2,10 @@
 import plumed
 import os
 import array
+import unittest
 
-def test():
+class Test(unittest.TestCase):
+  def test(self):
 
     p = plumed.Plumed()
     p.cmd("setNatoms",2)
@@ -32,16 +34,14 @@ def test():
 
     p.cmd("getBias", bias )
 
-    assert (bias[0] - 7.0)**2<1e-8
-    assert (forces[0] - 1.0)**2<1e-8
-    assert (forces[1] - 2.0)**2<1e-8
-    assert (forces[2] - 3.0)**2<1e-8
-    assert (forces[3] + 1.0)**2<1e-8
-    assert (forces[4] + 2.0)**2<1e-8
-    assert (forces[5] + 3.0)**2<1e-8
-
-    
+    self.assertAlmostEqual( bias[0]  ,   7.0)
+    self.assertAlmostEqual( forces[0],   1.0)
+    self.assertAlmostEqual( forces[1],   2.0)
+    self.assertAlmostEqual( forces[2],   3.0)
+    self.assertAlmostEqual( forces[3], - 1.0)
+    self.assertAlmostEqual( forces[4], - 2.0)
+    self.assertAlmostEqual( forces[5], - 3.0)
 
 if __name__ == "__main__":
-    test()
+    unittest.main()
 

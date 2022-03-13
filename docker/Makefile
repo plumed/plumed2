@@ -1,5 +1,5 @@
 
-.PHONY: ubuntu plumed2.tgz clean centos7 fedora34
+.PHONY: ubuntu plumed2.tgz clean centos7 fedora35 rocky8
 
 ubuntu: plumed2.tgz
 	docker build -t plumed .
@@ -7,8 +7,11 @@ ubuntu: plumed2.tgz
 centos7: plumed2.tgz
 	docker build -t plumed -f centos7 .
 
-fedora34: plumed2.tgz
-	docker build -t plumed -f fedora34 .
+fedora35: plumed2.tgz
+	docker build -t plumed -f fedora35 .
+
+rocky8: plumed2.tgz
+	docker build -t plumed -f rocky8 .
 
 plumed2.tgz:
 	cd ../ ; git archive HEAD -o "$(CURDIR)"/plumed2.tgz --prefix plumed2/ ; cd -

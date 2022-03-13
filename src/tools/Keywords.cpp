@@ -608,7 +608,7 @@ std::string Keywords::get( const unsigned k ) const {
   return keys[k];
 }
 
-bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
+bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
   if( booldefs.find(key)!=booldefs.end() ) {
     def=booldefs.find(key)->second;
     return true;
@@ -617,7 +617,7 @@ bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
   }
 }
 
-bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
+bool Keywords::getDefaultValue(const std::string & key, std::string& def ) const {
   plumed_assert( style(key,"compulsory") || style(key,"hidden") );
 
   if( numdefs.find(key)!=numdefs.end() ) {

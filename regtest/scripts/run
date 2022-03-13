@@ -209,6 +209,7 @@ case "$type" in
       if test "$plumed_language" = fortran08 ; then
         cat > __test_fortran08.f90 << EOF
 module test_fortran08_a
+implicit none
 type b
 contains
   final :: c
@@ -217,6 +218,10 @@ contains
   impure elemental subroutine c(x)
     type(b), intent(inout) :: x
   end subroutine c
+  subroutine sub(x)
+    integer :: x(:)
+    write(*,*) is_contiguous(x)
+  end subroutine sub
 end module test_fortran08_a
 EOF
         if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then

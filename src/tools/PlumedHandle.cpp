@@ -80,6 +80,7 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.nelem=ptr.getNelem();
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
+    safe.opt=nullptr;
     // try/catch needed to remap exceptions in anonymous namespace to standard plumed exceptions
     // this is necessary otherwise a user would not be able to catch them
     try {

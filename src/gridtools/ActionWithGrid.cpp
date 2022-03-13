@@ -67,6 +67,7 @@ std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type,
   } else {
     plumed_merror("no way to create grid of type " + type );
   }
+  // cppcheck-suppress danglingLifetime
   mygrid=grid.get();
   return grid;
 }
