@@ -52,6 +52,9 @@ SUBROUTINE run_pwscf( exit_status )
   USE scf,                  ONLY : rho
   USE lsda_mod,             ONLY : nspin
   USE fft_base,             ONLY : dfftp
+  !
+  USE plugin_flags,         ONLY : use_plumed
+  !
   USE qmmm,                 ONLY : qmmm_initialization, qmmm_shutdown, &
                                    qmmm_update_positions, qmmm_update_forces
   USE qexsd_module,         ONLY : qexsd_set_status
@@ -312,6 +315,12 @@ SUBROUTINE run_pwscf( exit_status )
   CALL qexsd_set_status( exit_status )
   IF ( lensemb ) CALL beef_energies( )
   IF ( io_level > -2 ) CALL punch( 'all' )
+  !
+  ! finalize plumed
+  !
+  IF(use_plumed) then
+      CALL plumed_f_gfinalize()
+  ENDIF
   !
   CALL qmmm_shutdown()
   !
