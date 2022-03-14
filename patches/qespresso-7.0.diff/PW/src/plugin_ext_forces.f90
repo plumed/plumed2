@@ -22,6 +22,8 @@ SUBROUTINE plugin_ext_forces()
   USE force_mod,        ONLY : force,sigma
   USE control_flags,    ONLY : istep
   USE ener,             ONLY : etot 
+
+  USE plumed_module,    ONLY: plumed_f_gcmd
   !
   IMPLICIT NONE
   !
