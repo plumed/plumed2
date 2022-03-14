@@ -1,0 +1,17 @@
+# vim:ft=plumed
+
+#define input x
+phi: TORSION ATOMS=5,7,9,15
+
+#load model computing y=sin(x)
+model: PYTORCH_MODEL FILE=torch_model.ptc ARG=phi
+#compute sin(x) with python
+sinphi: CUSTOM ARG=phi FUNC=sin(x) PERIODIC=NO
+
+#output derivatives dy/dx (copy the latter to reference file and change header)
+DUMPDERIVATIVES ARG=model.* STRIDE=5 FILE=DERIVATIVES FMT=%10.5f
+DUMPDERIVATIVES ARG=sinphi STRIDE=5 FILE=DERIVATIVES_REF FMT=%10.5f
+
+#print colvar
+PRINT FMT=%g STRIDE=5 FILE=COLVAR ARG=phi,model.*,sinphi
+ENDPLUMED

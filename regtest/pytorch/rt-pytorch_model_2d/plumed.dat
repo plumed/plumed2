@@ -1,0 +1,15 @@
+# vim:ft=plumed
+
+#define input x
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+#load model computing [sin(x),cos(x)]
+model: PYTORCH_MODEL FILE=torch_model.ptc ARG=phi,psi
+
+#output derivatives dy/dx
+DUMPDERIVATIVES ARG=model.* STRIDE=5 FILE=DERIVATIVES
+
+#print colvar
+PRINT FMT=%g STRIDE=5 FILE=COLVAR ARG=phi,psi,model.*
+ENDPLUMED

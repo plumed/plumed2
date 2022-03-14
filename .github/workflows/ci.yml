@@ -74,6 +74,17 @@ jobs:
         pip install --user MDAnalysis ;
         python -c "import MDAnalysis" ;
         python -c "import mdtraj" ;
+    - name: Install Libtorch
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # libtorch is not compiled with GLIBCXX_DEBUG
+      run: |
+        # added by luigibonati
+        wget https://download.pytorch.org/libtorch/lts/1.8/cpu/libtorch-cxx11-abi-shared-with-deps-1.8.2%2Bcpu.zip ;
+        unzip libtorch-cxx11-abi-shared-with-deps-1.8.2+cpu.zip ;
+        echo "LIBRARY_PATH=$PWD/libtorch/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$PWD/libtorch/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "CPATH=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$INCLUDE" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |

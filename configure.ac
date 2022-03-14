@@ -114,11 +114,12 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     fi
 ])
 
-# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library,multiple_libraries])
 # Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
 # Name is just a string used in the configure log
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
+# If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
 AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     found=ko
     $3=no
@@ -127,9 +128,14 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     else
       testlibs=""
     fi
+    # check if multiple libraries are required
+    multiple=no
+    if test "$5" == "true"; then
+      multiple=yes
+    fi
+    save_LIBS="$LIBS"
     for testlib in "" $testlibs
     do
-      save_LIBS="$LIBS"
       if test -n "$testlib" ; then
         AC_MSG_CHECKING([$1 with -l$testlib])
         LIBS="-l$testlib $LIBS"
@@ -144,7 +150,9 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
       if test $found == ok ; then
         break
       fi
-      LIBS="$save_LIBS"
+      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+        LIBS="$save_LIBS"
+      fi
     done
     if test $found == ok ; then
       AC_DEFINE([$3])
@@ -283,6 +291,7 @@ PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
+PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -507,20 +516,20 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-  AC_MSG_CHECKING([whether dgemv can be linked with no library])
-  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
+  AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
     AC_MSG_RESULT([yes])
-    blas_found=nounderscore
+    blas_found=underscore
     ],[
     AC_MSG_RESULT([no])
     AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
-    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
+    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
       AC_MSG_RESULT([yes])
-      blas_found=underscore
+      blas_found=nounderscore
     ],[
       AC_MSG_RESULT([no])
-      PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore],[
-        PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+      PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore],[
+        PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore])
       ])
     ])
   ])
@@ -878,6 +887,21 @@ if test "$af_cuda" == true ; then
 fi
 if test "$af_cpu" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
+fi
+
+#added by luigibonati
+if test $libtorch == true ; then 
+  # enable c++14 support
+  PLUMED_CHECK_CXXFLAG([-std=c++14])
+  # test program
+  PLUMED_CHECK_CXX_PACKAGE([libtorch],[
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+  ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG
