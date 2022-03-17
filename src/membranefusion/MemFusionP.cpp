@@ -44,7 +44,7 @@ Where \f$\xi_f\f$ is the CV, \f$N_{sf}\f$ is the number of slices of the cylinde
 \f$\delta_{sf} = 1\f$ for 1 or more beads in the slice s) and \f$N_{sf}^{(p)}\f$ accounts for the number of tail beads
 within the slice s.
 
-\par Example
+\par Examples
 
 This example induces a hemifusion stalk (\f$\xi_f = 0.85\f$) from a pair of initially flat membranes (\f$\xi_f = 0.2\f$).
 
@@ -65,7 +65,7 @@ PRINT ARG=memFusion FILE=COLVAR STRIDE=1
 
 \endplumedfile
 
-You can test this CV with an example in this <a href="https://github.com/lautarodibartolo/MemFusion/tree/main/ExampleParallel">GitHub folder</a>.
+You can test this CV with another example in this <a href="https://github.com/lautarodibartolo/MemFusion/tree/main/ExampleParallel">GitHub folder</a>.
 
 */
 //+ENDPLUMEDOC
@@ -194,7 +194,11 @@ void memFusionP::calculate()
   // Z center of the upper membrane (uMem) and lower membrane (lMem) for systems with PBC: https://en.wikipedia.org/wiki/Center_of_mass#Systems_with_periodic_boundary_conditions .
   double ZuMem, ZuMemcos = 0.0, ZuMemsin = 0.0, uMemAngle, ZlMem, ZlMemcos = 0.0, ZlMemsin = 0.0, lMemAngle;
 
+  #ifdef _OPENMP
+  #if _OPENMP >= 201307
   #pragma omp parallel for private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
+  #endif
+  #endif
   for (unsigned i = 0; i < UMEM.size(); i++)
   {
     uMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
@@ -271,11 +275,19 @@ void memFusionP::calculate()
   Vector TailPosition;
 
   // Thanks stack overflow.
+  #ifdef _OPENMP
+  #if _OPENMP >= 201307
   #pragma omp declare reduction(vec_double_plus : std::vector<double> : \
   std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<double>())) \
   initializer(omp_priv = decltype(omp_orig)(omp_orig.size()))
+  #endif
+  #endif
 
+  #ifdef _OPENMP
+  #if _OPENMP >= 201307
   #pragma omp parallel for private(ZTailDistance, PositionS_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
+  #endif
+  #endif
   for (unsigned i = 0; i < TAILS.size(); i++)
   {
     ZTailDistance = pbcDistance(Vector(0.0, 0.0, ZMems), getPosition(i + membraneBeads))[2];
@@ -443,7 +455,11 @@ void memFusionP::calculate()
   // Eq. 1 Hub & Awasthi JCTC 2017. This is the CV that describes de Pore Nucleation.
   double Xi_Mem = 0.0;
 
+  #ifdef _OPENMP
+  #if _OPENMP >= 201307
   #pragma omp parallel for private(TailPosition,d_Xsc_Mem_dx,d_Xcc_Mem_dx,d_Ysc_Mem_dy,d_Ycc_Mem_dy,d_Xsc_Mem_dz,d_Xcc_Mem_dz,d_Ysc_Mem_dz,d_Ycc_Mem_dz,d_sx_Mem_dx,d_sy_Mem_dy,d_cx_Mem_dx,d_cy_Mem_dy,d_sx_Mem_dz,d_sy_Mem_dz,d_cx_Mem_dz,d_cy_Mem_dz,d_ws_Mem_dz,ri_Mem,x,fradial_Mem) reduction(vec_double_plus: Nsp_Mem, Axs_Mem, Ays_Mem)
+  #endif
+  #endif
   for (unsigned i = 0; i < TAILS.size(); i++)
   {
     if (analyzeThisParticle_Mem[i])
@@ -542,8 +558,12 @@ void memFusionP::calculate()
 
   // Eq. 13 Hub & Awasthi JCTC 2017.
   std::vector<Vector> derivatives_Mem(TAILS.size());
-
+  
+  #ifdef _OPENMP
+  #if _OPENMP >= 201307
   #pragma omp parallel for private(aux)
+  #endif
+  #endif
   for (unsigned i = 0; i < TAILS.size(); i++)
   {
     if (analyzeThisParticle_Mem[i])
