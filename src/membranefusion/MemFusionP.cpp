@@ -22,7 +22,11 @@
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include <cmath>
+#ifdef _OPENMP
+#if _OPENMP >= 201307
 #include <omp.h>
+#endif
+#endif
 
 namespace PLMD
 {
