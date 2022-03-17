@@ -26,15 +26,6 @@
 namespace PLMD {
 namespace gridtools {
 
-void HistogramBase::histogramKeywords( Keywords& keys ) {
-  keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
-  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
-           "of 0 implies that all the data will be used and that the grid will never be cleared");
-  keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
-           "these options are explained in the manual page for \\ref HISTOGRAM");
-}
-
 void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_str, ActionShortcut* action ) {
   std::string inp; bool uflag; action->parseFlag("UNORMALIZED",uflag);
   // Deal with the weights if we are doing averages on a grid
@@ -51,20 +42,6 @@ void HistogramBase::createKDEObject( const std::string& lab, const std::string& 
   if( height.length()>0 && !uflag ) {
     action->readInputLine(  lab + ": MATHEVAL ARG1=" + lab + "_unorm ARG2=" + lab + "_hsum FUNC=x/y PERIODIC=NO"); 
   }
-}
-
-void HistogramBase::readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) { 
-  Keywords keys; keys.add("optional","UPDATE_FROM",""); keys.add("optional","UPDATE_UNTIL","");
-  HistogramBase::histogramKeywords( keys ); action->readShortcutKeywords( keys, keymap );
-}
-
-void HistogramBase::createAveragingObject( const std::string& ilab, const std::string& olab, 
-                                           const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
-  std::string av_words = "STRIDE=" + keymap.find("STRIDE")->second + " CLEAR=" + keymap.find("CLEAR")->second + " NORMALIZATION=" + keymap.find("NORMALIZATION")->second;
-  if( keymap.count("LOGWEIGHTS") ) av_words += " LOGWEIGHTS=" + keymap.find("LOGWEIGHTS")->second;
-  if( keymap.count("UPDATE_UNTIL") ) av_words += " UPDATE_UNTIL=" + keymap.find("UPDATE_UNTIL")->second;
-  if( keymap.count("UPDATE_FROM") ) av_words += " UPDATE_FROM=" + keymap.find("UPDATE_FROM")->second;
-  action->readInputLine( olab + ": AVERAGE ARG=" + ilab + " " + av_words );
 }
 
 void HistogramBase::registerKeywords( Keywords& keys ) {

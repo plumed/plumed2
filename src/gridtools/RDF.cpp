@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "RDF.h"
 #include "KDE.h"
+#include "Histogram.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -105,7 +106,7 @@ public:
 PLUMED_REGISTER_ACTION(RDFShortcut,"RDF")
 
 void RDFShortcut::registerKeywords( Keywords& keys ) {
-  RDF::registerKeywords( keys ); HistogramBase::histogramKeywords( keys );
+  RDF::registerKeywords( keys ); HistogramTools::histogramKeywords( keys );
 }
 
 RDFShortcut::RDFShortcut(const ActionOptions&ao):
@@ -113,11 +114,11 @@ Action(ao),
 ActionShortcut(ao)
 {
     // Parse the keymap
-    std::map<std::string,std::string> keymap; HistogramBase::readHistogramKeywords( keymap, this );
+    std::map<std::string,std::string> keymap; HistogramTools::readHistogramKeywords( keymap, this );
     // Make the kde object
     readInputLine( getShortcutLabel() + "_kde: RDF_CALC " + convertInputLineToString() );
     // And the averaging object
-    HistogramBase::createAveragingObject( getShortcutLabel() + "_rdf", getShortcutLabel(), keymap, this );
+    HistogramTools::createAveragingObject( getShortcutLabel() + "_rdf", getShortcutLabel(), keymap, this );
 }
 
 }

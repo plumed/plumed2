@@ -198,7 +198,7 @@ void FourierTransform::getGridPointAsCoordinate( const unsigned& ind, const bool
 
 #ifdef __PLUMED_HAS_FFTW
 void FourierTransform::calculate() {
-   if( firstime ) {
+   if( firsttime ) {
        std::vector<double> fspacing; std::vector<unsigned> snbins( getGridObject().getDimension() );
        std::vector<std::string> smin( getGridObject().getDimension() ), smax( getGridObject().getDimension() );
        for(unsigned i=0; i<getGridObject().getDimension(); ++i) {

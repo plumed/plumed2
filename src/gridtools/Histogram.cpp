@@ -19,10 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Histogram.h"
 #include "KDE.h"
 #include "SphericalKDE.h"
 #include "core/ActionRegister.h"
-#include "core/ActionShortcut.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -193,13 +193,6 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 */
 //+ENDPLUMEDOC
 
-template<class T>
-class Histogram : public ActionShortcut {
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit Histogram(const ActionOptions&ao);
-};
-
 typedef Histogram<KDE> histo;
 PLUMED_REGISTER_ACTION(histo,"HISTOGRAM")
 typedef Histogram<SphericalKDE> Shisto;
@@ -207,8 +200,7 @@ PLUMED_REGISTER_ACTION(Shisto,"SPHERICAL_HISTOGRAM")
 
 template <class T>
 void Histogram<T>::registerKeywords( Keywords& keys ) {
-  T::registerKeywords( keys );
-  HistogramBase::histogramKeywords( keys );
+  T::registerKeywords( keys ); HistogramTools::histogramKeywords( keys );
   keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 
@@ -218,13 +210,38 @@ Action(ao),
 ActionShortcut(ao)
 {
     // Parse the keymap
-    std::map<std::string,std::string> keymap; HistogramBase::readHistogramKeywords( keymap, this ); 
+    std::map<std::string,std::string> keymap; HistogramTools::readHistogramKeywords( keymap, this ); 
     // Make the kde object
     std::string name="KDE"; if( getName().find("SPHERICAL")!=std::string::npos ) name = "SPHERICAL_KDE"; 
     readInputLine( getShortcutLabel() + "_kde: " + name + " " + convertInputLineToString(), true ); 
     // And the averaging object
-    HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
+    HistogramTools::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
 }
+
+void HistogramTools::histogramKeywords( Keywords& keys ) {
+  keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
+           "these options are explained in the manual page for \\ref HISTOGRAM");
+}
+
+void HistogramTools::readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
+  Keywords keys; keys.add("optional","UPDATE_FROM",""); keys.add("optional","UPDATE_UNTIL","");
+  histogramKeywords( keys ); action->readShortcutKeywords( keys, keymap );
+}
+
+void HistogramTools::createAveragingObject( const std::string& ilab, const std::string& olab,
+                                           const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
+  std::string av_words = "STRIDE=" + keymap.find("STRIDE")->second + " CLEAR=" + keymap.find("CLEAR")->second + " NORMALIZATION=" + keymap.find("NORMALIZATION")->second;
+  if( keymap.count("LOGWEIGHTS") ) av_words += " LOGWEIGHTS=" + keymap.find("LOGWEIGHTS")->second;
+  if( keymap.count("UPDATE_UNTIL") ) av_words += " UPDATE_UNTIL=" + keymap.find("UPDATE_UNTIL")->second;
+  if( keymap.count("UPDATE_FROM") ) av_words += " UPDATE_FROM=" + keymap.find("UPDATE_FROM")->second;
+  action->readInputLine( olab + ": AVERAGE ARG=" + ilab + " " + av_words );
+}
+
+
 
 }
 }

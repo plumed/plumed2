@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KDE.h"
+#include "Histogram.h"
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
@@ -36,7 +37,7 @@ PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")
 
 void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   KDE::registerKeywords( keys );
-  HistogramBase::histogramKeywords( keys );
+  HistogramTools::histogramKeywords( keys );
   keys.add("compulsory","ORIGIN","we will use the position of this atom as the origin");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("optional","DATA","the multicolvar which you would like to calculate the density profile for");
@@ -65,7 +66,7 @@ ActionShortcut(ao)
     else error( dir + " is invalid dir specification use x/y/z/xy/xz/yz/xyz");
 
     // Parse the keymap for this averaging stuff
-    std::map<std::string,std::string> keymap; HistogramBase::readHistogramKeywords( keymap, this );
+    std::map<std::string,std::string> keymap; HistogramTools::readHistogramKeywords( keymap, this );
     // Create distance action
     bool hasheights; std::string dist_words = getShortcutLabel() + "_dist: DISTANCES COMPONENTS ORIGIN=" + origin_str; 
     if( atoms_str.length()>0 ) { hasheights=false; dist_words += " ATOMS=" + atoms_str; }
@@ -77,16 +78,16 @@ ActionShortcut(ao)
     // Make the kde object for the numerator if needed
     if( hasheights ) {
       readInputLine( getShortcutLabel() + "_inumer: KDE UNORMALIZED HEIGHTS=" + data_str + " " + direction_string + " " + inputLine );
-      HistogramBase::createAveragingObject( getShortcutLabel() + "_inumer", getShortcutLabel() + "_numer", keymap, this );
+      HistogramTools::createAveragingObject( getShortcutLabel() + "_inumer", getShortcutLabel() + "_numer", keymap, this );
     }
     // Make the kde object
     readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );
     // Make the division object if it is required
     if( hasheights ) {
-      HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel() + "_denom", keymap, this);
+      HistogramTools::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel() + "_denom", keymap, this);
       readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_numer ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
     } else {
-      HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
+      HistogramTools::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel(), keymap, this );
     }
 }
 
