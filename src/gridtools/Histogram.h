@@ -40,6 +40,7 @@ public:
   static void readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void createAveragingObject( const std::string& ilab, const std::string& olab,
                                      const std::map<std::string,std::string>& keymap, ActionShortcut* action );
+  static void convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, ActionShortcut* action );
 };
 
 }

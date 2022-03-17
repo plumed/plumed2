@@ -25,7 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
-#include "gridtools/KDEShortcut.h"
+#include "gridtools/Histogram.h"
 #include "MetadShortcut.h"
 #include "core/ReweightBase.h"
 
@@ -435,7 +435,7 @@ ActionShortcut(ao)
       if( neigv[k]==0 ) {
           targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
           // Convert the bandwidth to something constant actions
-          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
+          gridtools::HistogramTools::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
           if( grid_nbins.size()>0 ) {
               if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
               tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins );
@@ -446,7 +446,7 @@ ActionShortcut(ao)
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
           // Convert the bandwidth to something constant actions
-          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
+          gridtools::HistogramTools::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
           for(unsigned i=0;i<neigv[k];++i) {
               std::string eignum; Tools::convert( i+1, eignum );
               if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );

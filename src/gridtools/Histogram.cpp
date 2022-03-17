@@ -241,7 +241,16 @@ void HistogramTools::createAveragingObject( const std::string& ilab, const std::
   action->readInputLine( olab + ": AVERAGE ARG=" + ilab + " " + av_words );
 }
 
-
+void HistogramTools::convertBandwiths( const std::string& lab, const std::vector<std::string>& bwidths, ActionShortcut* action ) {
+  double bw; std::string band="VALUES=" + bwidths[0];
+  for(unsigned i=0;i<bwidths.size();++i) {
+      if( !Tools::convert( bwidths[i], bw ) ) action->error("could not convert input bandwidth to real number");
+      if( i>0 ) band += "," + bwidths[i];
+  }
+  action->readInputLine( lab + "_sigma: CONSTANT_VALUE " + band );
+  action->readInputLine( lab + "_cov: CUSTOM ARG=" + lab + "_sigma FUNC=x*x PERIODIC=NO" );
+  action->readInputLine( lab + "_icov: CUSTOM ARG=" + lab + "_cov FUNC=1/x PERIODIC=NO" );
+}
 
 }
 }

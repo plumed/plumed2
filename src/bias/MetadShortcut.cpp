@@ -25,7 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
-#include "gridtools/KDEShortcut.h"
+#include "gridtools/Histogram.h"
 #include "core/ReweightBase.h"
 
 namespace PLMD {
@@ -62,7 +62,7 @@ ActionShortcut(ao)
   std::vector<std::string> gmin( args.size() ), gmax( args.size() ), grid_nbins(args.size()), sigma(args.size());
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax); parseVector("GRID_BIN",grid_nbins); parseVector("SIGMA",sigma);
   // Convert the bandwidth to something constant actions
-  gridtools::KDEShortcut::convertBandwiths( getShortcutLabel(), sigma, this );
+  gridtools::HistogramTools::convertBandwiths( getShortcutLabel(), sigma, this );
   // Create a metadynamics bias
   createMetadBias( getShortcutLabel(), pacestr, args, gmin, gmax, grid_nbins, getShortcutLabel() + "_wtfact", "", "", this );
   // Bias the simulation using this bias potentital

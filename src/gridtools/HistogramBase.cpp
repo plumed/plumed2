@@ -26,24 +26,6 @@
 namespace PLMD {
 namespace gridtools {
 
-void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_str, ActionShortcut* action ) {
-  std::string inp; bool uflag; action->parseFlag("UNORMALIZED",uflag);
-  // Deal with the weights if we are doing averages on a grid
-  if( height.length()>0 && !uflag ) {
-    inp = lab + "_unorm: " + command + "_CALC " + action->convertInputLineToString(); 
-    action->readInputLine( lab + "_hsum: SUM ARG=" + height + " PERIODIC=NO");
-    inp = inp + " UNORMALIZED";
-  } else if( !uflag ) {
-     inp = lab + ": " + command + "_CALC " + action->convertInputLineToString();
-  } else {
-     inp = lab + ": " + command + "_CALC UNORMALIZED " + action->convertInputLineToString();
-  }
-  action->readInputLine( inp + height_str );
-  if( height.length()>0 && !uflag ) {
-    action->readInputLine(  lab + ": MATHEVAL ARG1=" + lab + "_unorm ARG2=" + lab + "_hsum FUNC=x/y PERIODIC=NO"); 
-  }
-}
-
 void HistogramBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");

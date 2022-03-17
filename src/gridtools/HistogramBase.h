@@ -51,7 +51,6 @@ protected:
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
   static void registerKeywords( Keywords& keys );
-  static void createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_inp, ActionShortcut* action );
   explicit HistogramBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
