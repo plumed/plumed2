@@ -64,6 +64,7 @@ SUBROUTINE run_pwscf( exit_status )
   USE add_dmft_occ,         ONLY : dmft
   !
   USE device_fbuff_m,             ONLY : dev_buf
+  USE plumed_module,        ONLY : plumed_f_gfinalize
   !
   IMPLICIT NONE
   !

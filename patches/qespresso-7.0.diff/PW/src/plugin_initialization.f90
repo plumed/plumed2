@@ -19,6 +19,8 @@ SUBROUTINE plugin_initialization()
   !
   USE dynamics_module,  ONLY : dt
   USE constants,        ONLY : au_ps
+
+  USE plumed_module,    ONLY : plumed_f_installed, plumed_f_gcreate, plumed_f_gcmd
   !
   !
   IMPLICIT NONE
