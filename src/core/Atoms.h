@@ -154,6 +154,8 @@ public:
   void wait();
   void updateForces();
 
+  void lazyCopyPos(std::vector<Vector>&, const std::vector<AtomNumber>&);
+
   void setRealPrecision(int);
   int  getRealPrecision()const;
 

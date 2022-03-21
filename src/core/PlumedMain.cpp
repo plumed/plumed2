@@ -149,6 +149,7 @@ static Register myregister;
 
 PlumedMain::PlumedMain():
   initialized(false),
+  lazy_copy(false),
 // automatically write on log in destructor
   stopwatch_fwd(log),
   step(0),
@@ -729,6 +730,9 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   else if(words[0]=="_SET_SUFFIX") {
     plumed_assert(words.size()==2);
     setSuffix(words[1]);
+  } else if(words[0]=="_LAZY_COPY") {
+    plumed_assert(words.size()==1);
+    lazy_copy=true;
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);

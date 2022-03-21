@@ -123,6 +123,8 @@ public:
   void getPositions(const std::vector<int>&index,std::vector<Vector>&positions) const override;
   void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
   void getPositions(unsigned j,unsigned k,std::vector<Vector>&positions) const override;
+  void getPositionsLazy(const std::vector<AtomNumber>&indexes,int natoms,std::vector<Vector>&action_positions,
+	std::vector<Vector>&positions,std::vector<Vector>&forces) const override;
   void getLocalPositions(std::vector<Vector>&p) const override;
   void getMasses(const std::vector<int>&index,std::vector<double>&) const override;
   void getCharges(const std::vector<int>&index,std::vector<double>&) const override;
@@ -212,6 +214,28 @@ void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,std::vector<Vector>&pos
   }
 }
 
+template <class T>
+void MDAtomsTyped<T>::getPositionsLazy(const std::vector<AtomNumber>&indexes,int natoms,
+                                   std::vector<Vector>&action_positions,
+                                   std::vector<Vector>&positions,
+                                   std::vector<Vector>&forces)const {
+  unsigned stride;
+  const T* ppx;
+  const T* ppy;
+  const T* ppz;
+  getPointers(p,px,py,pz,natoms,ppx,ppy,ppz,stride);
+  plumed_assert(ppx && ppy && ppz);
+  for(unsigned id=0; id<indexes.size(); id++) {
+    int i = indexes[id].index();
+    if (i < natoms) {
+      positions[i][0]=ppx[stride*i]*scalep;
+      positions[i][1]=ppy[stride*i]*scalep;
+      positions[i][2]=ppz[stride*i]*scalep;
+    }
+    action_positions[id]=positions[i];
+    forces[i].zero();
+  }
+}
 
 template <class T>
 void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {

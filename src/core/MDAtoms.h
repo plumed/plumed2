@@ -88,6 +88,9 @@ public:
   virtual void getPositions(const std::vector<int>&index,std::vector<Vector>&p)const=0;
 /// Retrieve all atom positions from index i to index j.
   virtual void getPositions(unsigned i,unsigned j,std::vector<Vector>&p)const=0;
+/// Retrieve all atom positions lazy
+  virtual void getPositionsLazy(const std::vector<AtomNumber>&indexes,int natoms,
+                                std::vector<Vector>&action_positions,std::vector<Vector>&positions,std::vector<Vector>&forces)const=0;
 /// Retrieve all atom positions from atom indices and local indices.
   virtual void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&p)const=0;
 /// Retrieve selected masses.

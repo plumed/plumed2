@@ -118,6 +118,8 @@ private:
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
   bool  initialized;
+/// Flag to set lazy copy
+  bool lazy_copy;
 /// Name of MD engine
   std::string MDEngine;
 
@@ -364,6 +366,10 @@ public:
   void exit(int c=0);
 /// Load a shared library
   void load(const std::string&);
+/// Check if lazy copy
+  bool isLazyCopy()const;
+/// Disable lazy copy
+  void disableLazyCopy();
 /// Get the suffix string
   const std::string & getSuffix()const;
 /// Set the suffix string
@@ -441,6 +447,15 @@ const std::string & PlumedMain::getSuffix()const {
 inline
 void PlumedMain::setSuffix(const std::string&s) {
   suffix=s;
+}
+
+inline
+bool PlumedMain::isLazyCopy() const {
+  return lazy_copy;
+}
+
+inline void PlumedMain::disableLazyCopy() {
+  lazy_copy=false;
 }
 
 inline
