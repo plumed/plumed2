@@ -52,7 +52,7 @@ namespace rascal {
 
 //+PLUMEDOC COLVAR SPHERICAL_INVARIANTS
 /*
-Interface to librascal code for computing structural descritors such as SOAP.
+Interface to librascal code for computing structural descriptors such as SOAP.
 
 To use PLUMED and librascal together you must configure as follows:
 
@@ -62,7 +62,7 @@ To use PLUMED and librascal together you must configure as follows:
 
 \par Examples
 
-Here is an example input file:
+Here is an example input file for calcualting spherical invariants:
 
 \plumedfile
 r: SPHERICAL_INVARIANTS ...
@@ -79,7 +79,55 @@ r: SPHERICAL_INVARIANTS ...
               }
 ...
 
-PRINT ARG=rr FILE=colvar
+PRINT ARG=r FILE=colvar
+\endplumedfile
+
+These spherical invariants can be used to compute calculating Gaussian Approximation Potentials (GAP).  GAP potentials provide a way of obtaining a potential that offers DFT accuracy but that 
+has a much less computationally expensive functional form to evaluate.  To fit one of these GAP potentials you perform a series of DFT calculations and use them to perform kernel ridge regression.  
+The GAP potential then offers a way of interpolating the energy between the structures for which you have DFT energies.  These ideas are explained in more detail in the following papers:  
+
+When using a GAP the total energy is written as a sum of atomic energies.  For each atom you calculate a vector of \f$N\f$ spherical invariants, \f$\phi_{ij}\f$.  These invariants describe the 
+environment around atom \f$i\f$.  \f$M\f$ of these vectors of invariants are used when kernel ridge regression is used to train the model.  These \f$M\f$ vectors of invariants are stored in the 
+columns of the matrix \f$K\f$.  The output from the kernel ridge regression is then the weights vector, \f$w_k\f$. All taken together the the energy of the \f$i\f$th atom is then given by:
+
+\f[
+E_i = \sum_{k=0}^M \left( \sum_{j=0}^N \phi_{ij} K_{jk} \right) w_k 
+\f] 
+
+The total energy of all the atoms is then calculated by summing over all the \f$E_i\f$ values.  You can implement a GAP in PLUMED by using an input like the one below:
+
+\plumedfile  
+# This constant value gives the elements of the weights vector w_k
+w: CONSTANT_VALUE VALUES=0.1,0.4,0.2,1.0
+# This constant value reads in the matrix K.  For this input this matrix has 4 columns (number of reference environments) and 27 rows (number of descriptors) 
+K: CONSTANT_VALUE FILE=K.matx
+# This calculates a matrix of spherical invariants.  The matrix in this case will be 3 (the number of atoms) by 27 (the number of descriptors)
+phi: SPHERICAL_INVARIANTS ...
+      SPECIES=1-3
+      HYPERPARAMS={ 
+                    "max_radial": 3,
+                    "max_angular": 2,
+                    "compute_gradients": true,
+                    "soap_type": "PowerSpectrum",
+                    "normalize": true,
+                    "cutoff_function": {"type": "ShiftedCosine", "cutoff": {"value": 4.0, "unit": "AA"}, "smooth_width": {"value": 0.5, "unit": "AA"}},
+                    "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 0.4, "unit": "AA"}},
+                    "radial_contribution": {"type": "GTO"}
+                  }
+...
+# Calculate the product of the matrices phi and K
+# The output here is a matrix with 3 rows (the number of atoms) and 4 columns (number of reference environments)
+prod: DOT ARG1=phi ARG2=K
+# Now calculate the product of the matrix calculated above with the weights vector
+# The output here is a 3 dimensional vector.  The elements of this vector give the individual atomic energies.
+evals: DOT ARG1=prod ARG2=w 
+# We can then calculate the total energy by summing the atomic energies
+eng: SUM ARG=evals PERIODIC=NO
+# Add forces due to this potential
+BIASVALUE ARG=eng
+# And print out the energy
+PRINT ARG=evals FILE=colvar
+...
 \endplumedfile
 
 */
