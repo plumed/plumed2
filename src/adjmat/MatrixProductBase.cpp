@@ -260,12 +260,10 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
   if( getPntrToOutput(0)->getRank()<2 ) {
       if( !actionInChain() ) return ;
       for(unsigned nv=0; nv<getNumberOfComponents(); ++nv ) {
+          unsigned ostrn = getPntrToOutput(nv)->getPositionInStream();
           unsigned istrn = getPntrToArgument(nv)->getPositionInMatrixStash();
           std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
-          for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
-              unsigned ostrn = getPntrToOutput(nv)->getPositionInStream();
-              myvals.updateIndex( ostrn, mat_indices[i] );
-          }
+          for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) myvals.updateIndex( ostrn, mat_indices[i] );
       }
   } else {
       for(unsigned k=0; k<getNumberOfComponents(); ++k ) {

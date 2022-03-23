@@ -122,7 +122,8 @@ void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
 
 void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
-  getPntrToOutput(0)->alwaysStoreValues();
+  getPntrToOutput(0)->alwaysStoreValues(); 
+  getPntrToOutput(0)->setDerivativeIsZeroWhenValueIsZero();
   if( one_kernel_at_a_time ) {
     for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
   }

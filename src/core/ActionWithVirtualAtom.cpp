@@ -28,64 +28,52 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
+  keys.addOutputComponent("x","default","the x coordinate of the virtual atom");
+  keys.addOutputComponent("y","default","the y coordinate of the virtual atom");
+  keys.addOutputComponent("z","default","the z coordinate of the virtual atom");
+  keys.addOutputComponent("mass","default","the mass of the virtual atom");
+  keys.addOutputComponent("charge","default","the charge of the virtual atom");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  boxDerivatives(3)
+  forcesToApply(9)
 {
-  if( getName()!="GYRATION_TENSOR" ) {
-      index=atoms.addVirtualAtom(this);
-      log.printf("  serial associated to this virtual atom is %u\n",index.serial());
-  }
-}
-
-ActionWithVirtualAtom::~ActionWithVirtualAtom() {
-  if( getName()!="GYRATION_TENSOR" ) atoms.removeVirtualAtom(this);
+  addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+  addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  // Store the derivatives with respect to the virial only even if there are no atoms
+  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
+  addComponent("mass"); componentIsNotPeriodic("mass"); getPntrToComponent("mass")->reset=false;
+  addComponent("charge"); componentIsNotPeriodic("charge"); getPntrToComponent("charge")->reset=false;
+  atoms.addAtomValues( getLabel(), copyOutput(0), copyOutput(1), copyOutput(2), copyOutput(3), copyOutput(4) );
 }
 
 void ActionWithVirtualAtom::apply() {
-  Vector & f(atoms.getVatomForces(index)); //atoms.forces[index.index()]);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) modifyForces()[i]=matmul(derivatives[i],f);
-  Tensor & v(modifyVirial());
-  for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];
-  f.zero(); // after propagating the force to the atoms used to compute the vatom, we reset this to zero
-  // this is necessary to avoid double counting if then one tries to compute the total force on the c.o.m. of the system.
-  // notice that this is currently done in FIT_TO_TEMPLATE
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
 }
 
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
-  ActionAtomistic::requestAtoms(a);
-  derivatives.resize(a.size());
-}
-
-void ActionWithVirtualAtom::setGradients() {
-  gradients.clear();
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    AtomNumber an=getAbsoluteIndex(i);
-    // this case if the atom is a virtual one
-    if(atoms.isVirtualAtom(an)) {
-      ActionAtomistic* a=atoms.getVirtualAtomsAction(an);
-      for(const auto & p : a->getVatomGradients(an)) {
-        gradients[p.first]+=matmul(derivatives[i],p.second);
-      }
-      // this case if the atom is a normal one
-    } else {
-      gradients[an]+=derivatives[i];
-    }
-  }
+  ActionAtomistic::requestAtoms(a); forcesToApply.resize(3*a.size()+9);
+  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
-  boxDerivatives=d;
-  plumed_assert(d.size()==3);
+  plumed_assert(d.size()==3); unsigned nbase = 3*getNumberOfAtoms();
+  for(unsigned i=0; i<3; ++i) {
+      Value* myval = getPntrToComponent(i);
+      for(unsigned j=0; j<3; ++j) {
+          for(unsigned k=0; k<3; ++k) myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
+      }
+  }
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
-  Vector pos=atoms.getVatomPosition(index);   // positions[index.index()];
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) boxDerivatives[j][i][j]+=pos[i];
+  Vector pos; for(unsigned i=0; i<3; ++i) pos[i] = getPntrToComponent(i)->get();
+  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) getPntrToComponent(j)->addDerivative( nbase + 3*i + j, pos[i] );
 }
 
 void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
@@ -96,18 +84,10 @@ void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
 // and derivatives. Notice that this only works only when Pbc have not been used to compute
 // derivatives.
         for(unsigned l=0; l<getNumberOfAtoms(); l++) {
-          bd[k][i][j]-=getPosition(l)[i]*derivatives[l][j][k];
+          bd[k][i][j]-=getPosition(l)[i]*getPntrToComponent(k)->getDerivative(3*l+j);
         }
       }
   setBoxDerivatives(bd);
-}
-
-
-
-void ActionWithVirtualAtom::setGradientsIfNeeded() {
-  if(isOptionOn("GRADIENTS")) {
-    setGradients() ;
-  }
 }
 
 }

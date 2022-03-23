@@ -22,9 +22,10 @@
 #include "Group.h"
 #include "ActionRegister.h"
 #include "Atoms.h"
+#include "PlumedMain.h"
+#include "Atoms.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
-#include "PlumedMain.h"
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -222,12 +223,10 @@ void Group::registerKeywords( Keywords& keys ) {
   keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
 }
 
-unsigned Group::getNumberOfAtoms() const {
-  return atoms.size();
-}
-
-AtomNumber Group::getAtomIndex( const unsigned& ind ) const {
-  plumed_assert( ind<atoms.size() ); return atoms[ind];
+std::vector<std::string> Group::getGroupAtoms() const {
+  std::vector<std::string> atoms_str(atoms.size());
+  for(unsigned i=0;i<atoms.size(); ++i) atoms_str[i] = plumed.getAtoms().getAtomString( atoms[i] );
+  return atoms_str;
 }
 
 }

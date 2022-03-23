@@ -184,6 +184,10 @@ public:
 /// a final Action has been initialized
   void checkRead();
 
+/// This calculates any values that are constant and ensures 
+/// that we don't calculate these actions on every timestep
+  void setupConstantValues( const bool& have_atoms );
+
   Communicator& comm;
   Communicator& multi_sim_comm;
 

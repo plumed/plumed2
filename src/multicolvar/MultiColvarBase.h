@@ -37,6 +37,7 @@ class MultiColvarBase :
   public ActionAtomistic,
   public ActionWithValue
 {
+friend class SelectMassCharge;
 private:
 /// Use periodic boundary conditions
   bool usepbc;
@@ -76,7 +77,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives() const ;
+  virtual unsigned getNumberOfDerivatives() const ;
 /// Do the calculation
   void calculate();
 /// Perform one of the tasks

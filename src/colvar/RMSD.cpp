@@ -185,8 +185,8 @@ void RMSD::createReferenceConfiguration( const std::string& lab, const std::stri
          }
          Vector center; center.zero(); for(unsigned i=0;i<mypdb.getPositions().size();++i) center += align[i]*mypdb.getPositions()[i];       
 
-         for(unsigned i=0; i<mypdb.getPositions().size(); ++i) {
-             for(unsigned j=0; j<3; ++j) vals.push_back( mypdb.getPositions()[i][j] - center[j] );
+         for(unsigned j=0; j<3; ++j) { 
+             for(unsigned i=0; i<mypdb.getPositions().size(); ++i) vals.push_back( mypdb.getPositions()[i][j] - center[j] );
          }
      }
      nframes++;
@@ -201,10 +201,17 @@ void RMSD::createReferenceConfiguration( const std::string& lab, const std::stri
 }
 
 void RMSD::createPosVector( const std::string& lab, const PDB& pdb, ActionShortcut* action ) { 
-  std::vector<AtomNumber> anum( pdb.getAtomNumbers() ); 
-  std::string num; Tools::convert( anum[0].serial(), num ); std::string pos_line = lab + ": POS2VECTOR ATOMS=" + num; 
+  bool nopbc; action->parseFlag("NOPBC",nopbc); std::vector<AtomNumber> anum( pdb.getAtomNumbers() ); 
+  if( !nopbc ) {
+      std::string num; Tools::convert( anum[0].serial(), num ); std::string wm_line = "WHOLEMOLECULES ENTITY0=" + num;
+      for(unsigned i=1; i<anum.size(); ++i) { Tools::convert( anum[i].serial(), num ); wm_line += "," + num; }
+      action->readInputLine( wm_line ); 
+  }
+  std::string num; Tools::convert( anum[0].serial(), num ); std::string pos_line = lab + "_pos: POSITION NOPBC ATOMS=" + num; 
   for(unsigned i=1; i<anum.size(); ++i) { Tools::convert( anum[i].serial(), num ); pos_line += "," + num; }
-  bool nopbc; action->parseFlag("NOPBC",nopbc); if(nopbc) pos_line += " NOPBC"; action->readInputLine( pos_line );
+  action->readInputLine( pos_line );
+  // Concatenate the three positions together
+  action->readInputLine( lab + ": CONCATENATE ARG1=" + lab + "_pos.x ARG2=" + lab + "_pos.y ARG3=" + lab + "_pos.z");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
@@ -287,7 +294,7 @@ void RMSD::setReferenceConfiguration( const unsigned& jconf ) {
   if( getPntrToArgument(1)->getRank()==2 ) natoms = getPntrToArgument(1)->getShape()[1] / 3;
   Vector center; std::vector<Vector> pos( natoms );
   for(unsigned i=0; i<pos.size(); ++i) { 
-      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(1)->get( 3*pos.size()*jconf + 3*i + j ); 
+      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(1)->get( (3*jconf+j)*pos.size() + i ); 
       center+=pos[i]*align[i];
   }
   for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
@@ -309,8 +316,10 @@ bool RMSD::performTask( const std::string& controller, const unsigned& index1, c
   // Do not perform the loop here with a loop over other matrix elements
   if( controller!=getLabel() ) return false;
 
-  unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); unsigned jarg = index2 - getFullNumberOfTasks();
-  unsigned iatom = jarg / 3, icomp = jarg%3; std::vector<Vector>& pos( myvals.getFirstAtomVector() ); myvals.addValue( ostrn, pos[iatom][icomp] );
+  unsigned jarg = index2 - getFullNumberOfTasks(), natoms = getPntrToArgument(0)->getShape()[0] / 3; 
+  unsigned icomp = std::floor( jarg / natoms ); unsigned iatom = jarg - icomp*natoms;
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream();   
+  std::vector<Vector>& pos( myvals.getFirstAtomVector() ); myvals.addValue( ostrn, pos[iatom][icomp] );
   if( !doNotCalculateDerivatives() ) { myvals.addDerivative( ostrn, jarg, 1.0 ); myvals.updateIndex( ostrn, jarg ); }
 
   return true;
@@ -328,7 +337,7 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   std::vector<Vector>& pos( myvals.getFirstAtomVector() ); std::vector<Vector>& der( myvals.getSecondAtomVector() );
   if( pos.size()!=natoms ) pos.resize( natoms ); if( der.size()!=natoms ) der.resize( natoms ); 
   for(unsigned i=0;i<pos.size();++i) {
-      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(0)->get( 3*natoms*structno + 3*i + j );
+      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(0)->get( (3*structno+j)*natoms + i );
   }
 
   // Calculate RMSD distance
@@ -342,10 +351,10 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
          if( dval->forcesWereAdded() ) {
              Vector comforce; comforce.zero();
              for(unsigned i=0; i<natoms; i++) {
-                 for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*dval->getForce( task_index*3*natoms + 3*i+k);
+                 for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*dval->getForce( (task_index*3+k)*natoms + i);
              } 
              for(unsigned i=0; i<natoms; i++) {
-                 for(unsigned k=0; k<3; ++k) dval->addForce( task_index*3*natoms + 3*i+k, -comforce[k] );
+                 for(unsigned k=0; k<3; ++k) dval->addForce( (task_index*3+k)*natoms + i, -comforce[k] );
              }
          }
       } else {
@@ -356,36 +365,36 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
          if( dval->forcesWereAdded() ) {
              Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( natoms ); Vector v1; v1.zero();
              for(unsigned n=0; n<natoms; n++) { 
-                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( task_index*3*natoms + 3*n + k ); 
+                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( (task_index*3+k)*natoms + n ); 
                   v1+=prefactor*matmul(trot,ff);
              }
              // Notice that we use centreredreference here to accumulate the true forces
              for(unsigned n=0; n<natoms; n++) { 
-                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( task_index*3*natoms + 3*n + k ); 
+                  Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = dval->getForce( (task_index*3+k)*natoms + n ); 
                   centeredreference[n] = sqrtdisplace[n]*( matmul(trot,ff) - v1 );
              }
              for(unsigned a=0; a<3; a++) {
                  for(unsigned b=0; b<3; b++) {
                      for(unsigned i=0; i<natoms; i++) {
-                         double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*dval->getForce( task_index*3*natoms + 3*m+a );
+                         double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*dval->getForce( (task_index*3+a)*natoms + m );
                          centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
                      }
                  }
              }
              // Now subtract the current force and add on the true force
              for(unsigned n=0; n<natoms; n++) {
-                 for(unsigned k=0; k<3; ++k) dval->addForce( task_index*3*natoms + 3*n+k, centeredreference[n][k]-dval->getForce( task_index*3*natoms + 3*n + k ) );
+                 for(unsigned k=0; k<3; ++k) dval->addForce( (task_index*3+k)*natoms + n, centeredreference[n][k]-dval->getForce( (task_index*3+k)*natoms + n ) );
              }
          }
       }
-      for(unsigned i=0; i<pos.size(); ++i) {
-          unsigned base = getFullNumberOfTasks() + 3*i;
-          for(unsigned j=0; j<3; ++j) { 
+      unsigned base = getFullNumberOfTasks();;
+      for(unsigned j=0; j<3; ++j) {
+          for(unsigned i=0; i<pos.size(); ++i) {
               pos[i][j] = direction[i][j]; 
               // This ensures that the matrix element is gathered
-              runTask( getLabel(), myvals.getTaskIndex(), task_index, base+j, myvals ); 
+              runTask( getLabel(), myvals.getTaskIndex(), task_index, base, myvals ); 
               // Now clear only elements that are not accumulated over whole row 
-              clearMatrixElements( myvals );
+              clearMatrixElements( myvals ); base++;
           } 
       } 
       // Set the value that we are outputting on
@@ -396,7 +405,7 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   myvals.setValue( ostrn, r ); if( doNotCalculateDerivatives() ) return; 
 
   for(unsigned i=0; i<natoms; i++){ 
-      for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( ostrn, 3*i+j, der[i][j] ); myvals.updateIndex( ostrn, 3*i+j ); } 
+      for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( ostrn, j*natoms+i, der[i][j] ); myvals.updateIndex( ostrn, j*natoms+i ); } 
   }
 }
 

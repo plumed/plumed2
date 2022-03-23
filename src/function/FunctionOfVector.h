@@ -128,6 +128,10 @@ nderivatives(getNumberOfScalarArguments())
         else addComponent( components[i], shape );
     } 
   }
+  // Check if we can turn off the derivatives when they are zero
+  if( myfunc.getDerivativeZeroIfValueIsZero() )  {
+      for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
+  }
   // Check if this is a timeseries
   unsigned argstart=myfunc.getArgStart();
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
@@ -150,6 +154,12 @@ nderivatives(getNumberOfScalarArguments())
       }  
   }
   if( myfunc.doWithTasks() && !doNotChain && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(myfunc.getArgStart()); 
+  else if( doNotChain ) {
+      done_over_stream=false; 
+      for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore( getLabel() );
+      }
+  } else done_over_stream=false;
 }
 
 template <class T>

@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "MultiColvarBase.h"
+#include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {
-namespace colvar {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR POSITION
 /*
@@ -70,23 +70,27 @@ END
 */
 //+ENDPLUMEDOC
 
-class Position : public Colvar {
+class Position : public MultiColvarBase {
+private:
   bool scaled_components;
-  bool pbc;
-
+  bool wholemolecule;
+  bool novirial;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
 // active methods:
-  void calculate() override;
+  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Position,"POSITION")
 
 void Position::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
-  componentsAreNotOptional(keys);
-  keys.add("atoms","ATOM","the atom number");
+  MultiColvarBase::registerKeywords( keys ); keys.remove("ATOMS");
+  keys.add("atoms","ATOM","the index of the atom whose position you would like to use");
+  keys.add("atoms","ATOMS","the indices of the atoms that you would like to use the position of");
+  keys.addFlag("WHOLEMOLECULE",false,"make all the atoms all one contiguous whole as is done in WHOLEMOLECULES");
+  keys.addFlag("NOVIRIAL",false,"set the virial contribution of this CV to ero");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","default","the x-component of the atom position");
   keys.addOutputComponent("y","default","the y-component of the atom position");
@@ -97,23 +101,15 @@ void Position::registerKeywords( Keywords& keys ) {
 }
 
 Position::Position(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  scaled_components(false),
-  pbc(true)
+  Action(ao),
+  MultiColvarBase(ao),
+  scaled_components(false)
 {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOM",atoms);
-  if(atoms.size()!=1)
-    error("Number of specified atoms should be 1");
-  parseFlag("SCALED_COMPONENTS",scaled_components);
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
-  checkRead();
-
-  log.printf("  for atom %d\n",atoms[0].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(getNumberOfAtomsInEachCV()!=1) error("Number of specified atoms should be 1");
+  parseFlag("SCALED_COMPONENTS",scaled_components); parseFlag("WHOLEMOLECULE",wholemolecule); parseFlag("NOVIRIAL",novirial);
+  if( wholemolecule && getFullNumberOfTasks()==1 ) warning("WHOLEMOLECULE does nothing if you only have one atom");
+  if( wholemolecule && scaled_components ) error("WHOLEMOLECULE and SCALED_COMPONENTS options together don't make sense");
+  if( wholemolecule ) { log.printf("  making molecule whole\n"); }
 
   if(scaled_components) {
     addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
@@ -125,48 +121,45 @@ Position::Position(const ActionOptions&ao):
     addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
     log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   }
+}
 
-  requestAtoms(atoms);
+void Position::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+  if( wholemolecule ) makeWhole();
 }
 
 
 // calculator
-void Position::calculate() {
-
+void Position::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
+  
   Vector distance;
-  if(pbc) {
-    distance=pbcDistance(Vector(0.0,0.0,0.0),getPosition(0));
-  } else {
-    distance=delta(Vector(0.0,0.0,0.0),getPosition(0));
-  }
+  if( wholemolecule ) distance = delta(Vector(0.0,0.0,0.0), pos[0]);  
+  else distance  = getSeparation(Vector(0.0,0.0,0.0), pos[0]);
 
   if(scaled_components) {
-    Value* valuea=getPntrToComponent("a");
-    Value* valueb=getPntrToComponent("b");
-    Value* valuec=getPntrToComponent("c");
     Vector d=getPbc().realToScaled(distance);
-    setAtomsDerivatives (valuea,0,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
-    valuea->set(Tools::pbc(d[0]));
-    setAtomsDerivatives (valueb,0,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
-    valueb->set(Tools::pbc(d[1]));
-    setAtomsDerivatives (valuec,0,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
-    valuec->set(Tools::pbc(d[2]));
+    addAtomsDerivatives( 0, 0, matmul(getPbc().getInvBox(), Vector(+1,0,0)), myvals );
+    setValue(0, Tools::pbc(d[0]), myvals );
+
+    addAtomsDerivatives( 1, 0, matmul(getPbc().getInvBox(), Vector(0,+1,0)), myvals );
+    setValue(1, Tools::pbc(d[1]), myvals );
+
+    addAtomsDerivatives( 2, 0, matmul(getPbc().getInvBox(), Vector(0,0,+1)), myvals );
+    setValue(2, Tools::pbc(d[2]), myvals );
   } else {
-    Value* valuex=getPntrToComponent("x");
-    Value* valuey=getPntrToComponent("y");
-    Value* valuez=getPntrToComponent("z");
+    addAtomsDerivatives( 0, 0, Vector(+1,0,0), myvals );
+    setValue( 0, distance[0], myvals);
 
-    setAtomsDerivatives (valuex,0,Vector(+1,0,0));
-    setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
-    valuex->set(distance[0]);
+    addAtomsDerivatives ( 1, 0, Vector(0,+1,0), myvals );
+    setValue( 1, distance[1], myvals);
 
-    setAtomsDerivatives (valuey,0,Vector(0,+1,0));
-    setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
-    valuey->set(distance[1]);
+    addAtomsDerivatives ( 2, 0, Vector(0,0,+1), myvals );
+    setValue( 2, distance[2], myvals);
 
-    setAtomsDerivatives (valuez,0,Vector(0,0,+1));
-    setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
-    valuez->set(distance[2]);
+    if( !novirial ) {
+        addBoxDerivatives( 0, Tensor(distance,Vector(-1,0,0)), myvals );
+        addBoxDerivatives( 1, Tensor(distance,Vector(0,-1,0)), myvals );
+        addBoxDerivatives( 2, Tensor(distance,Vector(0,0,-1)), myvals );
+    }
   }
 }
 

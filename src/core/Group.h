@@ -31,8 +31,7 @@ private:
 public:
   explicit Group(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  unsigned getNumberOfAtoms() const ;
-  AtomNumber getAtomIndex( const unsigned& ind ) const ;
+  std::vector<std::string> getGroupAtoms() const ;
   void calculate() override {}
   void apply() override {}
 };

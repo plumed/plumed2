@@ -25,7 +25,6 @@
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "ActionWithValue.h"
-#include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
@@ -271,13 +270,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         step=(*static_cast<int*>(val));
-        atoms.startStep();
+        startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         step=(*static_cast<long int*>(val));
-        atoms.startStep();
+        startStep();
         break;
       /* ADDED WITH API=7 */
       case cmd_setValue:
@@ -378,10 +377,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
         inputs.clear();
+        atoms.clearAtomValues();
         initialized=false;
-        atoms.setup();
+        createAtomValues();
         initialized=true;
-        atoms.updateUnits();
+        updateUnits();
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
@@ -633,11 +633,43 @@ void PlumedMain::cmd(const std::string & word,void*val) {
   }
 }
 
+void PlumedMain::createAtomValues() {
+  if( atoms.getNatoms()==0 ) return ;
+  // Create holders for the positions
+  std::string str_natoms; Tools::convert( atoms.getNatoms(), str_natoms ); int dim=3;
+  cmd("createVector pos: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=length PERIODIC=NO",&dim);
+  // Create holder for the cell
+  std::string noforce="";
+  if( novirial || atoms.dd.Get_rank()!=0 ) noforce = " NOFORCE";
+  cmd("createValue Box: PUT PERIODIC=NO UNIT=length FORCE_UNIT=energy SHAPE=3,3 " + noforce );
+  // Create holder for the energy
+  cmd("createValue Energy: PUT SUM_OVER_DOMAINS UNIT=energy FORCES_FOR_POTENTIAL=posx,posy,posz,Box PERIODIC=NO");
+  // Create holder for the masses
+  cmd("createValue Masses: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=mass CONSTANT PERIODIC=NO");
+  // Create holder for the charges 
+  cmd("createValue Charges: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=charge CONSTANT PERIODIC=NO");
+  plumed_assert( atoms.posx.size()==0 );
+  ActionWithValue* xv = actionSet.selectWithLabel<ActionWithValue*>("posx");
+  ActionWithValue* yv = actionSet.selectWithLabel<ActionWithValue*>("posy");
+  ActionWithValue* zv = actionSet.selectWithLabel<ActionWithValue*>("posz");
+  ActionWithValue* mv = actionSet.selectWithLabel<ActionWithValue*>("Masses");
+  ActionWithValue* qv = actionSet.selectWithLabel<ActionWithValue*>("Charges");
+  atoms.addAtomValues( MDEngine, xv->copyOutput(0), yv->copyOutput(0), zv->copyOutput(0), mv->copyOutput(0), qv->copyOutput(0) );
+}
+
+void PlumedMain::updateUnits() {
+  for(const auto & ip : inputs) ip.second->updateUnits();
+}
+
+void PlumedMain::startStep() {
+  for(const auto & ip : inputs) { ip.second->dataCanBeSet=true; }
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 void PlumedMain::init() {
 // check that initialization just happens once
-  atoms.init(); atoms.setup(); initialized=true;
+  atoms.init(); createAtomValues(); initialized=true;
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
@@ -661,7 +693,7 @@ void PlumedMain::init() {
     readInputFile(plumedDat);
     plumedDat="";
   }
-  atoms.updateUnits();
+  updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
   if(atoms.getKbT()>0.0)
     log.printf("KbT: %f\n",atoms.getKbT());
@@ -856,6 +888,13 @@ void PlumedMain::justCalculate() {
   bias=0.0;
   work=0.0;
 
+  // Check the input actions to determine if we need to calculate constants that 
+  // depend on masses and charges
+  bool firststep=false;
+  for(const auto & ip : inputs) {
+      if( ip.second->fixed && ip.second->firststep ) firststep=true;
+  }
+
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
@@ -888,9 +927,10 @@ void PlumedMain::justCalculate() {
       // This retrieves components called bias
       if(av) bias+=av->getOutputQuantity("bias");
       if(av) work+=av->getOutputQuantity("work");
+      // This makes all values that depend on the (fixed) masses and charges constant
+      if( firststep ) p->setupConstantValues( true );
+      // And this gets the gradients if they are required
       if(av)av->setGradientsIfNeeded();
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
     }
     iaction++;
   }
@@ -1064,6 +1104,16 @@ int PlumedMain::getRealPrecision() const {
 std::string PlumedMain::getMDEngine() const {
   return MDEngine;
 }
+
+void PlumedMain::writeBinary(std::ostream&o)const {
+  for(const auto & ip : inputs) ip.second->writeBinary(o);
+}
+
+void PlumedMain::readBinary(std::istream&i) {
+  for(const auto & ip : inputs) ip.second->readBinary(i);
+  atoms.setPbcFromBox();
+}
+
 
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

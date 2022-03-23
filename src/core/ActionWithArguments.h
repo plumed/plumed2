@@ -107,6 +107,8 @@ public:
   void setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start );
 /// This sets the forces on if the action is in a chain
   static void setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av );
+/// This gets the gradients
+  static void setGradientsForActionChain( Value* myval, unsigned& start, ActionWithValue* av );
 /// This gets the component jcomp of argument iarg
   double retrieveRequiredArgument( const unsigned& iarg, const unsigned& jcomp ) const ;
 public:
@@ -133,7 +135,9 @@ public:
 /// This gets the position of the argument in the stream
   unsigned getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const ;
 /// Used to calculate constant values in startup
-  bool calculateConstantValues();
+  bool calculateConstantValues( const bool& have_atoms );
+/// Get the gradient for this action
+  void setGradients( Value* myval, unsigned& start ) const ;
 };
 
 

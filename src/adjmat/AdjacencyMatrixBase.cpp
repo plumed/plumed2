@@ -92,6 +92,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponent( "w", shape ); componentIsNotPeriodic("w");
+  getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   // Stuff for neighbor list
   parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut; parse("NL_STRIDE",nl_stride); 
   if( nl_cut==0 && nl_stride>1 ) error("NL_CUTOFF must be set if NL_STRIDE is set greater than 1");

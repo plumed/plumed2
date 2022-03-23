@@ -15,6 +15,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionShortcut.h"
 
 namespace PLMD {
@@ -67,28 +70,88 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
+PLUMED_REGISTER_ACTION(Gyration,"GYRATION_TENSOR")
 
 void Gyration::registerKeywords( Keywords& keys ) {
    ActionShortcut::registerKeywords( keys );
    keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
    keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances"); 
+   keys.add("optional","WEIGHTS","what weights should be used when calculating the center.  If this keyword is not present the geometric center is computed. "
+           "If WEIGHTS=@Masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
+           "the label of an action is provided PLUMED assumes that that action calculates a list of symmetry functions that can be used "
+           "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
+   keys.addFlag("PHASES",false,"use trigonometric phases when computing position of center of mass");
+   keys.addFlag("MASS",false,"calculate the center of mass");
+   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
 }
 
 Gyration::Gyration(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
-    std::string atoms; parse("ATOMS",atoms); bool nopbc; parseFlag("NOPBC",nopbc); 
-    std::string pbcstr; if(nopbc) pbcstr = " NOPBC"; 
-    std::string gtype; parse("TYPE",gtype);
-    if(    gtype!="RADIUS" && gtype!="TRACE" && gtype!="GTPC_1" && gtype!="GTPC_2" && gtype!="GTPC_3" && gtype!="ASPHERICITY" && gtype!="ACYLINDRICITY"
-        && gtype!= "KAPPA2" && gtype!="RGYR_1" && gtype!="RGYR_2" && gtype!="RGYR_3" ) error("type " + gtype + " is invalid");
+    log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)")<<"\n"; 
+    // Read in what we are doing with the weights
+    bool usemass = false; parseFlag("MASS",usemass); std::string str_weights; parse("WEIGHTS",str_weights);
+    if( usemass ) str_weights="@Masses"; if( str_weights.length()>0 ) str_weights = " WEIGHTS=" + str_weights;    
+    // Read in the atoms involved
+    std::vector<std::string> atoms; parseVector("ATOMS",atoms); Tools::interpretRanges(atoms); 
+    std::string gtype, atlist=atoms[0]; for(unsigned i=1; i<atoms.size(); ++i) atlist += "," + atoms[i];
+    bool nopbc; parseFlag("NOPBC",nopbc); std::string pbcstr; if(nopbc) pbcstr = " NOPBC"; 
+    bool phases; parseFlag("PHASES",phases); std::string phasestr; if(phases) phasestr = " PHASES"; 
     // Create the geometric center of the molecule
-    readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atoms + pbcstr );
-    std::string unormstr; if( gtype=="TRACE" || gtype=="KAPPA2" ) unormstr = " UNORMALIZED"; 
-    // Now compute the gyration tensor
-    readInputLine( getShortcutLabel() + "_tensor: GYRATION_TENSOR ATOMS=" + atoms + pbcstr + unormstr + " CENTER=" + getShortcutLabel() + "_cent");
+    readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atlist + pbcstr + phasestr + str_weights );
+    // Check for normalisation
+    bool unorm; parseFlag("UNORMALIZED",unorm);
+    // Find out the type
+    if( getName()!="GYRATION_TENSOR" ) {
+        parse("TYPE",gtype);
+        if( gtype!="RADIUS" && gtype!="TRACE" && gtype!="GTPC_1" && gtype!="GTPC_2" && gtype!="GTPC_3" && gtype!="ASPHERICITY" && gtype!="ACYLINDRICITY"
+            && gtype!= "KAPPA2" && gtype!="RGYR_1" && gtype!="RGYR_2" && gtype!="RGYR_3" ) error("type " + gtype + " is invalid");
+        // Check if we need to calculate the unormlised radius
+        if( gtype=="TRACE" || gtype=="KAPPA2" ) unorm=true;
+    }
+    // Compute all the vectors separating all the positions from the center 
+    std::string distance_act = getShortcutLabel() + "_dists: DISTANCE COMPONENTS" + pbcstr; 
+    for(unsigned i=0; i<atoms.size(); ++i) { std::string num; Tools::convert( i+1, num ); distance_act += " ATOMS" + num + "=" + getShortcutLabel() + "_cent," + atoms[i]; }
+    readInputLine( distance_act );
+    // And stack up the distances
+    readInputLine( getShortcutLabel() + "_stack: VSTACK ARG1=" + getShortcutLabel() + "_dists.x ARG2=" + getShortcutLabel() + "_dists.y ARG3=" + getShortcutLabel() + "_dists.z");
+    // Use the weights that are defined in the center
+    std::string wflab = getShortcutLabel() + "_cent_w";
+    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( wflab );
+    if( !av ) {
+        std::size_t eq=str_weights.find("="); wflab = str_weights.substr(eq+1);
+        av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( wflab );
+    }
+    if( !av ) error("cannot find action named " + wflab + " in input");
+    // Create a matrix to hold the weights so we can do a product with the stack of distances
+    readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE VALUES=1,1,1");
+    readInputLine( getShortcutLabel() + "_wmat: DOT ARG1=" + wflab + " ARG2=" + getShortcutLabel() + "_ones");
+    // Multiply the distances by the weights
+    readInputLine( getShortcutLabel() + "_wstack: CUSTOM ARG1=" + getShortcutLabel() + "_stack ARG2=" + getShortcutLabel() + "_wmat FUNC=x*y PERIODIC=NO");
+    // And transpose
+    readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_wstack");
+    // Get the name of the gyration tensor action
+    std::string tname = getShortcutLabel() + "_utensor"; 
+    if( unorm && getName()=="GYRATION_TENSOR" ) tname = getShortcutLabel();
+    else if( unorm ) tname = getShortcutLabel() + "_tensor"; 
+    // Now calculate the gyration tensor
+    readInputLine( tname + ": DOT ARG1=" + getShortcutLabel() + "_stackT ARG2=" + getShortcutLabel() + "_stack");
+    // Make sre that the sum of the weights is calcualted if we are calculating the normalized gyration tensor
+    std::string normstr = getShortcutLabel() + "_cent_wnorm";
+    if( !unorm ) {
+        ActionWithValue* avn=plumed.getActionSet().selectWithLabel<ActionWithValue*>( normstr );
+        if( !avn ) { normstr = getShortcutLabel() + "_wnorm"; readInputLine( normstr + ": SUM PERIODIC=NO ARG=" + wflab ); } 
+    }
+    // Normalize the tensor
+    if( getName()=="GYRATION_TENSOR" ) {
+        // Gyration Tensor command just calculates the tensor 
+        if( !unorm ) readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + normstr + " ARG2=" + tname + " FUNC=y/x PERIODIC=NO");
+        return;
+    }
+    // In the real version we do all sorts of things to the tensor once it has been calculated
+    if( !unorm ) readInputLine( getShortcutLabel() + "_tensor: CUSTOM ARG1=" + normstr + " ARG2=" + tname + " FUNC=y/x PERIODIC=NO");
     // Pick out the diagonal elements
     readInputLine( getShortcutLabel() + "_diag_elements: SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_tensor COMPONENTS=1.1,2.2,3.3");
     if( gtype=="RADIUS") {

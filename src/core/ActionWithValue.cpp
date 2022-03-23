@@ -24,7 +24,6 @@
 #include "ActionAtomistic.h"
 #include "ActionSetup.h"
 #include "AverageBase.h"
-#include "ActionWithVirtualAtom.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "ActionRegister.h"
@@ -73,7 +72,6 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   allow_mixed_history_input(false),
   nactive_tasks(0),
   thisAsActionWithArguments(NULL),
-  thisAsActionWithVatom(NULL),
   action_to_do_before(NULL),
   action_to_do_after(NULL),
   atom_action_to_do_after(NULL)
@@ -347,7 +345,15 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    for(unsigned i=0; i<values.size(); i++) values[i]->setGradients();
+    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(this);
+    if(aa) {
+        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
+    } else {
+        if( !thisAsActionWithArguments ) {
+            thisAsActionWithArguments = dynamic_cast<ActionWithArguments*>(this); plumed_massert( thisAsActionWithArguments, "failing in " + getLabel() );
+        }
+        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); thisAsActionWithArguments->setGradients( values[i].get(), start ); }
+    }
   }
 }
 
@@ -423,7 +429,6 @@ void ActionWithValue::getGridPointAsCoordinate( const unsigned& ind, const bool&
 
 void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
   if( !thisAsActionWithArguments ) thisAsActionWithArguments = dynamic_cast<const ActionWithArguments*>( this );
-  if( !thisAsActionWithVatom ) thisAsActionWithVatom=dynamic_cast<const ActionWithVirtualAtom*>( this );
   fullTaskList.push_back( taskCode ); taskFlags.push_back(0);
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
@@ -527,9 +532,6 @@ void ActionWithValue::runAllTasks() {
   // Get the total number of streamed quantities that we need
   unsigned nquantities = 0, ncols=0, nmatrices=0;
   getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
-  // This needs to be separate from StreamedQuntities as the above
-  // has to be const in order to be called from rerunTask
-  setupVirtualAtomStashes( nquantities );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -599,12 +601,6 @@ void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) c
   }
   if( nnd>nderivatives ) nderivatives = nnd;
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
-}
-
-void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
-  ActionWithVirtualAtom* av = dynamic_cast<ActionWithVirtualAtom*>( this );
-  if( av ) av->setStashIndices( nquants );
-  if( action_to_do_after ) action_to_do_after->setupVirtualAtomStashes( nquants );
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
@@ -740,9 +736,6 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
         gatherStoredValue( i, taskCode, myvals, bufstart, buffer ); 
       }
     }
-    // Special method for dealing with centers
-    // const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
-    if(thisAsActionWithVatom) thisAsActionWithVatom->gatherForVirtualAtom( myvals, buffer );
   }
 
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
@@ -826,7 +819,6 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
     unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
     unsigned nquants=0, ncols=0, nmatrices=0; 
     av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
-    av->setupVirtualAtomStashes( nquants );
     #pragma omp parallel num_threads(nt)
     {
       std::vector<double> omp_forces;
@@ -904,8 +896,6 @@ std::string ActionWithValue::getCleanGraphLabel( const std::string& gilab ) {
 
 void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const {
   if( action_to_do_before ) return ;
-  const ActionWithVirtualAtom* ava=dynamic_cast<const ActionWithVirtualAtom*>(this);
-  if( ava ) return ;
 
   // Check we have not dealt with this node already
   for(unsigned i=0;i<graph_actions.size();++i) {

@@ -42,10 +42,7 @@ class ActionWithVirtualAtom:
   public ActionAtomistic,
   public ActionWithValue
 {
-  AtomNumber index;
-  std::vector<Tensor> derivatives;
-  std::vector<Tensor> boxDerivatives;
-  std::map<AtomNumber,Tensor> gradients;
+  std::vector<double> forcesToApply;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -75,18 +72,11 @@ protected:
 ///          in the same periodic image.
   void setBoxDerivativesNoPbc();
 public:
-  void setGradients();
-  const std::map<AtomNumber,Tensor> & getVatomGradients( const AtomNumber& ind );
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
   explicit ActionWithVirtualAtom(const ActionOptions&ao);
-  ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
-  void setGradientsIfNeeded();
-  unsigned getNumberOfVirtualAtoms() const ;
   virtual unsigned getNumberOfDerivatives() const ;
-  virtual void setStashIndices( unsigned& nquants ) { plumed_error(); }
-  virtual void gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const { plumed_error(); }
   virtual void apply();
 };
 
@@ -96,38 +86,28 @@ unsigned ActionWithVirtualAtom::getNumberOfDerivatives() const {
 }
 
 inline
-unsigned ActionWithVirtualAtom::getNumberOfVirtualAtoms() const {
-  return 1;
-}
-
-inline
-AtomNumber ActionWithVirtualAtom::getIndex()const {
-  return index;
-}
-
-inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos) {
-  atoms.setVatomPosition( index, pos ); //positions[index.index()]=pos;
+  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->set(pos[i]);
 }
 
 inline
 void ActionWithVirtualAtom::setMass(double m) {
-  atoms.setVatomMass( index, m );       // masses[index.index()]=m;
+  getPntrToComponent("mass")->set(m);
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c) {
-  atoms.setVatomCharge( index, c );     // charges[index.index()]=c;
+  getPntrToComponent("charge")->set(c);
 }
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
-  derivatives=d;
-}
-
-inline
-const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getVatomGradients(const AtomNumber& ind) {
-  plumed_dbg_assert( ind.index()==index.index() ); return gradients;
+  for(unsigned i=0; i<3; ++i) {
+      Value* myval=getPntrToComponent(i);
+      for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+          for(unsigned k=0; k<3; ++k) myval->setDerivative( 3*j + k, d[j][k][i] );
+      } 
+  }
 }
 
 }

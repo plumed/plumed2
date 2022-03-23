@@ -152,8 +152,9 @@ Average::Average( const ActionOptions& ao):
        setNotPeriodic();
        if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
      }
+     if( getPntrToArgument(0)->getDerivativeIsZeroWhenValueIsZero() ) getPntrToOutput(0)->setDerivativeIsZeroWhenValueIsZero();
   } else if( getNumberOfAtoms()>0 ) {
-      displacements.resize( mygroup.size() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
+      displacements.resize( getNumberOfAtoms() ); for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
       std::vector<unsigned> shape(1); shape[0]=3*getNumberOfAtoms(); addValue( shape ); setNotPeriodic();
   } else error("found nothing to average in input");
 }
@@ -174,11 +175,9 @@ void Average::accumulate( const std::vector<std::vector<Vector> >& dir  ) {
       plumed_assert( dir.size()==1 );
       for(unsigned i=0;i<displacements.size();++i) {
           displacements[i] += cweight*dir[0][i];
-          atoms.setVatomMass( mygroup[i], align[i] ); atoms.setVatomCharge( mygroup[i], displace[i] );
           Vector pos = getReferencePosition(i) + displacements[i] / val->getNorm();
-          atoms.setVatomPosition( mygroup[i], pos );
           double mynorm=val->getNorm(); if( normalization==t ) mynorm += cweight; else if(normalization==ndata ) mynorm += 1.0;
-          for(unsigned k=0;k<3;++k) val->set( 3*i + k, mynorm*pos[k] );
+          for(unsigned k=0;k<3;++k) val->set( k*displacements.size()+i, mynorm*pos[k] );
       } 
   } 
 

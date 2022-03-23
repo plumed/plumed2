@@ -22,6 +22,8 @@
 #ifndef __PLUMED_matrixtools_FunctionOfMatrix_h
 #define __PLUMED_matrixtools_FunctionOfMatrix_h
 
+#include "function/FunctionOfVector.h"
+#include "function/Sum.h"
 #include "adjmat/MatrixProductBase.h"
 #include "tools/Matrix.h"
 
@@ -125,22 +127,30 @@ nderivatives(getNumberOfScalarArguments())
         break;
     }
   }
+  // Check if this can be sped up
+  if( myfunc.getDerivativeZeroIfValueIsZero() )  {
+      for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
+  }
   // Set the periodicities of the output components
-  myfunc.setPeriodicityForOutputs( this ); bool hasstack=false;
+  myfunc.setPeriodicityForOutputs( this ); bool doNotChain=false;
   // We can't do this with if we are dividing a stack by some a product v.v^T product as we need to store the vector
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-      if( (getPntrToArgument(i)->getPntrToAction())->getName()=="VSTACK" ) { hasstack=true; break; }
+      if( (getPntrToArgument(i)->getPntrToAction())->getName()=="VSTACK" ) { doNotChain=true; break; }
+      if( getPntrToArgument(i)->getRank()==0 ) {
+          function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
+          if(as) doNotChain=true;
+      }  
   }
   // Now setup the action in the chain if we can
-  if( !hasstack && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
+  if( !doNotChain && distinct_arguments.size()>0 ) nderivatives = setupActionInChain(0); 
   else { for(unsigned i=argstart; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); }
 }
 
 template <class T>
 void FunctionOfMatrix<T>::turnOnDerivatives() {
   if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
-  ActionWithValue::turnOnDerivatives(); 
+  ActionWithValue::turnOnDerivatives(); myfunc.setup(this); 
 }
 
 template <class T>
@@ -236,7 +246,13 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
                   myvals.addDerivative( ostrn, myind, derivatives(i,j) );
                   myvals.updateIndex( ostrn, myind ); 
               }
-          } else plumed_merror("no implmentation of forces on scalar");
+          } else {
+              for(unsigned i=0;i<getNumberOfComponents();++i) {
+                  unsigned ostrn=getPntrToOutput(i)->getPositionInStream();
+                  myvals.addDerivative( ostrn, base, derivatives(i,j) );
+                  myvals.updateIndex( ostrn, base );
+              }  
+          }
           base += getPntrToArgument(j)->getNumberOfValues();
       }
   }
@@ -283,6 +299,19 @@ void FunctionOfMatrix<T>::updateCentralMatrixIndex( const unsigned& ind, const s
                    myvals.updateIndex( ostrn, arg_deriv_starts[i] + mat_indices[k] );
               }
           }
+      }
+  } else if( getPntrToOutput(0)->getRank()==2 ) {
+      for(unsigned vv=0; vv<getNumberOfComponents(); ++vv) {
+          unsigned nmat = getPntrToOutput(vv)->getPositionInMatrixStash();
+          std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned ntot_mat=0;
+          if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
+          for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+            if( getPntrToArgument(i)->getRank()==0 ) continue ;
+            unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = ss*myvals.getTaskIndex();
+            for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
+            ntot_mat += ss;
+          }
+          myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
       }
   } 
 }

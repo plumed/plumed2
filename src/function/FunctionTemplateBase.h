@@ -31,6 +31,8 @@ namespace function {
 
 class FunctionTemplateBase { 
 protected:
+/// Are we using derivatives
+  bool noderiv;
 /// Parse a keyword from the input as a value
   template<class T>
   void parse( Action* action, const std::string&key, T&t );
@@ -46,6 +48,7 @@ public:
   virtual bool defaultTaskListBuilder() const { return true; }
 ////
   virtual std::vector<std::string> getComponentsPerLabel() const ;
+  virtual bool getDerivativeZeroIfValueIsZero() const { return false; } 
   virtual void buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const { plumed_merror("this function should not be called"); }
   virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
@@ -55,7 +58,7 @@ public:
   virtual void setPeriodicityForOutputs( ActionWithValue* action );
   virtual void setPrefactor( ActionWithArguments* action, const double pref ) {}
   virtual unsigned getArgStart() const { return 0; }
-  virtual void setup( const ActionWithArguments* action ) {}
+  virtual void setup( const ActionWithValue* action ); 
   virtual void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const = 0;
 };
 
@@ -77,6 +80,16 @@ void FunctionTemplateBase::parseFlag( Action* action, const std::string&key, boo
 inline
 std::vector<std::string> FunctionTemplateBase::getComponentsPerLabel() const {
   std::vector<std::string> comps; return comps;
+}
+
+inline
+void FunctionTemplateBase::setup( const ActionWithValue* action ) {
+  noderiv=action->doNotCalculateDerivatives();
+  // Check for grids in input
+  const ActionWithArguments* aarg=dynamic_cast<const ActionWithArguments*>( action ); plumed_assert( aarg ); 
+  for(unsigned i=0; i<aarg->getNumberOfArguments(); ++i) {
+      if( aarg->getPntrToArgument(i)->getRank()>0 && aarg->getPntrToArgument(i)->hasDerivatives() ) { noderiv=false; break; }
+  }
 }
 
 inline

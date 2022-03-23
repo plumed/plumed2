@@ -68,7 +68,6 @@ PLMD::Action you should use <b> the routines with the word component in the name
 
 class ActionAtomistic;
 class ActionWithArguments;
-class ActionWithVirtualAtom;
 
 class ActionWithValue :
   public virtual Action
@@ -110,8 +109,6 @@ private:
   std::vector<double> buffer;
 /// A pointer to this but with actionWithArgument so we can avoid lots of dynamic_cast
   const ActionWithArguments* thisAsActionWithArguments;
-/// A pointer to this but with actionWithVirtualAtom so we can avoid lots of dynamic_cast
-  const ActionWithVirtualAtom* thisAsActionWithVatom;
 /// Action that must be done before this one
   ActionWithValue* action_to_do_before;
 /// Actions that must be done after this one
@@ -134,7 +131,6 @@ private:
   bool checkForGrids() const ;
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
-  void setupVirtualAtomStashes( unsigned& nquants );
   unsigned getGridArgumentIndex( const ActionWithArguments* aa ) const ;
 public:
 
@@ -250,7 +246,7 @@ public:
 /// Clear the derivatives of values wrt parameters
   virtual void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
-  void setGradientsIfNeeded();
+  virtual void setGradientsIfNeeded();
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used

@@ -205,7 +205,16 @@ private:
 /// Store information used in class \ref generic::UpdateIf
   std::stack<bool> updateFlags;
 
+/// This sets up the values that are set from the MD code
+  void startStep();
+
+/// This creates the values that hold the atomic positions
+  void createAtomValues(); 
+
 public:
+/// This updates the units of the input quantities
+  void updateUnits();
+
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
 
@@ -414,6 +423,9 @@ public:
   bool callErrorHandler(int code,const char* msg)const;
 /// Get the name of the MD engine that called PLUMED
   std::string getMDEngine() const ;
+/// Transfer information
+  void writeBinary(std::ostream&)const;
+  void readBinary(std::istream&);
 };
 
 /////

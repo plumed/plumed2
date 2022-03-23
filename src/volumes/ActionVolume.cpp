@@ -54,7 +54,7 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
 
   if( getFullNumberOfTasks()==1 ) { ActionWithValue::addValueWithDerivatives(); }
   else { std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks(); ActionWithValue::addValue( shape ); }
-  setNotPeriodic();
+  setNotPeriodic(); getPntrToOutput(0)->setDerivativeIsZeroWhenValueIsZero();
 }
 
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {

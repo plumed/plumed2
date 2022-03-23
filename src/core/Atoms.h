@@ -47,6 +47,7 @@ class Atoms
 {
   friend class ActionToPutData;
   friend class ActionAtomistic;
+  friend class PlumedMain;
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
@@ -56,27 +57,14 @@ class Atoms
 /// ones used in domain decomposition. However, it is now also used for the NAMD-like
 /// interface, where only a small number of atoms is passed to plumed.
   std::vector<int> g2l;
-  std::vector<Vector> positions;
-  std::vector<Vector> forces;
-  std::vector<double> masses;
-  std::vector<double> charges;
-  std::vector<ActionAtomistic*> virtualAtomsActions;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
 
-//   bool   dataCanBeSet;
-//   unsigned positionsHaveBeenSet;
-//  unsigned forcesHaveBeenSet;
   unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
-  void resizeVectors(unsigned);
-  void setPbcFromBox();
-
   std::vector<int> fullList;
-
-  //std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 
@@ -87,12 +75,11 @@ class Atoms
   bool MDnaturalUnits;
 
   double timestep;
-  double forceOnEnergy;
 
 /// if set to true, all the forces in the global array are zeroes
 /// at every step. It should not be necessary in general, but it is
 /// for actions accessing to modifyGlobalForce() (e.g. FIT_TO_TEMPLATE).
-  bool zeroallforces;
+//  bool zeroallforces;
 
   double kbT;
 
@@ -101,6 +88,16 @@ class Atoms
 
   bool asyncSent;
   bool atomsNeeded;
+
+/// This holds the names of the values that contain the various atoms
+  std::vector<std::string> names;
+/// These hold pointers to the values that contain the positions, masses
+/// and charges of the atoms 
+  std::vector<Value*> posx;
+  std::vector<Value*> posy;
+  std::vector<Value*> posz;
+  std::vector<Value*> masses;
+  std::vector<Value*> charges;
 
   class DomainDecomposition:
     public Communicator
@@ -128,22 +125,27 @@ class Atoms
 
   bool needsAllAtoms() const;
   void share(const std::set<AtomNumber>&);
-
+/// These are used to manipulate the atom values
+  void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const;
+  Vector getPosition( const AtomNumber& i ) const ;
+  void setPosition( const AtomNumber& i, const Vector& pos );
+  double getMass( const AtomNumber& i ) const ;
+  double getCharge( const AtomNumber& i ) const ;
+  void addForce( const AtomNumber& i, Vector f );
 public:
 
   explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
   void init();
-  void setup();
 
   void share();
   void shareAll();
   void wait();
-//  void updateForces();
 
   void setRealPrecision(int);
-//  int  getRealPrecision()const;
+
+  void setPbcFromBox();
 
   void setTimeStep(const double tstep);
   double getTimeStep()const;
@@ -153,33 +155,17 @@ public:
 
   void setNatoms(int);
   int getNatoms()const;
-  int getNVirtualAtoms()const;
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
-//   void getLocalPositions(std::vector<Vector>&);
-//   void getLocalForces(std::vector<Vector>&);
-//   void getLocalMDForces(std::vector<Vector>&);
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 
-  void startStep();
   void setBox(void*);
-//   void setPositions(void*);
-//   void setPositions(void*,int);
-  void setVatomPosition( const AtomNumber&, const Vector& );
-  Vector getVatomPosition( const AtomNumber& ) const ;
-  double getVatomMass( const AtomNumber& ) const ;
-  double getVatomCharge( const AtomNumber& ) const ;
-  void setVatomMass( const AtomNumber&, const double& );
-  void setVatomCharge( const AtomNumber&, const double& );
-  Vector & getVatomForces( const AtomNumber& );
-//  void setForces(void*);
-//  void setForces(void*,int);
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;
@@ -199,14 +185,7 @@ public:
   const Units& getMDUnits() {return MDUnits;}
   void setUnits(const Units&u) {units=u;}
   const Units& getUnits() {return units;}
-  void updateUnits();
 
-  AtomNumber addVirtualAtom(ActionAtomistic*);
-  void removeVirtualAtom(ActionAtomistic*);
-  ActionAtomistic* getVirtualAtomsAction(AtomNumber)const;
-  bool isVirtualAtom(AtomNumber)const;
-  void writeBinary(std::ostream&)const;
-  void readBinary(std::istream&);
   double getKBoltzmann()const;
   double getMDKBoltzmann()const;
   bool usingNaturalUnits()const;
@@ -217,16 +196,17 @@ public:
   void setExtraCVForce(const std::string &name,void*p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
+
+  void clearAtomValues();
+  void addAtomValues( const std::string& n, Value* x, Value* y, Value* z, Value* m, Value* q );
+  std::string getAtomString( const AtomNumber& i ) const ;
+  void getGradient( const AtomNumber& i, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ; 
+  bool checkConstant( const AtomNumber& i, const std::string& name ) const ;
 };
 
 inline
 int Atoms::getNatoms()const {
   return natoms;
-}
-
-inline
-int Atoms::getNVirtualAtoms()const {
-  return virtualAtomsActions.size();
 }
 
 inline
@@ -245,50 +225,9 @@ const Pbc& Atoms::getPbc()const {
 }
 
 inline
-bool Atoms::isVirtualAtom(AtomNumber i)const {
-  return i.index()>=(unsigned) getNatoms();
-}
-
-inline
 bool Atoms::usingNaturalUnits() const {
   return naturalUnits || MDnaturalUnits;
 }
-
-inline
-void Atoms::setVatomPosition( const AtomNumber& ind, const Vector& pos ) {
-  positions[ind.index()]=pos;
-}
-
-inline
-void Atoms::setVatomMass( const AtomNumber& ind, const double& mass ) {
-  masses[ind.index()]=mass;
-}
-
-inline
-void Atoms::setVatomCharge( const AtomNumber& ind, const double& c ) {
-  charges[ind.index()]=c;
-}
-
-inline
-Vector & Atoms::getVatomForces( const AtomNumber& ind ) {
-  return forces[ind.index()];
-}
-
-inline
-Vector Atoms::getVatomPosition( const AtomNumber& ind ) const {
-  return positions[ind.index()];
-}
-
-inline
-double Atoms::getVatomMass( const AtomNumber& ind ) const {
-  return masses[ind.index()];
-} 
-
-inline
-double Atoms::getVatomCharge( const AtomNumber& ind ) const {
-  return charges[ind.index()];
-}
-
 
 }
 #endif

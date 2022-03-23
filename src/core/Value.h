@@ -35,6 +35,7 @@ namespace PLMD {
 class OFile;
 class Action;
 class ActionWithValue;
+class ActionAtomistic;
 
 /// \ingroup TOOLBOX
 /// A class for holding the value of a function together with its derivatives.
@@ -49,6 +50,7 @@ class Value {
   friend class Atoms;
   friend class ActionWithValue;
   friend class ActionWithArguments;
+  friend class ActionWithVirtualAtom;
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -101,6 +103,8 @@ private:
   double min,max;
   double max_minus_min;
   double inv_max_minus_min;
+/// Is the derivative of this quantity zero when the value is zero
+  bool derivativeIsZeroWhenValueIsZero;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
@@ -181,7 +185,9 @@ public:
 /// Get the difference between max and minimum of domain
   double getMaxMinusMin()const;
 /// This sets up the gradients
-  void setGradients();
+  void setGradients( ActionAtomistic* aa, unsigned& start );
+/// This passes gradients from one action to another
+  void passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const ;
   static double projection(const Value&,const Value&);
 /// Build the store of data
   void buildDataStore( const std::string& actlabel );
@@ -235,6 +241,9 @@ public:
   void readBinary(std::istream&i);
 /// This gets the number of threads to use for setting the value
   unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
+///
+  void setDerivativeIsZeroWhenValueIsZero();
+  bool getDerivativeIsZeroWhenValueIsZero() const ;
 };
 
 inline
@@ -423,7 +432,11 @@ bool Value::storingData() const {
   return storedata;
 }
 
+inline
+void Value::setDerivativeIsZeroWhenValueIsZero() {
+  derivativeIsZeroWhenValueIsZero=true;
 }
 
+}
 #endif
 

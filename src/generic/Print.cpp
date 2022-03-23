@@ -285,7 +285,8 @@ Print::Print(const ActionOptions&ao):
       if( atoms.size()!=0 && atoms.size()!=nper ) error("number of atoms should match number of colvars");
       std::vector<AtomNumber> origin; parseAtomList("ORIGIN",origin);
       if( origin.size()==1 ) {
-        hasorigin=true; log.printf("  printing atom positions relative to atom %d \n", origin[0].serial() );
+        hasorigin=true; atoms.push_back( origin[0] ); 
+        log.printf("  printing atom positions relative to atom %d \n", origin[0].serial() );
       } else if( origin.size()>0 ) error("should only specify one atom for origin");
 
       if( tstyle=="xyz" ) {
@@ -298,11 +299,6 @@ Print::Print(const ActionOptions&ao):
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
         }
-        // std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-        // if( moldat.size()==1 ) {
-        //   names.resize(atoms.size());
-        //   for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
-        // }
         log.printf("  atom positions printed are : ");
       } else if( tstyle=="ndx" ) {
         log.printf("  printing ndx file containing indices of atoms that have symmetry functions in ranges prescribed above \n");
@@ -312,9 +308,8 @@ Print::Print(const ActionOptions&ao):
         if ( (i+1) % 25 == 0 ) log.printf("  \n");
         log.printf("  %d", atoms[i].serial());
       }
-      log.printf("\n"); if( hasorigin ) atoms.push_back( origin[0] );
+      log.printf("\n"); 
       std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false );
-      if( hasorigin && plumed.getAtoms().isVirtualAtom(origin[0]) ) addDependency(plumed.getAtoms().getVirtualAtomsAction(origin[0]));
     }
   } else if( tstyle=="grid" ) {
     if( getStride()==0 ) {
@@ -675,9 +670,9 @@ void Print::update() {
         if( posnums.size()==0 && matnums.size()==1 ) {
             unsigned npos = getPntrToArgument(matnums[0])->getShape()[1] / 3;
             for(unsigned k=0;k<npos;++k) {
-                pos[0]=getPntrToArgument(matnums[0])->get(3*npos*j + 3*k + 0);
-                pos[1]=getPntrToArgument(matnums[0])->get(3*npos*j + 3*k + 1);
-                pos[2]=getPntrToArgument(matnums[0])->get(3*npos*j + 3*k + 2);
+                pos[0]=getPntrToArgument(matnums[0])->get(npos*(3*j+0) + k);
+                pos[1]=getPntrToArgument(matnums[0])->get(npos*(3*j+1) + k);
+                pos[2]=getPntrToArgument(matnums[0])->get(npos*(3*j+2) + k);
                 printAtom( opdbf, pdb_atom_indices[k], pos, 1.0, 1.0 );
             }
         } else {

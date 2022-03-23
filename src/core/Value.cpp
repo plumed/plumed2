@@ -24,7 +24,6 @@
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
 #include "ActionSetup.h"
-#include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
 #include "tools/OpenMP.h"
@@ -55,7 +54,8 @@ Value::Value():
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForces.resize(1);
 }
@@ -70,7 +70,8 @@ Value::Value(const std::string& name):
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForces.resize(1); 
   data[0]=inputForces[0]=0;
@@ -98,7 +99,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   if( action ) alwaysstore=action->getName()=="PUT";
   if( ss.size()>0 && !alwaysstore ) storedata=false;
@@ -217,40 +219,24 @@ void Value::getDomain(double&minout,double&maxout) const {
   maxout=max;
 }
 
-void Value::setGradients() {
+void Value::setGradients( ActionAtomistic* aa, unsigned& start ) {
   // Can't do gradients if we don't have derivatives
   if( !hasDeriv ) return;
   plumed_assert( shape.size()==0 );
-  gradients.clear();
-  ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
-  ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
-  if(aa) {
-    Atoms&atoms((aa->plumed).getAtoms());
-    for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
-      AtomNumber an=aa->getAbsoluteIndex(j);
-      if(atoms.isVirtualAtom(an)) {
-        ActionAtomistic* a=atoms.getVirtualAtomsAction(an);
-        for(const auto & p : a->getVatomGradients(an)) {
-// controllare l'ordine del matmul:
-          gradients[p.first]+=matmul(Vector(data[1+3*j],data[1+3*j+1],data[1+3*j+2]),p.second);
-        }
-      } else {
-        for(unsigned i=0; i<3; i++) gradients[an][i]+=data[1+3*j+i];
-      }
-    }
-  } else if(aw) {
-    std::vector<Value*> values=aw->getArguments();
-    for(unsigned j=0; j<data.size()-1; j++) {
-      for(const auto & p : values[j]->gradients) {
-        AtomNumber iatom=p.first;
-        gradients[iatom]+=p.second*data[1+j];
-      }
-    }
-  } else plumed_error();
+  Atoms&atoms((aa->plumed).getAtoms());
+  for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
+      Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
+      atoms.getGradient( aa->getAbsoluteIndex(j), der, gradients );
+  }
+  start += aa->getNumberOfAtoms();
+}
+
+void Value::passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const {
+  for(const auto & p : gradients) { AtomNumber iatom=p.first; g[iatom] += p.second*der; }
 }
 
 double Value::projection(const Value& v1,const Value&v2) {
-  double proj=0.0;
+  double proj=0.0; plumed_assert( v1.getRank()==0 && v2.getRank()==0 );
   const std::map<AtomNumber,Vector> & grad1(v1.gradients);
   const std::map<AtomNumber,Vector> & grad2(v2.gradients);
   for(const auto & p1 : grad1) {
@@ -408,6 +394,10 @@ void Value::readBinary(std::istream&i) {
 
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
   return OpenMP::getGoodNumThreads( &data[j], (k-j) );
+}
+
+bool Value::getDerivativeIsZeroWhenValueIsZero() const {
+  return derivativeIsZeroWhenValueIsZero;
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){

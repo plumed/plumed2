@@ -6,4 +6,4 @@ dipole: DIPOLE 	ATOMS=1-3
 dist:		DISTANCE ATOMS=1,com
 distxyz:	DISTANCE ATOMS=1,com COMPONENTS
 
-PRINT ARG=* FILE=COLVAR
+PRINT ARG=dipole,dist,distxyz.x,distxyz.y,distxyz.z FILE=COLVAR

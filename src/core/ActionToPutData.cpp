@@ -32,6 +32,8 @@ PLUMED_REGISTER_ACTION(ActionToPutData,"PUT")
 void ActionToPutData::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys); ActionWithValue::registerKeywords( keys );
   keys.add("compulsory","SHAPE","0","the shape of the value that is being passed to PLUMED");
+  keys.add("compulsory","UNIT","the unit of the quantity that is being passed to PLUMED through this value.  Can be either number, energy, length, mass or charge");
+  keys.add("compulsory","FORCE_UNIT","default","the units to use for the force");
   keys.add("optional","FORCES_FOR_POTENTIAL","If your input quantity is an energy this lists the input actions that hold the forces.  These are rescaled");
   keys.add("compulsory","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
@@ -55,6 +57,18 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
    if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
    else { addValue( shape ); }    
 
+   std::string unitstr; parse("UNIT",unitstr);
+   if( unitstr=="number" ) unit=n;
+   else if( unitstr=="energy" ) unit=e;
+   else if( unitstr=="length" ) unit=l;
+   else if( unitstr=="mass" ) unit=m;
+   else if( unitstr=="charge" ) unit=q;
+   else error( unitstr + " is not a valid input unit");
+   std::string funitstr; parse("FORCE_UNIT",funitstr);
+   if( funitstr=="default" ) funit=d;
+   else if( funitstr=="energy" ) funit=eng;
+   else error( funitstr + " is not a valid input force unit");
+
    // Now sort out period
    std::vector<std::string> period; parseVector("PERIODIC",period);
    if( period.size()==1 ) {
@@ -64,7 +78,7 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
    else  error("input to PERIODIC keyword does not make sense");
 
    parseFlag("SUM_OVER_DOMAINS",sum_domains); parseFlag("NOFORCE", noforce); 
-   parseFlag("CONSTANT",fixed); if( fixed ) noforce=true; 
+   parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
    parseFlag("SCATTERED",scattered);  if( scattered ) plumed_assert( shape.size()>0 );
    std::vector<std::string> toscale; parseVector("FORCES_FOR_POTENTIAL",toscale);
    for(unsigned i=0;i<toscale.size();++i) {
@@ -78,12 +92,20 @@ void ActionToPutData::setStride( const unsigned& sss ) {
   mydata->setStride(sss);
 }
 
-void ActionToPutData::setUnit( const double& u ) {
-   mydata->setUnit(u);
-}
+void ActionToPutData::updateUnits() {
+  // Don't need to do anythign if this is just a number
+  if( unit==n ) return ; 
 
-void ActionToPutData::setForceUnit( const double& u ) {
-   mydata->setForceUnit(u);
+  double vunits; 
+  const Units& MDUnits = plumed.getAtoms().getMDUnits();
+  const Units& units = plumed.getAtoms().getUnits();
+  if( unit==e ) vunits = MDUnits.getEnergy()/units.getEnergy();  
+  else if( unit==l ) vunits = MDUnits.getLength()/units.getLength(); 
+  else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();
+  else if( unit==q ) vunits = MDUnits.getCharge()/units.getCharge();
+  mydata->setUnit(vunits); 
+  if( funit==eng ) mydata->setForceUnit(units.getEnergy()/MDUnits.getEnergy());
+  else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
 }
 
 void ActionToPutData::set_value(void* val ) {

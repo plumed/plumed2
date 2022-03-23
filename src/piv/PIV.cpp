@@ -17,7 +17,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "colvar/Colvar.h"
 #include "colvar/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/ActionWithVirtualAtom.h"
 #include "tools/NeighborList.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/PDB.h"

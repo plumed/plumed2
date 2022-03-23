@@ -108,6 +108,10 @@ nderivatives(0)
   } else error("functions of grid should only output one grid");
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
+  // Check if we can turn off the derivatives when they are zero
+  if( myfunc.getDerivativeZeroIfValueIsZero() )  {
+      for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
+  }
 }
 
 template <class T>

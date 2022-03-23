@@ -94,13 +94,13 @@ PCAVars::PCAVars( const ActionOptions& ao ):
         norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
         for(unsigned i=0;i<mypdb.getPositions().size();++i) {
             if( mtype=="SIMPLE" ) {
-                normed_coeffs[3*i+0] = mypdb.getPositions()[i][0] / norm;
-                normed_coeffs[3*i+1] = mypdb.getPositions()[i][1] / norm;
-                normed_coeffs[3*i+2] = mypdb.getPositions()[i][2] / norm;
+                normed_coeffs[0*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][0] / norm;
+                normed_coeffs[1*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][1] / norm;
+                normed_coeffs[2*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][2] / norm;
             } else {
-                normed_coeffs[3*i+0] = sqrt(displace[i])*mypdb.getPositions()[i][0] / norm;
-                normed_coeffs[3*i+1] = sqrt(displace[i])*mypdb.getPositions()[i][1] / norm;
-                normed_coeffs[3*i+2] = sqrt(displace[i])*mypdb.getPositions()[i][2] / norm;
+                normed_coeffs[0*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][0] / norm;
+                normed_coeffs[1*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][1] / norm;
+                normed_coeffs[2*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][2] / norm;
             }
         }
         std::string coeff1, pvec; Tools::convert( normed_coeffs[0], pvec );

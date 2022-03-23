@@ -52,6 +52,7 @@ void CreateGridInSetup::createGridAndValue( const std::string& gtype, const std:
       std::vector<unsigned> shape( 3 ); shape[0]=gbin[0]; shape[1]=shape[2]=1;
       ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
   }
+  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
 }
 
 unsigned CreateGridInSetup::getNumberOfDerivatives() const {

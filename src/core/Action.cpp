@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
 #include "ActionWithValue.h"
+#include "ActionAtomistic.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
@@ -166,9 +167,8 @@ void Action::parseFlag(const std::string&key,bool & t) {
 }
 
 void Action::addDependency(Action*action) {
-  bool found=false;
   for(unsigned i=0; i<after.size(); ++i) {
-    if( after[i]->getLabel()==action->getLabel() ) { found=true; return; }
+    if( after[i]->getLabel()==action->getLabel() ) return; 
   }
   after.push_back(action);
 }
@@ -226,8 +226,24 @@ void Action::checkRead() {
     }
     error(msg);
   }
+  setupConstantValues(false);
+}
+
+void Action::setupConstantValues( const bool& have_atoms ) {
+  if( have_atoms ) {
+      // This ensures that we switch off actions that only depend on constant when passed from the 
+      // MD code on the first step
+      ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
+      ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+      if( at && av ) {
+          never_activate=true;
+          for(unsigned i=0; i<av->getNumberOfComponents();++i) {
+              if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
+          }
+      }
+  }
   ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
-  if(aa) never_activate = aa->calculateConstantValues();
+  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long int Action::getStep()const {

@@ -50,7 +50,6 @@ protected:
   bool clearnorm;
   unsigned clearstride;
   unsigned n_real_args;
-  std::vector<AtomNumber> mygroup;
   std::vector<double> align, displace;
 /// Get the number of atoms that we are averaging
   unsigned getNumberOfAtomsToAverage() const ;
@@ -59,11 +58,9 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
-  ~AverageBase();
   void clearDerivatives( const bool& force=false );
   bool hasClear() const ;
   unsigned getNumberOfDerivatives() const ;
-  unsigned getNumberOfVirtualAtoms() const ;
 /// These are required because we inherit from both ActionAtomistic and ActionWithArguments
   void lockRequests();
   void unlockRequests();
@@ -76,7 +73,6 @@ public:
   virtual void accumulate( const std::vector<std::vector<Vector> >& dir ) = 0;
   std::string getStrideClearAndWeights() const ;
   std::string getAtomsData() const ;
-  AtomNumber getAtomNumber(const AtomNumber& num ) const ;
 };
 
 inline
@@ -87,11 +83,6 @@ unsigned AverageBase::getNumberOfAtomsToAverage() const {
 inline
 Vector AverageBase::getReferencePosition(const unsigned& i ) {
   return myrmsd.getReference()[i];
-}
-
-inline
-unsigned AverageBase::getNumberOfVirtualAtoms() const {
-  return getNumberOfAtoms();
 }
 
 inline

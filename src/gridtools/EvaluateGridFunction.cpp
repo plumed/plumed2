@@ -78,8 +78,10 @@ void EvaluateGridFunction::read( ActionWithArguments* action ) {
   action->log.printf("  generating off grid points using %s interpolation \n", itype.c_str() );
 }
 
-void EvaluateGridFunction::setup( const ActionWithArguments* action ) {
-  setupGridBounds( action, action->getPntrToArgument(0), gridobject );
+void EvaluateGridFunction::setup( const ActionWithValue* action ) {
+  FunctionTemplateBase::setup( action );
+  const ActionWithArguments* aarg = dynamic_cast<const ActionWithArguments*>( action ); 
+  setupGridBounds( aarg, aarg->getPntrToArgument(0), gridobject );
 }
 
 void EvaluateGridFunction::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

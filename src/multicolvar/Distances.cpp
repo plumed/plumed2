@@ -72,17 +72,15 @@ ActionShortcut(ao)
       std::vector<std::string> afstr, astr; parseVector("ATOMS",astr); Tools::interpretRanges(astr);
       for(unsigned i=0;i<astr.size();++i) {
           Group* mygr=plumed.getActionSet().selectWithLabel<Group*>(astr[i]);
-          if( mygr ) {
-              for(unsigned j=0;j<mygr->getNumberOfAtoms();++j) {
-                  std::string num; Tools::convert( mygr->getAtomIndex(j).serial(), num ); afstr.push_back( num );
-              }
+          if( mygr ) { 
+              std::vector<std::string> grstr( mygr->getGroupAtoms() );
+              for(unsigned j=0; j<grstr.size(); ++j) afstr.push_back(grstr[j]); 
           } else {
-              Group* mygr2=plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
-              if( mygr2 ) {
-                  for(unsigned j=0;j<mygr2->getNumberOfAtoms();++j) {
-                      std::string num; Tools::convert( mygr2->getAtomIndex(j).serial(), num ); afstr.push_back( num );
-                  }
-              } else afstr.push_back(astr[i]);
+             Group* mygr2=plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
+             if( mygr2 ) {
+                 std::vector<std::string> grstr( mygr2->getGroupAtoms() );
+              for(unsigned j=0; j<grstr.size(); ++j) afstr.push_back(grstr[j]);
+             } else afstr.push_back(astr[i]);
           }
       }
       for(unsigned i=0;i<afstr.size();++i) { Tools::convert( i+1, num ); dline += " ATOMS" + num + "=" + ostr + "," + afstr[i]; }

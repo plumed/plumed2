@@ -83,6 +83,7 @@ GetGridDerivatives::GetGridDerivatives(const ActionOptions&ao):
   // And create the components
   for(unsigned i=0;i<shape.size();++i) {
       addComponentWithDerivatives( argn[i] + "_der", shape ); componentIsNotPeriodic( argn[i] + "_der" ); getPntrToOutput(i)->alwaysStoreValues(); 
+      getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
 }
 

@@ -254,7 +254,11 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  std::vector<AtomNumber> all_atoms; parseAtomList( "ATOMS", all_atoms );
+  std::vector<AtomNumber> all_atoms; 
+  if( getName()=="POSITION" || getName()=="MASSES" || getName()=="CHARGES" ) {
+      parseAtomList( "ATOM", all_atoms );
+      if( all_atoms.size()>1 ) error("Too many atoms read in for ATOM keyword");
+  } else parseAtomList( "ATOMS", all_atoms );
   if( getName()=="TORSION" ) {
       std::vector<AtomNumber> v1, v2, axis; parseAtomList("VECTORA", v1 ); parseAtomList("VECTORB", v2 ); parseAtomList("AXIS", axis );
       if( v1.size()>0 ) {
@@ -270,6 +274,12 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
     log.printf("  Colvar is calculated from atoms : ");
     for(unsigned j=0; j<ablocks.size(); ++j) { ablocks[j].push_back(j); log.printf("%d ",all_atoms[j].serial() ); }
     log.printf("\n"); 
+  } else if( getName()=="POSITION" || getName()=="MASSES" || getName()=="CHARGES" ) {
+    parseAtomList( "ATOMS", all_atoms ); ablocks.resize(1); std::string descr="position";
+    if( getName()=="MASSES" ) descr="mass"; else if( getName()=="CHARGES") descr="charge";
+    for(unsigned i=0;i<all_atoms.size();++i) {
+        log.printf("  Colvar %d is %s of atom : %d \n", i+1, descr.c_str(), all_atoms[i] ); ablocks[0].push_back(i);
+    }
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
@@ -369,26 +379,26 @@ void MultiColvarBase::performTask( const unsigned& task_index, MultiValue& myval
   }
   // And compute
   compute( fpositions, myvals );
+  // Finish if there are no derivatives
+  if( doNotCalculateDerivatives() || getNumberOfDerivatives()==getNumberOfAtoms() ) return;
   // Now update the active derivatives
-  if( !doNotCalculateDerivatives() ) {
-    for(unsigned i=0; i<ablocks.size(); ++i) {
-      // Check for duplicated indices during update to avoid double counting
-      bool newi=true;
-      for(unsigned j=0; j<i; ++j) {
-        if( ablocks[j][task_index]==ablocks[i][task_index] ) { newi=false; break; }
-      }
-      if( !newi ) continue;
-      unsigned base=3*ablocks[i][task_index];
-      for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-        myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base );
-        myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 1 );
-        myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 2 );
-      }
+  for(unsigned i=0; i<ablocks.size(); ++i) {
+    // Check for duplicated indices during update to avoid double counting
+    bool newi=true;
+    for(unsigned j=0; j<i; ++j) {
+      if( ablocks[j][task_index]==ablocks[i][task_index] ) { newi=false; break; }
     }
-    unsigned nvir=3*getNumberOfAtoms();
+    if( !newi ) continue;
+    unsigned base=3*ablocks[i][task_index];
     for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<9; ++i) myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), nvir + i );
+      myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base );
+      myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 1 );
+      myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 2 );
     }
+  }
+  unsigned nvir=3*getNumberOfAtoms();
+  for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(unsigned i=0; i<9; ++i) myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), nvir + i );
   }
 }
 

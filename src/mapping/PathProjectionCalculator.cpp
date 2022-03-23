@@ -64,8 +64,8 @@ mypath_obj(NULL)
   unsigned nargs=refargs.size(); if( refargs[0]->getRank()==2 ) nargs = refargs[0]->getShape()[1];
   std::string str_nargs; Tools::convert( nargs, str_nargs ); std::string period_str=" PERIODIC=NO";
   if( mypath_obj && mypath_obj->isPeriodic() ) { std::string min, max; mypath_obj->getDomain( min, max ); period_str=" PERIODIC=" + min + "," + max; }
-  metric.cmd("createValue arg1: PUT SHAPE=" + str_nargs + period_str);
-  metric.cmd("createValue arg2: PUT SHAPE=" + str_nargs + period_str);
+  metric.cmd("createValue arg1: PUT UNIT=number SHAPE=" + str_nargs + period_str);
+  metric.cmd("createValue arg2: PUT UNIT=number SHAPE=" + str_nargs + period_str);
   double tstep=1.0; metric.cmd("setTimestep",&tstep);
   std::string inp; act->parse("METRIC",inp); inp += " ARG1=arg2 ARG2=arg1"; const char* cinp=inp.c_str();
   std::vector<std::string> input=Tools::getWords(inp);

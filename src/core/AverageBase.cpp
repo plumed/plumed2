@@ -82,16 +82,6 @@ AverageBase::AverageBase( const ActionOptions& ao):
        t.resize(0);
      }
   }
-  for(unsigned i=0;i<all_atoms.size();++i) {
-     AtomNumber index = atoms.addVirtualAtom( this ); mygroup.push_back( index );
-  }
-  if( all_atoms.size()>0 ) { 
-      std::string num; Tools::convert( mygroup[0].serial(), num ); std::string grp_str = getLabel() + "_grp: GROUP ATOMS=" + num;
-      for(unsigned i=1;i<mygroup.size();++i) { Tools::convert( mygroup[i].serial(), num ); grp_str += "," + num; }
-      plumed.readInputLine( grp_str );
-       // atoms.insertGroup( getLabel(), mygroup ); 
-      log.printf("\n"); 
-  }
 
   std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr); 
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
@@ -124,17 +114,6 @@ AverageBase::AverageBase( const ActionOptions& ao):
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing average every %u steps \n",clearstride);
   }
-}
-
-AverageBase::~AverageBase() {
-  if( getNumberOfAtoms()>0 ) { atoms.removeVirtualAtom( this ); } // atoms.removeGroup( getLabel() ); }
-}
-
-AtomNumber AverageBase::getAtomNumber(const AtomNumber& anum ) const {
-  for(unsigned i=0;i<mygroup.size();++i) {
-      if( anum==mygroup[i] ) return getAbsoluteIndex(i);
-  }
-  plumed_error(); return getAbsoluteIndex(0);
 }
 
 std::string AverageBase::getStrideClearAndWeights() const {

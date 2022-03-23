@@ -194,7 +194,7 @@ Units::Units(const ActionOptions&ao):
   }
   log.printf("  inside PLUMED, Boltzmann constant is %g\n",plumed.getAtoms().getKBoltzmann());
 
-  plumed.getAtoms().updateUnits();
+  plumed.updateUnits();
 }
 
 }

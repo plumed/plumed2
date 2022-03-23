@@ -279,7 +279,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
     if( arguments[i]->alwaysstore ) { 
         ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
         if( arguments[i]->isConstant() || as ) { arguments[i]->buildDataStore( getLabel() ); } else { storing=true; break; }
-    }
+    } else if( arguments[i]->isConstant() ) arguments[i]->buildDataStore( getLabel() );
     if( !arguments[i]->isConstant() ) { allconstant=false; }
   }
   if( allconstant ) storing=true;
@@ -399,7 +399,7 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg, const
     // Build vector with locations to keep derivatives of arguments
     arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
     arg_deriv_starts.push_back(0); unsigned nder;
-    if( !distinct_but_stored ) nder = distinct_arguments[0].first->getNumberOfDerivatives();
+    if( !arguments[argstart]->isConstant() && !distinct_but_stored ) nder = distinct_arguments[0].first->getNumberOfDerivatives();
     else if(ab) nder = 1; else nder = arguments[argstart]->getNumberOfValues();
 
     if( getNumberOfArguments()==1 ) { 
@@ -718,6 +718,50 @@ void ActionWithArguments::setForceOnScalarArgument(const unsigned n, const doubl
   arguments[j]->addForce( n-nn, ff );
 }
 
+void ActionWithArguments::setGradientsForActionChain( Value* myval, unsigned& start, ActionWithValue* av ) { 
+  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( av );
+  if( aarg ) aarg->setGradients( myval, start ); 
+  ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( av );
+  if( aat ) myval->setGradients( aat, start );
+}
+
+void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
+  if( !myval->hasDeriv ) return; plumed_assert( myval->getRank()==0 );
+
+  if( done_over_stream ) {
+      for(unsigned i=0; i<distinct_arguments.size(); ++i) {
+        if( distinct_arguments[i].second==0 ) setGradientsForActionChain( myval, start, distinct_arguments[i].first );
+        else {
+          for(unsigned j=0; j<arguments.size(); ++j) {
+              bool hasstored=false;
+              for(unsigned k=0; k<arguments[j]->store_data_for.size(); ++k) {
+                  if( arguments[j]->store_data_for[k].first==getLabel() ) { hasstored=true; break; }
+              }
+              if( hasstored && arguments[j]->getPntrToAction()==distinct_arguments[i].first ) {
+                  if( !arguments[j]->isConstant() ) plumed_merror("cannot use gradients with non-constant values for input " + arguments[j]->getName() );
+                  else start += arguments[j]->getNumberOfValues();
+              }
+          }
+        }
+      }
+  } else {
+      bool scalar=true;
+      for(unsigned i=0; i<arguments.size(); ++i ) {
+          if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
+      }
+      if( !scalar ) {
+           bool constant=true;
+           for(unsigned i=0; i<arguments.size(); ++i ) {
+               if( !arguments[i]->isConstant() ) { constant=false; break; }
+               else start += arguments[i]->getNumberOfValues();
+           }
+           if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+      }
+      // Now pass the gradients 
+      for(unsigned i=0; i<arguments.size(); ++i ) arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
+  }
+}
+
 void ActionWithArguments::setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av ) {
   plumed_dbg_massert( start<=forces.size(), "not enough forces have been saved" );
   ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( av );
@@ -843,19 +887,24 @@ void ActionWithArguments::resizeForFinalTasks() {
   if( aa ) aa->resizeForFinalTasks();
 }
 
-bool ActionWithArguments::calculateConstantValues() {
+bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
   if( !av || arguments.size()==0 ) return false; 
-  bool constant = true;
+  bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
+      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
+      if( aa ) { atoms=true; }
       if( !arguments[i]->isConstant() ) { constant=false; break; }
   }
   if( constant ) {
       // Set everything constant first as we need to set the shape
       for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
-      // Now do the calculation and store the values
-      activate(); calculate(); deactivate(); 
-      log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+      if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+      if( atoms ) return haveatoms;
+  } 
+  // Now do the calculation and store the values if we don't need anything from the atoms
+  if( constant && !haveatoms ) {
+      plumed_assert( !atoms ); activate(); calculate(); deactivate(); 
       for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
          unsigned nv = av->copyOutput(i)->getNumberOfValues();
          log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );

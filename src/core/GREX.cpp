@@ -190,7 +190,7 @@ void GREX::savePositions() {
   atoms.shareAll();
   plumedMain.waitData();
   std::ostringstream o;
-  atoms.writeBinary(o);
+  plumedMain.writeBinary(o);
   buffer=o.str();
 }
 
@@ -205,7 +205,7 @@ void GREX::calculate() {
   }
   intracomm.Bcast(rbuf,0);
   std::istringstream i(std::string(&rbuf[0],rbuf.size()));
-  atoms.readBinary(i);
+  plumedMain.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();

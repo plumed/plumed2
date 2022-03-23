@@ -35,6 +35,7 @@ namespace PLMD {
 
 class Pbc;
 class PDB;
+class ActionWithVirtualAtom;
 
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
@@ -48,9 +49,6 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
-  std::vector<Value*>   pos_values;
-  Value*                massValue;
-  Value*                chargeValue;
   Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
   Pbc&                  pbc=*pbc_fwd;
@@ -188,15 +186,7 @@ public:
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb );
-/// Get the number of virtual atoms this object creates
-  virtual unsigned getNumberOfVirtualAtoms() const ;
-  virtual const std::map<AtomNumber,Tensor> & getVatomGradients( const AtomNumber& ) ;
 };
-
-inline
-unsigned ActionAtomistic::getNumberOfVirtualAtoms() const {
-  return 0;
-}
 
 inline
 const Vector & ActionAtomistic::getPosition(int i)const {
@@ -285,7 +275,6 @@ inline
 Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
 }
-
 
 }
 

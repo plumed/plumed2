@@ -31,6 +31,7 @@ class ActionToPutData :
 public ActionWithValue
 {
 friend class Atoms;
+friend class PlumedMain;
 private:
 /// Action has been set
   bool wasset;
@@ -48,6 +49,10 @@ private:
   bool dataCanBeSet;
 /// Have the original forces been scaled
   bool wasscaled;
+/// The unit of the value that has been passed to plumed
+  enum{n,e,l,m,q} unit;
+/// The unit to to use for the force
+  enum{d,eng} funit;
 /// This is the list of forces that must be scaled
   std::vector<ActionToPutData*> forces_to_scale;
 /// This holds the pointer that we getting data from
@@ -61,6 +66,10 @@ public:
   bool hasBeenSet() const ;
 /// Override clear the input data 
   void clearDerivatives( const bool& force ){}
+/// Override the need to deal with gradients
+  void setGradientsIfNeeded() override {}
+/// Update the units on the input data
+  void updateUnits();
 /// Do not add chains to setup actions
   bool canChainFromThisAction() const { return false; }
 /// The number of derivatives
@@ -71,10 +80,6 @@ public:
   bool collectFromDomains() const;
 /// Do we always need to collect the atoms from all domains
   bool collectAllFromDomains() const;
-/// Set the unit for this quantity
-  void setUnit( const double& u );
-/// Set the unit of the force on this quantity
-  void setForceUnit( const double& u );
 /// Set the memory that holds the value
   void set_value(void* val );
 /// Set the memory that holds the force
