@@ -265,7 +265,7 @@ void ActionAtomistic::applyForces() {
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
-  for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
+  Tools::set_to_zero(forces);
   forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
 }

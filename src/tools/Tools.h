@@ -23,6 +23,8 @@
 #define __PLUMED_tools_Tools_h
 
 #include "AtomNumber.h"
+#include "Vector.h"
+#include "Tensor.h"
 #include <vector>
 #include <string>
 #include <cctype>
@@ -230,6 +232,24 @@ public:
   template<class T, class... Args>
   static typename _Unique_if<T>::_Known_bound
   make_unique(Args&&...) = delete;
+
+  static void set_to_zero(double*ptr,unsigned n) {
+    for(unsigned i=0; i<n; i++) ptr[i]=0.0;
+  }
+
+  template<unsigned n>
+  static void set_to_zero(std::vector<VectorGeneric<n>> & vec) {
+    unsigned s=vec.size();
+    if(s==0) return;
+    set_to_zero(&vec[0][0],s*n);
+  }
+
+  template<unsigned n,unsigned m>
+  static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
+    unsigned s=vec.size();
+    if(s==0) return;
+    set_to_zero(&vec[0](0,0),s*n*m);
+  }
 };
 
 template <class T>

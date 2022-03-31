@@ -272,7 +272,7 @@ void PathMSDBase::calculate() {
   double tmp;
 
   // clean vector
-  for(unsigned i=0; i< derivs_z.size(); i++) {derivs_z[i].zero();}
+  Tools::set_to_zero(derivs_z);
 
   for(auto & it : imgVec) {
     it.similarity=std::exp(-lambda*(it.distance));
@@ -285,8 +285,7 @@ void PathMSDBase::calculate() {
   val_z_path->set(-(1./lambda)*std::log(partition));
   for(unsigned j=0; j<s_path.size(); j++) {
     // clean up
-    #pragma omp simd
-    for(unsigned i=0; i< derivs_s.size(); i++) {derivs_s[i].zero();}
+    Tools::set_to_zero(derivs_s);
     // do the derivative
     for(const auto & it : imgVec) {
       double expval=it.similarity;
