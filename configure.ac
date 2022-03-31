@@ -903,6 +903,7 @@ AC_DEFINE([_REENTRANT])
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
 AC_SUBST(LDSHARED)
+AC_SUBST(LD_MAIN_RUNPATH)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
 # python executable
@@ -966,6 +967,12 @@ then
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
         LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir\""
+        AC_MSG_NOTICE([Enabling RPATH])
+      elif readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        AC_MSG_NOTICE([Enabling RUNPATH])
       else
         AC_MSG_WARN([-R option seems not working, disabling rpath])
       fi
