@@ -24,6 +24,7 @@
 #include "MDAtoms.h"
 #include "PlumedMain.h"
 #include "tools/Pbc.h"
+#include "tools/Tools.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -183,11 +184,11 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
 
   virial.zero();
   if(zeroallforces || int(gatindex.size())==natoms) {
-    for(int i=0; i<natoms; i++) forces[i].zero();
+    Tools::set_to_zero(forces);
   } else {
     for(const auto & p : unique) forces[p.index()].zero();
+    for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   }
-  for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   forceOnEnergy=0.0;
   mdatoms->getBox(box);
 
