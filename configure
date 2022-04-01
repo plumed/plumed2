@@ -9701,13 +9701,13 @@ fi
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
         { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RPATH" >&5
 $as_echo "$as_me: Enabling RPATH" >&6;}
-      elif readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+      elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
         LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
         { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RUNPATH" >&5
 $as_echo "$as_me: Enabling RUNPATH" >&6;}
       else
