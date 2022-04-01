@@ -71,8 +71,9 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
-    else unique.insert(indexes[i]);
+    else unique.push_back(indexes[i]);
   }
+  Tools::removeDuplicates(unique);
   updateUniqueLocal();
   atoms.unique.clear();
 }
@@ -293,13 +294,13 @@ void ActionAtomistic::makeWhole() {
 }
 
 void ActionAtomistic::updateUniqueLocal() {
-  unique_local.clear();
   if(atoms.dd && atoms.shuffledAtoms>0) {
+    unique_local.clear();
     for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
+      if(atoms.g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
     }
   } else {
-    unique_local.insert(unique.begin(),unique.end());
+    unique_local=unique; // copy
   }
 }
 

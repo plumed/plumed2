@@ -121,14 +121,14 @@ public:
   }
   void getBox(Tensor &) const override;
   void getPositions(const std::vector<int>&index,std::vector<Vector>&positions) const override;
-  void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
+  void getPositions(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
   void getPositions(unsigned j,unsigned k,std::vector<Vector>&positions) const override;
   void getLocalPositions(std::vector<Vector>&p) const override;
   void getMasses(const std::vector<int>&index,std::vector<double>&) const override;
   void getCharges(const std::vector<int>&index,std::vector<double>&) const override;
   void updateVirial(const Tensor&) const override;
   void updateForces(const std::vector<int>&index,const std::vector<Vector>&) override;
-  void updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) override;
+  void updateForces(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) override;
   void rescaleForces(const std::vector<int>&index,double factor) override;
   unsigned  getRealPrecision()const override;
 };
@@ -173,7 +173,7 @@ void MDAtomsTyped<T>::getPositions(const std::vector<int>&index,std::vector<Vect
 }
 
 template <class T>
-void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getPositions(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
   unsigned stride;
   const T* ppx;
   const T* ppy;
@@ -251,7 +251,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
+void MDAtomsTyped<T>::updateForces(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
   unsigned stride;
   T* ffx;
   T* ffy;
