@@ -396,17 +396,15 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
 
 std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap()  {
   std::map<std::string, std::map<std::string, std::string> > typemap;
-  typemap = {
-    { "ACE", {
+  typemap["ACE"] = {
         {"CH3", "CT3"},
         {"HH31","HA3"},
         {"HH32","HA3"},
         {"HH33","HA3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "ALA", {
+      };
+  typemap["ALA"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -417,9 +415,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HB3", "HA3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "ARG", {
+      };
+  typemap["ARG"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -444,9 +441,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HH22", "HC" },
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    },
-    { "ASN", {
+      };
+  typemap["ASN"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -461,9 +457,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD22", "H"  },
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    },
-    { "ASPP", {
+      };
+  typemap["ASPP"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -477,9 +472,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD2", "H"  },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "ASP", {
+      };
+  typemap["ASP"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -492,9 +486,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"OD2", "OC" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "CYS", {
+      };
+  typemap["CYS"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -506,9 +499,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HG1", "HS" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "GLN", {
+      };
+  typemap["GLN"] = {
         {"N",    "NH1" },
         {"HN",   "H"   },
         {"CA",   "CT1" },
@@ -526,9 +518,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE22", "H"   },
         {"C",    "C"   },
         {"O",    "O"   }
-      }
-    },
-    { "GLUP", {
+      };
+  typemap["GLUP"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -545,9 +536,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE2", "H"  },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "GLU", {
+      };
+  typemap["GLU"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -563,9 +553,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"OE2", "OC" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "GLY", {
+      };
+  typemap["GLY"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT2"},
@@ -573,9 +562,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HA2", "HB2"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "HSD", {
+      };
+  typemap["HSD"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -593,9 +581,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD2", "HR3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "HIS", {
+      };
+  typemap["HIS"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -613,9 +600,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD2", "HR3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "HSE", {
+      };
+  typemap["HSE"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -633,9 +619,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD2", "HR3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "HSP", {
+      };
+  typemap["HSP"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -654,9 +639,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE1", "HR2"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "ILE", {
+      };
+  typemap["ILE"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -676,9 +660,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD3",  "HA3"},
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    },
-    { "LEU", {
+      };
+  typemap["LEU"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -698,9 +681,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HD23", "HA3"},
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    },
-    { "LYS", {
+      };
+  typemap["LYS"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -723,9 +705,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HZ3", "HC" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "MET", {
+      };
+  typemap["MET"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -743,18 +724,16 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE3", "HA3"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "NMA", {
+      };
+  typemap["NMA"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CH3", "CT3"},
         {"HH31","HA3"},
         {"HH32","HA3"},
         {"HH33","HA3"},
-      }
-    },
-    { "PHE", {
+      };
+  typemap["PHE"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -775,9 +754,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE2", "HP" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "PRO", {
+      };
+  typemap["PRO"] = {
         {"N",   "N"  },
         {"CD",  "CP3"},
         {"HD1", "HA2"},
@@ -792,9 +770,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HG2", "HA2"},
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "SER", {
+      };
+  typemap["SER"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -806,9 +783,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HG1", "H"  },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "THR", {
+      };
+  typemap["THR"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -823,9 +799,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HG23", "HA3"},
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    },
-    { "TRP", {
+      };
+  typemap["TRP"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -850,9 +825,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HH2", "HP" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "TYR", {
+      };
+  typemap["TYR"] = {
         {"N",   "NH1"},
         {"HN",  "H"  },
         {"CA",  "CT1"},
@@ -874,9 +848,8 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HE2", "HP" },
         {"C",   "C"  },
         {"O",   "O"  }
-      }
-    },
-    { "VAL", {
+      };
+  typemap["VAL"] = {
         {"N",    "NH1"},
         {"HN",   "H"  },
         {"CA",   "CT1"},
@@ -893,17 +866,14 @@ std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap
         {"HG23", "HA3"},
         {"C",    "C"  },
         {"O",    "O"  }
-      }
-    }
-  };
+      };
   return typemap;
 }
 
 std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
   // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
   std::map<std::string, std::vector<double> > valuemap;
-  valuemap = {
-    { "C", {
+  valuemap["C"] = {
         ANG3_TO_NM3 * 14.720,
         KCAL_TO_KJ * 0.000,
         KCAL_TO_KJ * 0.000,
@@ -911,9 +881,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 0.0,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CD", {
+      };
+  valuemap["CD"] = {
         ANG3_TO_NM3 * 14.720,
         KCAL_TO_KJ * 0.000,
         KCAL_TO_KJ * 0.000,
@@ -921,9 +890,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 0.0,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CT1", {
+      };
+  valuemap["CT1"] = {
         ANG3_TO_NM3 * 11.507,
         KCAL_TO_KJ * -0.187,
         KCAL_TO_KJ * -0.187,
@@ -931,9 +899,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 0.0,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CT2", {
+      };
+  valuemap["CT2"] = {
         ANG3_TO_NM3 * 18.850,
         KCAL_TO_KJ * 0.372,
         KCAL_TO_KJ * 0.372,
@@ -941,9 +908,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 18.6,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CT2A", {
+      };
+  valuemap["CT2A"] = {
         ANG3_TO_NM3 * 18.666,
         KCAL_TO_KJ * 0.372,
         KCAL_TO_KJ * 0.372,
@@ -951,9 +917,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 18.6,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CT3", {
+      };
+  valuemap["CT3"] = {
         ANG3_TO_NM3 * 27.941,
         KCAL_TO_KJ * 1.089,
         KCAL_TO_KJ * 1.089,
@@ -961,9 +926,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 35.6,
         1. / (ANG_TO_NM * 3.5),
         0.204,
-      }
-    },
-    { "CPH1", {
+      };
+  valuemap["CPH1"] = {
         ANG3_TO_NM3 * 5.275,
         KCAL_TO_KJ * 0.057,
         KCAL_TO_KJ * 0.080,
@@ -971,9 +935,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.18,
-      }
-    },
-    { "CPH2", {
+      };
+  valuemap["CPH2"] = {
         ANG3_TO_NM3 * 11.796,
         KCAL_TO_KJ * 0.057,
         KCAL_TO_KJ * 0.080,
@@ -981,9 +944,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.18,
-      }
-    },
-    { "CPT", {
+      };
+  valuemap["CPT"] = {
         ANG3_TO_NM3 * 4.669,
         KCAL_TO_KJ * -0.890,
         KCAL_TO_KJ * -0.890,
@@ -991,9 +953,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.186,
-      }
-    },
-    { "CY", {
+      };
+  valuemap["CY"] = {
         ANG3_TO_NM3 * 10.507,
         KCAL_TO_KJ * -0.890,
         KCAL_TO_KJ * -0.890,
@@ -1001,9 +962,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.199,
-      }
-    },
-    { "CP1", {
+      };
+  valuemap["CP1"] = {
         ANG3_TO_NM3 * 25.458,
         KCAL_TO_KJ * -0.187,
         KCAL_TO_KJ * -0.187,
@@ -1011,9 +971,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 0.0,
         1. / (ANG_TO_NM * 3.5),
         0.227,
-      }
-    },
-    { "CP2", {
+      };
+  valuemap["CP2"] = {
         ANG3_TO_NM3 * 19.880,
         KCAL_TO_KJ * 0.372,
         KCAL_TO_KJ * 0.372,
@@ -1021,9 +980,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 18.6,
         1. / (ANG_TO_NM * 3.5),
         0.217,
-      }
-    },
-    { "CP3", {
+      };
+  valuemap["CP3"] = {
         ANG3_TO_NM3 * 26.731,
         KCAL_TO_KJ * 0.372,
         KCAL_TO_KJ * 0.372,
@@ -1031,9 +989,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 18.6,
         1. / (ANG_TO_NM * 3.5),
         0.217,
-      }
-    },
-    { "CC", {
+      };
+  valuemap["CC"] = {
         ANG3_TO_NM3 * 16.539,
         KCAL_TO_KJ * 0.000,
         KCAL_TO_KJ * 0.000,
@@ -1041,9 +998,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 0.0,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "CAI", {
+      };
+  valuemap["CAI"] = {
         ANG3_TO_NM3 * 18.249,
         KCAL_TO_KJ * 0.057,
         KCAL_TO_KJ * 0.057,
@@ -1051,9 +1007,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.199,
-      }
-    },
-    { "CA", {
+      };
+  valuemap["CA"] = {
         ANG3_TO_NM3 * 18.249,
         KCAL_TO_KJ * 0.057,
         KCAL_TO_KJ * 0.057,
@@ -1061,9 +1016,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 6.9,
         1. / (ANG_TO_NM * 3.5),
         0.199,
-      }
-    },
-    { "N", {
+      };
+  valuemap["N"] = {
         ANG3_TO_NM3 * 0.000,
         KCAL_TO_KJ * -1.000,
         KCAL_TO_KJ * -1.000,
@@ -1071,9 +1025,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * 8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NR1", {
+      };
+  valuemap["NR1"] = {
         ANG3_TO_NM3 * 15.273,
         KCAL_TO_KJ * -5.950,
         KCAL_TO_KJ * -5.950,
@@ -1081,9 +1034,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NR2", {
+      };
+  valuemap["NR2"] = {
         ANG3_TO_NM3 * 15.111,
         KCAL_TO_KJ * -3.820,
         KCAL_TO_KJ * -3.820,
@@ -1091,9 +1043,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NR3", {
+      };
+  valuemap["NR3"] = {
         ANG3_TO_NM3 * 15.071,
         KCAL_TO_KJ * -5.950,
         KCAL_TO_KJ * -5.950,
@@ -1101,9 +1052,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NH1", {
+      };
+  valuemap["NH1"] = {
         ANG3_TO_NM3 * 10.197,
         KCAL_TO_KJ * -5.950,
         KCAL_TO_KJ * -5.950,
@@ -1111,9 +1061,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NH2", {
+      };
+  valuemap["NH2"] = {
         ANG3_TO_NM3 * 18.182,
         KCAL_TO_KJ * -5.950,
         KCAL_TO_KJ * -5.950,
@@ -1121,9 +1070,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NH3", {
+      };
+  valuemap["NH3"] = {
         ANG3_TO_NM3 * 18.817,
         KCAL_TO_KJ * -20.000,
         KCAL_TO_KJ * -20.000,
@@ -1131,9 +1079,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -18.0,
         1. / (ANG_TO_NM * 6.0),
         0.185,
-      }
-    },
-    { "NC2", {
+      };
+  valuemap["NC2"] = {
         ANG3_TO_NM3 * 18.215,
         KCAL_TO_KJ * -10.000,
         KCAL_TO_KJ * -10.000,
@@ -1141,9 +1088,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -7.0,
         1. / (ANG_TO_NM * 6.0),
         0.185,
-      }
-    },
-    { "NY", {
+      };
+  valuemap["NY"] = {
         ANG3_TO_NM3 * 12.001,
         KCAL_TO_KJ * -5.950,
         KCAL_TO_KJ * -5.950,
@@ -1151,9 +1097,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.185,
-      }
-    },
-    { "NP", {
+      };
+  valuemap["NP"] = {
         ANG3_TO_NM3 * 4.993,
         KCAL_TO_KJ * -20.000,
         KCAL_TO_KJ * -20.000,
@@ -1161,9 +1106,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -18.0,
         1. / (ANG_TO_NM * 6.0),
         0.185,
-      }
-    },
-    { "O", {
+      };
+  valuemap["O"] = {
         ANG3_TO_NM3 * 11.772,
         KCAL_TO_KJ * -5.330,
         KCAL_TO_KJ * -5.330,
@@ -1171,9 +1115,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.170,
-      }
-    },
-    { "OB", {
+      };
+  valuemap["OB"] = {
         ANG3_TO_NM3 * 11.694,
         KCAL_TO_KJ * -5.330,
         KCAL_TO_KJ * -5.330,
@@ -1181,9 +1124,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -8.8,
         1. / (ANG_TO_NM * 3.5),
         0.170,
-      }
-    },
-    { "OC", {
+      };
+  valuemap["OC"] = {
         ANG3_TO_NM3 * 12.003,
         KCAL_TO_KJ * -10.000,
         KCAL_TO_KJ * -10.000,
@@ -1191,9 +1133,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -9.4,
         1. / (ANG_TO_NM * 6.0),
         0.170,
-      }
-    },
-    { "OH1", {
+      };
+  valuemap["OH1"] = {
         ANG3_TO_NM3 * 15.528,
         KCAL_TO_KJ * -5.920,
         KCAL_TO_KJ * -5.920,
@@ -1201,9 +1142,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -11.2,
         1. / (ANG_TO_NM * 3.5),
         0.177,
-      }
-    },
-    { "OS", {
+      };
+  valuemap["OS"] = {
         ANG3_TO_NM3 * 6.774,
         KCAL_TO_KJ * -2.900,
         KCAL_TO_KJ * -2.900,
@@ -1211,9 +1151,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -4.8,
         1. / (ANG_TO_NM * 3.5),
         0.177,
-      }
-    },
-    { "S", {
+      };
+  valuemap["S"] = {
         ANG3_TO_NM3 * 20.703,
         KCAL_TO_KJ * -3.240,
         KCAL_TO_KJ * -3.240,
@@ -1221,9 +1160,8 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -39.9,
         1. / (ANG_TO_NM * 3.5),
         0.20,
-      }
-    },
-    { "SM", {
+      };
+  valuemap["SM"] = {
         ANG3_TO_NM3 * 21.306,
         KCAL_TO_KJ * -3.240,
         KCAL_TO_KJ * -3.240,
@@ -1231,9 +1169,7 @@ std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
         KCAL_TO_KJ * -39.9,
         1. / (ANG_TO_NM * 3.5),
         0.197,
-      }
-    }
-  };
+      };
   return valuemap;
 }
 }
