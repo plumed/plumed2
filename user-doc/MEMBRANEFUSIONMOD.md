@@ -33,6 +33,4 @@ This module contains three CVs to:
 
 The following list contains descriptions of biases developed for the PLUMED-MEMBRANEFUSION module. They can be used in combination with other biases outside of the MEMBRANEFUSION module.
 
-- Induce a hemifusion stalk: \ref MEMFUSIONP
-- Nucleate a fusion pore: \ref FUSIONPORENUCLEATIONP
-- Expand a fusion pore: \ref FUSIONPOREEXPANSIONP
+@MEMBRANEFUSIONMOD_COLVAR@

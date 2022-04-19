@@ -32,9 +32,9 @@ namespace PLMD
 {
 namespace membranefusion
 {
-//+PLUMEDOC COLVAR FUSIONPOREEXPANSIONP
+//+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPOREEXPANSIONP
 /*
-Calculate the collective variable designed by Hub \cite Hub2021 and implemented into PLUMED by Masone and collaborators.
+Calculate the collective variable designed by Hub \cite Hub2021  and implemented into PLUMED by Masone and collaborators.
 This CV is capable of inducing the expansion of the fusion pore from a nucleated fusion pore.
 
 \f[

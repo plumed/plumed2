@@ -32,10 +32,10 @@ namespace PLMD
 {
 namespace membranefusion
 {
-//+PLUMEDOC COLVAR MEMFUSIONP
+//+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR MEMFUSIONP
 /*
-Calculate the collective variable designed by Hub and collaborators \cite Hub2017
-and implemented into PLUMED by Masone and collaborators \cite DiBartolo2022.
+Calculate the collective variable designed by Hub and collaborators \cite Hub2017 and 
+implemented into PLUMED by Masone and collaborators \cite DiBartolo2022 .
 This CV is capable of inducing the formation of the hemifusion stalk between two initially flat and planar bilayers
 surrounded by water molecules.
 
