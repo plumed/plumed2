@@ -88,12 +88,12 @@ which is almost always the case.
 EDS computes means and variances as part of its algorithm. If you are
 also using a biasing method like metadynamics, you may wish to remove
 the effect of this bias in your EDS computations so that EDS works on
-the canonical values (reweighted).  For example, you may be using
+the canonical values (reweighted to be unbiased).  For example, you may be using
 metadynamics to bias a dihedral angle to enhance sampling and be using
 EDS to set the average distance between two particular atoms. Specifically:
 
 \plumedfile
-# set-up metadnyamics
+# set-up metadynamics
 t: TORSION ATOMS=1,2,3,4
 md: METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500 TEMP=300
 # compute bias weights
@@ -101,10 +101,12 @@ bias: REWEIGHT_METAD TEMP=300
 # now do EDS on distance while removing effect of metadynamics
 d: DISTANCE ATOMS=4,7
 eds: EDS ARG=d CENTER=3.0 PERIOD=100 TEMP=300 LOGWEIGHTS=bias
+\endplumedfile
 
-This is an approximation though because EDS uses a finte sample to get means/variances.
-At the end of a run, you should ensure this approach worked and indeed your
-reweighted CV matches the target value.
+This is an approximation though because EDS uses a finite samples while running to get means/variances.
+At the end of a run,
+you should ensure this approach worked and indeed your reweighted CV matches the target value.
+
 
 \par Example 1
 
@@ -118,7 +120,7 @@ dist: DISTANCE ATOMS=1,2
 # this is the squared of the distance
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
-#bias mean and variance
+# bias mean and variance
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
@@ -130,10 +132,10 @@ Rather than trying to find the coupling constants adaptively, one can ramp up to
 dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
-#ramp couplings from 0,0 to -1,1 over 50000 steps
+# ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
-#same as above, except starting at -0.5,0.5 rather than default of 0,0
+# same as above, except starting at -0.5,0.5 rather than default of 0,0
 eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
@@ -143,7 +145,7 @@ A restart file can be added to dump information needed to restart/continue simul
 dist: DISTANCE ATOMS=1,2
 dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
 
-#add the option to write to a restart file
+# add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0 OUT_RESTART=checkpoint.eds
 \endplumedfile
 
