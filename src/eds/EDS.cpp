@@ -52,7 +52,7 @@ and you can read a review on the method and its applications here: \cite Amirkul
 You can
 see a tutorial on EDS specifically for biasing coordination number at
 <a
-href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
+href="http://thewhitelab.org/blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
 Andrew White's webpage</a>.
 
 The addition to the potential is of the form
@@ -92,7 +92,7 @@ the canonical values (reweighted).  For example, you may be using
 metadynamics to bias a dihedral angle to enhance sampling and be using
 EDS to set the average distance between two particular atoms. Specifically:
 
-plumedfile
+\plumedfile
 # set-up metadnyamics
 t: TORSION ATOMS=1,2,3,4
 md: METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500 TEMP=300
@@ -106,7 +106,7 @@ This is an approximation though because EDS uses a finte sample to get means/var
 At the end of a run, you should ensure this approach worked and indeed your
 reweighted CV matches the target value.
 
-\par Examples
+\par Example 1
 
 The following input for a harmonic oscillator of two beads will
 adaptively find a linear bias to change the mean and variance to the
@@ -123,6 +123,8 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
+\par Example 2
+
 Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
 dist: DISTANCE ATOMS=1,2
@@ -135,6 +137,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
+\par Example 3
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
 dist: DISTANCE ATOMS=1,2
@@ -159,6 +162,7 @@ The first few lines of the restart file that is output if we run a calculation w
    4.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
 \endauxfile
 
+\par Example 4
 Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
 d1: DISTANCE ATOMS=1,2
@@ -166,6 +170,7 @@ d1: DISTANCE ATOMS=1,2
 eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
 \endplumedfile
 
+\par Example 5
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
 \plumedfile
 d1: DISTANCE ATOMS=1,2
@@ -173,18 +178,12 @@ d1: DISTANCE ATOMS=1,2
 eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE
 \endplumedfile
 
+\par Example 6
 Read in a previous restart file and freeze the bias at the mean from the previous simulation
 \plumedfile
 d1: DISTANCE ATOMS=1,2
 
 eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
-\endplumedfile
-
-Read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
-\plumedfile
-d1: DISTANCE ATOMS=1,2
-
-eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds MEAN
 \endplumedfile
 
 
