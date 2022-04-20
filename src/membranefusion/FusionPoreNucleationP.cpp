@@ -34,7 +34,7 @@ namespace membranefusion
 {
 //+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPORENUCLEATIONP
 /*
-Calculate the collective variable designed by Hub and collaborators \cite Hub2017 and 
+Calculate the collective variable designed by Hub and collaborators \cite Hub2017 and
 implemented into PLUMED by Masone and collaborators.
 This CV is capable of inducing the nucleation of the fusion pore from a hemifusion stalk.
 
