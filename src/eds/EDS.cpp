@@ -106,7 +106,7 @@ This is an approximation though because EDS uses a finite samples while running 
 At the end of a run,
 you should ensure this approach worked and indeed your reweighted CV matches the target value.
 
-\par Example 1
+\par Examples
 
 The following input for a harmonic oscillator of two beads will
 adaptively find a linear bias to change the mean and variance to the
@@ -123,7 +123,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=100 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
-\par Example 2
+<hr>
 
 Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
@@ -137,7 +137,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
-\par Example 3
+<hr>
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
 dist: DISTANCE ATOMS=1,2
@@ -162,7 +162,8 @@ The first few lines of the restart file that is output if we run a calculation w
    4.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
 \endauxfile
 
-\par Example 4
+<hr>
+
 Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
 d1: DISTANCE ATOMS=1,2
@@ -170,7 +171,8 @@ d1: DISTANCE ATOMS=1,2
 eds: EDS ARG=d1 CENTER=2.0 PERIOD=100 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
 \endplumedfile
 
-\par Example 5
+<hr>
+
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
 \plumedfile
 d1: DISTANCE ATOMS=1,2
@@ -178,7 +180,8 @@ d1: DISTANCE ATOMS=1,2
 eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE
 \endplumedfile
 
-\par Example 6
+<hr>
+
 Read in a previous restart file and freeze the bias at the mean from the previous simulation
 \plumedfile
 d1: DISTANCE ATOMS=1,2
