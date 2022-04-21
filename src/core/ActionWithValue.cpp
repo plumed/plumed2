@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "ActionToPutData.h"
 #include "ActionAtomistic.h"
 #include "ActionSetup.h"
 #include "AverageBase.h"
@@ -758,7 +759,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
   if( isActive() ) {
     for(unsigned i=0; i<values.size(); ++i) {
       unsigned bufstart = values[i]->bufstart;
-      if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
+      values[i]->data.assign( values[i]->data.size(), 0 );
       if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) {
         unsigned sz_v = values[i]->data.size();
         for(unsigned j=0; j<sz_v; ++j) values[i]->add( j, buffer[bufstart+j] );
@@ -878,7 +879,7 @@ void ActionWithValue::clearAllForcesInChain() {
 
 std::string ActionWithValue::getCleanGraphLabel( const std::string& gilab ) {
   std::string glab = gilab; 
-  if( glab.find("@")!=std::string::npos ){ std::size_t at=glab.find_first_of("@"); glab=glab.substr(at+1); }
+  if( glab.find("@")!=std::string::npos ){ std::size_t at=glab.find_first_of("@"); glab="n" + glab.substr(at+1); }
   for(unsigned j=0;;++j) {
       std::size_t pos = glab.find_first_of("-"); if( pos==std::string::npos ) break;
       glab = glab.substr(0,pos) + "h" + glab.substr(pos+1);
@@ -906,7 +907,6 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
   std::vector<std::string> chain; getAllActionLabelsInChain( chain );
   if( chain.size()>1 ) { 
       ofile.printf("   subgraph cluster%d { \n", graph_actions.size() );
-      ofile.printf("      node [style=filled,fillcolor=lightgrey];\n");
       ofile.printf("      penwidth=3;\n");
       ofile.printf("      color=black;\n");
       // Now create all the nodes in this chain
@@ -940,8 +940,15 @@ void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>
   } else {
       std::string label=getCleanGraphLabel( getLabel() ); 
       const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); graph_actions.push_back( getLabel() );
-      if( av ) { 
-          ofile.printf("     %s [label=\"%s: \\n %s \"] \n", label.c_str(), getLabel().c_str(), writeInGraph().c_str() ); 
+      if( av ) {
+          bool allconstant=true;
+          for(unsigned j=0;j<av->values.size();++j) {
+              if( !(av->values[j])->constant ) { allconstant=false; break; }
+          }
+          bool frommd=false; const ActionToPutData* ap = dynamic_cast<const ActionToPutData*>( this ); if(ap) frommd=true; 
+          if( allconstant ) ofile.printf("     %s [style=filled fillcolor=lightgrey label=\"%s: \\n %s \"] \n", label.c_str(), getLabel().c_str(), writeInGraph().c_str() );
+          else if( frommd ) ofile.printf("     %s [style=filled fillcolor=lightseagreen label=\"%s: \\n %s \"] \n", label.c_str(), getLabel().c_str(), writeInGraph().c_str() );
+          else ofile.printf("     %s [label=\"%s: \\n %s \"] \n", label.c_str(), getLabel().c_str(), writeInGraph().c_str() ); 
       } else ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str() ); 
   }
   // Now create the links to the nodes outside of this chain

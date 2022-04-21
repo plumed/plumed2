@@ -70,11 +70,11 @@ ActionShortcut(ao)
   CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
   std::string myplane; parse("PLANE",myplane);
   if( myplane=="xy" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.w" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.y ARG3=" + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="xz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="yz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.y ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
+     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG1=" + getShortcutLabel() + "_mat.y ARG2=" + getShortcutLabel() + "_mat.z ARG3=" + getShortcutLabel() + "_mat.w" );
   } else error("invalid input for plane -- should be xy, xz or yz");
   // And coordination number  
   readInputLine( getShortcutLabel() + "_rm: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + ".rm");

@@ -46,8 +46,7 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
   // Store the derivatives with respect to the virial only even if there are no atoms
   for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
-  addComponent("mass"); componentIsNotPeriodic("mass"); getPntrToComponent("mass")->reset=false;
-  addComponent("charge"); componentIsNotPeriodic("charge"); getPntrToComponent("charge")->reset=false;
+  addComponent("mass"); componentIsNotPeriodic("mass"); addComponent("charge"); componentIsNotPeriodic("charge");
   atoms.addAtomValues( getLabel(), copyOutput(0), copyOutput(1), copyOutput(2), copyOutput(3), copyOutput(4) );
 }
 

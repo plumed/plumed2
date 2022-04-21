@@ -52,7 +52,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   atoms.add(this);
   if( atoms.getNatoms()>0 ) {
       ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
-      boxValue=bv->copyOutput(0); addDependency(bv);
+      boxValue=bv->copyOutput(0); addDependency(bv); bv->copyOutput(0)->userdata.insert( getLabel() );
   }
 }
 
@@ -83,11 +83,11 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   // Add the dependencies to the actions that we require
   for(unsigned i=0; i<requirements.size(); ++i ) {
       if( !requirements[i] ) continue;
-      addDependency( atoms.posx[i]->getPntrToAction() );
-      addDependency( atoms.posy[i]->getPntrToAction() );
-      addDependency( atoms.posz[i]->getPntrToAction() );
-      addDependency( atoms.masses[i]->getPntrToAction() );
-      addDependency( atoms.charges[i]->getPntrToAction() );
+      addDependency( atoms.posx[i]->getPntrToAction() ); atoms.posx[i]->userdata.insert( getLabel() );
+      addDependency( atoms.posy[i]->getPntrToAction() ); atoms.posy[i]->userdata.insert( getLabel() );
+      addDependency( atoms.posz[i]->getPntrToAction() ); atoms.posz[i]->userdata.insert( getLabel() );
+      addDependency( atoms.masses[i]->getPntrToAction() ); atoms.masses[i]->userdata.insert( getLabel() );
+      addDependency( atoms.charges[i]->getPntrToAction() ); atoms.charges[i]->userdata.insert( getLabel() );
   }
   updateUniqueLocal();
   atoms.unique.clear();

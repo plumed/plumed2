@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 #include "tools/Exception.h"
 #include "tools/Tools.h"
 #include "tools/AtomNumber.h"
@@ -50,12 +51,12 @@ class Value {
   friend class Atoms;
   friend class ActionWithValue;
   friend class ActionWithArguments;
-  friend class ActionWithVirtualAtom;
+  friend class ActionAtomistic;
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
 /// Had the value been set
-  bool value_set, reset;
+  bool value_set;
 /// The value of the normalization
   double norm;
 /// The data for this value
@@ -80,7 +81,7 @@ private:
 /// Is this value a time series
   bool istimeseries;
 /// Who is using this action
-  std::vector<std::string> userdata;
+  std::set<std::string> userdata;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
 /// This is used if the action is a constant

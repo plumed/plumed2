@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
+#include "function/FunctionShortcut.h"
 #include "matrixtools/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
@@ -81,8 +82,10 @@ public:
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
+typedef function::FunctionShortcut<Fccubic> FccubicShortcut; 
+PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCCUBIC_FUNC")
 typedef matrixtools::FunctionOfMatrix<Fccubic> MatrixFccubic;
-PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC")
+PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");

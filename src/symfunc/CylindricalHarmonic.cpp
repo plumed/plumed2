@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
+#include "function/FunctionShortcut.h"
 #include "matrixtools/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
@@ -50,8 +51,10 @@ public:
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
+typedef function::FunctionShortcut<CylindricalHarmonic> CyHarmShortcut;
+PLUMED_REGISTER_ACTION(CyHarmShortcut,"CYLINDRICAL_HARMONIC")
 typedef matrixtools::FunctionOfMatrix<CylindricalHarmonic> MatrixCyHarm;
-PLUMED_REGISTER_ACTION(MatrixCyHarm,"CYLINDRICAL_HARMONIC")
+PLUMED_REGISTER_ACTION(MatrixCyHarm,"CYLINDRICAL_HARMONIC_MATRIX")
 
 void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DEGREE","the value of the n parameter in the equation above");

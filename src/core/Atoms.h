@@ -192,11 +192,6 @@ public:
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
 
-  void setExtraCV(const std::string &name,void*p);
-  void setExtraCVForce(const std::string &name,void*p);
-  double getExtraCV(const std::string &name);
-  void updateExtraCVForce(const std::string &name,double f);
-
   void clearAtomValues();
   void addAtomValues( const std::string& n, Value* x, Value* y, Value* z, Value* m, Value* q );
   std::string getAtomString( const AtomNumber& i ) const ;

@@ -35,7 +35,6 @@ namespace PLMD {
 Value::Value():
   action(NULL),
   value_set(false),
-  reset(true),
   norm(1.0),
   hasForce(false),
   hasDeriv(true),
@@ -80,7 +79,6 @@ Value::Value(const std::string& name):
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
   action(av),
   value_set(false),
-  reset(true),
   norm(1.0),
   hasForce(false),
   name(name),
@@ -142,7 +140,7 @@ void Value::setupPeriodicity() {
 
 void Value::use( Action* act, std::vector<Value*>& arg ) {
   arg.push_back( this ); ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( act );
-  if( aa ) userdata.push_back(aa->getLabel());
+  if( aa ) userdata.insert(aa->getLabel());
 }
 
 void Value::buildDataStore( const std::string& actlabel ) {

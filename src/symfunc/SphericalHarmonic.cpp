@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
+#include "function/FunctionShortcut.h"
 #include "matrixtools/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
@@ -56,8 +57,10 @@ public:
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
+typedef function::FunctionShortcut<SphericalHarmonic> SpHarmShortcut;
+PLUMED_REGISTER_ACTION(SpHarmShortcut,"SPHERICAL_HARMONIC")
 typedef matrixtools::FunctionOfMatrix<SphericalHarmonic> MatrixSpHarm;
-PLUMED_REGISTER_ACTION(MatrixSpHarm,"SPHERICAL_HARMONIC")
+PLUMED_REGISTER_ACTION(MatrixSpHarm,"SPHERICAL_HARMONIC_MATRIX")
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","L","the value of the angular momentum");
