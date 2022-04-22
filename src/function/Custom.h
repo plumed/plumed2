@@ -38,9 +38,8 @@ public:
   void registerKeywords( Keywords& keys ) override;
   std::string getGraphInfo( const std::string& lab ) const override;
   void read( ActionWithArguments* action ) override;
-  bool defaultTaskListBuilder() const override;
   bool getDerivativeZeroIfValueIsZero() const override;
-  void buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const override;
+  void buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 

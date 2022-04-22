@@ -74,8 +74,6 @@ cgtol(0)
   else if( getName()=="FIND_GRID_MINIMUM" ) domin=true;
   else plumed_error(); 
   std::vector<std::string> argn; EvaluateGridFunction::setupGridObject( this, getPntrToArgument(0), argn, gridobject );
-  // Arg ends must be setup once more
-  arg_ends.resize(0); arg_ends.push_back(1); 
   // Create value for this function
   std::vector<unsigned> shape(0); for(unsigned i=0;i<argn.size();++i) addComponent( argn[i] + "_opt", shape ); 
   addComponent( "optval", shape ); componentIsNotPeriodic( "optval" );

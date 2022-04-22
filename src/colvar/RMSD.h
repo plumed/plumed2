@@ -40,6 +40,7 @@ private:
   bool squared;
   bool displacement;
   bool norm_weights;
+  bool multiple;
   std::string type;
   std::vector<double> align,displace,sqrtdisplace;
   std::vector<PLMD::RMSD> myrmsd;

@@ -78,7 +78,7 @@ public:
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfDerivatives() const override ;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void setupCurrentTaskList() override;
   void calculate() override;
   void performTask( const unsigned&, MultiValue& ) const override;
   void apply() override;

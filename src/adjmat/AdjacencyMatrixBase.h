@@ -50,8 +50,8 @@ public:
   explicit AdjacencyMatrixBase(const ActionOptions&);
   unsigned getNumberOfColumns() const override;
   void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const override;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
+  void setupCurrentTaskList() override;
+  void prepareForTasks( const std::set<unsigned>& pTaskList );
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,

@@ -35,15 +35,17 @@ ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  firststep(true),
   mymin(this)
 {
   parse("CONTOUR",contour); function.read( this );
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 
+void ContourFindingBase::actionsToDoBeforeFirstCalculate() {
+  function.setup( this ); finishOutputSetup();
+}
+
 void ContourFindingBase::calculate() {
-  if( firststep ) { function.setup( this ); finishOutputSetup(); firststep=false; }
   runAllTasks();
 }                         
 

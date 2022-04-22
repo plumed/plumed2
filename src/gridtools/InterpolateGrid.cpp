@@ -71,6 +71,7 @@ public:
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const override;
+  std::vector<unsigned> getValueShapeFromArguments() override;
   void calculate() override;
   void update() override;
   void runFinalJobs() override;
@@ -156,11 +157,14 @@ void InterpolateGrid::calculate() {
           output_grid.setBounds( str_min, str_max, nbin,  gspacing );
       } else output_grid.setBounds( input_grid.getMin(), input_grid.getMax(), nbin, gspacing );
       getPntrToOutput(0)->setShape( output_grid.getNbin(true) );
-      for(unsigned i=0; i<output_grid.getNumberOfPoints(); ++i) addTaskToList(i);
       forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues() ); firststep=false;
   }
   plumed_assert( !actionInChain() ); runAllTasks();
 }
+
+std::vector<unsigned> InterpolateGrid::getValueShapeFromArguments() {
+  return getPntrToOutput(0)->getShape();
+}  
 
 void InterpolateGrid::update() {
   if( skipUpdate() ) return;

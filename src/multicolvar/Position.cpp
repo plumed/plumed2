@@ -79,7 +79,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
 // active methods:
-  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
+  void setupCurrentTaskList() override;
   void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const override;
 };
 
@@ -107,7 +107,7 @@ Position::Position(const ActionOptions&ao):
 {
   if(getNumberOfAtomsInEachCV()!=1) error("Number of specified atoms should be 1");
   parseFlag("SCALED_COMPONENTS",scaled_components); parseFlag("WHOLEMOLECULE",wholemolecule); parseFlag("NOVIRIAL",novirial);
-  if( wholemolecule && getFullNumberOfTasks()==1 ) warning("WHOLEMOLECULE does nothing if you only have one atom");
+  if( wholemolecule && getNumberOfAtoms()==1 ) warning("WHOLEMOLECULE does nothing if you only have one atom");
   if( wholemolecule && scaled_components ) error("WHOLEMOLECULE and SCALED_COMPONENTS options together don't make sense");
   if( wholemolecule ) { log.printf("  making molecule whole\n"); }
 
@@ -123,7 +123,8 @@ Position::Position(const ActionOptions&ao):
   }
 }
 
-void Position::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+void Position::setupCurrentTaskList() {
+  ActionWithValue::setupCurrentTaskList();
   if( wholemolecule ) makeWhole();
 }
 

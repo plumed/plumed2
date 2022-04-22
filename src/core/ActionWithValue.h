@@ -78,6 +78,8 @@ class ActionWithValue :
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
+/// Identify whether this is the first time that the function is being called
+  bool firststep;
 /// Are we skipping the calculation of the derivatives
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
@@ -97,38 +99,29 @@ private:
   unsigned nactive_tasks;
 /// Stores the labels of all the actions that are in this chain.  Used when setting up what to calculate
   std::vector<std::string> actionsLabelsInChain;
-/// The indices of the tasks in the full list of tasks
-  std::vector<unsigned> indexOfTaskInFullList;
 /// The list of currently active tasks  
-  std::vector<unsigned> partialTaskList;
-/// Ths full list of tasks we have to perform
-  std::vector<unsigned> fullTaskList;
+  std::set<unsigned> taskSet;
 /// This list is used to update the active tasks in the list
-  std::vector<unsigned> taskFlags;
+//  std::vector<unsigned> taskFlags;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
-/// A pointer to this but with actionWithArgument so we can avoid lots of dynamic_cast
-  const ActionWithArguments* thisAsActionWithArguments;
 /// Action that must be done before this one
   ActionWithValue* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithValue* action_to_do_after;
-  ActionAtomistic* atom_action_to_do_after;
 /// Check if the input to this action is a time series
   bool inputIsTimeSeries() const ;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
-////
-  void selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
-                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
 ///
-  void prepareForTaskLoop( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
+  void prepareForTaskLoop();
 ///  Run the task
-  void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
+  void runTask( const unsigned& taskno, MultiValue& myvals ) const ;
 /// Retrieve the forces for a particualr task
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void clearAllForcesInChain();
   bool checkForGrids() const ;
+  void getNumberOfTasks( unsigned& ntasks );
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
   unsigned getGridArgumentIndex( const ActionWithArguments* aa ) const ;
@@ -155,12 +148,8 @@ protected:
 // -------- The action has multiple components ---------- //
 
 ///
-  unsigned getTaskCode( const unsigned& ii ) const ;
-///
-  bool checkUsedOutsideOfChain( const std::vector<std::string>& actionLabelsInChain, const std::string& parent, 
-                                std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-///
-  unsigned setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList );
+  void setTaskFlags( const unsigned& ntasks, std::set<unsigned>& pTaskList );
+  void mergeTaskList( bool& tasksWereSet, std::set<unsigned>& pTaskList );
 /// Run all the tasks in the list
   void runAllTasks();
 /// Run all calculations in serial
@@ -170,6 +159,8 @@ protected:
 /// Gather all the data in one row of the matrix
   void gatherMatrixRow( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                         const unsigned& bufstart, std::vector<double>& buffer ) const ;
+/// This transfers information about the values that are required for this calculation to other actions
+  void propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks );
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
@@ -185,12 +176,10 @@ public:
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
-///
-  void addTaskToList( const unsigned& taskCode );
 /// Retrieve all the scalar values calculated in the loop
   void retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 ///
-  const std::vector<unsigned>& getCurrentTasks() const ;
+  const std::set<unsigned>& getTaskSet() const ;
 protected:
 /// Get a pointer to the output value
   Value* getPntrToOutput( const unsigned& ind ) const ;
@@ -248,6 +237,8 @@ public:
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
   virtual void clearDerivatives( const bool& force=false );
+/// Setup for doing the calculation by getting the atomic positions, clearing the output forces and setting up any task lists
+  void setupForCalculation( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   virtual void setGradientsIfNeeded();
 /// Set the value
@@ -262,16 +253,16 @@ public:
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 ///
-  unsigned getFullNumberOfTasks() const ;
-/// Reperform one of the tasks
-  void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
+//  unsigned getFullNumberOfTasks() const ;
 /// Get the number of columns for the matrix
   virtual unsigned getNumberOfColumns() const { plumed_merror("in " + getName() + " method for number of columns is not defined"); }
 /// Run a task for a matrix element
-  void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
+  void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
-///
-  virtual void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {}
+/// This is used to complete tasks before calculate is called for the first time
+  virtual void actionsToDoBeforeFirstCalculate() {}
+/// Ensure that we have Setup the tasks that are currently active
+  virtual void setupCurrentTaskList(); 
 ///
   virtual void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,
@@ -280,7 +271,7 @@ public:
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ; 
 /// Make sure all tasks required for loop are done before loop starts
-  virtual void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {}
+  virtual void prepareForTasks( const std::set<unsigned>& pTaskList ) {}
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
@@ -352,16 +343,10 @@ bool ActionWithValue::doNotCalculateDerivatives() const {
   return noderiv;
 }
 
-inline
-unsigned ActionWithValue::getFullNumberOfTasks() const {
-  return fullTaskList.size();
-}
-
-inline
-unsigned ActionWithValue::getTaskCode( const unsigned& ii ) const {
-  plumed_dbg_assert( ii<fullTaskList.size() );
-  return fullTaskList[ii];
-}
+// inline
+// unsigned ActionWithValue::getFullNumberOfTasks() const {
+//   return taskFlags.size();
+// }
 
 inline
 bool ActionWithValue::runInSerial() const {
@@ -379,8 +364,8 @@ bool ActionWithValue::actionInChain() const {
 }
 
 inline
-const std::vector<unsigned>& ActionWithValue::getCurrentTasks() const {
-  return indexOfTaskInFullList;
+const std::set<unsigned>& ActionWithValue::getTaskSet() const {
+  return taskSet;
 }
 
 

@@ -63,7 +63,6 @@ SphericalKDE::SphericalKDE(const ActionOptions&ao):
   std::vector<bool> ipbc( getNumberOfDerivatives(), false );
   double fib_cutoff = std::log( epsilon / von_misses_norm ) / von_misses_concentration;
   gridobject.setup( "fibonacci", ipbc, nbins, fib_cutoff ); checkRead();
-  createTaskList();
 
   // Setup the grid
   std::vector<unsigned> shape(3); shape[0]=nbins; shape[1]=shape[2]=1;
@@ -76,19 +75,16 @@ void SphericalKDE::getInfoForGridHeader( std::string& gtype, std::vector<std::st
     std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   gtype="fibonacci"; 
-  for(unsigned i=0; i<3;++i) {
-      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
-      argn[i] = getPntrToArgument( k )->getName();
-  }
+  for(unsigned i=0; i<3;++i) argn[i] = getPntrToArgument( i )->getName();
   out_nbin[0] = nbins; out_nbin[1]=out_nbin[2]=1;
   spacing[0] = von_misses_concentration;
 }
 
-void SphericalKDE::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
+void SphericalKDE::buildSingleKernel( const double& height, std::vector<double>& args ) {
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
   hh=height; for(unsigned i=0; i<args.size(); ++i) center[i]=args[i];
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
-  for(unsigned i=0; i<num_neigh; ++i) tflags[ neighbors[i] ] = 1;
+  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( neighbors[i] );
 }
 
 double SphericalKDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {
@@ -111,7 +107,7 @@ void SphericalKDE::addKernelToGrid( const double& height, const std::vector<doub
   }
 }
 
-void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args,
+void SphericalKDE::addKernelForces( const bool& height_has_derivative, const unsigned& itask, const std::vector<double>& args,
                                     const unsigned& htask, const double& height, std::vector<double>& forces ) const {
   std::vector<double> gpoint( args.size() );
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
@@ -120,7 +116,7 @@ void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigne
     gridobject.getGridPointCoordinates( neighbors[i], gpoint );
     double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
     double fforce = getPntrToOutput(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-    if( heights_index==2  ) forces[ args.size()*numberOfKernels + htask ] += newval*fforce / height;
+    if( height_has_derivative  ) forces[ args.size()*numberOfKernels + htask ] += newval*fforce / height;
     unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += numberOfKernels; }
   }
 }

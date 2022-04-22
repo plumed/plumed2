@@ -123,7 +123,6 @@ PathDisplacements::PathDisplacements(const ActionOptions& ao):
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing average every %u steps \n",clearstride);
   }
-  if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
   double halflife; parse("HALFLIFE",halflife);
   log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
   if( halflife<0 ) fadefact=1.0;

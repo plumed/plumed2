@@ -115,8 +115,6 @@ ActionShortcut(ao)
     std::string distance_act = getShortcutLabel() + "_dists: DISTANCE COMPONENTS" + pbcstr; 
     for(unsigned i=0; i<atoms.size(); ++i) { std::string num; Tools::convert( i+1, num ); distance_act += " ATOMS" + num + "=" + getShortcutLabel() + "_cent," + atoms[i]; }
     readInputLine( distance_act );
-    // And stack up the distances
-    readInputLine( getShortcutLabel() + "_stack: VSTACK ARG1=" + getShortcutLabel() + "_dists.x ARG2=" + getShortcutLabel() + "_dists.y ARG3=" + getShortcutLabel() + "_dists.z");
     // Use the weights that are defined in the center
     std::string wflab = getShortcutLabel() + "_cent_w";
     ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( wflab );
@@ -124,34 +122,15 @@ ActionShortcut(ao)
         std::size_t eq=str_weights.find("="); wflab = str_weights.substr(eq+1);
         av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( wflab );
     }
-    if( !av ) error("cannot find action named " + wflab + " in input");
-    // Create a matrix to hold the weights so we can do a product with the stack of distances
-    readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE VALUES=1,1,1");
-    readInputLine( getShortcutLabel() + "_wmat: DOT ARG1=" + wflab + " ARG2=" + getShortcutLabel() + "_ones");
-    // Multiply the distances by the weights
-    readInputLine( getShortcutLabel() + "_wstack: CUSTOM ARG1=" + getShortcutLabel() + "_stack ARG2=" + getShortcutLabel() + "_wmat FUNC=x*y PERIODIC=NO");
-    // And transpose
-    readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_wstack");
-    // Get the name of the gyration tensor action
-    std::string tname = getShortcutLabel() + "_utensor"; 
-    if( unorm && getName()=="GYRATION_TENSOR" ) tname = getShortcutLabel();
-    else if( unorm ) tname = getShortcutLabel() + "_tensor"; 
-    // Now calculate the gyration tensor
-    readInputLine( tname + ": DOT ARG1=" + getShortcutLabel() + "_stackT ARG2=" + getShortcutLabel() + "_stack");
-    // Make sre that the sum of the weights is calcualted if we are calculating the normalized gyration tensor
-    std::string normstr = getShortcutLabel() + "_cent_wnorm";
-    if( !unorm ) {
-        ActionWithValue* avn=plumed.getActionSet().selectWithLabel<ActionWithValue*>( normstr );
-        if( !avn ) { normstr = getShortcutLabel() + "_wnorm"; readInputLine( normstr + ": SUM PERIODIC=NO ARG=" + wflab ); } 
-    }
-    // Normalize the tensor
+    // And calculate the covariance
+    std::string norm_str; if( unorm ) norm_str = " UNORMALIZED";
     if( getName()=="GYRATION_TENSOR" ) {
-        // Gyration Tensor command just calculates the tensor 
-        if( !unorm ) readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + normstr + " ARG2=" + tname + " FUNC=y/x PERIODIC=NO");
+        readInputLine( getShortcutLabel() + ": COVARIANCE_MATRIX ARG1=" + getShortcutLabel() + "_dists.x ARG2=" + getShortcutLabel() + "_dists.y " + 
+                                                               " ARG3=" + getShortcutLabel() + "_dists.z WEIGHTS=" + wflab + norm_str );
         return;
     }
-    // In the real version we do all sorts of things to the tensor once it has been calculated
-    if( !unorm ) readInputLine( getShortcutLabel() + "_tensor: CUSTOM ARG1=" + normstr + " ARG2=" + tname + " FUNC=y/x PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_tensor: COVARIANCE_MATRIX ARG1=" + getShortcutLabel() + "_dists.x ARG2=" + getShortcutLabel() + "_dists.y " +
+                                                                  " ARG3=" + getShortcutLabel() + "_dists.z WEIGHTS=" + wflab + norm_str ); 
     // Pick out the diagonal elements
     readInputLine( getShortcutLabel() + "_diag_elements: SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_tensor COMPONENTS=1.1,2.2,3.3");
     if( gtype=="RADIUS") {

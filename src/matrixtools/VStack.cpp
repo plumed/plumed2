@@ -31,6 +31,7 @@ class VStack :
   public ActionWithValue
 {
 private: 
+  bool doUpdate;
   std::vector<double> forcesToApply;
   std::vector<std::string> actionsLabelsInChain;
 public:
@@ -38,8 +39,7 @@ public:
   explicit VStack(const ActionOptions&);
   unsigned getNumberOfDerivatives() const override;
   unsigned getNumberOfColumns() const override;
-  unsigned getNumberOfFinalTasks() override;
-  std::vector<unsigned> getMatrixShapeForFinalTasks() override; 
+  std::vector<unsigned> getValueShapeFromArguments() override; 
   void calculate() override; 
   void update() override;
   void runFinalJobs() override;
@@ -60,9 +60,10 @@ void VStack::registerKeywords( Keywords& keys ) {
 VStack::VStack(const ActionOptions&ao):
 Action(ao),
 ActionWithArguments(ao),
-ActionWithValue(ao)
+ActionWithValue(ao),
+doUpdate(false)
 {
-   std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); 
+   std::vector<unsigned> shape( getValueShapeFromArguments() ); 
    std::vector<Value*> args( getArguments() ); requestArguments( args, true );
    addValue( shape ); bool periodic=false; std::string smin, smax; 
    if( getPntrToArgument(0)->isPeriodic() ) { 
@@ -78,8 +79,7 @@ ActionWithValue(ao)
           if( tmin!=smin || tmax!=smax ) error("domain of argument " + getPntrToArgument(i)->getName() + " is different from domain for all other arguments");
       }
   }
-  forcesToApply.resize( shape[0]*shape[1] ); 
-  for(unsigned i=0;i<getNumberOfFinalTasks();++i) addTaskToList(i);
+  forcesToApply.resize( shape[0]*shape[1] ); if( shape[0]>0 ) doUpdate=true; 
 
   bool usechain=(shape.size()==2 && distinct_arguments.size()>0);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -87,7 +87,10 @@ ActionWithValue(ao)
       if( getPntrToArgument(i)->isTimeSeries() ) { usechain=false; getPntrToComponent(0)->makeHistoryDependent(); break; }
   }
   if( usechain ) { unsigned nd = setupActionInChain(0); forcesToApply.resize(nd); }
-  else getPntrToComponent(0)->alwaysStoreValues();
+  else { 
+     getPntrToComponent(0)->alwaysStoreValues();
+     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); 
+  }
 }
 
 unsigned VStack::getNumberOfDerivatives() const {
@@ -98,12 +101,7 @@ unsigned VStack::getNumberOfColumns() const {
   return getPntrToOutput(0)->getShape()[1];
 }
 
-unsigned VStack::getNumberOfFinalTasks() {
-  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
-  return shape[0];
-}
-
-std::vector<unsigned> VStack::getMatrixShapeForFinalTasks() {
+std::vector<unsigned> VStack::getValueShapeFromArguments() {
   if( getNumberOfArguments()==0 ) error("no arguments have been selected");
   unsigned nvals = getPntrToArgument(0)->getNumberOfValues();;
   // Check for consistent numbers of values in other actions
@@ -120,14 +118,13 @@ std::vector<unsigned> VStack::getMatrixShapeForFinalTasks() {
 void VStack::runFinalJobs() {
   if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
-  resizeForFinalTasks();
   runAllTasks();
 }
 
 void VStack::update() {
   if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( doUpdate ) runAllTasks();
 }
 
 void VStack::calculate() {
@@ -141,7 +138,7 @@ bool VStack::performTask( const std::string& controller, const unsigned& index1,
   // Do not perform the loop here with a loop over other matrix elements
   if( controller!=getLabel() ) return false;
 
-  unsigned iarg = index2 - getFullNumberOfTasks();
+  unsigned iarg = index2 - getPntrToOutput(0)->getShape()[0];
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   unsigned istrn = getPntrToArgument( iarg )->getPositionInStream(); 
   if( actionInChain() ) myvals.addValue( ostrn, myvals.get( istrn ) );
@@ -166,10 +163,10 @@ bool VStack::performTask( const std::string& controller, const unsigned& index1,
 }
 
 void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
-  unsigned base = getFullNumberOfTasks();
+  unsigned base = getPntrToOutput(0)->getShape()[0];
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     // This does everything in the stream that is done with single matrix elements
-    runTask( getLabel(), myvals.getTaskIndex(), current, base + i, myvals );
+    runTask( getLabel(), current, base + i, myvals );
     // Now clear only elements that are not accumulated over whole row 
     clearMatrixElements( myvals );
   } 

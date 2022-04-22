@@ -317,41 +317,38 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   }
   std::vector<AtomNumber> atoms_for_request(all_atoms); 
   requestAtoms(atoms_for_request); forcesToApply.resize( getNumberOfDerivatives() );
-  if( all_atoms.size()>0 ) {
-    for(unsigned i=0; i<ablocks[0].size(); ++i) addTaskToList( i );
-  }
 }
 
 void MultiColvarBase::addValueWithDerivatives() {
-  if( getFullNumberOfTasks()==1 ) { ActionWithValue::addValueWithDerivatives(); }
+  if( ablocks[0].size()==1 ) { ActionWithValue::addValueWithDerivatives(); }
   else addValue();
 }
 
 void MultiColvarBase::addValue() {
   std::vector<unsigned> shape;
-  if( getFullNumberOfTasks()>1 ) { shape.resize(1); shape[0]=getFullNumberOfTasks(); }
+  if( ablocks[0].size()>1 ) { shape.resize(1); shape[0]=ablocks[0].size(); }
   ActionWithValue::addValue( shape );
 }
 
 void MultiColvarBase::addComponentWithDerivatives( const std::string& name ) {
-  if( getFullNumberOfTasks()==1 ) { ActionWithValue::addComponentWithDerivatives(name); }
+  if( ablocks[0].size()==1 ) { ActionWithValue::addComponentWithDerivatives(name); }
   else addComponent( name );
 }
 
 void MultiColvarBase::addComponent( const std::string& name ) {
   std::vector<unsigned> shape;
-  if( getFullNumberOfTasks()>1 ) { shape.resize(1); shape[0]=getFullNumberOfTasks(); }
+  if( ablocks[0].size()>1 ) { shape.resize(1); shape[0]=ablocks[0].size(); }
   ActionWithValue::addComponent( name, shape );
 }
 
 void MultiColvarBase::useFourAtomsForEachCV() {
   std::vector<std::vector<unsigned> > tblocks( 4 );
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+  for(unsigned i=0; i<ablocks[0].size(); ++i) {
     tblocks[0].push_back(ablocks[0][i]); tblocks[1].push_back(ablocks[1][i]);
     tblocks[2].push_back(ablocks[1][i]); tblocks[3].push_back(ablocks[2][i]);
   }
   ablocks.resize(0); ablocks.resize(4);
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+  for(unsigned i=0; i<tblocks[0].size(); ++i) {
     for(unsigned j=0; j<4; ++j) ablocks[j].push_back(tblocks[j][i]);
   }
 }

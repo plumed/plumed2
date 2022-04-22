@@ -42,12 +42,13 @@ Value::Value():
   historydependent(false),
   istimeseries(false),
   shape(std::vector<unsigned>()),
+  ntasks(1),
+  reducedTasks(false),
   constant(false),
   alwaysstore(false),
   storedata(true),
   neverstore(false),
   symmetric(false),
-  bufstart(0),
   streampos(0),
   periodicity(unset),
   min(0.0),
@@ -65,6 +66,17 @@ Value::Value(const std::string& name):
   hasForce(false),
   hasDeriv(true),
   name(name),
+  ngrid_der(0),
+  historydependent(false),
+  istimeseries(false),
+  ntasks(1),
+  reducedTasks(false),
+  constant(false),
+  alwaysstore(false),
+  storedata(true),
+  neverstore(false),
+  symmetric(false),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -86,12 +98,13 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   ngrid_der(0),
   historydependent(false),
   istimeseries(false),
+  ntasks(1),
+  reducedTasks(false),
   constant(false),
   alwaysstore(false),
   storedata(true),
   neverstore(false),
   symmetric(false),
-  bufstart(0),
   streampos(0),
   periodicity(unset),
   min(0.0),
@@ -108,6 +121,9 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
 void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
+  // Set the number of tasks here that are done in loop
+  if( hasDeriv && shape.size()>0 ) ntasks=getNumberOfValues();
+  else if( shape.size()>0 ) ntasks=shape[0];
   // Matrices are resized dynamically so we can use the sparsity pattern to reduce the 
   // overhead on memory
   if( getRank()==2 ) {
@@ -163,7 +179,7 @@ void Value::alwaysStoreValues() {
 
 void Value::makeHistoryDependent() {
   historydependent=true;
-  if( shape.size()==1 && !hasDeriv && action->getName()!="AVERAGE" ) { istimeseries=true; setShape( shape ); }
+  if( shape.size()>0 && !hasDeriv && action->getName()!="AVERAGE" ) { istimeseries=true; setShape( shape ); }
 }
 
 void Value::neverStoreValues() {
@@ -398,12 +414,12 @@ bool Value::getDerivativeIsZeroWhenValueIsZero() const {
   return derivativeIsZeroWhenValueIsZero;
 }
 
-// void Value::setBufferPosition( const unsigned& ibuf ){
-//   bufstart = ibuf;
-// }
+void Value::setNumberOfTasks( const unsigned& nt ) {
+  ntasks=nt;
+}
 
-// unsigned Value::getBufferPosition() const {
-//   return bufstart;
-// }
+unsigned Value::getNumberOfTasks() const {
+  return ntasks;
+}
 
 }

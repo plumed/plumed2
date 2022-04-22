@@ -220,7 +220,8 @@ RMSD::RMSD(const ActionOptions&ao):
   ActionWithValue(ao),
   firsttime(true),
   squared(false),
-  displacement(false)
+  displacement(false),
+  multiple(false)
 {
   if( getNumberOfArguments()!=2 ) error("there should be exactly two arguments for this action");
   // Check for shorcut 
@@ -229,12 +230,12 @@ RMSD::RMSD(const ActionOptions&ao):
       natoms = getPntrToArgument(1)->getShape()[0] / 3; ntasks=1; myrmsd.resize(1);
   } else if( getPntrToArgument(0)->getRank()==2 ) {
       if( getPntrToArgument(1)->getRank()!=1 ) error("if first argument is a matrix second argument should be a vector");
-      natoms = getPntrToArgument(1)->getShape()[0] / 3; ntasks = getPntrToArgument(0)->getShape()[0]; myrmsd.resize(1);
+      natoms = getPntrToArgument(1)->getShape()[0] / 3; multiple=true; ntasks = getPntrToArgument(0)->getShape()[0]; myrmsd.resize(1);
       if( getPntrToArgument(0)->getShape()[1]!=3*natoms ) error("mismatch between numbers of pos and reference");
   } else {
       if( getPntrToArgument(1)->getRank()!=2 ) error("if first argument is a vector second argument should be a matrix");
       if( getPntrToArgument(0)->getRank()!=1 ) error("if first argument is a matrix second argument should be vector");
-      natoms = getPntrToArgument(0)->getShape()[0] / 3; ntasks = getPntrToArgument(1)->getShape()[0]; myrmsd.resize(ntasks);
+      natoms = getPntrToArgument(0)->getShape()[0] / 3; multiple=true; ntasks = getPntrToArgument(1)->getShape()[0]; myrmsd.resize(ntasks);
       if( getPntrToArgument(1)->getShape()[1]!=3*natoms ) error("mismatch between numbers of in pos and reference");
   }
   // Request the arguments
@@ -276,7 +277,6 @@ RMSD::RMSD(const ActionOptions&ao):
      else { std::vector<unsigned> shape(1); shape[0]=ntasks; addValue( shape ); }
      setNotPeriodic(); 
   }
-  for(unsigned i=0;i<ntasks;++i) addTaskToList(i);
 
   // Print information to screen
   if( ntasks==1 ) log.printf("  calculating RMSD distance between two sets of %d atoms in vectors %s and %s\n", natoms, getPntrToArgument(1)->getName().c_str(), getPntrToArgument(0)->getName().c_str() );
@@ -316,7 +316,7 @@ bool RMSD::performTask( const std::string& controller, const unsigned& index1, c
   // Do not perform the loop here with a loop over other matrix elements
   if( controller!=getLabel() ) return false;
 
-  unsigned jarg = index2 - getFullNumberOfTasks(), natoms = getPntrToArgument(0)->getShape()[0] / 3; 
+  unsigned jarg = index2 - getPntrToOutput(0)->getShape()[0], natoms = getPntrToArgument(0)->getShape()[0] / 3; 
   unsigned icomp = std::floor( jarg / natoms ); unsigned iatom = jarg - icomp*natoms;
   unsigned ostrn = getPntrToOutput(0)->getPositionInStream();   
   std::vector<Vector>& pos( myvals.getFirstAtomVector() ); myvals.addValue( ostrn, pos[iatom][icomp] );
@@ -330,8 +330,8 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   unsigned rmsdno=0, structno=0, natoms = getPntrToArgument(0)->getShape()[0] / 3;
   if( getPntrToArgument(0)->getRank()==2 ) natoms = getPntrToArgument(0)->getShape()[1] / 3;
  
-  if( getFullNumberOfTasks()>1 && myrmsd.size()>1 ) rmsdno=task_index;
-  else if( getFullNumberOfTasks()>1 ) structno=task_index;  
+  if( multiple && myrmsd.size()>1 ) rmsdno=task_index;
+  else if( multiple ) structno=task_index;  
 
   // Retrieve instantaneous configuration
   std::vector<Vector>& pos( myvals.getFirstAtomVector() ); std::vector<Vector>& der( myvals.getSecondAtomVector() );
@@ -387,12 +387,12 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
              }
          }
       }
-      unsigned base = getFullNumberOfTasks();;
+      unsigned base = getPntrToOutput(0)->getShape()[0];
       for(unsigned j=0; j<3; ++j) {
           for(unsigned i=0; i<pos.size(); ++i) {
               pos[i][j] = direction[i][j]; 
               // This ensures that the matrix element is gathered
-              runTask( getLabel(), myvals.getTaskIndex(), task_index, base, myvals ); 
+              runTask( getLabel(), task_index, base, myvals ); 
               // Now clear only elements that are not accumulated over whole row 
               clearMatrixElements( myvals ); base++;
           } 

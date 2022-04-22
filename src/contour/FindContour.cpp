@@ -97,7 +97,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   void finishOutputSetup() override;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override; 
+  void setupCurrentTaskList() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override;
   void jobsAfterLoop();
 };
@@ -130,14 +130,13 @@ FindContour::FindContour(const ActionOptions&ao):
 }
 
 void FindContour::finishOutputSetup() {
-  for(unsigned i=0; i<getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList( i );
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( shape );
 }
 
-void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+void FindContour::setupCurrentTaskList() {
   // We now need to identify the grid points that we need to search through
-  Value* gval=getPntrToArgument(0); actionsThatSelectTasks.push_back( getLabel() );
+  Value* gval=getPntrToArgument(0); 
   std::vector<unsigned> ind( gval->getRank() );
   std::vector<unsigned> ones( gval->getRank(), 1 );
   std::vector<unsigned> nbin( getGridObject().getNbin( false ) );
@@ -165,7 +164,7 @@ void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::st
       else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
       else ind[j]+=1;
       double val2=getPntrToArgument(0)->get( getGridObject().getIndex(ind) ) - contour;
-      if( val1*val2<0 ) tflags[ gval->getRank()*i + j ] = 1;
+      if( val1*val2<0 ) getPntrToOutput(0)->addTaskToCurrentList(gval->getRank()*i + j);
       if( getGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
       else ind[j]-=1;
     }

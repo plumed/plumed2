@@ -79,7 +79,6 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   std::vector<Value*> myargs( getArguments() ); myargs.push_back( wval[0] ); requestArguments( myargs, true );
   for(unsigned i=0; i<myargs.size(); ++i) myargs[i]->buildDataStore( getLabel() + "_mat" );
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  for(unsigned i=0; i<shape[0]; ++i) addTaskToList(i);
 
   // And now read the functions to compute
   for(int i=1;; i++) {
@@ -182,7 +181,7 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
 
       unsigned iind = myvals.getStashedMatrixIndex(matind,i);
       // Rerun the task
-      av->runTask( av->getLabel(), myvals.getTaskIndex(), task_index, aindex_start + iind, myvals );
+      av->runTask( av->getLabel(), task_index, aindex_start + iind, myvals );
       // Add the derivatives
       for(unsigned n=0; n<functions.size(); ++n) {
           unsigned ostrn = getPntrToOutput(n)->getPositionInStream();

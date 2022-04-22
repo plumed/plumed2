@@ -62,6 +62,7 @@ CenterMatrix::CenterMatrix( const ActionOptions& ao):
 
   // Re-request the arguments as we do in diagonalize for similar reasons
   std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0]; addValue(shape); 
+  if( getPntrToArgument(0)->isTimeSeries() ) getPntrToComponent(0)->makeHistoryDependent();
 }
 
 void CenterMatrix::completeMatrixOperations() {

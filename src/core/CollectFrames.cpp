@@ -52,25 +52,19 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   }
   // Setup the components
   nvals = 0;
-  if( n_real_args>0 ) {
-      plumed_assert( arg_ends.size()>0 );
-      for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
-  } else if( getNumberOfAtoms()>0 ) nvals = std::floor( getNumberOfAtoms() / atom_pos.size() );
-  else {
-      for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) nvals += getPntrToArgument(i)->getNumberOfValues();
-  }
+  if( n_real_args>0 ) nvals = getPntrToArgument(0)->getNumberOfValues();
+  else if( getNumberOfAtoms()>0 ) nvals = std::floor( getNumberOfAtoms() / atom_pos.size() );
+  else nvals = getPntrToArgument(0)->getNumberOfValues();
   frame_weights.resize( nvals ); std::vector<unsigned> shape( 1 ); shape[0]=( clearstride / getStride() )*nvals; 
   // Setup values to hold arguments
   if( n_real_args>0 ) {
-      for(unsigned i=0;i<arg_ends.size()-1;++i) {
-          if( arg_ends[i]>=n_real_args ) break;   // Ignore anything that is weights
-          unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
-          if( tvals!=nvals ) error("all values input to store object must have same length");
-          addComponent( getPntrToArgument(arg_ends[i])->getName(), shape ); 
-          if( getPntrToArgument(arg_ends[i])->isPeriodic() ) { 
-              std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max ); 
-              componentIsPeriodic( getPntrToArgument(arg_ends[i])->getName(), min, max );
-          } else componentIsNotPeriodic( getPntrToArgument(arg_ends[i])->getName() );
+      for(unsigned i=0;i<n_real_args;++i) {
+          if( getPntrToArgument(i)->getNumberOfValues()!=nvals ) error("all values input to store object must have same length");
+          addComponent( getPntrToArgument(i)->getName(), shape ); 
+          if( getPntrToArgument(i)->isPeriodic() ) { 
+              std::string min, max; getPntrToArgument(i)->getDomain( min, max ); 
+              componentIsPeriodic( getPntrToArgument(i)->getName(), min, max );
+          } else componentIsNotPeriodic( getPntrToArgument(i)->getName() );
       }
   }
   data.resize( getNumberOfComponents() );
@@ -82,8 +76,7 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
       addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); 
   }
   if( getNumberOfArguments()>n_real_args ) {
-      unsigned tvals=0; for(unsigned i=n_real_args;i<getNumberOfArguments(); ++i) tvals += getPntrToArgument(i)->getNumberOfValues();
-      if( tvals!=nvals ) error("number of weights does not match number of input arguments");
+      if( getPntrToArgument(n_real_args)->getNumberOfValues()!=nvals ) error("number of weights does not match number of input arguments");
   }
   // And create a component to store the weights -- if we store the history this is a matrix
   addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
@@ -108,37 +101,26 @@ void CollectFrames::turnOnBiasHistory() {
   getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
  
   const ActionSet & as=plumed.getActionSet(); task_counts.resize(0);
-  std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false ); 
+  bool foundbias=false; 
   for(const auto & pp : as ) { 
       Action* p(pp.get()); CollectFrames* ab=dynamic_cast<CollectFrames*>(p);
       if( ab && !ab->doNotCalculateDerivatives() ) task_counts.push_back(0);
       // If this is a gather replicas then crash
       if( p->getLabel()=="GATHER_REPLICAS" ) error("cannot use ITRE with replica gathering");  
       // If this is the final bias then get the value and get out
-      for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
-          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-          if( name.substr(0,dot)==p->getLabel() ) foundbias[i-n_real_args]=true; 
-      } 
+      std::string name = getPntrToArgument(n_real_args)->getName(); std::size_t dot = name.find_first_of(".");
+      if( name.substr(0,dot)==p->getLabel() ) foundbias=true; 
       // Check if we have recalculated all the things we need
-      bool foundall=true;
-      for(unsigned i=0;i<foundbias.size();++i) {
-          if( !foundbias[i] ) { foundall=false; break; }
-      }
-      if( foundall ) break;
+      if( foundbias ) break;
   }
 }
 
 void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial, std::vector<double>& weights ) {
-  const ActionSet & as=plumed.getActionSet(); CollectFrames* ab=NULL;
-  std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
+  const ActionSet & as=plumed.getActionSet(); CollectFrames* ab=NULL; bool foundbias=false;
   // Set the arguments equal to the values in the old frame
   for(unsigned i=0;i<data.size();++i) {
-      unsigned k=0; 
-      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          Value* thisarg = getPntrToArgument(j); 
-          unsigned nv = thisarg->getNumberOfValues();
-          for(unsigned n=0;n<nv;++n) { thisarg->set( n, values[i*nvals+k] ); k++; }
-      }
+      Value* thisarg = getPntrToArgument(i); 
+      for(unsigned n=0;n<thisarg->getNumberOfValues();++n) thisarg->set( n, values[i*nvals+n] ); 
   }
  
   unsigned k=0;
@@ -160,7 +142,7 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
      if( p->isActive() ) {
          ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
          if(av) { 
-           av->clearInputForces(); av->clearDerivatives();
+           av->clearInputForces(); av->clearDerivatives(); av->setupForCalculation();
            if( runserial ) { savemp = av->no_openmp; savempi = av->serial; av->no_openmp = true; av->serial = true; }
          }
          p->calculate();
@@ -168,22 +150,13 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
       }
       if(ab) ab->task_start = 0;
       // If this is the final bias then get the value and get out
-      unsigned basej = 0;
-      for(unsigned i=arg_ends[arg_ends.size()-2];i<arg_ends[arg_ends.size()-1];++i) {
-          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-          if( name.substr(0,dot)==p->getLabel() ) {
-              foundbias[i-n_real_args]=true; 
-              unsigned nv = getPntrToArgument(i)->getNumberOfValues();
-              for(unsigned j=0;j<nv;++j) weights[basej+j] = getPntrToArgument(i)->get(j);
-          }
-          basej += getPntrToArgument(i)->getNumberOfValues(); 
+      std::string name = getPntrToArgument(n_real_args)->getName(); std::size_t dot = name.find_first_of(".");
+      if( name.substr(0,dot)==p->getLabel() ) {
+          foundbias=true; unsigned nv = getPntrToArgument(n_real_args)->getNumberOfValues();
+          for(unsigned j=0;j<nv;++j) weights[j] = getPntrToArgument(n_real_args)->get(j);
       }
       // Check if we have recalculated all the things we need
-      bool foundall=true; 
-      for(unsigned i=0;i<foundbias.size();++i) { 
-          if( !foundbias[i] ) { foundall=false; break; }
-      }
-      if( foundall ) break;
+      if( foundbias ) break;
   }
 }
 
@@ -204,7 +177,7 @@ void CollectFrames::finishComputations( const std::vector<double>& buf ) {
 
 void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
   for(unsigned i=0;i<nvals;++i) {
-      frame_weights[i]=0; if( getNumberOfArguments()>n_real_args ) frame_weights[i] = retrieveRequiredArgument( arg_ends.size()-2, i );
+      frame_weights[i]=0; if( getNumberOfArguments()>n_real_args ) frame_weights[i] = getPntrToArgument( n_real_args )->get( i ); 
   }
 
   if( save_all_bias ) {
@@ -245,21 +218,15 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
       if( task_counts.size()>0 ) {
           // And update the task counts
           const ActionSet & as=plumed.getActionSet(); unsigned k=0;
-          std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
+          bool foundbias=false;
           for(const auto & pp : as ) {
               Action* p(pp.get()); CollectFrames* ab=dynamic_cast<CollectFrames*>(p);
-              if( ab ) { task_counts[k] = ab->getFullNumberOfTasks(); k++; }
+              if( ab ) { task_counts[k] = ab->copyOutput(0)->getNumberOfTasks(); k++; }
               // If this is the final bias then get the value and get out
-              for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
-                  std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
-                  if( name.substr(0,dot)==p->getLabel() ) foundbias[i-n_real_args]=true;
-              }
+              std::string name = getPntrToArgument(n_real_args)->getName(); std::size_t dot = name.find_first_of(".");
+              if( name.substr(0,dot)==p->getLabel() ) foundbias=true;
               // Check if we have recalculated all the things we need
-              bool foundall=true;
-              for(unsigned i=0;i<foundbias.size();++i) {
-                  if( !foundbias[i] ) { foundall=false; break; }
-              }
-              if( foundall ) break;
+              if( foundbias ) break;
           }
       }
   }
@@ -271,7 +238,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
           else bval->set( ndata, frame_weights[i] );      
           if( n_real_args>0 ) {
               for(unsigned j=0;j<data.size();++j ) {
-                  getPntrToOutput(j)->set( ndata, retrieveRequiredArgument( j, i ) ); 
+                  getPntrToOutput(j)->set( ndata, getPntrToArgument(j)->get(i) ); 
               }
           }
           if( dir.size()>0 ) {
@@ -289,7 +256,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
           allweights.push_back( frame_weights[i] );
           if( n_real_args>0 ) { 
               for(unsigned j=0;j<data.size();++j ) {
-                  data[j] = retrieveRequiredArgument( j, i ); 
+                  data[j] = getPntrToArgument(j)->get(i);
               }
               alldata.push_back( data );
           }
@@ -311,8 +278,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
       getPntrToOutput(getNumberOfComponents()-1)->setShape( shape ); unsigned k=0;
       for(unsigned i=0;i<allweights.size();++i) {
           for(unsigned j=0;j<data.size();++j) { getPntrToOutput(j)->set( i, alldata[i][j] ); }
-          unsigned pos_b=0; if( n_real_args>0 ) pos_b = arg_ends.size()-2;
-          for(unsigned j=0;j<posdata.size();++j) { getPntrToOutput(pos_b+j)->set( i, allposdata[i][j] ); }
+          for(unsigned j=0;j<posdata.size();++j) { getPntrToOutput(n_real_args+j)->set( i, allposdata[i][j] ); }
           if( save_all_bias ) {
               Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( allweights.size()*i + i, allweights[i] );
               for(unsigned j=0;j<i;++j) { 
@@ -338,13 +304,12 @@ void CollectFrames::retrieveDataPoint( const unsigned& itime, std::vector<double
   }
 }
 
-void CollectFrames::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-   // Add any new tasks to the list
-   actionsThatSelectTasks.push_back( getLabel() );
-   unsigned nstart = getFullNumberOfTasks(), ndata = getPntrToOutput(0)->getShape()[0];
-   for(unsigned i=nstart;i<ndata;++i) addTaskToList(i);  
+void CollectFrames::setupCurrentTaskList() {
+   if( task_start==0 ) { ActionWithValue::setupCurrentTaskList(); return; }
    // Now switch on the relevant tasks
-   for(unsigned i=task_start;i<tflags.size();++i) tflags[i]=1; 
+   for(unsigned j=0; j<getNumberOfComponents(); ++j ) {
+       for(unsigned i=task_start;i<getPntrToOutput(j)->getShape()[0];++i) getPntrToOutput(j)->addTaskToCurrentList(i);  
+   }
 }
 
 void CollectFrames::performTask( const unsigned& current, MultiValue& myvals ) const {

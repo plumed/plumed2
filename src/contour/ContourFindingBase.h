@@ -35,8 +35,6 @@ public ActionWithValue,
 public ActionWithArguments
 {
 private:
-/// Is the the first step of the simulation
-  bool firststep;
 /// This is the object that does the root finding
   RootFindingBase<ContourFindingBase> mymin;
 /// This holds the input grid
@@ -57,6 +55,7 @@ public:
   unsigned getNumberOfDerivatives() const override { return 0; }
 /// This resizes everything during startup
   virtual void finishOutputSetup() = 0;  
+  void actionsToDoBeforeFirstCalculate();
   void calculate() override;
   void apply() override;
   void update() override;

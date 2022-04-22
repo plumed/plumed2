@@ -220,15 +220,11 @@ Print::Print(const ActionOptions&ao):
       rotateLast=0;
     }
   } else if( tstyle=="xyz" || tstyle=="ndx" ) {
-    if( arg_ends.size()==0 ) { arg_ends.push_back(0); arg_ends.push_back( getNumberOfArguments() ); }
-    unsigned nper=getNumberOfArgumentsPerTask();
-    for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-      unsigned nt=0;
-      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
-        if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; break; }
-        if( getPntrToArgument(j)->getRank()!=1 ) error("problem outputting " + getPntrToArgument(j)->getName() + " can only output vectors in xyz/ndx output" );
-        nt += getPntrToArgument(j)->getNumberOfValues();
-      }
+    unsigned nper=getNumberOfArguments();
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { gridinput=true; break; }
+      if( getPntrToArgument(i)->getRank()!=1 ) error("problem outputting " + getPntrToArgument(i)->getName() + " can only output vectors in xyz/ndx output" );
+      unsigned nt = getPntrToArgument(i)->getNumberOfValues();;
       if( i==0 ) { nper=nt; }
       else if( nt!=nper ) error("mismatched number of values in matrices input in input");
     }
@@ -248,8 +244,8 @@ Print::Print(const ActionOptions&ao):
       if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
       std::vector<std::string> str_upper, str_lower;
       parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);
-      if( str_upper.size()!=getNumberOfArgumentsPerTask() && str_upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
-      if( str_lower.size()!=getNumberOfArgumentsPerTask() && str_lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
+      if( str_upper.size()!=getNumberOfArguments() && str_upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
+      if( str_lower.size()!=getNumberOfArguments() && str_lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
       if( str_upper.size()>0 && str_lower.size()>0 ) {
         lower.resize( str_lower.size() ); upper.resize( str_upper.size() );
         for(unsigned i=0; i<upper.size(); ++i) {
@@ -450,9 +446,9 @@ void Print::update() {
   } else if( tstyle=="xyz") {
     if( getNumberOfAtoms()>0 ) {
       unsigned natoms=0, ntatoms=getNumberOfAtoms(); if( hasorigin ) ntatoms = ntatoms - 1;
-      MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
+      std::vector<double> argvals( getNumberOfArguments() );
       for(unsigned i=0; i<ntatoms; ++i) {
-        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
+        for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(i); 
         if( isInTargetRange( argvals ) ) natoms++;
       }
       ofile.printf("%d\n",natoms);
@@ -469,7 +465,7 @@ void Print::update() {
       for(unsigned i=0; i<ntatoms; ++i) {
         const char* defname="X"; const char* name=defname;
         if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
+        for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(i);
         if( isInTargetRange( argvals ) ) {
           if( hasorigin ) {
             Vector fpos=pbcDistance( getPosition(ntatoms), getPosition(i) );
@@ -492,12 +488,12 @@ void Print::update() {
         ofile.printf("\n");
       }
     } else {
-      std::vector<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getCurrentTasks() );
-      MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
+      std::set<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getTaskSet() );
+      std::vector<double> argvals( getNumberOfArguments() );
       ofile.printf("%d\n",tasks.size()); ofile.printf("\n");
-      for(unsigned i=0; i<tasks.size(); ++i) {
+      for(const auto & t : tasks) {
         const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
-        myfvals.setTaskIndex(tasks[i]); retrieveArguments( myfvals, argvals, 0 );
+        for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(t); 
         if( isInTargetRange( argvals ) ) {
           for(unsigned j=0; j<argvals.size(); ++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
           ofile.printf("\n");
@@ -505,10 +501,10 @@ void Print::update() {
       }
     }
   } else if( tstyle=="ndx" ) {
-    unsigned n=0; MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
+    unsigned n=0; std::vector<double> argvals( getNumberOfArguments() );
     ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-      myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
+      for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(i); 
       if( isInTargetRange( argvals ) ) {
         ofile.printf("%6d", getAbsoluteIndexes()[i].serial() ); n++;
         if( n%15==0 ) ofile.printf("\n");

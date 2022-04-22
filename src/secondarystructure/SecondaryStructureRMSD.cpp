@@ -141,7 +141,6 @@ void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ) 
     for(unsigned i=0; i<newatoms.size(); ++i) log.printf("%d ",all_atoms[newatoms[i]].serial() );
     log.printf("\n");
   }
-  addTaskToList( colvar_atoms.size() );
   colvar_atoms.push_back( newatoms );
 }
 
@@ -181,7 +180,7 @@ void SecondaryStructureRMSD::setupValues() {
   unsigned nref = myrmsd.size(); if( alignType=="DRMSD" ) nref=drmsd_targets.size();
 
   plumed_assert( nref>0 );
-  std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks();
+  std::vector<unsigned> shape(1); shape[0]=colvar_atoms.size();
   if( nref==1 ) { addValue( shape ); setNotPeriodic(); }
   else {
     std::string num;
@@ -192,15 +191,14 @@ void SecondaryStructureRMSD::setupValues() {
   }
 }
 
-void SecondaryStructureRMSD::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+void SecondaryStructureRMSD::setupCurrentTaskList() {
   if( s_cutoff2>0 ) {
-    actionsThatSelectTasks.push_back( getLabel() ); 
-    for(unsigned i=0; i<tflags.size(); ++i) {
+    for(unsigned i=0; i<getPntrToOutput(0)->getNumberOfValues(); ++i) {
       Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ),
                                    ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
-      if( distance.modulo2()<s_cutoff2 ) tflags[i]=1;
+      if( distance.modulo2()<s_cutoff2 ) getPntrToOutput(0)->addTaskToCurrentList(i);
     }
-  } 
+  } else ActionWithValue::setupCurrentTaskList(); 
 }
 
 void SecondaryStructureRMSD::calculate() {

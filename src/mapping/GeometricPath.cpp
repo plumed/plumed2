@@ -58,7 +58,6 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   path_projector(this)
 {
   done_over_stream=false; plumed_assert( !actionInChain() );
-  if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
   // Get the coordinates in the low dimensional space
   std::string pcoord; parse("PROPERTY", pcoord ); log.printf("  projecting onto vector of coordinates in %s \n", pcoord.c_str() ); 
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( pcoord ); plumed_assert( av );

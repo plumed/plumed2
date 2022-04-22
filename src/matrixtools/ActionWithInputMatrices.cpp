@@ -39,7 +39,7 @@ ActionWithInputMatrices::ActionWithInputMatrices(const ActionOptions& ao):
       }
   }
   // Now request the arguments to make sure we store things we need
-  std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(args.size()); 
+  std::vector<Value*> args( getArguments() ); 
   requestArguments(args, false ); 
 }
 
@@ -110,9 +110,8 @@ void ActionWithInputMatrices::runFinalJobs() {
   if( skipUpdate() ) return;
   if( getName()=="VORONOI" ) {
       std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-      for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
-      getPntrToOutput(0)->setShape( shape );
-  } else if( getName()!="SELECT_COMPONENTS" ) resizeForFinalTasks(); 
+      getPntrToOutput(0)->setShape( shape ); getPntrToOutput(0)->setNumberOfTasks( shape[1] );
+  } else if( getName()!="SELECT_COMPONENTS" && getName()!="DIAGONALIZE" ) getPntrToOutput(0)->setShape( getValueShapeFromArguments() ); 
   completeMatrixOperations();
 }
 

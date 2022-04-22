@@ -58,7 +58,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void setupCurrentTaskList();
   void calculate();
   void apply();
   virtual void setupRegions() = 0;
@@ -83,7 +83,8 @@ std::string ActionVolume::getKernelType() const {
 
 inline
 Vector ActionVolume::getPosition( const unsigned& index ) const {
-  return ActionAtomistic::getPosition( getFullNumberOfTasks() + index );
+  if( getPntrToOutput(0)->getRank()==0 ) return ActionAtomistic::getPosition( 1 + index ); 
+  return ActionAtomistic::getPosition( getPntrToOutput(0)->getShape()[0] + index );
 }
 
 }

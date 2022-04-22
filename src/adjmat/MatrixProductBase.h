@@ -36,12 +36,13 @@ class MatrixProductBase :
 {
 friend class Dot;
 private:
-  bool skip_ieqj, diagonal;
+  bool runUpdate, skip_ieqj, diagonal;
   std::vector<double> forcesToApply;
 /// The list of actiosn in this chain
   std::vector<std::string> actionsLabelsInChain;
   void updateAtomicIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   unsigned getNumberOfInnerTasks() const ;
+  unsigned getNumberOfOuterTasks() const ;
 protected:
   bool doInnerLoop;
   void readMatricesToMultiply( const bool& periodic, const std::string& min="", const std::string& max="" );
@@ -52,15 +53,14 @@ public:
   bool canBeAfterInChain( ActionWithValue* av ) override;
   virtual unsigned getNumberOfColumns() const ;
   bool mustBeTreatedAsDistinctArguments() override ;
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks );
   void lockRequests() override;
   void unlockRequests() override;
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
   void calculate() override;
   void update() override;
   void runFinalJobs() override;
-  unsigned getNumberOfFinalTasks() override;
-  virtual std::vector<unsigned> getMatrixShapeForFinalTasks();
+  virtual std::vector<unsigned> getValueShapeFromArguments() override;
   virtual void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
   virtual void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;

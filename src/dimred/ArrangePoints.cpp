@@ -40,7 +40,7 @@ class ArrangePoints :
 public ActionWithValue,
 public ActionWithArguments {
 private: 
-  unsigned maxiter, ncycles, current_index;
+  unsigned dimout, maxiter, ncycles, current_index;
   double cgtol, gbuf;
   std::vector<unsigned> npoints, nfgrid;
   std::vector<double> mypos;
@@ -94,11 +94,10 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   dist_target(-1),
   updateWasRun(false)
 {
-  std::vector<unsigned> shape(1); shape[0]=0; 
-  for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
-      if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates");
+  dimout = getNumberOfArguments();
+  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getNumberOfValues(); 
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( shape[0]!=getPntrToArgument(i)->getNumberOfValues() ) error("mismatch between sizes of input coordinates");
       std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape ); 
       componentIsNotPeriodic( "coord-" + num ); getPntrToOutput( i )->alwaysStoreValues();
   }
@@ -128,9 +127,9 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   } else if( mtype=="pointwise") { 
       mintype=pointwise;
       log.printf("  minimimising stress function using pointwise global optimisation\n");
-      npoints.resize(arg_ends.size()-1); nfgrid.resize(arg_ends.size()-1);
+      npoints.resize(dimout); nfgrid.resize(dimout);
       parseVector("CGRID_SIZE",npoints); parse("BUFFER",gbuf); parse("NCYCLES",ncycles);
-      parseVector("FGRID_SIZE",nfgrid); if( nfgrid[0]!=0 && arg_ends.size()!=3 ) error("interpolation only works in two dimensions");
+      parseVector("FGRID_SIZE",nfgrid); if( nfgrid[0]!=0 && dimout!=2 ) error("interpolation only works in two dimensions");
       log.printf("  doing %u cycles of global optimization sweeps\n",ncycles);
       log.printf("  using coarse grid of points that is %u",npoints[0]);
       for(unsigned j=1; j<npoints.size(); ++j) log.printf(" by %u",npoints[j]);
@@ -163,26 +162,26 @@ void ArrangePoints::checkInputMatrix( const std::string& key, const unsigned& nv
 
 double ArrangePoints::calculateStress( const std::vector<double>& p, std::vector<double>& d ) { 
   double stress=0; for(unsigned i=0; i<p.size(); ++i) d[i]=0.0; 
-  unsigned nlow = arg_ends.size()-1; std::vector<double> dtmp(nlow);
-  std::vector<unsigned> shape( getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape() );
+  std::vector<double> dtmp(dimout);
+  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() );
   unsigned targi=shape[0]*current_index;
-  unsigned nmatrices = ( getNumberOfArguments() - arg_ends[arg_ends.size()-1] ) / 2;
+  unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
   for(unsigned i=0; i<shape[0]; ++i) { 
       if( i==current_index ) continue ;
       // Calculate distance in low dimensional space
-      double dd2=0; for(unsigned k=0; k<nlow; ++k) { dtmp[k]=p[k] - mypos[nlow*i+k]; dd2+=dtmp[k]*dtmp[k]; }
+      double dd2=0; for(unsigned k=0; k<dimout; ++k) { dtmp[k]=p[k] - mypos[dimout*i+k]; dd2+=dtmp[k]*dtmp[k]; }
       
       for(unsigned k=0; k<nmatrices; ++k ) {
           // Now do transformations and calculate differences
           double df, fd = 1. - switchingFunction[k].calculateSqr( dd2, df );
           // Get the weight for this connection 
           double weight = 0;
-          for(unsigned j=0;j<shape[0];++j) weight += getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k + 1 )->get( shape[0]*i+j );
+          for(unsigned j=0;j<shape[0];++j) weight += getPntrToArgument( dimout + 2*k + 1 )->get( shape[0]*i+j );
           // Get the difference for the connection
-          double fdiff = fd - getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k )->get( targi+i );
+          double fdiff = fd - getPntrToArgument( dimout + 2*k )->get( targi+i );
           // Calculate derivatives
           double pref = -2.*weight*fdiff*df;
-          for(unsigned n=0; n<nlow; ++n) d[n] += pref*dtmp[n]; 
+          for(unsigned n=0; n<dimout; ++n) d[n] += pref*dtmp[n]; 
           // Accumulate the total stress
           stress += weight*fdiff*fdiff;
       }
@@ -193,26 +192,25 @@ double ArrangePoints::calculateStress( const std::vector<double>& p, std::vector
 double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::vector<double>& d ) {
   // Zero derivative and stress accumulators
   for(unsigned i=0; i<p.size(); ++i) d[i]=0.0; 
-  double stress=0; std::vector<double> dtmp( arg_ends.size()-1 );
+  double stress=0; std::vector<double> dtmp( dimout );
 
-  unsigned nlow = arg_ends.size()-1;
-  unsigned nmatrices = ( getNumberOfArguments() - arg_ends[arg_ends.size()-1] ) / 2;
-  std::vector<unsigned> shape( getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape() );
+  unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
+  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() );
   for(unsigned i=1; i<shape[0]; ++i) {
     for(unsigned j=0; j<i; ++j) {
       // Calculate distance in low dimensional space
-      double dd2=0; for(unsigned k=0; k<nlow; ++k) { dtmp[k]=p[nlow*i+k] - p[nlow*j+k]; dd2+=dtmp[k]*dtmp[k]; }
+      double dd2=0; for(unsigned k=0; k<dimout; ++k) { dtmp[k]=p[dimout*i+k] - p[dimout*j+k]; dd2+=dtmp[k]*dtmp[k]; }
 
       for(unsigned k=0; k<nmatrices; ++k ) {
           // Now do transformations and calculate differences
           double df, fd = 1. - switchingFunction[k].calculateSqr( dd2, df );
           // Get the weight for this connection 
-          double weight = getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k + 1 )->get( shape[0]*i+j ); 
+          double weight = getPntrToArgument( dimout + 2*k + 1 )->get( shape[0]*i+j ); 
           // Get the difference for the connection
-          double fdiff = fd - getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k )->get( shape[0]*i+j );
+          double fdiff = fd - getPntrToArgument( dimout + 2*k )->get( shape[0]*i+j );
           // Calculate derivatives
           double pref = -2.*weight*fdiff*df;
-          for(unsigned n=0; n<nlow; ++n) { double dterm=pref*dtmp[n]; d[nlow*i+n]+=dterm; d[nlow*j+n]-=dterm; }
+          for(unsigned n=0; n<dimout; ++n) { double dterm=pref*dtmp[n]; d[dimout*i+n]+=dterm; d[dimout*j+n]-=dterm; }
           // Accumulate the total stress
           stress += weight*fdiff*fdiff;
       }
@@ -222,13 +220,13 @@ double ArrangePoints::calculateFullStress( const std::vector<double>& p, std::ve
 }
 
 double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SMACOF& mysmacof ) const {
-  unsigned nlow = arg_ends.size()-1; double stress=0, totalWeight=0; 
-  unsigned nmatrices = ( getNumberOfArguments() - arg_ends[arg_ends.size()-1] ) / 2;
-  std::vector<unsigned> shape( getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape() ); 
+  double stress=0, totalWeight=0; 
+  unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2;
+  std::vector<unsigned> shape( getPntrToArgument( dimout )->getShape() ); 
   for(unsigned i=1; i<shape[0]; ++i) {
     for(unsigned j=0; j<i; ++j) {
       // Calculate distance in low dimensional space
-      double dd2=0; for(unsigned k=0; k<nlow; ++k) { double dtmp=p[nlow*i+k] - p[nlow*j+k]; dd2+=dtmp*dtmp; }
+      double dd2=0; for(unsigned k=0; k<dimout; ++k) { double dtmp=p[dimout*i+k] - p[dimout*j+k]; dd2+=dtmp*dtmp; }
       // Calculate difference between target difference and true difference
       double wval=0, dd1 = sqrt(dd2); double diff = mysmacof.getDistance(i,j) - dd1;
 
@@ -238,9 +236,9 @@ double ArrangePoints::recalculateSmacofWeights( const std::vector<double>& p, SM
           // Now do transformations and calculate differences
           double df, fd = 1. - switchingFunction[k].calculateSqr( dd2, df );
           // Get the weight for this connection 
-          double weight = getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k + 1 )->get( shape[0]*i+j );
+          double weight = getPntrToArgument( dimout + 2*k + 1 )->get( shape[0]*i+j );
           // Get the difference for the connection
-          double fdiff = getPntrToArgument( arg_ends[arg_ends.size()-1] + 2*k )->get( shape[0]*i+j ) - fd;
+          double fdiff = getPntrToArgument( dimout + 2*k )->get( shape[0]*i+j ) - fd;
           // Now set the weight if difference in distance is larger than regularisation parameter
           if( fabs(diff)>smacof_reg  ) wval -= weight*fdiff*df*dd1 / diff;
           // And the total stress and weights
@@ -257,17 +255,17 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
   if( mintype==conjgrad ) {
       mycgminimise.minimise( cgtol, pos, &ArrangePoints::calculateFullStress );
   } else if( mintype==pointwise ) {
-      unsigned nlow=arg_ends.size()-1, nvals=getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape()[0];
-      std::vector<double> gmin( nlow ), gmax( nlow ), mypoint( nlow );
+      unsigned nvals=getPntrToArgument( dimout )->getShape()[0];
+      std::vector<double> gmin( dimout ), gmax( dimout ), mypoint( dimout );
       // Find the extent of the grid
-      for(unsigned j=0; j<nlow; ++j) gmin[j]=gmax[j]=pos[j]; 
+      for(unsigned j=0; j<dimout; ++j) gmin[j]=gmax[j]=pos[j]; 
       for(unsigned i=1; i<nvals; ++i) {
-        for(unsigned j=0; j<nlow; ++j) {
-          if( pos[nlow*i+j] < gmin[j] ) gmin[j] = pos[nlow*i+j];
-          if( pos[nlow*i+j] > gmax[j] ) gmax[j] = pos[nlow*i+j];
+        for(unsigned j=0; j<dimout; ++j) {
+          if( pos[dimout*i+j] < gmin[j] ) gmin[j] = pos[dimout*i+j];
+          if( pos[dimout*i+j] > gmax[j] ) gmax[j] = pos[dimout*i+j];
         }
       }
-      for(unsigned j=0; j<nlow; ++j) {
+      for(unsigned j=0; j<dimout; ++j) {
         double gbuffer = 0.5*gbuf*( gmax[j]-gmin[j] ) - 0.5*( gmax[j]- gmin[j] );
         gmin[j]-=gbuffer; gmax[j]+=gbuffer;
       }
@@ -280,12 +278,12 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
              current_index=j;
 
              // Find current projection of jth point
-             for(unsigned k=0; k<nlow; ++k) mypoint[k]=mypos[j*nlow+k];
+             for(unsigned k=0; k<dimout; ++k) mypoint[k]=mypos[j*dimout+k];
              // Minimise using grid search
              bool moved=mygridsearch.minimise( mypoint, &ArrangePoints::calculateStress );
              if( moved ) {
                // Reassign the new projection
-               for(unsigned k=0; k<nlow; ++k) mypos[nlow*j+k]=mypoint[k];
+               for(unsigned k=0; k<dimout; ++k) mypos[dimout*j+k]=mypoint[k];
                // Minimise output using conjugate gradient
                mycgminimise.minimise( cgtol, mypos, &ArrangePoints::calculateFullStress );
              }
@@ -293,7 +291,7 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
         for(unsigned i=0;i<mypos.size();++i) pos[i] = mypos[i];
     }
   } else if( mintype==smacof ) {
-        SMACOF mysmacof( getPntrToArgument(arg_ends[arg_ends.size()-1] + 2*dist_target) ); double stress = recalculateSmacofWeights( pos, mysmacof ); 
+        SMACOF mysmacof( getPntrToArgument( dimout + 2*dist_target) ); double stress = recalculateSmacofWeights( pos, mysmacof ); 
 
         for(unsigned i=0; i<maxiter; ++i) {
             // Optimise using smacof and current weights
@@ -311,27 +309,25 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
 void ArrangePoints::update() {
   updateWasRun=true;
   // Retrive the initial value
-  unsigned nvals = getPntrToArgument( arg_ends[arg_ends.size()-1] )->getShape()[0];
-  std::vector<double> pos( (arg_ends.size()-1)*nvals ); unsigned nlow = arg_ends.size()-1;
+  unsigned nvals = getPntrToArgument( dimout )->getShape()[0];
+  std::vector<double> pos( dimout*nvals );
   for(unsigned i=0;i<nvals;++i) {
-      for(unsigned j=0;j<nlow;++j) pos[ nlow*i + j ] = retrieveRequiredArgument( j, i ); 
+      for(unsigned j=0;j<dimout;++j) pos[ dimout*i + j ] = getPntrToArgument(j)->get(i); 
   }
   // Do the optimization
   optimize( pos );
   // And set the final values
   for(unsigned i=0;i<nvals;++i) {
-      for(unsigned j=0;j<nlow;++j) getPntrToOutput(j)->set( i, pos[nlow*i+j] );
+      for(unsigned j=0;j<dimout;++j) getPntrToOutput(j)->set( i, pos[dimout*i+j] );
   }
 }
 
 void ArrangePoints::runFinalJobs() {
    if( updateWasRun ) return ; 
    // Resize all the output stuff
-   std::vector<unsigned> shape(1); shape[0]=0; 
-   for(unsigned i=arg_ends[0];i<arg_ends[1];++i) shape[0] += getPntrToArgument(i)->getNumberOfValues();
-   for(unsigned i=0;i<arg_ends.size()-1;++i) { 
-       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
-       if( shape[0]!=tvals ) error("mismatch between sizes of input coordinates"); 
+   std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getNumberOfValues(); 
+   for(unsigned i=0;i<dimout;++i) { 
+       if( shape[0]!=getPntrToArgument(i)->getNumberOfValues() ) error("mismatch between sizes of input coordinates"); 
        getPntrToOutput(i)->setShape( shape ); 
    }
    update();

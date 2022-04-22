@@ -913,14 +913,14 @@ void PlumedMain::justCalculate() {
         sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
       }
       ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
       {
         if(av) av->clearInputForces();
         if(av) av->clearDerivatives();
+        if(av) av->setupForCalculation();
       }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
+      if(!av) {
+         ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+         if(aa) if(aa->isActive()) aa->retrieveAtoms();
       }
       if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
       else p->calculate();
@@ -965,9 +965,6 @@ void PlumedMain::backwardPropagate() {
       }
 
       p->apply();
-      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(p);
-// still ActionAtomistic has a special treatment, since they may need to add forces on atoms
-      if(a) a->applyForces();
 
     }
     iaction++;

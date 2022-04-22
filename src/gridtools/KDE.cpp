@@ -213,58 +213,37 @@ void KDE::registerKeywords( Keywords& keys ) {
 KDE::KDE(const ActionOptions&ao):
   Action(ao),
   HistogramBase(ao),
-  firststep(false),
-  fixed_width(false),
   ignore_out_of_bounds(false),
+  bwargno(0),
   gmin( getNumberOfDerivatives() ),
   gmax( getNumberOfDerivatives() )
 {
-  parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
+  bool hasauto=false; parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
   for(unsigned i=0; i<gmin.size(); ++i) {
     if( gmin[i]=="auto" ) {
       log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
-      firststep=true;  // We need to do a preparation step to set the grid from the box size
+      hasauto=true;  // We need to do a preparation step to set the grid from the box size
       if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
-      if( arg_ends.size()==0 ) {
-        if( getPntrToArgument(i)->isPeriodic() ) {
-          if( gmin[i]=="auto" ) getPntrToArgument(i)->getDomain( gmin[i], gmax[i] );
-          else {
-            std::string str_min, str_max; getPntrToArgument(i)->getDomain( str_min, str_max );
-            if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
-          }
-        } else if( getPntrToArgument(i)->getName().find(".")!=std::string::npos ) {
-          std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
-          std::string name = getPntrToArgument(i)->getName().substr(dot+1);
-          if( name!="x" && name!="y" && name!="z" ) {
-            error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-          }
-        } else {
+      if( getPntrToArgument(i)->isPeriodic() ) {
+        if( gmin[i]=="auto" ) getPntrToArgument(i)->getDomain( gmin[i], gmax[i] );
+        else {
+          std::string str_min, str_max; getPntrToArgument(i)->getDomain( str_min, str_max );
+          if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
+        }
+      } else if( getPntrToArgument(i)->getName().find(".")!=std::string::npos ) {
+        std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+        std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+        if( name!="x" && name!="y" && name!="z" ) {
           error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
         }
       } else {
-        for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
-          if ( getPntrToArgument(j)->isPeriodic() ) {
-            if( gmin[i]=="auto" ) getPntrToArgument(j)->getDomain( gmin[i], gmax[i] );
-            else {
-              std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
-              if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
-            }
-          } else if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
-            std::size_t dot = getPntrToArgument(j)->getName().find_first_of(".");
-            std::string name = getPntrToArgument(j)->getName().substr(dot+1);
-            if( name!="x" && name!="y" && name!="z" ) {
-              error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-            }
-          } else {
-            error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-          }
-        }
+        error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
       }
     } else {
       log.printf("  for %dth coordinate min is set to %s and max is set to %s \n", (i+1), gmin[i].c_str(), gmax[i].c_str() );
     }
   }
-  if( firststep && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
+  if( hasauto && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
 
   parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); parse("CUTOFF",dp2cutoff);
   parse("KERNEL",kerneltype); 
@@ -276,9 +255,8 @@ KDE::KDE(const ActionOptions&ao):
       if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");
       log.printf("  bandwidths are taken from : %s \n", bandwidth[0].c_str() );
       std::vector<Value*> args( getArguments() ); args.push_back( bw_args[0] );
-      requestArguments( args, true ); resizeForcesToApply();
+      bwargno=args.size()-1; requestArguments( args, true ); resizeForcesToApply();
   }
-  createTaskList();
 
   if( kerneltype.find("bin")==std::string::npos && kerneltype!="DISCRETE" ) {
      std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH RETURN_DERIV", errors ); 
@@ -293,14 +271,13 @@ KDE::KDE(const ActionOptions&ao):
   // Create a value
   std::vector<bool> ipbc( getNumberOfDerivatives() );
   for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
-    unsigned k=i; if( arg_ends.size()>0 ) k=arg_ends[i];
-    if( getPntrToArgument( k )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
+    if( getPntrToArgument( i )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
     else ipbc[i]=false;
   }
   gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
 
   // Setup the grid if we are not using automatic bounds
-  if( !firststep ) {
+  if( !hasauto ) {
     gridobject.setBounds( gmin, gmax, nbin, gspacing );
     std::vector<unsigned> shape( gridobject.getNbin(true) );
     for(unsigned i=0; i<gmin.size(); ++i) {
@@ -308,8 +285,8 @@ KDE::KDE(const ActionOptions&ao):
         if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
         else grid_diff_value[i].setNotPeriodic();
     }
-    addValueWithDerivatives( shape ); 
-    if( kerneltype!="DISCRETE" && getPntrToArgument(arg_ends[arg_ends.size()-1])->isConstant() ) { 
+    addValueWithDerivatives( shape );
+    if( kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) { 
         fixed_width=true; setupNeighborsVector(); 
     }
   } else {
@@ -324,7 +301,7 @@ void KDE::setupNeighborsVector() {
     if( kerneltype.find("bin")!=std::string::npos ) {
       std::size_t dd = kerneltype.find("-bin"); 
       HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
-      Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+      Value* bw_arg=getPntrToArgument(bwargno);
       if( bw_arg->getRank()<2 ) {
           for(unsigned i=0; i<support.size(); ++i) {
             bead.set( 0, gridobject.getGridSpacing()[i], 1./sqrt(bw_arg->get(i)) );
@@ -332,7 +309,7 @@ void KDE::setupNeighborsVector() {
           } 
       } else plumed_error();
     } else {
-      Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+      Value* bw_arg=getPntrToArgument(bwargno);
       if( bw_arg->getRank()<2 ) {
           for(unsigned i=0; i<support.size(); ++i) {
              support[i] = sqrt(2.0*dp2cutoff)*(1.0/sqrt(bw_arg->get(i)));
@@ -361,39 +338,31 @@ void KDE::setupNeighborsVector() {
   }
 }
 
-void KDE::completeGridObjectSetup() {
-  if( firststep ) {
-    for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
-      if( gmin[i]=="auto" ) {
-        double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
-        std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
-        std::string name = getPntrToArgument(i)->getName().substr(dot+1);
-        if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
-        else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
-        else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
-        else plumed_error();
-        // And convert to strings for bin and bmax
-        Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
-      }
-      grid_diff_value.push_back( Value() );
-      if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
-      else grid_diff_value[i].setNotPeriodic();
+void KDE::actionsToDoBeforeFirstCalculate() {
+  for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
+    if( gmin[i]=="auto" ) {
+      double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
+      std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+      std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+      if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
+      else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
+      else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
+      else plumed_error();
+      // And convert to strings for bin and bmax
+      Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
     }
-    // And setup the grid object
-    gridobject.setBounds( gmin, gmax, nbin, gspacing );
-    std::vector<unsigned> shape( gridobject.getNbin(true) );
-    getPntrToComponent(0)->setShape( shape );
-    // And create the tasks
-    if( one_kernel_at_a_time ) {
-      for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
-    }
-    // And setup the neighbors
-    if( kerneltype!="DISCRETE" && getPntrToArgument(arg_ends[arg_ends.size()-1])->isConstant() ) { 
-        fixed_width=true; setupNeighborsVector(); 
-    }
-    // And never do this again
-    firststep=false;
-  } else if( !fixed_width ) setupNeighborsVector();
+    grid_diff_value.push_back( Value() );
+    if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
+    else grid_diff_value[i].setNotPeriodic();
+  } 
+  // And setup the grid object
+  gridobject.setBounds( gmin, gmax, nbin, gspacing );
+  std::vector<unsigned> shape( gridobject.getNbin(true) );
+  getPntrToComponent(0)->setShape( shape );
+  // And setup the neighbors 
+  if( kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) {
+      fixed_width=true; setupNeighborsVector();
+  }   
 }
 
 void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
@@ -401,10 +370,9 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
                                       std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   bool isdists=dumpcube; double units=1.0; gtype="flat";
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
-    unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
-    if( getPntrToArgument( k )->getName().find(".")==std::string::npos ) { isdists=false; break; }
-    std::size_t dot = getPntrToArgument( k )->getName().find(".");
-    std::string name = getPntrToArgument( k )->getName().substr(dot+1);
+    if( getPntrToArgument( i )->getName().find(".")==std::string::npos ) { isdists=false; break; }
+    std::size_t dot = getPntrToArgument( i )->getName().find(".");
+    std::string name = getPntrToArgument( i )->getName().substr(dot+1);
     if( name!="x" && name!="y" && name!="z" ) { isdists=false; break; }
   }
   if( isdists ) {
@@ -412,8 +380,7 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
     else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
-    unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
-    argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
+    argn[i] = getPntrToArgument( i )->getName(); double gmin, gmax;
     if( isdists && gridobject.getMin().size()>0 ) {
       Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
       Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
@@ -424,16 +391,16 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
   }
 }
 
-void KDE::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
+void KDE::buildSingleKernel( const double& height, std::vector<double>& args ) {
   if( kerneltype=="DISCRETE" ) {
     for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
-    tflags[ gridobject.getIndex( args ) ] = 1; return;
+    getPntrToOutput(0)->addTaskToCurrentList( gridobject.getIndex( args ) ); return;
   } else { 
     cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
   } 
   unsigned num_neigh; std::vector<unsigned> neighbors;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
-  for(unsigned i=0; i<num_neigh; ++i) tflags[ neighbors[i] ] = 1;
+  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( neighbors[i] );
 }
 
 double KDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {
@@ -441,7 +408,7 @@ double KDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::
 
   if( kerneltype.find("bin")!=std::string::npos ) {
     double val=cheight; std::size_t dd = kerneltype.find("-bin");
-    HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) ); Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+    HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) ); Value* bw_arg=getPntrToArgument(bwargno);
     for(unsigned j=0; j<args.size(); ++j) {
       if( gridobject.isPeriodic(j) ) {
         double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
@@ -459,7 +426,7 @@ double KDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::
 }
 
 double KDE::evaluateKernel( const std::vector<double>& gpoint, const std::vector<double>& args, const double& height, std::vector<double>& der ) const {
-  double r2=0, hval = height; Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+  double r2=0, hval = height; Value* bw_arg=getPntrToArgument(bwargno);
   if( bw_arg->getRank()<2 ) {
       for(unsigned j=0; j<der.size(); ++j) {
          double tmp = -grid_diff_value[j].difference( gpoint[j], args[j] );
@@ -494,7 +461,7 @@ void KDE::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
 
 double KDE::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args,
                                      const double& height, std::vector<double>& der ) const {
-  double val=height; std::vector<double> contr( args.size() ); Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
+  double val=height; std::vector<double> contr( args.size() ); Value* bw_arg=getPntrToArgument(bwargno);
   if( bw_arg->getRank()<2 ) {
       for(unsigned j=0; j<args.size(); ++j) {
         bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], 1/sqrt(bw_arg->get(j)) );
@@ -540,7 +507,7 @@ void KDE::addKernelToGrid( const double& height, const std::vector<double>& args
   }
 }
 
-void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const {
+void KDE::addKernelForces( const bool& height_has_derivative, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const {
   plumed_assert( kerneltype!="DISCRETE" );
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
@@ -550,14 +517,14 @@ void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask,
     for(unsigned i=0; i<num_neigh; ++i) {
       gridobject.getGridPointCoordinates( neighbors[i], gpoint );
       double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
+      if( height_has_derivative ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += numberOfKernels; }
     }
   } else {
     for(unsigned i=0; i<num_neigh; ++i) {
       gridobject.getGridPointCoordinates( neighbors[i], gpoint ); 
       double val = evaluateKernel( gpoint, args, height, der ), fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
+      if( height_has_derivative ) forces[ args.size()*numberOfKernels + htask ] += val*fforce / height;
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
     }
   }

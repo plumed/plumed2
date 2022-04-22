@@ -35,7 +35,7 @@ public:
 /// Constructor
   explicit Concatenate(const ActionOptions&);
 ///
-  std::vector<unsigned> getMatrixShapeForFinalTasks() override;
+  std::vector<unsigned> getValueShapeFromArguments() override;
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
@@ -62,7 +62,6 @@ Concatenate::Concatenate(const ActionOptions& ao):
           getPntrToArgument(i)->buildDataStore( getLabel() ); 
       }
       std::vector<unsigned> shape(1); shape[0]=getNumberOfScalarArguments(); 
-      for(unsigned i=0; i<shape[0]; ++i) addTaskToList(i);
       log.printf("  creating vector with %d elements \n", shape[0] ); 
       addValue( shape ); bool period=getPntrToArgument(0)->isPeriodic(); 
       std::string min, max; if( period ) getPntrToArgument(0)->getDomain( min, max );
@@ -118,7 +117,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
   }
 }
 
-std::vector<unsigned> Concatenate::getMatrixShapeForFinalTasks() {
+std::vector<unsigned> Concatenate::getValueShapeFromArguments() {
   return getPntrToOutput(0)->getShape();
 }
 

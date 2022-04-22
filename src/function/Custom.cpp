@@ -257,28 +257,19 @@ std::string Custom::getGraphInfo( const std::string& name ) const {
   return FunctionTemplateBase::getGraphInfo( name ) + "\\n" + "FUNC=" + func;
 }
 
-
-bool Custom::defaultTaskListBuilder() const {
-  return check_multiplication_vars.size()==0;
-}
-
 bool Custom::getDerivativeZeroIfValueIsZero() const {
   return check_multiplication_vars.size()>0;
 }
- 
-void Custom::buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const {
-  bool foundarg=false;
+
+void Custom::buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const {
+  bool found=false; ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>(av); plumed_assert( aa );
   for(unsigned i=0;i<check_multiplication_vars.size();++i) {
-      if( action->getPntrToArgument(check_multiplication_vars[i])->getPntrToAction() ) { 
-          std::string argact = action->getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
-          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
-              if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
-          } 
-          if( foundarg ) break;
-      }
+      if( aa->getPntrToArgument(check_multiplication_vars[i])->getName()==name ) { found=true; break; }
   }
-  if( foundarg ) actionsThatSelectTasks.push_back( action->getLabel() );
-}
+  if( found ) {
+      Value* output=av->copyOutput(0); for(const auto & t : tflags ) output->addTaskToCurrentList(t);
+  }
+} 
 
 void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {

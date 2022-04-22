@@ -48,7 +48,6 @@ class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
   friend class CollectFrames; 
 private:
-  bool allrankzero;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
   AverageBase* theAverageInArguments;
@@ -57,13 +56,11 @@ private:
   ActionWithValue* getFirstNonStream();
   Value* getArgumentForScalar(const unsigned n) const ;
 protected:
-  bool numberedkeys, done_over_stream;
+  bool done_over_stream;
   std::vector< std::pair<ActionWithValue*,unsigned> > distinct_arguments;
-  std::vector<unsigned> arg_ends, arg_deriv_starts;
+  std::vector<unsigned> arg_deriv_starts;
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( const PDB& pdb );
-/// Create a list of tasks from the argument streams
-  void createTasksFromArguments();
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
@@ -72,8 +69,6 @@ protected:
   bool skipCalculate() const ;
 /// Should we skip running update for this action
   bool skipUpdate() const ;
-/// Resize all the values for the final task
-  void resizeForFinalTasks();
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -88,11 +83,9 @@ public:
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
 /// Returns the sizes of output matrices 
-  virtual std::vector<unsigned> getMatrixShapeForFinalTasks();
+  virtual std::vector<unsigned> getValueShapeFromArguments();
 /// Get the number of tasks to create if this is called at end
   virtual unsigned getNumberOfFinalTasks() { plumed_merror("Number of final tasks function not defined for this type of object"); }
-/// Get the number of arguments in each task
-  unsigned getNumberOfArgumentsPerTask() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
 /// Takes one value and brings it back into the pbc of argument i
@@ -109,8 +102,6 @@ public:
   static void setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av );
 /// This gets the gradients
   static void setGradientsForActionChain( Value* myval, unsigned& start, ActionWithValue* av );
-/// This gets the component jcomp of argument iarg
-  double retrieveRequiredArgument( const unsigned& iarg, const unsigned& jcomp ) const ;
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}
@@ -124,10 +115,10 @@ public:
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   static void interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* action, std::vector<Value*>&arg);
-///
-  virtual void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-/// Retrieve the argument values
-  void retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const ;
+/// Create the tasks from the requests put in by the various arguments
+  virtual void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& tflags );
+/// Built the task list from the argument values that have been passed here
+  virtual void buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags );
 /// This tells us which arguments must be treated as distinct in functions
   virtual bool mustBeTreatedAsDistinctArguments();
 /// Get the number of quantities that must be stored in input

@@ -35,13 +35,13 @@ public:
 ///
   unsigned getNumberOfColumns() const override;
 ///
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) override ;
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
   void apply() override;
 ///
-  std::vector<unsigned> getMatrixShapeForFinalTasks() override;
+  std::vector<unsigned> getValueShapeFromArguments() override;
 ///
   double getForceOnMatrixElement( const unsigned& imat, const unsigned& jrow, const unsigned& kcol ) const override;
 };
@@ -58,10 +58,10 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->isSymmetric() ) warning("input matrix is symmetric.  Transposing will achieve nothing!");
-  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); addValue( shape ); 
+  std::vector<unsigned> shape( getValueShapeFromArguments() ); addValue( shape ); 
 }
 
-std::vector<unsigned> TransposeMatrix::getMatrixShapeForFinalTasks() {
+std::vector<unsigned> TransposeMatrix::getValueShapeFromArguments() {
   std::vector<unsigned> shape(2);
   if( getPntrToArgument(0)->getRank()==0 ) {
      shape.resize(0);
@@ -79,9 +79,11 @@ std::vector<unsigned> TransposeMatrix::getMatrixShapeForFinalTasks() {
   return shape;
 }
 
-void TransposeMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) { 
-  if( aLabelsInChain.size()==0 ) getAllActionLabelsInChain( aLabelsInChain );
-  bool ignore = checkUsedOutsideOfChain( aLabelsInChain, parent, actionsThatSelectTasks, tflags );
+void TransposeMatrix::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+  // By calling this function here we ensure that if we are multiplying if we are calculating an lq6 in a particular volume
+  // the calculation runs fast.  Only the parts of the matrix that we need to compute the dot products in the volume of interest
+  // are computed.  There are lots of zeros in the matrix because we don't need all the elements in this case
+  propegateTaskListsForValue( 0, ntasks, reduce, otasks );
 }
 
 unsigned TransposeMatrix::getNumberOfColumns() const {

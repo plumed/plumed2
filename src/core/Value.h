@@ -84,6 +84,11 @@ private:
   std::set<std::string> userdata;
 /// What is the shape of the value (0 dimensional=scalar, 1 dimensional=vector, 2 dimensional=matrix)
   std::vector<unsigned> shape;
+/// The number of tasks that must be performed to calculate this value
+  unsigned ntasks;
+/// The list of tasks that are being performed for this action
+  bool reducedTasks;
+  std::set<unsigned> taskList;
 /// This is used if the action is a constant
   bool constant;
 /// This is used by actions that always store data.  They cannot operate without storing all values
@@ -245,6 +250,10 @@ public:
 ///
   void setDerivativeIsZeroWhenValueIsZero();
   bool getDerivativeIsZeroWhenValueIsZero() const ;
+///
+  void setNumberOfTasks( const unsigned& nt );
+  unsigned getNumberOfTasks() const ;
+  void addTaskToCurrentList( const unsigned& itask );
 };
 
 inline
@@ -257,7 +266,7 @@ void Value::applyPeriodicity( const unsigned& ival ) {
 
 inline
 void Value::set(double v) {
-  plumed_dbg_assert( shape.size()==0 );
+  plumed_dbg_massert( shape.size()==0, "problem in " + name );
   value_set=true;
   data[0]=v;
   applyPeriodicity(0);
@@ -334,6 +343,11 @@ inline
 void Value::clearDerivatives() {
   if( constant ) return; value_set=false; 
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+}
+
+inline
+void Value::addTaskToCurrentList( const unsigned& itask ) {
+  taskList.insert( itask );
 }
 
 inline

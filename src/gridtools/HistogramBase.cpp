@@ -38,32 +38,26 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  heights_index(1),
-  numberOfKernels(1),
-  one_kernel_at_a_time(false)
+  hasheight(false),
+  fixed_width(false),
+  grid_dimension(getNumberOfArguments()),
+  numberOfKernels(1)
 {
   // Check all the values have the right size
-  if( arg_ends.size()>0 ) {
-    setNumberOfKernels();
-  } else {
-    arg_ends.push_back(0); for(unsigned i=0; i<getNumberOfArguments(); ++i) arg_ends.push_back(i+1);
-  }
+  setNumberOfKernels();
   // Get the heights if need be
   std::vector<std::string> weight_str; parseVector("HEIGHTS",weight_str);
-  if( weight_str.size()>0 ) {
+  if( weight_str.size()==1 ) {
     std::vector<Value*> weight_args; ActionWithArguments::interpretArgumentList( weight_str, plumed.getActionSet(), this, weight_args );
-    heights_index=2; std::vector<Value*> args( getArguments() ); unsigned tvals=0;
-    log.printf("  quantities used for weights are : %s ", weight_str[0].c_str() );
-    for(unsigned i=1; i<weight_args.size(); ++i) log.printf(", %s", weight_str[i].c_str() );
-    log.printf("\n");
+    hasheight=true; std::vector<Value*> args( getArguments() ); args.push_back( weight_args[0] );
+    log.printf("  quantities used for weights are : %s \n", weight_str[0].c_str() );
 
-    for(unsigned i=0; i<weight_args.size(); ++i) {
-      tvals += weight_args[i]->getNumberOfValues();
-      args.push_back( weight_args[i] );
-    }
-    if( tvals>1 && numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
-    arg_ends.push_back( args.size() ); requestArguments( args, true );
+    if( weight_args[0]->getNumberOfValues()>1 && numberOfKernels!=weight_args[0]->getNumberOfValues() ) error("mismatch between numbers of values in input arguments and HEIGHTS");
+    requestArguments( args, true );
   }
+  // Make sure we are storing all the values
+  done_over_stream = false;
+  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->buildDataStore( getLabel() );
 
   parseFlag("UNORMALIZED",unorm);
   if( unorm ) log.printf("  calculating unormalized distribution \n");
@@ -78,45 +72,27 @@ void HistogramBase::resizeForcesToApply() {
   forcesToApply.resize( nvals_t );
 }
 
-void HistogramBase::createTaskList() {
-  bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
-  if( hasrank ) {
-    buildTasksFromBasedOnRankOfInputData();
-  } else {
-    one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
-    if( !one_kernel_at_a_time ) for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
-  }
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); }
-}
-
 void HistogramBase::setNumberOfKernels() {
-  numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues();
-  for(unsigned i=1; i<arg_ends.size()-1; ++i) {
-    unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues();
-    if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments");
+  numberOfKernels=getPntrToArgument(0)->getNumberOfValues();
+  for(unsigned i=1; i<grid_dimension; ++i) {
+    if( numberOfKernels!=getPntrToArgument(i)->getNumberOfValues() ) error("mismatch between numbers of values in input arguments");
   }
-}
-
-void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
-  plumed_dbg_assert( getPntrToArgument(0)->getRank()>0 );
-  // Now build the data task list based on the rank of the input data
-  if( getPntrToArgument(0)->getRank()==2 ) {
-     std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-     bool symmetric=getPntrToArgument(arg_ends[getNumberOfDerivatives()])->isSymmetric(); 
-     for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
-         if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
-     }
-     if( symmetric ) {
-         for(unsigned j=0;j<shape[0];++j) {
-             for(unsigned k=0;k<=j;++k) addTaskToList( j*shape[0] + k );
-         }
-     } else {
-         for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
-     }
-  } else if( getPntrToArgument(0)->getRank()==1 ) {
-     for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
-  } else {
-     error("do not know how to build histograms for objects with this rank");
+  if( numberOfKernels>1 ) {
+      task_list.clear(); bool symmetric=false;
+      if( getPntrToArgument(0)->getRank()==2 ) {
+          symmetric=getPntrToArgument(0)->isSymmetric();
+          for(unsigned i=0; i<grid_dimension; ++i) {
+              if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
+          }
+      }
+      if( symmetric ) { 
+          std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+          for(unsigned j=1;j<shape[0];++j) {
+              for(unsigned k=0;k<j;++k) task_list.insert(j*shape[0]+k);
+          } 
+      } else {
+          for(unsigned i=0;i<numberOfKernels;++i) task_list.insert(i);
+      }
   }
 }
 
@@ -124,13 +100,10 @@ void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape 
   ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
   getPntrToOutput(0)->alwaysStoreValues(); 
   getPntrToOutput(0)->setDerivativeIsZeroWhenValueIsZero();
-  if( one_kernel_at_a_time ) {
-    for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
-  }
 }
 
 unsigned HistogramBase::getNumberOfDerivatives() const {
-  return arg_ends.size()-heights_index;
+  return grid_dimension;
 }
 
 void HistogramBase::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
@@ -153,6 +126,7 @@ void HistogramBase::update() {
   if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
   // This is done if we are doing a histogram from a time series
+  // Make sure tasks are set
   runAllTasks();
 }
 
@@ -160,30 +134,36 @@ void HistogramBase::runFinalJobs() {
   if( skipUpdate() ) return;
   plumed_assert( !actionInChain() );
   // Need to create tasks here
-  if( getFullNumberOfTasks()==0 ) { setNumberOfKernels(); buildTasksFromBasedOnRankOfInputData(); runAllTasks(); }
+  if( getPntrToArgument(0)->getRank()>0 ) { 
+      setNumberOfKernels(); 
+      // Make sure tasks are set
+      setupCurrentTaskList(); runAllTasks();
+  }
 } 
 
-void HistogramBase::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  completeGridObjectSetup(); actionsThatSelectTasks.push_back( getLabel() );
-  if( !one_kernel_at_a_time ) { 
-      unsigned hind = getNumberOfDerivatives();
-      if( heights_index==2 && getPntrToArgument(arg_ends[hind])->getRank()>0 ) {
-          tflags.assign(tflags.size(),1);
-          for(unsigned i=0;i<tflags.size();++i) {
-              if( fabs(getPntrToArgument(arg_ends[hind])->get( getTaskCode(i) ))<epsilon ) tflags[i]=0;
-          }
-      } else { tflags.assign(tflags.size(),1); }
-      norm = static_cast<double>( tflags.size() ); 
+void HistogramBase::setupCurrentTaskList() {
+  if( !fixed_width ) setupNeighborsVector();
+  if( numberOfKernels>1 ) {
+    unsigned hind = getNumberOfDerivatives();
+    getPntrToOutput(0)->setNumberOfTasks( numberOfKernels );
+    if( hasheight && getPntrToArgument(grid_dimension)->getRank()>0 ) {
+        for(const auto & t : task_list ) {
+            if( fabs(getPntrToArgument(grid_dimension)->get(t))>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(t);
+        }
+    } else {
+        for(const auto & t : task_list ) getPntrToOutput(0)->addTaskToCurrentList(t);
+    }
+    norm = static_cast<double>( numberOfKernels );
   } else {
     std::vector<double> args( getNumberOfDerivatives() );
-    double height=1.0; if( heights_index==2 ) height = getPntrToArgument(arg_ends[args.size()])->get();
+    double height=1.0; if( hasheight ) height = getPntrToArgument(grid_dimension)->get();
     for(unsigned i=0; i<args.size(); ++i) args[i]=getPntrToArgument(i)->get();
-    buildSingleKernel( tflags, height, args );
+    buildSingleKernel( height, args );
   }
 }
 
 void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) const {
-  if( one_kernel_at_a_time ) {
+  if( numberOfKernels==1 ) {
     std::vector<double> args( getNumberOfDerivatives() ), der( getNumberOfDerivatives() );
     unsigned valout = getPntrToOutput(0)->getPositionInStream();
     gridobject.getGridPointCoordinates( current, args ); double vv = calculateValueOfSingleKernel( args, der );
@@ -193,16 +173,16 @@ void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) c
 }
 
 void HistogramBase::retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const {
-  std::vector<double> argsh( arg_ends.size()-1 ); retrieveArguments( myvals, argsh, 0 );
-  height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
+  height=1.0; for(unsigned i=0; i<args.size(); ++i) args[i]=getPntrToArgument(i)->get( myvals.getTaskIndex() );
+  if( hasheight && getPntrToArgument(grid_dimension)->getRank()==0 ) height = getPntrToArgument( grid_dimension )->get();
+  else if( hasheight ) height = height = getPntrToArgument( grid_dimension )->get( myvals.getTaskIndex() );
   if( !unorm ) height = height / norm;
-  for(unsigned i=0; i<args.size(); ++i) args[i]=argsh[i];
 }
 
 void HistogramBase::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                        const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 );
-  if( one_kernel_at_a_time ) {
+  if( numberOfKernels==1 ) {
     unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
     unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
     for(unsigned i=0; i<getNumberOfDerivatives(); ++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
@@ -224,7 +204,7 @@ void HistogramBase::apply() {
 }
 
 void HistogramBase::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( one_kernel_at_a_time ) {
+  if( numberOfKernels==1 ) {
     if( getPntrToOutput(0)->forcesWereAdded() ) {
       unsigned valout = getPntrToOutput(0)->getPositionInStream(); double fforce = getPntrToOutput(0)->getForce( itask );
       for(unsigned i=0; i<getNumberOfDerivatives(); ++i) forces[i] += fforce*myvals.getDerivative( valout, i );
@@ -234,8 +214,7 @@ void HistogramBase::gatherForces( const unsigned& itask, const MultiValue& myval
   std::vector<double> args( getNumberOfDerivatives() ); double height;
   retrieveArgumentsAndHeight( myvals, args, height );
   if( fabs(height)>epsilon ) {
-    unsigned htask = 0; if( arg_ends[arg_ends.size()-1]-arg_ends[arg_ends.size()-2]>1 || getPntrToArgument(arg_ends[arg_ends.size()-2])->getRank()>0 ) htask=itask;
-    if( getPntrToOutput(0)->forcesWereAdded() ) addKernelForces( heights_index, itask, args, htask, height, forces );
+    if( getPntrToOutput(0)->forcesWereAdded() ) addKernelForces( hasheight, itask, args, itask, height, forces );
   }
 }
 

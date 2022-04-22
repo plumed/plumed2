@@ -137,26 +137,28 @@ double DistanceFromContourBase::getDifferenceFromContour( const std::vector<doub
 
 void DistanceFromContourBase::apply() {
   if( doNotCalculateDerivatives() ) return ;
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
   const unsigned    nat=getNumberOfAtoms();
 
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if(getPntrToComponent(3)->applyForce(forcesToApply)) {
+    Vector f;
     for(unsigned j=0; j<nat; ++j) {
-      f[j][0]+=forcesToApply[3*j+0];
-      f[j][1]+=forcesToApply[3*j+1];
-      f[j][2]+=forcesToApply[3*j+2];
+      f[0]=forcesToApply[3*j+0];
+      f[1]=forcesToApply[3*j+1];
+      f[2]=forcesToApply[3*j+2];
+      addForce( j, f );
     }
-    v(0,0)+=forcesToApply[3*nat+0];
-    v(0,1)+=forcesToApply[3*nat+1];
-    v(0,2)+=forcesToApply[3*nat+2];
-    v(1,0)+=forcesToApply[3*nat+3];
-    v(1,1)+=forcesToApply[3*nat+4];
-    v(1,2)+=forcesToApply[3*nat+5];
-    v(2,0)+=forcesToApply[3*nat+6];
-    v(2,1)+=forcesToApply[3*nat+7];
-    v(2,2)+=forcesToApply[3*nat+8];
+    Tensor v; 
+    v(0,0)=forcesToApply[3*nat+0];
+    v(0,1)=forcesToApply[3*nat+1];
+    v(0,2)=forcesToApply[3*nat+2];
+    v(1,0)=forcesToApply[3*nat+3];
+    v(1,1)=forcesToApply[3*nat+4];
+    v(1,2)=forcesToApply[3*nat+5];
+    v(2,0)=forcesToApply[3*nat+6];
+    v(2,1)=forcesToApply[3*nat+7];
+    v(2,2)=forcesToApply[3*nat+8];
+    addVirial( v );
   }
 }
 

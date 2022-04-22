@@ -44,12 +44,10 @@ protected:
 public:
 /// Override this function if you have not implemented the derivatives
   virtual bool derivativesImplemented() { return true; }
-/// Override this function if there is something special you need to do when building task lists for vectors
-  virtual bool defaultTaskListBuilder() const { return true; }
 ////
   virtual std::vector<std::string> getComponentsPerLabel() const ;
   virtual bool getDerivativeZeroIfValueIsZero() const { return false; } 
-  virtual void buildTaskList( ActionWithArguments* action, std::vector<std::string>& actionsThatSelectTasks ) const { plumed_merror("this function should not be called"); }
+  virtual void buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const ; 
   virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
@@ -108,6 +106,13 @@ void FunctionTemplateBase::setPeriodicityForOutputs( ActionWithValue* action ) {
 inline
 std::string FunctionTemplateBase::getGraphInfo( const std::string& name ) const {
   std::size_t und = name.find_last_of("_"); return name.substr(0,und); 
+}
+
+inline
+void FunctionTemplateBase::buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const {
+  for(unsigned i=0;i<av->getNumberOfComponents();++i) {
+      Value* output=av->copyOutput(i); for(const auto & t : tflags ) output->addTaskToCurrentList(t);
+  }
 }
 
 }

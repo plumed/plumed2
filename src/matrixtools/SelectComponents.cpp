@@ -32,6 +32,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit SelectComponents(const ActionOptions&);
+/// Get the shape of the final value
+  std::vector<unsigned> getValueShapeFromArguments() override;
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
@@ -76,6 +78,11 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
       }
   } else error("can only select elements from values with rank 1 or rank 2");
   log.printf("\n");
+}
+
+std::vector<unsigned> SelectComponents::getValueShapeFromArguments() {
+  std::vector<unsigned> r2shape(2); r2shape[0]=r2shape[1]=selection.size();
+  return r2shape;
 }
 
 void SelectComponents::completeMatrixOperations() {

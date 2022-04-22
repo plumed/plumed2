@@ -45,7 +45,7 @@ public:
   void calculate();
   void finishComputations( const std::vector<double>& buf );
   void accumulate( const std::vector<std::vector<Vector> >& dir );
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void setupCurrentTaskList() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };
 

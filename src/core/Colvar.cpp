@@ -42,17 +42,17 @@ void Colvar::registerKeywords( Keywords& keys ) {
 
 void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
-  ActionAtomistic::requestAtoms(a);
+  ActionAtomistic::requestAtoms(a); f.resize(a.size());
 // Resize the derivatives of all atoms
   for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
 void Colvar::apply() {
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
+  Tensor            v; v.zero();
   const unsigned    nat=getNumberOfAtoms();
   const unsigned    ncp=getNumberOfComponents();
   const unsigned    fsz=f.size();
+  for(unsigned i=0;i<fsz;++i) f[i].zero();
 
   unsigned stride=1;
   unsigned rank=0;
@@ -100,6 +100,8 @@ void Colvar::apply() {
     if(fsz>0) comm.Sum(&f[0][0],3*fsz);
     comm.Sum(&v[0][0],9);
   }
+  for(unsigned j=0; j<nat; ++j) addForce( j, f[j] );
+  addVirial(v);
 
 }
 

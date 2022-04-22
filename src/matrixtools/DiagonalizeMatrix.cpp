@@ -37,8 +37,6 @@ public:
   explicit DiagonalizeMatrix(const ActionOptions&);
 /// This is required to set the number of derivatives for the eigenvalues
   unsigned getNumberOfDerivatives() const override { return getPntrToArgument(0)->getNumberOfValues(); }
-///
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
 /// 
   unsigned getNumberOfFinalTasks() override { return getPntrToArgument(0)->getShape()[0]; }
 /// Do the calculation
@@ -94,19 +92,16 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); 
 }
 
-void DiagonalizeMatrix::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  if( (getPntrToArgument(0)->getPntrToAction())->getName()=="COVARIANCE_MATRIX" ) return;
-  ActionWithArguments::getTasksForParent( parent, actionsThatSelectTasks, tflags );
-}
-
 void DiagonalizeMatrix::completeMatrixOperations() {
   if( getPntrToArgument(0)->getShape()[0]==0 ) return ;
-
   // Resize stuff that might need resizing
   unsigned nvals=getPntrToArgument(0)->getShape()[0]; 
   if( eigvals.size()!=nvals ) { 
       mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); 
-      eigvecs.resize( nvals, nvals );
+      eigvecs.resize( nvals, nvals ); std::vector<unsigned> shape(1); shape[0]=nvals;
+      for(unsigned i=0; i<desired_vectors.size(); ++i) {
+         if( getPntrToComponent( 2*i+1 )->getShape()[0]!=nvals ) getPntrToComponent( 2*i+1 )->setShape( shape );
+      }
   }
 
   // Retrieve the matrix from input

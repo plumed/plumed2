@@ -41,6 +41,7 @@ MatrixProductBase::MatrixProductBase(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   ActionWithValue(ao),
+  runUpdate(false),
   skip_ieqj(false),
   diagonal(false),
   doInnerLoop(false)
@@ -52,14 +53,13 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
      if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->hasDerivatives() ) error("arguments should be matrices or vectors");
   }
-  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() ); unsigned noutput = getNumberOfArguments() / 2;
+  std::vector<unsigned> shape( getValueShapeFromArguments() ); unsigned noutput = getNumberOfArguments() / 2;
   bool zero_diag=false; if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",zero_diag);
   if( zero_diag && shape[0]!=shape[1] ) error("cannot set diagonal elements of matrix to zero if matrix is not square");
   else if( zero_diag ) skip_ieqj=true;
   if( skip_ieqj ) log.printf("  ignoring diagonal elements of matrix \n");
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-  if( shape.size()==0 ) addTaskToList(0);
-  else { for(unsigned j=0; j<shape[0]; ++j ) addTaskToList(j); }
+  if( shape.size()==0 ) runUpdate=true; else if( shape[0]>0 ) runUpdate=true;  
   // And create the matrix to hold the dot products
   if( noutput>1 ) {
       for(unsigned i=0; i<noutput; ++i) {
@@ -75,6 +75,9 @@ void MatrixProductBase::readMatricesToMultiply( const bool& periodic, const std:
   } else {
       if( shape.size()==0 ) addValueWithDerivatives( shape ); else addValue( shape ); 
       if( periodic ) setPeriodic( min, max ); else setNotPeriodic();  
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->isTimeSeries() ) { getPntrToComponent(0)->makeHistoryDependent(); break; }
+      }
   }
 
   for(unsigned nv=0; nv<noutput; ++nv ) {
@@ -127,42 +130,27 @@ bool MatrixProductBase::mustBeTreatedAsDistinctArguments() {
   return true;
 }
 
-void MatrixProductBase::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  if( tflags.size()!=getFullNumberOfTasks() ) return;
-  // Check if parent has already been added
-  bool found=false;
-  for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
-      if( actionsThatSelectTasks[i]==parent ) { found=true; break; }
-  }
-  if( found ) return;
+void MatrixProductBase::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+  if( ntasks!=getNumberOfOuterTasks() || skipCalculate() ) return;
   // Get the flags for this chain
-  std::vector<unsigned> lflags( tflags.size(), 0 ); std::vector<unsigned> pTaskList, pIndexList;
-  unsigned n_active = setTaskFlags( lflags, pTaskList, pIndexList );
+  getActionThatCalculates()->setupForCalculation(); std::set<unsigned> pTaskList; setTaskFlags( ntasks, pTaskList );
   // Check if anything has been deactivated downstream
-  if( n_active==tflags.size() ) return;
+  if( pTaskList.size()==ntasks ) return;
   // And retrieve non zero elements of contact matrix we are multiplying this by
   AdjacencyMatrixBase* ab = dynamic_cast<AdjacencyMatrixBase*>( getActionThatCalculates() );
   if( ab ) {
-      // If tasks are deactivated in this child we can deactivate things in parent
-      actionsThatSelectTasks.push_back( parent );
       // Get the atoms so that we can setup the neightbor lists
       ab->retrieveAtoms();
       // Now prepare the input matrix for the task loop
-      ab->prepareForTasks( n_active, pTaskList );
+      ab->prepareForTasks( pTaskList );
       // Get the neighbours of each of the active atoms
-      std::vector<unsigned> indices( getFullNumberOfTasks() );
-      for(unsigned i=0;i<n_active;++i) {
-          unsigned nneigh = ab->retrieveNeighbours( pTaskList[i], indices );
-          for(unsigned j=0;j<nneigh;++j) tflags[indices[j]] = 1;
+      std::vector<unsigned> indices( getPntrToOutput(0)->getShape()[0] );
+      for(const auto & t : pTaskList) {
+          unsigned nneigh = ab->retrieveNeighbours( t, indices );
+          for(unsigned j=0;j<nneigh;++j) otasks.insert(indices[j]);
       }
-      unsigned nacc = 0;
-      for(unsigned i=0; i<tflags.size(); ++i) {
-        if( tflags[i]>0 ) nacc++;
-      }
-  } else {
-      if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
-      bool ignore = checkUsedOutsideOfChain( actionsLabelsInChain, parent, actionsThatSelectTasks, tflags );
-  }
+      if( !reduce ) reduce=true;
+  } else propegateTaskListsForValue( 0, ntasks, reduce, otasks );
 }
 
 void MatrixProductBase::lockRequests() {
@@ -186,21 +174,16 @@ void MatrixProductBase::calculate() {
 void MatrixProductBase::update() {
   if( actionInChain() || skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( runUpdate ) runAllTasks();
 }
 
 void MatrixProductBase::runFinalJobs() {
   if( actionInChain() || skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
-  resizeForFinalTasks();
-  runAllTasks();
+  runAllTasks(); 
 }
 
-unsigned MatrixProductBase::getNumberOfFinalTasks() {
-  return getMatrixShapeForFinalTasks()[0];
-}
-
-std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
+std::vector<unsigned> MatrixProductBase::getValueShapeFromArguments() {
   std::vector<unsigned> shape(2); unsigned noutput=getNumberOfArguments() / 2;
   if( getPntrToArgument(0)->getRank()==1 && getPntrToArgument(noutput)->getRank()==1 ) {
       shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(noutput)->getShape()[0];
@@ -214,7 +197,7 @@ std::vector<unsigned> MatrixProductBase::getMatrixShapeForFinalTasks() {
           unsigned nn=shape[0]; shape.resize(1); shape[0]=nn; 
       }
   } else if( getPntrToArgument(0)->getRank()==2 && getPntrToArgument(noutput)->getRank()==2 ) {
-      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of columns in second");
+      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(noutput)->getShape()[0] ) error("number of columns in first matrix is not equal to number of rows in second");
       shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(noutput)->getShape()[1];
       for(unsigned i=1;i<noutput;++i) {
           if( getPntrToArgument(i)->getRank()!=2 || getPntrToArgument(noutput+i)->getRank()!=2 ) error("all input arguments should have rank two");
@@ -268,7 +251,7 @@ void MatrixProductBase::updateCentralMatrixIndex( const unsigned& ind, const std
   } else {
       for(unsigned k=0; k<getNumberOfComponents(); ++k ) {
           unsigned nmat = getPntrToOutput(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
-          std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); unsigned invals=getFullNumberOfTasks(); 
+          std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) ); 
 
           unsigned numargs = 0;
           if( getNumberOfArguments()>0 ) {
@@ -306,16 +289,22 @@ unsigned MatrixProductBase::getNumberOfInnerTasks() const {
   return getPntrToOutput(0)->getShape()[1]; 
 }
 
+unsigned MatrixProductBase::getNumberOfOuterTasks() const {
+  if( getPntrToOutput(0)->getRank()==0 ) return 1;
+  else if( getPntrToOutput(0)->getRank()==1 ) getPntrToArgument(0)->getShape()[0];
+  return getPntrToOutput(0)->getShape()[0];
+}
+
 void MatrixProductBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
   if( diagonal && getPntrToOutput(0)->getRank()!=0 ) {
       if( indices.size()!=2 ) indices.resize( 2 ); 
-      indices[0] = current; indices[1] = getFullNumberOfTasks() + current;
+      indices[0] = current; indices[1] = getNumberOfOuterTasks() + current;
   } else {
       unsigned size_v = getNumberOfInnerTasks();
       if( skip_ieqj ) {
          if( indices.size()!=size_v ) indices.resize( size_v );
       } else if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );; 
-      unsigned k=1; indices[0]=current; unsigned start_n = getFullNumberOfTasks();
+      unsigned k=1; indices[0]=current; unsigned start_n = getNumberOfOuterTasks();;
       for(unsigned i=0; i<size_v; ++i) {
           if( skip_ieqj && myvals.getTaskIndex()==i ) continue;
           indices[k]=start_n + i; k++;
@@ -338,7 +327,7 @@ void MatrixProductBase::performTask( const unsigned& current, MultiValue& myvals
   unsigned ntwo_atoms = myvals.getSplitIndex();
   for(unsigned i=1; i<ntwo_atoms; ++i) {
     // This does everything in the stream that is done with single matrix elements
-    runTask( getLabel(), myvals.getTaskIndex(), current, indices[i], myvals );
+    runTask( getLabel(), current, indices[i], myvals );
     // Now clear only elements that are not accumulated over whole row
     clearMatrixElements( myvals );
   }
@@ -374,7 +363,7 @@ bool MatrixProductBase::performTask( const std::string& controller, const unsign
   // This makes sure other AdjacencyMatrixBase actions in the stream don't get their matrix elements calculated here
   unsigned noutput=getNumberOfComponents(); if( doInnerLoop ) { noutput=1; if( controller!=getLabel() ) return false; }
   // Now do the calculation
-  unsigned ss0=0, ss1=0, nargs=0, ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+  unsigned ss0=0, ss1=0, nargs=0, ind2 = index2; if( index2>=getNumberOfOuterTasks() ) ind2 = index2 - getNumberOfOuterTasks();
   for(unsigned nv=0; nv<noutput; ++nv) {
       if( getNumberOfArguments()>0 ) {
           ss0=1; if( getPntrToArgument(nv)->getRank()==2 ) ss0=getPntrToArgument(nv)->getShape()[1];

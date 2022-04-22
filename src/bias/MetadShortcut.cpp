@@ -64,7 +64,7 @@ ActionShortcut(ao)
   // Convert the bandwidth to something constant actions
   gridtools::HistogramTools::convertBandwiths( getShortcutLabel(), sigma, this );
   // Create a metadynamics bias
-  createMetadBias( getShortcutLabel(), pacestr, args, gmin, gmax, grid_nbins, getShortcutLabel() + "_wtfact", "", "", this );
+  createMetadBias( getShortcutLabel(), pacestr, args, args, gmin, gmax, grid_nbins, getShortcutLabel() + "_wtfact", "", "", this );
   // Bias the simulation using this bias potentital
   readInputLine("BIASVALUE ARG=" + getShortcutLabel() + "_bias" );
   // Complete setup of the well tempered weights
@@ -75,44 +75,45 @@ ActionShortcut(ao)
   }
 }
 
-void MetadShortcut::createMetadBias( const std::string& lab, const std::string& pacestr, const std::vector<std::string>& args, 
+void MetadShortcut::createMetadBias( const std::string& lab, const std::string& pacestr, const std::vector<std::string>& kernel_args, const std::vector<std::string>& eval_args,
                                      const std::vector<std::string>& gmin, const std::vector<std::string>& gmax, const std::vector<std::string>& grid_nbins,
                                      const std::string& weight_str, const std::string& truncflag1, const std::string& truncflag2, ActionShortcut* act ) {
   if( gmin.size()>0 ) {
       // Now create the height
       act->readInputLine( lab + "_height: CONSTANT VALUE=1.0");
-      std::string input = lab + "_kde: KDE_CALC METRIC=" + lab + "_icov ARG1=" + args[0] + " HEIGHTS=" + lab + "_height";
+      std::string input = lab + "_kde: KDE_CALC METRIC=" + lab + "_icov ARG1=" + kernel_args[0] + " HEIGHTS=" + lab + "_height";
       std::string gminstr=" GRID_MIN=" + gmin[0]; std::string gmaxstr=" GRID_MAX=" + gmax[0]; std::string gbinstr=" GRID_BIN=" + grid_nbins[0];
-      for(unsigned i=1;i<args.size();++i) { 
-        std::string num; Tools::convert( i+1, num ); input += " ARG" + num + "=" + args[i]; 
+      for(unsigned i=1;i<kernel_args.size();++i) { 
+        std::string num; Tools::convert( i+1, num ); input += " ARG" + num + "=" + kernel_args[i]; 
         gminstr += "," + gmin[i]; gmaxstr += "," + gmax[i]; gbinstr += "," + grid_nbins[i]; 
 
       }
       act->readInputLine( input + " " + gminstr + " " + gmaxstr + " " + " " + gbinstr + " " + truncflag1 );
       act->readInputLine( lab + "_grid: AVERAGE ARG=" + lab + "_kde NORMALIZATION=false STRIDE=" + pacestr + " LOGWEIGHTS=" + weight_str );
       // Evaluate the instantaneous value of the bias potential 
-      act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID ARG=" + lab + "_grid " + truncflag2 );
+      std::string eval_str=eval_args[0]; for(unsigned i=1;i<eval_args.size();++i) eval_str += "," + eval_args[i];
+      act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID GRID=" + lab + "_grid ARG=" + eval_str + truncflag2 );
   } else {
-      if( args.size()>1 ) {
-          for(unsigned i=0; i<args.size();++i) {
-              std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com); 
-              act->readInputLine( lab + "_sigma_" + thisarg + ": SELECT_COMPONENTS ARG=" + lab + "_sigma COMPONENTS=" + num );
+      if( eval_args.size()>1 ) {
+          for(unsigned i=0; i<eval_args.size();++i) {
+              std::string num; Tools::convert( i+1, num ); 
+              act->readInputLine( lab + "_sigma_" + eval_args[i] + ": SELECT_COMPONENTS ARG=" + lab + "_sigma COMPONENTS=" + num );
           }
       }
-      std::string store_args; for(unsigned i=0;i<args.size();++i) { std::string num; Tools::convert( i+1, num ); store_args += " ARG" + num + "=" + args[i]; }
+      std::string store_args; for(unsigned i=0;i<kernel_args.size();++i) { std::string num; Tools::convert( i+1, num ); store_args += " ARG" + num + "=" + kernel_args[i]; }
       // Create a store to hold the list of Gaussians
       act->readInputLine( lab + "_store: COLLECT_FRAMES STRIDE=" + pacestr + store_args + " LOGWEIGHTS=" + weight_str );
       std::string names=" VAR=v1", func="v1*v1", func_args;
-      for(unsigned i=1;i<args.size();++i) {  std::string num; Tools::convert( i+1, num ); names += ",v" + num; func += "+v" + num + "*v" + num; }
-      for(unsigned i=0;i<args.size();++i) {
-          std::string num; Tools::convert( i+1, num ); std::size_t com=args[i].find_first_of(","); std::string thisarg=args[i].substr(0,com);
-          act->readInputLine( lab + "_sub_" + thisarg + ": DIFFERENCE MIX_HISTORY_DEPENDENCE ARG2=" + thisarg + " ARG1=" + lab + "_store." + thisarg ); 
-          if( args.size()==1 ) act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg + " ARG2=" + lab + "_sigma");
-          else act->readInputLine( lab  + "_scaled_" + thisarg + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + thisarg + " ARG2=" + lab + "_sigma_" + thisarg );
-          func_args += " ARG" + num + "=" + lab + "_scaled_" + thisarg;
+      for(unsigned i=1;i<eval_args.size();++i) {  std::string num; Tools::convert( i+1, num ); names += ",v" + num; func += "+v" + num + "*v" + num; }
+      for(unsigned i=0;i<eval_args.size();++i) {
+          std::string num; Tools::convert( i+1, num ); 
+          act->readInputLine( lab + "_sub_" + eval_args[i] + ": DIFFERENCE MIX_HISTORY_DEPENDENCE ARG2=" + eval_args[i] + " ARG1=" + lab + "_store." + kernel_args[i] ); 
+          if( eval_args.size()==1 ) act->readInputLine( lab  + "_scaled_" + eval_args[i] + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + eval_args[i] + " ARG2=" + lab + "_sigma");
+          else act->readInputLine( lab  + "_scaled_" + eval_args[i] + ": CUSTOM FUNC=x/y PERIODIC=NO ARG1=" + lab + "_sub_" + eval_args[i] + " ARG2=" + lab + "_sigma_" + eval_args[i] );
+          func_args += " ARG" + num + "=" + lab + "_scaled_" + eval_args[i] ;
       }
       // Calculate the potential
-      std::string num; Tools::convert( args.size()+1, num );
+      std::string num; Tools::convert( eval_args.size()+1, num );
       act->readInputLine( lab + "_heights: CUSTOM PERIODIC=NO FUNC=exp(x) ARG1=" + lab + "_store.logweights" );
       act->readInputLine( lab + "_gvals: CUSTOM PERIODIC=NO FUNC=vh*exp(-(" + func + ")/2)" + names + ",vh " + func_args + " ARG" + num + "=" + lab  + "_heights");
       act->readInputLine( lab + "_bias: SUM ARG=" + lab + "_gvals PERIODIC=NO");

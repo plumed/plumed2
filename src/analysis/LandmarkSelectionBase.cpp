@@ -50,37 +50,32 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       CollectFrames* myfram = plumed.getActionSet().selectWithLabel<CollectFrames*>(data);
       if( !myfram ) error( data + " is not a valid COLLECT_FRAMES action so cannot collect data");
       std::vector<Value*> vals( getArguments() );
-      for(unsigned j=0;j<myfram->getNumberOfComponents();++j) { 
-          vals.push_back( myfram->copyOutput(j) ); arg_ends.push_back(vals.size()); 
-      }
+      for(unsigned j=0;j<myfram->getNumberOfComponents();++j) vals.push_back( myfram->copyOutput(j) ); 
       requestArguments( vals, false );
   }
+  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->buildDataStore( getLabel() );
  
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks);
   log.printf("  selecting %u landmark points \n",nlandmarks);
 
   nvals = 0; landmarks.resize(nlandmarks);
-  for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
-      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues();
-      else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
-  }
+  if( getPntrToArgument(0)->getRank()==1 ) nvals += getPntrToArgument(0)->getNumberOfValues();
+  else if( getPntrToArgument(0)->getRank()==2 ) nvals += getPntrToArgument(0)->getShape()[1];
 
   std::vector<unsigned> shape(1); std::vector<std::string> foundmat;
-  for(unsigned i=0;i<arg_ends.size()-1;++i) { 
+  for(unsigned i=0;i<getNumberOfArguments();++i) { 
       unsigned tvals=0; 
-      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues();
-          else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
-      }
+      if( getPntrToArgument(i)->getRank()==1 ) tvals = getPntrToArgument(i)->getNumberOfValues();
+      else if( getPntrToArgument(i)->getRank()==2 ) tvals = getPntrToArgument(i)->getShape()[1];
       if( tvals!=nvals ) {
           if( tvals==0 ) {
               // Check here if input is a matrix that was read in during startup
-              ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[0])->getPntrToAction() );
+              ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
               if( !as ) error("mismatch between sizes of input positions");
           } else error("mismatch between sizes of input positions");
       }
       // Add suitable argument
-      Value* argi = getPntrToArgument(arg_ends[i]);
+      Value* argi = getPntrToArgument(i);
       if( argi->hasDerivatives() ) {
           error("cannot select landmarks for value " + argi->getName() );
       } else if( argi->getRank()==2 ) {
@@ -96,7 +91,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
       } else if( shape.size()==2 ) { foundmat.push_back(vname); vname = vname + "_rect"; }
       addComponent( vname, shape );
       if( argi->isPeriodic() ) {
-          std::string min, max; getPntrToArgument(arg_ends[i])->getDomain( min, max );
+          std::string min, max; getPntrToArgument(i)->getDomain( min, max );
           componentIsPeriodic( vname, min, max );
       } else componentIsNotPeriodic( vname ); 
       getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
@@ -121,28 +116,28 @@ void LandmarkSelectionBase::getGridPointIndicesAndCoordinates( const unsigned& i
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
       Value* val0=getPntrToOutput(i); 
       if( val0->getRank()==2 && val0->storingData() ) {
-          Value* arg0 = getPntrToArgument(arg_ends[i]); unsigned ncols = arg0->getNumberOfColumns();
+          Value* arg0 = getPntrToArgument(i); unsigned ncols = arg0->getNumberOfColumns();
           for(unsigned j=0;j<arg0->getRowLength(iframe);++j) {
               val0->set( nvals*jframe + arg0->getRowIndex(iframe,j), arg0->get(ncols*iframe+j) );
           }
-      } else if( val0->getRank()==1 && val0->storingData() ) val0->set( jframe, retrieveRequiredArgument( i, iframe ) );
+      } else if( val0->getRank()==1 && val0->storingData() ) val0->set( jframe, getPntrToArgument(i)->get(iframe) );
   }
   landmarks[jframe]=iframe; jframe++; if( jframe==nlandmarks ) jframe=0;
 }
 
 void LandmarkSelectionBase::setLandmarkSeparations() {
-  if( getNumberOfComponents()==(arg_ends.size()-1) ) return;
-  for(unsigned k=arg_ends.size()-1;k<getNumberOfComponents();++k) {
+  if( getNumberOfComponents()==getNumberOfArguments() ) return;
+  for(unsigned k=getNumberOfArguments();k<getNumberOfComponents();++k) {
       Value* val0 = getPntrToOutput( k );
       if( !val0->storingData() ) continue;
 
       Value* arg0; std::string fname = getPntrToOutput(k)->getName(); fname=fname.substr(0,fname.size()-4);
-      for(unsigned i=0;i<arg_ends.size()-1;++i) {
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
           std::string tname = getPntrToOutput(i)->getName(); tname=tname.substr(0,tname.size()-5);
-          if( tname==fname ) { arg0 = getPntrToArgument(arg_ends[i]); break; }
+          if( tname==fname ) { arg0 = getPntrToArgument(i); break; }
       }
       plumed_assert( arg0 ); 
 
@@ -177,17 +172,13 @@ void LandmarkSelectionBase::runFinalJobs() {
       if( !allsetup ) return;
   }
   plumed_dbg_assert( !actionInChain() ); nvals=0;
-  for(unsigned j=arg_ends[0];j<arg_ends[1];++j) {
-      if( getPntrToArgument(j)->getRank()==1 ) nvals += getPntrToArgument(j)->getNumberOfValues();
-      else if( getPntrToArgument(j)->getRank()==2 ) nvals += getPntrToArgument(j)->getShape()[1];
-  }
+  if( getPntrToArgument(0)->getRank()==1 ) nvals = getPntrToArgument(0)->getNumberOfValues();
+  else if( getPntrToArgument(0)->getRank()==2 ) nvals = getPntrToArgument(0)->getShape()[1];
   std::vector<unsigned> shape(2); shape[0]=nlandmarks; shape[1]=nvals;
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
       unsigned tvals=0;
-      for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-          if( getPntrToArgument(j)->getRank()==1 ) tvals += getPntrToArgument(j)->getNumberOfValues();
-          else if( getPntrToArgument(j)->getRank()==2 ) tvals += getPntrToArgument(j)->getShape()[1];
-      }
+      if( getPntrToArgument(i)->getRank()==1 ) tvals = getPntrToArgument(i)->getNumberOfValues();
+      else if( getPntrToArgument(i)->getRank()==2 ) tvals = getPntrToArgument(i)->getShape()[1];
       if( tvals!=nvals ) error("mismatch between sizes of input positions");
       Value* val0 = getPntrToComponent(i); if( val0->getRank()==2 ) { val0->setShape( shape ); } 
   }

@@ -41,6 +41,7 @@ class Colvar :
   public ActionWithValue
 {
 private:
+  std::vector<Vector> f;
 protected:
   void requestAtoms(const std::vector<AtomNumber> & a);
 // Set the derivatives for a particular atom equal to the input Vector

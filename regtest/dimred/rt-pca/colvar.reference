@@ -1,4 +1,4 @@
-#! FIELDS time pca-1 pca-2 pca_weights
+#! FIELDS time pca-1 pca-2 pca_uweights
  0.000000   0.2889   0.1443   1.0000
  1.000000   0.2527  -0.1263   1.0000
  2.000000   0.2895   0.2688   1.0000

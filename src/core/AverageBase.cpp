@@ -54,7 +54,6 @@ AverageBase::AverageBase( const ActionOptions& ao):
   n_real_args(getNumberOfArguments())
 {
   plumed_assert( keywords.exists("ARG") );
-  if( getNumberOfArguments()>0 && arg_ends.size()==0 ) { arg_ends.push_back(0); arg_ends.push_back(n_real_args); }
   std::vector<AtomNumber> all_atoms; parseAtomList( "ATOMS", all_atoms );
   if( all_atoms.size()>0 ) {
      atom_pos.resize( all_atoms.size() ); log.printf("  using atoms : ");
@@ -103,7 +102,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
       parse("TYPE",rmsd_type); der.resize( atom_pos.size() );
       log.printf("  aligning atoms to first frame in data set using %s algorithm \n", rmsd_type.c_str() );
   } 
-  requestArguments( arg, false ); arg_ends.push_back( getNumberOfArguments() );
+  requestArguments( arg, false ); 
   if( all_atoms.size()>0 ) {
       ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box"); addDependency(ap);
   }

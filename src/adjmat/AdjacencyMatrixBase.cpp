@@ -58,7 +58,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
     // Create list of tasks
     log.printf("  atoms in GROUPA ");
-    for(unsigned i=0; i<ta.size(); ++i) { log.printf("%d ", ta[i].serial()); addTaskToList( i ); t.push_back(ta[i]); }
+    for(unsigned i=0; i<ta.size(); ++i) { log.printf("%d ", ta[i].serial()); t.push_back(ta[i]); }
     log.printf("\n");
     log.printf("  atoms in GROUPB "); ablocks.resize( tb.size() ); unsigned n=0;
     for(unsigned i=0; i<tb.size(); ++i) {
@@ -69,7 +69,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   } else {
     // Create list of tasks
     log.printf("  atoms in GROUP "); ablocks.resize( t.size() );
-    for(unsigned i=0; i<t.size(); ++i) { log.printf("%d ", t[i].serial()); addTaskToList( i ); ablocks[i]=i; }
+    for(unsigned i=0; i<t.size(); ++i) { log.printf("%d ", t[i].serial()); ablocks[i]=i; }
     log.printf("\n"); shape[0]=shape[1]=t.size(); read_one_group=true;
   }
   if( keywords.exists("GROUPC") ) {
@@ -122,11 +122,15 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
   threecells.setCutoff( tcut );
 }
 
-void AdjacencyMatrixBase::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  if( nl_stride>1 ) forceAllTasks = getStep()%nl_stride;
+void AdjacencyMatrixBase::setupCurrentTaskList() {
+  if( nl_stride>1 && getStep()%nl_stride==0 ) {
+      for(unsigned i=0; i<getPntrToOutput(0)->getShape()[0]; ++i) {
+          for(unsigned j=0; j<getNumberOfComponents(); ++j) getPntrToOutput(j)->addTaskToCurrentList(i);
+      } 
+  } else ActionWithValue::setupCurrentTaskList();
 }
 
-void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+void AdjacencyMatrixBase::prepareForTasks( const std::set<unsigned>& taskSet ) {
   // Build link cells here so that this is done in stream if it needed in stream
   if( getStep()%nl_stride==0 ) {
       // Build the link cells   
@@ -136,21 +140,23 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
       // This ensures the link cell does not get too big.  We find the cell that contains the maximum number of atoms and multiply this by 27.
       // In this way we ensure that the neighbour list doesn't get too big.  Also this number should always be large enough
       natoms_per_list = 27*linkcells.getMaxInCell();
-      nlist.resize( getFullNumberOfTasks()*( 2 + natoms_per_list ) );
+      nlist.resize( getPntrToOutput(0)->getShape()[0]*( 2 + natoms_per_list ) );
       // Set the number of neighbors to zero for all ranks 
       nlist.assign(nlist.size(),0);
       // Now get stuff to do parallel implementation
       unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
       unsigned nt=OpenMP::getNumThreads();
-      if( nt*stride*10>getFullNumberOfTasks() ) nt=getFullNumberOfTasks()/stride/10;
+      if( nt*stride*10>getPntrToOutput(0)->getShape()[0] ) nt=getPntrToOutput(0)->getShape()[0]/stride/10;
       if( nt==0 || runWithoutOpenMP() ) nt=1;
+      // Create a vector from the input set of tasks
+      std::vector<unsigned> pTaskList( taskSet.begin(), taskSet.end() );
 
       #pragma omp parallel num_threads(nt)
       { 
         // Get the number of tasks we have to deal with
-        unsigned ntasks=getFullNumberOfTasks();
-        if( nl_stride==1 ) ntasks=nactive;
+        unsigned ntasks=getPntrToOutput(0)->getShape()[0];
+        if( nl_stride==1 ) ntasks=pTaskList.size();
         // Build a tempory nlist so we can do omp parallelism
         std::vector<unsigned> omp_nlist;
         if( nt>1 ) omp_nlist.resize( nlist.size(), 0 );
@@ -167,7 +173,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
             linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
             if( nl_stride==1 ) {
                 if( nt>1 ) omp_nlist[indices[0]]=0; else nlist[indices[0]] = 0;
-                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+natoms_per_list);
+                unsigned lstart = getPntrToOutput(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
                 for(unsigned j=0;j<natoms;++j) { 
                     if( nt>1 ) { omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j]; omp_nlist[indices[0]]++; }
                     else { nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++; }
@@ -178,7 +184,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
                 if( !nopbc ) pbcApply( t_atoms, natoms );
                 // Now construct the neighbor list
                 if( nt>1 ) omp_nlist[indices[0]] = 0; else nlist[indices[0]] = 0;
-                unsigned lstart = getFullNumberOfTasks() + indices[0]*(1+natoms_per_list);
+                unsigned lstart = getPntrToOutput(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
                 for(unsigned j=0;j<natoms;++j) {
                     double d2; 
                     if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
@@ -196,7 +202,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
         if(nt>1) {
            for(unsigned i=0; i<ntasks; ++i) nlist[pTaskList[i]]+=omp_nlist[pTaskList[i]]; 
            for(unsigned i=0; i<ntasks; ++i) {
-               unsigned lstart = getFullNumberOfTasks() + pTaskList[i]*(1+natoms_per_list); 
+               unsigned lstart = getPntrToOutput(0)->getShape()[0] + pTaskList[i]*(1+natoms_per_list); 
                for(unsigned j=0;j<omp_nlist[pTaskList[i]];++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ]; 
            }
         } 
@@ -215,7 +221,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
 
 unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
   unsigned maxcol=nlist[0];
-  for(unsigned i=1; i<getFullNumberOfTasks(); ++i) {
+  for(unsigned i=1; i<getPntrToOutput(0)->getShape()[0]; ++i) {
       if( nlist[i]>maxcol ) maxcol = nlist[i]; 
   }
   return maxcol;
@@ -223,7 +229,7 @@ unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
 
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
   unsigned natoms=nlist[current]; indices[0]=current;
-  unsigned lstart = getFullNumberOfTasks() + current*(1+natoms_per_list); plumed_dbg_assert( nlist[lstart]==current );
+  unsigned lstart = getPntrToOutput(0)->getShape()[0] + current*(1+natoms_per_list); plumed_dbg_assert( nlist[lstart]==current );
   for(unsigned i=1;i<nlist[current];++i){ indices[i] = nlist[ lstart + i ]; }
   return natoms;
 }
@@ -244,7 +250,7 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, MultiValue& myv
   }
   myvals.setNumberOfIndices( natoms );
   // Ensure that things that come later know if we have used GROUPA + GROUPB style symmetry function
-  if( indices[1]>getFullNumberOfTasks() ) myvals.setNumberOfIndicesInFirstBlock( getFullNumberOfTasks() );
+  if( indices[1]>getPntrToOutput(0)->getShape()[0] ) myvals.setNumberOfIndicesInFirstBlock( getPntrToOutput(0)->getShape()[0] );
   else myvals.setNumberOfIndicesInFirstBlock( 0 );
 
 // Apply periodic boundary conditions to atom positions

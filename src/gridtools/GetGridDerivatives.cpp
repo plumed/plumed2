@@ -89,7 +89,6 @@ GetGridDerivatives::GetGridDerivatives(const ActionOptions&ao):
 
 void GetGridDerivatives::calculate() {
   if( firststep ) {
-      for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
       getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() ); firststep=false;
   }
   runAllTasks();

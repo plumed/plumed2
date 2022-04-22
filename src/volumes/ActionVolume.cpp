@@ -45,15 +45,15 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
   if( atoms.size()==0 ) error("no atoms were specified");
   log.printf("  examining positions of atoms ");
-  for(unsigned i=0; i<atoms.size(); ++i) { log.printf(" %d", atoms[i].serial() );  addTaskToList( i ); }
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d", atoms[i].serial() );  
   log.printf("\n"); ActionAtomistic::requestAtoms( atoms );
 
   parseFlag("OUTSIDE",not_in); sigma=0.0;
   if( keywords.exists("SIGMA") ) parse("SIGMA",sigma);
   if( keywords.exists("KERNEL") ) parse("KERNEL",kerneltype);
 
-  if( getFullNumberOfTasks()==1 ) { ActionWithValue::addValueWithDerivatives(); }
-  else { std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks(); ActionWithValue::addValue( shape ); }
+  if( atoms.size()==1 ) { ActionWithValue::addValueWithDerivatives(); }
+  else { std::vector<unsigned> shape(1); shape[0]=atoms.size(); ActionWithValue::addValue( shape ); }
   setNotPeriodic(); getPntrToOutput(0)->setDerivativeIsZeroWhenValueIsZero();
 }
 
@@ -63,26 +63,27 @@ void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   ActionAtomistic::requestAtoms( all_atoms ); forcesToApply.resize( 3*all_atoms.size()+9 );
 }
 
-void ActionVolume::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  setupRegions(); actionsThatSelectTasks.push_back( getLabel() );
-
-  Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms()-getFullNumberOfTasks() );
-  for(unsigned i=0;i<tflags.size();++i) {
+void ActionVolume::setupCurrentTaskList() {
+  setupRegions(); unsigned nref=getNumberOfAtoms(); 
+  if( getPntrToOutput(0)->getRank()==0) { nref=nref-1; } else { nref=nref-getPntrToOutput(0)->getShape()[0]; }
+  Vector wdf; Tensor vir; std::vector<Vector> refders( nref );
+  for(unsigned i=0;i<getPntrToOutput(0)->getNumberOfValues();++i) {
       // Calculate weight for this position
       double weight=calculateNumberInside( ActionAtomistic::getPosition(i), wdf, vir, refders );
       if( not_in ) weight = 1.0 - weight;
       // Now activate only those tasks that have a significant weight
-      if( weight>epsilon ) tflags[i]=1;
+      if( weight>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(i);
   }
 }
 
 void ActionVolume::calculate() {
   if( actionInChain() ) return;
-  runAllTasks();
+  setupRegions(); runAllTasks();
 }
 
 void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) const {
-  Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms()-getFullNumberOfTasks() );
+  unsigned nref=getNumberOfAtoms(); if( getPntrToOutput(0)->getRank()==0) { nref=nref-1; } else { nref=nref-getPntrToOutput(0)->getShape()[0]; }
+  Vector wdf; Tensor vir; std::vector<Vector> refders( nref );
   double weight=calculateNumberInside( ActionAtomistic::getPosition(curr), wdf, vir, refders );
 
   if( not_in ) {
@@ -99,7 +100,7 @@ void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) cons
     outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), 3*curr+2, wdf[2] );
     outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), 3*curr+2 );
     // Add derivatives with respect to reference positions
-    unsigned vbase = 3*getFullNumberOfTasks();
+    unsigned vbase = 3*(getNumberOfAtoms()-nref);
     for(unsigned i=0; i<refders.size(); ++i) {
       outvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vbase, refders[i][0] );
       outvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), vbase ); vbase++;

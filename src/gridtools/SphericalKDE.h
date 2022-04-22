@@ -37,15 +37,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SphericalKDE(const ActionOptions&ao);
-  void setupNeighborsVector();
+  void setupNeighborsVector() override;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void completeGridObjectSetup() {}
-  void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
+  void buildSingleKernel( const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const ;
+  void addKernelForces( const bool& height_has_derivative, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const override;
 };
 
 }

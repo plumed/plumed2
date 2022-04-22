@@ -172,8 +172,6 @@ void FindContourSurface::finishOutputSetup() {
   for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) {
     find.assign( find.size(), 0 ); gridcoords.getIndices( i, ind );
     for(unsigned j=0; j<gdirs.size(); ++j) find[gdirs[j]]=ind[j];
-    // Current will be set equal to the start point for this grid index
-    addTaskToList( gridcoords.getIndex(find) );
   }
 
   // Set the direction in which to look for the contour

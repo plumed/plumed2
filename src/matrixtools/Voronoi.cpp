@@ -57,9 +57,7 @@ Voronoi::Voronoi(const ActionOptions&ao):
   std::vector<unsigned> shape(2); 
   shape[0]=getPntrToArgument(0)->getShape()[0]; 
   shape[1]=getPntrToArgument(0)->getShape()[1];
-  addValue( shape );
-  // Create a task list for this action
-  for(unsigned i=0; i<shape[1]; ++i) addTaskToList( i );
+  addValue( shape ); getPntrToOutput(0)->setNumberOfTasks( shape[1] );
 
   parseFlag("HIGHEST",highest);
   if( highest ) log.printf("  connecting each element to largest matrix element \n");

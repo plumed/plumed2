@@ -66,7 +66,6 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   int nat=a.size();
   indexes=a;
   positions.resize(nat);
-  forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
   int n=0; for(unsigned i=0;i<atoms.posx.size();++i) n += atoms.posx[i]->getNumberOfValues(); 
@@ -260,20 +259,8 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
      plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
      boxValue->addForce( i, forcesToApply[ind] ); ind++; 
   }
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial(i,j) = forcesToApply[3*indexes.size()+3*i+j]; 
 }
-
-void ActionAtomistic::applyForces() {
-  if(donotforce || atoms.getNatoms()==0) return;
-  for(unsigned j=0; j<indexes.size(); j++) atoms.addForce( indexes[j], forces[j] );
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
-}
-
-void ActionAtomistic::clearOutputForces() {
-  virial.zero();
-  if(donotforce) return;
-  for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
-}
-
 
 void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
   for(unsigned j=0; j<indexes.size(); j++) {
@@ -319,7 +306,13 @@ void ActionAtomistic::updateUniqueLocal() {
   }
 }
 
+void ActionAtomistic::addForce( const unsigned& i, const Vector& f ) {
+  atoms.addForce( indexes[i], f );
+}
+
 void ActionAtomistic::addVirial( const Tensor& v ) {
+  if( !boxValue ) return ;
+  virial = v;
   for(unsigned j=0; j<3; ++j) for(unsigned k=0; k<3; ++k) boxValue->addForce( 3*j+k, v[j][k] );
 }
 

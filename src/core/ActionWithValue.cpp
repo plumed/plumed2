@@ -65,6 +65,7 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys) {
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
+  firststep(true),
   noderiv(true),
   numericalDerivatives(false),
   no_openmp(plumed.getMDEngine()=="plumed"),
@@ -72,10 +73,8 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   timers(false),
   allow_mixed_history_input(false),
   nactive_tasks(0),
-  thisAsActionWithArguments(NULL),
   action_to_do_before(NULL),
-  action_to_do_after(NULL),
-  atom_action_to_do_after(NULL)
+  action_to_do_after(NULL)
 {
   if( keywords.exists("MIX_HISTORY_DEPENDENCE") )parseFlag("MIX_HISTORY_DEPENDENCE",allow_mixed_history_input);
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
@@ -167,13 +166,17 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       }
   }
   action_to_do_after=act; 
-  atom_action_to_do_after=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
   act->action_to_do_before=this;
   return true;
 }
 
 void ActionWithValue::clearInputForces() {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
+  if( action_to_do_after ) action_to_do_after->clearInputForces();
+}
+
+void ActionWithValue::setupCurrentTaskList() {
+  for(unsigned i=0;i<values.size();++i) values[i]->reducedTasks=false;
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
@@ -186,7 +189,51 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
     #pragma omp for
     for(unsigned i=0; i<values.size(); i++) values[i]->clearDerivatives();
   }
+  // And sort everything out for downstream actions
   if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
+}
+
+void ActionWithValue::propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+  // Get all the actions in the current chain
+  std::vector<std::string> actionsLabelsInChain; getAllActionLabelsInChain( actionsLabelsInChain );
+  for(const auto & p : values[valno]->userdata) {
+      // Check if the output of the action is only being used within this chain
+      bool inchain=false;
+      for(unsigned j=0;j<actionsLabelsInChain.size();++j) {
+          if( p==actionsLabelsInChain[j] ){ inchain=true; break; }
+      }
+      ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p );
+      if( user && !inchain ) {
+          user->buildTaskListFromArgumentRequests( ntasks, reduce, otasks );
+      } else if( user && values[valno]->taskList.size()>0 ) user->buildTaskListFromArgumentValues( values[valno]->getName(), otasks );
+  } 
+}
+
+void ActionWithValue::setupForCalculation( const bool& force ) {
+  if( !force && action_to_do_before ) return ;
+  // Check if this is putting data
+  ActionToPutData* ap = dynamic_cast<ActionToPutData*>(this);
+  if( ap ) return ;
+  // Get the atomic positions if these are needed
+  ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( this );
+  if( aa ) {
+      if( aa->isActive() ) aa->retrieveAtoms(); 
+  } 
+  // Setup the task lists that tell PLUMED what needs to be calculated
+  for(unsigned i=0;i<values.size();++i) {
+      values[i]->reducedTasks=true; values[i]->taskList.clear();
+  }
+  if( firststep ) { actionsToDoBeforeFirstCalculate(); firststep=false; }
+  // Setup the task list for this action
+  setupCurrentTaskList(); 
+  // Check for users of this value
+  for(unsigned i=0;i<values.size();++i) {
+      if( values[i]->getRank()==0 || (values[i]->getRank()>0 && values[i]->hasDerivatives()) ) continue;
+      // Check for users of full list of values 
+      propegateTaskListsForValue( i, values[i]->ntasks, values[i]->reducedTasks, values[i]->taskList );
+  }  
+
+  if( action_to_do_after ) action_to_do_after->setupForCalculation( true );
 }
 
 // -- These are the routine for copying the value pointers to other classes -- //
@@ -350,10 +397,9 @@ void ActionWithValue::setGradientsIfNeeded() {
     if(aa) {
         for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
     } else {
-        if( !thisAsActionWithArguments ) {
-            thisAsActionWithArguments = dynamic_cast<ActionWithArguments*>(this); plumed_massert( thisAsActionWithArguments, "failing in " + getLabel() );
-        }
-        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); thisAsActionWithArguments->setGradients( values[i].get(), start ); }
+        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
+        if( !aarg ) plumed_merror( "failing in " + getLabel() );
+        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
     }
   }
 }
@@ -428,88 +474,25 @@ void ActionWithValue::getGridPointAsCoordinate( const unsigned& ind, const bool&
   plumed_merror("problem in getting grid data for " + getLabel() ); 
 }
 
-void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
-  if( !thisAsActionWithArguments ) thisAsActionWithArguments = dynamic_cast<const ActionWithArguments*>( this );
-  fullTaskList.push_back( taskCode ); taskFlags.push_back(0);
-  plumed_assert( fullTaskList.size()==taskFlags.size() );
+void ActionWithValue::prepareForTaskLoop() {
+  prepareForTasks( getActionThatCalculates()->taskSet ); 
+  if( action_to_do_after ) action_to_do_after->prepareForTaskLoop();
 }
 
-bool ActionWithValue::checkUsedOutsideOfChain( const std::vector<std::string>& actionLabelsInChain, const std::string& parent, 
-                                               std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  std::vector<std::string> user_list;
+void ActionWithValue::mergeTaskList( bool& tasksWereSet, std::set<unsigned>& pTaskList ) {
   for(unsigned i=0;i<values.size();++i) {
-      if( values[i]->getRank()==0 ) continue;
-      // Check for users of full list of values 
-      for(const auto & p : values[i]->userdata) {
-          // Check if the action is only being used within the chain
-          bool inchain=false;
-          for(unsigned j=0;j<actionLabelsInChain.size();++j) {
-              if( p==actionLabelsInChain[j] ){ inchain=true; break; }
-          }
-          // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
-          if( !inchain ) {
-              ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p ); 
-              // Check if we have already recognised this action
-              plumed_assert( user ); bool found=false;
-              for(unsigned j=0; j<user_list.size(); ++j) {
-                  if( user_list[j]==user->getLabel() ) { found=true; break; }
-              }
-              if( !found ) {
-                  user->getTasksForParent( parent, actionsThatSelectTasks, tflags );
-                  user_list.push_back( user->getLabel() ); 
-              }
-          }
-      }
+      if( !values[i]->reducedTasks ) continue;
+      tasksWereSet=true; for(const auto & t : values[i]->taskList) pTaskList.insert(t);
+  }
+  if( action_to_do_after ) action_to_do_after->mergeTaskList( tasksWereSet, pTaskList );
+}
+
+void ActionWithValue::setTaskFlags( const unsigned& ntasks, std::set<unsigned>& pTaskList ) {
+  bool tasksWereSet=false; pTaskList.clear(); mergeTaskList( tasksWereSet, pTaskList );
+  // If nothing in the stream set the tasks then active them all
+  if( !tasksWereSet ) {
+      unsigned ntasks=0; getNumberOfTasks( ntasks ); for(unsigned i=0; i<ntasks; ++i) pTaskList.emplace_hint(pTaskList.end(),i);
   } 
-  return user_list.size()>0;
-}
-
-void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
-                                         std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
-  // Check which actions are using the values calculated by this action
-  bool usedOutsideOfChain=checkUsedOutsideOfChain( actionLabelsInChain, getLabel(), actionsThatSelectTasks, tflags );
-  // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
-  // allows deactivated tasks
-  if( usedOutsideOfChain ) {
-      bool OKToDeactivate=false;
-      for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
-          if( getLabel()==actionsThatSelectTasks[i] ){ OKToDeactivate=true; break; }
-      }
-      if( !OKToDeactivate ) forceAllTasks=true;
-  }
-  // And now do stuff for the next action in the chain
-  if( action_to_do_after ) {
-      // Retrieve the atoms for tasks in the stream
-      // ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
-      if( atom_action_to_do_after ) atom_action_to_do_after->retrieveAtoms();
-      // And set up the task list for the next one
-      action_to_do_after->selectActiveTasks( actionLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
-  }
-}
-
-void ActionWithValue::prepareForTaskLoop( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
-  prepareForTasks( nactive, pTaskList ); 
-  if( action_to_do_after ) action_to_do_after->prepareForTaskLoop( nactive, pTaskList );
-}
-
-unsigned ActionWithValue::setTaskFlags( std::vector<unsigned>& tflags, std::vector<unsigned>&  pTaskList, std::vector<unsigned>& pIndexList ) {
-  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
-  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false;
-  tflags.assign(tflags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
-  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) tflags.assign(tflags.size(),1);
-  // Now actually build the list of active tasks
-  unsigned n_active = 0;
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    if( tflags[i]>0 ) n_active++;
-  }
-  // Now create the partial task list
-  unsigned n=0; pTaskList.resize( n_active ); pIndexList.resize( n_active );
-  for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    // Deactivate sets inactive tasks to number not equal to zero
-    if( tflags[i]>0 ) { pTaskList[n] = fullTaskList[i]; pIndexList[n]=i; n++; } 
-  }
-  return n_active;
 }
 
 void ActionWithValue::runAllTasks() {
@@ -520,16 +503,22 @@ void ActionWithValue::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
+  // Get the number of tasks
+  unsigned ntasks=0; getNumberOfTasks( ntasks );
+  // Determine if some tasks can be switched off
+  setTaskFlags( ntasks, taskSet );
+  // Get the number of tasks
+  nactive_tasks = taskSet.size();
+  // Create a vector from the task set 
+  std::vector<unsigned> partialTaskList( taskSet.begin(), taskSet.end() );
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
   if( nt==0 || no_openmp ) nt=1;
 
-  // Determine if some tasks can be switched off
-  nactive_tasks = setTaskFlags( taskFlags, partialTaskList, indexOfTaskInFullList );
   // Now do all preparations required to run all the tasks
-  prepareForTaskLoop( nactive_tasks, partialTaskList );
-
+  prepareForTaskLoop();
+ 
   // Get the total number of streamed quantities that we need
   unsigned nquantities = 0, ncols=0, nmatrices=0;
   getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
@@ -554,13 +543,13 @@ void ActionWithValue::runAllTasks() {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      runTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
+      runTask( partialTaskList[i], myvals );
 
       // Now transfer the data to the actions that accumulate values from the calculated quantities
       if( nt>1 ) {
-        gatherAccumulators( indexOfTaskInFullList[i], myvals, omp_buffer );
+        gatherAccumulators( partialTaskList[i], myvals, omp_buffer );
       } else {
-        gatherAccumulators( indexOfTaskInFullList[i], myvals, buffer );
+        gatherAccumulators( partialTaskList[i], myvals, buffer );
       }
 
       // Clear the value
@@ -604,9 +593,34 @@ void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) c
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
 }
 
+void ActionWithValue::getNumberOfTasks( unsigned& ntasks ) {
+  // Reshape the output components if that is necessary
+  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
+  if( aa ) {
+      bool timeseries=false;
+      for(unsigned i=0;i<aa->getNumberOfArguments();++i) {
+          if( (aa->getPntrToArgument(i))->isTimeSeries() ) { timeseries=true; break; }
+      }
+      if( timeseries ) {
+          std::vector<unsigned> vshape(1), shape( aa->getValueShapeFromArguments() ); plumed_assert( shape.size()>0 ); vshape[0]=shape[0];
+          for(unsigned i=0;i<values.size();++i) {
+              if( values[i]->getRank()==1 && !values[i]->hasDerivatives() && values[i]->getShape()[0]!=shape[0] ) values[i]->setShape( vshape );
+              else if( values[i]->getRank()==2 && !values[i]->hasDerivatives() && (values[i]->getShape()[0]!=shape[0] || values[i]->getShape()[1]!=shape[1]) ) values[i]->setShape( shape );
+              else if( values[i]->getRank()==0 ) values[i]->setNumberOfTasks( shape[0] );
+          }
+      }
+  }
+
+  if( ntasks==0 ) { plumed_assert( values.size()>0 ); ntasks = values[0]->ntasks; }
+  for(unsigned i=0; i<values.size(); ++i) {
+      if( ntasks!=values[i]->ntasks ) error("mismatched numbers of tasks in streamed quantities");
+  }
+  if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
+}
+
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
-  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( thisAsActionWithArguments ) thisAsActionWithArguments->getNumberOfStashedInputArguments( nquants );
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ) aa->getNumberOfStashedInputArguments( nquants );
 
   for(unsigned i=0; i<values.size(); ++i) {
     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
@@ -627,16 +641,16 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
-void ActionWithValue::runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
+void ActionWithValue::runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   // Do matrix element task
-  bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
+  bool wasperformed=false; myvals.setTaskIndex(current); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
 
   if( wasperformed ) {
-    unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
     for(unsigned i=0; i<values.size(); ++i) {
       if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ) continue;
-      unsigned matindex = values[i]->getPositionInMatrixStash();;
+      unsigned matindex = values[i]->getPositionInMatrixStash(), col_stash_index = colno;
+      if( colno>=values[i]->getShape()[0] ) col_stash_index = colno - values[i]->getShape()[0];
       if( values[i]->hasForce ) {
         unsigned sind = values[i]->streampos, find = col_stash_index;
         if( values[i]->getNumberOfColumns()<values[i]->shape[1] ) find=myvals.getNumberOfStashedMatrixElements(matindex);
@@ -650,14 +664,14 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   }
 
   // Now continue on with the stream
-  if( action_to_do_after ) action_to_do_after->runTask( controller, task_index, current, colno, myvals );
+  if( action_to_do_after ) action_to_do_after->runTask( controller, current, colno, myvals );
 }
 
-void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+void ActionWithValue::runTask( const unsigned& current, MultiValue& myvals ) const {
   if( isActive() ) {
-    myvals.setTaskIndex(task_index); myvals.vector_call=true; performTask( current, myvals );
+    myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
   }
-  if( action_to_do_after ) action_to_do_after->runTask( task_index, current, myvals );
+  if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
 
 void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
@@ -667,17 +681,6 @@ void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
     }
   }
   if( action_to_do_after ) action_to_do_after->clearMatrixElements( myvals );
-}
-
-void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
-  if( !action_to_do_before ) {
-    unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat );
-    unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
-    if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives, ncol, nmat );
-    runTask( task_index, fullTaskList[task_index], myvals ); return;
-  }
-  action_to_do_before->rerunTask( task_index, myvals );
-
 }
 
 void ActionWithValue::gatherMatrixRow( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -715,7 +718,7 @@ void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigne
   if( values[valindex]->getRank()==2 && !values[valindex]->alwaysstore ) {
     gatherMatrixRow( valindex, code, myvals, bufstart, buffer );
  // This looks after storing in all other cases
-  } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues() ) {
+  } else if( values[valindex]->ntasks==values[valindex]->getNumberOfValues() ) {
     unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );
     unsigned vindex = bufstart + code*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
     buffer[vindex] += myvals.get(sind);
@@ -821,6 +824,8 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
     if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
     if( nt==0 || no_openmp ) nt=1;
 
+    // Create a vector from the task set 
+    std::vector<unsigned> partialTaskList( av->taskSet.begin(), av->taskSet.end() );
     // Now determine how big the multivalue needs to be
     unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
     unsigned nquants=0, ncols=0, nmatrices=0; 
@@ -834,12 +839,12 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
 
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        unsigned itask = av->indexOfTaskInFullList[i];
-        av->runTask( itask, av->partialTaskList[i], myvals );
+        unsigned itask = partialTaskList[i];
+        av->runTask( itask, myvals );
 
         // Now get the forces
-        if( nt>1 ) av->gatherForces( av->partialTaskList[i], myvals, omp_forces );
-        else av->gatherForces( av->partialTaskList[i], myvals, forces );
+        if( nt>1 ) av->gatherForces( itask, myvals, omp_forces );
+        else av->gatherForces( itask, myvals, forces );
 
         myvals.clearAll();
         myvals.clearStoredForces();

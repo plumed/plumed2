@@ -38,8 +38,8 @@ public ActionWithValue,
 public ActionWithArguments
 {
 private:
-/// This makes sure that things are done to setup the underlying function in the first step
-  bool firststep;
+/// Do the calculation at the end of the run
+  bool doAtEnd;
 /// The forces that we get from the values
   std::vector<double> forcesToApply;
 /// The function that is being computed
@@ -54,14 +54,16 @@ public:
   explicit FunctionOfVector(const ActionOptions&);
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks() override ;
+/// This does some final setup stuff befor ethe first calculate
+  void actionsToDoBeforeFirstCalculate();
 /// Check if derivatives are available
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const override ;
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
-/// This updates the number of tasks we need to do if there is a time seeries
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+/// This builds the task list for the action
+  void buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags );
   void calculate() override;
   void update() override;
   void runFinalJobs() override;
@@ -84,7 +86,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao),
-firststep(true),
+doAtEnd(true),
 nderivatives(getNumberOfScalarArguments())
 {
   // Get the shape of the output
@@ -93,17 +95,15 @@ nderivatives(getNumberOfScalarArguments())
   myfunc.read( this );
   // Create the task list
   if( myfunc.doWithTasks() ) {
-      for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
+      if( shape[0]>0 ) doAtEnd=false;
   } else { plumed_assert( getNumberOfArguments()==1 ); done_over_stream=false; getPntrToArgument(0)->buildDataStore( getLabel() ); }
-  // Check we are not calculating a sum
-  if( myfunc.zeroRank() ) shape.resize(0);  
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() ); 
-  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) addValueWithDerivatives( shape );
+  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) addValueWithDerivatives(); 
   else if( components.size()==0 && myfunc.zeroRank() ) {
-    for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j], shape );
+     for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j] );
   } else if( components.size()==0 && str_ind.size()==0 ) addValue( shape );
   else if( components.size()==0 ) {
     for(unsigned j=0;j<str_ind.size();++j) addComponent( str_ind[j], shape ); 
@@ -111,22 +111,26 @@ nderivatives(getNumberOfScalarArguments())
     for(unsigned i=0;i<components.size();++i) {
         if( str_ind.size()>0 ) {
             for(unsigned j=0;j<str_ind.size();++j) {
-                if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] + str_ind[j], shape );
+                if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] + str_ind[j] );
                 else addComponent( components[i] + str_ind[j], shape );
             }
         } else if( components[i].find_first_of("_")!=std::string::npos ) {
-            if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives( shape );
+            if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives(); 
             else if( getNumberOfArguments()==1 ) addValue( shape ); 
             else { 
                unsigned argstart=myfunc.getArgStart();
                for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-                   if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i], shape ); 
+                   if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i] );
                    else addComponent( getPntrToArgument(i)->getName() + components[i], shape ); 
                }
             }
-        } else if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i], shape );
+        } else if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] );
         else addComponent( components[i], shape );
     } 
+  }
+  // Make sure we have set the number of tasks correctly for zero rank outputs
+  if( myfunc.zeroRank() ) {
+      for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setNumberOfTasks( shape[0] );
   }
   // Check if we can turn off the derivatives when they are zero
   if( myfunc.getDerivativeZeroIfValueIsZero() )  {
@@ -265,40 +269,13 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
 }
 
 template <class T>
-void FunctionOfVector<T>::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  // Make sure everything is setup
-  if( firststep ) { myfunc.setup( this ); firststep=false; }
-  // If we have a time series then resize the task list so this action does all the required tasks
-  plumed_assert( myfunc.doWithTasks() ); unsigned argstart=myfunc.getArgStart(), nstart = getFullNumberOfTasks(), ndata = 0;
-  for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()<=1 && getPntrToArgument(i)->isTimeSeries() ) ndata = getPntrToArgument(i)->getNumberOfValues();
-  }
-  if( nstart<ndata ) {
-      for(unsigned i=nstart;i<ndata;++i) addTaskToList(i);
-      std::vector<unsigned> shape(1); shape[0]=ndata;
-      for(unsigned i=0;i<getNumberOfComponents();++i) {
-          if( getPntrToOutput(i)->getRank()==1 ) getPntrToOutput(i)->setShape( shape );
-      }
-  }
-  // Check if there is a sepcial method for setting up the task list
-  if( !myfunc.defaultTaskListBuilder() ) {
-      myfunc.buildTaskList( this, actionsThatSelectTasks );
-  } else {
-      bool safeToChain=true, atLeastOneRank=false;
-      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()>0 ) atLeastOneRank=true;
-          Action* myact = getPntrToArgument(i)->getPntrToAction();
-          if( myact ) {
-              std::string argact = myact->getLabel(); bool found=false;
-              for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
-                  if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
-              }
-              if( !found ) safeToChain=false;
-          } else safeToChain=false;
-      }
-      plumed_assert( atLeastOneRank );
-      if( safeToChain ) actionsThatSelectTasks.push_back( getLabel() );
-  }
+void FunctionOfVector<T>::actionsToDoBeforeFirstCalculate() {
+  myfunc.setup( this );
+}
+
+template <class T>
+void FunctionOfVector<T>::buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags ) {
+  myfunc.buildTaskList( name, tflags, this );
 }
 
 template <class T>
@@ -322,7 +299,7 @@ void FunctionOfVector<T>::calculate() {
   // Everything is done elsewhere
   if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( !doAtEnd ) runAllTasks();
   // This is used if we are doing sorting actions on a single vector
   else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
@@ -331,14 +308,14 @@ template <class T>
 void FunctionOfVector<T>::update() {
   if( skipUpdate() || actionInChain() ) return;
   plumed_dbg_assert( !actionInChain() ); plumed_assert( myfunc.doWithTasks() );
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( !doAtEnd ) runAllTasks();
 }
   
 template <class T>
 void FunctionOfVector<T>::runFinalJobs() {
   if( skipUpdate() || actionInChain() ) return;
   plumed_assert( myfunc.doWithTasks() );
-  resizeForFinalTasks(); runAllTasks();
+  runAllTasks();
 }
 
 template <class T>

@@ -43,7 +43,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfMatrix(const ActionOptions&);
 /// Get the shape of the output matrix
-  std::vector<unsigned> getMatrixShapeForFinalTasks() override ;
+  std::vector<unsigned> getValueShapeFromArguments() override ;
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
 /// Make sure the derivatives are turned on
@@ -53,7 +53,7 @@ public:
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
 /// This checks for tasks in the parent class
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override;
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) override ;
 /// This is not used
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
@@ -80,7 +80,7 @@ nderivatives(getNumberOfScalarArguments())
 {
   if( myfunc.getArgStart()>0 ) error("this has not beeen implemented -- if you are interested email gareth.tribello@gmail.com");
   // Get the shape of the output
-  std::vector<unsigned> shape( getMatrixShapeForFinalTasks() );
+  std::vector<unsigned> shape( getValueShapeFromArguments() );
   // Check if the output matrix is symmetric
   bool symmetric=true; unsigned argstart=myfunc.getArgStart();
   for(unsigned i=argstart;i<getNumberOfArguments();++i) {
@@ -88,19 +88,20 @@ nderivatives(getNumberOfScalarArguments())
           if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false;  }
       }                        
   }
-  // Create the task list
-  for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
   // Read the input and do some checks
-  myfunc.read( this );
+  myfunc.read( this ); unsigned ntasks = shape[0];
   // Check we are not calculating a sum
   if( myfunc.zeroRank() ) shape.resize(0);
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) addValueWithDerivatives( shape );
-  else if( components.size()==0 && myfunc.zeroRank() ) {
-     for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j], shape );
+  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) {
+      addValueWithDerivatives( shape ); getPntrToOutput(0)->setNumberOfTasks( ntasks );
+  } else if( components.size()==0 && myfunc.zeroRank() ) {
+     for(unsigned j=0;j<str_ind.size();++j) {
+         addComponentWithDerivatives( str_ind[j], shape ); getPntrToOutput(j)->setNumberOfTasks( ntasks );
+     }
   } else if( components.size()==0 && str_ind.size()==0 ) { 
      addValue( shape ); getPntrToOutput(0)->setSymmetric( symmetric );
   } else if ( components.size()==0 ) {
@@ -170,18 +171,19 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 }
 
 template <class T>
-void FunctionOfMatrix<T>::getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+void FunctionOfMatrix<T>::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
   // Check if this is the first element in a chain
   if( actionInChain() ) return;
   // If it is computed outside a chain get the tassks the daughter chain needs
-  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
-  bool ignore = checkUsedOutsideOfChain( actionsLabelsInChain, parent, actionsThatSelectTasks, tflags );
+  propegateTaskListsForValue( 0, ntasks, reduce, otasks );
 }
 
 template <class T>
 bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments() - argstart ); 
-  unsigned ind2 = index2; if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+  unsigned ind2 = index2; 
+  if( getPntrToOutput(0)->getRank()==2 && index2>=getPntrToOutput(0)->getShape()[0] ) ind2 = index2 - getPntrToOutput(0)->getShape()[0];
+  else if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   if( actionInChain() ) {
       for(unsigned i=argstart;i<getNumberOfArguments();++i) {
           if( getPntrToArgument(i)->getRank()==0 ) args[i-argstart] = getPntrToArgument(i)->get(); 
@@ -237,7 +239,7 @@ bool FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
       }
   } else {
       unsigned base=0; ind2 = index2;
-      if( index2>=getFullNumberOfTasks() ) ind2 = index2 - getFullNumberOfTasks();
+      if( index2>=getPntrToOutput(0)->getShape()[0] ) ind2 = index2 - getPntrToOutput(0)->getShape()[0];
       for(unsigned j=argstart;j<getNumberOfArguments();++j) {
           if( getPntrToArgument(j)->getRank()==2 ) {
               for(unsigned i=0;i<getNumberOfComponents();++i) {
@@ -317,7 +319,7 @@ void FunctionOfMatrix<T>::updateCentralMatrixIndex( const unsigned& ind, const s
 }
 
 template <class T>
-std::vector<unsigned> FunctionOfMatrix<T>::getMatrixShapeForFinalTasks() { 
+std::vector<unsigned> FunctionOfMatrix<T>::getValueShapeFromArguments() { 
   unsigned argstart=myfunc.getArgStart(); std::vector<unsigned> shape(2); shape[0]=shape[1]=0;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
       plumed_assert( getPntrToArgument(i)->getRank()==2 || getPntrToArgument(i)->getRank()==0 );

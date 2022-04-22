@@ -56,8 +56,6 @@ class ActionAtomistic :
   std::vector<double>   masses;
   std::vector<double>   charges;
 
-  std::vector<Vector>   forces;          // forces on the needed atoms
-
 
   std::string           extraCV;
 
@@ -102,6 +100,8 @@ public:
 //  Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
   Tensor & modifyVirial();
+/// Get the value of the virial
+  const Tensor & getVirial() const ;
 /// Should be used by action that need to modify the stored virial
 //  Tensor & modifyGlobalVirial();
 /// Get modifiable PBC
@@ -115,8 +115,8 @@ public:
   double getMass(int i)const;
 /// Get charge of i-th atom
   double getCharge(int i)const;
-/// Get a reference to forces array
-  std::vector<Vector> & modifyForces();
+/// Add force to an atom
+  void addForce( const unsigned& i, const Vector& f );
 /// Get a reference to virial array
   void addVirial( const Tensor& v );
 /// Get number of available atoms
@@ -168,8 +168,6 @@ public:
 
   static void registerKeywords( Keywords& keys );
 
-  void clearOutputForces();
-
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
   void   calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
@@ -178,7 +176,6 @@ public:
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
   virtual void retrieveAtoms();
-  void applyForces();
   void lockRequests() override;
   void unlockRequests() override;
   const std::set<AtomNumber> & getUnique()const;
@@ -237,12 +234,7 @@ const Tensor & ActionAtomistic::getBox()const {
 }
 
 inline
-std::vector<Vector> & ActionAtomistic::modifyForces() {
-  return forces;
-}
-
-inline
-Tensor & ActionAtomistic::modifyVirial() {
+const Tensor & ActionAtomistic::getVirial() const {
   return virial;
 }
 

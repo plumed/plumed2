@@ -81,7 +81,7 @@ public:
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void setupCurrentTaskList() override;
 /// Do the calculation
   void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
@@ -125,19 +125,17 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   // Now create the value
   std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0];
   addValue( shape ); setNotPeriodic();
-  // And the tasks
-  for(unsigned i=0; i<shape[0]; ++i) addTaskToList(i);
 }
 
-void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); actionsThatSelectTasks.push_back( getLabel() );
+void ClusterDistribution::setupCurrentTaskList() {
+  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); 
   if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
   double csize = getPntrToArgument(0)->get(0);
   for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
     if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
   }
   unsigned ntasks = static_cast<unsigned>( csize );
-  for(unsigned i=0; i<ntasks; ++i) tflags[i]=1;
+  for(unsigned i=0; i<ntasks; ++i) getPntrToOutput(0)->addTaskToCurrentList(i);
 }
 
 unsigned ClusterDistribution::getNumberOfDerivatives() const {

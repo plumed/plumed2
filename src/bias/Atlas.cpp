@@ -422,18 +422,20 @@ ActionShortcut(ao)
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
-  std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> targs,tgmin,tgmax,tgbins;
+  std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> kargs,eargs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
   // Build the histograms for the bias potential
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
-      std::string num; Tools::convert( k+1, num ); targs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
+      std::string num; Tools::convert( k+1, num ); kargs.resize(0); eargs.resize(0); tgmin.resize(0); tgmax.resize(0); tgbins.resize(0);
       readInputLine(getShortcutLabel() + "_logwkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_wkernel-" + num +
                                                                           " ARG2=" + getShortcutLabel() + "_wksum FUNC=log(x/y) PERIODIC=NO");
       readInputLine(getShortcutLabel() + "-" + num + "_wtfact: MATHEVAL ARG1=" + getShortcutLabel() + "_wtfact ARG2=" + getShortcutLabel() + "_logwkernel-" +
                     num + " FUNC=x+y PERIODIC=NO"); hstring = getShortcutLabel() + "-" + num + "_wtfact";
       if( neigv[k]==0 ) {
-          targs.push_back( getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
+          readInputLine( getShortcutLabel() + "_cdist-" + num + ": CONCATENATE " + 
+                            "ARG=" + getShortcutLabel() + "_dist-" + num + "," + getShortcutLabel() + "_pdist-" + num );
+          kargs.push_back( getShortcutLabel() + "_cdist-" + num ); eargs.push_back( getShortcutLabel() + "_dist-" + num ); 
           // Convert the bandwidth to something constant actions
           gridtools::HistogramTools::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
           if( grid_nbins.size()>0 ) {
@@ -441,16 +443,20 @@ ActionShortcut(ao)
               tgmin.push_back("0"); tgmax.push_back(gmax); tgbins.push_back( grid_nbins );
           } else {
               readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
-              hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
+              readInputLine( getShortcutLabel() + "-" + num + "_hnwtfact: CONCATENATE ARG=" + getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact");
+              hstring = getShortcutLabel() + "-" + num + "_hnwtfact";
           }
       } else {
           std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
           // Convert the bandwidth to something constant actions
-          gridtools::HistogramTools::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); targs.resize(0);
+          gridtools::HistogramTools::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this ); kargs.resize(0); eargs.resize(0);
           for(unsigned i=0;i<neigv[k];++i) {
               std::string eignum; Tools::convert( i+1, eignum );
-              if( resid[k] ) targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num  );
-              else targs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
+              if( resid[k] ) { 
+                   readInputLine( getShortcutLabel() + "_cproj" + eignum + "-" + num + ": CONCATENATE " +
+                                     "ARG=" + getShortcutLabel() + "_proj" + eignum + "-" + num + "," + getShortcutLabel() + "_proj" + eignum + "-" + num );
+                   kargs.push_back( getShortcutLabel() + "_cproj" + eignum + "-" + num ); eargs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num );
+              } else { kargs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num ); eargs.push_back( getShortcutLabel() + "_proj" + eignum + "-" + num ); }
               if( grid_nbins.size()>0 ) { 
                   ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_kernel-" + num + "_dist_2_diff" );
                   if( av->copyOutput(0)->isPeriodic() ) {
@@ -465,17 +471,19 @@ ActionShortcut(ao)
               }
           }
           if( resid[k] ) {
-              targs.push_back( getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
+              readInputLine( getShortcutLabel() + "_cresid-" + num + ": CONCATENATE ARG=" + getShortcutLabel() + "_resid-" + num + "," + getShortcutLabel() + "_presid-" + num );
+              kargs.push_back( getShortcutLabel() + "_cresid-" + num ); eargs.push_back( getShortcutLabel() + "_resid-" + num );
               if( grid_nbins.size()>0 ) {
                   if( gmax.size()==0 ) error("you must set GRID_MAX if you set GRID_BIN");
                   tgmin.push_back( "-" + gmax ); tgmax.push_back( gmax ); tgbins.push_back( grid_nbins );
               } else {
                   readInputLine( getShortcutLabel() + "-" + num + "_nwtfact: MATHEVAL ARG1=" + getShortcutLabel() + "-" + num + "_wtfact FUNC=x-log(2) PERIODIC=NO");
-                  hstring = getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact";
+                  readInputLine( getShortcutLabel() + "-" + num + "_hnwtfact: CONCATENATE ARG=" + getShortcutLabel() + "-" + num + "_nwtfact," + getShortcutLabel() + "-" + num + "_nwtfact");
+                  hstring = getShortcutLabel() + "-" + num + "_hnwtfact"; 
               }
           }
       }
-      MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, targs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
+      MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, kargs, eargs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
   }
 
   // Normalize the weights for each of the kernels and compute the final bias

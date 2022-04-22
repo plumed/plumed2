@@ -37,16 +37,15 @@ class HistogramBase :
   public ActionWithArguments
 {
 private:
+  std::set<unsigned> task_list;
   std::vector<double> forcesToApply;
   void setNumberOfKernels();
-  void buildTasksFromBasedOnRankOfInputData();
   void retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const ;
 protected:
   double norm;
-  unsigned heights_index, numberOfKernels;
-  bool one_kernel_at_a_time, unorm;
+  unsigned grid_dimension, numberOfKernels;
+  bool hasheight, unorm, fixed_width;
   GridCoordinatesObject gridobject;
-  void createTaskList();
   void resizeForcesToApply();
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
@@ -55,20 +54,19 @@ public:
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
-  virtual void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) = 0;
+  virtual void buildSingleKernel( const double& height, std::vector<double>& args ) = 0;
   virtual double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const = 0;
   virtual void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
-  void getTasksForParent( const std::string& parent, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) override {}
   void calculate();
   void update();
   void runFinalJobs();
-  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
-  virtual void completeGridObjectSetup()=0;
+  void setupCurrentTaskList();
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();
+  virtual void setupNeighborsVector()=0;
   void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
-  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const = 0;
+  virtual void addKernelForces( const bool& hasheight, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const = 0;
 };
 
 }

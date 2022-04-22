@@ -155,8 +155,6 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
   addValueWithDerivatives( shape ); setNotPeriodic(); 
   getPntrToOutput(0)->alwaysStoreValues(); checkRead();
-  // Create a task list
-  for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
 }
 
 void FindSphericalContour::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,

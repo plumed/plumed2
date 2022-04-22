@@ -92,8 +92,7 @@ nderivatives(0)
   myfunc.read( this );
   // Check we are not calculating an integral
   if( myfunc.zeroRank() ) { 
-      shape.resize(0); forcesToApply.resize( npoints ); 
-      for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
+      shape.resize(0); forcesToApply.resize( npoints );
   } 
   // This sets the prefactor to the volume which converts integrals to sums
   myfunc.setPrefactor( this, volume );
@@ -102,8 +101,9 @@ nderivatives(0)
   // Get the names of the components
   std::vector<std::string> components( keywords.getAllOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 && myfunc.zeroRank() ) addValueWithDerivatives();
-  else if( components.size()==0 ) { 
+  if( components.size()==0 && myfunc.zeroRank() ) {
+      addValueWithDerivatives(); getPntrToOutput(0)->setNumberOfTasks( npoints );
+  } else if( components.size()==0 ) { 
      addValueWithDerivatives( shape ); getPntrToOutput(0)->alwaysStoreValues();
   } else error("functions of grid should only output one grid");
   // Set the periodicities of the output components
@@ -138,7 +138,6 @@ void FunctionOfGrid<T>::getVolumeAndPoints( double& volume, unsigned& npoints, s
   // Now check that all grids have the same size
   shape.resize( min.size() ); std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
   std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
-  if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
   for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
     if( getPntrToArgument(j)->getRank()!=0 ) {
       if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
@@ -206,15 +205,14 @@ void FunctionOfGrid<T>::gatherStoredValue( const unsigned& valindex, const unsig
 template <class T>
 void FunctionOfGrid<T>::reshapeOutput() {
   plumed_assert( firststep ); myfunc.setup( this ); 
-  unsigned npoints=0; double volume; std::vector<unsigned> shape;
+  unsigned npoints=0; double volume; std::vector<unsigned> shape; 
   getVolumeAndPoints( volume, npoints, shape ); myfunc.setPrefactor( this, volume );
   if( !myfunc.zeroRank() && getPntrToOutput(0)->getNumberOfValues()!=npoints ) {
       plumed_assert( shape.size()>0 ); getPntrToOutput(0)->setShape( shape ); 
   }
-  if( myfunc.doWithTasks() && getFullNumberOfTasks()<npoints ) {
-      if( myfunc.zeroRank() ) { getPntrToOutput(0)->resizeDerivatives( npoints ); forcesToApply.resize( npoints ); } 
-      for(unsigned j=getFullNumberOfTasks(); j<npoints; ++j) addTaskToList(j);
-  }
+  if( myfunc.doWithTasks() && myfunc.zeroRank() ) {
+      getPntrToOutput(0)->setNumberOfTasks( npoints ); getPntrToOutput(0)->resizeDerivatives( npoints ); forcesToApply.resize( npoints ); 
+  } else if( !myfunc.doWithTasks() ) getPntrToOutput(0)->setNumberOfTasks( 0 ); 
   firststep=false;
 }
 
@@ -238,7 +236,7 @@ void FunctionOfGrid<T>::calculate() {
   if( !skipUpdate() ) return;
   if( firststep ) reshapeOutput();
   // This is done if we are calculating a function of multiple cvs
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( getPntrToOutput(0)->getNumberOfTasks()>0 ) runAllTasks();
   // This is used if we are doing sorting actions on a single vector
   else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
@@ -248,7 +246,7 @@ void FunctionOfGrid<T>::update() {
   if( skipUpdate() ) return;
   if( firststep ) reshapeOutput();
   // This is done if we are calculating a function of multiple cvs
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( getPntrToOutput(0)->getNumberOfTasks()>0 ) runAllTasks();
   // This is used if we are doing sorting actions on a single vector
   else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
@@ -258,7 +256,7 @@ void FunctionOfGrid<T>::runFinalJobs() {
   if( skipUpdate()  ) return;
   if( firststep ) reshapeOutput(); 
   // This is done if we are calculating a function of multiple cvs
-  if( getFullNumberOfTasks()>0 ) runAllTasks();
+  if( getPntrToOutput(0)->getNumberOfTasks()>0 ) runAllTasks();
   // This is used if we are doing sorting actions on a single vector
   else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
@@ -283,7 +281,7 @@ void FunctionOfGrid<T>::apply() {
   }
   
   std::vector<double> totv(nscalars,0);
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) { 
+  for(unsigned i=0; i<getPntrToOutput(0)->getNumberOfValues(); ++i) { 
     nscalars=0;
     for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
       double fforce = getPntrToOutput(0)->getForce(i);

@@ -61,7 +61,6 @@ Neighbors::Neighbors(const ActionOptions&ao):
   // Now create a value
   std::vector<unsigned> shape(2); getPntrToArgument(0)->buildDataStore( getLabel() );
   shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[1];
-  for(unsigned i=0; i<shape[0]; ++i) addTaskToList( i );
   addValue( shape ); getPntrToOutput(0)->neverStoreValues();
 
   unsigned nlow; parse("NLOWEST",nlow);

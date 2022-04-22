@@ -890,7 +890,7 @@ void EDS::update_pseudo_virial() {
   for(unsigned int i = 0; i < ncvs_; ++i) {
     //checked in setup to ensure this cast is valid.
     ActionAtomistic* cv = dynamic_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
-    Tensor &v(cv->modifyVirial());
+    const Tensor &v(cv->getVirial());
     Tensor box(cv->getBox());
     const unsigned int natoms=cv->getNumberOfAtoms();
     if(!volume)
