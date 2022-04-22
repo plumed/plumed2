@@ -21,6 +21,7 @@ requirements:
     - python
     - pip
     - cython
+    - mpi4py
   run:
     - plumed
     - python

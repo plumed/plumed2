@@ -48,7 +48,8 @@ if {${name} ne ${subport}} {
 
     depends_test-append port:py${python.version}-pytest \
                         port:py${python.version}-numpy \
-                        port:py${python.version}-pandas
+                        port:py${python.version}-pandas \
+                        port:py${python.version}-mpi4py
 
     test.cmd            pytest-${python.branch}
     test.target         -v

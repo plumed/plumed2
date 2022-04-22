@@ -8,7 +8,7 @@ RUN yum -y update \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
                    python3 python3-devel python3-pip \
  && pip3 install numpy \
- && pip3 install cython numpy pandas mdtraj \
+ && pip3 install cython numpy pandas mdtraj mpi4py \
  && pip3 install MDAnalysis
 
 RUN useradd -ms /bin/bash plumed
