@@ -48,7 +48,7 @@ except ImportError:
      HAS_NUMPY=False
 
 try:
-     cimport mpi4py.MPI as MPI
+     import mpi4py.MPI as MPI
      cimport mpi4py.libmpi as libmpi
      HAS_MPI4PY=True
 except ImportError:
