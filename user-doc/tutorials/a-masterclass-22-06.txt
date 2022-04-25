@@ -1,0 +1,92 @@
+/**
+\page masterclass-22-06 PLUMED Masterclass 22.6: EDS module + Coarse-Grained directed simulations
+
+\authors Glen Hocky, Andrew White
+\date April 26, 2022
+
+\section masterclass-22-06-aims Aims
+
+This Masterclass describes how to bias simulations to agree with experimental data using experiment directed simulation.
+
+\section masterclass-22-06-obj Objectives
+
+Once this Masterclass is completed, you will know how to:
+
+- How to bias collective variables to agree with set values
+- ????
+
+\section masterclass-22-06-prereq Prerequisites
+
+We assume that you are familiar with PLUMED and enhanced sampling calculations. If you are not, the 2021 PLUMED Masterclass is a great place to start.  We will also use \ref OPES to enhance sampling, which has been covered on the \ref masterclass-22-03.
+
+Furthermore, Python knowledge is required for this masterclass.
+
+\section masterclass-22-06-theory Overview
+
+XXXXXX
+
+\section masterclass-22-06-install Software and data
+
+The data needed to complete the exercises of this Masterclass can be found on [GitHub](https://github.com/luigibonati/masterclass-plumed/).
+To complete the exercises, we will go through a set of **Jupyter notebooks**, from which all the simulations can be performed and analyzed.
+
+If instead you want to run the exercises on your computer you can follow the instructions available on [GitHub](https://github.com/luigibonati/masterclass-plumed/blob/main/INSTALL.md).
+In particular, you will need to use the development version of PLUMED. Furthermore, you will need to download LibTorch and configure PLUMED against it, as well as enable the PYTORCH and OPES modules. To configure PLUMED with Pytorch you can follow the instructions in the \ref PYTORCH page.
+To run the simulations we will use GROMACS 2020.6 patched with PLUMED.
+
+\subsection masterclass-22-06-training Training CVs with Pytorch
+
+In this tutorial, we will use [mlcvs](https://mlcvs.readthedocs.io/en/latest/), a Python-based package designed for building data-driven collective variables for enhanced sampling simulations.
+In `mlcvs` we have implemented different kinds of data-driven CVs proposed in the literature, including Deep-LDA \cite bonati2020data and Deep-TICA \cite bonati2021deep which we describe in this masterclass.
+
+\subsection masterclass-22-06-deploy Using the CVs in PLUMED
+
+Once the models have been trained on the data, we can export them using the jit (just in time) compiler of Pytorch. This creates a Python-independent model, which can be loaded in PLUMED using Pytorch C++ APIs (LibTorch). Of particular relevance is that we can exploit the automatic differentiation feature of Pytorch to compute derivatives of the model with respect to the inputs.
+Note that in this way we can load the models exported from `mlcvs` as well as any other function built using Pytorch methods and serialized with jit.
+
+A typical PLUMED input might be the following, in which we first calculate some descriptors and feed them as inputs of the model.
+\plumedfile
+#SETTINGS AUXFILE=regtest/pytorch/rt-pytorch_model_2d/torch_model.ptc
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+model: PYTORCH_MODEL FILE=torch_model.ptc ARG=phi,psi
+PRINT FILE=COLVAR ARG=model.node-0,model.node-1
+\endplumedfile
+
+\section masterclass-22-06-ex Exercises
+
+The exercises are presented in the Jupyter notebooks, from which all the simulations can be performed and analyzed.
+For this reason, this page only presents a high level overview of the contents of the notebooks.
+
+\subsection masterclass-22-06-ex-system Toy system: alanine dipeptide
+
+As done in some previous masterclass, we will play with a toy system, the small alanine dipeptide molecule in a vacuum (ala2).
+This has the advantage of being a well-known system and it is cheap to simulate.
+The typical use case is to test enhanced sampling methods using as CVs the torsional angle\f$\phi\f$ and \f$\psi\f$. Since the former is an almost ideal CV for describing the transition between its two metastable states, this will typically result in a very efficient sampling.
+Here we want to approach this problem in a more blind way and try to design efficient CVs with as little knowledge as possible, learning the CVs directly from the output of molecular dynamics simulations.
+
+In both exercises, we will characterize the molecule with a general set of physical descriptors, which are the interatomic distances between heavy atoms.
+The reason for not working directly with atomic positions is twofold: on one hand, invariant CVs can be easily obtained under the relevant symmetries, while on the other, we can use different kind of descriptors to focus the sampling on the relevant processes.
+
+\subsection masterclass-22-06-ex-1 Tutorial 1: `Collective variables from equilibrium fluctuations
+
+You can find the first tutorial in the jupyter notebook `tutorial1_DeepLDA.ipynb`. In this exercise, we will design the CVs starting only from a realization of the metastable states.
+The main steps will be the following:
+
+1. Perform short unbiased MD simulations in the metastable states and evaluate a set of physical descriptors (e.g. interatomic distances between heavy atoms)
+2. We train a neural-network based CV to discriminate between the states, using Fisher's discriminant as the objective function (DeepLDA)
+3. Finally, we apply a bias potential to enhance the fluctuations of the DeepLDA CV and drive the system back and forth between the two states.
+
+\subsection masterclass-22-06-ex-2 Tutorial 2: Collective variables as slow modes of biased simulations
+
+In the second exercise, which you can find in the notebook `tutorial2_DeepTICA.ipynb` , we will extract the CVs from biased simulations. As before, we will go through three main steps:
+
+1. Perform an enhanced sampling calculation using some approximate CVs as well as generalized ensembles simulations (e.g. multicanonical).
+2. Use the trajectory to train a neural-network based CV to find the maximally autocorrelated modes, which correspond to the slowest degrees of freedom (DeepTICA)
+3. Bias these slow degrees of freedom to improve sampling
+
+*/
+
+link: @subpage masterclass-22-06
+
+description: This Masterclass describes how to bias simulations to agree with experimental data using experiment directed simulation.
