@@ -33,11 +33,50 @@ where \f$U(x)\f$ is the potential energy of the system, \f$f(x)\f$ is the CV, an
 
 \section masterclass-22-06-install Software and data
 
-The only data needed to complete the exercises of this Masterclass can be found on an earlier masterclass git page [GitHub](https://github.com/invemichele/masterclass-22-03.git/).
+The only data needed to complete the exercises of this Masterclass can be found on an the following github page [data](https://github.com/hockyg/plumed-eds-masterclass), with alanine inputs being borrowed from an earlier one [GitHub-22-03](https://github.com/invemichele/masterclass-22-03.git/).
+Simulations will be performed using PLUMED's pesmd module, and gromacs.
 
 \section masterclass-22-06-ex Exercises
 
 The exercises are presented below.
+
+\subsection masterclass-22-06-ex-1d-setup Setup 1-dimensional system.
+
+Set up a plumed file to use with pesmd that has a harmonic potential. Then run using the 1d input provided in the github. For example:
+
+\plumedfile
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+ff: MATHEVAL ARG=d1.x PERIODIC=NO FUNC=0.5*10*(x^2)
+bb: BIASVALUE ARG=ff
+
+PRINT ARG=d1.x STRIDE=25 FILE=_PREFIX_.colvars.dat
+\endplumedfile
+
+\verbatim
+plumed pesmd < harmonic_1d.in
+\endverbatim
+
+Histogram your data, and see if it fits the ideal Boltzmann distribution for this harmonic oscillator. Make sure to normalize your distribution properly!
+
+Now try adding a harmonic bias using the RESTRAINT function, so that the data becomes centered near x=1. 
+
+Finally, we will add an EDS bias. Make your EDS bias also be centered at 1.
+
+\plumedfile
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+ff: MATHEVAL ARG=d1.x PERIODIC=NO FUNC=0.5*10*(x^2)
+bb: BIASVALUE ARG=ff
+
+eds: EDS ARG=d1.x CENTER=__FILL__ PERIOD=__FILL__ OUT_RESTART=__FILL__ TEMP=1.0 BIAS_SCALE=1
+PRINT ARG=* STRIDE=100 FILE=_PREFIX_.colvars.dat
+\endplumedfile
+
+Note, we have to add TEMP=1 because pesmd does not provide the temperature to the EDS module.
+
+\image html masterclass-22-6-comp_rest_eds.png "Position versus time, unbiased, harmonic bias, and EDS bias."
+\image html masterclass-22-6-comp_rest_eds_hist.png "Histogram of position for 1d oscillator shows how RESTRAINT fails and EDS wins."
+
+
 
 \subsection masterclass-22-06-ex-alanine Alanine dipeptide
 
