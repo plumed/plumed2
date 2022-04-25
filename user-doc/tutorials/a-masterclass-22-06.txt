@@ -76,10 +76,47 @@ Note, we have to add TEMP=1 because pesmd does not provide the temperature to th
 \image html masterclass-22-6-comp_rest_eds.png "Position versus time, unbiased, harmonic bias, and EDS bias."
 \image html masterclass-22-6-comp_rest_eds_hist.png "Histogram of position for 1d oscillator shows how RESTRAINT fails and EDS wins."
 
+Now look at how the bias factor changes with time. Can you also compute the bias from this value, and the value of the position versus time? Look in the colvar file and the restart file to see what values are there.
+\image html masterclass-22-6-1d_check_bias.png "Value of learned EDS linear coefficient and eds bias versus time in the simulation."
 
+
+\subsection masterclass-22-06-ex-2d-setup Setup and bias a 2-dimensional system.
+Now we will move on to a 2d harmonic oscillator. This way we can see the effect of biasing x, y, or a combination. Note, there is a different pesmd input file for this.
+
+\plumedfile
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+ff: MATHEVAL ARG=__FILL__ PERIODIC=NO FUNC=__FILL__
+bb: BIASVALUE ARG=ff
+
+PRINT ARG=__FILL__ STRIDE=25 FILE=_PREFIX_.colvars.dat
+\endplumedfile
+
+Try to bias either the x or y directions separately. Try biasing a combination of them. 
+We biased the average of x*y to be = 1. Use the CUSTOM command to try that out. What do you think it should look like?
+Write a python program to histogram the x and y data and see. It should look like below.
+
+\image html masterclass-22-6-2d_bias.png "Histogram of positions for 2d oscillator with various EDS biases applied."
 
 \subsection masterclass-22-06-ex-alanine Alanine dipeptide
+Bias alanine dipeptide using gromacs and the input files provided in the github.
+\plumedfile
+MOLINFO STRUCTURE=./input.ala2.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
 
+eds: EDS ARG=__FILL__ CENTER=__FILL__ PERIOD=__FILL__ OUT_RESTART=_PREFIX_.restart.dat BIAS_SCALE=1
+
+PRINT ARG=* STRIDE=500 FILE=_PREFIX_.colvars.dat
+\endplumedfile
+
+Try biasing phi and psi indepdendently. Try biasing them at the same time. What is a good PERIOD to choose? 
+
+\image html masterclass-22-6-ala2_unbiased.png "Histogram of phi and psi for adp from a very long unbiased simulation."
+\image html masterclass-22-6-ala2_eds_phi.png  "Histogram of phi and psi for adp from a very long unbiased simulation with <phi> biased to be 1."
+\image html masterclass-22-6-ala2_eds_psi.png "Histogram of phi and psi for adp from a very long unbiased simulation with <psi> biased to be 1."
+
+\subsection masterclass-22-06-ex-explore Free explore
+Take a protein of interest, or alanine 2, and bias more than one variable. To try CGDS, choose the center of mass of some different parts of your protein. Can you bias the distance between these COMs and the angle between them at the same time? Does using COVAR or LM affect the speed of convergence?
 
 link: @subpage masterclass-22-06
 
