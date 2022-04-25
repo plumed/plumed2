@@ -13,17 +13,22 @@ This Masterclass describes how to bias simulations to agree with experimental da
 Once this Masterclass is completed, you will know how to:
 
 - How to bias collective variables to agree with set values
-- ????
 
 \section masterclass-22-06-prereq Prerequisites
 
-We assume that you are familiar with PLUMED and enhanced sampling calculations. If you are not, the 2021 PLUMED Masterclass is a great place to start.  We will also use \ref OPES to enhance sampling, which has been covered on the \ref masterclass-22-03.
+We assume that you are familiar with PLUMED and enhanced sampling calculations. If you are not, the 2021 PLUMED Masterclass is a great place to start. In particular, you should be familiar with specifying collective variables.
 
-Furthermore, Python knowledge is required for this masterclass.
+Furthermore, some Python knowledge is required for this masterclass to generate plots and perform some analysis calculations.
 
 \section masterclass-22-06-theory Overview
 
-XXXXXX
+Experiment directed simulation (EDS) is a maximum entropy method for biasing specific collective variables (CVs) to agree with set values. These are typically from experimental data, like a known radius of gyration or NMR chemical shift. Biasing a CV is an under-determined problem because there are many ways to change the systems' potential energy to agree with a set point. If we further maximize ensemble entropy while matching the set point, the problem has a unique solution of
+
+\f[
+U'(x) = U(x) + \lambda f(x)
+\f]
+
+where \f$U(x)\f$ is the potential energy of the system, \f$f(x)\f$ is the CV, and \f$\lambda\f$ is a fit parameter. EDS is a time-dependent method that finds \f$\lambda\f$ while the simulation is running. It typically converges much faster than free-energy methods, but comes with the same caveats that insufficient sampling or rare events can affect the method. Another important detail is that EDS/maximum entropy biasing is for matching the set point on average (in expectation), rather than at every frame.
 
 \section masterclass-22-06-install Software and data
 
