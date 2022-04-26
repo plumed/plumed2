@@ -58,7 +58,7 @@ plumed pesmd < harmonic_1d.in
 
 Histogram your data, and see if it fits the ideal Boltzmann distribution for this harmonic oscillator. Make sure to normalize your distribution properly!
 
-Now try adding a harmonic bias using the RESTRAINT function, so that the data becomes centered near x=1. 
+Now try adding a harmonic bias using the RESTRAINT function, so that the data becomes centered near \f$x=1\f$.
 
 Finally, we will add an EDS bias. Make your EDS bias also be centered at 1.
 
@@ -91,7 +91,7 @@ bb: BIASVALUE ARG=ff
 PRINT ARG=__FILL__ STRIDE=25 FILE=_PREFIX_.colvars.dat
 \endplumedfile
 
-Try to bias either the x or y directions separately. Try biasing a combination of them. 
+Try to bias either the x or y directions separately. Try biasing a combination of them.
 We biased the average of x*y to be = 1. Use the CUSTOM command to try that out. What do you think it should look like?
 Write a python program to histogram the x and y data and see. It should look like below.
 
@@ -109,14 +109,16 @@ eds: EDS ARG=__FILL__ CENTER=__FILL__ PERIOD=__FILL__ OUT_RESTART=_PREFIX_.resta
 PRINT ARG=* STRIDE=500 FILE=_PREFIX_.colvars.dat
 \endplumedfile
 
-Try biasing phi and psi indepdendently. Try biasing them at the same time. What is a good PERIOD to choose? 
+Try biasing phi and psi independently. Try biasing them at the same time. What is a good PERIOD to choose?
 
 \image html masterclass-22-6-ala2_unbiased.png "Histogram of phi and psi for adp from a very long unbiased simulation."
-\image html masterclass-22-6-ala2_eds_phi.png  "Histogram of phi and psi for adp from a very long unbiased simulation with <phi> biased to be 1."
-\image html masterclass-22-6-ala2_eds_psi.png "Histogram of phi and psi for adp from a very long unbiased simulation with <psi> biased to be 1."
+\image html masterclass-22-6-ala2_eds_phi1.png  "Histogram of phi and psi for adp from a very long unbiased simulation with <phi> biased to be 1."
+\image html masterclass-22-6-ala2_eds_psi1.png "Histogram of phi and psi for adp from a very long unbiased simulation with <psi> biased to be 1."
 
 \subsection masterclass-22-06-ex-explore Free explore
 Take a protein of interest, or alanine 2, and bias more than one variable. To try CGDS, choose the center of mass of some different parts of your protein. Can you bias the distance between these COMs and the angle between them at the same time? Does using COVAR or LM affect the speed of convergence?
+
+*/
 
 link: @subpage masterclass-22-06
 
