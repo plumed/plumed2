@@ -135,7 +135,7 @@ cdef class Plumed:
          self.c_plumed.cmd_int( ckey, val)
      cdef cmd_mpi(self, ckey, MPI.Comm val):
          cdef libmpi.MPI_Comm buffer = val.ob_mpi
-         self.c_plumed.cmd_mpi( ckey, <libmpi.MPI_Comm*>&buffer)
+         self.c_plumed.cmd_mpi( ckey, <void*>&buffer)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
