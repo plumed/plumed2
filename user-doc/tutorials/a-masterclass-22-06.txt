@@ -112,8 +112,8 @@ PRINT ARG=* STRIDE=500 FILE=_PREFIX_.colvars.dat
 Try biasing phi and psi independently. Try biasing them at the same time. What is a good PERIOD to choose?
 
 \image html masterclass-22-6-ala2_unbiased.png "Histogram of phi and psi for adp from a very long unbiased simulation."
-\image html masterclass-22-6-ala2_eds_phi.png  "Histogram of phi and psi for adp from a very long unbiased simulation with <phi> biased to be 1."
-\image html masterclass-22-6-ala2_eds_psi.png "Histogram of phi and psi for adp from a very long unbiased simulation with <psi> biased to be 1."
+\image html masterclass-22-6-ala2_eds_phi1.png  "Histogram of phi and psi for adp from a very long unbiased simulation with <phi> biased to be 1."
+\image html masterclass-22-6-ala2_eds_psi1.png "Histogram of phi and psi for adp from a very long unbiased simulation with <psi> biased to be 1."
 
 \subsection masterclass-22-06-ex-explore Free explore
 Take a protein of interest, or alanine 2, and bias more than one variable. To try CGDS, choose the center of mass of some different parts of your protein. Can you bias the distance between these COMs and the angle between them at the same time? Does using COVAR or LM affect the speed of convergence?
