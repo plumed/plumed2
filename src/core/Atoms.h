@@ -30,7 +30,6 @@
 #include "tools/AtomNumber.h"
 #include "tools/ForwardDecl.h"
 #include <vector>
-#include <set>
 #include <map>
 #include <string>
 #include <memory>
@@ -50,7 +49,8 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
-  std::set<AtomNumber> unique;
+  bool unique_serial=false; // use unique in serial mode
+  std::vector<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
 /// Map global indexes to local indexes
 /// E.g. g2l[i] is the position of atom i in the array passed from the MD engine.
@@ -140,7 +140,7 @@ class Atoms
   DomainDecomposition dd;
   long int ddStep;  //last step in which dd happened
 
-  void share(const std::set<AtomNumber>&);
+  void share(const std::vector<AtomNumber>&);
 
 public:
 

@@ -24,6 +24,7 @@
 #include "MDAtoms.h"
 #include "PlumedMain.h"
 #include "tools/Pbc.h"
+#include "tools/Tools.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -34,6 +35,29 @@ namespace PLMD {
 /// We assume that charges and masses are constant along the simulation
 /// Set this to false if you want to revert to the original (expensive) behavior
 static const bool shareMassAndChargeOnlyAtFirstStep=true;
+
+/// Use a priority_queue to merge unique vectors.
+/// export PLUMED_MERGE_VECTORS_PRIORITY_QUEUE=yes to use a priority_queue.
+/// Might be faster with some settings, but appears to not be in practice.
+/// This option is for testing and might be removed.
+static bool getenvMergeVectorsPriorityQueue() noexcept {
+  static const auto* res=std::getenv("PLUMED_MERGE_VECTORS_PRIORITY_QUEUE");
+  return res;
+}
+
+/// Use unique list of atoms to manipulate forces and positions.
+/// A unique list of atoms is used to manipulate forces and positions in MPI parallel runs.
+/// In serial runs, this is done if convenient. The code currently contain
+/// some heuristic to decide if the unique list should be used or not.
+/// An env var can be used to override this decision.
+/// export PLUMED_FORCE_UNIQUE=yes  # enforce using the unique list in serial runs
+/// export PLUMED_FORCE_UNIQUE=no   # enforce not using the unique list in serial runs
+/// export PLUMED_FORCE_UNIQUE=auto # choose heuristically
+/// default: auto
+static const char* getenvForceUnique() noexcept {
+  static const auto* res=std::getenv("PLUMED_FORCE_UNIQUE");
+  return res;
+}
 
 class PlumedMain;
 
@@ -142,16 +166,38 @@ void Atoms::share() {
     return;
   }
 
-  if(!(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+  if(!getenvForceUnique() || !std::strcmp(getenvForceUnique(),"auto")) {
+    unsigned largest=0;
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        auto l=actions[i]->getUnique().size();
+        if(l>largest) largest=l;
+      }
+    }
+    if(largest*2<natoms) unique_serial=true;
+    else unique_serial=false;
+  } else if(!std::strcmp(getenvForceUnique(),"yes")) {
+    unique_serial=true;
+  } else if(!std::strcmp(getenvForceUnique(),"no")) {
+    unique_serial=false;
+  } else {
+    plumed_error()<<"PLUMED_FORCE_UNIQUE set to unknown value "<<getenvForceUnique();
+  }
+
+  if(unique_serial || !(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+    std::vector<const std::vector<AtomNumber>*> vectors;
+    vectors.reserve(actions.size());
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
-          atomsNeeded=true;
           // unique are the local atoms
-          unique.insert(actions[i]->getUniqueLocal().begin(),actions[i]->getUniqueLocal().end());
+          vectors.push_back(&actions[i]->getUniqueLocal());
         }
       }
     }
+    if(!vectors.empty()) atomsNeeded=true;
+    unique.clear();
+    Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
   } else {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -170,40 +216,42 @@ void Atoms::shareAll() {
   unique.clear();
   // keep in unique only those atoms that are local
   if(dd && shuffledAtoms>0) {
-    for(int i=0; i<natoms; i++) if(g2l[i]>=0) unique.insert(AtomNumber::index(i));
+    for(int i=0; i<natoms; i++) if(g2l[i]>=0) unique.push_back(AtomNumber::index(i)); // already sorted
   } else {
-    for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
+    unique.resize(natoms);
+    for(int i=0; i<natoms; i++) unique[i]=AtomNumber::index(i);
   }
   atomsNeeded=true;
   share(unique);
 }
 
-void Atoms::share(const std::set<AtomNumber>& unique) {
+void Atoms::share(const std::vector<AtomNumber>& unique) {
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
 
   virial.zero();
-  if(zeroallforces || int(gatindex.size())==natoms) {
-    for(int i=0; i<natoms; i++) forces[i].zero();
+  if(zeroallforces || (int(gatindex.size())==natoms && !unique_serial)) {
+    Tools::set_to_zero(forces);
   } else {
     for(const auto & p : unique) forces[p.index()].zero();
+    for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   }
-  for(unsigned i=getNatoms(); i<positions.size(); i++) forces[i].zero(); // virtual atoms
   forceOnEnergy=0.0;
   mdatoms->getBox(box);
 
   if(!atomsNeeded) return;
   atomsNeeded=false;
 
-  if(int(gatindex.size())==natoms && shuffledAtoms==0) {
+  if(!(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+    uniq_index.resize(unique.size());
+    for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=g2l[unique[i].index()];
+    mdatoms->getPositions(unique,uniq_index,positions);
+  } else if(unique_serial) {
+    uniq_index.resize(unique.size());
+    for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=unique[i].index();
+    mdatoms->getPositions(unique,uniq_index,positions);
+  } else {
 // faster version, which retrieves all atoms
     mdatoms->getPositions(0,natoms,positions);
-  } else {
-    uniq_index.clear();
-    uniq_index.reserve(unique.size());
-    if(shuffledAtoms>0) {
-      for(const auto & p : unique) uniq_index.push_back(g2l[p.index()]);
-    }
-    mdatoms->getPositions(unique,uniq_index,positions);
   }
 
 
@@ -318,7 +366,7 @@ void Atoms::updateForces() {
     mdatoms->rescaleForces(gatindex,alpha);
     mdatoms->updateForces(gatindex,forces);
   } else {
-    if(int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
+    if(!unique_serial && int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
     else mdatoms->updateForces(unique,uniq_index,forces);
   }
   if( !plumed.novirial && dd.Get_rank()==0 ) {
@@ -471,16 +519,19 @@ void Atoms::createFullList(const TypesafePtr & n) {
 // This is not very clear, and probably should be coded differently.
 // Hopefully this fix the longstanding issue with NAMD.
     unique.clear();
+    std::vector<const std::vector<AtomNumber>*> vectors;
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
           atomsNeeded=true;
           // unique are the local atoms
-          unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+          vectors.push_back(&actions[i]->getUnique());
         }
       }
     }
-    fullList.resize(0);
+    unique.clear();
+    Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
+    fullList.clear();
     fullList.reserve(unique.size());
     for(const auto & p : unique) fullList.push_back(p.index());
     n.set(int(fullList.size()));
