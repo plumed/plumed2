@@ -50,22 +50,12 @@ static bool getenvMergeVectorsPriorityQueue() noexcept {
 /// In serial runs, this is done if convenient. The code currently contain
 /// some heuristic to decide if the unique list should be used or not.
 /// An env var can be used to override this decision.
-/// export PLUMED_FORCE_UNIQUE=yes # enforce using the unique list in serial runs
-/// export PLUMED_FORCE_UNIQUE=no  # enforce not using the unique list in serial runs
-/// default: choose heuristically
+/// export PLUMED_FORCE_UNIQUE=yes  # enforce using the unique list in serial runs
+/// export PLUMED_FORCE_UNIQUE=no   # enforce not using the unique list in serial runs
+/// export PLUMED_FORCE_UNIQUE=auto # choose heuristically
+/// default: auto
 static const char* getenvForceUnique() noexcept {
   static const auto* res=std::getenv("PLUMED_FORCE_UNIQUE");
-  return res;
-}
-
-/// Force the construction of the unique list.
-/// Can be used for timing the construction of the unique list.
-/// export PLUMED_FORCE_UNIQUE=no
-/// export PLUMED_MAKE_UNIQUE=yes
-/// By setting *both*, plumed will construct the list but not use it.
-/// This option is for testing and might be removed.
-static bool getenvMakeUnique() noexcept {
-  static const auto* res=std::getenv("PLUMED_MAKE_UNIQUE");
   return res;
 }
 
@@ -176,7 +166,7 @@ void Atoms::share() {
     return;
   }
 
-  if(!getenvForceUnique()) {
+  if(!getenvForceUnique() || !std::strcmp(getenvForceUnique(),"auto")) {
     unsigned largest=0;
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -186,12 +176,15 @@ void Atoms::share() {
     }
     if(largest*2<natoms) unique_serial=true;
     else unique_serial=false;
+  } else if(!std::strcmp(getenvForceUnique(),"yes")) {
+    unique_serial=true;
+  } else if(!std::strcmp(getenvForceUnique(),"no")) {
+    unique_serial=false;
   } else {
-    if(!std::strcmp(getenvForceUnique(),"yes")) unique_serial=true;
-    else unique_serial=false;
+    plumed_error()<<"PLUMED_FORCE_UNIQUE set to unknown value "<<getenvForceUnique();
   }
 
-  if(getenvMakeUnique() || unique_serial || !(int(gatindex.size())==natoms && shuffledAtoms==0)) {
+  if(unique_serial || !(int(gatindex.size())==natoms && shuffledAtoms==0)) {
     std::vector<const std::vector<AtomNumber>*> vectors;
     vectors.reserve(actions.size());
     for(unsigned i=0; i<actions.size(); i++) {
