@@ -282,12 +282,13 @@ private:
   {
     double forcecutoff2=forcecutoff*forcecutoff; // squared force cutoff
     engconf=0.0;
+    double engconf_tmp=0.0; // separate variable for reduction (gcc 4.8 does not make reductions on references)
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
     double engcorrection=4.0*epsilon*(1.0/std::pow(forcecutoff2/(sigma*sigma),6.0)-1.0/std::pow(forcecutoff2/(sigma*sigma),3)); // energy necessary shift the potential avoiding discontinuities
     #   pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
       std::vector<Vector> omp_forces(forces.size());
-      #pragma omp for reduction(+:engconf) schedule(static,1) nowait
+      #pragma omp for reduction(+:engconf_tmp) schedule(static,1) nowait
       for(int iatom=0; iatom<natoms-1; iatom++) {
         for(int jlist=0; jlist<list[iatom].size(); jlist++) {
           const int jatom=list[iatom][jlist];
@@ -302,7 +303,7 @@ private:
           auto distance_pbcm8=distance_pbcm6*distance_pbcm2;
           auto distance_pbcm12=distance_pbcm6*distance_pbcm6;
           auto distance_pbcm14=distance_pbcm12*distance_pbcm2;
-          engconf+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
+          engconf_tmp+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
           auto f=24.0*distance_pbc*(2.0*distance_pbcm14-distance_pbcm8)*epsilon/sigma;
           omp_forces[iatom]+=f;
           omp_forces[jatom]-=f;
@@ -311,6 +312,8 @@ private:
       #     pragma omp critical
       for(unsigned i=0; i<omp_forces.size(); i++) forces[i]+=omp_forces[i];
     }
+
+    engconf=engconf_tmp;
 
   }
 
