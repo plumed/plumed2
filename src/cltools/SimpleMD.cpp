@@ -450,10 +450,7 @@ private:
 // Commenting the next line it is possible to switch-off plumed
     plumed=Tools::make_unique<PLMD::PlumedMain>();
 
-    if(plumed) {
-      int s=sizeof(double);
-      plumed->cmd("setRealPrecision",&s);
-    }
+    if(plumed) plumed->cmd("setRealPrecision",int(sizeof(double)));
 
     read_input(temperature,tstep,friction,forcecutoff,
                listcutoff,nstep,nconfig,nstat,
@@ -508,18 +505,16 @@ private:
 
     if(plumed) {
       plumed->cmd("setNoVirial");
-      plumed->cmd("setNatoms",&natoms);
+      plumed->cmd("setNatoms",natoms);
       plumed->cmd("setMDEngine","simpleMD");
-      plumed->cmd("setTimestep",&tstep);
+      plumed->cmd("setTimestep",tstep);
       plumed->cmd("setPlumedDat","plumed.dat");
       int pversion=0;
       plumed->cmd("getApiVersion",&pversion);
 // setting kbT is only implemented with api>1
 // even if not necessary in principle in SimpleMD (which is part of plumed)
 // we leave the check here as a reference
-      if(pversion>1) {
-        plumed->cmd("setKbT",&temperature);
-      }
+      if(pversion>1) plumed->cmd("setKbT",temperature);
       plumed->cmd("init");
     }
 
@@ -571,14 +566,13 @@ private:
       compute_forces(natoms,epsilon,sigma,positions,cell,forcecutoff,list,forces,engconf);
 
       if(plumed) {
-        int istepplusone=istep+1;
         plumedWantsToStop=0;
         for(int i=0; i<3; i++)for(int k=0; k<3; k++) cell9[i][k]=0.0;
         for(int i=0; i<3; i++) cell9[i][i]=cell[i];
-        plumed->cmd("setStep",&istepplusone);
+        plumed->cmd("setStep",istep+1);
         plumed->cmd("setMasses",&masses[0]);
         plumed->cmd("setForces",&forces[0][0]);
-        plumed->cmd("setEnergy",&engconf);
+        plumed->cmd("setEnergy",engconf);
         plumed->cmd("setPositions",&positions[0][0]);
         plumed->cmd("setBox",&cell9[0][0]);
         plumed->cmd("setStopFlag",&plumedWantsToStop);
