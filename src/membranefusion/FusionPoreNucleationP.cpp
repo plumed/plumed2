@@ -2,7 +2,7 @@
 Copyright (c) 2022.
 
 CVs originally developed by the Jochen Hub group from the University of Saarland (Germany)
-and adapted and implemented in PLUMED by Ary Lautaro Di Bartolo and Diego Masone from the 
+and adapted and implemented in PLUMED by Ary Lautaro Di Bartolo and Diego Masone from the
 National University of Cuyo (Argentina).
 
 The membranefusion module is free software: you can redistribute it and/or modify
