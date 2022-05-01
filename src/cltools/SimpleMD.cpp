@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2022 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -141,7 +141,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); std::exit(1); }
       Tools::convert(frictionstr,friction);
     }
     parse("forcecutoff",forcecutoff);
@@ -154,31 +154,31 @@ private:
     parse("inputfile",inputfile);
     if(inputfile.length()==0) {
       std::fprintf(stderr,"Specify input file\n");
-      exit(1);
+      std::exit(1);
     }
     parse("outputfile",outputfile);
     if(outputfile.length()==0) {
       std::fprintf(stderr,"Specify output file\n");
-      exit(1);
+      std::exit(1);
     }
     std::string nconfstr; parse("nconfig",nconfstr);
     std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
     trajfile=buffer1;
     if(trajfile.length()==0) {
       std::fprintf(stderr,"Specify traj file\n");
-      exit(1);
+      std::exit(1);
     }
     std::string nstatstr; parse("nstat",nstatstr);
     std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
     statfile=buffer1;
     if(statfile.length()==0) {
       std::fprintf(stderr,"Specify stat file\n");
-      exit(1);
+      std::exit(1);
     }
     parse("ndim",ndim);
     if(ndim<1 || ndim>3) {
       std::fprintf(stderr,"ndim should be 1,2 or 3\n");
-      exit(1);
+      std::exit(1);
     }
     std::string w;
     parse("wrapatoms",w);
@@ -191,7 +191,7 @@ private:
     FILE* fp=fopen(inputfile.c_str(),"r");
     if(!fp) {
       std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      exit(1);
+      std::exit(1);
     }
 
 // call fclose when fp goes out of scope
@@ -208,7 +208,7 @@ private:
     FILE* fp=fopen(inputfile.c_str(),"r");
     if(!fp) {
       std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      exit(1);
+      std::exit(1);
     }
 // call fclose when fp goes out of scope
     auto deleter=[](FILE* f) { fclose(f); };
@@ -278,7 +278,7 @@ private:
 // too many neighbours
           std::fprintf(stderr,"%s","Verlet list size exceeded\n");
           std::fprintf(stderr,"%s","Increase maxneighbours\n");
-          exit(1);
+          std::exit(1);
         }
         list[point[iatom+1]]=jatom;
         point[iatom+1]++;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2022 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -139,7 +139,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); std::exit(1); }
       Tools::convert(frictionstr,friction);
     }
     parse("plumed",plumedin); parse("dimension",dim);
