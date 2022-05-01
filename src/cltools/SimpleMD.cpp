@@ -264,7 +264,7 @@ private:
                     std::vector<std::vector<int> >& list) {
     double listcutoff2=listcutoff*listcutoff; // squared list cutoff
     list.assign(natoms,std::vector<int>());
-#   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
+    #   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
         auto distance=positions[iatom]-positions[jatom];
@@ -284,12 +284,12 @@ private:
     engconf=0.0;
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
     double engcorrection=4.0*epsilon*(1.0/std::pow(forcecutoff2/(sigma*sigma),6.0)-1.0/std::pow(forcecutoff2/(sigma*sigma),3)); // energy necessary shift the potential avoiding discontinuities
-#   pragma omp parallel num_threads(OpenMP::getNumThreads())
+    #   pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
       std::vector<Vector> omp_forces(forces.size());
       #pragma omp for reduction(+:engconf) schedule(static,1) nowait
       for(int iatom=0; iatom<natoms-1; iatom++) {
-        for(int jlist=0;jlist<list[iatom].size();jlist++){
+        for(int jlist=0; jlist<list[iatom].size(); jlist++) {
           const int jatom=list[iatom][jlist];
           auto distance=positions[iatom]-positions[jatom];
           Vector distance_pbc;    // minimum-image distance of the two atoms
@@ -308,7 +308,7 @@ private:
           omp_forces[jatom]-=f;
         }
       }
-#     pragma omp critical
+      #     pragma omp critical
       for(unsigned i=0; i<omp_forces.size(); i++) forces[i]+=omp_forces[i];
     }
 
@@ -319,8 +319,8 @@ private:
 // calculate the kinetic energy from the velocities
     engkin=0.0;
     for(int iatom=0; iatom<natoms; iatom++) {
-        engkin+=0.5*masses[iatom]*modulo2(velocities[iatom]);
-      }
+      engkin+=0.5*masses[iatom]*modulo2(velocities[iatom]);
+    }
   }
 
 
@@ -529,7 +529,7 @@ private:
     compute_list(natoms,positions,cell,listcutoff,list);
 
     int list_size=0;
-    for(int i=0;i<list.size();i++) list_size+=list[i].size();
+    for(int i=0; i<list.size(); i++) list_size+=list[i].size();
     std::fprintf(out,"List size: %d\n",list_size);
     for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
 
@@ -555,10 +555,10 @@ private:
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
       for(int iatom=0; iatom<natoms; iatom++)
-          velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
+        velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
       for(int iatom=0; iatom<natoms; iatom++)
-          positions[iatom]+=velocities[iatom]*tstep;
+        positions[iatom]+=velocities[iatom]*tstep;
 
 // a check is performed to decide whether to recalculate the neighbour list
       check_list(natoms,positions,positions0,listcutoff,forcecutoff,recompute_list);
@@ -566,7 +566,7 @@ private:
         compute_list(natoms,positions,cell,listcutoff,list);
         for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
         int list_size=0;
-        for(int i=0;i<list.size();i++) list_size+=list[i].size();
+        for(int i=0; i<list.size(); i++) list_size+=list[i].size();
         std::fprintf(out,"List size: %d\n",list_size);
       }
 
@@ -592,7 +592,7 @@ private:
         for(int iatom=0; iatom<natoms; ++iatom) for(int k=ndim; k<3; ++k) forces[iatom][k]=0.0;
 
       for(int iatom=0; iatom<natoms; iatom++)
-          velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
+        velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
