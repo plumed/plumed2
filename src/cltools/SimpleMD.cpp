@@ -100,7 +100,6 @@ public:
     keys.add("compulsory","outputfile","An output xyz file containing the final configuration of the system");
     keys.add("compulsory","nconfig","10","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
     keys.add("compulsory","nstat","1","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
-    keys.add("compulsory","maxneighbours","10000","The maximum number of neighbors an atom can have");
     keys.add("compulsory","idum","0","The random number seed");
     keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
     keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
@@ -132,7 +131,6 @@ private:
              std::string& outputfile,
              std::string& trajfile,
              std::string& statfile,
-             int&    maxneighbours,
              int&    ndim,
              int&    idum,
              double& epsilon,
@@ -152,7 +150,6 @@ private:
     parse("forcecutoff",forcecutoff);
     parse("listcutoff",listcutoff);
     parse("nstep",nstep);
-    parse("maxneighbours",maxneighbours);
     parse("idum",idum);
     parse("epsilon",epsilon);
     parse("sigma",sigma);
@@ -429,7 +426,6 @@ private:
     int         nstep;             // number of steps
     int         nconfig;           // stride for output of configurations
     int         nstat;             // stride for output of statistics
-    int         maxneighbour;      // maximum average number of neighbours per atom
     int         ndim;              // dimensionality of the system (1, 2, or 3)
     int         idum;              // seed
     int         plumedWantsToStop; // stop flag
@@ -462,7 +458,7 @@ private:
     read_input(temperature,tstep,friction,forcecutoff,
                listcutoff,nstep,nconfig,nstat,
                wrapatoms,inputfile,outputfile,trajfile,statfile,
-               maxneighbour,ndim,idum,epsilon,sigma);
+               ndim,idum,epsilon,sigma);
 
 // number of atoms is read from file inputfile
     read_natoms(inputfile,natoms);
@@ -481,7 +477,6 @@ private:
     std::fprintf(out,"%s %s\n","Trajectory file                  :",trajfile.c_str());
     std::fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
     std::fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
-    std::fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
     std::fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
     std::fprintf(out,"%s %d\n","Seed                             :",idum);
     std::fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
