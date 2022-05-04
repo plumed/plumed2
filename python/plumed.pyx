@@ -49,7 +49,6 @@ except ImportError:
 
 try:
      import mpi4py.MPI as MPI
-     cimport mpi4py.libmpi as libmpi
      HAS_MPI4PY=True
 except ImportError:
      HAS_MPI4PY=False
@@ -133,8 +132,8 @@ cdef class Plumed:
          self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
          self.c_plumed.cmd_int( ckey, val)
-     cdef cmd_mpi(self, ckey, MPI.Comm val):
-         cdef libmpi.MPI_Comm buffer = val.ob_mpi
+     cdef cmd_mpi(self, ckey, val):
+         cdef void buffer = val.ob_mpi
          self.c_plumed.cmd_mpi( ckey, <void*>&buffer)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
