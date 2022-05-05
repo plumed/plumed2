@@ -9,9 +9,9 @@ except ImportError:
   HAS_MPI4PY=False
 
 class Test(unittest.TestCase):
-  def test(self):
+  if HAS_MPI4PY:
+    def test(self):
 
-    if HAS_MPI4PY:
       comm = MPI.COMM_WORLD
       p = plumed.Plumed()
       p.cmd("setNatoms",2)
