@@ -47,13 +47,6 @@ try:
 except ImportError:
      HAS_NUMPY=False
 
-try:
-     import mpi4py.MPI as MPI
-     HAS_MPI4PY = True
-except ImportError:
-     HAS_MPI4PY = False
-
-
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
      def __cinit__(self,kernel=None):
@@ -134,6 +127,7 @@ cdef class Plumed:
      cdef cmd_int(self, ckey, int val):
          self.c_plumed.cmd_int( ckey, val)
      cdef cmd_mpi(self, ckey, val):
+         import mpi4py.MPI as MPI
          cdef size_t comm_addr = MPI._addressof(val)
          self.c_plumed.cmd_mpi( ckey, <void*>comm_addr)
      def cmd( self, key, val=None ):
@@ -142,11 +136,14 @@ cdef class Plumed:
          cdef char* cval
          if val is None :
             self.c_plumed.cmd( ckey)
-         elif isinstance(val, (int,long) ):
+            return
+         if isinstance(val, (int,long) ):
             self.cmd_int(ckey, val)
-         elif isinstance(val, float ) :
+            return
+         if isinstance(val, float ) :
             self.cmd_float(ckey, val)
-         elif HAS_NUMPY and isinstance(val, np.ndarray) :
+            return
+         if HAS_NUMPY and isinstance(val, np.ndarray) :
             # See https://numpy.org/doc/stable/user/basics.types.html
             if( val.dtype==np.double):
                self.cmd_ndarray_double(ckey, val)
@@ -156,7 +153,8 @@ cdef class Plumed:
                self.cmd_ndarray_long(ckey, val)
             else :
                raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
-         elif isinstance(val, array.array) :
+            return
+         if isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
                self.cmd_array_double(ckey, val)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
@@ -165,14 +163,18 @@ cdef class Plumed:
                self.cmd_array_long(ckey, val)
             else :
                raise ValueError("ndarrays should be double (size=8), int, or long")
-         elif isinstance(val, str ) :
-              py_bytes = val.encode()
-              cval = py_bytes
-              self.c_plumed.cmd( ckey, <const char*>cval )
-         elif HAS_MPI4PY and isinstance(val, MPI.Comm):
+            return
+         if isinstance(val, str ) :
+            py_bytes = val.encode()
+            cval = py_bytes
+            self.c_plumed.cmd( ckey, <const char*>cval )
+            return
+         if 'mpi4py' in sys.modules:
+            import mpi4py.MPI as MPI
+            if isinstance(val, MPI.Comm):
               self.cmd_mpi(ckey, val)
-         else :
-              raise ValueError("Unknown value type ({})".format(str(type(val))))
+              return
+         raise ValueError("Unknown value type ({})".format(str(type(val))))
 
 class FormatError(Exception):
     """Custom error reported by read_as_pandas.
