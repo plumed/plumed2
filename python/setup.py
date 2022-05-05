@@ -116,34 +116,16 @@ else:
     print('using available plumed.cpp file')
     extension="cpp"
 
-# check if mpi4py is installed
-try:
-    import mpi4py
-    USE_MPI4PY = True
-    print("using mpi4py to enable setMPIComm")
-except ImportError:
-    USE_MPI4PY = False
-    print("not using mpi4py: setMPIComm will be unavailable from the Python interface")
+ext_modules=[Extension(
+     name=plumedname,
+     sources=["plumed." + extension],
+     language="c++",
+     include_dirs=include_dirs,
+     extra_compile_args=extra_compile_args
+  )]
 
 if USE_CYTHON:
-    ext_modules=[Extension(
-     name=plumedname,
-     sources=["plumed." + extension],
-     language="c++",
-     include_dirs=include_dirs,
-     extra_compile_args=extra_compile_args,
-    )]
-    ext_modules=cythonize(ext_modules,language_level=3,compile_time_env=dict(USE_MPI4PY=USE_MPI4PY))
-else:
-    ext_modules=[Extension(
-     name=plumedname,
-     sources=["plumed." + extension],
-     language="c++",
-     include_dirs=include_dirs,
-     extra_compile_args=extra_compile_args,
-     cython_compile_time_env=dict(USE_MPI4PY=USE_MPI4PY)
-    )]
-
+    ext_modules=cythonize(ext_modules,language_level=3)
 
 setup(
   name=plumedname,

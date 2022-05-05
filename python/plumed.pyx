@@ -47,15 +47,12 @@ try:
 except ImportError:
      HAS_NUMPY=False
 
-IF USE_MPI4PY:
-    try:
-         cimport mpi4py.MPI as MPI
-         cimport mpi4py.libmpi as libmpi
-         HAS_MPI4PY = True
-    except ImportError:
-         HAS_MPI4PY = False
-ELSE:
-    HAS_MPI4PY=False
+try:
+     import mpi4py.MPI as MPI
+     HAS_MPI4PY = True
+except ImportError:
+     HAS_MPI4PY = False
+
 
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
@@ -136,10 +133,9 @@ cdef class Plumed:
          self.c_plumed.cmd_float( ckey, val)
      cdef cmd_int(self, ckey, int val):
          self.c_plumed.cmd_int( ckey, val)
-     IF USE_MPI4PY:
-         cdef cmd_mpi(self, ckey, MPI.Comm val):
-             cdef libmpi.MPI_Comm buffer = val.ob_mpi
-             self.c_plumed.cmd_mpi( ckey, <libmpi.MPI_Comm*>&buffer)
+     cdef cmd_mpi(self, ckey, val):
+         cdef size_t comm_addr = MPI._addressof(val)
+         self.c_plumed.cmd_mpi( ckey, <void*>comm_addr)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
@@ -173,15 +169,10 @@ cdef class Plumed:
               py_bytes = val.encode()
               cval = py_bytes
               self.c_plumed.cmd( ckey, <const char*>cval )
-
+         elif HAS_MPI4PY and isinstance(val, MPI.Comm):
+              self.cmd_mpi(ckey, val)
          else :
-            IF USE_MPI4PY:
-               if HAS_MPI4PY and isinstance(val, MPI.Comm):
-                  self.cmd_mpi(ckey, val)
-               else:
-                  raise ValueError("Unknown value type ({})".format(str(type(val))))
-            ELSE:
-               raise ValueError("Unknown value type ({})".format(str(type(val))))
+              raise ValueError("Unknown value type ({})".format(str(type(val))))
 
 class FormatError(Exception):
     """Custom error reported by read_as_pandas.
