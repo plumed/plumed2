@@ -129,7 +129,7 @@ cdef class Plumed:
      cdef cmd_mpi(self, ckey, val):
          import mpi4py.MPI as MPI
          cdef size_t comm_addr = MPI._addressof(val)
-         self.c_plumed.cmd_mpi( ckey, <void*>comm_addr)
+         self.c_plumed.cmd_mpi( ckey, <const void*>comm_addr)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
