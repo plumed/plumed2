@@ -39,6 +39,7 @@ cdef extern from "Plumed.h" namespace "PLMD":
 # see https://stackoverflow.com/questions/42610108/is-overloading-broken-in-cppclass-cython-c-definitions
          void cmd_int "cmd" (const char*key, int val) except +exceptions_handler
          void cmd_float "cmd" (const char*key, double val) except +exceptions_handler
+         void cmd_mpi "cmd" (const char*key, const void*val) except +exceptions_handler
          void cmd(const char*key) except +exceptions_handler
          bool valid() except +exceptions_handler
          @staticmethod
