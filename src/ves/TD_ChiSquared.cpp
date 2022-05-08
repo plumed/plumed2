@@ -94,8 +94,8 @@ PLUMED_REGISTER_ACTION(TD_ChiSquared,"TD_CHISQUARED")
 void TD_ChiSquared::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","MINIMUM","The minimum of the chi-squared distribution.");
-  keys.add("compulsory","SIGMA","The \\f$\\sigma\\f$ parameter of the chi-squared distribution given as a positive number.");
-  keys.add("compulsory","KAPPA","The \\f$k\\f$ parameter of the chi-squared distribution given as positive integer larger than 2.");
+  keys.add("compulsory","SIGMA","The sigma parameter of the chi-squared distribution given as a positive number.");
+  keys.add("compulsory","KAPPA","The k parameter of the chi-squared distribution given as positive integer larger than 2.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");

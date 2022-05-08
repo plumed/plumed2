@@ -88,7 +88,7 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available.");
   keys.add("numbered","RADIUS","");
-  keys.add("numbered","CYLINDER_SWITCH","a switching function on \\f$(r_{ij}\\cdot r_{ik}-1)/r_{ij}\\f$");
+  keys.add("numbered","CYLINDER_SWITCH","a switching function on the distance from the center of the cylinder");
   keys.add("numbered","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");

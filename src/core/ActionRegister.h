@@ -74,6 +74,8 @@ public:
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
+/// Get a list of action names
+  std::vector<std::string> getActionNames() const ;
   ~ActionRegister();
 };
 

@@ -671,6 +671,10 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
   return false;
 }
 
+std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
+  return ckey.find(name)->second;
+}
+
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
   if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
 
@@ -696,6 +700,14 @@ void Keywords::removeComponent( const std::string& name ) {
   // Delete documentation, type and so on from the description
   cdocs.erase(name); ckey.erase(name);
   plumed_massert(found,"You are trying to remove " + name + " a component that isn't there");
+}
+
+std::vector<std::string> Keywords::getOutputComponents() const {
+  return cnames;
+}
+
+std::string Keywords::getKeywordDescription( const std::string& key ) const {
+  plumed_assert( exists( key ) ); return documentation.find(key)->second;
 }
 
 }

@@ -87,7 +87,7 @@ PLUMED_REGISTER_ACTION(TD_Exponential,"TD_EXPONENTIAL")
 void TD_Exponential::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","MINIMUM","The minimum of the exponential distribution.");
-  keys.add("compulsory","LAMBDA","The \\f$\\lambda\\f$ parameter of the exponential distribution given as positive number.");
+  keys.add("compulsory","LAMBDA","The lambda parameter of the exponential distribution given as positive number.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");
