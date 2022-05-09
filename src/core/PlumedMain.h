@@ -414,6 +414,8 @@ public:
   bool updateFlagsTop();
 /// Set end of input file
   void setEndPlumed();
+/// Get the value of the end plumed flag
+  bool getEndPlumed() const ;
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
@@ -486,6 +488,11 @@ bool PlumedMain::updateFlagsTop() {
 inline
 void PlumedMain::setEndPlumed() {
   endPlumed=true;
+}
+
+inline
+bool PlumedMain::getEndPlumed() const {
+  return endPlumed;
 }
 
 inline

@@ -35,9 +35,8 @@ class ActionShortcut :
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
-protected:
-  const std::string & getShortcutLabel() const ;
 public:
+  const std::string & getShortcutLabel() const ;
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);

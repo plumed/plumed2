@@ -23,6 +23,8 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionShortcut.h"  
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -222,6 +224,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
   keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
+  keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
@@ -280,6 +283,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
   bool parseOnly; parseFlag("--parse-only",parseOnly);
+  std::string full_outputfile; parse("--shortcut-ofile",full_outputfile); 
   bool restart; parseFlag("--restart",restart);
 
   std::string fakein;
@@ -515,7 +519,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setMDMassUnits",units.getMass());
   p.cmd("setMDEngine","driver");
   p.cmd("setTimestep",timestep);
-  p.cmd("setPlumedDat",plumedFile.c_str());
+  if( !parseOnly || full_outputfile.length()==0 ) p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
   int natoms;
@@ -681,8 +685,31 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setKbT",kt);
       }
       checknatoms=natoms;
-      p.cmd("setNatoms",natoms);
+      p.cmd("setNatoms",natoms); 
       p.cmd("init");
+      // Check if we have been asked to output the long version of the input and if there are shortcuts 
+      if( parseOnly && full_outputfile.length()>0 ) {
+
+          // Read in the plumed input file and store what is in there
+          IFile ifile; ifile.open(plumedFile); std::vector<std::string> long_lines, words; bool hasshort=false; 
+          while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) { 
+                 p.readInputWords(words); 
+                 ActionShortcut* as=dynamic_cast<ActionShortcut*>( p.getActionSet()[p.getActionSet().size()-1].get() );
+                 if( as ) {
+                     hasshort=true; long_lines.push_back("#EXPANSION " + as->getShortcutLabel() ); 
+                     std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+                     for(unsigned i=0;i<shortcut_commands.size(); ++i) long_lines.push_back( shortcut_commands[i] );
+                     long_lines.push_back("#ENDEXPANSION " + as->getShortcutLabel() ); 
+                 } 
+          }
+          ifile.close(); 
+          // Only output the full version of the input file if there are shortcuts
+          if( hasshort ) {
+              OFile long_file; long_file.open( full_outputfile );
+              for(unsigned i=0;i<long_lines.size();++i) long_file.printf("%s \n", long_lines[i].c_str() );
+              long_file.close();
+          }
+      } 
       if(parseOnly) break;
     }
     if(checknatoms!=natoms) {
