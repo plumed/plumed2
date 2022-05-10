@@ -24,6 +24,7 @@
 #include "tools/Tools.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionShortcut.h"  
 #include "tools/Communicator.h"
 #include "tools/Random.h"
@@ -693,10 +694,22 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           // Read in the plumed input file and store what is in there
           IFile ifile; ifile.open(plumedFile); std::vector<std::string> long_lines, words; bool hasshort=false; 
           while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) { 
-                 p.readInputWords(words); 
-                 ActionShortcut* as=dynamic_cast<ActionShortcut*>( p.getActionSet()[p.getActionSet().size()-1].get() );
+                 p.readInputWords(words); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
+                 ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
+                 if( av && aa->getDefaultString().length()>0 ) {
+                     hasshort=true; long_lines.push_back("#DEFAULTS " + aa->getLabel() );
+                     long_lines.push_back( aa->getDefaultString() ); 
+                     long_lines.push_back("#ENDDEFAULTS " + aa->getLabel() );
+                 }
+                 ActionShortcut* as=dynamic_cast<ActionShortcut*>( aa );
                  if( as ) {
-                     hasshort=true; long_lines.push_back("#EXPANSION " + as->getShortcutLabel() ); 
+                     hasshort=true; 
+                     if( aa->getDefaultString().length()>0 ) {
+                        long_lines.push_back("#SDEFAULTS " + aa->getLabel() );
+                        long_lines.push_back( aa->getDefaultString() ); 
+                        long_lines.push_back("#ENDSDEFAULTS " + aa->getLabel() );
+                     } 
+                     long_lines.push_back("#EXPANSION " + as->getShortcutLabel() ); 
                      std::vector<std::string> shortcut_commands = as->getSavedInputLines();
                      for(unsigned i=0;i<shortcut_commands.size(); ++i) long_lines.push_back( shortcut_commands[i] );
                      long_lines.push_back("#ENDEXPANSION " + as->getShortcutLabel() ); 
