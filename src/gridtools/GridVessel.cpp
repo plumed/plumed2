@@ -117,8 +117,8 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
 }
 
 void GridVessel::setupFibonacciGrid( const unsigned& np ) {
-  bounds_set=true; root5 = sqrt(5);
-  npoints = np; golden = ( 1 + sqrt(5) ) / 2.0; igolden = golden - 1;
+  bounds_set=true; root5 = std::sqrt(5);
+  npoints = np; golden = ( 1 + std::sqrt(5) ) / 2.0; igolden = golden - 1;
   fib_increment = 2*pi*igolden; log_golden2 = std::log( golden*golden );
   fib_offset = 2 / static_cast<double>( npoints );
   fib_shift = fib_offset/2 - 1;
@@ -292,10 +292,10 @@ void GridVessel::getFlatGridCoordinates( const unsigned& ipoint, std::vector<uns
 
 void GridVessel::getFibonacciCoordinates( const unsigned& ipoint, std::vector<double>& x ) const {
   plumed_dbg_assert( gtype==fibonacci );
-  x[1] = (ipoint*fib_offset) + fib_shift; double r = sqrt( 1 - x[1]*x[1] );
+  x[1] = (ipoint*fib_offset) + fib_shift; double r = std::sqrt( 1 - x[1]*x[1] );
   double phi = ipoint*fib_increment; x[0] = r*std::cos(phi); x[2] = r*std::sin(phi);
   double norm=0; for(unsigned j=0; j<3; ++j) norm+=x[j]*x[j];
-  norm = sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
+  norm = std::sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
 }
 
 void GridVessel::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
@@ -479,11 +479,11 @@ double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const u
       int x0=1;
       if(nindices[j]==indices[j]) x0=0;
       double ddx=dx[j];
-      X=fabs((x[j]-xfloor[j])/ddx-(double)x0);
+      X=std::fabs((x[j]-xfloor[j])/ddx-(double)x0);
       X2=X*X;
       X3=X2*X;
       double yy;
-      if(fabs(grid)<0.0000001) yy=0.0;
+      if(std::fabs(grid)<0.0000001) yy=0.0;
       else yy=-dder[j]/grid;
       C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*ddx;
       D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*ddx;

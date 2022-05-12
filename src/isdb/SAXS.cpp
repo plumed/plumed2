@@ -287,14 +287,14 @@ SAXS::SAXS(const ActionOptions&ao):
     else if(martini) n_atom_types=NMARTINI;
     FF_value.resize(n_atom_types,std::vector<double>(numq));
     for(unsigned k=0; k<numq; ++k) {
-      for(unsigned i=0; i<n_atom_types; i++) FF_value[i][k] = static_cast<double>(FF_tmp[k][i])/sqrt(scale_int);
+      for(unsigned i=0; i<n_atom_types; i++) FF_value[i][k] = static_cast<double>(FF_tmp[k][i])/std::sqrt(scale_int);
       for(unsigned i=0; i<size; i++) FF_rank[k] += FF_value[atoi[i]][k]*FF_value[atoi[i]][k];
     }
   } else {
     FFf_value.resize(numq,std::vector<float>(size));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; i++) {
-        FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/sqrt(scale_int);
+        FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/std::sqrt(scale_int);
       }
     }
   }

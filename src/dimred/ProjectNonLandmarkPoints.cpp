@@ -107,10 +107,10 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
     ispca->getProjection( my_input_data->getStoredData(idat,false), point );
   } else {
     ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
-    unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
+    unsigned closest=0; double mindist = std::sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
     mybase->setTargetDistance( 0, mindist );
     for(unsigned i=1; i<mybase->getNumberOfDataPoints(); ++i) {
-      double dist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
+      double dist = std::sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
       mybase->setTargetDistance( i, dist );
       if( dist<mindist ) { mindist=dist; closest=i; }
     }

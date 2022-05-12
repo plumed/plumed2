@@ -75,7 +75,7 @@ void SketchMapSmacof::minimise( Matrix<double>& projections ) {
     // Recalculate weights matrix and sigma
     double newsig = recalculateWeights( projections, weights );
     // Test whether or not the algorithm has converged
-    if( fabs( newsig - filt )<iter_tol ) break;
+    if( std::fabs( newsig - filt )<iter_tol ) break;
     // Make initial sigma into new sigma so that the value of new sigma is used every time so that the error can be reduced
     filt=newsig;
   }
@@ -92,13 +92,13 @@ double SketchMapSmacof::recalculateWeights( const Matrix<double>& projections, M
         double tmp = projections(i,k) - projections(j,k);
         tempd += tmp*tmp;
       }
-      double dij=sqrt(tempd);
+      double dij=std::sqrt(tempd);
 
       double fij = transformLowDimensionalDistance( dij, dr );
       double filter=transformed(i,j)-fij;
       double diff=distances(i,j) - dij;
 
-      if( fabs(diff)<regulariser ) weights(i,j)=weights(j,i)=0.0;
+      if( std::fabs(diff)<regulariser ) weights(i,j)=weights(j,i)=0.0;
       else weights(i,j)=weights(j,i) = ninj*( (1-mixparam)*( filter*dr )/diff + mixparam );
       filt += ninj*( (1-mixparam)*filter*filter + mixparam*diff*diff );
     }

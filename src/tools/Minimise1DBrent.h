@@ -101,7 +101,7 @@ void Minimise1DBrent<FCLASS>::bracket( const double& a, const double& b, eng_poi
   while ( fb > fc ) {
     double r=(bx-ax)*(fb-fc);
     double q=(bx-cx)*(fb-fa);
-    double u=bx-((bx-cx)*q-(bx-ax)*r)/(2.0*(fabs(q-r)>TINY?fabs(q-r):TINY)*(q-r>=0?1:-1));
+    double u=bx-((bx-cx)*q-(bx-ax)*r)/(2.0*(std::fabs(q-r)>TINY?std::fabs(q-r):TINY)*(q-r>=0?1:-1));
     double ulim=bx+GLIMIT*(cx-bx);
     if((bx-u)*(u-cx) > 0.0 ) {
       fu=(myclass_func.*eng)(u);
@@ -144,29 +144,29 @@ double Minimise1DBrent<FCLASS>::minimise( eng_pointer eng ) {
   fw=fv=fx=(myclass_func.*eng)(x);
   for(unsigned iter=0; iter<ITMAX; ++iter) {
     xm=0.5*(a+b);
-    tol2=2.0*(tol1=tol*fabs(x)+ZEPS);
-    if( fabs(x-xm) <= (tol2-0.5*(b-a))) {
+    tol2=2.0*(tol1=tol*std::fabs(x)+ZEPS);
+    if( std::fabs(x-xm) <= (tol2-0.5*(b-a))) {
       fmin=fx; minimised=true; return x;
     }
-    if( fabs(e) > tol1 ) {
+    if( std::fabs(e) > tol1 ) {
       r=(x-w)*(fx-fv);
       q=(x-v)*(fx-fw);
       p=(x-v)*q-(x-w)*r;
       q=2.0*(q-r);
       if( q > 0.0 ) p = -p;
-      q=fabs(q);
+      q=std::fabs(q);
       etemp=e;
       e=d;
-      if( fabs(p) >= fabs(0.5*q*etemp) || p <= q*(a-x) || p >= q*(b-x) ) {
+      if( std::fabs(p) >= std::fabs(0.5*q*etemp) || p <= q*(a-x) || p >= q*(b-x) ) {
         d = CGOLD*(e=(x >= xm ? a-x : b-x ));
       } else {
         d=p/q; u=x+d;
-        if(u-a < tol2 || b-u < tol2 ) d=(xm-x>=0?fabs(tol1):-fabs(tol1));
+        if(u-a < tol2 || b-u < tol2 ) d=(xm-x>=0?std::fabs(tol1):-std::fabs(tol1));
       }
     } else {
       d=CGOLD*(e=( x >= xm ? a-x : b-x ));
     }
-    if( fabs(d)>=tol1) u=x+d; else u=x+(d>=0?fabs(tol1):-fabs(tol1));
+    if( std::fabs(d)>=tol1) u=x+d; else u=x+(d>=0?std::fabs(tol1):-std::fabs(tol1));
     fu=(myclass_func.*eng)(u);
     if( fu <= fx ) {
       if( u >= x ) a=x; else b=x;

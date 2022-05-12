@@ -37,7 +37,7 @@ double Angle::compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)co
   const double sv2(v2.modulo2());
   const Vector dsv1_dv1(2*v1);
   const Vector dsv2_dv2(2*v2);
-  const double nn(1.0/sqrt(sv1*sv2));
+  const double nn(1.0/std::sqrt(sv1*sv2));
   const Vector dnn_dv1(-0.5*nn/sv1*dsv1_dv1);
   const Vector dnn_dv2(-0.5*nn/sv2*dsv2_dv2);
 
@@ -56,7 +56,7 @@ double Angle::compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)co
   const Vector ddpnn_dv1(dp*dnn_dv1+dp_dv1*nn);
   const Vector ddpnn_dv2(dp*dnn_dv2+dp_dv2*nn);
 
-  const double x(-1.0/sqrt(1-dpnn*dpnn));
+  const double x(-1.0/std::sqrt(1-dpnn*dpnn));
 
   d1=x*ddpnn_dv1;
   d2=x*ddpnn_dv2;

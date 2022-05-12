@@ -135,7 +135,7 @@ Sprint::Sprint(const ActionOptions&ao):
   std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 
   // Create all the values
-  sqrtn = sqrt( static_cast<double>( getNumberOfNodes() ) );
+  sqrtn = std::sqrt( static_cast<double>( getNumberOfNodes() ) );
   for(unsigned i=0; i<getNumberOfNodes(); ++i) {
     std::string num; Tools::convert(i,num);
     addComponentWithDerivatives("coord-"+num);
@@ -157,7 +157,7 @@ void Sprint::calculate() {
   double lambda = eigvals[ getNumberOfNodes()-1 ];
   // Get the corresponding eigenvector
   for(unsigned j=0; j<maxeig.size(); ++j) {
-    maxeig[j].first = fabs( eigenvecs( getNumberOfNodes()-1, j ) );
+    maxeig[j].first = std::fabs( eigenvecs( getNumberOfNodes()-1, j ) );
     maxeig[j].second = j;
     // Must make all components of principle eigenvector +ve
     eigenvecs( getNumberOfNodes()-1, j ) = maxeig[j].first;

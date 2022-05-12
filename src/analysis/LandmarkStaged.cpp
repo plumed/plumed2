@@ -66,7 +66,7 @@ LandmarkStaged::LandmarkStaged( const ActionOptions& ao ):
 void LandmarkStaged::selectLandmarks() {
   unsigned int n = getNumberOfDataPoints(); // The number of landmarks to pick
   unsigned int N = my_input_data->getNumberOfDataPoints();  // The total number of frames we can choose from
-  unsigned int m = static_cast<int>( sqrt(n*N) );
+  unsigned int m = static_cast<int>( std::sqrt(n*N) );
   std::vector<unsigned> fpslandmarks(m);
   // Select first point at random
   Random random; random.setSeed(-seed); double rand=random.RandU01();
@@ -100,7 +100,7 @@ void LandmarkStaged::selectLandmarks() {
   voronoiAnalysis( fpslandmarks, weights, poly_assign );
 
   //Calculate total weight of voronoi polyhedras
-  double vweight=0; for(unsigned i=0; i<m; i++) vweight += exp( -weights[i] / gamma );
+  double vweight=0; for(unsigned i=0; i<m; i++) vweight += std::exp( -weights[i] / gamma );
 
   std::vector<bool> selected(N, false); unsigned ncount=0;
   while ( ncount<n) {
@@ -108,7 +108,7 @@ void LandmarkStaged::selectLandmarks() {
     double rand = vweight*random.RandU01();
     double running_vweight=0;
     for(unsigned jpoly=0; jpoly<m; ++jpoly) {
-      running_vweight+=exp( -weights[jpoly] / gamma );
+      running_vweight+=std::exp( -weights[jpoly] / gamma );
       if( running_vweight>=rand ) {
         double tweight=0;
         for(unsigned i=0; i<poly_assign.size(); ++i) {

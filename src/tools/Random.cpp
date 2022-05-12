@@ -151,7 +151,7 @@ double Random::Gaussian() {
     rsq=v1*v1+v2*v2;
     if(rsq<1.0 && rsq>0.0) break;
   }
-  double fac=sqrt(-2.*std::log(rsq)/rsq);
+  double fac=std::sqrt(-2.*std::log(rsq)/rsq);
   saveGaussian=v1*fac;
   switchGaussian=true;
   return v2*fac;

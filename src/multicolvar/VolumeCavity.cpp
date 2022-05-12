@@ -315,7 +315,7 @@ void VolumeCavity::setupRegions() {
   jacob(0,0)=bi[0]; jacob(1,0)=bi[1]; jacob(2,0)=bi[2];
   jacob(0,1)=cross[0]; jacob(1,1)=cross[1]; jacob(2,1)=cross[2];
   jacob(0,2)=perp[0]; jacob(1,2)=perp[1]; jacob(2,2)=perp[2];
-  jacob_det = fabs( jacob.determinant() );
+  jacob_det = std::fabs( jacob.determinant() );
 }
 
 void VolumeCavity::update() {

@@ -286,7 +286,7 @@ void PRE::calculate()
       tmpratio = pre ; //prova a caso per vedere se lui da problemi
       fact[i] = 1.; //prova a caso per vedere se lui da problemi
     } else {
-      tmpratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+      tmpratio = rtwo[i]*std::exp(-pre*inept) / (rtwo[i]+pre);
       fact[i] = -tmpratio*(inept+1./(rtwo[i]+pre));
     }
     const double ratio = tmpratio;

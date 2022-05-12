@@ -117,7 +117,7 @@ void BridgeVessel::completeNumericalDerivatives() {
   std::vector<double> base( myOutputValues->getNumberOfComponents() );
   for(int j=0; j<myOutputValues->getNumberOfComponents(); ++j) base[j] = myOutputValues->getOutputQuantity(j);
 
-  const double delta=sqrt(epsilon);
+  const double delta=std::sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );
   unsigned nvals=myOutputValues->getNumberOfComponents();
   for(unsigned j=0; j<nvals; ++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();
@@ -157,7 +157,7 @@ void BridgeVessel::completeNumericalDerivatives() {
   for(unsigned j=0; j<nvals; ++j) {
     unsigned k=0;
     for(unsigned i=getAction()->getNumberOfDerivatives(); i<myOutputAction->getNumberOfDerivatives(); ++i) {
-      ( myOutputValues->copyOutput(j) )->addDerivative( i, (tmpder(j,k)-base[j])/sqrt(epsilon) ); k++;
+      ( myOutputValues->copyOutput(j) )->addDerivative( i, (tmpder(j,k)-base[j])/std::sqrt(epsilon) ); k++;
     }
   }
 }

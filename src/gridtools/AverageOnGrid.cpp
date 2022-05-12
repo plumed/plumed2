@@ -56,7 +56,7 @@ double AverageOnGrid::getGridElement( const unsigned& ipoint, const unsigned& je
   if( noderiv ) return getDataElement( nper*ipoint+jelement ) / getDataElement( nper*(1+ipoint) - 1);
 
   double rdenom = 1.0;
-  if( fabs(getDataElement( nper*(ipoint+1) -(dimension+1) ))>epsilon ) rdenom = 1. / getDataElement( nper*(ipoint+1) - (dimension+1) );
+  if( std::fabs(getDataElement( nper*(ipoint+1) -(dimension+1) ))>epsilon ) rdenom = 1. / getDataElement( nper*(ipoint+1) - (dimension+1) );
 
   unsigned jderiv = jelement%(1+dimension);
   if( jderiv==0 ) return rdenom*getDataElement( nper*ipoint+jelement );

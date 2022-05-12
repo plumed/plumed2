@@ -202,7 +202,7 @@ void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double
 
   // Pass final projections to map object
   for(unsigned i=0; i<n; ++i) {
-    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=std::sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
   }
 }
 

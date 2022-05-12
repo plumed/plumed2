@@ -111,8 +111,8 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
     }
   }
   double rdenom, df2, pref=calculateCoordinationPrefactor( denom, df2 );
-  if( fabs(denom)>epsilon ) { rdenom = 1.0 / denom; }
-  else { plumed_assert(fabs(value)<epsilon); rdenom=1.0; }
+  if( std::fabs(denom)>epsilon ) { rdenom = 1.0 / denom; }
+  else { plumed_assert(std::fabs(value)<epsilon); rdenom=1.0; }
 
   // Now divide everything
   double rdenom2=rdenom*rdenom;

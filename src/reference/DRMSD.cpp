@@ -105,7 +105,7 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     drmsd = drmsd * inpairs;
     idrmsd = 2.0 * inpairs;
   } else {
-    drmsd = sqrt( drmsd * inpairs );
+    drmsd = std::sqrt( drmsd * inpairs );
     idrmsd = inpairs / drmsd ;
   }
 

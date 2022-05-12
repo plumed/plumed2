@@ -399,7 +399,7 @@ void PCAVars::calculate() {
     // And set final value
     getPntrToComponent(i)->set( proj );
   }
-  dist=sqrt(dist);
+  dist=std::sqrt(dist);
   resid->set( dist );
 
   // Take square root of residual derivatives

@@ -106,7 +106,7 @@ void MultiValue::quotientRule( const unsigned& nder, const unsigned& oder ) {
   unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
   unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
 
-  if( fabs(tmpval)>epsilon ) { wpref=1.0/tmpval; }
+  if( std::fabs(tmpval)>epsilon ) { wpref=1.0/tmpval; }
   else { wpref=1.0; }
 
   double pref = values[nder]*wpref*wpref;

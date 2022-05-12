@@ -152,8 +152,8 @@ unsigned ClusterWithSurface::getNumberOfQuantities() const {
 
 double  ClusterWithSurface::getCutoffForConnection() const {
   double tcut = myclusters->getCutoffForConnection();
-  if( tcut>sqrt(rcut_surf2) ) return tcut;
-  return sqrt(rcut_surf2);
+  if( tcut>std::sqrt(rcut_surf2) ) return tcut;
+  return std::sqrt(rcut_surf2);
 }
 
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
