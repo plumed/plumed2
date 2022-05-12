@@ -43,9 +43,25 @@ public:
 class BiasWeight:public WeightBase {
 public:
   double beta,invbeta;
+  double shift=0.0;
   explicit BiasWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
-  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
+  //double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
+  //double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {
+    auto betav=beta*v;
+    auto x=betav-shift;
+    if(x>0) {
+      shift=betav;
+      return input*std::exp(-x)+1;
+    } else {
+      return input+std::exp(x);
+    }
+  }
+  double projectOuterLoop(double &v) override {
+    auto res=-invbeta*(std::log(v)+shift);
+    shift=0.0;
+    return res;
+  }
 };
 
 class ProbWeight:public WeightBase {
