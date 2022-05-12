@@ -936,13 +936,7 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
     // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated
     double initval=0.;
     projectOnLowDimension(initval,vHigh, ptr2obj);
-    smallgrid.setValue(i,initval);
-  }
-  // reset to zero just for biasing (this option can be evtl enabled in a future...)
-  //double vmin;vmin=-smallgrid.getMinValue()+1;
-  for(unsigned i=0; i<smallgrid.getSize(); i++) {
-    double vv=smallgrid.getValue(i);
-    smallgrid.setValue(i,ptr2obj->projectOuterLoop(vv));
+    smallgrid.setValue(i,ptr2obj->projectOuterLoop(initval));
   }
 
   return smallgrid;
