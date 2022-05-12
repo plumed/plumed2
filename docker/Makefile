@@ -1,5 +1,5 @@
 
-.PHONY: ubuntu plumed2.tgz clean centos7 fedora35 rocky8
+.PHONY: ubuntu plumed2.tgz clean centos7 fedora36 rocky8
 
 ubuntu: plumed2.tgz
 	docker build -t plumed .
@@ -7,8 +7,8 @@ ubuntu: plumed2.tgz
 centos7: plumed2.tgz
 	docker build -t plumed -f centos7 .
 
-fedora35: plumed2.tgz
-	docker build -t plumed -f fedora35 .
+fedora36: plumed2.tgz
+	docker build -t plumed -f fedora36 .
 
 rocky8: plumed2.tgz
 	docker build -t plumed -f rocky8 .

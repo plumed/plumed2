@@ -206,14 +206,14 @@ jobs:
       run: |
         make -C docker centos7
 
-  # We test on fedora35 to make sure we have compatibility with newer compilers (gcc 11)
-  fedora35:
+  # We test on fedora36 to make sure we have compatibility with newer compilers (gcc 12)
+  fedora36:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Build and run tests
       run: |
-        make -C docker fedora35
+        make -C docker fedora36
 
   # We test on rockylinux8 as well
   rocky8:
