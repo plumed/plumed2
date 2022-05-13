@@ -517,7 +517,7 @@ def write_pandas(df,file_or_path=None):
             file_or_path.write(" "+str(df[j][i]))
         file_or_path.write("\n")
 
-def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac1=None, nocopy=False):
+def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac1=None, inplace=False):
     """Compute a time-averaged hills file.
 
        hills: dataframe containing a hills file, or file, or filename
@@ -532,13 +532,13 @@ def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac
 
        frac1: final fraction for averaging
 
-       nocopy: pass true to avoid copying the dataframe (for very large dataframes)
+       inplace: pass true to avoid copying the dataframe (for very large dataframes)
 
        Returns
        -------
 
-       if nocopy=False and tofile=None (default): a modified copy of the dataframe
-       if nocopy=True and tofile=None: a reference to the modified dataframe
+       if inplace=False and tofile=None (default): a modified copy of the dataframe
+       if inplace=True and tofile=None: a reference to the modified dataframe
        if tofile!=None: None
 
        This tool takes as an input a pandas dataframe read from a HILLS file and
@@ -574,7 +574,7 @@ def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac
     import pandas as pd
     if not isinstance(hills,pd.DataFrame):
         hills=read_as_pandas(hills)
-    elif not nocopy:
+    elif not inplace:
         hills=hills.copy()
 
     use_time = (t0 is not None or t1 is not None)

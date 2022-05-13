@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
   def test5(self):
     with cd('test/'):
         df=plumed.read_as_pandas("HILLS_av")
-        df1=plumed.hills_time_average(df,nocopy=True)
+        df1=plumed.hills_time_average(df,inplace=True)
         df["pp"]=1
         plumed.write_pandas(df1,"HILLS_av5")
         self.assertTrue(filecmp.cmp("HILLS_av5","HILLS_av5.ref"))
