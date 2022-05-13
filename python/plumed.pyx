@@ -538,8 +538,7 @@ def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac
        -------
 
        if inplace=False and tofile=None (default): a modified copy of the dataframe
-       if inplace=True and tofile=None: a reference to the modified dataframe
-       if tofile!=None: None
+       if inplace=True or tofile!=None: None
 
        This tool takes as an input a pandas dataframe read from a HILLS file and
        returns an equivalent dataframe where Gaussian heights have been scaled
@@ -604,7 +603,7 @@ def hills_time_average(hills, tofile=None, *, t0=None, t1=None, frac0=None, frac
 
     if tofile is not None:
         write_pandas(hills,tofile)
-    else:
+    elif not inplace:
         return hills
 
 def _guessplumedroot(kernel=None):
