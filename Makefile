@@ -21,7 +21,7 @@ all:
 	$(MAKE) lib
 	$(MAKE) -C vim
 	$(MAKE) -C python
-	$(MAKE) -C json
+	LD_LIBRARY_PATH="$(realpath .)/src/lib":${LD_LIBRARY_PATH} PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C json
 
 # target useful for macports
 # it builds the code then the documentation
