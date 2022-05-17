@@ -73,11 +73,14 @@ GenJson::GenJson(const CLToolOptions& co ):
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
-
-  // Get the names of all the actions 
-  std::vector<std::string> action_names( actionRegister().getActionNames() );
   // Cycle over all the action names
   std::cout<<"{"<<std::endl;
+  // Get the vimlink
+  std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_vim_syntax.html\","<<std::endl;
+  // And the replicas link
+  std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/special-replica-syntax.html\","<<std::endl;
+  // Get the names of all the actions 
+  std::vector<std::string> action_names( actionRegister().getActionNames() );
   for(unsigned i=0;i<action_names.size();++i) {
     std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl; std::string action=action_names[i];  
     // Handle conversion of action names to links
