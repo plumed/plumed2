@@ -24,6 +24,7 @@
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
+#include "core/GenericMolInfo.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -130,9 +131,27 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::cout<<"    }"<<std::endl;
 
     } 
-    if(i==action_names.size()-1) std::cout<<"  }"<<std::endl; 
-    else std::cout<<"  },"<<std::endl;
+    std::cout<<"  },"<<std::endl;
   }
+  // Get all the special groups
+  std::cout<<"  \"groups\" : {"<<std::endl; 
+  std::cout<<"    \"@allatoms\" : { \n"<<std::endl; 
+  std::cout<<"        \"description\" : \"refers to all the MD codes atoms and PLUMEDs vatoms\","<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"    },"<<std::endl;
+  std::cout<<"    \"@mdatoms\" : { \n"<<std::endl; 
+  std::cout<<"        \"description\" : \"refers to all the MD codes atoms but not PLUMEDs vatoms\","<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  // Now print all the special keywords in molinfo
+  std::map<std::string,std::string> specials( GenericMolInfo::getSpecialKeywords() );
+  for(auto const& s : specials ) {
+      std::cout<<"    },"<<std::endl;
+      std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
+      std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
+      std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
+  } 
+  std::cout<<"        }"<<std::endl;
+  std::cout<<"  }"<<std::endl;
   std::cout<<"}"<<std::endl;
   return 0;
 }
