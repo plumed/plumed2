@@ -63,6 +63,7 @@ PLUMED_REGISTER_CLTOOL(GenJson,"gen_json")
 
 void GenJson::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
+  keys.add("compulsory","--actions","a file containing one line descriptions of the various actions");
 }
 
 GenJson::GenJson(const CLToolOptions& co ):
@@ -74,6 +75,15 @@ GenJson::GenJson(const CLToolOptions& co ):
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
+  std::string line(""), actionfile; parse("--actions",actionfile);
+  IFile myfile; myfile.open(actionfile); bool stat; 
+  std::map<std::string,std::string> action_map;
+  while((stat=myfile.getline(line))) {
+       std::size_t col = line.find_first_of(":");
+       action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
+  }
+  myfile.close();
+
   // Cycle over all the action names
   std::cout<<"{"<<std::endl;
   // Get the vimlink
@@ -96,6 +106,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     }
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
+    std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n"; 
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;

@@ -26,7 +26,7 @@
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
-Convert a histogram, \f$H(x)\f$, to a free energy surface using \f$F(x) = -k_B T \ln H(x)\f$.
+Convert a histogram, H(x), to a free energy surface using F(x) = -k_B T ln H(x).
 
 This action allows you to take a free energy surface that was calculated using the \ref HISTOGRAM
 action and to convert it to a free energy surface.  This transformation performed by doing:

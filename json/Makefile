@@ -22,7 +22,8 @@ all:
 else
 
 all:
-	../src/lib/plumed gen_json > syntax.json
+	./get_action_list.sh > action_list
+	../src/lib/plumed gen_json --actions action_list > syntax.json
 
 endif
 

@@ -35,7 +35,9 @@ namespace s2cm {
 
 //+PLUMEDOC S2CMMOD_COLVAR S2CM
 /*
-S2 contact model CV used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers.
+S2 contact model CV.
+
+This CV was used in \cite Palazzesi_s2_2017, based on NH order parameter from \cite Zhang_s2_2002 and methyl order parameter from \cite Ming_s2_2004. Input parameters can be found in the relevant papers.
 
 \par Examples
 

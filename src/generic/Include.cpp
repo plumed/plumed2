@@ -30,7 +30,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
-Includes an external input file, similar to "#include" in C preprocessor.
+Includes an external input file, similar to #include in C preprocessor.
 
 Useful to split very large plumed.dat files. Notice that in PLUMED 2.4 this action
 cannot be used before the initial setup part of the file (e.g. in the part with \ref UNITS, \ref MOLINFO, etc).

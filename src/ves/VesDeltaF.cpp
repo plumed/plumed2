@@ -34,6 +34,8 @@ namespace ves {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
 /*
+Implementation of VES Delta F method
+
 Implementation of VES\f$\Delta F\f$ method \cite Invernizzi2019vesdeltaf (step two only).
 
 \warning

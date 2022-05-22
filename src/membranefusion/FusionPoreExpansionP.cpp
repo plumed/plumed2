@@ -33,6 +33,8 @@ namespace membranefusion
 {
 //+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPOREEXPANSIONP
 /*
+A CV for inducing the expansion of a fusion pore from a nucleated fusion pore.
+
 Calculate the collective variable designed by Hub \cite Hub2021  and implemented into PLUMED by Masone and collaborators.
 This CV is capable of inducing the expansion of the fusion pore from a nucleated fusion pore.
 
