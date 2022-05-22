@@ -88,10 +88,6 @@ private:
   std::map<std::string,std::string> cdocs;
 /// Print the documentation for the jth keyword in html
   void print_html_item( const std::string& ) const;
-/// Print a particular keyword
-  void printKeyword( const std::string& j, Log& log ) const ;
-/// Print a particular keyword (copy of the above that works with files)
-  void printKeyword( const std::string& j, FILE* out ) const ;
 public:
 /// Constructor
   Keywords() : isaction(true), isatoms(true) {}
@@ -109,10 +105,14 @@ public:
   bool numbered( const std::string & k ) const ;
 /// Return the ith keyword
   std::string getKeyword( const unsigned i ) const ;
+/// Get the documentation for a particular keyword
+  std::string getKeywordDocs( const std::string& key ) const ;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
+/// Get the help string
+  std::string getHelpString() const ;
 /// Print a file containing the list of keywords for a particular action (used for spell checking)
   void print_spelling() const ;
 /// Reserve a keyword
@@ -135,6 +135,8 @@ public:
   bool exists( const std::string & k ) const ;
 /// Check the keyword k has been reserved
   bool reserved( const std::string & k ) const ;
+/// Get the type for the keyword with string k
+  std::string getStyle( const std::string & k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation

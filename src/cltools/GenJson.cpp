@@ -98,17 +98,18 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<".html\","<<std::endl;
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
-    for(unsigned j=0;j<keys.size();++j){
+    std::cout<<"    \"syntax\" : {"<<std::endl;
+    for(unsigned j=0;j<keys.size();++j) {
         std::string desc = keys.getKeywordDescription( keys.getKeyword(j) ); 
         if( desc.find("default=")!=std::string::npos ) { 
              std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1); 
         } 
         std::size_t dot=desc.find_first_of(".");
-        if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<"    \""<<keys.getKeyword(j)<<"\" : \""<<desc.substr(0,dot)<<"\""<<std::endl;
-        else std::cout<<"    \""<<keys.getKeyword(j)<<"\" : \""<<desc.substr(0,dot)<<"\","<<std::endl;
+        if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<"    \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\"}"<<std::endl;
+        else std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\"},"<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {
-        std::cout<<"    \"output\" : {"<<std::endl;
+        std::cout<<"       \"output\" : {"<<std::endl;
         std::vector<std::string> components( keys.getOutputComponents() );
         // Check if we have a value
         bool hasvalue=true;
@@ -116,21 +117,29 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
             if( keys.getOutputComponentFlag( components[k] )=="default" ) { hasvalue=false; break; }
         } 
         if( hasvalue ) {
-            std::cout<<"      \"value\": {"<<std::endl;
-            std::cout<<"        \"flag\": \"value\","<<std::endl;
-            std::cout<<"        \"description\": \"a scalar quantity\""<<std::endl;
-            if( components.size()==0 ) std::cout<<"      }"<<std::endl; else std::cout<<"      },"<<std::endl;
+            std::cout<<"         \"value\": {"<<std::endl;
+            std::cout<<"           \"flag\": \"value\","<<std::endl;
+            std::cout<<"           \"description\": \"a scalar quantity\""<<std::endl;
+            if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
         }
         for(unsigned k=0; k<components.size(); ++k) {
-            std::cout<<"      \""<<components[k]<<"\" : {"<<std::endl;
-            std::cout<<"        \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
+            std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
+            std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
             std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
-            std::cout<<"        \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
-            if( k==components.size()-1 ) std::cout<<"      }"<<std::endl; else std::cout<<"      },"<<std::endl;  
+            std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
+            if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;  
         }
-        std::cout<<"    }"<<std::endl;
+        std::cout<<"       }"<<std::endl;
 
-    } 
+    }
+    std::cout<<"    },"<<std::endl;
+    // This ensures that \n is replaced by \\n
+    std::string unsafen="\n", safen="\\n", helpstr = keys.getHelpString();
+    for( std::size_t pos = helpstr.find("\n");
+         pos != std::string::npos;
+         pos = helpstr.find("\n", pos)
+       ) { helpstr.replace(pos, unsafen.size(), safen); pos += safen.size(); }
+    std::cout<<"    \"help\" : \""<<helpstr<<"\"\n"; 
     std::cout<<"  },"<<std::endl;
   }
   // Get all the special groups
