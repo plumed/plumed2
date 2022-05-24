@@ -45,7 +45,9 @@ namespace drr {
 
 //+PLUMEDOC EABFMOD_BIAS DRR
 /*
-Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
+Used to performed extended-system adaptive biasing force(eABF) 
+
+This method was introduced in \cite Lelievre2007.  It is used  
  on one or more collective variables. This method is also
  called dynamic reference restraining(DRR) \cite Zheng2012 . A detailed description
  of this module can be found at \cite Chen2018 .
