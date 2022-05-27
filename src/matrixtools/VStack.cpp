@@ -155,7 +155,10 @@ bool VStack::performTask( const std::string& controller, const unsigned& index1,
       }
   } else if( getPntrToArgument(iarg)->getRank()==0 ) {
       myvals.addDerivative( ostrn, iarg, 1 ); myvals.updateIndex( ostrn, iarg );
-  } else plumed_error();
+  } else {
+      unsigned matind = iarg*getPntrToArgument(0)->getNumberOfValues() + index1;
+      myvals.addDerivative( ostrn, matind, 1 ); myvals.updateIndex( ostrn, matind );
+  }
 
   return true;
 }
@@ -176,6 +179,8 @@ void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()==0 ) {
           ntot_mat++; mat_indices[ntot_mat] = i;
+      } else if( !actionInChain() ) {
+          mat_indices[ntot_mat] = i*getPntrToArgument(0)->getNumberOfValues() + current; ntot_mat++;
       } else {
           // Ensure we only store one lot of derivative indices
           bool found=false;
