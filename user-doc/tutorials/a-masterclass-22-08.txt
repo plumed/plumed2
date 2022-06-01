@@ -42,6 +42,10 @@ You can clone this repository locally on your machine using the following comman
 git clone https://github.com/mme-ucl/PLUMED_MClass_22-08 
 \endverbatim
 
+\section masterclass-22-8-solution Solution
+
+The solution of this masterclass is available on GitHub as a [jupyter notebook](https://github.com/mme-ucl/PLUMED_MClass_22-08/blob/main/Solution/Solution.ipynb). 
+
 \section masterclass-22-8-ex1 Exercise 1: analysis of a nucleation trajectory I 
 
 We can start by using plumed to analyze a trajectory and identify the total number of atoms belonging to a liquid phase condensing from a supersaturated vapour in a long unbiased MD simulation.
@@ -108,14 +112,14 @@ The MD trajectory that we will analyze can be found in the folder called `data`:
 - `LJvap.gro`: reference conformation of 10000 LJ particles in a metastable vapour phase.
 - `LJvap_to_liq.xtc`: trajectory.
 
-\section masterclass-22-8-ex3 Exercise 3: Steady-state diffusive flux with C$\mu$MD
+\section masterclass-22-8-ex3 Exercise 3: Steady-state diffusive flux with CmuMD
 
 In the two examples discussed in Exercises 1 and 2 it is apparent that the process of condensation reaches steady state due to finite-size effects. However, looking at the process more carefully, one can notice that the driving force leading to phase separation is far from constant.
 C$\mu$MD allows using PLUMED to apply ad-hoc forces and keep constant the composition of spatial regions of the simulation box called control regions. This feature allows to model processes driven by concentration in steady, out-of-equilibrium conditions. 
 
 The first example we will focus on is a purely diffusive process in a LJ vapour. 
 
-A PLUMED file that allows imposing a steady concentration difference with C$\mu$MD looks like: 
+A PLUMED file that allows imposing a steady concentration difference with CmuMD looks like: 
 
 \plumedfile
 # Define groups of atoms
