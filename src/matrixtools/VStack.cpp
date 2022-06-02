@@ -45,6 +45,7 @@ public:
   void runFinalJobs() override;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const override ;
   void apply() override;
 };
 
@@ -86,6 +87,7 @@ ActionWithValue(ao)
       if( getPntrToArgument(i)->isTimeSeries() ) { usechain=false; getPntrToComponent(0)->makeHistoryDependent(); break; }
   }
   if( usechain ) { unsigned nd = setupActionInChain(0); forcesToApply.resize(nd); }
+  else getPntrToComponent(0)->alwaysStoreValues();
 }
 
 unsigned VStack::getNumberOfDerivatives() const {
@@ -194,6 +196,13 @@ void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
       }
   }
   myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
+}
+
+void VStack::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                const unsigned& bufstart, std::vector<double>& buffer ) const {
+  if( getPntrToOutput(0)->dataAlwaysStored() ) {
+      plumed_assert( valindex==0 ); gatherMatrixRow( valindex, code, myvals, bufstart, buffer );
+  } else ActionWithValue::gatherStoredValue( valindex, code, myvals, bufstart, buffer );
 }
 
 void VStack::apply() {

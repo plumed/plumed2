@@ -1,0 +1,71 @@
+q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+
+nq4_rm-[-4]: CUSTOM ARG1=q4.rm-[-4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-4]: CUSTOM ARG1=q4.im-[-4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-3]: CUSTOM ARG1=q4.rm-[-3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-3]: CUSTOM ARG1=q4.im-[-3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-2]: CUSTOM ARG1=q4.rm-[-2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-2]: CUSTOM ARG1=q4.im-[-2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[-1]: CUSTOM ARG1=q4.rm-[-1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[-1]: CUSTOM ARG1=q4.im-[-1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[0]: CUSTOM ARG1=q4.rm-[0] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[0]: CUSTOM ARG1=q4.im-[0] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[1]: CUSTOM ARG1=q4.rm-[1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[1]: CUSTOM ARG1=q4.im-[1] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[2]: CUSTOM ARG1=q4.rm-[2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[2]: CUSTOM ARG1=q4.im-[2] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[3]: CUSTOM ARG1=q4.rm-[3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[3]: CUSTOM ARG1=q4.im-[3] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-[4]: CUSTOM ARG1=q4.rm-[4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-[4]: CUSTOM ARG1=q4.im-[4] ARG2=q4_norm FUNC=x/y PERIODIC=NO
+
+data4: VSTACK ...
+  ARG1=nq4_rm-[-4]
+  ARG2=nq4_im-[-4]
+  ARG3=nq4_rm-[-3]
+  ARG4=nq4_im-[-3]
+  ARG5=nq4_rm-[-2]
+  ARG6=nq4_im-[-2]
+  ARG7=nq4_rm-[-1]
+  ARG8=nq4_im-[-1]
+  ARG9=nq4_rm-[0]
+  ARG10=nq4_im-[0]
+  ARG11=nq4_rm-[1]
+  ARG12=nq4_im-[1]
+  ARG13=nq4_rm-[2]
+  ARG14=nq4_im-[2]
+  ARG15=nq4_rm-[3]
+  ARG16=nq4_im-[3]
+  ARG17=nq4_rm-[4]
+  ARG18=nq4_im-[4]
+...
+
+mask: CONSTANT_VALUE VALUES=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+# Multiply Q4 matrix by the mask
+data4T: TRANSPOSE ARG=data4
+glob: DOT ARG1=data4T ARG2=mask
+
+P: SELECT_COMPONENTS ARG=glob COMPONENTS=16,17,18
+
+# And three vectors for Q
+QM1: SELECT_COMPONENTS ARG=glob COMPONENTS=1,2,3,4,5,6
+QM2: SELECT_COMPONENTS ARG=glob COMPONENTS=7,8,9,10,11,12
+QM3: SELECT_COMPONENTS ARG=glob COMPONENTS=13,14,15,16,17,18
+# And make a matrix by joining the three vectors together
+Q: VSTACK ARG1=QM1 ARG2=QM2 ARG3=QM3
+
+# And compute O
+O: DOT ARG1=Q ARG2=P
+
+# And create an eigenvector
+eig: CONSTANT_VALUE VALUES=1,1,1,1,1,1
+
+# And calculate the CV
+cv_prod: CUSTOM ARG1=O ARG2=eig FUNC=x*y PERIODIC=NO
+cv: SUM ARG=cv_prod PERIODIC=NO
+
+# Add a force
+BIASVALUE ARG=cv
+
+PRINT ARG=cv FILE=colvar STRIDE=1
