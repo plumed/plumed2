@@ -45,6 +45,7 @@ public:
   void runFinalJobs() override;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const override ;
   void apply() override;
 };
 
@@ -86,6 +87,7 @@ ActionWithValue(ao)
       if( getPntrToArgument(i)->isTimeSeries() ) { usechain=false; getPntrToComponent(0)->makeHistoryDependent(); break; }
   }
   if( usechain ) { unsigned nd = setupActionInChain(0); forcesToApply.resize(nd); }
+  else getPntrToComponent(0)->alwaysStoreValues();
 }
 
 unsigned VStack::getNumberOfDerivatives() const {
@@ -155,7 +157,10 @@ bool VStack::performTask( const std::string& controller, const unsigned& index1,
       }
   } else if( getPntrToArgument(iarg)->getRank()==0 ) {
       myvals.addDerivative( ostrn, iarg, 1 ); myvals.updateIndex( ostrn, iarg );
-  } else plumed_error();
+  } else {
+      unsigned matind = iarg*getPntrToArgument(0)->getNumberOfValues() + index1;
+      myvals.addDerivative( ostrn, matind, 1 ); myvals.updateIndex( ostrn, matind );
+  }
 
   return true;
 }
@@ -176,6 +181,8 @@ void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()==0 ) {
           ntot_mat++; mat_indices[ntot_mat] = i;
+      } else if( !actionInChain() ) {
+          mat_indices[ntot_mat] = i*getPntrToArgument(0)->getNumberOfValues() + current; ntot_mat++;
       } else {
           // Ensure we only store one lot of derivative indices
           bool found=false;
@@ -189,6 +196,13 @@ void VStack::performTask( const unsigned& current, MultiValue& myvals ) const {
       }
   }
   myvals.setNumberOfMatrixIndices( nmat, ntot_mat );
+}
+
+void VStack::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                const unsigned& bufstart, std::vector<double>& buffer ) const {
+  if( getPntrToOutput(0)->dataAlwaysStored() ) {
+      plumed_assert( valindex==0 ); gatherMatrixRow( valindex, code, myvals, bufstart, buffer );
+  } else ActionWithValue::gatherStoredValue( valindex, code, myvals, bufstart, buffer );
 }
 
 void VStack::apply() {

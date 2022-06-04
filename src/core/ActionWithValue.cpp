@@ -680,35 +680,40 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
 
 }
 
+void ActionWithValue::gatherMatrixRow( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                       const unsigned& bufstart, std::vector<double>& buffer ) const {
+  unsigned rstart = (1+values[valindex]->getNumberOfColumns())*code;
+  unsigned matind = values[valindex]->getPositionInMatrixStash();
+  unsigned vindex = bufstart + code*values[valindex]->getNumberOfColumns();
+  // Only matrix elements that are definitely non-zero are stored here
+  // This is used with contact matrices to reduce the ammount of memory required
+  if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[1] ) {
+      values[valindex]->matindexes[rstart]=0;
+      for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+        unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+        values[valindex]->matindexes[rstart+1+values[valindex]->matindexes[rstart]]=jind; values[valindex]->matindexes[rstart]++;
+        plumed_dbg_massert( vindex+j<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+        buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind ); 
+      }
+  // This stores all matrix elements in the expected places for when the matrix is dense
+  } else {
+      values[valindex]->matindexes[rstart]=values[valindex]->getShape()[1]; unsigned k=rstart+1;
+      for(unsigned j=0;j<values[valindex]->matindexes[rstart];++j) { values[valindex]->matindexes[k]=j; k++; }
+      for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+         unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+         plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+         buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+      }
+  }  
+}
+
 void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                          const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( !values[valindex]->hasDeriv && values[valindex]->getRank()>0 );
   unsigned sind = values[valindex]->streampos;
   // This looks after storing for matrices
   if( values[valindex]->getRank()==2 && !values[valindex]->alwaysstore ) {
-    unsigned rstart = (1+values[valindex]->getNumberOfColumns())*code;
-    unsigned matind = values[valindex]->getPositionInMatrixStash();
-    unsigned vindex = bufstart + code*values[valindex]->getNumberOfColumns();
-    // Only matrix elements that are definitely non-zero are stored here
-    // This is used with contact matrices to reduce the ammount of memory required
-    if( values[valindex]->getNumberOfColumns()<values[valindex]->getShape()[1] ) {
-        values[valindex]->matindexes[rstart]=0; 
-        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-          unsigned jind = myvals.getStashedMatrixIndex(matind,j); 
-          values[valindex]->matindexes[rstart+1+values[valindex]->matindexes[rstart]]=jind; values[valindex]->matindexes[rstart]++;
-          plumed_dbg_massert( vindex+j<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
-          buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind );
-        }
-    // This stores all matrix elements in the expected places for when the matrix is dense
-    } else {
-        values[valindex]->matindexes[rstart]=values[valindex]->getShape()[1]; unsigned k=rstart+1;
-        for(unsigned j=0;j<values[valindex]->matindexes[rstart];++j) { values[valindex]->matindexes[k]=j; k++; }
-        for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-           unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-           plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
-           buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );    
-        } 
-    } 
+    gatherMatrixRow( valindex, code, myvals, bufstart, buffer );
  // This looks after storing in all other cases
   } else if( getFullNumberOfTasks()==values[valindex]->getNumberOfValues() ) {
     unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );

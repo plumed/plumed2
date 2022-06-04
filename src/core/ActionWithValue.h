@@ -167,6 +167,9 @@ protected:
   bool runInSerial() const ;
 ///  Ruan all calculations without open MP
   bool runWithoutOpenMP() const ;
+/// Gather all the data in one row of the matrix
+  void gatherMatrixRow( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                        const unsigned& bufstart, std::vector<double>& buffer ) const ;
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
