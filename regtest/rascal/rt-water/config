@@ -2,4 +2,4 @@ plumed_modules=rascal
 plumed_needs=rascal
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz frames.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.num"
+arg="--plumed plumed.dat --ixyz frames.xyz --dump-forces forces --dump-forces-fmt %8.4f --length-units A" # --debug-forces forces.num"

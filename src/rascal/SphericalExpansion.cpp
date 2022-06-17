@@ -262,12 +262,14 @@ unsigned RascalSpherical<T>::getNumberOfDerivatives() const {
 
 template <class T>
 void RascalSpherical<T>::structureToJson() {
-  // Set the atoms from the atomic positions
+  // Conversion factor from PLUMED length units to angstroms
+  double lunit = 10*plumed.getAtoms().getUnits().getLength();
+  // Set the atoms from the atomic positions 
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
-      for(unsigned k=0;k<3;++k) structure["positions"][i][k]=getPosition(i)[k];
+      for(unsigned k=0;k<3;++k) structure["positions"][i][k]=lunit*getPosition(i)[k];
   }
   // Set the box and the pbc from the cell 
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { structure["cell"][i][j]=getBox()(i,j); }
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { structure["cell"][i][j]=lunit*getBox()(i,j); }
 }
 
 // calculator
@@ -320,6 +322,7 @@ void RascalSpherical<T>::apply() {
 
   // Apply the forces on the atoms
   Value* outval=getPntrToOutput(0); Tensor vir; vir.zero();
+  double lunit = 10*plumed.getAtoms().getUnits().getLength();
   std::vector<unsigned> shape( outval->getShape() ); unsigned base=0;
   // Loop over environments (atoms)
   for(unsigned i=0; i<shape[0]; ++i) {
@@ -333,7 +336,7 @@ void RascalSpherical<T>::apply() {
               double ff = outval->getForce( i*shape[1] + j );
               // Loop over x, y, z
               for(unsigned n=0;n<3;++n) {
-                  force[n] = ff*gradients(3*(base+k)+n,j); 
+                  force[n] = ff*gradients(3*(base+k)+n,j)*lunit; 
                   // This is the force to add to the central atom  
                   forcesToApply[ 3*i+n ] -= force[n];
                   // This is the force to add to the neighbour atom.
