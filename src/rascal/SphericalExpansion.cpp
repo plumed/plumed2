@@ -263,7 +263,7 @@ unsigned RascalSpherical<T>::getNumberOfDerivatives() const {
 template <class T>
 void RascalSpherical<T>::structureToJson() {
   // Conversion factor from PLUMED length units to angstroms
-  double lunit = 10*plumed.getAtoms().getUnits().getLength();
+  double lunit = 1.0; if( !plumed.getAtoms().usingNaturalUnits() ) lunit = 10*plumed.getAtoms().getUnits().getLength();
   // Set the atoms from the atomic positions 
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
       for(unsigned k=0;k<3;++k) structure["positions"][i][k]=lunit*getPosition(i)[k];
@@ -322,7 +322,7 @@ void RascalSpherical<T>::apply() {
 
   // Apply the forces on the atoms
   Value* outval=getPntrToOutput(0); Tensor vir; vir.zero();
-  double lunit = 10*plumed.getAtoms().getUnits().getLength();
+  double lunit = 1.0; if( !plumed.getAtoms().usingNaturalUnits() ) lunit = 10*plumed.getAtoms().getUnits().getLength();
   std::vector<unsigned> shape( outval->getShape() ); unsigned base=0;
   // Loop over environments (atoms)
   for(unsigned i=0; i<shape[0]; ++i) {
