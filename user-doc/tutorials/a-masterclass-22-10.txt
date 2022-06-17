@@ -32,14 +32,14 @@ git clone https://github.com/plumed/masterclass-22-10.git
 
 \note All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6
 
-Some documentation about the replica exchange implementation discussed in this tutorial can be found at this page: \ref hrex .
+Some documentation about the replica exchange implementation discussed in this Masterclass can be found at this page: \ref hrex .
 
 \section masterclass-22-10-ex Exercises
 
-Throughout this tutorial we will run simulations of alanine dipeptide in water using GROMACS and PLUMED.
+Throughout this Masterclass we will run simulations of alanine dipeptide in water using GROMACS and PLUMED.
 Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
 it is complex enough to be used in learning them.
-This tutorial regards a specific implementation of Hamiltonian replica exchange that is only available when using GROMACS and PLUMED.
+This Masterclass regards a specific implementation of Hamiltonian replica exchange that is only available when using GROMACS and PLUMED.
 
 \subsection masterclass-22-10-intr Introduction to Hamiltonian replica exchange
 
@@ -69,14 +69,14 @@ and the `plumed.dat` file is in the parent directory you will need a command suc
 mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat
 ```
 
-To enable replica exchange you will have to add something like `-replex 200`. To enable the specific version of replica exchange we are discussing in this tutorial you will further need the option `-hrex`.
+To enable replica exchange you will have to add something like `-replex 200`. To enable the specific version of replica exchange we are discussing in this Masterclass you will further need the option `-hrex`.
 
 If you have random crashes on MacOS, try to set this environemnt variable:
 \verbatim
 export OMPI_MCA_btl="self,tcp"
 \endverbatim
 
-In the root directory of this masterclass you will find a `conf.gro` file, that can be used as a starting configuration
+In the root directory of this Masterclass you will find a `conf.gro` file, that can be used as a starting configuration
 for your simulations, a `topol.top` file, which contains the topology information, and a `grompp.mdp` file
 with reasonable simulation parameters. You have also a `conf.pdb` file, that is basically the `conf.gro` file
 converted to PDB format, and can be used for the \ref MOLINFO keyword so as to facilitate atom selections in analysis.
@@ -244,20 +244,106 @@ Now answer the following questions:
 \subsection masterclass-22-10-ex-4 Exercise 4: Analyze Hamiltonian replica exchange simulations with WHAM
 
 So far we only analized the reference replica (lambda=1.0). We can however do better and combine all replicas with WHAM. To this aim you should:
-- Concatenate all trajectories in a single `traj_concatenated.xtc` file.
-- Use `gmx_mpi mdrun -rerun` to recompute the potential energy according to each of the tpr files (for each replica).
+- Concatenate all trajectories in a single file (`gmx_mpi trjcat -cat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
+- Recompute the potential energy according to each of the tpr files (for each replica).
+  (`gmx_mpi mdrun -rerun traj_multi.xtc -s dir0/topol.tpr -e ener0.edr`,
+  `gmx_mpi mdrun -rerun traj_multi.xtc -s dir1/topol.tpr -e ener1.edr -xvg no`, etc.)
+- Convert the energies to textual files.
+  (`echo 11 | gmx_mpi energy -f ener0.edr -xvg no -e ener0.xvg`, etc.).
+  11 should select the potential energy
 
-TODO
+Then you can use the provided python wham script to compute the weight of all frames
+
+```
+import wham
+print(wham.__file__) # make sure you are using the wham script provided with this masterclass
+ene=[]
+for i in range(len(lambdas)):
+    ene.append(np.loadtxt("ener{}.xvg".format(i),usecols=2)) # this 
+ene=np.array(ene).T
+# ene[i,j] is the energy of frame i according to the j-th Hamiltonian
+kBT=8.31446261815324*0.300
+w=wham.wham(ene,T=kBT)
+# w["logW"] are the Boltzmann factors
+# notice that we didn't specify yet to which ensemble we are reweighting
+logW=w["logW"]-ene[0,:]/kBT
+logW-=np.max(logW) # avoid numerical errors in exp
+weights=np.exp(logW)
+weights/=np.sum(weights) # normalize weights
+# logW are the logaritm weights to obtain properties corresponding to replica 0
+```
+
+Now plot the `logW` array and answer the following questions:
+- How does the weight depend on the frame index? Remember that the replica exchange trajectories were concatenated.
+  Can you recognize those frames coming from the first, second, etc replica?
+- Compute the population of the two states by summing the weight of all states in the two basins.
+- Modify the script above to compute weights corresponding to replicas other than the first one, and compute 
+  the population of the two states as a function of lambda.
 
 \subsection masterclass-22-10-ex-5 Exercise 5: Optimize the lamdba ladder
 
-**This is a difficult exercise. It will be solved in the solution, but it is not necessary to proceed at the next step.**
+The aim of this exercise is to optimize the list of values of lambda. As a target, we will try to make the
+product of the acceptances as large as possible.
+We will do this *without* running new simulations, i.e. just analyzing the simulation above.
 
-TODO
+This is a difficult exercise. It will be solved in the solution, but it is not necessary to proceed at the next step.
+I write some hints here.
+- In solute tempering, the energy is a quadratic function of `sqrt(lambda)`. In other words, for each frame, you could
+  write the energy as `A*lambda+B*sqrt(lambda)+C`, where `A`, `B`, and `C` are to be recomputed at each frame.
+  Analyze the `ene` array that we generated in the last exercise so as to obtain these coefficients.
+  The goal is to have a function that, for any frame, and for any value of lambda (including values not yet simulated),
+  returns the energy of the system.
+- Using these functions, we can compute weights corresponding to arbitrary values of lambda. You could use these
+  weights to generate a smooth version of the population vs lambda plot that we did in the last exercise.
+- Given two values of lambda, you can compute the average acceptance by doing ensemble averages.
+  You can easily test this function: use it to predict the acceptance associated to the neighboring replicas
+  simulated above. Can you predict the acceptances seen during the simulation?
+
+Once you have this function (let's call it `predict_acceptance(lambda1,lambda2)`) you can use the following script
+to find the setting that maximizes the product of the acceptances. Let's say that the largest lambda is fixed to 1.0
+and the lowest is fixed to 0.3
+
+```
+# lambda is the array with the replicas we used for out simulation (a starting point(
+# first and last replicas are fixed (1.0 and 3.0)
+# we thus optimize all elements excluding the first and the last (lambda[1:-1])
+
+def predict_all_acceptances(x):
+    x=np.array(x)
+    acc=[]
+    # lambdas should not be negative
+    if np.any(x<=0.0):
+        return np.zeros(len(x)+1)
+    # nor larger than 1
+    if np.any(x>=1.0):
+        return np.zeros(len(x)+1)
+    # first replica has lambda=1.0
+    acc.append(predict_acceptance(1.0,x[0]))
+    for i in range(len(x)-1):
+        acc.append(predict_acceptance(x[i],x[i+1]))
+    # last replica has lambda=0.3
+    acc.append(predict_acceptance(x[-1],0.3))
+    return acc
+
+def func(x)
+    acc=predict_all_acceptances(x)
+    return -np.prod(acc) # negative, since we minimize the result
+
+from scipy.optimize import minimize
+res=minimize(func,lambdas[1:-1]) # starting values
+
+print("optimal lambdas: ",1.0,res.x,3.0)
+print(predict_all_acceptances(res.x))
+
+```
+
+You can then run a new simulation with the optimal lambdas and find if the predicted acceptances correspond to the observed ones!
+
 
 \subsection masterclass-22-10-ex-6 Exercise 6: Combine with metadynamics on psi
 
-TODO
+As a very last point, repeat exercise \ref masterclass-21-5-ex-5
+using alanine dipeptide in explicit solvent and solute tempering with the lambda values optimized above.
 
 */
 
