@@ -1,0 +1,201 @@
+/**
+\page masterclass-22-10 PLUMED Masterclass 22.10: Hamiltonian replica exchange with PLUMED and GROMACS
+
+\authors Giovanni Bussi
+\date June 21, 2022
+
+\section masterclass-22-10-aims Aims
+
+In this Masterclass, we will discuss how to run Hamiltonian replica exchange using PLUMED and GROMACS. We will also understand how to analyze the resulting trajectories.
+
+\section masterclass-22-10-lo Objectives
+
+Once you have completed this Masterclass you will be able to:
+
+- Use PLUMED to manipulate GROMACS topologies and prepare a solute tempering simulation.
+- Use PLUMED and GROMACS to run replica exchange simulations with multiple topologies.
+- Use WHAM to combine multiple simulations performed with different bias potentials.
+ 
+\section masterclass-22-10-install Setting up PLUMED
+
+For this masterclass you will need versions of PLUMED and GROMACS that are compiled using the MPI library.
+In order to obtain the correct versions, please follow the instructions at this link: https://github.com/plumed/masterclass-2022
+
+\section masterclass-22-10-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/plumed/masterclass-22-10).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/plumed/masterclass-22-10.git
+\endverbatim
+
+\note All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6
+
+\section masterclass-22-10-ex Exercises
+
+Throughout this tutorial we will run simulations of alanine dipeptide in water using GROMACS and PLUMED.
+Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
+it is complex enough to be used in learning them.
+This tutorial regards a specific implementation of Hamiltonian replica exchange that is only available
+when using GROMACS and PLUMED.
+
+\subsection masterclass-22-10-intr Introduction to Hamiltonian replica exchange
+
+In \ref masterclass-21-5 we have learned how to run replica exchange simulations with multiple replicas,
+where each replica was possibly feeling different biasing forces. A typical example are
+umbrella sampling simulations with replica exchange, where each replica has a restraint
+located in a different position. Another example is bias-exchange metadynamics, where
+each replica is biased along a different collective variable. We have also seen parallel-tempering
+metadynamics, where replicas are kept at a different temperature and, at the same time,
+keep track of different history-dependent potentials.
+All these examples are a form of Hamiltonian replica exchange, since different replicas
+are subject to different potential energy functions, and so different Hamiltonians.
+
+In this masterclass we will consider a conceptually similar but technically different version of
+Hamiltonian replica exchange. Here, the different replicas will be simulated using
+different force field parameters. For most of the exercise, we will use an empty `plumed.dat` file.
+This file will just be needed to ensure we can enable PLUMED, but we will not use it to add specific 
+bias potentials. Instead, we will spend some time in learning how to edit the GROMACS topologies.
+
+In order to use multiple-replica methods, you should run your simulation using MPI. This can be done prefixing your command
+with `mpiexec -np N --oversubscribe`, where `N` is the number of processes that you want to use and the `--oversubscribe`
+option is an OpenMPI option that is required to use more processes than the number of available processors. This is typically suboptimal,
+but we will need it in our lectures to run, e.g., simulations with 32 replicas even if we have a computer with 4 cores.
+
+In brief, to run a GROMACS simulation where the individual replicas are in directories names `dir0`, `dir1`, etc
+and the `plumed.dat` file is in the parent directory you will need a command such as
+```
+mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat
+```
+
+If you have random crashes on MacOS, try to set this environemnt variable:
+\verbatim
+export OMPI_MCA_btl="self,tcp"
+\endverbatim
+
+In the root directory of this masterclass you will find a `conf.gro` file, that can be used as a starting configuration
+for your simulations, a `topol.top` file, which contains the topology information, and a `grompp.mdp` file
+with reasonable simulation parameters. You have also a `conf.pdb` file, that is basically the `conf.gro` file
+converted to PDB format, and can be used for the \ref MOLINFO keyword so as to facilitate atom selections in analysis.
+
+\subsection masterclass-22-10-ex-1a Exercise 1a: Tests different temperatures
+
+Parallel tempering simulations require the highest replica to be hot enough for important energy barriers to be crossed
+in the simulation. We will first estimate how we should raise the temperature so as to see forward and backward transitions
+between the two metastable states of our system.
+
+To do so:
+- Prepare an array of simulations, with temperatures equal to 300, 400, 500, 600, 700, 800, 900, 1000
+- Run each of them for 1 ns and check at which temperature you have at least on transition from the initial basin to the other one and a backward transition
+
+These are serial simulations, so you can run them with this command:
+```
+# first edit grompp.mdp setting the temperature (both solute and solvent groups!)
+gmx_mpi grompp
+gmx_mpi mdrun -nsteps 500000
+```
+
+To analyze the resulting trajectories you can use PLUMED \ref driver with commands like these ones:
+```
+plumed driver --ixtc traj_comp.xtc --plumed plumed.dat
+```
+with the following `plumed.dat` file:
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+phi: TORSION ATOMS=@phi-2 
+PRINT ARG=phi FILE=COLVAR
+\endplumedfile
+
+You can then plot the second column of the resulting `COLVAR` file and see if there is a transition from the first basin (phi in range (-3,-1))
+to the second basin (phi in range (0.5,1.5)), and back. Answer the following question:
+- How much should you increase the temperature to see a transition back-and-forth between the two basins?
+
+The result depends some stochastic factor, but also on the length of the simulation.
+I recommend running 1 ns simulation (500000 steps), but you can try with a longer or shorter trajectory.
+
+\subsection masterclass-22-10-ex-1b Exercise 1b: Run a parallel tempering simulation
+
+Once you have identified this temperature, you can run a parallel tempering simulation. You will need a number of replicas to bridge from T=300
+to the temperature you have identified. As a first guess, you can place them in a geometric series (that's the allocation that leads to
+uniform acceptance in a system with temperature-independent specific heat).
+If, for instance, you want to try with 16 replicas, create 16 directories named `dir0`, `dir1`, ... `dir15`, place a file named `topol.tpr` in each,
+where each file will be created setting a different temperature in the `grompp.mdp` file.
+We will not need PLUMED for this exercise,
+so the simulation can be run with a command like this one:
+\verbatim
+mpiexec -np 32 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -replex 200 -nsteps 500000
+\endverbatim
+
+The `-replex` option tells to GROMACS how frequently exchanges should be attempted.
+The average acceptance will be reported at the end of the `md.log` file.
+
+What you should see is that, even in the replica that is kept as T=300K, the system can explore both metastable states.
+
+Now answer the following questions:
+- How many replicas do you need to have an acceptance that is at least 30%? (the answer will depend on the maximum temperature you have chosen)
+- How much is the relative population of the two metastable states at T=300? Plot this population as a function of the temperature.
+
+\subsection masterclass-22-10-ex-2a Exercise 2a: Setting up scaled Hamiltonians
+
+In order to run Hamiltonian replica exchange simulations with multiple topologies, we will have first to learn how to generate
+the multiple topologies. Different tools could be used (including editing the `topol.top` file by hand!) but we will now learn
+how to use the `plumed partial_tempering` tool.
+
+Let's first have a look at the `topol.top` file. In this file there are a number of lines that look like `#include ...`, so that this file
+is not selfcontained. The first thing that we have to do is to generate a self-contained topology file. To do so you need to
+use the following command:
+```
+gmx_mpi grompp -p topol.top -pp processed.top
+```
+The `processed.top` file will have the same information as the `topol.top` file but will be self contained.
+Then you should edit the `processed.top` file to indicate which atoms you want to scale. To do so you have to add an underscore (`_`)
+to the atom name of the selected atoms. For instance, this line:
+```
+     1         HC     1    ACE   HH31      1     0.1123      1.008   ; qtot 0.1123
+```
+should be modified to this line:
+```
+     1         HC_    1    ACE   HH31      1     0.1123      1.008   ; qtot 0.1123
+```
+Now, find all atoms belonging to the solute (look in the `[ atoms ]` section) and add an underscore to all of them.
+Once this is done you can use the following command:
+```
+plumed partial_tempering 1.0 < processed.top  > scaled.top
+```
+This will scale the Hamiltonian of the selected atoms by a factor 1.0 (which means, no change).
+Have a look at the resulting `scaled.top` file and find out what has changed.
+You can also try to apply two different scaling factors and check the difference:
+```
+plumed partial_tempering 1.0 < processed.top  > scaled0.top
+plumed partial_tempering 0.5 < processed.top  > scaled1.top
+diff scaled0.top scaled1.top
+```
+\subsection masterclass-22-10-ex-2b Exercise 2b: Sanity check on generated topologies
+
+Notice that these scaled topologies can be used to run GROMACS simulations. We will now make some sanity check.
+
+TODO: check that energy with 1.0 is identical to the original one
+
+\subsection masterclass-22-10-ex-2c Exercise 2c: Sanity check on replica exchange implementation
+
+TODO: check that acceptance between two identical topologies is 1.0
+
+\subsection masterclass-22-10-ex-2d Exercise 2d: find minimum scaling factor
+You can now experiment with
+scaling factors. Try to run a set of 1 ns long simulations, with scaling factors decreasing (e.g., 1.0, 0.9, 0.8, etc).
+Now answer the following question:
+- How much should you decrease the scaling factor to see transitions between the two metastable states in the first nanosecond?
+
+
+\subsection masterclass-22-10-ex-3 Exercise 3: Run Hamiltonian replica exchange simulations
+
+\subsection masterclass-22-10-ex-4 Exercise 4: Analyze Hamiltonian replica exchange simulations with WHAM
+
+\subsection masterclass-22-10-ex-5 Exercise 5: Optimize the lamdba ladder
+
+*/
+
+link: @subpage masterclass-22-10 
+
+description: This Masterclass explains how to use Hamiltonian replica exchange simulations with GROMACS + PLUMED
