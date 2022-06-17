@@ -7,6 +7,7 @@
 \section masterclass-22-10-aims Aims
 
 In this Masterclass, we will discuss how to run Hamiltonian replica exchange using PLUMED and GROMACS. We will also understand how to analyze the resulting trajectories.
+It is highly recommended to follow \ref masterclass-21-5 in advance.
 
 \section masterclass-22-10-lo Objectives
 
@@ -15,7 +16,7 @@ Once you have completed this Masterclass you will be able to:
 - Use PLUMED to manipulate GROMACS topologies and prepare a solute tempering simulation.
 - Use PLUMED and GROMACS to run replica-exchange simulations with multiple topologies.
 - Use WHAM to combine multiple simulations performed with different bias potentials.
- 
+
 \section masterclass-22-10-install Setting up PLUMED
 
 For this masterclass you will need versions of PLUMED and GROMACS that are compiled using the MPI library.
@@ -32,18 +33,18 @@ git clone https://github.com/plumed/masterclass-22-10.git
 
 \note All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6
 
-Some documentation about the replica exchange implementation discussed in this Masterclass can be found at this page: \ref hrex .
+Additional documentation about the replica exchange implementation discussed in this Masterclass can be found at this page: \ref hrex .
 
 \section masterclass-22-10-ex Exercises
 
-Throughout this Masterclass we will run simulations of alanine dipeptide in water using GROMACS and PLUMED.
+Throughout this Masterclass we will run simulations of **alanine dipeptide in water** using GROMACS and PLUMED.
 Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
 it is complex enough to be used in learning them.
-This Masterclass regards a specific implementation of Hamiltonian replica exchange that is only available when using GROMACS and PLUMED.
+This Masterclass regards a specific implementation of Hamiltonian replica exchange that is only available when combining GROMACS and PLUMED.
 
 \subsection masterclass-22-10-intr Introduction to Hamiltonian replica exchange
 
-In \ref masterclass-21-5 we have learned how to run replica exchange simulations with multiple replicas,
+In \ref masterclass-21-5 we have learned how to run replica-exchange simulations
 where each replica was possibly feeling different biasing forces. A typical example is
 umbrella sampling with replica exchange, where each replica has a restraint
 located in a different position. Another example is bias-exchange metadynamics, where
@@ -51,12 +52,13 @@ each replica is biased along a different collective variable. We have also seen 
 metadynamics, where replicas are kept at a different temperature and, at the same time,
 keep track of different history-dependent potentials.
 All these examples are a form of Hamiltonian replica exchange, since different replicas
-are subject to different potential energy functions, and so different Hamiltonians.
+are subject to different potential energy functions, and thus different Hamiltonians.
 
 In this masterclass we will consider a conceptually similar but technically different implementation of
 Hamiltonian replica exchange. Here, the different replicas will be simulated using
 different force field parameters. For most of the exercise, we will thus use an empty `plumed.dat` file (no bias added!).
-You will however need to include this file to ensure PLUMED can be enabled. We will also spend some time in learning how to edit the GROMACS topologies.
+You will however need to include this file to ensure PLUMED can be enabled. We will also spend some time in learning how to edit the GROMACS topologies,
+so as to generate the modified force fields.
 
 In order to use multiple-replica methods, you should run your simulation using MPI. This can be done prefixing your command
 with `mpiexec -np N --oversubscribe`, where `N` is the number of processes that you want to use and the `--oversubscribe`
@@ -64,12 +66,17 @@ option is an OpenMPI option that is required to use more processes than the numb
 but we will need it in our lectures to run, e.g., simulations with 16 replicas even if we have a computer with 4 cores.
 
 In brief, to run a GROMACS simulation where the individual replicas are in directories names `dir0`, `dir1`, etc
-and the `plumed.dat` file is in the parent directory you will need a command such as
+and the (possibly empty) `plumed.dat` file is in the parent directory you will need a command such as
 ```
-mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat
+mpiexec -np 16 --oversubscribe gmx_mpi mdrun -multidir dir? dir?? -plumed ../plumed.dat -replex 200 -hrex
 ```
 
-To enable replica exchange you will have to add something like `-replex 200`. To enable the specific version of replica exchange we are discussing in this Masterclass you will further need the option `-hrex`.
+The option `-replex 200` enables replica exchange and ensures exchanges are attempted every 200 steps.
+The option `-hrex` is specific for the implemenation discussed in this Masterclass, and informs GROMACS and PLUMED
+that there might be different force fields used in different replicas.
+
+\warning
+If you forget the `-hrex` flag, no error will be issued, but the acceptance for exchanges will be incorrectly calculated.
 
 If you have random crashes on MacOS, try to set this environemnt variable:
 \verbatim
@@ -83,6 +90,7 @@ converted to PDB format, and can be used for the \ref MOLINFO keyword so as to f
 
 \subsection masterclass-22-10-ex-1a Exercise 1a: Test with different temperatures
 
+Before swithing to solute tempering, we will play a bit with parallel tempering.
 Parallel tempering simulations require the highest replica to be hot enough for important energy barriers to be crossed
 in the simulation. We will first estimate how much we should raise the temperature so as to see forward and backward transitions
 between the two metastable states of our system.
@@ -94,11 +102,14 @@ To do so:
 These are serial simulations, so you can run them with this command:
 ```
 # first edit grompp.mdp setting the temperature (both solute and solvent groups!)
+# then create the topol.tpr file:
 gmx_mpi grompp
+# then run your simulation:
 gmx_mpi mdrun -nsteps 500000
 ```
+though it is recommended to use a script to run your simulations.
 
-To analyze the resulting trajectories you can use PLUMED \ref driver with commands like these ones:
+To analyze the resulting trajectories you can use PLUMED \ref driver
 ```
 plumed driver --ixtc traj_comp.xtc --plumed plumed.dat
 ```
@@ -143,16 +154,17 @@ Now answer the following questions:
 
 In order to run Hamiltonian replica exchange simulations with multiple topologies, we will have first to learn how to generate
 the multiple topologies. Different tools could be used (including editing the `topol.top` file by hand!) but we will now learn
-how to use the `plumed partial_tempering` tool. This tool
+how to use the \ref partial_tempering tool available in PLUMED. This tool
 basically allows you to generate topologies where the energy of a subset of the atom have be scaled by a chosen factor. Remember that dividing the energy by a factor 2 is equivalent to multiplying the temperature by a factor 2.
 
 Let's first have a look at the `topol.top` file. In this file there are a number of lines that look like `#include ...`, so that this file
-is not self-contained. The first thing that we have to do is to generate a self-contained topology file. To do so you need to
-use the following command:
+is not self-contained. The first thing that we have to do is to generate a self-contained topology file:
 ```
 gmx_mpi grompp -p topol.top -pp processed.top
 ```
-The `processed.top` file will now contain also all the generic force-field parameters and will be self-contained.
+Have a look at the resulting `processed.top` file with a text editor.
+This file does not contain only information about alanine dipeptide, but also about the generic force-field parameters.
+It is thus self-contained.
 
 Then you should edit the `processed.top` file to indicate which atoms you want to scale. To do so you have to add an underscore (`_`)
 to the atom name of the selected atoms. For instance, this line:
@@ -167,7 +179,7 @@ To perform a solute tempering simulation, you should add the underscore to all t
 ```
 plumed partial_tempering 1.0 < processed.top  > scaled.top
 ```
-This will scale the Hamiltonian of the selected atoms by a factor 1.0 (which means, no change).
+This will scale the Hamiltonian of the selected atoms by a factor 1.0 (which means: no change!).
 Have a look at the resulting `scaled.top` file and find out what has changed.
 You can also try to apply two different scaling factors and check the difference:
 ```
@@ -194,24 +206,32 @@ gmx_mpi grompp -p topol_scaled.top -o topol_scaled.tpr
 gmx_mpi mdrun -rerun traj.xtc -s topol_scaled.tpr -e ener_scaled.edr
 ```
 
-**Energies should be identical.**
+The resulting energies should be identical!
 
-Then, generate a new topology where you scaled *all* atoms (make sure to also select water!) by a factor 0.5:
+As a second check,
+generate a new topology where you scaled *all* atoms (make sure to also select water!) by a factor 0.5:
 ```
 plumed partial_tempering 0.5 < topol_all_selected.top > topol_all_scaled.top
 gmx_mpi grompp -p topol_all_scaled.top -o topol_all_scaled.tpr
 gmx_mpi mdrun -rerun traj.xtc -s topol_all_scaled.tpr -e ener_all_scaled.edr
 ```
 
-**Dihedral, LJ, and Coulomb energies should be multiplied by 0.5.**
+This time, dihedral angles, LJ, and Coulomb energies should be multiplied by 0.5.
 
-This is a very important check. The `partial_tempering` script is not compatible with some specific functional form, you will find an inconsistency here. For the provided `topol.top` file, everything should work.
+This is a very important check. The `partial_tempering` script is not compatible with some specific functional forms,
+e.g., CHARMM CMAP (search PLUMED mailing list for a fix).
+In case you are using an incompatible force field, you will find inconsistencies in these sanity checks.
+For the provided `topol.top` file, everything should work.
 
-**These tests are very important, please only proceed if you managed to pass them.**
+<b> These tests are very important, please only proceed if you managed to pass them.</b>
 
-\subsection masterclass-22-10-ex-2c Exercise 2c: Sanity check on replica exchange implementation
+\subsection masterclass-22-10-ex-2c Exercise 2c: Sanity check on replica-exchange implementation
 
-Another thing that we will have to check now is if acceptance is computed correctly. To do so, we can run a short Hamiltonian replica exchange with two equivalent topology files. For instance, you can use the original `topol.tpr` file and the one that you obtained with scaling factor 1.0. Make sure that the two tpr files are using a different seed for randomizing the initial velocities or, even better, use two different `conf.gro` files to initialize the two simulations.
+Another thing that we will have to check now is if acceptance is computed correctly.
+The code inserted in GROMACS to implement this calculation is non trivial and quite fragile.
+To do this check, you should run a short Hamiltonian replica exchange with two equivalent topology files.
+For instance, you can use the original `topol.tpr` file and the one that you obtained with scaling factor 1.0. Make sure that the two tpr files are using a different seed for randomizing the initial velocities or, even better, use two different `conf.gro` files to initialize the two simulations.
+For everything else, use the same settings you will use in production (ideally, same number of processes per replica, same GPU settings, etc).
 
 Now run a short replica exchange simulation:
 ```
@@ -223,9 +243,9 @@ Check the resulting acceptance. Since the Hamiltonians are identical, the accept
 
 **Notice that this might be expected to fail if you use a GPU.**
 
-\subsection masterclass-22-10-ex-2d Exercise 2d: find minimum scaling factor
+\subsection masterclass-22-10-ex-2d Exercise 2d: Find minimum scaling factor needed to cross the barrier
 
-You are now able to generate tpr files where the energy of a subset of the atoms is scaled. We will do something similar to \ref masterclass-22-10-ex-1a, but playing with scaling factor instead of temperature. Make sure that you select all (and only) the atoms belonging to the solute (alanine dipeptide).
+You are now able to generate tpr files where the energy of a subset of the atoms is scaled. We will do something similar to \ref masterclass-22-10-ex-1a, but playing with scaling factor instead of temperature. Make sure that you select all (and only) the atoms belonging to the solute (alanine dipeptide), so as to implement solute tempering.
 Try to run a set of 1 ns long simulations, with scaling factors decreasing (e.g., 1.0, 0.9, 0.8, etc).
 Now answer the following question:
 - How much should you decrease the scaling factor to see transitions between the two metastable states in the first nanosecond?
@@ -245,14 +265,14 @@ Now answer the following questions:
 
 So far we only analized the reference replica (lambda=1.0). We can however do better and combine all replicas with WHAM. To this aim you should:
 - Concatenate all trajectories in a single file (`gmx_mpi trjcat -cat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
-- Recompute the potential energy according to each of the tpr files (for each replica).
-  (`gmx_mpi mdrun -rerun traj_multi.xtc -s dir0/topol.tpr -e ener0.edr`,
-  `gmx_mpi mdrun -rerun traj_multi.xtc -s dir1/topol.tpr -e ener1.edr -xvg no`, etc.)
-- Convert the energies to textual files.
+- Recompute the potential energy according to each of the tpr files (for each replica)
+  (`gmx_mpi mdrun -rerun traj_multi.xtc -s dir0/topol.tpr -e ener0.edr -xvg no`,
+  `gmx_mpi mdrun -rerun traj_multi.xtc -s dir1/topol.tpr -e ener1.edr -xvg no`, etc.).
+- Convert the energies to text files
   (`echo 11 | gmx_mpi energy -f ener0.edr -xvg no -e ener0.xvg`, etc.).
-  11 should select the potential energy
+  11 should select the potential energy.
 
-Then you can use the provided python wham script to compute the weight of all frames
+Then you can use the provided python wham script to compute the weight of all frames with the following python commands:
 
 ```
 import wham
@@ -262,18 +282,20 @@ for i in range(len(lambdas)):
     ene.append(np.loadtxt("ener{}.xvg".format(i),usecols=2)) # this 
 ene=np.array(ene).T
 # ene[i,j] is the energy of frame i according to the j-th Hamiltonian
-kBT=8.31446261815324*0.300
+kBT=0.00831446261815324*300
 w=wham.wham(ene,T=kBT)
 # w["logW"] are the Boltzmann factors
-# notice that we didn't specify yet to which ensemble we are reweighting
+# notice that we did not specify yet to which ensemble we are reweighting
+# this can be done with the following line:
 logW=w["logW"]-ene[0,:]/kBT
+# logW are the logaritm weights to obtain properties corresponding to replica 0
 logW-=np.max(logW) # avoid numerical errors in exp
 weights=np.exp(logW)
 weights/=np.sum(weights) # normalize weights
-# logW are the logaritm weights to obtain properties corresponding to replica 0
+# these weights can be used to compute weighted averages
 ```
 
-Now plot the `logW` array and answer the following questions:
+Now plot the `weights` array and answer the following questions:
 - How does the weight depend on the frame index? Remember that the replica exchange trajectories were concatenated.
   Can you recognize those frames coming from the first, second, etc replica?
 - Compute the population of the two states by summing the weight of all states in the two basins.
@@ -286,28 +308,30 @@ The aim of this exercise is to optimize the list of values of lambda. As a targe
 product of the acceptances as large as possible.
 We will do this *without* running new simulations, i.e. just analyzing the simulation above.
 
-This is a difficult exercise. It will be solved in the solution, but it is not necessary to proceed at the next step.
+This is a difficult exercise. It will be solved in the solution, but it is **not** necessary to complete it so as to proceed to the next step.
 I write some hints here.
 - In solute tempering, the energy is a quadratic function of `sqrt(lambda)`. In other words, for each frame, you could
   write the energy as `A*lambda+B*sqrt(lambda)+C`, where `A`, `B`, and `C` are to be recomputed at each frame.
   Analyze the `ene` array that we generated in the last exercise so as to obtain these coefficients.
-  The goal is to have a function that, for any frame, and for any value of lambda (including values not yet simulated),
+  The goal is to have a function that, for any frame, and for any value of lambda (including values not yet simulated!),
   returns the energy of the system.
-- Using these functions, we can compute weights corresponding to arbitrary values of lambda. You could use these
+- Using these functions, you will be able to compute weights corresponding to arbitrary values of lambda. You could for instance use these
   weights to generate a smooth version of the population vs lambda plot that we did in the last exercise.
 - Given two values of lambda, you can compute the average acceptance by doing ensemble averages.
   You can easily test this function: use it to predict the acceptance associated to the neighboring replicas
   simulated above. Can you predict the acceptances seen during the simulation?
 
 Once you have this function (let's call it `predict_acceptance(lambda1,lambda2)`) you can use the following script
-to find the setting that maximizes the product of the acceptances. Let's say that the largest lambda is fixed to 1.0
-and the lowest is fixed to 0.3
+to find the ladder that maximizes the product of the acceptances. Let's say that the largest lambda is fixed to 1.0
+and the lowest is fixed to `lambda_min`
 
 ```
 # lambda is the array with the replicas we used for out simulation (a starting point(
-# first and last replicas are fixed (1.0 and 3.0)
+# first and last replicas are fixed (1.0 and lambda_min)
 # we thus optimize all elements excluding the first and the last (lambda[1:-1])
 
+# this function compute the acceptances given the three intermediate values of
+# lambda
 def predict_all_acceptances(x):
     x=np.array(x)
     acc=[]
@@ -321,10 +345,11 @@ def predict_all_acceptances(x):
     acc.append(predict_acceptance(1.0,x[0]))
     for i in range(len(x)-1):
         acc.append(predict_acceptance(x[i],x[i+1]))
-    # last replica has lambda=0.3
-    acc.append(predict_acceptance(x[-1],0.3))
+    # last replica has lambda=lambda_min
+    acc.append(predict_acceptance(x[-1],lambda_min))
     return acc
 
+# this is function to be minimized
 def func(x)
     acc=predict_all_acceptances(x)
     return -np.prod(acc) # negative, since we minimize the result
@@ -332,18 +357,21 @@ def func(x)
 from scipy.optimize import minimize
 res=minimize(func,lambdas[1:-1]) # starting values
 
-print("optimal lambdas: ",1.0,res.x,3.0)
+print("optimal lambdas: ",1.0,res.x,lambda_min)
 print(predict_all_acceptances(res.x))
 
 ```
 
-You can then run a new simulation with the optimal lambdas and find if the predicted acceptances correspond to the observed ones!
+You can then run a new simulation with the optimal lambdas and check if the predicted acceptances correspond to the observed ones!
 
 
 \subsection masterclass-22-10-ex-6 Exercise 6: Combine with metadynamics on psi
 
 As a very last point, repeat exercise \ref masterclass-21-5-ex-5
 using alanine dipeptide in explicit solvent and solute tempering with the lambda values optimized above.
+No further guidance is provided for this exercise, but it should not be difficult following
+the suggestions given for \ref masterclass-21-5-ex-5.
+
 
 */
 
