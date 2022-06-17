@@ -23,6 +23,8 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 #include "rascal/representations/calculator_sorted_coulomb.hh"
 #include "rascal/representations/calculator_spherical_expansion.hh"
@@ -82,6 +84,8 @@ r: SPHERICAL_INVARIANTS ...
 
 PRINT ARG=r FILE=colvar
 \endplumedfile
+
+Notice that all length units in the rascal input are in Angstroms.  Even if you do not use the unit option when writing your hyperparameter input in json the lengths are assumed to be in Angstroms.
 
 These spherical invariants can be used to compute calculating Gaussian Approximation Potentials (GAP).  GAP potentials provide a way of obtaining a potential that offers DFT accuracy but that 
 has a much less computationally expensive functional form to evaluate.  To fit one of these GAP potentials you perform a series of DFT calculations and use them to perform kernel ridge regression.  
@@ -144,6 +148,8 @@ private:
   typedef AdaptorStrict<AdaptorCenterContribution<AdaptorNeighbourList<StructureManagerCenters>>> Manager_t;
   typedef CalculatorSphericalInvariants::Property_t<Manager_t> Prop_t;
   typedef CalculatorSphericalInvariants::PropertyGradient_t<Manager_t> PropGrad_t ;
+/// We store the value of the cutoff here so we can check for small cells
+  double cutoff;
 /// These are the adaptors to use within rascal
   json adaptors;
 /// This is the structure object that is passed between PLUMED and librascal
@@ -187,16 +193,20 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   std::string adapt, hypers; parse("HYPERPARAMS",hypers);
   json hyper_params=json::parse( "{" + hypers + "}" );
   log<<"   hyper parameters : \n"<<std::setw(4)<<hyper_params<<"\n";
-  double cutoff = hyper_params["cutoff_function"]["cutoff"]["value"];
+  cutoff = hyper_params["cutoff_function"]["cutoff"]["value"];
   // Check that we have gradients being computed
   if( !hyper_params["compute_gradients"] ) { 
       warning("resetting compute_gradients to true as PLUMED cannot operate without gradients");
       hyper_params["compute_gradients"]=true;
   }
-  if( hyper_params["cutoff_function"]["cutoff"].find("unit")!=hyper_params["cutoff_function"]["cutoff"].end() || 
-      hyper_params["cutoff_function"]["smooth_width"].find("unit")!=hyper_params["cutoff_function"]["smooth_width"].end() ||
-      hyper_params["gaussian_density"]["gaussian_sigma"].find("unit")!=hyper_params["gaussian_density"]["gaussian_sigma"].end() ) {
-      error("remove units keywords from json input to HYPERPARAMS.  The units of length for PLUMED are nm or whatever length unit was specified in the UNIT action and cannot be changed in input to librascal");
+  if( hyper_params["cutoff_function"]["cutoff"].find("unit")!=hyper_params["cutoff_function"]["cutoff"].end() ){
+      if( hyper_params["cutoff_function"]["cutoff"]["unit"]!="AA" ) error("units for cutoff in json input should be AA");
+  } 
+  if( hyper_params["cutoff_function"]["smooth_width"].find("unit")!=hyper_params["cutoff_function"]["smooth_width"].end() ) {
+      if( hyper_params["cutoff_function"]["smooth_width"]["unit"]!="AA" ) error("units for smooth_width in json input should be AA");
+  }
+  if( hyper_params["gaussian_density"]["gaussian_sigma"].find("unit")!=hyper_params["gaussian_density"]["gaussian_sigma"].end() ) {
+      if( hyper_params["gaussian_density"]["gaussian_sigma"]["unit"]!="AA" ) error("units for gaussian sigma in json input should be AA");
   }
   // Create the representation using the hyper parameters 
   representation=std::unique_ptr<T>( new T{hyper_params} );
@@ -210,6 +220,8 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   adaptors.emplace_back(ad1);
   adaptors.emplace_back(ad1b);
   adaptors.emplace_back(ad2);
+  // Convert cutoff from angrstroms to plumed units so we can use it to test if the cell is too small later
+  if( !plumed.getAtoms().usingNaturalUnits() ) cutoff = cutoff*(0.1/plumed.getAtoms().getUnits().getLength());
   // Create structure object.  This will be used to pass information to rascal
   structure["cell"]={{0,0,0},{0,0,0},{0,0,0}}; structure["pbc"]={true,true,true};
   // Now read in atoms that we are using
@@ -284,6 +296,10 @@ template <class T>
 void RascalSpherical<T>::apply() {
   // Do nothing if no forces were added
   if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
+  // Check that plumed can handle the forces. The CV doesn't work if the box is too small
+  for(unsigned i=0; i<3; ++i) {
+      if( getBox()[i][i]<cutoff ) error("cannot calculate rascal derivatives correctly for small cells");
+  }
   // Clear the forces from last time
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
 

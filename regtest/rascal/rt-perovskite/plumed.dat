@@ -4,8 +4,8 @@ r: SPHERICAL_EXPANSION ...
     "max_radial": 6,
     "max_angular": 1,
     "compute_gradients": false,
-    "cutoff_function": {"type": "ShiftedCosine", "cutoff": {"value": 6}, "smooth_width": {"value": 0.5}},
-    "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 0.5}},
+    "cutoff_function": {"type": "ShiftedCosine", "cutoff": {"value": 6, "unit": "AA"}, "smooth_width": {"value": 0.5, "unit": "AA"}},
+    "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 0.5, "unit": "AA"}},
     "radial_contribution": {"type": "GTO"}
   }
 ...
