@@ -266,10 +266,10 @@ Now answer the following questions:
 So far we only analized the reference replica (lambda=1.0). We can however do better and combine all replicas with WHAM. To this aim you should:
 - Concatenate all trajectories in a single file (`gmx_mpi trjcat -cat -f dir?/traj_comp.xtc dir??/traj_comp.xtc -o traj_multi.xtc`).
 - Recompute the potential energy according to each of the tpr files (for each replica)
-  (`gmx_mpi mdrun -rerun traj_multi.xtc -s dir0/topol.tpr -e ener0.edr -xvg no`,
-  `gmx_mpi mdrun -rerun traj_multi.xtc -s dir1/topol.tpr -e ener1.edr -xvg no`, etc.).
+  (`gmx_mpi mdrun -rerun traj_multi.xtc -s dir0/topol.tpr -e energy0.edr`,
+  `gmx_mpi mdrun -rerun traj_multi.xtc -s dir1/topol.tpr -e ener1.edr`, etc.).
 - Convert the energies to text files
-  (`echo 11 | gmx_mpi energy -f ener0.edr -xvg no -e ener0.xvg`, etc.).
+  (`echo 11 | gmx_mpi energy -f ener0.edr -xvg no -e energy0.xvg -xvg no`, etc.).
   11 should select the potential energy.
 
 Then you can use the provided python wham script to compute the weight of all frames with the following python commands:
@@ -277,17 +277,18 @@ Then you can use the provided python wham script to compute the weight of all fr
 ```
 import wham
 print(wham.__file__) # make sure you are using the wham script provided with this masterclass
-ene=[]
-for i in range(len(lambdas)):
-    ene.append(np.loadtxt("ener{}.xvg".format(i),usecols=2)) # this 
-ene=np.array(ene).T
-# ene[i,j] is the energy of frame i according to the j-th Hamiltonian
+energies=[]
+with cd("3/6reps"):
+    for i in range(len(lambdas)):
+        energies.append(np.loadtxt("energy{}.xvg".format(i),usecols=1))
+energies=np.array(energies).T
+# energies[i,j] is the energy of frame i according to the j-th Hamiltonian
 kBT=0.00831446261815324*300
-w=wham.wham(ene,T=kBT)
+w=wham.wham(energies,T=kBT)
 # w["logW"] are the Boltzmann factors
 # notice that we did not specify yet to which ensemble we are reweighting
 # this can be done with the following line:
-logW=w["logW"]-ene[0,:]/kBT
+logW=w["logW"]-energies[:,0]/kBT
 # logW are the logaritm weights to obtain properties corresponding to replica 0
 logW-=np.max(logW) # avoid numerical errors in exp
 weights=np.exp(logW)
@@ -350,7 +351,7 @@ def predict_all_acceptances(x):
     return acc
 
 # this is function to be minimized
-def func(x)
+def func(x):
     acc=predict_all_acceptances(x)
     return -np.prod(acc) # negative, since we minimize the result
 
