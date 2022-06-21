@@ -15,7 +15,7 @@ Once you have completed this Masterclass you will be able to:
 
 - Use PLUMED to manipulate GROMACS topologies and prepare a solute tempering simulation.
 - Use PLUMED and GROMACS to run replica-exchange simulations with multiple topologies.
-- Use WHAM to combine multiple simulations performed with different bias potentials.
+- Use WHAM to combine multiple simulations performed with different topologies and/or bias potentials.
 
 \section masterclass-22-10-install Setting up PLUMED
 
@@ -41,6 +41,11 @@ Throughout this Masterclass we will run simulations of **alanine dipeptide in wa
 Whereas this system is too simple to be considered a proper benchmark for enhanced sampling methods,
 it is complex enough to be used in learning them.
 This Masterclass regards a specific implementation of Hamiltonian replica exchange that is only available when combining GROMACS and PLUMED.
+
+Notice that simulations might take up to a couple of hours, depending on the hardware you have access to.
+The version of GROMACS that we provide on our conda channel is not optimized. Compiling GROMACS directly
+on your machine  might lead to much better performance. In addition, using a GPU will also make your simulations
+significantly faster.
 
 \subsection masterclass-22-10-intr Introduction to Hamiltonian replica exchange
 
@@ -303,7 +308,7 @@ Now plot the `weights` array and answer the following questions:
 - Modify the script above to compute weights corresponding to replicas other than the first one, and compute 
   the population of the two states as a function of lambda.
 
-\subsection masterclass-22-10-ex-5 Exercise 5: Optimize the lamdba ladder
+\subsection masterclass-22-10-ex-5 Exercise 5: Optimize the lambda ladder
 
 The aim of this exercise is to optimize the list of values of lambda. As a target, we will try to make the
 product of the acceptances as large as possible.
