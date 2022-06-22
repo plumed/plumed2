@@ -542,14 +542,14 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     std::string atomNamesFile;
     parse("ATOM_NAMES_FILE",atomNamesFile);
     if (!atomNamesFile.empty()) {
-        PDB pdb;
-        if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
-          error("missing input file " + atomNamesFile);
-        unsigned natoms=pdb.getPositions().size();
-        atomNames_.resize( natoms );
-        for(unsigned i=0; i<natoms; ++i) atomNames_[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
-        log.printf("  Read %d atoms from atom names file %s \n", natoms, atomNamesFile.c_str() );
-        log.printf("  Atoms in environments will be considered only if atom names match.\n");
+      PDB pdb;
+      if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        error("missing input file " + atomNamesFile);
+      unsigned natoms=pdb.getPositions().size();
+      atomNames_.resize( natoms );
+      for(unsigned i=0; i<natoms; ++i) atomNames_[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      log.printf("  Read %d atoms from atom names file %s \n", natoms, atomNamesFile.c_str() );
+      log.printf("  Atoms in environments will be considered only if atom names match.\n");
     } else {
       log.printf("  No atom names file has been given. Atoms in reference environments will be matched disregarding atom type.\n");
     }
