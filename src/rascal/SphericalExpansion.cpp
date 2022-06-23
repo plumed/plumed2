@@ -266,7 +266,10 @@ void RascalSpherical<T>::structureToJson() {
   double lunit = 1.0; if( !plumed.getAtoms().usingNaturalUnits() ) lunit = 10*plumed.getAtoms().getUnits().getLength();
   // Set the atoms from the atomic positions 
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
-      for(unsigned k=0;k<3;++k) structure["positions"][i][k]=lunit*getPosition(i)[k];
+      Vector fpos = getPbc().realToScaled( getPosition(i) ); 
+      for(unsigned j=0; j<3; ++j) fpos[j] = Tools::pbc( fpos[j] ) + 0.5; 
+      Vector cpos = getPbc().scaledToReal( fpos );      
+      for(unsigned k=0;k<3;++k) structure["positions"][i][k]=lunit*cpos[k];
   }
   // Set the box and the pbc from the cell 
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { structure["cell"][i][j]=lunit*getBox()(i,j); }
