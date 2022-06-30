@@ -341,7 +341,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
       }
     }
     return std::log(sum)/lambda_;
-  } else if (!atomNames_.empty()) {
+  } else {
     // Reference environments with atom names
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
