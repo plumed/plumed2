@@ -1,0 +1,43 @@
+/**
+\page masterclass-22-11 PLUMED Masterclass 22.11: Variationally enhanced sampling with PLUMED
+
+\authors Omar Valsson
+\date July 4, 2022 
+
+\section masterclass-22-11-aims Aims
+
+In this Masterclass, we will discuss how to run variationally enhanced sampling simulations with PLUMED. We will also understand how to analyze the results. 
+
+\section masterclass-22-11-lo Objectives
+
+Once you have completed this Masterclass you will be able to:
+
+- Use PLUMED to run and analyze variationally enhanced sampling simulations. 
+- Use PLUMED to reweight from variationally enhanced sampling simulations. 
+
+\section masterclass-22-11-install Setting up PLUMED
+
+For this masterclass you will need versions of PLUMED (with the VES module enabled) and GROMACS that are compiled using the MPI library.
+In order to obtain the correct versions, please follow the instructions at [this link](https://github.com/plumed/masterclass-2022).
+
+\note All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6
+
+\section masterclass-22-11-resources Resources
+
+The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/valsson-group/masterclass-22-11).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/valsson-group/masterclass-22-11.git
+\endverbatim
+
+\subsection masterclass-22-11-ex-1a Exercise 1a: Biasing with one collective variable 
+
+
+
+
+*/
+
+link: @subpage masterclass-22-11 
+
+description: This Masterclass explains how to run variationally enhanced sampling simulations with PLUMED
