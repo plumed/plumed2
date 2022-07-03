@@ -12,8 +12,13 @@ In this Masterclass, we will discuss how to run variationally enhanced sampling 
 
 Once you have completed this Masterclass you will be able to:
 
-- Use PLUMED to run and analyze variationally enhanced sampling simulations.
-- Use PLUMED to reweight from variationally enhanced sampling simulations.
+- Run variationally enhanced sampling simulations biasing one and two CVs
+- Assess the convergence of the simulation
+- Perform reweighting from a variationally enhanced sampling simulations
+
+Use PLUMED to run and analyze
+
+- Use PLUMED to reweight from
 
 \section masterclass-22-11-install Setting up PLUMED
 
@@ -31,9 +36,9 @@ You can clone this repository locally on your machine using the following comman
 git clone https://github.com/valsson-group/masterclass-22-11.git
 \endverbatim
 
-\subsection masterclass-22-11-theory Summary of theory
+\section masterclass-22-11-theory Summary of theory
 
-Here, we will briefly summarize the theory behind VES. For an full overview of variationally enhanced sampling (VES), you should read the [original paper](https://doi.org/10.1103/PhysRevLett.113.090601), a recent review [book chapter on VES](https://doi.org/10.1007/978-3-319-44677-6_50), or a recent [enhanced sampling review](https://arxiv.org/abs/2202.04164) that includes discussion about VES.
+Here, we will briefly summarize the theory behind variationally enhanced sampling (VES). For an full overview of VES, you should read the [original paper](https://doi.org/10.1103/PhysRevLett.113.090601), a recent review [book chapter on VES](https://doi.org/10.1007/978-3-319-44677-6_50), or a recent [enhanced sampling review](https://arxiv.org/abs/2202.04164) that includes discussion about VES.
 
 VES is based on the the following functional of the bias potential:
 \f[
@@ -88,16 +93,12 @@ As said above, we can choose the target distribution \f$ p_{\mathrm{tg}}(\mathbf
 The most simple choice would be a uniform target distribution. However, it has found more optimal to
 employ the so-called well-tempered distribution \cite Valsson-JCTC-2015 :
 \f[
-p_{\mathrm{tg}}(\mathbf{s})=\frac{e^{-(\beta/\gamma) F(\mathbf{s})}}{\int d\mathbf{s} \, e^{- (\beta/\gamma) F(\mathbf{s})}}
-\f]
-where \f$ \gamma \f$ is the so-called bias
-factor. It is possible to show that:
-\f[
 p_{\mathrm{tg}}(\mathbf{s}) =
 \frac{[ P(\mathbf{s}) ]^{1/\gamma}}
 {\int d\mathbf{s}\, [ P(\mathbf{s}) ]^{1/\gamma}}
 \f]
-where \f$ P(\mathbf{s}) \f$ is the unbiased CV distribution. Therefore the
+where \f$ \gamma \f$ is the so-called bias
+factor and \f$ P(\mathbf{s}) \f$ is the unbiased CV distribution. Therefore the
 well-tempered distribution is the unbiased distribution with enhanced fluctuations
 and lowered barriers. This is the same distribution as sampled in well-tempered
 metadynamics. The advantages of this distribution are that the features of the
@@ -124,7 +125,7 @@ the uniform \f$ p(\mathbf{s}) \f$ \cite Valsson-JCTC-2015.
 
 \subsection masterclass-22-11-system The system
 
-In this tutorial, we will consider the association/dissociation of NaCl in aqueous solution. The system consists of 1 Na atom, 1 Cl atom, and 107 water molecules for a total of 323 atoms. In an effort to speed up the simulations, we employ a rather small water box, and thus need to employ smaller cutoffs than usually used. Therefore, this simulation setup should not be used in production runs.
+In this tutorial, we will consider the association/dissociation of NaCl in aqueous solution. The system consists of 1 Na atom, 1 Cl atom, and 107 water molecules for a total of 323 atoms. In an effort to speed up the simulations, we employ a rather small water box, and thus need to employ smaller cutoffs than usually used. Therefore, this simulation setup should not be used in production runs. Typically, the run should take around 15-20 minutes to run on a laptop using two MPI processes. By running the simulations on a cluster, you reduce the simulation time.
 
 The most relevant CV for this system are the distance between the Na and Cl atoms
 that is defined in PLUMED as
@@ -153,11 +154,8 @@ Na and Cl atoms that is defined in PLUMED as
 \plumedfile
 UPPER_WALLS ...
    ARG=dist
-   AT=0.6
-   KAPPA=2000.0
-   EXP=2
-   EPS=1
-   OFFSET=0.0
+   AT=0.7
+   KAPPA=4000.0
    LABEL=uwall
 ... UPPER_WALLS
 \endplumedfile
@@ -181,18 +179,18 @@ BF_WAVELETS ...
   LABEL=bf1
   TYPE=SYMLETS
   ORDER=10
-  NUM_BF=26
+  NUM_BF=22
   MINIMUM=0.2
-  MAXIMUM=0.7
+  MAXIMUM=0.8
   TAILS_THRESHOLD=0.01
 ... BF_WAVELETS
 \endplumedfile
 
 For the target distribution, we employ a well-tempered distribution with a bias factor
-of 10.
+of 5.
 \plumedfile
 # Target distribution
-td: TD_WELLTEMPERED BIASFACTOR=10
+td: TD_WELLTEMPERED BIASFACTOR=5
 \endplumedfile
 
 Then we define the VES bias potential using the \ref VES_LINEAR_EXPANSION action
@@ -254,8 +252,7 @@ the run.sh script
 ./generate-tpr-file.sh
 ./run.sh
 \endverbatim
-The run might take around 15-25 minutes to run. You can adjust the number of cores used
-for the simulation using the NumProcs variable in the run.sh script.
+The run might take around 15-20 minutes to run using two MPI processes. You can adjust the number of MIP processes used for the simulation using the NumProcs variable in the run.sh script.
 
 At the end of simulation, you will get several files:
 - colvar.data: Colvar file
@@ -313,7 +310,7 @@ plumed driver --plumed plumed_reweight.dat --noatoms
 \endverbatim
 
 You should compare the resulting FES (the fes-reweight.dist.data file)
-to the results obtained directly from the bias potential in exercise-1a.
+to the results obtained directly from the bias potential in Exercise 1a.
 
 We can also obtained the FES for CVs that are not biased in the VES simulation.
 For example, we can obtain the two-dimensional FES for the distance and the
@@ -348,7 +345,7 @@ StartingGeometry=NaCl_StartingStructure-2.gro
 and regenerating the GROMACS tpr file. Do this and rerun the simulation,
 check the convergence, and perform reweighting
 as before. Make sure that you do this in a new clean folder that is separate from the run
-in exercise-1a.
+in Exercise 1a.
 
 \subsection masterclass-22-11-ex-1c Exercise 2a: biasing with two collective variables
 
@@ -385,8 +382,8 @@ VES_LINEAR_EXPANSION ...
 Additionally, we have turned on the calculation of the one-dimensional project
 of the FES on the distance CV. This is useful to assess the convergence as this is
 easier in one-dimension. We can also compare the projection to the results from
-exercise-1a. These changes should be sufficient to do the simulations using two CVs.
-You can see full input file in the exercise-2a folder.
+Exercise 1a. These changes should be sufficient to do the simulations using two CVs.
+You can see full input file in the Exercise-2a folder.
 
 Once you have performed this simulation, you should also try to reweight from
 this simulations. Furthermore, if you have time, you should also try to perform
@@ -397,8 +394,8 @@ another independent simulation.
 
 The following three exercises are optional, but they will show you how different
 parameters effect the results. You should base these exercises on the files from
-the exercise-1a folder and make the necessary changes. Make sure that you run these
-simulations in separate folders and start from clean files from the exercise-1a folder.
+the Exercise-1a folder and make the necessary changes. Make sure that you run these
+simulations in separate folders and start from clean files from the Exercise-1a folder.
 
 \subsection masterclass-22-11-ex-3a Optional exercise 3a: Play with the optimization parameters
 
