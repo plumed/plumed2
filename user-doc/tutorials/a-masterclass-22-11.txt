@@ -123,7 +123,7 @@ when the simulation has converged. It has been shown that in some cases the
 convergence is faster using the well-tempered target distribution than using
 the uniform \f$ p(\mathbf{s}) \f$ \cite Valsson-JCTC-2015.
 
-\subsection masterclass-22-11-system The system
+\section masterclass-22-11-system The system
 
 In this tutorial, we will consider the association/dissociation of NaCl in aqueous solution. The system consists of 1 Na atom, 1 Cl atom, and 107 water molecules for a total of 323 atoms. In an effort to speed up the simulations, we employ a rather small water box, and thus need to employ smaller cutoffs than usually used. Therefore, this simulation setup should not be used in production runs. Typically, the run should take around 15-20 minutes to run on a laptop using two MPI processes. By running the simulations on a cluster, you reduce the simulation time.
 
@@ -160,7 +160,7 @@ UPPER_WALLS ...
 ... UPPER_WALLS
 \endplumedfile
 
-\subsection masterclass-22-11-ex-1 Exercise 1: Biasing with one collective variable
+\section masterclass-22-11-ex-1 Exercise 1: Biasing with one collective variable
 
 We will start by performing a simulation where we bias the Na-Cl distance.
 
@@ -267,7 +267,7 @@ a function of time by looking at the fes.<bias-name>.iter-<iteration-number>.dat
 to facilitate comparison).
 
 
-\subsection masterclass-22-11-ex-2 Exercise 2: Reweighting a VES simulation
+\section masterclass-22-11-ex-2 Exercise 2: Reweighting a VES simulation
 Apart from estimating the FES directly from the bias potential, you can also estimate
 the FES through reweighting by histogramming where each configuration is weighted by the
 bias acting on it, \f$ e^{\beta V(\mathbf{s})} \f$. The VES bias acting at each time step
@@ -335,7 +335,7 @@ obtain smoother results.
 
 This will generate a two-dimensional FES that you can visualize.
 
-\subsection masterclass-22-11-ex-3 Exercise 3: Run another independent simulation
+\section masterclass-22-11-ex-3 Exercise 3: Run another independent simulation
 
 To check the results, it is a good practice to run another independent simulation
 using different initial conditions. You can achieve this here by changing the initial
@@ -348,7 +348,7 @@ check the convergence, and perform reweighting
 as before. Make sure that you do this in a new clean folder that is separate from the run
 in Exercise 1a.
 
-\subsection masterclass-22-11-ex-4 Exercise 4: biasing with two collective variables
+\section masterclass-22-11-ex-4 Exercise 4: biasing with two collective variables
 
 We will now bias also the solvation CV. To achieve this, we need first to setup
 a separate basis set for the solvation CV, where again we use the symlets but
@@ -391,14 +391,14 @@ this simulations. Furthermore, if you have time, you should also try to perform
 another independent simulation.
 
 
-\subsection masterclass-22-11-ex-optional Optional exercises
+\section masterclass-22-11-ex-optional Optional exercises
 
 The following three exercises are optional, but they will show you how different
 parameters effect the results. You should base these exercises on the files from
 the Exercise-1 folder and make the necessary changes. Make sure that you run these
 simulations in separate folders and start from clean files from the Exercise-1 folder.
 
-\subsection masterclass-22-11-ex-5 Optional exercise 5: Play with the optimization parameters
+\section masterclass-22-11-ex-5 Optional exercise 5: Play with the optimization parameters
 
 The main parameter in the optimization algorithm is the step size and
 it is not always easy to choose this parameter. Luckily, the algorithm
@@ -410,7 +410,7 @@ system gets stuck in CV space and coefficients oscillate wildly. When the step s
 too small, the algorithm runs out of "steam" too fast and the simulation converges slowly.
 These two extreme cases should be avoided.
 
-\subsection masterclass-22-11-ex-6 Optional exercise 6: Uniform target distribution
+\section masterclass-22-11-ex-6 Optional exercise 6: Uniform target distribution
 Perform a simulation using an uniform target distribution and see how this changes
 the results.
 
@@ -422,7 +422,7 @@ td: TD_UNIFORM
 and remove the TARGETDIST_STRIDE and TARGETDIST_OUTPUT keywords from the \ref OPT_AVERAGED_SGD
 action.
 
-\subsection masterclass-22-11-ex-7 Optional exercise 7: uniform target distribution
+\section masterclass-22-11-ex-7 Optional exercise 7: uniform target distribution
 Perform a simulation using Legendre polynomials (\ref BF_LEGENDRE) polynomials instead of the
 wavelets and see how this will affect the result. As the Legendre polynomials are delocalized
 basis functions, this should lead to more fluctuations in the bias potential as has been observed
@@ -439,7 +439,22 @@ BF_LEGENDRE ...
 ... BF_LEGENDRE
 \endplumedfile
 
+\section masterclass-22-11-comments Additional comments
 
+\subsection masterclass-22-11-comments-restarting Restarting
+VES simulations can be easily restarted. The code will automatically output
+all the file needed at the end of the simulation. To restart, you just need to
+reset the simulation with your MD code in the traditional way and add a \ref RESET
+keyword to the top of the PLUMED input (for some codes like GROMACS, a restart is
+automatically detected by PLUMED and thus this keyword is not needed).
+
+\subsection masterclass-22-11-comments-multiplewalkers Multiple Walkers
+
+VES simulations supports the usage of multiple walkers where different copies of the system share the same bias potential (i.e. coefficients) and cooperatively sample the averages needed for the gradient and Hessian. This can significantly help with convergence in difficult cases. It is of course best to start the different copies from different positions in CV space. To activate this option you just need to add the MULTIPLE_WALKERS keyword to the \ref OPT_AVERAGED_SGD action. Note that this is only supported if the MD code support running multiple replicas connected via MPI.
+
+\section masterclass-22-11-final-remarks Final Remarks
+
+This should cover the basics of running VES simulations in PLUMED. 
 
 
 
