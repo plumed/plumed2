@@ -2,18 +2,18 @@
 \page masterclass-22-11 PLUMED Masterclass 22.11: Variationally enhanced sampling with PLUMED
 
 \authors Omar Valsson
-\date July 4, 2022 
+\date July 4, 2022
 
 \section masterclass-22-11-aims Aims
 
-In this Masterclass, we will discuss how to run variationally enhanced sampling simulations with PLUMED. We will also understand how to analyze the results. 
+In this Masterclass, we will discuss how to run variationally enhanced sampling simulations with PLUMED. We will also understand how to analyze the results.
 
 \section masterclass-22-11-lo Objectives
 
 Once you have completed this Masterclass you will be able to:
 
-- Use PLUMED to run and analyze variationally enhanced sampling simulations. 
-- Use PLUMED to reweight from variationally enhanced sampling simulations. 
+- Use PLUMED to run and analyze variationally enhanced sampling simulations.
+- Use PLUMED to reweight from variationally enhanced sampling simulations.
 
 \section masterclass-22-11-install Setting up PLUMED
 
@@ -31,13 +31,145 @@ You can clone this repository locally on your machine using the following comman
 git clone https://github.com/valsson-group/masterclass-22-11.git
 \endverbatim
 
-\subsection masterclass-22-11-ex-1a Exercise 1a: Biasing with one collective variable 
+\subsection masterclass-22-11-theory Summary of theory
+
+Here, we will briefly summarize the theory behind VES. For an full overview of variationally enhanced sampling (VES), you should read the [original paper](https://doi.org/10.1103/PhysRevLett.113.090601), a recent review [book chapter on VES](https://doi.org/10.1007/978-3-319-44677-6_50), or a recent [enhanced sampling review](https://arxiv.org/abs/2202.04164) that includes discussion about VES.
+
+VES is based on the the following functional of the bias potential:
+\f[
+\Omega [V]  =
+\frac{1}{\beta} \log
+\frac
+{\int d\mathbf{s} \, e^{-\beta \left[ F(\mathbf{s}) + V(\mathbf{s})\right]}}
+{\int d\mathbf{s} \, e^{-\beta F(\mathbf{s})}}
++
+\int d\mathbf{s} \, p_{\mathrm{tg}}(\mathbf{s}) V(\mathbf{s}),
+\f]
+where \f$\mathbf{s}\f$ are the CVs that we are biasing,
+\f$ p_{\mathrm{tg}}(\mathbf{s}) \f$ is a predefined probability distribution that we will refer
+to as the target distribution, and \f$ F(\mathbf{s}) \f$ is the free energy
+surface. This functional can be shown to be convex and to have a minimum at:
+\f[
+V(\mathbf{s}) = -F(\mathbf{s})-{\frac {1}{\beta}} \log {p_{\mathrm{tg}}(\mathbf{s})}.
+\f]
+The last equation states that when we minimize the functional \f$ \Omega [V] \f$,
+we can obtain the free energy surface from the bias potential (and the target distribution)
+We can choose the target distribution \f$ p_{\mathrm{tg}}(\mathbf{s}) \f$ at will and it is
+the CV distribution that we obtain when minimizing \f$ \Omega [V] \f$.
+
+We put the variational principle to practice by expanding \f$ V(\mathbf{s}) \f$
+in some basis set:
+\f[
+V(\mathbf{s}) = \sum\limits_{i} \alpha_i \, f_i(\mathbf{s}),
+\f]
+where \f$ f_i(\mathbf{s}) \f$ are the basis functions and the \f$\boldsymbol\alpha \f$ are the coefficients in the expansion.
+We then need to find the coefficients \f$\boldsymbol\alpha \f$ that minimize \f$ \Omega
+[V] \f$. In principle one could use any optimization algorithm. In practice
+the algorithm that has become the default choice for VES is the so-called
+averaged stochastic gradient descent algorithm \cite Bach-NIPS-2013.
+In this algorithm the \f$\boldsymbol\alpha \f$ are evolved iteratively
+according to:
+\f[
+\boldsymbol\alpha^{(n+1)} = \boldsymbol\alpha^{(n)}-\mu
+ \left[
+\nabla\Omega(\bar{\boldsymbol\alpha}^{(n)})+
+H(\bar{\boldsymbol\alpha}^{(n)})[\boldsymbol\alpha^{(n)}-\bar{\boldsymbol\alpha}^{(n)}]
+\right]
+\f]
+where \f$\mu\f$ is the step size,
+\f$\bar{\boldsymbol\alpha}^{(n)} \f$ is the running average of \f$\boldsymbol\alpha^{(n)} \f$ at iteration \f$ n \f$, and
+\f$\nabla\Omega(\bar{\boldsymbol\alpha}^{(n)}) \f$ and
+\f$H(\bar{\boldsymbol\alpha}^{(n)}) \f$
+ are the gradient and Hessian of \f$ \Omega[V] \f$ evaluated at the running
+average at iteration \f$ n \f$, respectively.
+The behavior of the coefficients will become clear in the examples below.
+
+As said above, we can choose the target distribution \f$ p_{\mathrm{tg}}(\mathbf{s}) \f$ at will.
+The most simple choice would be a uniform target distribution. However, it has found more optimal to
+employ the so-called well-tempered distribution \cite Valsson-JCTC-2015 :
+\f[
+p_{\mathrm{tg}}(\mathbf{s})=\frac{e^{-(\beta/\gamma) F(\mathbf{s})}}{\int d\mathbf{s} \, e^{- (\beta/\gamma) F(\mathbf{s})}}
+\f]
+where \f$ \gamma \f$ is the so-called bias
+factor. It is possible to show that:
+\f[
+p_{\mathrm{tg}}(\mathbf{s}) =
+\frac{[ P(\mathbf{s}) ]^{1/\gamma}}
+{\int d\mathbf{s}\, [ P(\mathbf{s}) ]^{1/\gamma}}
+\f]
+where \f$ P(\mathbf{s}) \f$ is the unbiased CV distribution. Therefore the
+well-tempered distribution is the unbiased distribution with enhanced fluctuations
+and lowered barriers. This is the same distribution as sampled in well-tempered
+metadynamics. The advantages of this distribution are that the features of the
+FES (metastable states) are preserved and that the system is not forced to sample regions of high
+free energy (that can represent un-physical configurations)
+as it would if we had chosen the uniform target distribution.
+
+There is a caveat though, the well-tempered \f$ p_{\mathrm{tg}}(\mathbf{s}) \f$ depends on \f$
+F(\mathbf{s})\f$ that is the function that we are trying to calculate.
+One way to approach this problem is to calculate \f$ p_{\mathrm{tg}}(\mathbf{s}) \f$
+self-consistently \cite Valsson-JCTC-2015, for instance at iteration \f$ k \f$:
+\f[
+p^{(k+1)}(\mathbf{s})=\frac{e^{-(\beta/\gamma) F^{(k+1)}(\mathbf{s})}}{\int d\mathbf{s} \, e^{-(\beta/\gamma) F^{(k+1)}(\mathbf{s})}}
+\f]
+where:
+\f[
+F^{(k+1)}(\mathbf{s})=-V^{(k)}(\mathbf{s}) - \frac{1}{\beta} \log p^{(k)}(\mathbf{s})
+\f]
+Normally \f$ p^{(0)}(\mathbf{s}) \f$ is taken to be uniform.
+Therefore the target distribution evolves in time until it becomes stationary
+when the simulation has converged. It has been shown that in some cases the
+convergence is faster using the well-tempered target distribution than using
+the uniform \f$ p(\mathbf{s}) \f$ \cite Valsson-JCTC-2015.
+
+\subsection masterclass-22-11-system The system
+
+In this tutorial, we will consider the association/dissociation of NaCl in aqueous solution. The system consists of 1 Na atom, 1 Cl atom, and 107 water molecules for a total of 323 atoms. In an effort to speed up the simulations, we employ a rather small water box, and thus need to employ smaller cutoffs than usually used. Therefore, this simulation setup should not be used in production runs.
+
+The most relevant CV for this system are the distance between the Na and Cl atoms
+that is defined in PLUMED as
+\plumedfile
+dist:  DISTANCE ATOMS=322,323
+\endplumedfile
+
+Furthermore, the NaCl association/dissociation is coupled to the collective motion
+of the solvent. To measure that, we will use a CV that measures the solvation of the
+Na atom. For this, we employ the coordination number of the Na atom with respect to
+the oxygens of the water molecules that we define in PLUMED as
+\plumedfile
+COORDINATION ...
+ GROUPA=322
+ GROUPB=1-321:3
+ SWITCH={RATIONAL R_0=0.315 D_MAX=0.5 NN=12 MM=24}
+ NLIST
+ NL_CUTOFF=0.55
+ NL_STRIDE=10
+ LABEL=coord
+... COORDINATION
+\endplumedfile
+
+We will also limit CV space exploration by employing an upper wall on the distance between
+Na and Cl atoms that is defined in PLUMED as
+\plumedfile
+UPPER_WALLS ...
+   ARG=dist
+   AT=0.6
+   KAPPA=2000.0
+   EXP=2
+   EPS=1
+   OFFSET=0.0
+   LABEL=uwall
+... UPPER_WALLS
+\endplumedfile
+
+
+\subsection masterclass-22-11-ex-1a Exercise 1a: Biasing with one collective variable
 
 
 
 
 */
 
-link: @subpage masterclass-22-11 
+link: @subpage masterclass-22-11
 
 description: This Masterclass explains how to run variationally enhanced sampling simulations with PLUMED
