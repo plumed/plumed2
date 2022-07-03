@@ -458,6 +458,9 @@ BF_LEGENDRE ...
 
 \section masterclass-22-11-comments Additional comments
 
+This should cover the basics of running VES simulations in PLUMED, but the following
+comments might be of interest to some. 
+
 \subsection masterclass-22-11-comments-restarting Restarting
 VES simulations can be easily restarted. The code will automatically output
 all the file needed at the end of the simulation. To restart, you just need to
@@ -469,9 +472,9 @@ automatically detected by PLUMED and thus this keyword is not needed).
 
 VES simulations supports the usage of multiple walkers where different copies of the system share the same bias potential (i.e. coefficients) and cooperatively sample the averages needed for the gradient and Hessian. This can significantly help with convergence in difficult cases. It is of course best to start the different copies from different positions in CV space. To activate this option you just need to add the MULTIPLE_WALKERS keyword to the \ref OPT_AVERAGED_SGD action. Note that this is only supported if the MD code support running multiple replicas connected via MPI.
 
-\section masterclass-22-11-final-remarks Final Remarks
 
-This should cover the basics of running VES simulations in PLUMED.
+
+
 
 
 
