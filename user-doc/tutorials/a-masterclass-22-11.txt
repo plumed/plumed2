@@ -280,8 +280,9 @@ ExtractCoeff.sh 3 > coeff.3.data
 \endverbatim
 This will create a file with the first column the iteration number, the second
 column the averaged coefficient \f$\bar{\boldsymbol\alpha} \f$, and the third column
-the instantaneous coefficients \f$\boldsymbol\alpha \f$. You can visualize this file.
-
+the instantaneous coefficients \f$\boldsymbol\alpha \f$. You should create files for
+different coefficient and visualize both the second and third column to understand
+how the coefficients converge.
 
 \section masterclass-22-11-ex-2 Exercise 2: Reweighting a VES simulation
 Apart from estimating the FES directly from the bias potential, you can also estimate
