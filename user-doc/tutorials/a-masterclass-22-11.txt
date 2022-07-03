@@ -127,7 +127,7 @@ the uniform \f$ p(\mathbf{s}) \f$ \cite Valsson-JCTC-2015.
 
 In this tutorial, we will consider the association/dissociation of NaCl in aqueous solution. The system consists of 1 Na atom, 1 Cl atom, and 107 water molecules for a total of 323 atoms. In an effort to speed up the simulations, we employ a rather small water box, and thus need to employ smaller cutoffs than usually used. Therefore, this simulation setup should not be used in production runs. Typically, the run should take around 15-20 minutes to run on a laptop using two MPI processes. By running the simulations on a cluster, you reduce the simulation time.
 
-The most relevant CV for this system are the distance between the Na and Cl atoms
+The most relevant CV for this system is the distance between the Na and Cl atoms
 that is defined in PLUMED as
 \plumedfile
 dist:  DISTANCE ATOMS=322,323
@@ -154,34 +154,34 @@ Na and Cl atoms that is defined in PLUMED as
 \plumedfile
 UPPER_WALLS ...
    ARG=dist
-   AT=0.7
+   AT=0.6
    KAPPA=4000.0
    LABEL=uwall
 ... UPPER_WALLS
 \endplumedfile
 
-\subsection masterclass-22-11-ex-1a Exercise 1a: Biasing with one collective variable
+\subsection masterclass-22-11-ex-1 Exercise 1: Biasing with one collective variable
 
 We will start by performing a simulation where we bias the Na-Cl distance.
 
-Every VES simulation has three key
+Every VES simulation has three key ingredients
 
 - Basis set
 - Target distribution
 - Optimization algorithm
 
-For the basis set, we will use the recently introduced [wavelet-based basis set](https://doi.org/10.1021/acs.jctc.2c00197) that are localized basis functions that have been shown to perform better than the previously used Chebyshev or Legendre polynomials. We will employ the least asymmetric variant of these wavelets or so-called symlets (as indicated by the TYPE=SYMLETS keyword). We will use an order 12 of the symlets (as indicated by the ORDER=12 keyword). Furthermore information about the wavelets can be found in the reference above.
+For the basis set, we will use the recently introduced [wavelet-based basis set](https://doi.org/10.1021/acs.jctc.2c00197) that are localized basis functions that have been shown to perform better than the previously used Chebyshev or Legendre polynomials. We will employ the least asymmetric variant of these wavelets or so-called symlets (as indicated by the TYPE=SYMLETS keyword). We will use an order 10 of the symlets or Sym10 (as indicated by the ORDER=10 keyword). Furthermore information about the wavelets can be found in the reference above.
 
-We need to select the range on which the bias potential is expanded. Here we will use the range from 0.2 nm to 0.7 nm (as indicated by the MINIMUM and MAXIMUM keywords). We also need to select the number of basis functions, and here we will use 26 basis functions (as indicated by the NUM_BF keyword). The PLUMED action corresponding to this setup is given by
+We need to select the range on which the bias potential is expanded. Here we will use the range from 0.2 nm to 0.7 nm (as indicated by the MINIMUM and MAXIMUM keywords). We also need to select the number of basis functions, and here we will use 22 basis functions (as indicated by the NUM_BF keyword). The PLUMED action corresponding to this setup is given by
 \plumedfile
-# Basisset
+# Basisset for Na-Cl distance
 BF_WAVELETS ...
   LABEL=bf1
   TYPE=SYMLETS
   ORDER=10
   NUM_BF=22
   MINIMUM=0.2
-  MAXIMUM=0.8
+  MAXIMUM=0.7
   TAILS_THRESHOLD=0.01
 ... BF_WAVELETS
 \endplumedfile
@@ -211,8 +211,8 @@ We need to define two parameters: the stride and the step size.
 The stride (given by the keyword STRIDE) is the number of MD steps in which samples
 are collected to calculate the gradient and hessian of \f$ \Omega [V] \f$. The
 step size (given by the keyword STEPSIZE) is the step by which the coefficients
-are evolved at every optimization steps. Both of this parameters are connected. Increasing the
-stride will have an effect similar to reducing the step size. It has become
+are evolved at every optimization steps, given by \f$\mu\f$ in the equation above.
+It has become
 traditional to choose a stride of around 500-2000 MD steps. It must be noted that we
 are not looking for an accurate estimation of the gradient, since for this we
 would need to sample all the CV space. The step size in the
@@ -243,7 +243,7 @@ Finally, we need to define the \ref PRINT action to output all the variables
 PRINT ARG=dist,coord,ves.*,uwall.* FILE=colvar.data STRIDE=125
 \endplumedfile
 
-The full PLUMED input file can be found in the Exercise-1a folder. There you also find all
+The full PLUMED input file can be found in the Exercise-1 folder. There you also find all
 the relevant GROMACS input file. First, you need to run the
 generate-tpr-file.sh script that generates the GROMACS TPR file using the parameters defined in MD-NPT.mdp
 and the initial geometry defined using the StartingGeometry variable. You can then run the simulation using
@@ -263,11 +263,11 @@ At the end of simulation, you will get several files:
 
 To assess the simulation and its convergence, you should first look at the time evolution of the
 biased CV and check that it is diffusive in CV space. Second, you should look at how the free energy surfaces behave as
-a function of time by looking at the fes.<bias-name>.iter-<iteration-number>.data files (the minimum of the FES is always align to zero
+a function of time by looking at the fes.<bias-name>.iter-<iteration-number>.data files at different number of iterations (the minimum of the FES is always align to zero
 to facilitate comparison).
 
 
-\subsection masterclass-22-11-ex-1a Exercise 1b: Reweighting a VES simulation
+\subsection masterclass-22-11-ex-2 Exercise 2: Reweighting a VES simulation
 Apart from estimating the FES directly from the bias potential, you can also estimate
 the FES through reweighting by histogramming where each configuration is weighted by the
 bias acting on it, \f$ e^{\beta V(\mathbf{s})} \f$. The VES bias acting at each time step
@@ -275,15 +275,15 @@ is given by the ves.bias variable in the colvar.dat file.
 
 When doing performing reweighting, it is better to ignore the initial part of
 the simulation where the bias potential is changing more rapidly. You can use the
-trim-colvar-file.py python script in the Exercise-1b folder to do this
+trim-colvar-file.py python script in the Exercise-2 folder to do this
 \verbatim
-./trim-colvar-file.py --colvar-file ../Exercise-1a/colvar.data --output-file colvar_reweight.data --time-min 400
+./trim-colvar-file.py --colvar-file ../Exercise-1/colvar.data --output-file colvar_reweight.data --time-min 400
 \endverbatim
-where here we ignore the first 400 ps of the colvar.data file from the Exercise-1a and create
+where here we ignore the first 400 ps of the colvar.data file from the Exercise-1 and create
 a new file called colvar_reweight.data.
 
 We can then perform the reweighting for the distance using the following PLUMED input
-(plumed_reweight.dat in the Exercise-1b folder)
+(plumed_reweight.dat in the Exercise-2 folder)
 \plumedfile
 dist:   READ FILE=colvar_reweight.data IGNORE_TIME VALUES=dist
 coord:  READ FILE=colvar_reweight.data IGNORE_TIME VALUES=coord
@@ -300,9 +300,10 @@ HISTOGRAM ...
   LOGWEIGHTS=weights
   LABEL=hg_dist
 ... HISTOGRAM
+
 fes_dist: CONVERT_TO_FES GRID=hg_dist TEMP=300 MINTOZERO
 DUMPGRID GRID=fes_dist FILE=fes-reweight.dist.data FMT=%24.16e
-\plumedfile
+\endplumedfile
 
 You can run this input by using the PLUMED driver
 \verbatim
@@ -328,13 +329,13 @@ HISTOGRAM ...
 ... HISTOGRAM
 fes_dist_coord: CONVERT_TO_FES GRID=hg_dist_coord TEMP=300 MINTOZERO
 DUMPGRID GRID=fes_dist_coord FILE=fes-reweight.dist-coord.data FMT=%24.16e
-\plumedfile
+\endplumedfile
 Note that here we use kernel density estimation with Gaussian kernels to
 obtain smoother results.
 
 This will generate a two-dimensional FES that you can visualize.
 
-\subsection masterclass-22-11-ex-1c Exercise 1c: Run another independent simulation
+\subsection masterclass-22-11-ex-3 Exercise 3: Run another independent simulation
 
 To check the results, it is a good practice to run another independent simulation
 using different initial conditions. You can achieve this here by changing the initial
@@ -347,18 +348,18 @@ check the convergence, and perform reweighting
 as before. Make sure that you do this in a new clean folder that is separate from the run
 in Exercise 1a.
 
-\subsection masterclass-22-11-ex-1c Exercise 2a: biasing with two collective variables
+\subsection masterclass-22-11-ex-4 Exercise 4: biasing with two collective variables
 
 We will now bias also the solvation CV. To achieve this, we need first to setup
 a separate basis set for the solvation CV, where again we use the symlets but
 with a different range from 2.0 to 8.0
 \plumedfile
-# Basisset
+# Basisset for coordination number
 BF_WAVELETS ...
   LABEL=bf2
   TYPE=SYMLETS
   ORDER=10
-  NUM_BF=20
+  NUM_BF=22
   MINIMUM=2.0
   MAXIMUM=8.0
   TAILS_THRESHOLD=0.01
@@ -383,7 +384,7 @@ Additionally, we have turned on the calculation of the one-dimensional project
 of the FES on the distance CV. This is useful to assess the convergence as this is
 easier in one-dimension. We can also compare the projection to the results from
 Exercise 1a. These changes should be sufficient to do the simulations using two CVs.
-You can see full input file in the Exercise-2a folder.
+You can see full input file in the Exercise-4 folder.
 
 Once you have performed this simulation, you should also try to reweight from
 this simulations. Furthermore, if you have time, you should also try to perform
@@ -394,10 +395,10 @@ another independent simulation.
 
 The following three exercises are optional, but they will show you how different
 parameters effect the results. You should base these exercises on the files from
-the Exercise-1a folder and make the necessary changes. Make sure that you run these
-simulations in separate folders and start from clean files from the Exercise-1a folder.
+the Exercise-1 folder and make the necessary changes. Make sure that you run these
+simulations in separate folders and start from clean files from the Exercise-1 folder.
 
-\subsection masterclass-22-11-ex-3a Optional exercise 3a: Play with the optimization parameters
+\subsection masterclass-22-11-ex-5 Optional exercise 5: Play with the optimization parameters
 
 The main parameter in the optimization algorithm is the step size and
 it is not always easy to choose this parameter. Luckily, the algorithm
@@ -409,7 +410,7 @@ system gets stuck in CV space and coefficients oscillate wildly. When the step s
 too small, the algorithm runs out of "steam" too fast and the simulation converges slowly.
 These two extreme cases should be avoided.
 
-\subsection masterclass-22-11-ex-3b Optional exercise 3b: Uniform target distribution
+\subsection masterclass-22-11-ex-6 Optional exercise 6: Uniform target distribution
 Perform a simulation using an uniform target distribution and see how this changes
 the results.
 
@@ -421,7 +422,7 @@ td: TD_UNIFORM
 and remove the TARGETDIST_STRIDE and TARGETDIST_OUTPUT keywords from the \ref OPT_AVERAGED_SGD
 action.
 
-\subsection masterclass-22-11-ex-3c Optional exercise 3c: uniform target distribution
+\subsection masterclass-22-11-ex-7 Optional exercise 7: uniform target distribution
 Perform a simulation using Legendre polynomials (\ref BF_LEGENDRE) polynomials instead of the
 wavelets and see how this will affect the result. As the Legendre polynomials are delocalized
 basis functions, this should lead to more fluctuations in the bias potential as has been observed
