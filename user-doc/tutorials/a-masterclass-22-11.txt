@@ -22,12 +22,7 @@ Use PLUMED to run and analyze
 
 \section masterclass-22-11-install Setting up PLUMED
 
-For this masterclass you will need versions of PLUMED (with the VES module enabled) and GROMACS that are compiled using the MPI library.
-In order to obtain the correct versions, please follow the instructions at [this link](https://github.com/plumed/masterclass-2022).
-
-\note All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6
-
-\section masterclass-22-11-resources Resources
+For this masterclass you will need versions of PLUMED (with the VES module enabled) and GROMACS that are compiled using the MPI library. All the exercises were tested with PLUMED version 2.8.0 and GROMACS 2020.6. In order to obtain the correct versions, please follow the instructions at [this link](https://github.com/plumed/masterclass-2022).
 
 The data needed to execute the exercises of this Masterclass can be found on [GitHub](https://github.com/valsson-group/masterclass-22-11).
 You can clone this repository locally on your machine using the following command:
@@ -228,7 +223,7 @@ OPT_AVERAGED_SGD ...
   LABEL=opt
   BIAS=ves
   STRIDE=500
-  STEPSIZE=1.0
+  STEPSIZE=10.0
   FES_OUTPUT=100
   BIAS_OUTPUT=500
   COEFFS_OUTPUT=10
@@ -311,7 +306,7 @@ weights: REWEIGHT_BIAS TEMP=300 ARG=ves.bias
 HISTOGRAM ...
   ARG=dist
   GRID_MIN=0.2
-  GRID_MAX=0.9
+  GRID_MAX=0.7
   GRID_BIN=60
   KERNEL=DISCRETE
   LOGWEIGHTS=weights
@@ -328,7 +323,7 @@ plumed driver --plumed plumed_reweight.dat --noatoms
 \endverbatim
 
 You should compare the resulting FES (the fes-reweight.dist.data file)
-to the results obtained directly from the bias potential in Exercise 1a.
+to the results obtained directly from the bias potential in Exercise 1.
 
 We can also obtained the FES for CVs that are not biased in the VES simulation.
 For example, we can obtain the two-dimensional FES for the distance and the
@@ -338,7 +333,7 @@ add the following to the plumed_reweight.dat file and repeat the PLUEMD driver r
 HISTOGRAM ...
   ARG=dist,coord
   GRID_MIN=0.2,2.5
-  GRID_MAX=0.9,7.5
+  GRID_MAX=0.7,7.5
   GRID_BIN=200,200
   BANDWIDTH=0.004,0.04
   LOGWEIGHTS=weights
@@ -363,7 +358,7 @@ StartingGeometry=NaCl_StartingStructure-2.gro
 and regenerating the GROMACS tpr file. Do this and rerun the simulation,
 check the convergence, and perform reweighting
 as before. Make sure that you do this in a new clean folder that is separate from the run
-in Exercise 1a.
+in Exercise 1.
 
 \section masterclass-22-11-ex-4 Exercise 4: biasing with two collective variables
 
@@ -377,8 +372,8 @@ BF_WAVELETS ...
   TYPE=SYMLETS
   ORDER=10
   NUM_BF=22
-  MINIMUM=2.0
-  MAXIMUM=8.0
+  MINIMUM=2.5
+  MAXIMUM=7.5
   TAILS_THRESHOLD=0.01
 ... BF_WAVELETS
 \endplumedfile
@@ -400,7 +395,7 @@ VES_LINEAR_EXPANSION ...
 Additionally, we have turned on the calculation of the one-dimensional project
 of the FES on the distance CV. This is useful to assess the convergence as this is
 easier in one-dimension. We can also compare the projection to the results from
-Exercise 1a. These changes should be sufficient to do the simulations using two CVs.
+Exercise 1. These changes should be sufficient to do the simulations using two CVs.
 You can see full input file in the Exercise-4 folder.
 
 Once you have performed this simulation, you should also try to reweight from
@@ -421,7 +416,7 @@ The main parameter in the optimization algorithm is the step size and
 it is not always easy to choose this parameter. Luckily, the algorithm
 is quite robust and will work for different step sizes.
 
-Run different simulations using step sizes 0.1 and 10.0 (and perhaps 0.01 if you can)
+Run different simulations using step sizes 1.0 and 100.0
 and try to rationalize the behavior. Normally, when the step size is too large, the
 system gets stuck in CV space and coefficients oscillate wildly. When the step size is
 too small, the algorithm runs out of "steam" too fast and the simulation converges slowly.
@@ -459,7 +454,7 @@ BF_LEGENDRE ...
 \section masterclass-22-11-comments Additional comments
 
 This should cover the basics of running VES simulations in PLUMED, but the following
-comments might be of interest to some. 
+comments might be of interest to some.
 
 \subsection masterclass-22-11-comments-restarting Restarting
 VES simulations can be easily restarted. The code will automatically output
