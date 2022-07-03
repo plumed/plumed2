@@ -256,7 +256,7 @@ The run might take around 15-20 minutes to run using two MPI processes. You can 
 
 At the end of simulation, you will get several files:
 - colvar.data: Colvar file
-- coeffs.data : Values of the coefficients \f$\boldsymbol\alpha \f$ and \f$\bar{\boldsymbol\alpha} \f$  .
+- coeffs.data : Values of the coefficients \f$\boldsymbol\alpha \f$ and \f$\bar{\boldsymbol\alpha} \f$ at different iterations.
 - bias.<bias-label>.iter-<iteration-number>.data : Bias potential at iteration <iteration-number>.
 - fes.<bias-name>.iter-<iteration-number>.data : FES at iteration <iteration-number>.
 - targetdistribution.<bias-name>.iter-<iteration-number>.data : Target distribution at iteration <iteration-number>.
@@ -271,6 +271,16 @@ You can also visualize the trajectory by opening it with VMD by using the comman
 vmd NaCl_StartingStructure-1.gro NaCl_VES_NPT-300K.pbc-whole.xtc
 \endverbatim
 The NaCl_VES_NPT-300K.pbc-whole.xtc is the trajectory file with the periodic boundary conditions made whole. This is done with the run.sh script.
+
+The coeffs.data file includes the values of coefficients \f$\boldsymbol\alpha \f$ and \f$\bar{\boldsymbol\alpha} \f$ at different iterations. To extract the time evolution of
+a given coefficient, you can use the ExtractCoeff.sh script, for example to extract
+coefficient 3:
+\verbatim
+ExtractCoeff.sh 3 > coeff.3.data
+\endverbatim
+This will create a file with the first column the iteration number, the second
+column the averaged coefficient \f$\bar{\boldsymbol\alpha} \f$, and the third column
+the instantaneous coefficients \f$\boldsymbol\alpha \f$. You can visualize this file.
 
 
 \section masterclass-22-11-ex-2 Exercise 2: Reweighting a VES simulation
