@@ -396,7 +396,7 @@ VES_LINEAR_EXPANSION ...
   PROJ_ARG2=coord
 ... VES_LINEAR_EXPANSION
 \endplumedfile
-Additionally, we have turned on the calculation of the one-dimensional project
+Additionally, we have turned on the calculation of the one-dimensional projection
 of the FES on the two CVs (we also need to set the keyword
 FES_PROJ_OUTPUT=100 in \ref OPT_AVERAGED_SGD). This is useful to assess the
 convergence as this is
