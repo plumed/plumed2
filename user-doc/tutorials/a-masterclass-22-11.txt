@@ -185,7 +185,7 @@ For the target distribution, we employ a well-tempered distribution with a bias 
 of 5.
 \plumedfile
 # Target distribution
-td: TD_WELLTEMPERED BIASFACTOR=5
+td: TD_WELLTEMPERED BIASFACTOR=10
 \endplumedfile
 
 Then we define the VES bias potential using the \ref VES_LINEAR_EXPANSION action
@@ -214,7 +214,7 @@ would need to sample all the CV space. The step size in the
 optimization has a strong connection with the height of typical barriers in
 the system. The larger the barriers, the larger the step size needed such that
 the bias can grow fast enough to overcome them. For this example we have
-chosen a stride of 500 steps (i.e., 1 ps) and a step size of 1.0 kJ/mol.
+chosen a stride of 500 steps (i.e., 1 ps) and a step size of 5.0 kJ/mol.
 We also need to choose how often we update the target distribution (given by the
 keyword TARGETDIST_STRIDE) and we do this every 100 bias potential updates
 (i.e., every 100 ps in the current case).
@@ -223,7 +223,7 @@ OPT_AVERAGED_SGD ...
   LABEL=opt
   BIAS=ves
   STRIDE=500
-  STEPSIZE=10.0
+  STEPSIZE=5.0
   FES_OUTPUT=100
   BIAS_OUTPUT=500
   COEFFS_OUTPUT=10
@@ -416,7 +416,7 @@ The main parameter in the optimization algorithm is the step size and
 it is not always easy to choose this parameter. Luckily, the algorithm
 is quite robust and will work for different step sizes.
 
-Run different simulations using step sizes 1.0 and 100.0
+Run different simulations using step sizes 0.5 and 50.0
 and try to rationalize the behavior. Normally, when the step size is too large, the
 system gets stuck in CV space and coefficients oscillate wildly. When the step size is
 too small, the algorithm runs out of "steam" too fast and the simulation converges slowly.
