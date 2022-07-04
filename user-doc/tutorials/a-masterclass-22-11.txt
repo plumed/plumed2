@@ -167,14 +167,14 @@ Every VES simulation has three key ingredients
 
 For the basis set, we will use the recently introduced [wavelet-based basis set](https://doi.org/10.1021/acs.jctc.2c00197) that are localized basis functions that have been shown to perform better than the previously used Chebyshev or Legendre polynomials. We will employ the least asymmetric variant of these wavelets or so-called symlets (as indicated by the TYPE=SYMLETS keyword). We will use an order 10 of the symlets or Sym10 (as indicated by the ORDER=10 keyword). Furthermore information about the wavelets can be found in the reference above.
 
-We need to select the range on which the bias potential is expanded. Here we will use the range from 0.2 nm to 0.7 nm (as indicated by the MINIMUM and MAXIMUM keywords). We also need to select the number of basis functions, and here we will use 22 basis functions (as indicated by the NUM_BF keyword). The PLUMED action corresponding to this setup is given by
+We need to select the range on which the bias potential is expanded. Here we will use the range from 0.2 nm to 0.7 nm (as indicated by the MINIMUM and MAXIMUM keywords). We also need to select the number of basis functions, and here we will use 26 basis functions (as indicated by the NUM_BF keyword). The PLUMED action corresponding to this setup is given by
 \plumedfile
 # Basisset for Na-Cl distance
 BF_WAVELETS ...
   LABEL=bf1
   TYPE=SYMLETS
   ORDER=10
-  NUM_BF=22
+  NUM_BF=26
   MINIMUM=0.2
   MAXIMUM=0.7
   TAILS_THRESHOLD=0.01
@@ -182,7 +182,7 @@ BF_WAVELETS ...
 \endplumedfile
 
 For the target distribution, we employ a well-tempered distribution with a bias factor
-of 5.
+of 10.
 \plumedfile
 # Target distribution
 td: TD_WELLTEMPERED BIASFACTOR=10
@@ -271,7 +271,7 @@ The coeffs.data file includes the values of coefficients \f$\boldsymbol\alpha \f
 a given coefficient, you can use the ExtractCoeff.sh script, for example to extract
 coefficient 3:
 \verbatim
-ExtractCoeff.sh 3 > coeff.3.data
+./ExtractCoeff.sh 3 > coeff.3.data
 \endverbatim
 This will create a file with the first column the iteration number, the second
 column the averaged coefficient \f$\bar{\boldsymbol\alpha} \f$, and the third column
