@@ -345,6 +345,9 @@ DUMPGRID GRID=fes_dist_coord FILE=fes-reweight.dist-coord.data FMT=%24.16e
 Note that here we use kernel density estimation with Gaussian kernels to
 obtain smoother results.
 
+You can also try to obtain the one-dimensional FES for the solvation CV by adjusting
+the input above.
+
 This will generate a two-dimensional FES that you can visualize.
 
 \section masterclass-22-11-ex-3 Exercise 3: Run another independent simulation
@@ -390,10 +393,13 @@ VES_LINEAR_EXPANSION ...
   OPTIMIZATION_THRESHOLD=0.000001
   TARGET_DISTRIBUTION=td
   PROJ_ARG1=dist
+  PROJ_ARG2=coord
 ... VES_LINEAR_EXPANSION
 \endplumedfile
 Additionally, we have turned on the calculation of the one-dimensional project
-of the FES on the distance CV. This is useful to assess the convergence as this is
+of the FES on the two CVs (we also need to set the keyword
+FES_PROJ_OUTPUT=100 in \ref OPT_AVERAGED_SGD). This is useful to assess the
+convergence as this is
 easier in one-dimension. We can also compare the projection to the results from
 Exercise 1. These changes should be sufficient to do the simulations using two CVs.
 You can see full input file in the Exercise-4 folder.
@@ -465,7 +471,7 @@ automatically detected by PLUMED and thus this keyword is not needed).
 
 \subsection masterclass-22-11-comments-multiplewalkers Multiple Walkers
 
-VES simulations supports the usage of multiple walkers where different copies of the system share the same bias potential (i.e. coefficients) and cooperatively sample the averages needed for the gradient and Hessian. This can significantly help with convergence in difficult cases. It is of course best to start the different copies from different positions in CV space. To activate this option you just need to add the MULTIPLE_WALKERS keyword to the \ref OPT_AVERAGED_SGD action. Note that this is only supported if the MD code support running multiple replicas connected via MPI.
+VES simulations supports the usage of multiple walkers where different copies of the system share the same bias potential (i.e. coefficients) and cooperatively sample the averages needed for the gradient and Hessian. This can significantly help with convergence in difficult cases. It is of course best to start the different copies from different positions in CV space. To activate this option you just need to add the MULTIPLE_WALKERS keyword to the \ref OPT_AVERAGED_SGD action. Note that this is only supported if the MD code support running multiple replicas connected via MPI (e.g., GROMACS or LAMMPS).
 
 
 
