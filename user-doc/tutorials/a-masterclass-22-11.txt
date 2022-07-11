@@ -440,8 +440,8 @@ td: TD_UNIFORM
 and remove the TARGETDIST_STRIDE and TARGETDIST_OUTPUT keywords from the \ref OPT_AVERAGED_SGD
 action.
 
-\section masterclass-22-11-ex-7 Optional exercise 7: uniform target distribution
-Perform a simulation using Legendre polynomials (\ref BF_LEGENDRE) polynomials instead of the
+\section masterclass-22-11-ex-7 Optional exercise 7: Legendre polynomials basis function 
+Perform a simulation using Legendre polynomials (\ref BF_LEGENDRE) basis functions instead of the
 wavelets and see how this will affect the result. As the Legendre polynomials are delocalized
 basis functions, this should lead to more fluctuations in the bias potential as has been observed
 in the [paper introducing the wavelets](https://doi.org/10.1021/acs.jctc.2c00197).
