@@ -415,7 +415,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     if (!reffile.empty()) {
       // Case with one reference environment
       environments.resize(1);
-      PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+      PDB pdb;
+      if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        error("missing input file " + reffile );
       unsigned natoms=pdb.getPositions().size(); environments[0].resize( natoms );
       for(unsigned i=0; i<natoms; ++i) environments[0][i]=pdb.getPositions()[i];
       max_dist=maxDistance(environments[0]);
@@ -425,7 +427,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       max_dist=0;
       for(unsigned int i=1;; i++) {
         if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
-        PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+        PDB pdb;
+        if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+          error("missing input file " + reffile );
         unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
         for(unsigned i=0; i<natoms; ++i) environment[i]=pdb.getPositions()[i];
         environments.push_back(environment);
