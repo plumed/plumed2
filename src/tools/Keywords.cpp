@@ -137,7 +137,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
   } else if( t=="numbered" ) {
-    fd = d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+    fd = d + ". You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
@@ -182,7 +182,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
   plumed_massert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel", "keyword " + k + " has already been registered");
   std::string fd;
   if( t=="numbered" ) {
-    fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+    fd=d + ". You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k, KeyType("optional")) );
   } else {

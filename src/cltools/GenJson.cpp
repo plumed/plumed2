@@ -116,8 +116,8 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
              std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1); 
         } 
         std::size_t dot=desc.find_first_of(".");
-        if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<"    \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\"}"<<std::endl;
-        else std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\"},"<<std::endl;
+        std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+        if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {
         std::cout<<"       \"output\" : {"<<std::endl;
