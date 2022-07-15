@@ -110,7 +110,7 @@ void BF_CubicBsplines::registerKeywords(Keywords& keys) {
 BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-  log.printf("  Gaussian basis functions, see and cite ");
+  log.printf("  Cubic B spline basis functions, see and cite ");
   log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
   setIntrinsicInterval(intervalMin(),intervalMax());
