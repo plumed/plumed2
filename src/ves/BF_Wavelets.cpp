@@ -40,7 +40,7 @@ Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
-This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis. See \cite ValssonPampel_Wavelets_2022 for full details. 
+This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis. See \cite ValssonPampel_Wavelets_2022 for full details.
 
 The basis set is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
 They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
