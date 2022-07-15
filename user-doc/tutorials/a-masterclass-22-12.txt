@@ -1,0 +1,49 @@
+/**
+\page masterclass-22-12 PLUMED Masterclass 22.12: Free energy calculations for crystalline solids with the environment similarity CV 
+
+\authors Pablo Piaggi
+\date July 18, 2022
+
+\section masterclass-22-12-aims Aims
+
+This Masterclass is an introduction to the use of the environment similarity CV available in PLUMED to the calculation of liquid-solid free energy differences (chemical potentials).
+
+\section masterclass-22-12-lo Objectives
+
+The objectives of this Masterclass are:
+- Learn to define reference environments for a crystal structure and choose appropriate parameters
+- Learn how to run simulations in which the bulk liquid and the bulk solid are reversibly interconverted
+- Learn how to run biased coexistence simulations (similar to interface pinning)
+- Understand the importance of finite size effects in these simulations
+- Understand the advantages and limitations of each method
+
+\section masterclass-22-12-install Setting up PLUMED
+
+We will use LAMMPS and PLUMED to perform the calculations.
+Conda packages with the software required for this class have been prepared and you can install them following the instructions in [this link](https://github.com/plumed/masterclass-2022).
+Make sure to install the conda package for LAMMPS.
+
+The environment similarity CV is a part of the crystallization module and you will need to enable this module if you are compiling PLUMED on your own.
+Also, LAMMPS has to be compiled with the following optional packages PLUMED, MANYBODY, EXTRA-DUMP, and EXTRA-FIX
+
+The data needed to run the exercises of this Masterclass can be found on [GitHub](https://github.com/PabloPiaggi/masterclass-22-12).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/PabloPiaggi/masterclass-22-12
+\endverbatim
+
+\section masterclass-22-12-theory Summary of theory
+
+\section masterclass-22-12-system The system
+
+\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate \f$\sigma\f$ values
+
+\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate \f$\sigma\f$ values
+
+
+*/
+
+link: @subpage masterclass-22-12
+
+description: This Masterclass explains how to perform free energy calculations for crystalline solids with the environment similarity CV
