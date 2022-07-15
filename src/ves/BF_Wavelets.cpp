@@ -28,6 +28,7 @@
 #include "WaveletGrid.h"
 #include "core/ActionRegister.h"
 #include "tools/Exception.h"
+#include "core/PlumedMain.h"
 
 
 namespace PLMD {
