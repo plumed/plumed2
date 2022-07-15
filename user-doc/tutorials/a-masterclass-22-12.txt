@@ -24,7 +24,7 @@ Conda packages with the software required for this class have been prepared and 
 Make sure to install the conda package for LAMMPS.
 
 The environment similarity CV is a part of the crystallization module and you will need to enable this module if you are compiling PLUMED on your own.
-Also, LAMMPS has to be compiled with the following optional packages PLUMED, MANYBODY, EXTRA-DUMP, and EXTRA-FIX
+Also, LAMMPS has to be compiled with the following optional packages PLUMED, MANYBODY, EXTRA-DUMP, and EXTRA-FIX.
 
 The data needed to run the exercises of this Masterclass can be found on [GitHub](https://github.com/PabloPiaggi/masterclass-22-12).
 You can clone this repository locally on your machine using the following command:
@@ -32,6 +32,11 @@ You can clone this repository locally on your machine using the following comman
 \verbatim
 git clone https://github.com/PabloPiaggi/masterclass-22-12
 \endverbatim
+
+\section masterclass-22-12-install Prerequisites
+
+We assume that the person that will follow this tutorial is familiar with the linux terminal, LAMMPS, and basic functionality of PLUMED.
+Knowledge of one enhanced sampling technique, such as metadynamics, is recommended.
 
 \section masterclass-22-12-theory Summary of theory
 
@@ -78,18 +83,94 @@ We consider the case of \f$M\f$ environments \f$X = \chi_1,\chi_2,...,\chi_M\f$ 
 \f]
 For a large enough \f$\lambda\f$ this expression will select the largest \f$\tilde{k}_{\chi_l}(\chi)\f$ with \f$\chi_l \in X\f$.
 
+\f$ \tilde{k}_X(\chi) \f$ is a per-atom quantity and we will have to compute global functions of these quantities, for instance, the mean or the number of atoms with at \f$ \tilde{k}_X(\chi) \f$ larger than some value.
+
 \section masterclass-22-12-system The system: Sodium as the alanine dipeptide of solids
 
 Alanine dipeptide is the prototypical system on which enhanced sampling methods are tested (and sometimes benchmarked) on.
 The reasons behind this choice is that alanine dipeptide is a small and relatively simple molecule that nonetheless captures well the phenomenon of conformational isomerism with relatively large free energy barriers.
 I argue that a similar system in the context of materials is sodium.
-It crystallizes in the bcc structure and it therefore does not show the competition between fcc and hcp structures typical of systems that crystallize in these two compact structures.
+It crystallizes in the bcc structure which is one of the simplest crystal structures.
+Also, it does not show the competition between fcc and hcp structures typical of systems that crystallize in these two compact structures.
 This fact greatly simplifies the task of characterizing the structure: all that we can see is liquid or bcc environments.
 We will use an embedded atom model (EAM) for sodium.
 
 \section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate \f$\sigma\f$ values
 
-\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate \f$\sigma\f$ values
+In the case of the bcc structure, the reference environment for the environment similarity CV can be chosen automatically using the following PLUMED input:
+
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-1024
+ CRYSTAL_STRUCTURE=BCC
+ LATTICE_CONSTANTS=0.423
+ SIGMA=0.07
+... ENVIRONMENTSIMILARITY
+
+\endplumedfile
+
+Here we have chosen the bcc crystal structure with a lattice constant of 0.423 nm which is appropriate for bcc sodium.
+This choice will automatically build an environment with 14 nearest neighbors.
+There are other structures for which environments can be built automatically, see the manual for further information \ref ENVIRONMENTSIMILARITY .
+Another option is to use CRYSTAL_STRUCTURE=CUSTOM and provide environments manually as PDB files using the REFERENCE keyword.
+In this case, I suggest using the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the appropriate environments for your structure.
+
+For the PLUMED input above we also have to determine the value for the SIGMA keyword.
+The first exercise of this class is to determine this value.
+Here is the rationale behind the choice.
+We are trying to determine a per-atom quantity that is able to distinguish liquid from solid environments.
+We should find a SIGMA such that the probability of mislabeling liquid atoms as solid, and viceversa, is minimized.
+This can be done by computing the probability of finding a given value of \f$ \tilde{k}_X(\chi) \f$ in the bulk solid and the bulk liquid.
+So, first things first, let's do a simulation of the bulk liquid and the bulk bcc solid!
+
+cd to the folder 1-distributions/bcc and run the command:
+\verbatim
+mpiexec lmp -in start.lmp > /dev/null &
+\endverbatim
+Then cd to the folder 1-distributions/liquid and run again the same command.
+These commands will run simulations of the bulk liquid and bulk solid at 1 bar and 375 K.
+I have chosen this temperature because it is close to coexistence for these phases.
+The files start.lmp are the LAMMPS input and they specify that we are doing a NPT simulations.
+The output of these runs are in the files log.lammps, dump.na, and out.dcd .
+log.lammps is a log file that also contains some thermodynamic ouput.
+dump.na is the trajectory is LAMMPS dump atom format.
+out.dcd is the trajectory in DCD format, which is useful to postprocess directly using PLUMED's driver, as we shall see.
+
+Once that these simulations have completed, we will compute the distributions of the environment similarity kernel using this input
+
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-1024
+ SIGMA=replace
+ CRYSTAL_STRUCTURE=BCC
+ LATTICE_CONSTANTS=0.423
+ LABEL=s
+ MEAN
+... ENVIRONMENTSIMILARITY
+
+hh: HISTOGRAM ...
+   DATA=s
+   GRID_MIN=-0.5
+   GRID_MAX=2
+   GRID_BIN=1000
+   BANDWIDTH=0.01
+...
+
+DUMPGRID GRID=hh FILE=histo
+\endplumedfile 
+
+Here, SIGMA=replace has to be replaced by an apprpriate value. 
+The action HISTOGRAM will compute the normalized histogram using all per-atom values of the kernel and the action DUMPGRID will write it to a file named histo.
+We have to compute these histograms for different values of SIGMA and this can be done with the script run.sh in the folder 1-distributions (execute the command ./run.sh > results.txt).
+This script will calculate the distributions and their overlaps for different SIGMA.
+The overlap \f$O(p,q)\f$ between two distributions \f$p(x)\f$ and \f$q(x)\f$ can be defined in a variety of ways. Here we use,
+\f[
+O(p,q) = \int dx \: min[p(x),q(x)]
+\f]
+
+The output of the script will have two columns, the sigma value used and the overlap between the liquid and solid distributions of the kernel for that sigma.
+The best choice of SIGMA will be the one that minimizes the overlap which in this case should be around 0.07 nm.
+Did you get that result? Great! Then, let's move to the next section.
 
 
 */
