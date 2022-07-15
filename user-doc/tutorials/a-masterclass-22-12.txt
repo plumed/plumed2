@@ -17,6 +17,12 @@ The objectives of this Masterclass are:
 - Understand the importance of finite size effects in these simulations
 - Understand the advantages and limitations of each method
 
+\section masterclass-22-12-prereq Prerequisites
+
+We assume that the person that will follow this tutorial is familiar with the linux terminal, LAMMPS, and basic functionality of PLUMED.
+Knowledge of one enhanced sampling technique, such as metadynamics, is recommended.
+Familiarity with at least one plotting software is required, for instance, gnuplot, xmgrace, or python with matplotlib.
+
 \section masterclass-22-12-install Setting up PLUMED
 
 We will use LAMMPS and PLUMED to perform the calculations.
@@ -32,11 +38,6 @@ You can clone this repository locally on your machine using the following comman
 \verbatim
 git clone https://github.com/PabloPiaggi/masterclass-22-12
 \endverbatim
-
-\section masterclass-22-12-install Prerequisites
-
-We assume that the person that will follow this tutorial is familiar with the linux terminal, LAMMPS, and basic functionality of PLUMED.
-Knowledge of one enhanced sampling technique, such as metadynamics, is recommended.
 
 \section masterclass-22-12-theory Summary of theory
 
@@ -133,7 +134,7 @@ I have chosen this temperature because it is close to coexistence for these phas
 The files start.lmp are the LAMMPS input and they specify that we are doing a NPT simulations.
 The output of these runs are in the files log.lammps, dump.na, and out.dcd .
 log.lammps is a log file that also contains some thermodynamic ouput.
-dump.na is the trajectory is LAMMPS dump atom format.
+dump.na is the trajectory is LAMMPS dump atom format and it is useful for visualization with [Ovito](https://www.ovito.org/).
 out.dcd is the trajectory in DCD format, which is useful to postprocess directly using PLUMED's driver, as we shall see.
 
 Once that these simulations have completed, we will compute the distributions of the environment similarity kernel using this input
@@ -169,8 +170,84 @@ O(p,q) = \int dx \: min[p(x),q(x)]
 \f]
 
 The output of the script will have two columns, the sigma value used and the overlap between the liquid and solid distributions of the kernel for that sigma.
+Plot sigma vs overlap.
 The best choice of SIGMA will be the one that minimizes the overlap which in this case should be around 0.07 nm.
-Did you get that result? Great! Then, let's move to the next section.
+Did you get that result? Great! Then, let's move to the next task.
+
+Now let's plot the distributions of the kernel in the liquid and in the solid.
+Plot simultaneously the histograms in ```1-distributions/liquid/histo-0.07``` and ```1-distributions/bcc/histo-0.07``` (column 1 vs column 2).
+How do the distributions look like? Do they have overlap? 
+Determine 1) the maximum for each distribution, and 2) the kernel value for which both distributions have equal values.
+We will need these values for the next exercise!
+
+\section masterclass-22-12-ex-2 Exercise 2: Bulk interconversion
+
+We now move to the first method to calculate chemical potentials, the bulk interconversion method.
+This method is based on simulating the reversible interconversion of the liquid to the solid and calculating the difference in chemical potential using:
+\f[
+\Delta\mu = -\frac{1}{\beta N} \ln \left ( Z_\beta / Z_\alpha \right)
+\f]
+with \f$Z_\alpha\f$ and \f$Z_\beta\f$ the partition functions restricted to each phase.
+These are computed with the formulae,
+\f[
+Z_\alpha = \int\limits_{-\infty}^{s^*} ds \int d\mathbf{R} e^{-\beta [U(\mathbf{R},V)+PV]} \delta (s-s(\mathbf{R},V))
+\f]
+\f[
+Z_\beta = \int\limits_{s^*}^{\infty} ds \int d\mathbf{R} e^{-\beta [U(\mathbf{R},V)+PV]} \delta (s-s(\mathbf{R},V))
+\f]
+assuming that the collective variable \f$ s \f$ can separate well the phases at threshold \f$ s^* \f$ .
+The ratio of the partition functions is easy to calculate if we have a simulation in which both phases are visited, as we shall see below.
+
+In a standard MD simulation we would only observe a single phase, and in order to see interconversion we need to apploy a bias potential.
+Here we will use \ref OPES to construct a bias potential (see the corresponding Masterclass \ref ) as a function of the environment similarity kernels.
+If you prefer to use \ref METAD or \ref VES , you can do so, adapting the input accordingly.
+Otherwise, you may want to have a look at the \ref masterclass-22-03.
+
+The environment similarity kernel, which are per-atom quantities, can be combined into a global quantity by evaluating how many have a value larger than some threshold.
+In file ```2-bulk-interconversion/250atoms/400K/plumed.dat``` we can see the input for a simulation with 250 atoms at 400 K,
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-250
+ SIGMA=0.07
+ CRYSTAL_STRUCTURE=BCC
+ LATTICE_CONSTANTS=0.423
+ LABEL=cv
+ MORE_THAN={CUBIC D_0=0.38 D_MAX=0.80}
+ MEAN
+... ENVIRONMENTSIMILARITY
+\endplumedfile
+Here you see that we are calculating the MEAN and the number of atoms that have a value of the kernel MORE_THAN something.
+Here, instead of having a strict threshold at some value we have a continuous and differentiable switching function that is 0 below 0.38, 1 above 0.80 and changes smoothly in between these values.
+The values for D_0 and D_MAX have been chosen based on the maxima of the distributions determined in the previous exercise. Did you get that right? I hope you did.
+
+The input for OPES is very simple,
+\plumedfile
+opes: OPES_METAD ARG=cv.morethan PACE=500 BARRIER=100 TEMP=400 STRIDE=2
+\endplumedfile
+and uses the morethan value described above as CV.
+We estimate a barrier of less than 100 kJ/mol and that's the rationale behind the choice of BARRIER.
+If you are using well tempered METAD you might want to use a biasfactor of around 40.
+The other keywords are fairly standard.
+
+We will also use a trick to avoid forming structures that have orientations different from the one that we are trying to form.
+This will discuss during the lecture and the PLUMED input is:
+```
+q6: Q6 SPECIES=1-250 SWITCH={CUBIC D_0=0.4 D_MAX=0.5} VMEAN
+diff: MATHEVAL ARG=q6.vmean,cv.mean FUNC=(x-0.0604)/(0.397-0.0604)-(y-0.387)/(0.756-0.387) PERIODIC=NO
+UPPER_WALLS ARG=diff AT=0.1 KAPPA=100000 EXP=2 LABEL=uwall STRIDE=2
+```
+In a nutshell we are limiting the increase of Q6 (rotationally invariant) not followed by an increase in ENVIRONMENTSIMILARITY (non rotationally invariant).
+
+The tasks for this exercise are to run a few simulations at different temperatures (say, 380 K, 400 K, 420K, or more if you have a computer cluster available).
+10 or 20 ns should suffice, but you may run them for longer if you are using a computer cluster.
+
+
+
+\section masterclass-22-12-ex-3 Exercise 3: Biased coexistence (interface pinning)
+
+\section masterclass-22-12-ex-4 Exercise 4: Thermodynamic integration along isobars
+
+\section masterclass-22-12-ex-4 Exercise 5 (optional): Custom environments
 
 
 */
