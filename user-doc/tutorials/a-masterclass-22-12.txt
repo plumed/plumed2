@@ -39,6 +39,8 @@ You can clone this repository locally on your machine using the following comman
 git clone https://github.com/PabloPiaggi/masterclass-22-12
 \endverbatim
 
+I suggest that you install the trajectory visualization software [Ovito](https://www.ovito.org/) before starting the tutorial.
+
 \section masterclass-22-12-theory Summary of theory
 
 We would like to define a per-atom quantity that tells us how similar the environments around atoms in the simulation box are to the environments found in some reference crystal structure.
@@ -94,9 +96,10 @@ I argue that a similar system in the context of materials is sodium.
 It crystallizes in the bcc structure which is one of the simplest crystal structures.
 Also, it does not show the competition between fcc and hcp structures typical of systems that crystallize in these two compact structures.
 This fact greatly simplifies the task of characterizing the structure: all that we can see is liquid or bcc environments.
-We will use an embedded atom model (EAM) for sodium.
+We will use an embedded atom model (EAM) for sodium that is described in [this paper](https://aip.scitation.org/doi/full/10.1063/1.4916741).
+The melting temperature is supposed to be 366 K. Let's see if we can reproduce that result.
 
-\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate \f$\sigma\f$ values
+\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate sigma values
 
 In the case of the bcc structure, the reference environment for the environment similarity CV can be chosen automatically using the following PLUMED input:
 
@@ -170,15 +173,17 @@ O(p,q) = \int dx \: min[p(x),q(x)]
 \f]
 
 The output of the script will have two columns, the sigma value used and the overlap between the liquid and solid distributions of the kernel for that sigma.
-Plot sigma vs overlap.
+Plot sigma vs overlap. 
+Nice results? Upload them to Slack!
 The best choice of SIGMA will be the one that minimizes the overlap which in this case should be around 0.07 nm.
 Did you get that result? Great! Then, let's move to the next task.
 
 Now let's plot the distributions of the kernel in the liquid and in the solid.
 Plot simultaneously the histograms in ```1-distributions/liquid/histo-0.07``` and ```1-distributions/bcc/histo-0.07``` (column 1 vs column 2).
-How do the distributions look like? Do they have overlap? 
+How do the distributions look like? Do they have overlap?
 Determine 1) the maximum for each distribution, and 2) the kernel value for which both distributions have equal values.
 We will need these values for the next exercise!
+Feel free to share these values and your plots on Slack as you get them.
 
 \section masterclass-22-12-ex-2 Exercise 2: Bulk interconversion
 
@@ -204,7 +209,7 @@ If you prefer to use \ref METAD or \ref VES , you can do so, adapting the input 
 Otherwise, you may want to have a look at the \ref masterclass-22-03.
 
 The environment similarity kernel, which are per-atom quantities, can be combined into a global quantity by evaluating how many have a value larger than some threshold.
-In file ```2-bulk-interconversion/250atoms/400K/plumed.dat``` we can see the input for a simulation with 250 atoms at 400 K,
+In file 2-bulk-interconversion/250atoms/400K/plumed.dat we can see the input for a simulation with 250 atoms at 400 K,
 \plumedfile
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-250
@@ -218,7 +223,7 @@ ENVIRONMENTSIMILARITY ...
 \endplumedfile
 Here you see that we are calculating the MEAN and the number of atoms that have a value of the kernel MORE_THAN something.
 Here, instead of having a strict threshold at some value we have a continuous and differentiable switching function that is 0 below 0.38, 1 above 0.80 and changes smoothly in between these values.
-The values for D_0 and D_MAX have been chosen based on the maxima of the distributions determined in the previous exercise. Did you get that right? I hope you did.
+The values for D_0 and D_MAX have been chosen based on the maxima of the distributions determined in the previous exercise. Did you get those values right? I hope you did.
 
 The input for OPES is very simple,
 \plumedfile
@@ -231,23 +236,77 @@ The other keywords are fairly standard.
 
 We will also use a trick to avoid forming structures that have orientations different from the one that we are trying to form.
 This will discuss during the lecture and the PLUMED input is:
-```
+\plumedfile
 q6: Q6 SPECIES=1-250 SWITCH={CUBIC D_0=0.4 D_MAX=0.5} VMEAN
 diff: MATHEVAL ARG=q6.vmean,cv.mean FUNC=(x-0.0604)/(0.397-0.0604)-(y-0.387)/(0.756-0.387) PERIODIC=NO
 UPPER_WALLS ARG=diff AT=0.1 KAPPA=100000 EXP=2 LABEL=uwall STRIDE=2
-```
-In a nutshell we are limiting the increase of Q6 (rotationally invariant) not followed by an increase in ENVIRONMENTSIMILARITY (non rotationally invariant).
+\endplumedfile
+In a nutshell, we are limiting the increase of Q6 (rotationally invariant) not followed by an increase in ENVIRONMENTSIMILARITY (non rotationally invariant).
 
-The tasks for this exercise are to run a few simulations at different temperatures (say, 380 K, 400 K, 420K, or more if you have a computer cluster available).
-10 or 20 ns should suffice, but you may run them for longer if you are using a computer cluster.
+The first task of this exercise is to run a few simulations at different temperatures (say, 380 K, 400 K, 420K, or more if you have a computer cluster available).
+In order to run the simulation you have to execute on the folder 2-bulk-interconversion/250atoms/400K the command:
+\verbatim
+mpiexec lmp -in start.lmp > /dev/null &
+\endverbatim
+10 or 20 ns of simulation should suffice, but you may run them for (much) longer if you are using a computer cluster.
+To run simulations at other temperatures copy the folder 400K, for example,
+\verbatim
+cp -r 400K 380K
+\endverbatim
+And edit the files plumed.dat and start.lmp to change the temperature from 400 K to 380 K.
+The lines where you should change the temperatures are highlighted!
+You can run as many simulations as you want to, but at least two are required.
+Each simulation should take about 2 hours to get ~10 ns running on ~8 cores.
+TIP: The simulations are easier at higher temperatures!
 
+Now that the simulations are running, let's start analyzing them.
+You don't have to wait until they finish to start with the analysis.
+The most useful output of these simulations is in the file COLVAR.
+For instance, the first column is the time, the third column is the environment similarity morethan value, and the fourth column is the OPES bias.
+Let's plot time vs environment similarity morethan (column 1 vs column 3).
+What is happenning during the simulation?
+Are there transitions between liquid and solid phases?
+I suggest that you also visualize the trajectory in file dump.na using Ovito.
+Try the modifiers Smooth Trajectory (with window size 5) and Polyhedral Template Matching.
+Is the bcc solid forming?
+Is it well aligned with the simulation box?
+It is also interesting to compute the free energy surface (FES).
+I provide a simple script fes.py to do this with python, numpy and matplotlib and you can run it using,
+\verbatim
+python fes.py
+\endverbatim
+This script is based in constructing a histogram with weights \f$e^{\beta V}\f$ with V the bias potential
+You can plot the FES at all the temperatures you have run simulations at.
+How does the FES look like?
+What do each basin represents?
+How do they change with temperature?
+Don't forget to upload your plots to Slack!
 
+Now let's move to the most important task of this section, the calculation of differences in chemical potentials.
+I prepared a basic python script that you can use to computed the difference in chemical potential between the liquid and the solid.
+You can find it in 2-bulk-interconversion/250atoms/chemical_potentials.py .
+You have to edit the highlighted lines to include more temperatures in the calculation and in the plot that it will generate.
+If you have at least two temperatures, it will fit a stright line and estimate the coexistence temperature from the condition that the chemical potential difference is zero at coexistence.
+Got nice results? I'll **buy a coffee** to the first person that uploads a plot of the chemical potentials vs temperature to Slack! Of course, I'll buy it next time we meet in person, if ever.
+Do the chemical potential differences depend linearly on the temperature?
+What melting temperature do you find?
+How does it compare with the reference value (366 K) that has been reported?
+
+If you have enough computer resources and time, I suggest to repeat the exercise with a larger system, for instance, with 1024 atoms.
+I prepared input files in the folder 2-bulk-interconversion/1024atoms/400K.
+Do you find the same chemical potentials and coexistence temperature?
 
 \section masterclass-22-12-ex-3 Exercise 3: Biased coexistence (interface pinning)
 
+In this section we will use a different method to calculate the difference in chemical potential between the liquid and the solid.
+I call it **biased coexistence** and it is a generalization of the [interface pinning](https://aip.scitation.org/doi/full/10.1063/1.4818747) method.
+The idea of the method is to simulate the liquid and the solid (or any pair of phases) in direct coexistence.
+Then, we add a bias potential such that we sample reversibly the growth and melting of a portion of the system, for instance, one layer of the solid.
+
+
 \section masterclass-22-12-ex-4 Exercise 4: Thermodynamic integration along isobars
 
-\section masterclass-22-12-ex-4 Exercise 5 (optional): Custom environments
+\section masterclass-22-12-ex-5 Exercise 5 (optional): Custom environments
 
 
 */
