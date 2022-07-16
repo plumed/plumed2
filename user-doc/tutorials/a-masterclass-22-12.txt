@@ -21,7 +21,7 @@ The objectives of this Masterclass are:
 
 \section masterclass-22-12-prereq Prerequisites
 
-We assume that the person that will follow this tutorial is familiar with the linux terminal, LAMMPS, and basic functionality of PLUMED.
+We assume that the person that will follow this tutorial is familiar with the Linux terminal, LAMMPS, and basic functionality of PLUMED.
 Knowledge of one enhanced sampling technique, such as metadynamics, is recommended.
 Familiarity with at least one plotting software is required, for instance, gnuplot, xmgrace, or python with matplotlib.
 
@@ -101,7 +101,7 @@ This fact greatly simplifies the task of characterizing the structure: all that 
 We will use an embedded atom model (EAM) for sodium that is described in [this paper](https://aip.scitation.org/doi/full/10.1063/1.4916741).
 The melting temperature is supposed to be 366 K. Let's see if we can reproduce that result.
 
-\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and apropriate sigma values
+\section masterclass-22-12-ex-1 Exercise 1: Choosing reference environments and appropriate sigma values
 
 In the case of the bcc structure, the reference environment for the environment similarity CV can be chosen automatically using the following PLUMED input:
 
@@ -125,7 +125,7 @@ In the PLUMED input above, we also have to determine the value for the SIGMA key
 The first exercise of this class is to determine this value.
 Here is the rationale behind the choice.
 We are trying to determine a per-atom quantity that is able to distinguish liquid from solid environments.
-We should find a SIGMA such that the probability of mislabeling liquid atoms as solid, and viceversa, is minimized.
+We should find a SIGMA such that the probability of mislabeling liquid atoms as solid, and vice versa, is minimized.
 This can be done by computing the probability of finding a given value of \f$ \tilde{k}_X(\chi) \f$ in the bulk solid and the bulk liquid.
 So, first things first, let's do a simulation of the bulk liquid and the bulk bcc solid!
 
@@ -142,9 +142,9 @@ These commands will run simulations of the bulk liquid and bulk solid at 1 bar a
 I have chosen this temperature because it is close to coexistence for these phases.
 The files start.lmp are the LAMMPS input and they specify that we are doing NPT simulations.
 The output of these runs are in the files log.lammps, dump.na, and out.dcd .
-log.lammps is a log file that also contains some thermodynamic ouput.
+log.lammps is a log file that also contains some thermodynamic output.
 dump.na is the trajectory in LAMMPS dump atom format and it is useful for visualization with [Ovito](https://www.ovito.org/).
-out.dcd is the trajectory in DCD format, which is useful to postprocess directly using PLUMED's driver, as we shall see.
+out.dcd is the trajectory in DCD format, which is useful to post-process directly using PLUMED's driver, as we shall see.
 
 Once that these simulations have completed, we will compute the distributions of the environment similarity kernel using this input
 
@@ -169,10 +169,10 @@ hh: HISTOGRAM ...
 DUMPGRID GRID=hh FILE=histo
 \endplumedfile 
 
-Here, SIGMA=replace has to be replaced by an apprpriate value. 
+Here, SIGMA=replace has to be replaced by an appropriate value. 
 The action HISTOGRAM will compute the normalized histogram using all per-atom values of the kernel and the action DUMPGRID will write it to a file named histo.
 We have to compute these histograms for different values of SIGMA and this can be done with the script run.sh in the folder 1-distributions (execute the command ./run.sh > results.txt).
-This script will use the PLUMED driver and the DCD trajcetory files to calculate the distributions of the environment similarity kernel.
+This script will use the PLUMED driver and the DCD trajectory files to calculate the distributions of the environment similarity kernel.
 Here's the command we are using inside run.sh to do this,
 \verbatim
 mpiexec plumed driver --plumed plumed.dat --mf_dcd out.dcd > plumed.out
@@ -274,7 +274,7 @@ You don't have to wait until they finish to start with the analysis.
 The most useful output of these simulations is in the file COLVAR.
 For instance, the first column is the time, the third column is the environment similarity morethan value, and the fourth column is the OPES bias.
 Let's plot time vs environment similarity morethan (column 1 vs column 3).
-What is happenning during the simulation?
+What is happening during the simulation?
 Are there transitions between liquid and solid phases?
 I suggest that you also visualize the trajectory in file dump.na using Ovito.
 Try the modifiers Smooth Trajectory (with window size 5) and Polyhedral Template Matching.
@@ -362,14 +362,14 @@ How does it look like? What is happening to the system under the action of the O
 You can visualize the trajectory dump.na using Ovito.
 Now we shall calculate the chemical potential from the slope of the FES with respect to the number of solid-like atoms.
 In order to do this, we will use the script chemical_potential_bc.py found on folder 3-biased-coexistence/2048atoms.
-This script will compute the FES, fit a stright line to get the slope (chemical potentials), plot the chemical potentials vs temperature, and get the coexistence temperature.
+This script will compute the FES, fit a straight line to get the slope (chemical potentials), plot the chemical potentials vs temperature, and get the coexistence temperature.
 Depending on how many temperatures you have performed, go into the script and add more temperatures.
 The line that you need to change has been highlighted.
 The FES is computed from the histogram with weights \f$e^{\beta V}\f$ where V is the bias potential.
 Are the FES linear with the number of solid-like atoms?
 What melting temperature did you find?
 
-Note that we are computing a "strict" morethan value for the environment similarity kernel that we use for postprocessing.
+Note that we are computing a "strict" morethan value for the environment similarity kernel that we use for post-processing.
 This definition can't be used for biasing but it is a better way to count solid-like atoms and we use it to construct the FES.
 The definition of the "strict" version is,
 \plumedfile
