@@ -127,7 +127,11 @@ We should find a SIGMA such that the probability of mislabeling liquid atoms as 
 This can be done by computing the probability of finding a given value of \f$ \tilde{k}_X(\chi) \f$ in the bulk solid and the bulk liquid.
 So, first things first, let's do a simulation of the bulk liquid and the bulk bcc solid!
 
-cd to the folder 1-distributions/bcc and run the command:
+First of all, if you are using the conda environment for the masterclass, activate it now,
+\verbatim
+conda activate plumed-masterclass-2022
+\endverbatim
+Now, cd to the folder 1-distributions/bcc and run the command:
 \verbatim
 mpiexec lmp -in start.lmp > /dev/null &
 \endverbatim
@@ -275,7 +279,11 @@ I provide a simple script fes.py to do this with python, numpy and matplotlib an
 \verbatim
 python fes.py
 \endverbatim
-This script is based in constructing a histogram with weights \f$e^{\beta V}\f$ with V the bias potential
+This script is based in constructing a histogram \f$h(s)\f$ with weights \f$e^{\beta V}\f$ where V the bias potential.
+The FES is then obtained using,
+\f[
+G(s) = -\frac{1}{\beta}\ln h(s) .
+\f]
 You can plot the FES at all the temperatures you have run simulations at.
 How does the FES look like?
 What do each basin represents?
@@ -295,14 +303,79 @@ How does it compare with the reference value (366 K) that has been reported?
 If you have enough computer resources and time, I suggest to repeat the exercise with a larger system, for instance, with 1024 atoms.
 I prepared input files in the folder 2-bulk-interconversion/1024atoms/400K.
 Do you find the same chemical potentials and coexistence temperature?
+Remember that the difference in chemical potential and coexistence temperature depend linearly on 1/N with N the system size.
+You can use this fact to extrapolate to the thermodynamic limit.
+Did you get a better coexistence temperature now?
+Which system sizes are big enough to make an error of about 1 K in the coexistence temperature?
 
-\section masterclass-22-12-ex-3 Exercise 3: Biased coexistence (interface pinning)
+\section masterclass-22-12-ex-3 Exercise 3: Biased coexistence
 
 In this section we will use a different method to calculate the difference in chemical potential between the liquid and the solid.
 I call it **biased coexistence** and it is a generalization of the [interface pinning](https://aip.scitation.org/doi/full/10.1063/1.4818747) method.
 The idea of the method is to simulate the liquid and the solid (or any pair of phases) in direct coexistence.
 Then, we add a bias potential such that we sample reversibly the growth and melting of a portion of the system, for instance, one layer of the solid.
+From this simulation we can compute the free energy as a function of the number of solid-like atoms in the system \f$G(N)\f$.
+This quantity is connected to the chemical potential in the following way,
+\f[
+G(N) \approx \Delta\mu \: N + const
+\f]
+This equation is an approximation and rests on several assumptions, yet it tells us that the chemical potential is the slope of the FES with respect to N.
 
+The files to perform a biased coexistence simulation with 2048 atoms can be found in the folder 3-biased-coexistence/2048atoms/400K.
+The LAMMPS input script start.lmp will do a lot of things automatically for us:
+- Create a bcc crystal and equilibrate it in NPT
+- Determine the equilibrium box dimensions and fix the lengths in x and y to their equilibrium value at the simulated temperature
+- Replicate the crystal along the z axis and melt half of the crystal in the box
+- Equilibrate the liquid-solid surface under the constraint of having around half the atoms with solid-like environments in the NP_zT ensemble
+- Production run with a bias potential in the NP_zT ensemble
+
+The equilibration under a constraint is done using the following PLUMED input found on plumed.equil.dat,
+\plumedfile
+uwall: UPPER_WALLS ARG=cv.morethan AT=1152. KAPPA=0.1 EXP=2 STRIDE=2
+lwall: LOWER_WALLS ARG=cv.morethan AT=896. KAPPA=0.1 EXP=2 STRIDE=2
+\endplumedfile
+And in the production run the bias is defined in file plumed.dat and is,
+\plumedfile
+opes: OPES_METAD ARG=cv.morethan PACE=500 BARRIER=100 TEMP=400 STRIDE=2
+
+uwall: UPPER_WALLS ARG=cv.morethan AT=1152. KAPPA=0.1 EXP=2 STRIDE=2
+lwall: LOWER_WALLS ARG=cv.morethan AT=896. KAPPA=0.1 EXP=2 STRIDE=2
+\endplumedfile
+
+Run the simulation at 400 K using the command,
+\verbatim
+mpiexec lmp -in start.lmp > /dev/null &
+\endverbatim
+I estimate that you need at least 3 ns of simulation to see reasonable results and this should take a couple of hours on ~8 cores.
+If you are running on a computer cluster, run it for longer.
+I suggest that you repeat the simulations at different temperatures, for instance, 360 K, 380 K, and 400 K, and you may do more temperatures if you have the computational resources.
+The lines of the input scripts plumed.dat and start.lmp where the temperature has to be changed are clearly highlighted.
+
+Let's see the progress of our simulation by plotting time vs environment similarity morethan (column 1 vs 3) on the COLVAR file.
+How does it look like? What is happening to the system under the action of the OPES bias and the walls?
+You can visualize the trajectory dump.na using Ovito.
+Now we shall calculate the chemical potential from the slope of the FES with respect to the number of solid-like atoms.
+In order to do this, we will use the script chemical_potential_bc.py found on folder 3-biased-coexistence/2048atoms.
+This script will compute the FES, fit a stright line to get the slope (chemical potentials), plot the chemical potentials vs temperature, and get the coexistence temperature.
+Depending on how many temperatures you have performed, go into the script and add more temperatures.
+The line that you need to change has been highlighted.
+The FES is computed from the histogram with weights \f$e^{\beta V}\f$ where V the bias potential.
+Are the FES linear with the number of solid-like atoms?
+What melting temperature did you find?
+
+Note that we are computing a "strict" morethan value for the environment similarity kernel that we use for postprocessing.
+This definition can't be used for biasing but it is a better way to count solid-like atoms and we use it to construct the FES.
+The definition of the "strict" version is,
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-2048
+ SIGMA=0.07
+ CRYSTAL_STRUCTURE=BCC
+ LATTICE_CONSTANTS=0.423
+ MORE_THAN={CUBIC D_0=0.5525 D_MAX=0.55251}
+... ENVIRONMENTSIMILARITY
+\endplumedfile
+and is in column 13 of the COLVAR file.
 
 \section masterclass-22-12-ex-4 Exercise 4: Thermodynamic integration along isobars
 
