@@ -28,6 +28,7 @@
 #include "WaveletGrid.h"
 #include "core/ActionRegister.h"
 #include "tools/Exception.h"
+#include "core/PlumedMain.h"
 
 
 namespace PLMD {
@@ -40,8 +41,9 @@ Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
-This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis.
-It is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
+This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis. See \cite ValssonPampel_Wavelets_2022 for full details.
+
+The basis set is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
 They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
 
 \f{align*}{
@@ -236,6 +238,8 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   waveletGrid_(nullptr),
   scale_(0.0)
 {
+  log.printf("  Wavelet basis functions, see and cite ");
+  log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
   // parse properties for waveletGrid and set it up
   bool use_mother_wavelet;

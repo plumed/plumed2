@@ -23,6 +23,7 @@
 #include "BasisFunctions.h"
 
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace ves {
@@ -35,7 +36,8 @@ Gaussian basis functions.
 __These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do form orthogonal bases__.
 
 Basis functions given by Gaussian distributions with shifted centers defined on a
-bounded interval.
+bounded interval. See \cite ValssonPampel_Wavelets_2022 for full details.
+
 You need to provide the interval \f$[a,b]\f$ on which the bias is to be
 expanded.
 The ORDER keyword of the basis set \f$N\f$ determines the number of equally sized
@@ -122,6 +124,9 @@ void BF_Gaussians::registerKeywords(Keywords& keys) {
 BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
+  log.printf("  Gaussian basis functions, see and cite ");
+  log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
+
   setIntrinsicInterval(intervalMin(),intervalMax());
 
   double width = (intervalMax()-intervalMin()) / getOrder();
