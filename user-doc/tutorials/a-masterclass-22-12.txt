@@ -12,10 +12,12 @@ This Masterclass is an introduction to the use of the environment similarity CV 
 
 The objectives of this Masterclass are:
 - Learn to define reference environments for a crystal structure and choose appropriate parameters
-- Learn how to run simulations in which the bulk liquid and the bulk solid are reversibly interconverted
-- Learn how to run biased coexistence simulations (similar to interface pinning)
-- Understand the importance of finite size effects in these simulations
+- Learn how to run **bulk interconversion** simulations in which the bulk liquid and the bulk solid are reversibly interconverted
+- Learn how to run **biased coexistence** simulations (similar to interface pinning)
+- Learn how to perform **thermodynamic integration** along isobars
+- Understand the importance of finite size effects
 - Understand the advantages and limitations of each method
+- Understand how these methods complement each other
 
 \section masterclass-22-12-prereq Prerequisites
 
