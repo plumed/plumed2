@@ -1,5 +1,5 @@
 /**
-\page masterclass-22-12 PLUMED Masterclass 22.12: Free energy calculations for crystalline solids with the environment similarity CV 
+\page masterclass-22-12 PLUMED Masterclass 22.12: Liquid-solid chemical potential differences with the environment similarity CV 
 
 \authors Pablo Piaggi
 \date July 18, 2022
@@ -45,8 +45,8 @@ I suggest that you install the trajectory visualization software [Ovito](https:/
 
 We would like to define a per-atom quantity that tells us how similar the environments around atoms in the simulation box are to the environments found in some reference crystal structure.
 Crystal structures are usually defined by a Bravais lattice with an associated basis of atoms.
-An important consideration, that follows from the symmetry properties of lattices, is that the number of distint environments that exist in a crystal structure is equal to the number of atoms in the basis \f$M\f$.
-To judge if a given environment is compatible with a given crystal structures, we will have to compare it against \f$M\f$ reference environments.
+An important consideration, that follows from the symmetry properties of lattices, is that the number of distinct environments that exist in a crystal structure is equal to the number of atoms in the basis \f$M\f$.
+To judge if an environment is compatible with a given crystal structure, we will have to compare it against \f$M\f$ reference environments.
 
 The environment similarity kernel is a way to quantify the similarity between environments.
 This idea was introduced in this article \cite Piaggi-JCP-2019 and is based on the [SOAP descriptors](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.87.184115) of Bartok et al.
@@ -115,11 +115,11 @@ ENVIRONMENTSIMILARITY ...
 
 Here we have chosen the bcc crystal structure with a lattice constant of 0.423 nm which is appropriate for bcc sodium.
 This choice will automatically build an environment with 14 nearest neighbors.
-There are other structures for which environments can be built automatically, see the manual for further information \ref ENVIRONMENTSIMILARITY .
+There are other structures for which environments can be built automatically, see the manual page of \ref ENVIRONMENTSIMILARITY for further information.
 Another option is to use CRYSTAL_STRUCTURE=CUSTOM and provide environments manually as PDB files using the REFERENCE keyword.
 In this case, I suggest using the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the appropriate environments for your structure.
 
-For the PLUMED input above we also have to determine the value for the SIGMA keyword.
+In the PLUMED input above, we also have to determine the value for the SIGMA keyword.
 The first exercise of this class is to determine this value.
 Here is the rationale behind the choice.
 We are trying to determine a per-atom quantity that is able to distinguish liquid from solid environments.
@@ -127,7 +127,7 @@ We should find a SIGMA such that the probability of mislabeling liquid atoms as 
 This can be done by computing the probability of finding a given value of \f$ \tilde{k}_X(\chi) \f$ in the bulk solid and the bulk liquid.
 So, first things first, let's do a simulation of the bulk liquid and the bulk bcc solid!
 
-First of all, if you are using the conda environment for the masterclass, activate it now,
+If you are using the conda environment for the masterclass, activate it now,
 \verbatim
 conda activate plumed-masterclass-2022
 \endverbatim
@@ -138,10 +138,10 @@ mpiexec lmp -in start.lmp > /dev/null &
 Then cd to the folder 1-distributions/liquid and run again the same command.
 These commands will run simulations of the bulk liquid and bulk solid at 1 bar and 375 K.
 I have chosen this temperature because it is close to coexistence for these phases.
-The files start.lmp are the LAMMPS input and they specify that we are doing a NPT simulations.
+The files start.lmp are the LAMMPS input and they specify that we are doing NPT simulations.
 The output of these runs are in the files log.lammps, dump.na, and out.dcd .
 log.lammps is a log file that also contains some thermodynamic ouput.
-dump.na is the trajectory is LAMMPS dump atom format and it is useful for visualization with [Ovito](https://www.ovito.org/).
+dump.na is the trajectory in LAMMPS dump atom format and it is useful for visualization with [Ovito](https://www.ovito.org/).
 out.dcd is the trajectory in DCD format, which is useful to postprocess directly using PLUMED's driver, as we shall see.
 
 Once that these simulations have completed, we will compute the distributions of the environment similarity kernel using this input
@@ -170,12 +170,17 @@ DUMPGRID GRID=hh FILE=histo
 Here, SIGMA=replace has to be replaced by an apprpriate value. 
 The action HISTOGRAM will compute the normalized histogram using all per-atom values of the kernel and the action DUMPGRID will write it to a file named histo.
 We have to compute these histograms for different values of SIGMA and this can be done with the script run.sh in the folder 1-distributions (execute the command ./run.sh > results.txt).
-This script will calculate the distributions and their overlaps for different SIGMA.
+This script will use the PLUMED driver and the DCD trajcetory files to calculate the distributions of the environment similarity kernel.
+Here's the command we are using inside run.sh to do this,
+\verbatim
+mpiexec plumed driver --plumed plumed.dat --mf_dcd out.dcd > plumed.out
+\endverbatim
+but you don't need to execute this yourself because it is done in the script run.sh.
+The script run.sh will also compute the overlap between the liquid and bcc distributions for different SIGMA.
 The overlap \f$O(p,q)\f$ between two distributions \f$p(x)\f$ and \f$q(x)\f$ can be defined in a variety of ways. Here we use,
 \f[
 O(p,q) = \int dx \: min[p(x),q(x)]
 \f]
-
 The output of the script will have two columns, the sigma value used and the overlap between the liquid and solid distributions of the kernel for that sigma.
 Plot sigma vs overlap. 
 Nice results? Upload them to Slack!
@@ -207,7 +212,7 @@ Z_\beta = \int\limits_{s^*}^{\infty} ds \int d\mathbf{R} e^{-\beta [U(\mathbf{R}
 assuming that the collective variable \f$ s \f$ can separate well the phases at threshold \f$ s^* \f$ .
 The ratio of the partition functions is easy to calculate if we have a simulation in which both phases are visited, as we shall see below.
 
-In a standard MD simulation we would only observe a single phase, and in order to see interconversion we need to apploy a bias potential.
+In a standard MD simulation we would only observe a single phase, and in order to see interconversion we need to apply a bias potential.
 Here we will use \ref OPES to construct a bias potential (see the corresponding Masterclass \ref ) as a function of the environment similarity kernels.
 If you prefer to use \ref METAD or \ref VES , you can do so, adapting the input accordingly.
 Otherwise, you may want to have a look at the \ref masterclass-22-03.
@@ -226,7 +231,7 @@ ENVIRONMENTSIMILARITY ...
 ... ENVIRONMENTSIMILARITY
 \endplumedfile
 Here you see that we are calculating the MEAN and the number of atoms that have a value of the kernel MORE_THAN something.
-Here, instead of having a strict threshold at some value we have a continuous and differentiable switching function that is 0 below 0.38, 1 above 0.80 and changes smoothly in between these values.
+Here, instead of having a strict threshold at some value, we have a continuous and differentiable switching function that is 0 below 0.38, 1 above 0.80, and changes smoothly from 0 to 1 between these values.
 The values for D_0 and D_MAX have been chosen based on the maxima of the distributions determined in the previous exercise. Did you get those values right? I hope you did.
 
 The input for OPES is very simple,
@@ -239,7 +244,7 @@ If you are using well tempered METAD you might want to use a biasfactor of aroun
 The other keywords are fairly standard.
 
 We will also use a trick to avoid forming structures that have orientations different from the one that we are trying to form.
-This will discuss during the lecture and the PLUMED input is:
+This will be discussed during the lecture and the PLUMED input is:
 \plumedfile
 q6: Q6 SPECIES=1-250 SWITCH={CUBIC D_0=0.4 D_MAX=0.5} VMEAN
 diff: MATHEVAL ARG=q6.vmean,cv.mean FUNC=(x-0.0604)/(0.397-0.0604)-(y-0.387)/(0.756-0.387) PERIODIC=NO
@@ -253,15 +258,14 @@ In order to run the simulation you have to execute on the folder 2-bulk-intercon
 mpiexec lmp -in start.lmp > /dev/null &
 \endverbatim
 10 or 20 ns of simulation should suffice, but you may run them for (much) longer if you are using a computer cluster.
-To run simulations at other temperatures copy the folder 400K, for example,
+To run simulations at other temperatures, copy the folder 400K, for example,
 \verbatim
 cp -r 400K 380K
 \endverbatim
 And edit the files plumed.dat and start.lmp to change the temperature from 400 K to 380 K.
 The lines where you should change the temperatures are highlighted!
 You can run as many simulations as you want to, but at least two are required.
-Each simulation should take about 2 hours to get ~10 ns running on ~8 cores.
-TIP: The simulations are easier at higher temperatures!
+Each simulation should take about 2 hours to get ~10 ns if you are running on ~8 cores.
 
 Now that the simulations are running, let's start analyzing them.
 You don't have to wait until they finish to start with the analysis.
@@ -286,7 +290,7 @@ G(s) = -\frac{1}{\beta}\ln h(s) .
 \f]
 You can plot the FES at all the temperatures you have run simulations at.
 How does the FES look like?
-What do each basin represents?
+What does each basin represent?
 How do they change with temperature?
 Don't forget to upload your plots to Slack!
 
@@ -294,13 +298,13 @@ Now let's move to the most important task of this section, the calculation of di
 I prepared a basic python script that you can use to computed the difference in chemical potential between the liquid and the solid.
 You can find it in 2-bulk-interconversion/250atoms/chemical_potentials.py .
 You have to edit the highlighted lines to include more temperatures in the calculation and in the plot that it will generate.
-If you have at least two temperatures, it will fit a stright line and estimate the coexistence temperature from the condition that the chemical potential difference is zero at coexistence.
+If you have at least two temperatures, it will fit a straight line and estimate the coexistence temperature from the condition that the chemical potential difference is zero at coexistence.
 Got nice results? I'll **buy a coffee** to the first person that uploads a plot of the chemical potentials vs temperature to Slack! Of course, I'll buy it next time we meet in person, if ever.
 Do the chemical potential differences depend linearly on the temperature?
 What melting temperature do you find?
 How does it compare with the reference value (366 K) that has been reported?
 
-If you have enough computer resources and time, I suggest to repeat the exercise with a larger system, for instance, with 1024 atoms.
+If you have enough computer resources and time, I suggest that you repeat the exercise with a larger system, for instance, with 1024 atoms.
 I prepared input files in the folder 2-bulk-interconversion/1024atoms/400K.
 Do you find the same chemical potentials and coexistence temperature?
 Remember that the difference in chemical potential and coexistence temperature depend linearly on 1/N with N the system size.
@@ -334,7 +338,7 @@ The equilibration under a constraint is done using the following PLUMED input fo
 uwall: UPPER_WALLS ARG=cv.morethan AT=1152. KAPPA=0.1 EXP=2 STRIDE=2
 lwall: LOWER_WALLS ARG=cv.morethan AT=896. KAPPA=0.1 EXP=2 STRIDE=2
 \endplumedfile
-And in the production run the bias is defined in file plumed.dat and is,
+And in the production run, the bias is defined in file plumed.dat and is,
 \plumedfile
 opes: OPES_METAD ARG=cv.morethan PACE=500 BARRIER=100 TEMP=400 STRIDE=2
 
@@ -359,7 +363,7 @@ In order to do this, we will use the script chemical_potential_bc.py found on fo
 This script will compute the FES, fit a stright line to get the slope (chemical potentials), plot the chemical potentials vs temperature, and get the coexistence temperature.
 Depending on how many temperatures you have performed, go into the script and add more temperatures.
 The line that you need to change has been highlighted.
-The FES is computed from the histogram with weights \f$e^{\beta V}\f$ where V the bias potential.
+The FES is computed from the histogram with weights \f$e^{\beta V}\f$ where V is the bias potential.
 Are the FES linear with the number of solid-like atoms?
 What melting temperature did you find?
 
@@ -377,13 +381,48 @@ ENVIRONMENTSIMILARITY ...
 \endplumedfile
 and is in column 13 of the COLVAR file.
 
+Discuss the advantages and disadvantages of the two methods presented above.
+Which one did you like best? Why?
+
 \section masterclass-22-12-ex-4 Exercise 4: Thermodynamic integration along isobars
 
-\section masterclass-22-12-ex-5 Exercise 5 (optional): Custom environments
+Perhaps the simplest method to compute chemical potential differences is thermodynamic integration.
+Here we will discuss the version of the method in which the integration is performed along isobars.
+It is very cheap and easy.
+What's the catch?
+You have to know the chemical potential difference for some thermodynamic condition in order to use it.
+It is therefore a perfect complement for the methods described above.
+PLUMED is not required for this exercise, but we will use the results obtained here to validate the methods described above.
 
+The method relies on the following thermodynamic identity,
+\f[
+\frac{\Delta\mu(T,P)}{T} = \frac{\Delta\mu(T_0,P)}{T_0} - \int\limits_{T_0}^T \frac{\Delta h(T',P)}{T'^2} dT' 
+\f]
+where \f$T_0\f$ is the reference temperature at which \f$\Delta\mu\f$ is known, and \f$\Delta h\f$ is the per-atom enthalpy difference.
+If  \f$T_0\f$ is the coexistence temperature, the first term on the RHS vanishes.
+
+In order to use this method, we shall compute the enthalpy for the liquid and the solid at several temperatures and pressures.
+Example scripts are given in folders 4-thermodynamic-integration/liquid and 4-thermodynamic-integration/bcc .
+You can use the script newtemp.sh to create folders to run simulations at different temperatures between 330 K and 410 K in steps of 10 K.
+It is used in the following way,
+\verbatim
+./newtemp.sh 400 
+\endverbatim
+to create the folder 400K with inputs for the simulation at a temperature of 400 K.
+The command to run the LAMMPS input scripts start.lmp is the same as the one above.
+The simulations should be fast, a couple of minutes each one, and they will output a file thermo.txt that has the enthalpy.
+I prepared a python script chemical_potentials_ti.py located in folder 4-thermodynamic-integration that plots the enthalpies vs temperature, performs the integration, and then plots the chemical potential differences vs temperature.
+How do these chemical potentials compare with the ones obtained with other methods?
+
+\section masterclass-22-12-thoughts Final thoughts
+
+We have discussed three methods to calculate chemical potential differences between the liquid and a solid.
+There are other methods that are not described here because they are not based on enhanced sampling techniques.
+Also, an important tool to study phase equilibria is the integration of the Clausius-Clapeyron equation to trace coexistence lines.
+The latter method is an important complement to the methods discussed in this tutorial and extremely useful when computing phase diagrams in the temperature-pressure plane.
 
 */
 
 link: @subpage masterclass-22-12
 
-description: This Masterclass explains how to perform free energy calculations for crystalline solids with the environment similarity CV
+description: This Masterclass explains how to compute chemical potential differences between the liquid and a solid with the environment similarity CV
