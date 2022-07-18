@@ -23,6 +23,7 @@
 #include "BasisFunctions.h"
 
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 
 namespace PLMD {
@@ -35,7 +36,9 @@ Cubic B spline basis functions.
 \attention
 __These basis functions do not form orthogonal bases. We recommend using wavelets (\ref BF_WAVELETS) instead that do for orthogonal bases__.
 
-A basis using cubic B spline functions according to \cite habermann_multidimensional_2007. The mathematical expression of the individual splines is given by
+A basis using cubic B spline functions according to \cite habermann_multidimensional_2007. See \cite ValssonPampel_Wavelets_2022 for full details.
+
+The mathematical expression of the individual splines is given by
 \f{align*}{
   h\left(x\right) =
   \begin{cases}
@@ -108,6 +111,9 @@ void BF_CubicBsplines::registerKeywords(Keywords& keys) {
 BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
+  log.printf("  Cubic B spline basis functions, see and cite ");
+  log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
+
   setIntrinsicInterval(intervalMin(),intervalMax());
   spacing_=(intervalMax()-intervalMin())/static_cast<double>(getOrder());
   inv_spacing_ = 1.0/spacing_;
