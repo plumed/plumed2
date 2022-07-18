@@ -111,8 +111,7 @@ ENVIRONMENTSIMILARITY ...
  CRYSTAL_STRUCTURE=BCC
  LATTICE_CONSTANTS=0.423
  SIGMA=0.07
-... ENVIRONMENTSIMILARITY
-
+...
 \endplumedfile
 
 Here we have chosen the bcc crystal structure with a lattice constant of 0.423 nm which is appropriate for bcc sodium.
@@ -149,14 +148,13 @@ out.dcd is the trajectory in DCD format, which is useful to post-process directl
 Once that these simulations have completed, we will compute the distributions of the environment similarity kernel using this input
 
 \plumedfile
-ENVIRONMENTSIMILARITY ...
+s: ENVIRONMENTSIMILARITY ...
  SPECIES=1-1024
  SIGMA=replace
  CRYSTAL_STRUCTURE=BCC
  LATTICE_CONSTANTS=0.423
- LABEL=s
  MEAN
-... ENVIRONMENTSIMILARITY
+...
 
 hh: HISTOGRAM ...
    DATA=s
@@ -222,15 +220,14 @@ Otherwise, you may want to have a look at the \ref masterclass-22-03.
 The environment similarity kernel, which are per-atom quantities, can be combined into a global quantity by evaluating how many have a value larger than some threshold.
 In file 2-bulk-interconversion/250atoms/400K/plumed.dat we can see the input for a simulation with 250 atoms at 400 K,
 \plumedfile
-ENVIRONMENTSIMILARITY ...
+cv: ENVIRONMENTSIMILARITY ...
  SPECIES=1-250
  SIGMA=0.07
  CRYSTAL_STRUCTURE=BCC
  LATTICE_CONSTANTS=0.423
- LABEL=cv
  MORE_THAN={CUBIC D_0=0.38 D_MAX=0.80}
  MEAN
-... ENVIRONMENTSIMILARITY
+...
 \endplumedfile
 Here you see that we are calculating the MEAN and the number of atoms that have a value of the kernel MORE_THAN something.
 Here, instead of having a strict threshold at some value, we have a continuous and differentiable switching function that is 0 below 0.38, 1 above 0.80, and changes smoothly from 0 to 1 between these values.
@@ -379,7 +376,7 @@ ENVIRONMENTSIMILARITY ...
  CRYSTAL_STRUCTURE=BCC
  LATTICE_CONSTANTS=0.423
  MORE_THAN={CUBIC D_0=0.5525 D_MAX=0.55251}
-... ENVIRONMENTSIMILARITY
+...
 \endplumedfile
 and is in column 13 of the COLVAR file.
 
