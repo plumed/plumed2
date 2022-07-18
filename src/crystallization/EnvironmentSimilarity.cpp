@@ -96,6 +96,10 @@ If instead several reference environments are given, then they have to be provid
 keywords REFERENCE_1, REFERENCE_2, etc.
 If you have a reference crystal structure configuration you can use the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the reference environments that you should use.
 
+If multiple chemical species are involved in the calculation, it is possible to provide the atom types (names) both for atoms in the reference environments and in the simulation box.
+This information is provided in pdb files using the atom name field.
+The comparison between environments is performed taking into account whether the atom names match.
+
 \par Examples
 
 The following input calculates the ENVIRONMENTSIMILARITY kernel for 250 atoms in the system
@@ -146,6 +150,36 @@ ENVIRONMENTSIMILARITY ...
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
 \endplumedfile
 
+The following examples illustrates the use of pdb files to provide information about different chemical species:
+\plumedfile
+ENVIRONMENTSIMILARITY ...
+ SPECIES=1-6
+ SIGMA=0.05
+ CRYSTAL_STRUCTURE=CUSTOM
+ REFERENCE=env.pdb
+ LABEL=es
+ MEAN
+ MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
+ ATOM_NAMES_FILE=atom-names.pdb
+... ENVIRONMENTSIMILARITY
+\endplumedfile
+Here the file env.pdb is:
+\verbatim
+ATOM      1    O MOL     1      -2.239  -1.296  -0.917  1.00  0.00           O
+ATOM      2    O MOL     1       0.000   0.000   2.751  1.00  0.00           O
+\endverbatim
+where atoms are of type O, and the atom-names.pdb file is:
+\verbatim
+ATOM      1  O       X   1       0.000   2.593   4.126  0.00  0.00           O
+ATOM      2  H       X   1       0.000   3.509   3.847  0.00  0.00           H
+ATOM      3  H       X   1       0.000   2.635   5.083  0.00  0.00           H
+ATOM      4  O       X   1       0.000   2.593  11.462  0.00  0.00           O
+ATOM      5  H       X   1       0.000   3.509  11.183  0.00  0.00           H
+ATOM      6  H       X   1       0.000   2.635  12.419  0.00  0.00           H
+\endverbatim
+where atoms are of type O and H.
+In this case, all atoms are used as centers, but only neighbors of type O are taken into account.
+
 */
 //+ENDPLUMEDOC
 
@@ -159,6 +193,10 @@ private:
   double lambda_;
   // Array of Vectors to store the reference environments, i.e. the templates
   std::vector<std::vector<Vector>> environments_;
+  // Array of strings to store the atom names of reference environments
+  std::vector<std::vector<std::string>> environmentsAtomNames_;
+  // Use of atom names reference file
+  std::vector<std::string> atomNames_;
 public:
   static void registerKeywords( Keywords& keys );
   explicit EnvironmentSimilarity(const ActionOptions&);
@@ -170,9 +208,10 @@ public:
   double maxDistance(std::vector<Vector> environment);
   // Parse everything connected to the definition of the reference environments
   // First argument is the array of Vectors that stores the reference environments
-  // Second argument is the maximum distance in the ref environments and sets the
+  // Second argument is the array of strings that stores the atom names of reference environments
+  // Third argument is the maximum distance in the ref environments and sets the
   // cutoff for the cell lists
-  void parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments, double& max_dist);
+  void parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments,  std::vector<std::vector<std::string>>& environmentsAtomNames, double& max_dist);
 };
 
 PLUMED_REGISTER_ACTION(EnvironmentSimilarity,"ENVIRONMENTSIMILARITY")
@@ -197,6 +236,8 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("numbered","REFERENCE_","PDB files with relative distances from central atom."
            " Each file corresponds to one template."
            " Use these keywords if you are targeting more than one reference environment.");
+  keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES."
+           " Atoms in reference environments will be compared only if atom names match.");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -213,7 +254,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
 
   // Parse everything connected to the definition of the reference environments
   double max_dist_ref_vector;
-  parseReferenceEnvironments(environments_, max_dist_ref_vector);
+  parseReferenceEnvironments(environments_, environmentsAtomNames_, max_dist_ref_vector);
 
   double sigma;
   parse("SIGMA", sigma);
@@ -231,11 +272,13 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
 
   // And setup the ActionWithVessel
   std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
+
+  plumed_massert(atomNames_.empty() || atomNames_.size()==getNumberOfAtoms(),"mismatch between atoms in SPECIES and ATOM_NAMES_FILE");
 }
 
 double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  if (environments_.size()==1) {
-    // One reference environment case
+  if (environments_.size()==1 && atomNames_.empty() ) {
+    // One reference environment case - no atom names
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
       Vector& distance=myatoms.getPosition(i);
       double d2;
@@ -247,14 +290,13 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
         for(unsigned k=0; k<environments_[0].size(); ++k) {
           Vector distanceFromRef=distance-environments_[0][k];
           double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[0].size() ;
-          // CAREFUL! Off-diagonal virial is incorrect. Do not perform NPT simulations with flexible box angles.
           accumulateSymmetryFunction( 1, i, value, -(value/(2*sigmaSqr_))*distanceFromRef, (value/(2*sigmaSqr_))*Tensor(distance,distanceFromRef), myatoms );
         }
       }
     }
     return myatoms.getValue(1);
-  } else {
-    // More than one reference environment case
+  } else if (atomNames_.empty()) {
+    // More than one reference environment case - no atom names
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
@@ -298,7 +340,56 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
         }
       }
     }
-    if(sum==0) sum=std::numeric_limits<double>::min();
+    return std::log(sum)/lambda_;
+  } else {
+    // Reference environments with atom names
+    std::vector<double> values(environments_.size()); //value for each template
+    // First time calculate sums
+    for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
+      Vector& distance=myatoms.getPosition(i);
+      double d2;
+      if ( (d2=distance[0]*distance[0])<rcut2_ &&
+           (d2+=distance[1]*distance[1])<rcut2_ &&
+           (d2+=distance[2]*distance[2])<rcut2_ &&
+           d2>epsilon ) {
+        // Iterate over templates
+        for(unsigned j=0; j<environments_.size(); ++j) {
+          // Iterate over atoms in the template
+          for(unsigned k=0; k<environments_[j].size(); ++k) {
+            if (atomNames_[myatoms.getIndex(i)]==environmentsAtomNames_[j][k]) {
+              Vector distanceFromRef=distance-environments_[j][k];
+              values[j] += std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[j].size() ;
+            }
+          }
+        }
+      }
+    }
+    double sum=0;
+    for(unsigned j=0; j<environments_.size(); ++j) {
+      values[j] = std::exp(lambda_*values[j]);
+      sum += values[j];
+    }
+    // Second time find derivatives
+    for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
+      Vector& distance=myatoms.getPosition(i);
+      double d2;
+      if ( (d2=distance[0]*distance[0])<rcut2_ &&
+           (d2+=distance[1]*distance[1])<rcut2_ &&
+           (d2+=distance[2]*distance[2])<rcut2_ &&
+           d2>epsilon ) {
+        // Iterate over reference environment
+        for(unsigned j=0; j<environments_.size(); ++j) {
+          // Iterate over atoms in the reference environment
+          for(unsigned k=0; k<environments_[j].size(); ++k) {
+            if (atomNames_[myatoms.getIndex(i)]==environmentsAtomNames_[j][k]) {
+              Vector distanceFromRef=distance-environments_[j][k];
+              double value = std::exp(-distanceFromRef.modulo2()/(4*sigmaSqr_) )/environments_[j].size() ;
+              accumulateSymmetryFunction( 1, i, value, -(values[j]/sum)*(value/(2*sigmaSqr_))*distanceFromRef, (values[j]/sum)*(value/(2*sigmaSqr_))*Tensor(distance,distanceFromRef), myatoms );
+            }
+          }
+        }
+      }
+    }
     return std::log(sum)/lambda_;
   }
 }
@@ -312,7 +403,7 @@ double EnvironmentSimilarity::maxDistance( std::vector<Vector> environment ) {
   return max_dist;
 }
 
-void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments, double& max_dist) {
+void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments, std::vector<std::vector<std::string>>& environmentsAtomNames, double& max_dist) {
   std::vector<double> lattice_constants;
   parseVector("LATTICE_CONSTANTS", lattice_constants);
   std::string crystal_structure;
@@ -414,10 +505,14 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     parse("REFERENCE",reffile);
     if (!reffile.empty()) {
       // Case with one reference environment
-      environments.resize(1);
-      PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
-      unsigned natoms=pdb.getPositions().size(); environments[0].resize( natoms );
+      environments.resize(1); environmentsAtomNames.resize(1);
+      PDB pdb;
+      if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        error("missing input file " + reffile );
+      unsigned natoms=pdb.getPositions().size();
+      environments[0].resize( natoms ); environmentsAtomNames[0].resize( natoms );
       for(unsigned i=0; i<natoms; ++i) environments[0][i]=pdb.getPositions()[i];
+      for(unsigned i=0; i<natoms; ++i) environmentsAtomNames[0][i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
       max_dist=maxDistance(environments[0]);
       log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
     } else {
@@ -425,10 +520,16 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       max_dist=0;
       for(unsigned int i=1;; i++) {
         if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
-        PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
-        unsigned natoms=pdb.getPositions().size();   std::vector<Vector> environment; environment.resize( natoms );
+        PDB pdb;
+        if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+          error("missing input file " + reffile );
+        unsigned natoms=pdb.getPositions().size();
+        std::vector<Vector> environment; std::vector<std::string> environmentAtomNames;
+        environment.resize( natoms ); environmentAtomNames.resize( natoms);
         for(unsigned i=0; i<natoms; ++i) environment[i]=pdb.getPositions()[i];
+        for(unsigned i=0; i<natoms; ++i) environmentAtomNames[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
         environments.push_back(environment);
+        environmentsAtomNames.push_back(environmentAtomNames);
         double norm = maxDistance(environment);
         if (norm>max_dist) max_dist=norm;
         log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
@@ -438,6 +539,20 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
                                         "or in the REFERENCE_1, REFERENCE_2, etc keywords");
     log.printf("  Number of reference environments is %lu\n",environments.size() );
     log.printf("  Number of vectors per reference environment is %lu\n",environments[0].size() );
+    std::string atomNamesFile;
+    parse("ATOM_NAMES_FILE",atomNamesFile);
+    if (!atomNamesFile.empty()) {
+      PDB pdb;
+      if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        error("missing input file " + atomNamesFile);
+      unsigned natoms=pdb.getPositions().size();
+      atomNames_.resize( natoms );
+      for(unsigned i=0; i<natoms; ++i) atomNames_[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      log.printf("  Read %d atoms from atom names file %s \n", natoms, atomNamesFile.c_str() );
+      log.printf("  Atoms in environments will be considered only if atom names match.\n");
+    } else {
+      log.printf("  No atom names file has been given. Atoms in reference environments will be matched disregarding atom type.\n");
+    }
   } else {
     error("CRYSTAL_STRUCTURE=" + crystal_structure + " does not match any structures in the database");
   }
