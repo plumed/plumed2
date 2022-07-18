@@ -200,9 +200,9 @@ WrapAround::WrapAround(const ActionOptions&ao):
   checkRead();
 
   // do not remove duplicates with pair
-  if(!pair_){
-   if(groupby<=1) Tools::removeDuplicates(atoms);
-   Tools::removeDuplicates(reference);
+  if(!pair_) {
+    if(groupby<=1) Tools::removeDuplicates(atoms);
+    Tools::removeDuplicates(reference);
   }
 
   std::vector<AtomNumber> merged(atoms.size()+reference.size());
@@ -218,7 +218,7 @@ void WrapAround::calculate() {
     Vector & first (modifyGlobalPosition(atoms[i]));
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
-    if(pair_){
+    if(pair_) {
       closest = i/groupby;
     } else {
       for(unsigned j=0; j<reference.size(); ++j) {
