@@ -43,7 +43,9 @@ namespace generic {
 
 //+PLUMEDOC GENERIC EFFECTIVE_ENERGY_DRIFT
 /*
-Print the effective energy drift described in Ref \cite Ferrarotti2015
+Print the effective energy drift 
+
+The method used to calculate the effective energy drift is described in Ref \cite Ferrarotti2015
 
 
 \par Examples

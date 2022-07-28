@@ -116,10 +116,15 @@ bool ActionRegister::printTemplate(const std::string& action, bool include_optio
   }
 }
 
-std::ostream & operator<<(std::ostream &log,const ActionRegister&ar) {
+std::vector<std::string> ActionRegister::getActionNames() const {
   std::vector<std::string> s;
-  for(const auto & it : ar.m) s.push_back(it.first);
+  for(const auto & it : m) s.push_back(it.first);
   std::sort(s.begin(),s.end());
+  return s;
+}
+
+std::ostream & operator<<(std::ostream &log,const ActionRegister&ar) {
+  std::vector<std::string> s(ar.getActionNames());
   for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
   if(!ar.disabled.empty()) {
     s.assign(ar.disabled.size(),"");

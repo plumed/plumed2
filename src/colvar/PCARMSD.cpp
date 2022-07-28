@@ -46,7 +46,9 @@ public:
 
 //+PLUMEDOC DCOLVAR PCARMSD
 /*
-Calculate the PCA components ( see \cite Sutto:2010 and \cite spiwok )  for a number of provided eigenvectors and an average structure. Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
+Calculate the PCA components for a number of provided eigenvectors and an average structure.
+
+For information on this method ( see \cite Sutto:2010 and \cite spiwok ). Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
 It takes the average structure and eigenvectors in form of a pdb.
 Note that beta and occupancy values in the pdb are neglected and all the weights are placed to 1 (differently from the RMSD colvar for example)
 

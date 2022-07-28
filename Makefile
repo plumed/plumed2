@@ -8,7 +8,7 @@ endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle python
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim json astyle python
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
@@ -21,6 +21,7 @@ all:
 	$(MAKE) lib
 	$(MAKE) -C vim
 	$(MAKE) -C python
+	LD_LIBRARY_PATH="$(realpath .)/src/lib":${LD_LIBRARY_PATH} PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C json
 
 # target useful for macports
 # it builds the code then the documentation

@@ -29,7 +29,9 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_METAD
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with metadynamics-like target distribution \cite Invernizzi2020rethinking.
+On-the-fly probability enhanced sampling with metadynamics-like target distribution.
+
+This On-the-fly probability enhanced sampling (\ref OPES "OPES") method with metadynamics-like target distribution is described in \cite Invernizzi2020rethinking.
 
 This \ref OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 By default \ref OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
@@ -258,7 +260,9 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
 //+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2022explore .
+On-the-fly probability enhanced sampling with well-tempered target distribution in exploreation mode.
+
+On-the-fly probability enhanced sampling with well-tempered target distribution (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2022explore .
 
 This \ref OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, \ref OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
@@ -310,7 +314,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
-  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target distribution. ");
+  std::string info_biasfactor("the gamma bias factor used for the well-tempered target distribution. ");
   if(mode::explore)
     info_biasfactor+="Cannot be 'inf'";
   else
@@ -323,7 +327,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
-  keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
+  keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, Z_n=1");
 //kernels and state files
   keys.add("compulsory","FILE","KERNELS","a file in which the list of all deposited kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
@@ -343,8 +347,8 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("UPDATE_UNTIL");
 
 //output components
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat once no new CV-space region is explored");
+  keys.addOutputComponent("rct","default","estimate of c(t). \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
+  keys.addOutputComponent("zed","default","estimate of Z_n. should become flat once no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");

@@ -37,6 +37,8 @@ namespace bias {
 
 //+PLUMEDOC BIAS MAXENT
 /*
+Add a linear biasing potential on one or more variables that satisfies a maximum entropy principle.
+
 Add a linear biasing potential on one or more variables \f$f_{i}\left(\boldsymbol{x}\right)\f$ satisfying the maximum entropy principle as proposed in Ref. \cite cesari2016maxent .
 
 \warning

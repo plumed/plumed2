@@ -88,7 +88,7 @@ void ECVcustom::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the single ECVs, \\f$\\Delta U_i\\f$, in energy units");
+  keys.add("compulsory","ARG","the labels of the single ECVs. \\f$\\Delta U_i\\f$, in energy units");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");
   keys.addFlag("DIMENSIONLESS",false,"consider ARG as dimensionless rather than an energy, thus do not multiply it by \\f$\\beta\\f$");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");

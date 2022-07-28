@@ -523,7 +523,7 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the \\f$c(t)\\f$ reweighting factor [rbias=bias-rct]."
+  keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-rct]."
                           "This component can be used to obtain a reweighted histogram.");
   keys.addOutputComponent("rct","CALC_RCT","the reweighting factor \\f$c(t)\\f$.");
   keys.addOutputComponent("work","CALC_WORK","accumulator for work");
@@ -542,14 +542,14 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify temp");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.add("optional","RECT","list of bias factors for all the replicas");
-  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(\\f$k_B\\f$T*DAMPFACTOR)");
+  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kT*DAMPFACTOR)");
   for (size_t i = 0; i < n_tempering_options_; i++) {
     registerTemperingKeywords(tempering_names_[i][0], tempering_names_[i][1], keys);
   }
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
-  keys.addFlag("CALC_RCT",false,"calculate the \\f$c(t)\\f$ reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
+  keys.addFlag("CALC_RCT",false,"calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
   keys.add("optional","RCT_USTRIDE","the update stride for calculating the \\f$c(t)\\f$ reweighting factor."
            "The default 1, so \\f$c(t)\\f$ is updated every time the bias is updated.");

@@ -30,6 +30,7 @@
 #include "tools/ForwardDecl.h"
 #include "tools/Subprocess.h"
 #include <memory>
+#include <map>
 
 namespace PLMD {
 
@@ -62,6 +63,7 @@ public:
   void calculate() override {}
   void apply() override {}
   static void registerKeywords( Keywords& keys );
+  static std::map<std::string,std::string> getSpecialKeywords();
   explicit GenericMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;

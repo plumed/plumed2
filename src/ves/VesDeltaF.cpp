@@ -34,6 +34,8 @@ namespace ves {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
 /*
+Implementation of VES Delta F method
+
 Implementation of VES\f$\Delta F\f$ method \cite Invernizzi2019vesdeltaf (step two only).
 
 \warning
@@ -185,15 +187,15 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.add("numbered","FILE_F","names of files containing local free energies and derivatives. "
            "The first one, FILE_F0, is used as reference for all the free energy differences.");
   keys.reset_style("FILE_F","compulsory");
-  keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) \\f$\\Delta F\\f$");
+  keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) Delta F");
   keys.addFlag("NO_MINTOZERO",false,"leave local free energies as provided, without shifting them to zero min");
 //target distribution
-  keys.add("compulsory","BIASFACTOR","0","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
+  keys.add("compulsory","BIASFACTOR","0","the gamma bias factor used for well-tempered target p(s)."
            " Set to 0 for non-tempered flat target");
   keys.add("optional","TG_STRIDE","( default=1 ) number of AV_STRIDE between updates"
-           " of target \\f$p(\\mathbf{s})\\f$ and reweighing factor \\f$c(t)\\f$");
+           " of target p(s) and reweighing factor c(t)");
 //optimization
-  keys.add("compulsory","M_STEP","1.0","the \\f$\\mu\\f$ step used for the \\f$\\Omega\\f$ functional minimization");
+  keys.add("compulsory","M_STEP","1.0","the mu step used for the Omega functional minimization");
   keys.add("compulsory","AV_STRIDE","500","number of simulation steps between alpha updates");
   keys.add("optional","TAU_MEAN","exponentially decaying average for alpha (rescaled using AV_STRIDE)."
            " Should be used only in very specific cases");
@@ -210,7 +212,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("rct","default","the reweighting factor \\f$c(t)\\f$");
+  keys.addOutputComponent("rct","default","the reweighting factor c(t)");
   keys.addOutputComponent("work","default","the work done by the bias in one AV_STRIDE");
 }
 
