@@ -129,7 +129,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
 std::map<std::string,std::string> GenericMolInfo::getSpecialKeywords() {
   std::map<std::string,std::string> mapkeys;
   mapkeys.insert( std::pair<std::string,std::string>("@mda:","atom selection built using syntax for <a href=\\\"https://docs.mdanalysis.org/stable/documentation_pages/selections.html\\\">MDAnalysis</a>") );
-  mapkeys.insert( std::pair<std::string,std::string>("@mdt:","atom selection built using syntax for <a href=\\\"https://www.mdtraj.org/1.9.8.dev0/index.html\\\">mdtraj</a>") ); 
+  mapkeys.insert( std::pair<std::string,std::string>("@mdt:","atom selection built using syntax for <a href=\\\"https://www.mdtraj.org/1.9.8.dev0/index.html\\\">mdtraj</a>") );
   mapkeys.insert( std::pair<std::string,std::string>("@vmdexec:","atom selection built using syntax for <a href=\\\"https://www.ks.uiuc.edu/Research/vmd/\\\">VMD</a>") );
   mapkeys.insert( std::pair<std::string,std::string>("@vmd:","atom selection built using syntax for <a href=\\\"https://www.ks.uiuc.edu/Research/vmd/\\\">VMD</a> python module") );
   mapkeys.insert( std::pair<std::string,std::string>("@nucleic","all atoms that are part of a DNA or RNA molecule") );

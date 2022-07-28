@@ -470,7 +470,7 @@ std::string Keywords::getKeywordDocs( const std::string& key ) const {
   sstr<<"\n"; return sstr.str();
 }
 
-std::string Keywords::getHelpString() const { 
+std::string Keywords::getHelpString() const {
   std::string helpstr; unsigned nkeys=0;
   for(unsigned i=0; i<keys.size(); ++i) {
     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
@@ -478,7 +478,7 @@ std::string Keywords::getHelpString() const {
   if( nkeys>0 ) {
     helpstr += "The input trajectory can be in any of the following formats: \n\n";
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isAtomList() ) helpstr += getKeywordDocs( keys[i] ); 
+      if ( (types.find(keys[i])->second).isAtomList() ) helpstr += getKeywordDocs( keys[i] );
     }
   }
   nkeys=0;
@@ -489,7 +489,7 @@ std::string Keywords::getHelpString() const {
   if( nkeys>0 ) {
     helpstr += "\nThe following arguments are compulsory: \n\n";
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) helpstr += getKeywordDocs( keys[i] ); 
+      if ( (types.find(keys[i])->second).isCompulsory() ) helpstr += getKeywordDocs( keys[i] );
     }
   }
   nkeys=0;

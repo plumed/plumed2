@@ -167,7 +167,7 @@ public:
   std::string getOutputComponentFlag( const std::string& name ) const ;
 /// Get the description of this component
   std::string getOutputComponentDescription( const std::string& name ) const ;
-/// Get the full list of output components 
+/// Get the full list of output components
   std::vector<std::string> getOutputComponents() const ;
 /// Get the description of a particular keyword
   std::string getKeywordDescription( const std::string& name ) const ;

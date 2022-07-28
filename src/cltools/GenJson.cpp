@@ -76,11 +76,11 @@ GenJson::GenJson(const CLToolOptions& co ):
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::string line(""), actionfile; parse("--actions",actionfile);
-  IFile myfile; myfile.open(actionfile); bool stat; 
+  IFile myfile; myfile.open(actionfile); bool stat;
   std::map<std::string,std::string> action_map;
   while((stat=myfile.getline(line))) {
-       std::size_t col = line.find_first_of(":");
-       action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
+    std::size_t col = line.find_first_of(":");
+    action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
   }
   myfile.close();
 
@@ -90,10 +90,10 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"  \"vimlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_vim_syntax.html\","<<std::endl;
   // And the replicas link
   std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/special-replica-syntax.html\","<<std::endl;
-  // Get the names of all the actions 
+  // Get the names of all the actions
   std::vector<std::string> action_names( actionRegister().getActionNames() );
-  for(unsigned i=0;i<action_names.size();++i) {
-    std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl; std::string action=action_names[i];  
+  for(unsigned i=0; i<action_names.size(); ++i) {
+    std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl; std::string action=action_names[i];
     // Handle conversion of action names to links
     std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
     std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -106,41 +106,41 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     }
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
-    std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n"; 
+    std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;
-    for(unsigned j=0;j<keys.size();++j) {
-        std::string desc = keys.getKeywordDescription( keys.getKeyword(j) ); 
-        if( desc.find("default=")!=std::string::npos ) { 
-             std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1); 
-        } 
-        std::size_t dot=desc.find_first_of(".");
-        std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
-        if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
+    for(unsigned j=0; j<keys.size(); ++j) {
+      std::string desc = keys.getKeywordDescription( keys.getKeyword(j) );
+      if( desc.find("default=")!=std::string::npos ) {
+        std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1);
+      }
+      std::size_t dot=desc.find_first_of(".");
+      std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+      if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {
-        std::cout<<"       \"output\" : {"<<std::endl;
-        std::vector<std::string> components( keys.getOutputComponents() );
-        // Check if we have a value
-        bool hasvalue=true;
-        for(unsigned k=0; k<components.size(); ++k) {
-            if( keys.getOutputComponentFlag( components[k] )=="default" ) { hasvalue=false; break; }
-        } 
-        if( hasvalue ) {
-            std::cout<<"         \"value\": {"<<std::endl;
-            std::cout<<"           \"flag\": \"value\","<<std::endl;
-            std::cout<<"           \"description\": \"a scalar quantity\""<<std::endl;
-            if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
-        }
-        for(unsigned k=0; k<components.size(); ++k) {
-            std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
-            std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
-            std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
-            std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
-            if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;  
-        }
-        std::cout<<"       }"<<std::endl;
+      std::cout<<"       \"output\" : {"<<std::endl;
+      std::vector<std::string> components( keys.getOutputComponents() );
+      // Check if we have a value
+      bool hasvalue=true;
+      for(unsigned k=0; k<components.size(); ++k) {
+        if( keys.getOutputComponentFlag( components[k] )=="default" ) { hasvalue=false; break; }
+      }
+      if( hasvalue ) {
+        std::cout<<"         \"value\": {"<<std::endl;
+        std::cout<<"           \"flag\": \"value\","<<std::endl;
+        std::cout<<"           \"description\": \"a scalar quantity\""<<std::endl;
+        if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
+      }
+      for(unsigned k=0; k<components.size(); ++k) {
+        std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
+        std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
+        std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
+        std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
+        if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
+      }
+      std::cout<<"       }"<<std::endl;
 
     }
     std::cout<<"    },"<<std::endl;
@@ -150,26 +150,26 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
          pos != std::string::npos;
          pos = helpstr.find("\n", pos)
        ) { helpstr.replace(pos, unsafen.size(), safen); pos += safen.size(); }
-    std::cout<<"    \"help\" : \""<<helpstr<<"\"\n"; 
+    std::cout<<"    \"help\" : \""<<helpstr<<"\"\n";
     std::cout<<"  },"<<std::endl;
   }
   // Get all the special groups
-  std::cout<<"  \"groups\" : {"<<std::endl; 
-  std::cout<<"    \"@allatoms\" : { \n"<<std::endl; 
+  std::cout<<"  \"groups\" : {"<<std::endl;
+  std::cout<<"    \"@allatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms and PLUMEDs vatoms\","<<std::endl;
   std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
   std::cout<<"    },"<<std::endl;
-  std::cout<<"    \"@mdatoms\" : { \n"<<std::endl; 
+  std::cout<<"    \"@mdatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms but not PLUMEDs vatoms\","<<std::endl;
   std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
   // Now print all the special keywords in molinfo
   std::map<std::string,std::string> specials( GenericMolInfo::getSpecialKeywords() );
   for(auto const& s : specials ) {
-      std::cout<<"    },"<<std::endl;
-      std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
-      std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
-      std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
-  } 
+    std::cout<<"    },"<<std::endl;
+    std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
+    std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
+    std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
+  }
   std::cout<<"        }"<<std::endl;
   std::cout<<"  }"<<std::endl;
   std::cout<<"}"<<std::endl;

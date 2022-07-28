@@ -25,7 +25,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
-#include "core/ActionShortcut.h"  
+#include "core/ActionShortcut.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -284,7 +284,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
   bool parseOnly; parseFlag("--parse-only",parseOnly);
-  std::string full_outputfile; parse("--shortcut-ofile",full_outputfile); 
+  std::string full_outputfile; parse("--shortcut-ofile",full_outputfile);
   bool restart; parseFlag("--restart",restart);
 
   std::string fakein;
@@ -686,55 +686,55 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setKbT",kt);
       }
       checknatoms=natoms;
-      p.cmd("setNatoms",natoms); 
+      p.cmd("setNatoms",natoms);
       p.cmd("init");
-      // Check if we have been asked to output the long version of the input and if there are shortcuts 
+      // Check if we have been asked to output the long version of the input and if there are shortcuts
       if( parseOnly && full_outputfile.length()>0 ) {
 
-          // Read in the plumed input file and store what is in there
-          std::map<std::string,std::vector<std::string> > data;
-          IFile ifile; ifile.open(plumedFile); std::vector<std::string> words; 
-          while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) { 
-                 p.readInputWords(words); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
-                 ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
-                 if( av && aa->getDefaultString().length()>0 ) {
-                     std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
-                     data[ aa->getLabel() ] = def; 
-                 }
-                 ActionShortcut* as=dynamic_cast<ActionShortcut*>( aa );
-                 if( as ) {
-                     if( aa->getDefaultString().length()>0 ) {
-                         std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
-                         data[ as->getShortcutLabel() ] = def;  
-                     } 
-                     if( data.find( as->getShortcutLabel() )!=data.end() ) {
-                         std::vector<std::string> shortcut_commands = as->getSavedInputLines();
-                         for(unsigned i=0;i<shortcut_commands.size(); ++i) data[ as->getShortcutLabel() ].push_back( shortcut_commands[i] ); 
-                     } else data[ as->getShortcutLabel() ] = as->getSavedInputLines();
-                 } 
+        // Read in the plumed input file and store what is in there
+        std::map<std::string,std::vector<std::string> > data;
+        IFile ifile; ifile.open(plumedFile); std::vector<std::string> words;
+        while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) {
+          p.readInputWords(words); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
+          ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
+          if( av && aa->getDefaultString().length()>0 ) {
+            std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
+            data[ aa->getLabel() ] = def;
           }
-          ifile.close(); 
-          // Only output the full version of the input file if there are shortcuts
-          if( data.size()>0 ) {
-              OFile long_file; long_file.open( full_outputfile ); long_file.printf("{\n"); bool firstpass=true;
-              for(auto& x : data ) {
-                  if( !firstpass ) long_file.printf("   },\n"); 
-                  long_file.printf("   \"%s\" : {\n", x.first.c_str() );
-                  plumed_assert( x.second.size()>0 ); unsigned sstart=0;  
-                  if( x.second[0].find("defaults")!=std::string::npos ) {
-                      sstart=1; long_file.printf("      \"defaults\" : \"%s\"", x.second[0].substr( 9 ).c_str() ); 
-                      if( x.second.size()>1 ) long_file.printf(",\n"); else long_file.printf("\n");
-                  }
-                  if( x.second.size()>sstart ) {
-                      long_file.printf("      \"expansion\" : \"%s", x.second[sstart].c_str() );
-                      for(unsigned j=sstart+1;j<x.second.size();++j) long_file.printf("\\n%s", x.second[j].c_str() );
-                      long_file.printf("\"\n"); 
-                  }
-                  firstpass=false;
-              } 
-              long_file.printf("   }\n}\n"); long_file.close();
+          ActionShortcut* as=dynamic_cast<ActionShortcut*>( aa );
+          if( as ) {
+            if( aa->getDefaultString().length()>0 ) {
+              std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
+              data[ as->getShortcutLabel() ] = def;
+            }
+            if( data.find( as->getShortcutLabel() )!=data.end() ) {
+              std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+              for(unsigned i=0; i<shortcut_commands.size(); ++i) data[ as->getShortcutLabel() ].push_back( shortcut_commands[i] );
+            } else data[ as->getShortcutLabel() ] = as->getSavedInputLines();
           }
-      } 
+        }
+        ifile.close();
+        // Only output the full version of the input file if there are shortcuts
+        if( data.size()>0 ) {
+          OFile long_file; long_file.open( full_outputfile ); long_file.printf("{\n"); bool firstpass=true;
+          for(auto& x : data ) {
+            if( !firstpass ) long_file.printf("   },\n");
+            long_file.printf("   \"%s\" : {\n", x.first.c_str() );
+            plumed_assert( x.second.size()>0 ); unsigned sstart=0;
+            if( x.second[0].find("defaults")!=std::string::npos ) {
+              sstart=1; long_file.printf("      \"defaults\" : \"%s\"", x.second[0].substr( 9 ).c_str() );
+              if( x.second.size()>1 ) long_file.printf(",\n"); else long_file.printf("\n");
+            }
+            if( x.second.size()>sstart ) {
+              long_file.printf("      \"expansion\" : \"%s", x.second[sstart].c_str() );
+              for(unsigned j=sstart+1; j<x.second.size(); ++j) long_file.printf("\\n%s", x.second[j].c_str() );
+              long_file.printf("\"\n");
+            }
+            firstpass=false;
+          }
+          long_file.printf("   }\n}\n"); long_file.close();
+        }
+      }
       if(parseOnly) break;
     }
     if(checknatoms!=natoms) {

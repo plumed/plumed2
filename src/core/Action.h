@@ -382,8 +382,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
         this->exit(1);
       } else {
         if(t.size()>0) {
-           for(unsigned i=0; i<t.size(); ++i) t[i]=val;
-           defaults += " " + key + "=" + def; for(unsigned i=1; i<t.size(); ++i) defaults += "," + def; 
+          for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+          defaults += " " + key + "=" + def; for(unsigned i=1; i<t.size(); ++i) defaults += "," + def;
         } else { t.push_back(val); defaults += " " + key + "=" + def; }
       }
     } else if( keywords.style(key,"compulsory") ) {

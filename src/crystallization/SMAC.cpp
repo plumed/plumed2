@@ -26,7 +26,7 @@
 
 //+PLUMEDOC MCOLVARF SMAC
 /*
-Calculate a variant on the SMAC collective variable 
+Calculate a variant on the SMAC collective variable
 
 This variable is discussed in \cite smac-paper
 
