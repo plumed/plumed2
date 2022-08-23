@@ -561,6 +561,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
 LogMFD::LogMFD( const ActionOptions& ao ):
   PLUMED_BIAS_INIT(ao),
   firsttime(true),
+  step_initial(0),
   interval(10),
   delta_t(1.0),
   thermostat("NVE"),
@@ -588,9 +589,14 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   fictValue(getNumberOfArguments(),NULL),
   vfictValue(getNumberOfArguments(),NULL)
 {
-  backup.fict.resize(getNumberOfArguments());
-  backup.vfict.resize(getNumberOfArguments());
-  backup.ffict.resize(getNumberOfArguments());
+  backup.fict.resize(getNumberOfArguments(),0.0);
+  backup.vfict.resize(getNumberOfArguments(),0.0);
+  backup.ffict.resize(getNumberOfArguments(),0.0);
+  backup.xeta = 0.0;
+  backup.veta = 0.0;
+  backup.phivs = 0.0;
+  backup.work = 0.0;
+  backup.weight = 0.0;
 
   parse("INTERVAL",interval);
   parse("DELTA_T",delta_t);
