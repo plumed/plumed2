@@ -1,0 +1,197 @@
+Starting configuration           : input.xyz
+Final configuration              : output.xyz
+Number of atoms                  : 108
+Temperature                      : 1.200000
+Time step                        : 0.005000
+Friction                         : 1.000000
+Cutoff for forces                : 2.500000
+Cutoff for neighbour list        : 3.000000
+Number of steps                  : 500
+Stride for trajectory            : 100
+Trajectory file                  : trajectory.xyz
+Stride for statistics            : 10
+Statistics file                  : energies.dat
+Dimensionality                   : 3
+Seed                             : 0
+Are atoms wrapped on output?     : F
+Epsilon                          : 1.000000
+Sigma                            : 1.000000
+PLUMED: PLUMED is starting
+PLUMED: Version: 2.9.0-dev (git: Unknown) compiled on Jul 25 2022 at 14:31:46
+PLUMED: Please cite these papers when using PLUMED [1][2]
+PLUMED: For further information see the PLUMED web page at http://www.plumed.org
+PLUMED: Root: /home/watanabe/plumed2-master/
+PLUMED: For installed feature, see /home/watanabe/plumed2-master//src/config/config.txt
+PLUMED: Molecular dynamics engine: simpleMD
+PLUMED: Precision of reals: 8
+PLUMED: Running over 1 node
+PLUMED: Number of threads: 1
+PLUMED: Cache line size: 512
+PLUMED: Number of atoms: 108
+PLUMED: File suffix: 
+PLUMED: FILE: plumed.dat
+PLUMED: Action DISTANCE
+PLUMED:   with label d
+PLUMED:   between atoms 1 2
+PLUMED:   using periodic boundary conditions
+PLUMED: Action LOGMFD
+PLUMED:   with label logmfd
+PLUMED:   with arguments d
+PLUMED:   added component to this action:  logmfd.bias 
+PLUMED: LogMFD, logarithmic flattening.
+PLUMED:   with harmonic force constant       50000.000000
+PLUMED:   with interval of cv(ideal) update  100
+PLUMED:   with time step of cv(ideal) update  0.500000
+PLUMED:   with alpha, gamma                  4.000000 0.250000
+PLUMED:   with Thermostat for cv(ideal)      NVT
+PLUMED:   with initial free energy           10.000000
+PLUMED:   with mass of cv(ideal) 1000.000000
+PLUMED:   with initial value of cv(ideal) 1.500000
+PLUMED:   with initial velocity of cv(ideal) 0.000000
+PLUMED:   with maximum value of cv(ideal)     10.000000
+PLUMED:   with minimum value of cv(ideal)     0.000000
+PLUMED:   and kbt                            2.494339
+PLUMED:  kbt for PD 1.200000
+PLUMED:   added component to this action:  logmfd.d_fict 
+PLUMED:   added component to this action:  logmfd.d_vfict 
+PLUMED: Action PRINT
+PLUMED:   with label @2
+PLUMED:   with stride 100
+PLUMED:   with arguments d logmfd.d_fict
+PLUMED:   on file COLVAR
+PLUMED:   with format  %f
+PLUMED: END FILE: plumed.dat
+PLUMED: Timestep: 0.005000
+PLUMED: KbT: 1.200000
+PLUMED: Relevant bibliography:
+PLUMED:   [1] The PLUMED consortium, Nat. Methods 16, 670 (2019)
+PLUMED:   [2] Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)
+PLUMED: Please read and cite where appropriate!
+PLUMED: Finished setup
+List size: 3996
+List size: 4015
+List size: 3994
+List size: 4008
+List size: 3983
+List size: 4025
+List size: 4032
+List size: 4151
+List size: 4163
+List size: 4202
+List size: 4210
+List size: 4248
+List size: 4247
+List size: 4280
+List size: 4299
+List size: 4313
+List size: 4359
+List size: 4373
+List size: 4374
+List size: 4389
+List size: 4378
+List size: 4404
+List size: 4390
+List size: 4414
+List size: 4406
+List size: 4434
+List size: 4418
+List size: 4424
+List size: 4417
+List size: 4433
+List size: 4426
+List size: 4433
+List size: 4427
+List size: 4440
+List size: 4429
+List size: 4441
+List size: 4434
+List size: 4436
+List size: 4425
+List size: 4443
+List size: 4427
+List size: 4435
+List size: 4434
+List size: 4442
+List size: 4441
+List size: 4449
+List size: 4421
+List size: 4436
+List size: 4424
+List size: 4438
+List size: 4431
+List size: 4430
+List size: 4421
+List size: 4433
+List size: 4417
+List size: 4415
+List size: 4405
+List size: 4412
+List size: 4419
+List size: 4422
+List size: 4415
+List size: 4419
+List size: 4408
+List size: 4404
+List size: 4404
+List size: 4411
+List size: 4422
+List size: 4411
+List size: 4410
+List size: 4412
+List size: 4413
+List size: 4426
+List size: 4427
+List size: 4428
+List size: 4435
+List size: 4430
+List size: 4426
+List size: 4434
+List size: 4432
+List size: 4439
+List size: 4463
+List size: 4473
+List size: 4463
+List size: 4477
+List size: 4469
+List size: 4480
+List size: 4463
+List size: 4466
+List size: 4464
+List size: 4470
+List size: 4454
+List size: 4479
+List size: 4481
+List size: 4479
+List size: 4481
+List size: 4484
+List size: 4485
+List size: 4490
+List size: 4485
+List size: 4486
+List size: 4482
+List size: 4478
+List size: 4484
+List size: 4477
+List size: 4477
+List size: 4488
+List size: 4484
+List size: 4476
+List size: 4488
+List size: 4524
+List size: 4514
+List size: 4506
+List size: 4491
+List size: 4506
+List size: 4536
+List size: 4526
+List size: 4520
+List size: 4522
+List size: 4513
+PLUMED:                                               Cycles        Total      Average      Minimum      Maximum
+PLUMED:                                                    1     0.004541     0.004541     0.004541     0.004541
+PLUMED: 1 Prepare dependencies                           500     0.000113     0.000000     0.000000     0.000003
+PLUMED: 2 Sharing data                                   500     0.000186     0.000000     0.000000     0.000009
+PLUMED: 3 Waiting for data                               500     0.000091     0.000000     0.000000     0.000002
+PLUMED: 4 Calculating (forward loop)                     500     0.001300     0.000003     0.000002     0.000202
+PLUMED: 5 Applying (backward loop)                       500     0.000605     0.000001     0.000001     0.000015
+PLUMED: 6 Update                                         500     0.000243     0.000000     0.000000     0.000051
