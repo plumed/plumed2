@@ -269,6 +269,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() { return MPI_UNSIGNED_LONG_LONG;}
 template<> MPI_Datatype Communicator::getMPIType<long double>()   { return MPI_LONG_DOUBLE;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
@@ -278,6 +279,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype()
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long double>() { return MPI_Datatype();}
 #endif
 
