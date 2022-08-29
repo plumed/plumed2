@@ -145,7 +145,7 @@ jobs:
          ./.travis/push doc
 
   codecheck:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Set path
@@ -173,7 +173,7 @@ jobs:
         make -C docker centos7
 
   macports:
-    runs-on: macos-10.15
+    runs-on: macos-11
     strategy:
       fail-fast: false
       matrix:
@@ -214,6 +214,7 @@ jobs:
         #done
 
   macsimple:
+    # still needs some fix to be upgraded to macos-11
     runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
@@ -241,7 +242,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04 , macos-10.15]
+        os: [ubuntu-20.04 , macos-11]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
