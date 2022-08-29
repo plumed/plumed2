@@ -6,16 +6,16 @@ file="$1"
 # version strings:
 version=$(
 echo "version short $(
-  if test -f ../../VERSION ; then
-    grep -v "#" ../../VERSION | sed  's/^\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/'
+  if test -f ../../VERSION.txt ; then
+    grep -v "#" ../../VERSION.txt | sed  's/^\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/'
   else
     echo "Unknown"
   fi
 )"
 
 echo "version long $(
-  if test -f ../../VERSION ; then
-    grep -v "#" ../../VERSION
+  if test -f ../../VERSION.txt ; then
+    grep -v "#" ../../VERSION.txt
   else
     echo "Unknown"
   fi
