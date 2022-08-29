@@ -40,7 +40,7 @@ def is_platform_mac():
     return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
-    copyfile("../VERSION","PLUMED_VERSION")
+    copyfile("../VERSION.txt","PLUMED_VERSION")
     try:
         os.mkdir("include")
     except OSError:

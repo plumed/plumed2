@@ -1,6 +1,6 @@
 
 # version number
-VERSION = $(shell if test -f ../../VERSION ; then grep -v \\\# ../../VERSION ; else echo "Unknown" ; fi )
+VERSION = $(shell if test -f ../../VERSION.txt ; then grep -v \\\# ../../VERSION.txt ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
 KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))

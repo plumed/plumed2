@@ -243,8 +243,7 @@ jobs:
         #done
 
   macsimple:
-    # still needs some fix to be upgraded to macos-11
-    runs-on: macos-10.15
+    runs-on: macos-11
     steps:
     - uses: actions/checkout@v2
     - name: Set paths
