@@ -230,8 +230,10 @@ public:
 /// Set the value of a int type field
   OFile& printField(const std::string&,int);
   OFile& printField(const std::string&,long int);
+  OFile& printField(const std::string&,long long int);
   OFile& printField(const std::string&,unsigned);
   OFile& printField(const std::string&,long unsigned);
+  OFile& printField(const std::string&,long long unsigned);
 /// Set the value of a string field
   OFile& printField(const std::string&,const std::string&);
 ///

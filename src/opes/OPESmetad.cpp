@@ -174,7 +174,7 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned long counter_;
+  unsigned long long counter_;
   std::size_t ncv_;
 
   double kbt_;
@@ -184,7 +184,7 @@ private:
   std::vector<double> sigma0_;
   std::vector<double> sigma_min_;
   unsigned adaptive_sigma_stride_;
-  unsigned long adaptive_counter_;
+  unsigned long long adaptive_counter_;
   std::vector<double> av_cv_;
   std::vector<double> av_M2_;
   bool fixed_sigma_;

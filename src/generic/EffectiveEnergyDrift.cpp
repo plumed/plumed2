@@ -74,7 +74,7 @@ EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
 class EffectiveEnergyDrift:
   public ActionPilot {
   OFile output;
-  long int printStride;
+  long long int printStride;
   std::string fmt;
 
   double eed;
@@ -82,7 +82,7 @@ class EffectiveEnergyDrift:
   Atoms& atoms;
   std::vector<ActionWithValue*> biases;
 
-  long int pDdStep;
+  long long int pDdStep;
   int nLocalAtoms;
   int pNLocalAtoms;
   std::vector<int> pGatindex;

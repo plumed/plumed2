@@ -208,17 +208,17 @@ private:
   std::vector<double> average_weights_;
 
 // write file with model overlap
-  void write_model_overlap(long int step);
+  void write_model_overlap(long long int step);
 // get median of std::vector
   double get_median(std::vector<double> &v);
 // annealing
-  double get_annealing(long int step);
+  double get_annealing(long long int step);
 // do regression
   double scaleEnergy(double s);
   double doRegression();
 // read and write status
   void read_status();
-  void print_status(long int step);
+  void print_status(long long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
@@ -757,7 +757,7 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<"\n";
 }
 
-void EMMI::write_model_overlap(long int step)
+void EMMI::write_model_overlap(long long int step)
 {
   OFile ovfile;
   ovfile.link(*this);
@@ -819,7 +819,7 @@ void EMMI::read_status()
   }
 }
 
-void EMMI::print_status(long int step)
+void EMMI::print_status(long long int step)
 {
 // if first time open the file
   if(first_status_) {
@@ -1474,7 +1474,7 @@ double EMMI::doRegression()
   return scale_best;
 }
 
-double EMMI::get_annealing(long int step)
+double EMMI::get_annealing(long long int step)
 {
 // default no annealing
   double fact = 1.0;
@@ -1565,7 +1565,7 @@ void EMMI::calculate()
   }
 
   // get time step
-  long int step = getStep();
+  long long int step = getStep();
 
   // do regression
   if(nregres_>0) {

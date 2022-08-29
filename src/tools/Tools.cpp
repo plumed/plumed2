@@ -54,11 +54,19 @@ bool Tools::convertNoexcept(const std::string & str,long int & t) {
   return convertToInt(str,t);
 }
 
+bool Tools::convertNoexcept(const std::string & str,long long int & t) {
+  return convertToInt(str,t);
+}
+
 bool Tools::convertNoexcept(const std::string & str,unsigned & t) {
   return convertToInt(str,t);
 }
 
 bool Tools::convertNoexcept(const std::string & str,long unsigned & t) {
+  return convertToInt(str,t);
+}
+
+bool Tools::convertNoexcept(const std::string & str,long long unsigned & t) {
   return convertToInt(str,t);
 }
 
