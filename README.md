@@ -69,7 +69,7 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
     README.md        : this file
-    VERSION          : version file
+    VERSION.txt      : version file
     astyle           : a local version of astyle, used to format code
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
