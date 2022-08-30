@@ -175,9 +175,9 @@ public:
 
     // Setup box if we have periodic domain
     std::vector<double> box(9, 0.0);
-    if( lperiod && dim==1 ) { box[0]=box[5]=box[9]=periods[0]; }
-    else if( lperiod && dim==2 ) { box[0]=periods[0]; box[5]=box[9]=periods[1]; }
-    else if( lperiod && dim==3 ) { box[0]=periods[0]; box[5]=periods[1]; box[9]=periods[2]; }
+    if( lperiod && dim==1 ) { box[0]=box[4]=box[8]=periods[0]; }
+    else if( lperiod && dim==2 ) { box[0]=periods[0]; box[4]=box[8]=periods[1]; }
+    else if( lperiod && dim==3 ) { box[0]=periods[0]; box[4]=periods[1]; box[8]=periods[2]; }
     else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
 
     // Create plumed object and initialize
