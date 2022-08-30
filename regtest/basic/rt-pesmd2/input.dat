@@ -1,0 +1,9 @@
+temperature 0.1
+friction 0.1
+tstep 0.005
+dimension 2
+nstep 50
+ipos 0.1 0.2
+periodic true
+min -0.001 -0.002
+max +0.001 +0.002
