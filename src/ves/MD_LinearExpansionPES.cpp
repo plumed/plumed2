@@ -592,8 +592,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
   if(plumed) {
-    int step_tmp = 0;
-    plumed->cmd("setStep",&step_tmp);
+    long long unsigned int step_tmp = 0;
+    plumed->cmd("setStepLongLong",&step_tmp);
     plumed->cmd("setMasses",&masses[0]);
     plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&potential);
@@ -638,7 +638,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     if(plumed) {
       long long unsigned int istepplusone=istep+1;
       plumedWantsToStop=0;
-      plumed->cmd("setStep",&istepplusone);
+      plumed->cmd("setStepLongLong",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
       plumed->cmd("setForces",&forces[0][0]);
       plumed->cmd("setEnergy",&potential);
