@@ -314,7 +314,7 @@ double TD_MultithermalMultibaric::getValue(const std::vector<double>& argument) 
 
 void TD_MultithermalMultibaric::updateGrid() {
   if (getStep() == 0) {
-    if(targetDistGrid().getDimension()>3 && targetDistGrid().getDimension()<2) plumed_merror(getName()+" works only with 2 or 3 arguments, i.e. energy and volume, or energy, volume, and CV");
+    if(targetDistGrid().getDimension()>3 || targetDistGrid().getDimension()<2) plumed_merror(getName()+" works only with 2 or 3 arguments, i.e. energy and volume, or energy, volume, and CV");
     if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
