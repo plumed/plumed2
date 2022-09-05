@@ -29,6 +29,10 @@
 #include <string>
 #include <array>
 
+#ifdef __PLUMED_HAS_ARRAYFIRE
+#include <arrayfire.h>
+#endif
+
 namespace PLMD {
 
 class Log;
@@ -79,6 +83,17 @@ class RMSD
   Vector positions_center;
   bool positions_center_is_calculated;
   bool positions_center_is_removed;
+// arrayfire GPU variable for rmsd calculation
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  double rr11;
+  af::array reference_device;
+  af::array align_device;
+  af::array displace_device;
+  mutable std::vector<double> rr01_host;
+  mutable std::vector<double> cpositions_host;
+  mutable std::vector<double> ddist_drotation_host;
+  mutable std::vector<double> derivatives_host;
+#endif
 // calculates the center from the position provided
   Vector calculateCenter(const std::vector<Vector> &p,const std::vector<double> &w) {
     plumed_massert(p.size()==w.size(),"mismatch in dimension of position/align arrays while calculating the center");
@@ -109,12 +124,25 @@ public:
 /// set reference coordinates, remove the com by using uniform weights
   void setReference(const std::vector<Vector> & reference);
   std::vector<Vector> getReference();
-/// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value
-  void setAlign(const std::vector<double> & align, bool normalize_weights=true, bool remove_center=true);
-  std::vector<double> getAlign();
 /// set align
   void setDisplace(const std::vector<double> & displace, bool normalize_weights=true);
   std::vector<double> getDisplace();
+/// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value
+  void setAlign(const std::vector<double> & align, bool normalize_weights=true, bool remove_center=true);
+  std::vector<double> getAlign();
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  void setReference_gpu(af::array & reference_device, const std::vector<Vector> & reference, int n);
+  af::array getReference_gpu();
+  void setAlign_gpu(af::array & align_device, const std::vector<double> & align, int n);
+  af::array getAlign_gpu();
+  void setDisplace_gpu(af::array & displace_device, const std::vector<double> & displace, int n);
+  af::array getDisplace_gpu();
+/// set rr11 for gpu calculate
+  void setrr11_gpu(double & rr11);
+  double getrr11_gpu();
+/// set host transfer memory
+  void setHostmem_gpu(std::vector<double> & derivatives_host, std::vector<double> & rr01_host, std::vector<double> & cpositions_host, std::vector<double> & ddist_drotation_host, int n);
+#endif
 ///
   std::string getMethod();
 /// workhorses
@@ -125,12 +153,18 @@ public:
                          std::vector<Vector>  & derivatives,
                          std::vector<Vector>  & displacement,
                          bool squared=false)const;
+  void optimalAlignment_gpu(const std::vector<Vector> & positions, 
+                            double & rr00, double & rr11, Tensor & rr01, Vector & cpositions, int deviceid) const;
+  void optimalAlignment_cpu(const  std::vector<double>  & align,
+                            const std::vector<Vector> & positions,
+                            const std::vector<Vector> & reference,
+                            double & rr00, double & rr11, Tensor & rr01, Vector & cpositions) const;
   template <bool safe,bool alEqDis>
   double optimalAlignment(const  std::vector<double>  & align,
                           const  std::vector<double>  & displace,
                           const std::vector<Vector> & positions,
                           const std::vector<Vector> & reference,
-                          std::vector<Vector>  & DDistDPos, bool squared=false)const;
+                          std::vector<Vector>  & DDistDPos, bool squared=false, bool gpu=false, int deviceid=0)const;
 
   template <bool safe, bool alEqDis>
   double optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
@@ -294,6 +328,18 @@ private:
   Tensor ddist_drr01;
   Tensor ddist_drotation;
   std::vector<Vector> d; // difference of components
+#ifdef __PLUMED_HAS_ARRAYFIRE
+  af::array positions_device;
+  af::array reference_device;
+  af::array cp_device;
+  af::array cr_device;
+  af::array rr01_device;
+  af::array rotation_device;
+  af::array d_device;
+  af::array align_device;
+  af::array displace_device;
+  af::array ddist_drotation_device;
+#endif
 public:
   /// the constructor (note: only references are passed, therefore is rather fast)
   /// note: this aligns the reference onto the positions
@@ -331,10 +377,14 @@ public:
   //  does the core calc : first thing to call after the constructor:
   // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
   void doCoreCalc(bool safe,bool alEqDis, bool only_rotation=false);
+  void doCoreCalc_cpu(bool safe,bool alEqDis, bool only_rotation=false);
+  void doCoreCalc_gpu(bool safe,bool alEqDis, bool only_rotation=false);
   // do calculation with close structure data structures
   void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01);
   // retrieve the distance if required after doCoreCalc
   double getDistance(bool squared);
+  double getDistance_cpu(bool squared);
+  double getDistance_gpu(bool squared);
   // retrieve the derivative of the distance respect to the position
   std::vector<Vector> getDDistanceDPositions();
   // retrieve the derivative of the distance respect to the reference

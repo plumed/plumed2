@@ -34,6 +34,10 @@ double RMSDBase::calculate( const std::vector<Vector>& pos, ReferenceValuePack& 
   return calc( pos, myder, squared );
 }
 
+double RMSDBase::calculate_cpugpu( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared, const bool& gpu, const int& deviceid ) const {
+  return calc_cpugpu(pos, myder, squared, gpu, deviceid);
+}
+
 double RMSDBase::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( pos.size()==getNumberOfAtoms() );
   return calc( pos, myder, squared );

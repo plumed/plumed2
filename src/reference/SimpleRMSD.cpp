@@ -32,6 +32,7 @@ public:
   explicit SimpleRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& ) override;
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const override;
+  double calc_cpugpu( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared, const bool& gpu, const int& deviceid ) const override;
   bool pcaIsEnabledForThisReference() override { return true; }
   void setupPCAStorage( ReferenceValuePack& mypack ) override {
     mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
@@ -50,6 +51,14 @@ SimpleRMSD::SimpleRMSD( const ReferenceConfigurationOptions& ro ):
 
 void SimpleRMSD::read( const PDB& pdb ) {
   readReference( pdb );
+}
+
+double SimpleRMSD::calc_cpugpu( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared, const bool& gpu, const int& deviceid ) const {
+  if( myder.getAtomsDisplacementVector().size()!=pos.size() ) myder.getAtomsDisplacementVector().resize( pos.size() );
+  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), myder.getAtomVector(), myder.getAtomsDisplacementVector(), squared );
+  myder.clear(); for(unsigned i=0; i<pos.size(); ++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
 }
 
 double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
