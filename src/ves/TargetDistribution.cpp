@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -55,9 +55,6 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
   shift_targetdist_to_zero_(false),
   dimension_(0),
   grid_args_(0),
-  targetdist_grid_pntr_(NULL),
-  log_targetdist_grid_pntr_(NULL),
-  targetdist_modifer_pntrs_(0),
   action_pntr_(NULL),
   vesbias_pntr_(NULL),
   needs_bias_grid_(false),
@@ -76,8 +73,8 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
     parse("WELLTEMPERED_FACTOR",welltempered_factor);
     //
     if(welltempered_factor>0.0) {
-      TargetDistModifer* pntr = new WellTemperedModifer(welltempered_factor);
-      targetdist_modifer_pntrs_.push_back(pntr);
+      auto pntr = Tools::make_unique<WellTemperedModifer>(welltempered_factor);
+      targetdist_modifer_pntrs_.emplace_back(std::move(pntr));
     }
     else if(welltempered_factor<0.0) {
       plumed_merror(getName()+": negative value in WELLTEMPERED_FACTOR does not make sense");
@@ -105,18 +102,7 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
 
 
 TargetDistribution::~TargetDistribution() {
-  if(targetdist_grid_pntr_!=NULL) {
-    delete targetdist_grid_pntr_;
-  }
-  if(log_targetdist_grid_pntr_!=NULL) {
-    delete log_targetdist_grid_pntr_;
-  }
-  for(unsigned int i=0; i<targetdist_modifer_pntrs_.size(); i++) {
-    delete targetdist_modifer_pntrs_[i];
-  }
 }
-
-
 double TargetDistribution::getBeta() const {
   plumed_massert(vesbias_pntr_!=NULL,"The VesBias has to be linked to use TargetDistribution::getBeta()");
   return vesbias_pntr_->getBeta();
@@ -182,8 +168,8 @@ void TargetDistribution::setupGrids(const std::vector<Value*>& arguments, const 
   plumed_massert(max.size()==dimension,"TargetDistribution::setupGrids: mismatch between number of values given for grid parameters");
   plumed_massert(nbins.size()==dimension,"TargetDistribution::setupGrids: mismatch between number of values given for grid parameters");
   grid_args_=arguments;
-  targetdist_grid_pntr_ =     new Grid("targetdist",arguments,min,max,nbins,false,false);
-  log_targetdist_grid_pntr_ = new Grid("log_targetdist",arguments,min,max,nbins,false,false);
+  targetdist_grid_pntr_ =     Tools::make_unique<Grid>("targetdist",arguments,min,max,nbins,false,false);
+  log_targetdist_grid_pntr_ = Tools::make_unique<Grid>("log_targetdist",arguments,min,max,nbins,false,false);
   setupAdditionalGrids(arguments,min,max,nbins);
 }
 
@@ -191,8 +177,8 @@ void TargetDistribution::setupGrids(const std::vector<Value*>& arguments, const 
 void TargetDistribution::calculateStaticDistributionGrid() {
   if(static_grid_calculated && !bias_cutoff_active_) {return;}
   // plumed_massert(isStatic(),"this should only be used for static distributions");
-  plumed_massert(targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
-  plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
+  plumed_massert(targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
+  plumed_massert(log_targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
   {
     std::vector<double> argument = targetdist_grid_pntr_->getPoint(l);
@@ -235,9 +221,9 @@ Grid TargetDistribution::getMarginalDistributionGrid(Grid* grid_pntr, const std:
   }
   plumed_massert(args.size()==args_index.size(),"getMarginalDistributionGrid: problem with the arguments of the marginal");
   //
-  MarginalWeight* Pw = new MarginalWeight();
-  Grid proj_grid = grid_pntr->project(args,Pw);
-  delete Pw;
+  auto Pw = Tools::make_unique<MarginalWeight>();
+  Grid proj_grid = grid_pntr->project(args,Pw.get());
+  Pw.reset();
   //
   // scale with the bin volume used for the integral such that the
   // marginals are proberly normalized to 1.0
@@ -252,7 +238,7 @@ Grid TargetDistribution::getMarginalDistributionGrid(Grid* grid_pntr, const std:
 
 
 Grid TargetDistribution::getMarginal(const std::vector<std::string>& args) {
-  return TargetDistribution::getMarginalDistributionGrid(targetdist_grid_pntr_,args);
+  return TargetDistribution::getMarginalDistributionGrid(targetdist_grid_pntr_.get(),args);
 }
 
 
@@ -261,7 +247,7 @@ void TargetDistribution::updateTargetDist() {
   updateGrid();
   //
   for(unsigned int i=0; i<targetdist_modifer_pntrs_.size(); i++) {
-    applyTargetDistModiferToGrid(targetdist_modifer_pntrs_[i]);
+    applyTargetDistModiferToGrid(targetdist_modifer_pntrs_[i].get());
   }
   //
   if(bias_cutoff_active_) {updateBiasCutoffForTargetDistGrid();}
@@ -271,7 +257,7 @@ void TargetDistribution::updateTargetDist() {
   //
   // if(check_normalization_ && !force_normalization_ && !shift_targetdist_to_zero_){
   if(check_normalization_ && !(bias_cutoff_active_)) {
-    double normalization = integrateGrid(targetdist_grid_pntr_);
+    double normalization = integrateGrid(targetdist_grid_pntr_.get());
     const double normalization_thrshold = 0.1;
     if(normalization < 1.0-normalization_thrshold || normalization > 1.0+normalization_thrshold) {
       std::string norm_str; Tools::convert(normalization,norm_str);
@@ -302,7 +288,7 @@ void TargetDistribution::updateBiasCutoffForTargetDistGrid() {
   // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   plumed_massert(getBiasWithoutCutoffGridPntr()!=NULL,"the bias without cutoff grid has to be linked");
   //
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_);
+  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
   {
@@ -327,7 +313,7 @@ void TargetDistribution::applyTargetDistModiferToGrid(TargetDistModifer* modifer
   // plumed_massert(targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   //
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_);
+  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
   {
@@ -370,7 +356,7 @@ void TargetDistribution::readInRestartTargetDistGrid(const std::string& grid_fna
   if(restart_grid->getSize()!=targetdist_grid_pntr_->getSize()) {
     plumed_merror(getName()+": problem with reading previous target distribution when restarting, the grid is not of the correct size!");
   }
-  VesTools::copyGridValues(restart_grid.get(),targetdist_grid_pntr_);
+  VesTools::copyGridValues(restart_grid.get(),targetdist_grid_pntr_.get());
   updateLogTargetDistGrid();
 }
 

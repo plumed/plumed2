@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,13 +27,10 @@
 #include "File.h"
 #include "Grid.h"
 
-
 namespace PLMD {
 
-using namespace std;
-
 /// the constructor here
-BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc) {
+BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc) {
   lowI_=0.0;
   uppI_=0.0;
   doInt_=false;
@@ -43,8 +40,11 @@ BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communi
     names.push_back(values[i]->getName());
   }
 }
+
 /// overload the constructor: add the sigma  at constructor time
-BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc,  const vector<double> & sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc) {
+BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<double> & sigma ):
+  hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc)
+{
   lowI_=0.0;
   uppI_=0.0;
   doInt_=false;
@@ -54,11 +54,14 @@ BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communi
     names.push_back(values[i]->getName());
   }
 }
+
 /// overload the constructor: add the grid at constructor time
-BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc, const vector<string> & gmin, const vector<string> & gmax,
-                                       const vector<unsigned> & nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc) {
+BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
+                                       const std::vector<unsigned> & nbin, bool doInt, double lowI, double uppI):
+  hasgrid(false), rescaledToBias(false), mycomm(cc)
+{
   ndim=tmpvalues.size();
-  for(int  i=0; i<ndim; i++) {
+  for(int i=0; i<ndim; i++) {
     values.push_back(tmpvalues[i]);
     names.push_back(values[i]->getName());
   }
@@ -68,8 +71,12 @@ BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communi
   // initialize the grid
   addGrid(gmin,gmax,nbin);
 }
+
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communicator &cc, const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin, const vector<double> & sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc) {
+BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
+                                       const std::vector<unsigned> & nbin, const std::vector<double> & sigma):
+  hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc)
+{
   lowI_=0.0;
   uppI_=0.0;
   doInt_=false;
@@ -82,22 +89,24 @@ BiasRepresentation::BiasRepresentation(const vector<Value*> & tmpvalues, Communi
   addGrid(gmin,gmax,nbin);
 }
 
-void  BiasRepresentation::addGrid( const vector<string> & gmin, const vector<string> & gmax, const vector<unsigned> & nbin ) {
+void BiasRepresentation::addGrid(const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin ) {
   plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
   plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");
-  string ss; ss="file.free";
-  vector<Value*> vv; for(unsigned i=0; i<values.size(); i++)vv.push_back(values[i]);
-  //cerr<<" initializing grid "<<endl;
-  BiasGrid_.reset(new Grid(ss,vv,gmin,gmax,nbin,false,true));
+  std::string ss; ss="file.free";
+  std::vector<Value*> vv; for(unsigned i=0; i<values.size(); i++) vv.push_back(values[i]);
+  BiasGrid_=Tools::make_unique<Grid>(ss,vv,gmin,gmax,nbin,false,true);
   hasgrid=true;
 }
+
 bool BiasRepresentation::hasSigmaInInput() {
   if(histosigma.size()==0) {return false;} else {return true;}
 }
+
 void BiasRepresentation::setRescaledToBias(bool rescaled) {
   plumed_massert(hills.size()==0,"you can set the rescaling function only before loading hills");
   rescaledToBias=rescaled;
 }
+
 const bool & BiasRepresentation::isRescaledToBias() {
   return rescaledToBias;
 }
@@ -105,28 +114,32 @@ const bool & BiasRepresentation::isRescaledToBias() {
 unsigned BiasRepresentation::getNumberOfDimensions() {
   return values.size();
 }
-vector<string> BiasRepresentation::getNames() {
+
+std::vector<std::string> BiasRepresentation::getNames() {
   return names;
 }
-const string & BiasRepresentation::getName(unsigned i) {
+
+const std::string & BiasRepresentation::getName(unsigned i) {
   return names[i];
 }
 
-const vector<Value*>& BiasRepresentation::getPtrToValues() {
+const std::vector<Value*>& BiasRepresentation::getPtrToValues() {
   return values;
 }
+
 Value*  BiasRepresentation::getPtrToValue(unsigned i) {
   return values[i];
 }
 
 std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile) {
-  vector<double> cc( names.size() );
+  std::vector<double> cc( names.size() );
   for(unsigned i=0; i<names.size(); ++i) {
     ifile->scanField(names[i],cc[i]);
   }
   double h=1.0;
-  return std::unique_ptr<KernelFunctions>( new KernelFunctions(cc,histosigma,"gaussian","DIAGONAL",h) );
+  return Tools::make_unique<KernelFunctions>(cc,histosigma,"stretched-gaussian","DIAGONAL",h);
 }
+
 void BiasRepresentation::pushKernel( IFile *ifile ) {
   std::unique_ptr<KernelFunctions> kk;
   // here below the reading of the kernel is completely hidden
@@ -140,14 +153,14 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
   }
   // the bias factor is not something about the kernels but
   // must be stored to keep the  bias/free energy duality
-  string dummy; double dummyd;
+  std::string dummy; double dummyd;
   if(ifile->FieldExist("biasf")) {
     ifile->scanField("biasf",dummy);
     Tools::convert(dummy,dummyd);
   } else {dummyd=1.0;}
   biasf.push_back(dummyd);
   // the domain does not pertain to the kernel but to the values here defined
-  string	mins,maxs,minv,maxv,mini,maxi; mins="min_"; maxs="max_";
+  std::string mins,maxs,minv,maxv,mini,maxi; mins="min_"; maxs="max_";
   for(int i=0 ; i<ndim; i++) {
     if(values[i]->isPeriodic()) {
       ifile->scanField(mins+names[i],minv);
@@ -161,13 +174,13 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
   // if grid is defined then it should be added on the grid
   //cerr<<"now with "<<hills.size()<<endl;
   if(hasgrid) {
-    vector<unsigned> nneighb;
+    std::vector<unsigned> nneighb;
     if(doInt_&&(kk->getCenter()[0]+kk->getContinuousSupport()[0] > uppI_ || kk->getCenter()[0]-kk->getContinuousSupport()[0] < lowI_ )) {
       nneighb=BiasGrid_->getNbin();
     } else nneighb=kk->getSupport(BiasGrid_->getDx());
-    vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
-    vector<double> der(ndim);
-    vector<double> xx(ndim);
+    std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
+    std::vector<double> der(ndim);
+    std::vector<double> xx(ndim);
     if(mycomm.Get_size()==1) {
       for(unsigned i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
@@ -188,9 +201,9 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
     } else {
       unsigned stride=mycomm.Get_size();
       unsigned rank=mycomm.Get_rank();
-      vector<double> allder(ndim*neighbors.size(),0.0);
-      vector<double> allbias(neighbors.size(),0.0);
-      vector<double> tmpder(ndim);
+      std::vector<double> allder(ndim*neighbors.size(),0.0);
+      std::vector<double> allbias(neighbors.size(),0.0);
+      std::vector<double> tmpder(ndim);
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
         BiasGrid_->getPoint(ineigh,xx);
@@ -217,15 +230,18 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
   }
   hills.emplace_back(std::move(kk));
 }
+
 int BiasRepresentation::getNumberOfKernels() {
   return hills.size();
 }
+
 Grid* BiasRepresentation::getGridPtr() {
   plumed_massert(hasgrid,"if you want the grid pointer then you should have defined a grid before");
   return BiasGrid_.get();
 }
-void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin) {
-  vector<double> ss,cc,binsize;
+
+void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin) {
+  std::vector<double> ss,cc,binsize;
   vmin.clear(); vmin.resize(ndim,10.e20);
   vmax.clear(); vmax.resize(ndim,-10.e20);
   vbin.clear(); vbin.resize(ndim);
@@ -255,9 +271,10 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
       if(minv>vmin[j])vmin[j]=minv;
       if(maxv<vmax[j])vmax[j]=maxv;
     }
-    vbin[j]=static_cast<unsigned>(ceil((vmax[j]-vmin[j])/binsize[j]) );
+    vbin[j]=static_cast<unsigned>(std::ceil((vmax[j]-vmin[j])/binsize[j]) );
   }
 }
+
 void BiasRepresentation::clear() {
   hills.clear();
   // clear the grid

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/Angle.h"
-
-#include <string>
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -104,7 +99,7 @@ Angle::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);

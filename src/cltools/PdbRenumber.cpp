@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,8 +31,6 @@
 #include <vector>
 #include <array>
 #include <limits>
-
-using namespace std;
 
 namespace PLMD {
 namespace cltools {
@@ -106,7 +104,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PdbRenumber(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
-  string description()const override {
+  std::string description()const override {
     return "Modify atom numbers in a PDB, possibly using hybrid-36 coding";
   }
 };
@@ -143,14 +141,14 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
 
   plumed_assert(ipdb.length()>0) << "please specify the input PDB with --ipdb";
   plumed_assert(opdb.length()>0) << "please specify the onput PDB with --opdb";
-  fprintf(out,"  with input PDB: %s\n",ipdb.c_str());
-  fprintf(out,"  with output PDB: %s\n",opdb.c_str());
+  std::fprintf(out,"  with input PDB: %s\n",ipdb.c_str());
+  std::fprintf(out,"  with output PDB: %s\n",opdb.c_str());
 
   std::vector<unsigned> serials;
 
   if(atomnumbers.length()>0) {
     plumed_assert(iat==0) << "it is not possible to use both --atomnumbers and --firstatomnumber";
-    fprintf(out,"  reading atom numbers from file %s\n",atomnumbers.c_str());
+    std::fprintf(out,"  reading atom numbers from file %s\n",atomnumbers.c_str());
     IFile ifile;
     ifile.open(atomnumbers);
     std::string line;
@@ -161,7 +159,7 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
     }
   } else {
     if(iat==0) iat=1;
-    fprintf(out,"  with atoms starting from %u\n",iat);
+    std::fprintf(out,"  with atoms starting from %u\n",iat);
   }
 
   IFile ifile;

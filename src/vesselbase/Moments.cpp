@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ void Moments::registerKeywords( Keywords& keys ) {
   Vessel::registerKeywords( keys );
   keys.remove("LABEL");
   keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
-  keys.add("compulsory","MOMENTS","the list of moments that you would like to calculate");
+  keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
 }
 
 void Moments::reserveKeyword( Keywords& keys ) {
@@ -77,17 +77,11 @@ Moments::Moments( const vesselbase::VesselOptions& da) :
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
 
-  std::vector<std::string> moments; std::string valstr;
-  if( getNumericalLabel()==0 ) {
-    valstr = "moment-";
-    moments=Tools::getWords(getAllInput(),"\t\n ,");
-    Tools::interpretRanges(moments); mycomponent=1;
-  } else {
-    std::string numstr; parse("COMPONENT",mycomponent);
-    Tools::convert( mycomponent, numstr); valstr = "moment-"  + numstr + "-";
-    parseVector("MOMENTS",moments); Tools::interpretRanges(moments);
-  }
-  unsigned nn;
+  std::vector<std::string> moments; std::string valstr = "moment-";
+  parse("COMPONENT",mycomponent); parseVector("MOMENTS",moments);
+  if( getNumericalLabel()!=0 ) { std::string numstr; Tools::convert( mycomponent, numstr); valstr = "moment-" + numstr + "-"; }
+  if( moments.size()==0 ) moments=Tools::getWords(getAllInput(),"\t\n ,");
+  Tools::interpretRanges(moments); unsigned nn;
   for(unsigned i=0; i<moments.size(); ++i) {
     a->addComponentWithDerivatives( valstr + moments[i] );
     a->componentIsNotPeriodic( valstr + moments[i] );
@@ -139,9 +133,9 @@ void Moments::finish( const std::vector<double>& buffer ) {
     for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {
       mystash->retrieveSequentialValue( i, false, myvalues );
       val=pfactor*( myvalues[mycomponent] - min );
-      sinsum+=sin(val); cossum+=cos(val);
+      sinsum+=std::sin(val); cossum+=std::cos(val);
     }
-    mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ), cossum / static_cast<double>( nvals ) ) / (2*pi);
+    mean = 0.5 + std::atan2( sinsum / static_cast<double>( nvals ), cossum / static_cast<double>( nvals ) ) / (2*pi);
     mean = min + (max-min)*mean;
   } else {
     for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {

@@ -17,7 +17,7 @@ I would like my code to appear in release __XXXXX__
   Please select the type of your contribution among these:
   (Change [ ] to [X] to tick an option)
 -->
-- [ ] changes to code or doc authored by PLUMED developers
+- [ ] changes to code or doc authored by PLUMED developers, or additions of code in the core or within the default modules
 - [ ] changes to a module not authored by you
 - [ ] new module contribution or edit of a module authored by you
 
@@ -46,7 +46,7 @@ I would like my code to appear in release __XXXXX__
 -->
 
 - [ ] I added a new regtest or modified an existing regtest to validate my changes.
-- [ ] I verified that all regtests are passed successfully on Travis-CI.
+- [ ] I verified that all regtests are passed successfully on [GitHub Actions](https://github.com/plumed/plumed2/actions).
 
 <!--
   After your branch has been merged to the desired branch and then to plumed2/master, and after the

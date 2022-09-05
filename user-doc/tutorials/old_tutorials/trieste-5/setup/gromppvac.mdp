@@ -39,7 +39,7 @@ rlist = 1.2
 rcoulomb = 1.2 
 ;cutoff-scheme=Verlet
 comm-mode=Angular
-; Periodic boudary conditions in all the directions 
+; Periodic boundary conditions in all the directions
 pbc                      = no
 ;Temperature coupling
 tcoupl                   = v-rescale

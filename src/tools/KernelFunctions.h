@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,13 +34,17 @@ private:
 /// Is the metric matrix diagonal
   enum {diagonal,multi,vonmises} dtype;
 /// What type of kernel are we using
-  enum {gaussian,truncatedgaussian,uniform,triangular} ktype;
+  enum {gaussian,truncatedgaussian,stretchedgaussian,uniform,triangular} ktype;
 /// The center of the kernel function
   std::vector<double> center;
 /// The width of the kernel
   std::vector<double> width;
 /// The height of the kernel
   double height;
+
+  double stretchA=1.0;
+  double stretchB=0.0;
+
 /// Used to set all the data in the kernel during construction - avoids double coding as this has two constructors
   void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form

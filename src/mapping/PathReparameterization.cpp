@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -112,7 +112,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
       mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, mydir );
       // Set our direction equal to the displacement
       // mydir.setDirection( mypack );
-      // Shift the reference configuration by this ammount
+      // Shift the reference configuration by this amount
       newpath[i].displaceReferenceConfiguration( dr, mydir );
     }
 
@@ -136,7 +136,7 @@ void PathReparameterization::reparameterize( const int& ifix1, const int& ifix2,
   // Get the separation between frames which we will use to set the remaining frames
   double target = sumlen[ifix2] / ( ifix2 - ifix1 );
 
-  // And reparameterize the begining and end of the path
+  // And reparameterize the beginning and end of the path
   if( ifix1>0 ) reparameterizePart( ifix1, 0, target, TOL );
   if( ifix2<(mypath.size()-1) ) reparameterizePart( ifix2, mypath.size()-1, target, TOL );
 //  calcCurrentPathSpacings( 0, mypath.size()-1 );

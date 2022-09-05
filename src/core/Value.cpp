@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,6 +36,22 @@ Value::Value():
   value(0.0),
   inputForce(0.0),
   hasForce(false),
+  hasDeriv(true),
+  periodicity(unset),
+  min(0.0),
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
+{
+}
+
+Value::Value(const std::string& name):
+  action(NULL),
+  value_set(false),
+  value(0.0),
+  inputForce(0.0),
+  hasForce(false),
+  name(name),
   hasDeriv(true),
   periodicity(unset),
   min(0.0),
@@ -91,9 +107,9 @@ void Value::setNotPeriodic() {
 
 void Value::setDomain(const std::string& pmin,const std::string& pmax) {
   str_min=pmin;
-  if( !Tools::convert(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
+  if( !Tools::convertNoexcept(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
   str_max=pmax;
-  if( !Tools::convert(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
+  if( !Tools::convertNoexcept(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
   setupPeriodicity();
 }
 

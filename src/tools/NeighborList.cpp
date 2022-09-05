@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,17 +23,19 @@
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
+#include "Communicator.h"
+#include "OpenMP.h"
 #include "Tools.h"
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 namespace PLMD {
-using namespace std;
 
-NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
-                           const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
+NeighborList::NeighborList(const std::vector<AtomNumber>& list0, const std::vector<AtomNumber>& list1,
+                           const bool& serial, const bool& do_pair, const bool& do_pbc, const Pbc& pbc, Communicator& cm,
                            const double& distance, const unsigned& stride): reduced(false),
-  do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc),
+  serial_(serial), do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
   distance_(distance), stride_(stride)
 {
 // store full list of atoms needed
@@ -53,10 +55,10 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   lastupdate_=0;
 }
 
-NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
-                           const Pbc& pbc, const double& distance,
+NeighborList::NeighborList(const std::vector<AtomNumber>& list0, const bool& serial, const bool& do_pbc,
+                           const Pbc& pbc, Communicator& cm, const double& distance,
                            const unsigned& stride): reduced(false),
-  do_pbc_(do_pbc), pbc_(&pbc),
+  serial_(serial), do_pbc_(do_pbc), pbc_(&pbc), comm(cm),
   distance_(distance), stride_(stride) {
   fullatomlist_=list0;
   nlist0_=list0.size();
@@ -73,43 +75,91 @@ void NeighborList::initialize() {
   }
 }
 
-vector<AtomNumber>& NeighborList::getFullAtomList() {
+std::vector<AtomNumber>& NeighborList::getFullAtomList() {
   return fullatomlist_;
 }
 
-pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
-  pair<unsigned,unsigned> index;
+std::pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
+  std::pair<unsigned,unsigned> index;
   if(twolists_ && do_pair_) {
-    index=pair<unsigned,unsigned>(ipair,ipair+nlist0_);
+    index=std::pair<unsigned,unsigned>(ipair,ipair+nlist0_);
   } else if (twolists_ && !do_pair_) {
-    index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
+    index=std::pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
   } else if (!twolists_) {
     unsigned ii = nallpairs_-1-ipair;
-    unsigned  K = unsigned(floor((sqrt(double(8*ii+1))+1)/2));
+    unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
     unsigned jj = ii-K*(K-1)/2;
-    index=pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
+    index=std::pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
   }
   return index;
 }
 
-void NeighborList::update(const vector<Vector>& positions) {
+void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   const double d2=distance_*distance_;
-// check if positions array has the correct length
+  // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
-  for(unsigned int i=0; i<nallpairs_; ++i) {
-    pair<unsigned,unsigned> index=getIndexPair(i);
-    unsigned index0=index.first;
-    unsigned index1=index.second;
-    Vector distance;
-    if(do_pbc_) {
-      distance=pbc_->distance(positions[index0],positions[index1]);
-    } else {
-      distance=delta(positions[index0],positions[index1]);
-    }
-    double value=modulo2(distance);
-    if(value<=d2) {neighbors_.push_back(index);}
+
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  unsigned nt=OpenMP::getNumThreads();
+  if(serial_) {
+    stride=1;
+    rank=0;
+    nt=1;
   }
+  std::vector<unsigned> local_flat_nl;
+
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<unsigned> private_flat_nl;
+    #pragma omp for nowait
+    for(unsigned int i=rank; i<nallpairs_; i+=stride) {
+      std::pair<unsigned,unsigned> index=getIndexPair(i);
+      unsigned index0=index.first;
+      unsigned index1=index.second;
+      Vector distance;
+      if(do_pbc_) {
+        distance=pbc_->distance(positions[index0],positions[index1]);
+      } else {
+        distance=delta(positions[index0],positions[index1]);
+      }
+      double value=modulo2(distance);
+      if(value<=d2) {
+        private_flat_nl.push_back(index0);
+        private_flat_nl.push_back(index1);
+      }
+    }
+    #pragma omp critical
+    local_flat_nl.insert(local_flat_nl.end(), private_flat_nl.begin(), private_flat_nl.end());
+  }
+
+  // find total dimension of neighborlist
+  std::vector <int> local_nl_size(stride, 0);
+  local_nl_size[rank] = local_flat_nl.size();
+  if(!serial_) comm.Sum(&local_nl_size[0], stride);
+  int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+  if(tot_size==0) {setRequestList(); return;}
+  // merge
+  std::vector<unsigned> merge_nl(tot_size, 0);
+  // calculate vector of displacement
+  std::vector<int> disp(stride);
+  disp[0] = 0;
+  int rank_size = 0;
+  for(unsigned i=0; i<stride-1; ++i) {
+    rank_size += local_nl_size[i];
+    disp[i+1] = rank_size;
+  }
+  // Allgather neighbor list
+  if(comm.initialized()&&!serial_) comm.Allgatherv((!local_flat_nl.empty()?&local_flat_nl[0]:NULL), local_nl_size[rank], &merge_nl[0], &local_nl_size[0], &disp[0]);
+  else merge_nl = local_flat_nl;
+  // resize neighbor stuff
+  neighbors_.resize(tot_size/2);
+  for(unsigned i=0; i<tot_size/2; i++) {
+    unsigned j=2*i;
+    neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
+  }
+
   setRequestList();
 }
 
@@ -123,15 +173,15 @@ void NeighborList::setRequestList() {
   reduced=false;
 }
 
-vector<AtomNumber>& NeighborList::getReducedAtomList() {
+std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
   if(!reduced)for(unsigned int i=0; i<size(); ++i) {
       unsigned newindex0=0,newindex1=0;
       AtomNumber index0=fullatomlist_[neighbors_[i].first];
       AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
-      auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
-      p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
-      neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
+      auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_dbg_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
+      p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_dbg_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
+      neighbors_[i]=std::pair<unsigned,unsigned>(newindex0,newindex1);
     }
   reduced=true;
   return requestlist_;
@@ -153,18 +203,18 @@ unsigned NeighborList::size() const {
   return neighbors_.size();
 }
 
-pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
+std::pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
   return neighbors_[i];
 }
 
-pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
-  pair<AtomNumber,AtomNumber> Aneigh;
-  Aneigh=pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
+std::pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
+  std::pair<AtomNumber,AtomNumber> Aneigh;
+  Aneigh=std::pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
   return Aneigh;
 }
 
-vector<unsigned> NeighborList::getNeighbors(unsigned index) {
-  vector<unsigned> neighbors;
+std::vector<unsigned> NeighborList::getNeighbors(unsigned index) {
+  std::vector<unsigned> neighbors;
   for(unsigned int i=0; i<size(); ++i) {
     if(neighbors_[i].first==index)  neighbors.push_back(neighbors_[i].second);
     if(neighbors_[i].second==index) neighbors.push_back(neighbors_[i].first);

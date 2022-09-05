@@ -33,8 +33,10 @@
 !/maze
 !/molfile
 !/multicolvar
+!/opes
 !/python
 !/pamm
+!/piv
 !/reference
 !/secondarystructure
 !/setup
@@ -46,8 +48,16 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
+<<<<<<< HEAD
 !/pycv
 
+=======
+!/funnel
+!/fisst
+!/sasa
+!/xdrfile
+!/s2cm
+>>>>>>> v2.8.0
 
 # And just ignore these files
 *.xxd

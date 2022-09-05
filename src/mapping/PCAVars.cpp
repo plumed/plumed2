@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -271,7 +271,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
   std::vector<std::string> args; myref->getArgumentRequests( args, false );
   if( atoms.size()>0 ) {
-    log.printf("  found %z atoms in input \n",atoms.size());
+    log.printf("  found %zu atoms in input \n",atoms.size());
     log.printf("  with indices : ");
     for(unsigned i=0; i<atoms.size(); ++i) {
       if(i%25==0) log<<"\n";

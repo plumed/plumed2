@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,12 +35,25 @@ void SingleDomainRMSD::readReference( const PDB& pdb ) {
   readAtomsFromPDB( pdb );
   double wa=0, wd=0;
   for(unsigned i=0; i<pdb.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
-  plumed_massert(wa>epsilon,"It looks like weights used for alignment are zero. Check your reference PDB file.");
-  plumed_massert(wd>epsilon,"It looks like weights used for displacement are zero. Check your reference PDB file.");
+
+  if(wa>epsilon) {
+    double w=1.0/wa;
+    for(unsigned i=0; i<pdb.size(); ++i) align[i] *= w;
+  } else {
+    double w=1.0/pdb.size();
+    for(unsigned i=0; i<pdb.size(); ++i) align[i] = w;
+  }
+
+  if(wd>epsilon) {
+    double w=1.0/wd;
+    for(unsigned i=0; i<pdb.size(); ++i) displace[i] *= w;
+  } else {
+    double w=1.0/pdb.size();
+    for(unsigned i=0; i<pdb.size(); ++i) displace[i] = w;
+  }
 
   Vector center;
   for(unsigned i=0; i<pdb.size(); ++i) {
-    align[i]=align[i] / wa; displace[i]=displace[i] / wd;
     center+=reference_atoms[i]*align[i];
   }
   for(unsigned i=0; i<pdb.size(); ++i) reference_atoms[i]-=center;
@@ -52,9 +65,24 @@ void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const
   double wa=0, wd=0;
   for(unsigned i=0; i<conf.size(); ++i) { wa+=align_in[i]; wd+=displace_in[i]; }
 
+  if(wa>epsilon) {
+    double w=1.0/wa;
+    for(unsigned i=0; i<conf.size(); ++i) align[i] = align_in[i] * w;
+  } else {
+    double w=1.0/conf.size();
+    for(unsigned i=0; i<conf.size(); ++i) align[i] = w;
+  }
+
+  if(wd>epsilon) {
+    double w=1.0/wd;
+    for(unsigned i=0; i<conf.size(); ++i) displace[i] = displace_in[i] * w;
+  } else {
+    double w=1.0/conf.size();
+    for(unsigned i=0; i<conf.size(); ++i) displace[i] = w;
+  }
+
   Vector center;
   for(unsigned i=0; i<conf.size(); ++i) {
-    align[i]=align_in[i] / wa; displace[i]=displace_in[i] / wd;
     center+=conf[i]*align[i]; atom_der_index[i]=i;
   }
   for(unsigned i=0; i<conf.size(); ++i) reference_atoms[i]=conf[i]-center;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -119,7 +119,7 @@ Gradient::Gradient(const ActionOptions&ao):
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();
-  std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
+  std::transform( functype.begin(), functype.end(), functype.begin(), [](unsigned char c) { return std::tolower(c); } );
   log.printf("  calculating gradient of %s in %s direction \n",functype.c_str(), direction.c_str() );
   log<<"  Bibliography:"<<plumed.cite("Giberti, Tribello and Parrinello, J. Chem. Theory Comput., 9, 2526 (2013)")<<"\n";
 

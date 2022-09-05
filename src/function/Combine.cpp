@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,10 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
-
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -148,8 +144,8 @@ void Combine::calculate() {
   double combine=0.0;
   for(unsigned i=0; i<coefficients.size(); ++i) {
     double cv = (getArgument(i)-parameters[i]);
-    combine+=coefficients[i]*pow(cv,powers[i]);
-    setDerivative(i,coefficients[i]*powers[i]*pow(cv,powers[i]-1.0));
+    combine+=coefficients[i]*std::pow(cv,powers[i]);
+    setDerivative(i,coefficients[i]*powers[i]*std::pow(cv,powers[i]-1.0));
   };
   setValue(combine);
 }

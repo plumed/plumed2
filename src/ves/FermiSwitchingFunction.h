@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -34,7 +34,7 @@ namespace ves {
 
 /// \ingroup TOOLBOX
 /// Small class to compute fermi switching function.
-/// kept similar to the orignal SwitchingFunction class.
+/// kept similar to the original SwitchingFunction class.
 class FermiSwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init;

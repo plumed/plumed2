@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -172,12 +172,12 @@ order of the basis functions, the interval on which the
 basis functions are defined, and the step size used
 in the optimizer, are left unfilled.
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=d1
  BASIS_FUNCTIONS=bf1
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=200
  LABEL=b1
 ... VES_LINEAR_EXPANSION
@@ -186,7 +186,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
 ... OPT_AVERAGED_SGD
@@ -201,15 +201,15 @@ dynamic and needs to be iteratively updated with a stride that is given
 using the TARGETDIST_STRIDE within the optimizer.
 
 \plumedfile
-bf1: BF_FOURIER  ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_FOURIER  ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 td_wt: TD_WELLTEMPERED BIASFACTOR=10.0
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  TARGET_DISTRIBUTION=td_wt
@@ -219,7 +219,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
@@ -232,13 +232,13 @@ only fills the free energy landscape up a certain level. In this case
 the target distribution is also dynamic and needs to iteratively updated.
 
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0
@@ -248,7 +248,7 @@ OPT_AVERAGED_SGD ...
  BIAS=b1
  STRIDE=1000
  LABEL=o1
- STEPSIZE=__
+ STEPSIZE=__FILL__
  FES_OUTPUT=500
  COEFFS_OUTPUT=10
  TARGETDIST_STRIDE=500
@@ -260,13 +260,13 @@ kinetics. For this you need read in the final coefficients from file
 (e.g. coeffs_final.data in this case) by using the
 COEFFS keyword (also, no optimizer should be defined in the input)
 \plumedfile
-bf1: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
-bf2: BF_LEGENDRE ORDER=__ MINIMUM=__ MAXIMUM=__
+bf1: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
+bf2: BF_LEGENDRE ORDER=__FILL__ MINIMUM=__FILL__ MAXIMUM=__FILL__
 
 VES_LINEAR_EXPANSION ...
  ARG=cv1,cv2
  BASIS_FUNCTIONS=bf1,bf2
- TEMP=__
+ TEMP=__FILL__
  GRID_BINS=100
  LABEL=b1
  BIAS_CUTOFF=20.0
@@ -284,7 +284,7 @@ class VesLinearExpansion : public VesBias {
 private:
   unsigned int nargs_;
   std::vector<BasisFunctions*> basisf_pntrs_;
-  LinearBasisSetExpansion* bias_expansion_pntr_;
+  std::unique_ptr<LinearBasisSetExpansion> bias_expansion_pntr_;
   size_t ncoeffs_;
   Value* valueForce2_;
   bool all_values_inside;
@@ -337,7 +337,6 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   PLUMED_VES_VESBIAS_INIT(ao),
   nargs_(getNumberOfArguments()),
   basisf_pntrs_(0),
-  bias_expansion_pntr_(NULL),
   valueForce2_(NULL),
   all_values_inside(true),
   bf_values(0),
@@ -370,7 +369,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bool coeffs_read = readCoeffsFromFiles();
 
   checkThatTemperatureIsGiven();
-  bias_expansion_pntr_ = new LinearBasisSetExpansion(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
+  bias_expansion_pntr_ = Tools::make_unique<LinearBasisSetExpansion>(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //
@@ -408,9 +407,6 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
 
 
 VesLinearExpansion::~VesLinearExpansion() {
-  if(bias_expansion_pntr_!=NULL) {
-    delete bias_expansion_pntr_;
-  }
 }
 
 
@@ -430,9 +426,11 @@ void VesLinearExpansion::calculate() {
     bf_values[0]=1.0;
   }
   double totalForce2 = 0.0;
-  for(unsigned int k=0; k<nargs_; k++) {
-    setOutputForce(k,forces[k]);
-    totalForce2 += forces[k]*forces[k];
+  if(all_values_inside) {
+    for(unsigned int k=0; k<nargs_; k++) {
+      setOutputForce(k,forces[k]);
+      totalForce2 += forces[k]*forces[k];
+    }
   }
 
   setBias(bias);
@@ -478,14 +476,12 @@ void VesLinearExpansion::setupBiasFileOutput() {
 
 void VesLinearExpansion::writeBiasToFile() {
   bias_expansion_pntr_->updateBiasGrid();
-  OFile* ofile_pntr = getOFile(getCurrentBiasOutputFilename(),useMultipleWalkers());
+  auto ofile_pntr = getOFile(getCurrentBiasOutputFilename(),useMultipleWalkers());
   bias_expansion_pntr_->writeBiasGridToFile(*ofile_pntr);
-  ofile_pntr->close(); delete ofile_pntr;
   if(biasCutoffActive()) {
     bias_expansion_pntr_->updateBiasWithoutCutoffGrid();
-    OFile* ofile_pntr2 = getOFile(getCurrentBiasOutputFilename("without-cutoff"),useMultipleWalkers());
+    auto ofile_pntr2 = getOFile(getCurrentBiasOutputFilename("without-cutoff"),useMultipleWalkers());
     bias_expansion_pntr_->writeBiasWithoutCutoffGridToFile(*ofile_pntr2);
-    ofile_pntr2->close(); delete ofile_pntr2;
   }
 }
 
@@ -502,9 +498,8 @@ void VesLinearExpansion::setupFesFileOutput() {
 
 void VesLinearExpansion::writeFesToFile() {
   bias_expansion_pntr_->updateFesGrid();
-  OFile* ofile_pntr = getOFile(getCurrentFesOutputFilename(),useMultipleWalkers());
+  auto ofile_pntr = getOFile(getCurrentFesOutputFilename(),useMultipleWalkers());
   bias_expansion_pntr_->writeFesGridToFile(*ofile_pntr);
-  ofile_pntr->close(); delete ofile_pntr;
 }
 
 
@@ -526,21 +521,18 @@ void VesLinearExpansion::writeFesProjToFile() {
     std::string suffix;
     Tools::convert(i+1,suffix);
     suffix = "proj-" + suffix;
-    OFile* ofile_pntr = getOFile(getCurrentFesOutputFilename(suffix),useMultipleWalkers());
+    auto ofile_pntr = getOFile(getCurrentFesOutputFilename(suffix),useMultipleWalkers());
     std::vector<std::string> args = getProjectionArgument(i);
     bias_expansion_pntr_->writeFesProjGridToFile(args,*ofile_pntr);
-    ofile_pntr->close(); delete ofile_pntr;
   }
 }
 
 
 void VesLinearExpansion::writeTargetDistToFile() {
-  OFile* ofile1_pntr = getOFile(getCurrentTargetDistOutputFilename(),useMultipleWalkers());
-  OFile* ofile2_pntr = getOFile(getCurrentTargetDistOutputFilename("log"),useMultipleWalkers());
+  auto ofile1_pntr = getOFile(getCurrentTargetDistOutputFilename(),useMultipleWalkers());
+  auto ofile2_pntr = getOFile(getCurrentTargetDistOutputFilename("log"),useMultipleWalkers());
   bias_expansion_pntr_->writeTargetDistGridToFile(*ofile1_pntr);
   bias_expansion_pntr_->writeLogTargetDistGridToFile(*ofile2_pntr);
-  ofile1_pntr->close(); delete ofile1_pntr;
-  ofile2_pntr->close(); delete ofile2_pntr;
 }
 
 
@@ -549,10 +541,9 @@ void VesLinearExpansion::writeTargetDistProjToFile() {
     std::string suffix;
     Tools::convert(i+1,suffix);
     suffix = "proj-" + suffix;
-    OFile* ofile_pntr = getOFile(getCurrentTargetDistOutputFilename(suffix),useMultipleWalkers());
+    auto ofile_pntr = getOFile(getCurrentTargetDistOutputFilename(suffix),useMultipleWalkers());
     std::vector<std::string> args = getProjectionArgument(i);
     bias_expansion_pntr_->writeTargetDistProjGridToFile(args,*ofile_pntr);
-    ofile_pntr->close(); delete ofile_pntr;
   }
 }
 

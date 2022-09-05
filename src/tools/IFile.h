@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,6 +24,7 @@
 
 #include "FileBase.h"
 #include <vector>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -48,7 +49,7 @@ class IFile:
   };
 /// Low-level read.
 /// Note: in parallel, all processes read
-  size_t llread(char*,size_t);
+  std::size_t llread(char*,std::size_t);
 /// All the defined fields
   std::vector<Field> fields;
 /// Flag set in the middle of a field reading
@@ -74,6 +75,12 @@ public:
   IFile& scanField(const std::string&,double&);
 /// Read a int field
   IFile& scanField(const std::string&,int&);
+/// Read a long int field
+  IFile& scanField(const std::string&,long int&);
+/// Read a unsigned field
+  IFile& scanField(const std::string&,unsigned&);
+/// Read a long unsigned field
+  IFile& scanField(const std::string&,long unsigned&);
 /// Read a string field
   IFile& scanField(const std::string&,std::string&);
   /**

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,11 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionPilot.h"
 
-using namespace std;
 namespace PLMD {
 
-void ActionPilot::registerKeywords(Keywords& keys) {
-}
+void ActionPilot::registerKeywords(Keywords& keys) {}
 
 ActionPilot::ActionPilot(const ActionOptions&ao):
   Action(ao),
@@ -48,7 +46,7 @@ int ActionPilot::getStride()const {
   return stride;
 }
 
-void ActionPilot::setStride( const int& n ) {
+void ActionPilot::setStride(const int& n) {
   stride=n;
 }
 

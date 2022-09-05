@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -92,10 +92,10 @@ BasisFunctions::BasisFunctions(const ActionOptions&ao):
   }
   interval_min_str_ = str_imin;
   interval_max_str_ = str_imax;
-  if(!Tools::convert(str_imin,interval_min_)) {
+  if(!Tools::convertNoexcept(str_imin,interval_min_)) {
     plumed_merror(getName()+": cannot convert the value given in MINIMUM to a double");
   }
-  if(!Tools::convert(str_imax,interval_max_)) {
+  if(!Tools::convertNoexcept(str_imax,interval_max_)) {
     plumed_merror(getName()+": cannot convert the value given in MAXIMUM to a double");
   }
   if(interval_min_>interval_max_) {plumed_merror(getName()+": MINIMUM and MAXIMUM are not correctly defined");}
@@ -124,10 +124,10 @@ void BasisFunctions::setIntrinsicInterval(const double interval_intrinsic_min_in
 void BasisFunctions::setIntrinsicInterval(const std::string& interval_intrinsic_min_str_in, const std::string& interval_intrinsic_max_str_in) {
   interval_intrinsic_min_str_ = interval_intrinsic_min_str_in;
   interval_intrinsic_max_str_ = interval_intrinsic_max_str_in;
-  if(!Tools::convert(interval_intrinsic_min_str_,interval_intrinsic_min_)) {
+  if(!Tools::convertNoexcept(interval_intrinsic_min_str_,interval_intrinsic_min_)) {
     plumed_merror("setIntrinsicInterval: cannot convert string value given for the minimum of the intrinsic interval to a double");
   }
-  if(!Tools::convert(interval_intrinsic_max_str_,interval_intrinsic_max_)) {
+  if(!Tools::convertNoexcept(interval_intrinsic_max_str_,interval_intrinsic_max_)) {
     plumed_merror("setIntrinsicInterval: cannot convert string value given for the maximum of the intrinsic interval to a double");
   }
   plumed_massert(interval_intrinsic_min_<interval_intrinsic_max_,"setIntrinsicInterval: intrinsic intervals are not defined correctly");
@@ -146,10 +146,10 @@ void BasisFunctions::setInterval(const double interval_min_in, const double inte
 void BasisFunctions::setInterval(const std::string& interval_min_str_in, const std::string& interval_max_str_in) {
   interval_min_str_ = interval_min_str_in;
   interval_max_str_ = interval_max_str_in;
-  if(!Tools::convert(interval_min_str_,interval_min_)) {
+  if(!Tools::convertNoexcept(interval_min_str_,interval_min_)) {
     plumed_merror("setInterval: cannot convert string value given for the minimum of the interval to a double");
   }
-  if(!Tools::convert(interval_max_str_,interval_max_)) {
+  if(!Tools::convertNoexcept(interval_max_str_,interval_max_)) {
     plumed_merror("setInterval: cannot convert string value given for the maximum of the interval to a double");
   }
   plumed_massert(interval_min_<interval_max_,"setInterval: intervals are not defined correctly");
@@ -240,18 +240,16 @@ void BasisFunctions::numericalUniformIntegrals() {
   std::vector<std::string> grid_min(1); grid_min[0]=intervalMinStr();
   std::vector<std::string> grid_max(1); grid_max[0]=intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins_;
-  std::vector<Value*> arguments(1); arguments[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> arguments(1); arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic()) {arguments[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {arguments[0]->setNotPeriodic();}
-  Grid* uniform_grid = new Grid("uniform",arguments,grid_min,grid_max,grid_bins,false,false);
+  auto uniform_grid = Tools::make_unique<Grid>("uniform",Tools::unique2raw(arguments),grid_min,grid_max,grid_bins,false,false);
   //
   double inverse_normalization = 1.0/(intervalMax()-intervalMin());
   for(Grid::index_t l=0; l<uniform_grid->getSize(); l++) {
     uniform_grid->setValue(l,inverse_normalization);
   }
-  uniform_integrals_ = numericalTargetDistributionIntegralsFromGrid(uniform_grid);
-  delete arguments[0]; arguments.clear();
-  delete uniform_grid;
+  uniform_integrals_ = numericalTargetDistributionIntegralsFromGrid(uniform_grid.get());
 }
 
 
@@ -345,15 +343,15 @@ void BasisFunctions::getMultipleValue(const std::vector<double>& args, std::vect
 }
 
 
-void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile_derivs, const std::string& min_in, const std::string& max_in, unsigned int nbins_in, const bool ignore_periodicity, const std::string& output_fmt, const bool numerical_deriv) const {
+void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile_derivs, const std::string& min_in, const std::string& max_in, unsigned int nbins_in, const bool ignore_periodicity, const std::string& output_fmt_values, const std::string& output_fmt_derivs, const bool numerical_deriv) const {
   std::vector<std::string> min(1); min[0]=min_in;
   std::vector<std::string> max(1); max[0]=max_in;
   std::vector<unsigned int> nbins(1); nbins[0]=nbins_in;
-  std::vector<Value*> value_pntr(1);
-  value_pntr[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> value_pntr(1);
+  value_pntr[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic() && !ignore_periodicity) {value_pntr[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {value_pntr[0]->setNotPeriodic();}
-  Grid args_grid = Grid("grid",value_pntr,min,max,nbins,false,false);
+  Grid args_grid = Grid("grid",Tools::unique2raw(value_pntr),min,max,nbins,false,false);
 
   std::vector<double> args(args_grid.getSize(),0.0);
   for(unsigned int i=0; i<args.size(); i++) {
@@ -385,8 +383,8 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   }
 
   getMultipleValue(args,argsT,values,derivs,numerical_deriv);
-  ofile_values.fmtField(output_fmt);
-  ofile_derivs.fmtField(output_fmt);
+  ofile_values.fmtField(output_fmt_values);
+  ofile_derivs.fmtField(output_fmt_derivs);
   for(unsigned int i=0; i<args.size(); i++) {
     ofile_values.printField("arg",args[i]);
     ofile_derivs.printField("arg",args[i]);
@@ -399,8 +397,6 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   }
   ofile_values.fmtField();
   ofile_derivs.fmtField();
-
-  delete value_pntr[0]; value_pntr.clear();
 
 }
 

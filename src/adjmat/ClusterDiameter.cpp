@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -98,7 +98,7 @@ ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
   for(unsigned  i=0; i<getNumberOfNodes(); ++i) {
     for(unsigned j=0; j<getNumberOfNodes(); ++j) addTaskToList( i*getNumberOfNodes() + j );
   }
-  // Now create a higest vessel
+  // Now create a highest vessel
   addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 }
 

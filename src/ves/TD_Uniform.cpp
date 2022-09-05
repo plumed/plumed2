@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -35,16 +35,8 @@ Uniform target distribution (static).
 Using this keyword you can define a uniform target distribution which is a
 product of one-dimensional distributions \f$p_{k}(s_{k})\f$ that are uniform
 over a given interval \f$[a_{k},b_{k}]\f$
-\f[
-p_{k}(s_{k}) =
-\begin{cases}
-\frac{1}{(b_{k}-a_{k})}
-& \mathrm{if} \ a_{k} \leq s_{k} \leq b_{k} \\
-\\
-\ 0
-& \mathrm{otherwise}
-\end{cases}
-\f]
+
+MISSING EQUATION TO BE FIXED
 
 The overall distribution is then given as
 \f[
@@ -107,10 +99,13 @@ the code should automatically detect the limits not given.
 Therefore, if we consider a target distribution that is
 defined over an interval from 0.0 to 10.0 for the first
 argument and from 0.2 to 1.0 for the second argument are
-all of the following examples equivalent
+the following example
 \plumedfile
 td: TD_UNIFORM
 \endplumedfile
+
+is equivalent to this one
+
 \plumedfile
 TD_UNIFORM ...
  MINIMA=0.0,0.2
@@ -118,9 +113,15 @@ TD_UNIFORM ...
  LABEL=td
  ... TD_UNIFORM
 \endplumedfile
+
+and this one
+
 \plumedfile
 td: TD_UNIFORM  MAXIMA=10.0,1.0
 \endplumedfile
+
+and also this one
+
 \plumedfile
 td: TD_UNIFORM MINIMA=0.0,0,2
 \endplumedfile

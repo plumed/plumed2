@@ -38,7 +38,7 @@
  * Biological Structures at Stanford, funded under the NIH Roadmap for        *
  * Medical Research, grant U54 GM072970. See https://simtk.org.               *
  *                                                                            *
- * Portions copyright (c) 2013-2016 Stanford University and the Authors.      *
+ * Portions copyright (c) 2013-2019 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
@@ -262,12 +262,12 @@ static double evaluateOperation(Operation* op, double* args) {
 }
 
 static void generateSingleArgCall(X86Compiler& c, X86Xmm& dest, X86Xmm& arg, double (*function)(double));
+static void generateTwoArgCall(X86Compiler& c, X86Xmm& dest, X86Xmm& arg1, X86Xmm& arg2, double (*function)(double, double));
 
 void CompiledExpression::generateJitCode() {
     CodeHolder code;
     auto & runtime(*static_cast<asmjit::JitRuntime*>(runtimeptr.get()));
     code.init(runtime.getCodeInfo());
-    X86Assembler a(&code);
     X86Compiler c(&code);
     c.addFunc(FuncSignature0<double>());
     vector<X86Xmm> workspaceVar(workspace.size());
@@ -305,6 +305,8 @@ void CompiledExpression::generateJitCode() {
             value = 1.0;
         else if (op.getId() == Operation::DELTA)
             value = 1.0/0.0;
+        else if (op.getId() == Operation::NANDELTA)
+            value = std::numeric_limits<double>::quiet_NaN();
         else
             continue;
         
@@ -367,6 +369,9 @@ void CompiledExpression::generateJitCode() {
                 c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
                 c.divsd(workspaceVar[target[step]], workspaceVar[args[1]]);
                 break;
+            case Operation::POWER:
+                generateTwoArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], workspaceVar[args[1]], pow);
+                break;
             case Operation::NEGATE:
                 c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
                 c.subsd(workspaceVar[target[step]], workspaceVar[args[0]]);
@@ -398,6 +403,9 @@ void CompiledExpression::generateJitCode() {
             case Operation::ATAN:
                 generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], atan);
                 break;
+            case Operation::ATAN2:
+                generateTwoArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], workspaceVar[args[1]], atan2);
+                break;
             case Operation::SINH:
                 generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], sinh);
                 break;
@@ -407,12 +415,26 @@ void CompiledExpression::generateJitCode() {
             case Operation::TANH:
                 generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tanh);
                 break;
+            case Operation::ASINH:
+                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], asinh);
+                break;
+            case Operation::ACOSH:
+                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], acosh);
+                break;
+            case Operation::ATANH:
+                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], atanh);
+                break;
             case Operation::STEP:
                 c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
                 c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(18)); // Comparison mode is _CMP_LE_OQ = 18
                 c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
                 break;
             case Operation::DELTA:
+                c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
+                c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(16)); // Comparison mode is _CMP_EQ_OS = 16
+                c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+                break;
+            case Operation::NANDELTA:
                 c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
                 c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(16)); // Comparison mode is _CMP_EQ_OS = 16
                 c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
@@ -454,7 +476,7 @@ void CompiledExpression::generateJitCode() {
                     c.movsd(x86::ptr(argsPointer, 8*i, 0), workspaceVar[args[i]]);
                 X86Gp fn = c.newIntPtr();
                 c.mov(fn, imm_ptr((void*) evaluateOperation));
-                CCFuncCall* call = c.call(fn, FuncSignature2<double, Operation*, double*>(CallConv::kIdHost));
+                CCFuncCall* call = c.call(fn, FuncSignature2<double, Operation*, double*>());
                 call->setArg(0, imm_ptr(&op));
                 call->setArg(1, imm_ptr(&argValues[0]));
                 call->setRet(0, workspaceVar[target[step]]);
@@ -463,19 +485,25 @@ void CompiledExpression::generateJitCode() {
     c.ret(workspaceVar[workspace.size()-1]);
     c.endFunc();
     c.finalize();
-    typedef double (*Func0)(void);
-    Func0 func0;
-    Error err = runtime.add(&func0,&code);
-    if(err) return;
-    jitCode = (void*) func0;
+    runtime.add(&jitCode, &code);
 }
 
 void generateSingleArgCall(X86Compiler& c, X86Xmm& dest, X86Xmm& arg, double (*function)(double)) {
     X86Gp fn = c.newIntPtr();
     c.mov(fn, imm_ptr((void*) function));
-    CCFuncCall* call = c.call(fn, FuncSignature1<double, double>(CallConv::kIdHost));
+    CCFuncCall* call = c.call(fn, FuncSignature1<double, double>());
     call->setArg(0, arg);
     call->setRet(0, dest);
 }
+
+void generateTwoArgCall(X86Compiler& c, X86Xmm& dest, X86Xmm& arg1, X86Xmm& arg2, double (*function)(double, double)) {
+    X86Gp fn = c.newIntPtr();
+    c.mov(fn, imm_ptr((void*) function));
+    CCFuncCall* call = c.call(fn, FuncSignature2<double, double, double>());
+    call->setArg(0, arg1);
+    call->setArg(1, arg2);
+    call->setRet(0, dest);
+}
+
 #endif
 }

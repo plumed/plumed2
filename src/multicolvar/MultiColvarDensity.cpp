@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,10 +29,7 @@
 #include "MultiColvarBase.h"
 #include "gridtools/ActionWithGrid.h"
 
-using namespace std;
-
-namespace PLMD
-{
+namespace PLMD {
 namespace multicolvar {
 
 //+PLUMEDOC GRIDCALC MULTICOLVARDENS
@@ -186,7 +183,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
       if( confined[i] ) {
         cmin[i]=cmax[i]=0.0; parse("XLOWER",cmin[i]); parse("XUPPER",cmax[i]);
         if( fractional ) error("XREDUCED is incompatible with FRACTIONAL");
-        if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for x axis makes no sense");
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for x axis makes no sense");
         log.printf("  confining calculation in x direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     } else if( directions[i]==1 ) {
@@ -194,7 +191,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
       if( confined[i] ) {
         cmin[i]=cmax[i]=0.0; parse("YLOWER",cmin[i]); parse("YUPPER",cmax[i]);
         if( fractional ) error("YREDUCED is incompatible with FRACTIONAL");
-        if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for y axis makes no sense");
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for y axis makes no sense");
         log.printf("  confining calculation in y direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     } else if( directions[i]==2 ) {
@@ -202,7 +199,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
       if( confined[i] ) {
         cmin[i]=cmax[i]=0.0; parse("ZLOWER",cmin[i]); parse("ZUPPER",cmax[i]);
         if( fractional ) error("ZREDUCED is incompatible with FRACTIONAL");
-        if( fabs(cmin[i]-cmax[i])<epsilon ) error("range set for z axis search makes no sense");
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for z axis search makes no sense");
         log.printf("  confining calculation in z direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     }

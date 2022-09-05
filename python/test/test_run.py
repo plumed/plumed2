@@ -158,6 +158,7 @@ def runtest():
         zeros = variables - correct_torsions[step,1:]
         for data in zeros :
             if abs(data)>1E-4 : of.write("MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON")
+            assert abs(data)<=1E-4
     
     of.close()
 

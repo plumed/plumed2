@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Exception.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace setup {
@@ -195,6 +193,8 @@ Units::Units(const ActionOptions&ao):
     log.printf("  using physical units\n");
   }
   log.printf("  inside PLUMED, Boltzmann constant is %g\n",plumed.getAtoms().getKBoltzmann());
+
+  plumed.getAtoms().updateUnits();
 }
 
 }

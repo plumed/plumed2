@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -98,7 +98,7 @@ public:
   //
   explicit CoeffsBase(
     const std::string&,
-    std::vector<Value*>&,
+    const std::vector<Value*>&,
     std::vector<BasisFunctions*>&,
     const bool use_iteration_counter=false);
   //
@@ -174,6 +174,7 @@ public:
   void resetOutputFmt() {output_fmt_="%30.16e";}
   std::string getOutputFmt() const {return output_fmt_;}
   //
+  void replaceLabelString(const std::string&, const std::string&);
 protected:
   void setupBasisFunctionsInfo();
   void resizeIndices(const std::vector<unsigned int>&);

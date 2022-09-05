@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -139,9 +139,9 @@ public:
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
-  unsigned int dim;
+  size_t dim;
   std::string dim_string_prefix;
-  LinearBasisSetExpansion* potential_expansion_pntr;
+  std::unique_ptr<LinearBasisSetExpansion> potential_expansion_pntr;
   //
   double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
   double calc_temp( const std::vector<Vector>& );
@@ -177,8 +177,7 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
 MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
-  dim_string_prefix("dim"),
-  potential_expansion_pntr(NULL)
+  dim_string_prefix("dim")
 {
   inputdata=ifile; //commandline;
 }
@@ -214,10 +213,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   Random random;
   unsigned int stepWrite=1000;
 
-  PLMD::PlumedMain* plumed=NULL;
-  PLMD::PlumedMain* plumed_bf=NULL;
+  std::unique_ptr<PLMD::PlumedMain> plumed;
 
-  unsigned int replicas;
+  size_t replicas;
   unsigned int coresPerReplica;
   parse("replicas",replicas);
   if(replicas==1) {
@@ -318,16 +316,21 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     error("problem with initial_position keyword, you need to give either one value or a value for each replica.");
   }
 
-
-  plumed_bf = new PLMD::PlumedMain;
-  unsigned int nn=1;
+  auto deleter=[](FILE* f) { fclose(f); };
   FILE* file_dummy = fopen("/dev/null","w+");
+  plumed_assert(file_dummy);
+  // call fclose when file_dummy_deleter goes out of scope
+  std::unique_ptr<FILE,decltype(deleter)> file_dummy_deleter(file_dummy,deleter);
+  // Note: this should be declared before plumed_bf to make sure the file is closed after plumed_bf has been destroyed
+
+  auto plumed_bf = Tools::make_unique<PLMD::PlumedMain>();
+  unsigned int nn=1;
   plumed_bf->cmd("setNatoms",&nn);
   plumed_bf->cmd("setLog",file_dummy);
   plumed_bf->cmd("init",&nn);
   std::vector<BasisFunctions*> basisf_pntrs(dim);
   std::vector<std::string> basisf_keywords(dim);
-  std::vector<Value*> args(dim);
+  std::vector<std::unique_ptr<Value>> args(dim);
   std::vector<bool> periodic(dim);
   std::vector<double> interval_min(dim);
   std::vector<double> interval_max(dim);
@@ -345,7 +348,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     basisf_keywords[i] = bf_keyword;
     plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
     basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
-    args[i] = new Value(NULL,dim_string_prefix+is,false);
+    args[i] = Tools::make_unique<Value>(nullptr,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
@@ -353,8 +356,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     interval_range[i] = basisf_pntrs[i]->intervalMax()-basisf_pntrs[i]->intervalMin();
   }
   Communicator comm_dummy;
-  CoeffsVector* coeffs_pntr = new CoeffsVector("pot.coeffs",args,basisf_pntrs,comm_dummy,false);
-  potential_expansion_pntr = new LinearBasisSetExpansion("potential",1.0/temp,comm_dummy,args,basisf_pntrs,coeffs_pntr);
+  auto coeffs_pntr = Tools::make_unique<CoeffsVector>("pot.coeffs",Tools::unique2raw(args),basisf_pntrs,comm_dummy,false);
+  potential_expansion_pntr = Tools::make_unique<LinearBasisSetExpansion>("potential",1.0/temp,comm_dummy,Tools::unique2raw(args),basisf_pntrs,coeffs_pntr.get());
 
   std::string template_coeffs_fname="";
   parse("template_coeffs_file",template_coeffs_fname);
@@ -364,7 +367,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    printf("Only generating a template coefficient file - Should stop now.");
+    std::printf("Only generating a template coefficient file - Should stop now.");
     return 0;
   }
 
@@ -425,8 +428,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       std::string is; Tools::convert(i+1,is);
       std::vector<std::string> proj_arg(1);
       proj_arg[0] = dim_string_prefix+is;
-      FesWeight* Fw = new FesWeight(1/temp);
-      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw);
+      auto Fw = Tools::make_unique<FesWeight>(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw.get());
       proj_grid.setMinToZero();
 
       std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
@@ -435,7 +438,6 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       ofile_potential_proj.open(output_potential_proj_fname);
       proj_grid.writeToFile(ofile_potential_proj);
       ofile_potential_proj.close();
-      delete Fw;
     }
   }
 
@@ -481,32 +483,32 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_coeffsout.close();
 
   if(pc.Get_rank() == 0) {
-    fprintf(out,"Replicas                              %u\n",replicas);
-    fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
-    fprintf(out,"Number of steps                       %u\n",nsteps);
-    fprintf(out,"Timestep                              %f\n",tstep);
-    fprintf(out,"Temperature                           %f",temps_vec[0]);
-    for(unsigned int i=1; i<temps_vec.size(); i++) {fprintf(out,",%f",temps_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Friction                              %f",frictions_vec[0]);
-    for(unsigned int i=1; i<frictions_vec.size(); i++) {fprintf(out,",%f",frictions_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Random seed                           %d",seeds_vec[0]);
-    for(unsigned int i=1; i<seeds_vec.size(); i++) {fprintf(out,",%d",seeds_vec[i]);}
-    fprintf(out,"\n");
-    fprintf(out,"Dimensions                            %u\n",dim);
+    std::fprintf(out,"Replicas                              %zu\n",replicas);
+    std::fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
+    std::fprintf(out,"Number of steps                       %u\n",nsteps);
+    std::fprintf(out,"Timestep                              %f\n",tstep);
+    std::fprintf(out,"Temperature                           %f",temps_vec[0]);
+    for(unsigned int i=1; i<temps_vec.size(); i++) {std::fprintf(out,",%f",temps_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Friction                              %f",frictions_vec[0]);
+    for(unsigned int i=1; i<frictions_vec.size(); i++) {std::fprintf(out,",%f",frictions_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Random seed                           %d",seeds_vec[0]);
+    for(unsigned int i=1; i<seeds_vec.size(); i++) {std::fprintf(out,",%d",seeds_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Dimensions                            %zu\n",dim);
     for(unsigned int i=0; i<dim; i++) {
-      fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
+      std::fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
     }
-    fprintf(out,"PLUMED input                          %s",plumed_inputfiles[0].c_str());
-    for(unsigned int i=1; i<plumed_inputfiles.size(); i++) {fprintf(out,",%s",plumed_inputfiles[i].c_str());}
-    fprintf(out,"\n");
-    fprintf(out,"kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
-    if(diff_input_coeffs) {fprintf(out,"using different coefficients for each replica\n");}
+    std::fprintf(out,"PLUMED input                          %s",plumed_inputfiles[0].c_str());
+    for(unsigned int i=1; i<plumed_inputfiles.size(); i++) {std::fprintf(out,",%s",plumed_inputfiles[i].c_str());}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
+    if(diff_input_coeffs) {std::fprintf(out,"using different coefficients for each replica\n");}
   }
 
 
-  plumed=new PLMD::PlumedMain;
+  plumed=Tools::make_unique<PLMD::PlumedMain>();
 
 
 
@@ -564,7 +566,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   for(unsigned int k=0; k<dim; k++) {
     positions[0][k] = initPos[inter.Get_rank()][k];
     if(periodic[k]) {
-      positions[0][k] = positions[0][k] - floor(positions[0][k]/interval_range[k]+0.5)*interval_range[k];
+      positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
     }
     else {
       if(positions[0][k]>interval_max[k]) {positions[0][k]=interval_max[k];}
@@ -580,19 +582,22 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   potential=calc_energy(positions,forces); double ttt=calc_temp(velocities);
 
   FILE* fp=fopen(stats_filename.c_str(),"w+");
+  // call fclose when fp_deleter goes out of scope
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
   double conserved = potential+1.5*ttt+therm_eng;
-  //fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+  //std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   if( intra.Get_rank()==0 ) {
-    fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+    std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   }
 
   if(plumed) {
     int step_tmp = 0;
     plumed->cmd("setStep",&step_tmp);
     plumed->cmd("setMasses",&masses[0]);
-    plumed->cmd("setForces",&forces[0]);
+    plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&potential);
-    plumed->cmd("setPositions",&positions[0]);
+    plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
   }
 
@@ -614,7 +619,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       positions[0][k] = positions[0][k] + tstep*velocities[0][k];
 
       if(periodic[k]) {
-        positions[0][k] = positions[0][k] - floor(positions[0][k]/interval_range[k]+0.5)*interval_range[k];
+        positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
       }
       else {
         if(positions[0][k]>interval_max[k]) {
@@ -635,9 +640,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       plumedWantsToStop=0;
       plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
-      plumed->cmd("setForces",&forces[0]);
+      plumed->cmd("setForces",&forces[0][0]);
       plumed->cmd("setEnergy",&potential);
-      plumed->cmd("setPositions",&positions[0]);
+      plumed->cmd("setPositions",&positions[0][0]);
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
       //if(istep%2000==0) plumed->cmd("writeCheckPointFile");
@@ -662,20 +667,12 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ttt = calc_temp( velocities );
     conserved = potential+1.5*ttt+therm_eng;
     if( (intra.Get_rank()==0) && ((istep % stepWrite)==0) ) {
-      fprintf(fp,"%u %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+      std::fprintf(fp,"%u %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
     }
   }
 
-  if(plumed) {delete plumed;}
-  if(plumed_bf) {delete plumed_bf;}
-  if(potential_expansion_pntr) {delete potential_expansion_pntr;}
-  if(coeffs_pntr) {delete coeffs_pntr;}
-  for(unsigned int i=0; i<args.size(); i++) {delete args[i];}
-  args.clear();
   //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
   //printf("Rank: %d, Size: %d, MultiSimCommRank: %d, MultiSimCommSize: %d \n", pc.Get_rank(), pc.Get_size(), multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
-  fclose(fp);
-  fclose(file_dummy);
 
   return 0;
 }

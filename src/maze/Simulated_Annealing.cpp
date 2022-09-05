@@ -180,7 +180,7 @@ Simulated_Annealing::Simulated_Annealing(const ActionOptions& ao)
 
   set_label("SIMULATED_ANNEALING");
 
-  // Calculate an optimal direction at the beggining of the MD simulation.
+  // Calculate an optimal direction at the beginning of the MD simulation.
   start_step_0();
 
   checkRead();

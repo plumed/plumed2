@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,7 +48,7 @@ ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
 
 void Action::registerKeywords( Keywords& keys ) {
   plumed_assert( keys.size()==0 );
-  keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
+  keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual components are then referred to using label.component" );
   keys.reserve("optional","UPDATE_FROM","Only update this action from this time");
   keys.reserve("optional","UPDATE_UNTIL","Only update this action until this time");
   keys.reserve("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
@@ -93,8 +93,9 @@ Action::Action(const ActionOptions&ao):
     parse("RESTART",srestart);
     if(srestart=="YES") restart=true;
     else if(srestart=="NO")  restart=false;
-    else if(srestart=="AUTO") {}
-    else error("RESTART should be either YES, NO, or AUTO");
+    else if(srestart=="AUTO") {
+      // do nothing, this is the default
+    } else error("RESTART should be either YES, NO, or AUTO");
   }
 }
 
@@ -237,7 +238,7 @@ void Action::prepare() {
   return;
 }
 
-void Action::error( const std::string & msg ) const {
+[[noreturn]] void Action::error( const std::string & msg ) const {
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }

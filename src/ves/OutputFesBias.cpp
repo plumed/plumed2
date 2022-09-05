@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -72,6 +72,19 @@ VES_OUTPUT_FES ...
   COEFFS_INPUT=coeffs.input.data
 ... VES_OUTPUT_FES
 \endplumedfile
+
+The header of coeffs.input.data should look like the following:
+
+\auxfile{coeffs.input.data}
+#! FIELDS idx_phi idx_psi ves1.coeffs ves1.aux_coeffs index
+#! SET time 100.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  2
+#! SET ncoeffs_total  121
+#! SET shape_phi  11
+#! SET shape_psi  11
+\endauxfile
 
 This input should be run through the driver by using a command similar to the
 following one where the trajectory/configuration file configuration.gro is needed to

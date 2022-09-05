@@ -334,7 +334,7 @@ without the use of PT (see \ref belfast-6-exercise-5), here we can focus on the 
 the PTMetaD simulation. Let's compare the behavior of the biased variable psi in the two simulations:
 
 \anchor belfast-7-ptmetadh-fig
-\image html belfast-7-ptmetadh.png "Time serie of the biased CV psi in a well-tempered metadynamics and PTMetaD simulations."
+\image html belfast-7-ptmetadh.png "Time series of the biased CV psi in a well-tempered metadynamics and PTMetaD simulations."
 
 In well-tempered metadynamics (left panel), the biased variable psi looked stuck early in the simulation (t=3 ns).
 The reason was the transition of the other hidden degree of freedom phi from one free-energy basin
@@ -342,7 +342,7 @@ to the other. In the PTMetaD case (right panel), this seems not to happen. To be
 we can plot the time evolution of the hidden degree of freedom phi in the two cases.
 
 \anchor belfast-7-ptmetadhidd-fig
-\image html belfast-7-ptmetadhidd.png "Time serie of the CV phi in a well-tempered metadynamics and PTMetaD simulations."
+\image html belfast-7-ptmetadhidd.png "Time series of the CV phi in a well-tempered metadynamics and PTMetaD simulations."
 
 Thanks to the excursions at high temperature, in the PTMetaD simulation the transition of the CV phi
 between the two basins is accelerate. As a result, the convergence of the reconstructed free energy in psi
@@ -399,7 +399,7 @@ replicas:
 To improve the overlap of the potential energy distributions at different temperatures, we
 enlarge the fluctuations of the energy by sampling the Well-Tempered Ensemble (WTE).
 In order to do that, we need to setup a well-tempered metadynamics simulation using energy
-as CV. In WTE, fluctuations - the standard deviation of the energy time serie measured above -
+as CV. In WTE, fluctuations - the standard deviation of the energy time series measured above -
 will be enhanced by a factor equal to the square root of the biasfactor. In this exercise,
 we will enhance fluctuations of a factor of 4, thus we will set the biasfactor equal to 16.
 We need to prepare 4 PLUMED input files (plumed_PTWTE.dat.0, plumed_PTWTE.dat.1,...),
@@ -456,7 +456,7 @@ and no bottlenecks are present.
 \anchor belfast-7-ptwtediff-fig
 \image html belfast-7-ptwtediff.png "Replica diffusion in temperature space during a PT-WTE simulation."
 
-Finally, as done in the previous run, we can visualize the time serie of the energy CV at all temperatures:
+Finally, as done in the previous run, we can visualize the time series of the energy CV at all temperatures:
 
 \anchor belfast-7-ptwteene-fig
 \image html belfast-7-ptwteene.png "Time series of total energy at the different temperatures of a PT-WTE simulation of alanine dipeptide in water."

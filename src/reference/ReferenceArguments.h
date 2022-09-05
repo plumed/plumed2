@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,7 +72,7 @@ public:
   unsigned getNumberOfReferenceArguments() const override;
 /// Get the arguments required
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ) override;
-/// Set the positions of the refernce arguments
+/// Set the positions of the reference arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Set the positions of the reference arguments
   void moveReferenceArguments( const std::vector<double>& arg_vals );

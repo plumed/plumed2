@@ -25,15 +25,23 @@
 
 from libcpp cimport bool
 
+cdef extern from "exceptions_handler.h":
+     cdef void exceptions_handler()
+
 # Some of these functions are noexcept.
 # We anyway use except + in case this changes later.
 cdef extern from "Plumed.h" namespace "PLMD":
      cdef cppclass Plumed:
-         Plumed() except +
-         void cmd(const char*key, const void*val) except +
-         void cmd(const char*key) except +
-         bool valid() except +
+         Plumed() except +exceptions_handler
+         void cmd_shaped "cmd" (const char*key, const void*val, const size_t* shape) except +exceptions_handler
+         void cmd(const char*key, const void*val, size_t nelem) except +exceptions_handler
+         void cmd(const char*key, const void*val) except +exceptions_handler
+# see https://stackoverflow.com/questions/42610108/is-overloading-broken-in-cppclass-cython-c-definitions
+         void cmd_int "cmd" (const char*key, int val) except +exceptions_handler
+         void cmd_float "cmd" (const char*key, double val) except +exceptions_handler
+         void cmd(const char*key) except +exceptions_handler
+         bool valid() except +exceptions_handler
          @staticmethod
-         Plumed dlopen(const char*path) except +
+         Plumed dlopen(const char*path) except +exceptions_handler
          @staticmethod
-         Plumed makeValid() except +
+         Plumed makeValid() except +exceptions_handler

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,6 @@
 #include <regex.h>
 #endif
 
-using namespace std;
 namespace PLMD {
 
 void ActionWithArguments::registerKeywords(Keywords& keys) {
@@ -47,7 +46,7 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
-  std::string def; vector<string> c; arg.clear(); parseVector(key,c);
+  std::string def; std::vector<std::string> c; arg.clear(); parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) c.push_back( def );
     else return;
@@ -56,7 +55,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
-  vector<string> c;
+  std::vector<std::string> c;
   arg.clear();
   if(parseNumberedVector(key,i,c)) {
     interpretArgumentList(c,arg);
@@ -74,7 +73,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 #ifdef __PLUMED_HAS_CREGEX
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
-        log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
+        //log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
 
         regex_t reg; // regular expression
 
@@ -96,12 +95,13 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         // select all the actions that have a value
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+        bool found_something=false;
         for(unsigned j=0; j<all.size(); j++) {
           std::vector<std::string> ss=all[j]->getComponentsVector();
           for(unsigned  k=0; k<ss.size(); ++k) {
-            unsigned ll=strlen(ss[k].c_str())+1;
+            unsigned ll=std::strlen(ss[k].c_str())+1;
             std::vector<char> str(ll);
-            strcpy(&str[0],ss[k].c_str());
+            std::strcpy(&str[0],ss[k].c_str());
             const char *ppstr=&str[0];
             if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
               //log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
@@ -109,21 +109,23 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
                 if (match.rm_so != -1) {	/* The regex is matching part of a string */
                   size_t matchlen = match.rm_eo - match.rm_so;
                   std::vector<char> submatch(matchlen+1);
-                  strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
+                  std::strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
                   submatch[matchlen]='\0';
                   //log.printf("  subpattern %s\n", submatch.data());
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
                     arg.push_back(all[j]->copyOutput(putativeVal));
+                    found_something=true;
                     //log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
-                };
+                }
                 ppstr += match.rm_eo;	/* Restart from last match */
               } while(!regexec(&reg,ppstr,reg.re_nsub,&match,0));
             }
           }
         }
+        if(!found_something) plumed_error()<<"There isn't any action matching your regex " << myregex;
 #else
         plumed_merror("Regexp support not compiled!");
 #endif
@@ -132,9 +134,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       }
     } else {
       std::size_t dot=c[i].find_first_of('.');
-      string a=c[i].substr(0,dot);
-      string name=c[i].substr(dot+1);
-      if(c[i].find(".")!=string::npos) {   // if it contains a dot:
+      std::string a=c[i].substr(0,dot);
+      std::string name=c[i].substr(dot+1);
+      if(c[i].find(".")!=std::string::npos) {   // if it contains a dot:
         if(a=="*" && name=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
@@ -204,7 +206,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   }
 }
 
-void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
+void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {
   std::vector<std::string> arg_names = pdb.getArgumentNames();
   if( arg_names.size()>0 ) {
     std::vector<Value*> arg_vals;
@@ -212,14 +214,33 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
   }
 }
 
-void ActionWithArguments::requestArguments(const vector<Value*> &arg) {
+void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   arguments=arg;
   clearDependencies();
-  std::string fullname,name;
+  std::string fullname;
+  std::string name;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
-    if(fullname.find(".")!=string::npos) {
+    if(fullname.find(".")!=std::string::npos) {
+      std::size_t dot=fullname.find_first_of('.');
+      name=fullname.substr(0,dot);
+    } else {
+      name=fullname;
+    }
+    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
+    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+    addDependency(action);
+  }
+}
+
+void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &extra) {
+  plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
+  std::string fullname;
+  std::string name;
+  for(unsigned i=0; i<extra.size(); i++) {
+    fullname=extra[i]->getName();
+    if(fullname.find(".")!=std::string::npos) {
       std::size_t dot=fullname.find_first_of('.');
       name=fullname.substr(0,dot);
     } else {
@@ -236,7 +257,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   lockRequestArguments(false)
 {
   if( keywords.exists("ARG") ) {
-    vector<Value*> arg;
+    std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
 
     if(!arg.empty()) {
@@ -254,8 +275,8 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
 
-  const int nval=a->getNumberOfComponents();
-  const int npar=arguments.size();
+  const size_t nval=a->getNumberOfComponents();
+  const size_t npar=arguments.size();
   std::vector<double> value (nval*npar);
   for(int i=0; i<npar; i++) {
     double arg0=arguments[i]->get();

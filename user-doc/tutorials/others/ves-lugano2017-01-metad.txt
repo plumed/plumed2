@@ -143,6 +143,7 @@ and therefore the system will evolve under an effective free energy:
 that is to say, the largest barrier will be of around 1 \f$k_\mathrm{B} T\f$.
 The input is:
 \plumedfile
+d1:  DISTANCE ATOMS=319,320
 METAD ...
  LABEL=metad
  ARG=d1
@@ -154,10 +155,10 @@ METAD ...
  GRID_MIN=0.2
  GRID_MAX=1.0
  GRID_BIN=300
- REWEIGHTING_NGRID=300
+ CALC_RCT
 ... METAD
 \endplumedfile
-Here the REWEIGHTING_NGRID keyword turns on the calculation of the
+Here the CALC_RCT keyword turns on the calculation of the
 time dependent constant \f$ c(t) \f$ that we will use below when
 reweighting the simulations.
 
@@ -173,6 +174,7 @@ The wall will focus the sampling in the most interesting region of the free
 energy surface. The effect of this bias potential will have to be corrected later in order to calculate
  ensemble averages. The syntax in Plumed 2 is:
 \plumedfile
+d1:  DISTANCE ATOMS=319,320
 UPPER_WALLS ...
  ARG=d1
  AT=0.6
@@ -327,6 +329,10 @@ already been discussed while the weights considering both biases are:
   w(\mathbf{R}) \propto  e^{\beta ( V(\mathbf{s},t) - c(t) +
 V_{wall}(\mathbf{s}) )}.
 \f]
+The header of the COLVAR file should be:
+\auxfile{COLVAR}
+#! FIELDS time d1 coord metad.bias metad.rbias metad.rct metad.work uwall.bias
+\endauxfile
 The input script for Plumed is:
 \plumedfile
 # Read COLVAR file
@@ -431,6 +437,7 @@ You can use the input files from Example2.tar and changed the plumed.dat file.
 To construct a 2 dimensional bias with metadynamics use the following
 input:
 \plumedfile
+__FILL__
 METAD ...
  LABEL=metad
  ARG=d1,coord
@@ -442,7 +449,7 @@ METAD ...
  GRID_MIN=0.15,2.
  GRID_MAX=0.9,9.
  GRID_BIN=400,400
- REWEIGHTING_NGRID=400,400
+ CALC_RCT
 ... METAD
 \endplumedfile
 

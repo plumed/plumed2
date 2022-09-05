@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_core_PlumedMainInitializer_h
 #define __PLUMED_core_PlumedMainInitializer_h
+
+#include <cstddef>
+
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
 // This section should be consistent with the Plumed.h file.
@@ -34,12 +37,20 @@ typedef struct {
   void*(*create)();
   void(*cmd)(void*,const char*,const void*);
   void(*finalize)(void*);
-} plumed_plumedmain_function_holder;
+} plumed_plumedmain_function_holder_x;
 
 typedef struct {
   void* ptr;
   void (*handler)(void*,int,const char*,const void*);
-} plumed_nothrow_handler;
+} plumed_nothrow_handler_x;
+
+typedef struct {
+  const void* ptr;
+  std::size_t nelem;
+  const std::size_t* shape;
+  std::size_t flags;
+  void* opt;
+} plumed_safeptr_x;
 
 /**
   Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
@@ -48,15 +59,17 @@ typedef struct {
 */
 typedef struct {
   int version;
-  plumed_plumedmain_function_holder functions;
-  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow);
-} plumed_symbol_table_type;
+  plumed_plumedmain_function_holder_x functions;
+  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow);
+  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr_x ptr);
+  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr_x,plumed_nothrow_handler_x);
+} plumed_symbol_table_type_x;
 
 
 // additional definitions
-typedef void*(*plumed_create_pointer)(void);
-typedef void(*plumed_cmd_pointer)(void*,const char*,const void*);
-typedef void(*plumed_finalize_pointer)(void*);
+typedef void*(*plumed_create_pointer_x)(void);
+typedef void(*plumed_cmd_pointer_x)(void*,const char*,const void*);
+typedef void(*plumed_finalize_pointer_x)(void*);
 
 /* These functions should be accessible from C, since they might be statically
    used from Plumed.c (for static binding) */
@@ -85,7 +98,7 @@ extern "C" void plumed_plumedmain_finalize(void*plumed);
   However, when accessed directly it might be safer to first call \ref plumed_symbol_table_init.
 */
 
-extern "C" plumed_symbol_table_type plumed_symbol_table;
+extern "C" plumed_symbol_table_type_x plumed_symbol_table;
 
 /**
   Function that makes sure that \ref plumed_symbol_table is initialized.

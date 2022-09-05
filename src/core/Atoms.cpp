@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,6 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 
@@ -80,56 +78,56 @@ void Atoms::startStep() {
   forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
 }
 
-void Atoms::setBox(void*p) {
+void Atoms::setBox(const TypesafePtr & p) {
   mdatoms->setBox(p);
   Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
 }
 
-void Atoms::setPositions(void*p) {
+void Atoms::setPositions(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL position pointer with non-zero local atoms");
   mdatoms->setp(p); positionsHaveBeenSet=3;
 }
 
-void Atoms::setMasses(void*p) {
+void Atoms::setMasses(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setMasses must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL mass pointer with non-zero local atoms");
   mdatoms->setm(p); massesHaveBeenSet=true;
 
 }
 
-void Atoms::setCharges(void*p) {
+void Atoms::setCharges(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet, "setCharges must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL charges pointer with non-zero local atoms");
   mdatoms->setc(p); chargesHaveBeenSet=true;
 }
 
-void Atoms::setVirial(void*p) {
+void Atoms::setVirial(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setVirial must be called after setStep in MD code interface");
   mdatoms->setVirial(p); virialHasBeenSet=true;
 }
 
-void Atoms::setEnergy(void*p) {
+void Atoms::setEnergy(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setEnergy must be called after setStep in MD code interface");
   MD2double(p,md_energy);
   md_energy*=MDUnits.getEnergy()/units.getEnergy();
   energyHasBeenSet=true;
 }
 
-void Atoms::setForces(void*p) {
+void Atoms::setForces(const TypesafePtr & p) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   forcesHaveBeenSet=3;
   mdatoms->setf(p);
 }
 
-void Atoms::setPositions(void*p,int i) {
+void Atoms::setPositions(const TypesafePtr & p,int i) {
   plumed_massert( dataCanBeSet,"setPositions must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL positions pointer with non-zero local atoms");
   mdatoms->setp(p,i); positionsHaveBeenSet++;
 }
 
-void Atoms::setForces(void*p,int i) {
+void Atoms::setForces(const TypesafePtr & p,int i) {
   plumed_massert( dataCanBeSet,"setForces must be called after setStep in MD code interface");
   plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   mdatoms->setf(p,i); forcesHaveBeenSet++;
@@ -246,10 +244,10 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
       }
     } else {
       const int n=(dd.Get_size());
-      vector<int> counts(n);
-      vector<int> displ(n);
-      vector<int> counts5(n);
-      vector<int> displ5(n);
+      std::vector<int> counts(n);
+      std::vector<int> displ(n);
+      std::vector<int> counts5(n);
+      std::vector<int> displ5(n);
       dd.Allgather(count,counts);
       displ[0]=0;
       for(int i=1; i<n; ++i) displ[i]=displ[i-1]+counts[i-1];
@@ -274,7 +272,7 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
 void Atoms::wait() {
   dataCanBeSet=false; // Everything should be set by this stage
 // How many double per atom should be scattered
-  int ndata=3;
+  std::size_t ndata=3;
   if(!massAndChargeOK)ndata=5;
 
   if(dd) {
@@ -288,7 +286,7 @@ void Atoms::wait() {
 // receive toBeReceived
     if(asyncSent) {
       Communicator::Status status;
-      int count=0;
+      std::size_t count=0;
       for(int i=0; i<dd.Get_size(); i++) {
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();
@@ -379,13 +377,14 @@ void Atoms::setAtomsNlocal(int n) {
   }
 }
 
-void Atoms::setAtomsGatindex(int*g,bool fortran) {
+void Atoms::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
+  auto gg=g.get<const int*>(gatindex.size());
   ddStep=plumed.getStep();
   if(fortran) {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i]-1;
+    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=gg[i]-1;
   } else {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i];
+    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=gg[i];
   }
   for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
   if( gatindex.size()==natoms ) {
@@ -429,10 +428,10 @@ int Atoms::getRealPrecision()const {
   return mdatoms->getRealPrecision();
 }
 
-void Atoms::MD2double(const void*m,double&d)const {
+void Atoms::MD2double(const TypesafePtr & m,double&d)const {
   plumed_assert(mdatoms); mdatoms->MD2double(m,d);
 }
-void Atoms::double2MD(const double&d,void*m)const {
+void Atoms::double2MD(const double&d,const TypesafePtr & m)const {
   plumed_assert(mdatoms); mdatoms->double2MD(d,m);
 }
 
@@ -440,15 +439,20 @@ void Atoms::updateUnits() {
   mdatoms->setUnits(units,MDUnits);
 }
 
-void Atoms::setTimeStep(void*p) {
+void Atoms::setTimeStep(const TypesafePtr & p) {
   MD2double(p,timestep);
+// The following is to avoid extra digits in case the MD code uses floats
+// e.g.: float f=0.002 when converted to double becomes 0.002000000094995
+// To avoid this, we keep only up to 6 significant digits after first one
+  double magnitude=std::pow(10,std::floor(std::log10(timestep)));
+  timestep=std::floor(timestep/magnitude*1e6)/1e6*magnitude;
 }
 
 double Atoms::getTimeStep()const {
   return timestep/units.getTime()*MDUnits.getTime();
 }
 
-void Atoms::setKbT(void*p) {
+void Atoms::setKbT(const TypesafePtr & p) {
   MD2double(p,kbT);
 }
 
@@ -457,9 +461,9 @@ double Atoms::getKbT()const {
 }
 
 
-void Atoms::createFullList(int*n) {
+void Atoms::createFullList(const TypesafePtr & n) {
   if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
-    *n=natoms;
+    n.set(int(natoms));
     fullList.resize(natoms);
     for(unsigned i=0; i<natoms; i++) fullList[i]=i;
   } else {
@@ -479,13 +483,14 @@ void Atoms::createFullList(int*n) {
     fullList.resize(0);
     fullList.reserve(unique.size());
     for(const auto & p : unique) fullList.push_back(p.index());
-    *n=fullList.size();
+    n.set(int(fullList.size()));
   }
 }
 
-void Atoms::getFullList(int**x) {
-  if(!fullList.empty()) *x=&fullList[0];
-  else *x=NULL;
+void Atoms::getFullList(const TypesafePtr & x) {
+  auto xx=x.template get<const int**>();
+  if(!fullList.empty()) *xx=&fullList[0];
+  else *xx=NULL;
 }
 
 void Atoms::clearFullList() {
@@ -581,11 +586,11 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
   }
 }
 
-void Atoms::setExtraCV(const std::string &name,void*p) {
+void Atoms::setExtraCV(const std::string &name,const TypesafePtr & p) {
   mdatoms->setExtraCV(name,p);
 }
 
-void Atoms::setExtraCVForce(const std::string &name,void*p) {
+void Atoms::setExtraCVForce(const std::string &name,const TypesafePtr & p) {
   mdatoms->setExtraCVForce(name,p);
 }
 

@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # vim: ft=awk
 
 # DOC: \page Plumedcheck Validating syntax with plumedcheck
@@ -158,7 +158,7 @@ BEGIN{
 
 # for each input file
 BEGINFILE{
-# these variables are used to track if a file containes at least one item of a specific kind
+# these variables are used to track if a file contains at least one item of a specific kind
 # as such they should be reset for every new input file
   found_namespace_plmd=0
   found_namespace_module=0
@@ -225,7 +225,7 @@ BEGINFILE{
 # DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface
 # DOC: since one can directly declare a `PlumedMain` object.
         if(!(module in outer_modules) && isarray(used_modules[module]) && ("wrapper" in used_modules[module]))
-           error("used_wrapper_module","wrapped module should not be used except in main")
+           error("used_wrapper_module","wrapped module should not be used except in main or with anonymous namespace")
       }
     }
   }
@@ -282,6 +282,14 @@ BEGINFILE{
     if($1=="/**") in_doxygen=1
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
+# detect special wrapper options
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION ")) defined_wrapper_implementation=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION  *1 *$")) defined_wrapper_implementation=1;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_EXTERN ")) defined_wrapper_extern_zero=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_EXTERN  *0 *$")) defined_wrapper_extern_zero=1;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE ")) defined_wrapper_cxx_anonymous_namespace=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE *1 *$")) defined_wrapper_cxx_anonymous_namespace=1;
+
 # check direct inclusion of headers that would bypass module dependencies
     if(module && match($0,"^# *include +\"\\.\\.")) {
       included_module_name=$0;
@@ -296,8 +304,13 @@ BEGINFILE{
 # DOC: since this would obviously create no problem.
 # DOC: This would simplify life when moving files from a directory to another.
       if(module != included_module_name) # ignore case where module is the same
-      if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0)
-        error("include_dots","wrong include. Module '" included_module_name "' is not used.");
+      if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0) {
+        if((included_module_name=="wrapper" && defined_wrapper_implementation && defined_wrapper_extern_zero && defined_wrapper_implementation)) {
+          information("include_anonymous_wrapper")
+        } else {
+          error("include_dots","wrong include. Module '" included_module_name "' is not used.");
+        }
+      }
     }
 
 # check if there is anything behind copyright and preprocessor commands
@@ -486,9 +499,24 @@ BEGINFILE{
 # DOC: A statement `using namespace` in header files is considered bad practice. Indeed, this would imply that
 # DOC: any other file including that header file would be using the same namespace.
 # DOC: This is true also for `std` namespace, and that's why you typically find full specifications
-# DOC: such as `std::string` in header files. In source files you are free to use `using namespace PLMD` and/or
-# DOC: `using namespace std` if you like, since these commands will only affect the source file where they are used.
+# DOC: such as `std::string` in header files.
     if(filetype=="header" && match($0,"using *namespace") && !in_plumed_doc && !in_doxygen) error("using_namespace_in_header","using namespace statement in header file")
+
+    if(module_type[module]=="default-off") {
+# check that "using namespace" statements are not used in source files
+# DOC: :using_namespace_std_in_source:
+# DOC: A statement `using namespace std` in a source files is considered bad practice. Indeed, it makes it difficult to
+# DOC: distinguish classes and functions that are taken from the standard library (such as `std::vector`) from similar
+# DOC: names declared locally. This is currently a style issue, but will become an error in the future.
+      if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen ) style("using_namespace_std_in_source","using namespace std statement in source file")
+    } else {
+# check that "using namespace" statements are not used in source files
+# DOC: :using_namespace_std_in_default_source:
+# DOC: A statement `using namespace std` in a source files is considered bad practice. Indeed, it makes it difficult to
+# DOC: distinguish classes and functions that are taken from the standard library (such as `std::vector`) from similar
+# DOC: names declared locally. This is currently an error for default modules.
+      if(filetype=="source" && match($0,"using *namespace *std") && !in_plumed_doc && !in_doxygen) error("using_namespace_std_in_default_source","using namespace std statement in source file")
+    }
   }
 
 # analyze HAS macros (bouth source and autoconf)
@@ -573,8 +601,8 @@ ENDFILE{
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
      while((getline < cppfile)>=0){
-       if(match($0,"^ *#include")){
-         sub("^ *#include","");
+       if(match($0,"^# *include")){
+         sub("^# *include","");
 # DOC: :non_included_h:
 # DOC: The source file corresponding to a header file (that is: with the same name) should include it as the first included file.
 # DOC: This is to make sure that all the header files that we install can be individually included and compiled.

@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 MANUAL="\
 
@@ -18,10 +18,10 @@ Options:
 
 Examples:
 
-Check if plumed as xdrfile enabled
-> plumed config has xdrfile
-Check if plumed as xdrfile AND zlib enabled
-> plumed config has xdrfile zlib
+Check if plumed as dlopen enabled
+> plumed config has dlopen
+Check if plumed as dlopen AND zlib enabled
+> plumed config has dlopen zlib
 Check if plumed as module colvar active
 > plumed config module colvar
 "
@@ -113,7 +113,7 @@ case $action in
   exit $retval
 ;;
 (mpiexec)
-  mpi=$(cat "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  mpi=$(cat "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") { sub(" *mpiexec ","",$0);  print} }')
   if test -n "$mpi" ; then
     retval=0
     test "$quiet" = no && echo "$mpi"

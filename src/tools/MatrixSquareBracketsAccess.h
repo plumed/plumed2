@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -109,7 +109,6 @@ const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const 
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
-// cppcheck-suppress returnTempReference
   return (*static_cast<const T*>(&t))(i,j);
 }
 
@@ -118,7 +117,6 @@ C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
 // This appears as a reference to a temporary object
 // however, in reality we know it is a reference to an object that is stored in the
 // t object. We thus suppress the warning raised by cppcheck
-// cppcheck-suppress returnTempReference
   return (*static_cast<T*>(&t))(i,j);
 }
 

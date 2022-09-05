@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ typedef Driver<float> DriverFloat;
 
 /// Specialized version
 template<>
-string Driver<float>::description()const { return "analyze trajectories with plumed (single precision version)"; }
+std::string Driver<float>::description()const { return "analyze trajectories with plumed (single precision version)"; }
 
 
 PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")

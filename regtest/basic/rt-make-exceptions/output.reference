@@ -40,14 +40,6 @@ readInputLine d: RMSD REFERENCE=missing.pdb
 +++ catched
 readInputLine d: RMSD REFERENCE=test-too-many-atoms.pdb
 +++ catched
-readInputLine d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb
-+++ catched
-readInputLine d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb
-+++ catched
-readInputLine d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb
-+++ catched
-readInputLine d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb
-+++ catched
 readInputLine d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0
 +++ catched
 readInputLine RESTRAINT ARG=x(d) KAPPA=5 AT=0
@@ -81,6 +73,8 @@ readInputLine COMBINE ARG=d,d1 COEFFICIENTS=3
 readInputLine COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1
 +++ catched
 readInputLine COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4
++++ catched
+readInputLine METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100
 +++ catched
 something random here NULL
 +++ catched

@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 set -e
 
@@ -22,9 +22,9 @@ done
 
 if [ $do_plumedcheck == true ] ; then
   if [ $do_local == true ] ; then
-    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
+    ../maketools/plumedcheck $(ls -1 *.{h,cpp}) ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
   else
-    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
+    maketools/plumedcheck --global-check $(ls -1 */*.{h,cpp}) ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
   fi
 fi
 
@@ -34,7 +34,7 @@ if [ $do_cppcheck == true ] ; then
   else
     files="$(echo */*.{h,cpp})"
   fi
-  cppcheck --std=c++11 --std=posix -j 4 --platform=unix64 --language=c++ \
+  cppcheck --std=c++11 -j 4 --platform=unix64 --language=c++ \
   -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
   -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
   -U__PLUMED_HAS_ASMJIT \
@@ -62,7 +62,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit" 
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile" 
 echo "  since they are full of false positives"
 cat codecheck.log |
  gawk '{
@@ -73,6 +73,7 @@ cat codecheck.log |
     if(match($0,"[[]molfile/")) next;
     if(match($0,"[[]lepton/")) next;
     if(match($0,"[[]asmjit/")) next;
+    if(match($0,"[[]xdrfile/")) next;
   } else {
 # with cppcheck we exclude molfile lapack and blas
     if(match($0,"[[]molfile/")) next;
@@ -80,6 +81,7 @@ cat codecheck.log |
     if(match($0,"[[]blas/")) next;
     if(match($0,"[[]lepton/")) next;
     if(match($0,"[[]asmjit/")) next;
+    if(match($0,"[[]xdrfile/")) next;
   }
   print
 }' > "${CLEAN_FILE}"

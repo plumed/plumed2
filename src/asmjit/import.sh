@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 path=$1
 
@@ -43,8 +43,10 @@ print "#pragma GCC diagnostic ignored \"-Wpedantic\""
 }
 {
 if($1=="namespace" && $2=="asmjit") print "namespace PLMD {"
+if(match($0,"^#undef T.*$")) print "}"
 print
 if($1=="}" && $2=="//" && $3=="asmjit") print "} // namespace PLMD"
+if(match($0,"^#define T.*$")) print "namespace { // unnamed namespace to avoid unique global symbols"
 }END{
 print "#pragma GCC diagnostic pop"
 print "#endif // __PLUMED_HAS_ASMJIT"

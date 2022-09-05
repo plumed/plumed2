@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -93,6 +93,7 @@ std::string getPlumedProgramName() {
 
 std::string getEnvCommand() {
   return "env PLUMED_ROOT=\""+getPlumedRoot()+"\""+
+         " env PLUMED_VERSION=\""+getVersionLong()+"\""+
          " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
          " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
          " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
@@ -112,15 +113,16 @@ std::string getVersionGit() {
 }
 
 std::string getMakefile() {
-  static const char conf [] = {
+  static const unsigned char confu [] = {
 #include "Makefile.conf.xxd"
     , 0x00
   };
+  auto conf=(char*)confu;
   return std::string(conf,conf+std::strlen(conf));
 }
 
 bool hasMatheval() {
-#if __PLUMED_HAS_MATHEVAL
+#ifdef __PLUMED_HAS_MATHEVAL
   return true;
 #else
   return false;
@@ -128,7 +130,7 @@ bool hasMatheval() {
 }
 
 bool hasDlopen() {
-#if __PLUMED_HAS_DLOPEN
+#ifdef __PLUMED_HAS_DLOPEN
   return true;
 #else
   return false;
@@ -136,7 +138,7 @@ bool hasDlopen() {
 }
 
 bool hasCregex() {
-#if __PLUMED_HAS_CREGEX
+#ifdef __PLUMED_HAS_CREGEX
   return true;
 #else
   return false;
@@ -144,7 +146,7 @@ bool hasCregex() {
 }
 
 bool hasMolfile() {
-#if __PLUMED_HAS_MOLFILE_PLUGINS
+#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   return true;
 #else
   return false;
@@ -152,7 +154,7 @@ bool hasMolfile() {
 }
 
 bool hasExternalMolfile() {
-#if __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
+#ifdef __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
   return true;
 #else
   return false;
@@ -160,15 +162,7 @@ bool hasExternalMolfile() {
 }
 
 bool hasZlib() {
-#if __PLUMED_HAS_ZLIB
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool hasXdrfile() {
-#if __PLUMED_HAS_XDRFILE
+#ifdef __PLUMED_HAS_ZLIB
   return true;
 #else
   return false;

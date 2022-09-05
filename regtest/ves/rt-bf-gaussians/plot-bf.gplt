@@ -1,0 +1,21 @@
+set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+set output "basisf-gaussian.png"
+
+set xlabel "x"
+set ylabel "f(x)"
+
+set xr [-2.5:2.5]
+set xtics 1
+set mxtics 2
+
+set key title "σ = 0.75 (μ_i - μ_{i+1})"
+
+set xzeroaxis
+
+set yr [-0.15:1.15]
+set ytics -1.0, 0.5, 1.0
+set mytics 2
+
+plot \
+     'bf.values.data.reference' u 1:15 w l lw 4 lt 2 notitle ,\
+     ''                         u 1:14 w l lw 4 lt 1 notitle ,\

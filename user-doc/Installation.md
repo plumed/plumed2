@@ -82,7 +82,7 @@ Notice that some of the methods within PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim
-> ./configure --disable-mpi --disable-xdrfile
+> ./configure --disable-mpi --disable-gsl
 \endverbatim
 
 Notice that when MPI search is enabled (by default) compilers
@@ -142,34 +142,34 @@ or not the libraries were properly detected.
 
 If a library is not found during configuration, you can try to use options to modify the
 search path.
-For example if your xdrfile libraries is in /opt/local (this is where MacPorts put it)
+For example if your gsl libraries is in /opt/local (this is where MacPorts put it)
 and configure is not able to find it you can try
 \verbatim
 > ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include
 \endverbatim
-Notice that PLUMED will first try to link a routine from say xdrfile
+Notice that PLUMED will first try to link a routine from say gsl
 without any additional flag, and then in case of failure will retry adding
-"-lxdrfile" to the LIBS options.
-If also this does not work, the xdrfile library will be
+"-lgsl" to the LIBS options.
+If also this does not work, the gsl library will be
 disabled and some features will not be available.
 This procedure allows you to use libraries
 with custom names. So, if
-your xdrfile library is called /opt/local/lib/libmyxdrfile.so you can 
+your gsl library is called /opt/local/lib/libmygsl.so you can 
 link it with
 \verbatim
-> ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include LIBS=-lmyxdrfile
+> ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include LIBS=-lmygsl
 \endverbatim
-In this example, the linker will directly try to link `/opt/local/lib/libmyxdrfile.so`.
+In this example, the linker will directly try to link `/opt/local/lib/libmygsl.so`.
 This rule is true for all the libraries, so that you will always be able to link
 a specific version of a library by specifying it using the LIBS variable.
 
-Since version 2.3.2, the search for the library functions passing to the linker a flag with the standard library name (in the xdrfile example,
-it would be `-lxdrfile`) can be skipped by using the option `--disable-libsearch`.
+Since version 2.3.2, the search for the library functions passing to the linker a flag with the standard library name (in the gsl example,
+it would be `-lgsl`) can be skipped by using the option `--disable-libsearch`.
 Notice that in this manner only libraries that are explicitly passed using the `LIBS` option will be linked. For instance
 \verbatim
-> ./configure --disable-libsearch LIBS=-lxdrfile
+> ./configure --disable-libsearch LIBS=-lgsl
 \endverbatim
-will make sure that only xdrfile is linked and, for instance, BLAS and LAPACK libraries are not.
+will make sure that only gsl is linked and, for instance, BLAS and LAPACK libraries are not.
 This might be useful when installing PLUMED within package managers such as MacPorts to
 make sure that only desired libraries are linked and thus to avoid to introduce spurious
 dependencies. The only exception to this rule is `-ldl`, which is anyway a system library on Linux.
@@ -233,7 +233,7 @@ native LAPACK libraries have problems.
 As a final resort, you can also edit the resulting Makefile.conf file.
 Notable variables in this file include:
 - DYNAMIC_LIB : these are the libraries needed to compile the PLUMED
-library (e.g. -L/path/to/xdrfile -lxdrfile etc). Notice that for the
+library (e.g. -L/path/to/gsl -lgsl etc). Notice that for the
 PLUMED shared library to be compiled properly these should be dynamic
 libraries. Also notice that PLUMED preferentially requires BLAS and LAPACK library;
 see \ref BlasAndLapack for further info. Notice that the variables 
@@ -242,7 +242,7 @@ variable. This is a bit misleading but is required to keep the configuration
 files compatible with PLUMED 2.0.
 - LIBS : these are the libraries needed when patching an MD code; typically only "-ldl" (needed to have functions for dynamic loading).
 - CPPFLAGS : add here definition needed to enable specific optional functions;
-e.g. use -D__PLUMED_HAS_XDRFILE to enable the xdrfile library
+e.g. use -D__PLUMED_HAS_GSL to enable the gsl library
 - SOEXT : this gives the extension for shared libraries in your system, typically
 "so" on UNIX, "dylib" on mac; If your system does not support dynamic libraries or, for some other reason, you would like a static executable you can
 just set this variable to a blank ("SOEXT=").
@@ -250,7 +250,7 @@ just set this variable to a blank ("SOEXT=").
 \subsection BlasAndLapack BLAS and LAPACK
 
 We tried to keep PLUMED as independent as possible from external libraries and as such those features
-that require external libraries (e.g. Matheval) are optional. However, to have a properly working version
+that require external libraries are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
 them.  However, if you cannot install BLAS and LAPACK, you can use the internal ones.
@@ -282,8 +282,11 @@ in the configuration file.
 
 \subsection installation-vmdplugins VMD trajectory plugins
 
-If you configure PLUMED with the VMD plugins you will be able to read
-many more trajectory formats. To this aim,
+PLUMED source code already includes a few selected VMD molfile plugins so as to read a small number
+of additional trajectory formats (e.g., dcd, gromacs files, pdb, and amber files).
+If you configure PLUMED with the full set of VMD plugins you will be able to read
+many more trajectory formats, basically all of those supported by VMD.
+To this aim,
 you need to download the SOURCE of VMD, which contains
 a plugins directory. Adapt build.sh and compile it. At
 the end, you should get the molfile plugins compiled as a static
@@ -294,17 +297,28 @@ which should be in `/pathtovmdplugins/include`.
 Then customize the configure command with something along the lines of:
 
 \verbatim
-./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
+> ./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
 Notice that it might be necessary to add to `LDFLAGS` the path to your TCL interpreter, e.g.
 
 \verbatim
-./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
+> ./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
             CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
 Then, rebuild plumed.
+
+\subsection additional-modules Additional Modules
+
+PLUMED includes some additional modules that by default are not compiled, but can be enabled during configuration.
+You can use the option `--enable-modules` to activate some of them, e.g.
+
+\verbatim
+> ./configure --enable-modules=module1name+module2name
+\endverbatim
+
+For more information on modules see \ref mymodules.
 
 \section CompilingPlumed Compiling PLUMED
 
@@ -661,14 +675,12 @@ Just edit it as necessary to make it suitable for your environment.
 
 Notice that PLUMED can take advantage of many additional features if specific libraries are available upon
 compiling it.
-If someone uses gromacs, install libxdrfile first and check if PLUMED `./configure` is detecting it.
-PLUMED will be able to write trr/xtc file, simplifying analysis.
 
 Try to patch all MD codes with the `--runtime` option. This will allow independent update of PLUMED and MD codes.
   Users will be able to combine any of the installed gromacs/amber/etc versions with any of the installed PLUMED versions.
 Notice that it is sometime claimed that statically linked codes are faster. In our experience, this is not true.
 In case you absolutely need a static executable, be ready to face non trivial linking issues. PLUMED is written in C++,
-thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libxdrfile).
+thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libgsl).
 
 Sometime we make small fixes on the patches. For this reason, keep track of which version of PLUMED you used
 to patch each of the MD code. Perhaps you can call the MD code modules with names such as `gromacs/4.6.7p1`,
@@ -690,15 +702,15 @@ PLUMED needs to be well optimized to run efficiently.
 If you need a single PLUMED binary to run efficiency on machines with different levels of hardware (e.g.: some
 of your workstations support AVX and some do not), with intel compiler you can use something like
 \verbatim
-./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
+> ./configure CXX=mpicxx CXXFLAGS="-O3 -axSSE2,AVX"
 \endverbatim
 It will take more time to compile but it will allow you to use a single module. Otherwise, you should install two
 PLUMED version with different optimization levels.
 
 Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
-scenario where you first installed a module `libxdrfile`, then load it while you compile PLUMED. If you
+scenario where you first installed a module `libgsl`, then load it while you compile PLUMED. If you
 provide the following option to configure `--enable-rpath`, the PLUMED executable and
-library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
+library will remember where libgsl is, without the need to load libgsl module at runtime.
 Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
 usually the PLUMED module should load the compiler and MPI modules.
 
@@ -769,19 +781,19 @@ ld: TOC section size exceeds 64k
 \endverbatim
   please configure plumed again with the following flag
 \verbatim
-./configure --disable-ld-r
+> ./configure --disable-ld-r
 \endverbatim
 - On Cray machines, you might have to set the following environment variable
   before configuring and building both PLUMED and the MD code that you want
   to patch with PLUMED (kindly reported by Marco De La Pierre):
 \verbatim
-export CRAYPE_LINK_TYPE=dynamic
+> export CRAYPE_LINK_TYPE=dynamic
 \endverbatim
 - Intel MPI seems to require the flags `-lmpi_mt -mt_mpi` for compiling and linking and the flag `-DMPICH_IGNORE_CXX_SEEK` for compiling
   (kindly reported by Abhishek Acharya).
   You might want to try to configure using
 \verbatim
-./configure LDFLAGS=-lmpi_mt CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi" STATIC_LIBS=-mt_mpi
+> ./configure LDFLAGS=-lmpi_mt CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi" STATIC_LIBS=-mt_mpi
 \endverbatim
   Adding libraries to `STATIC_LIBS` uses them for all the linking steps, whereas those in `LIBS` are only used when linking the PLUMED kernel library.
   See more at [this thread](https://groups.google.com/d/msgid/plumed-users/CAB1aw3y0m%3D5qwzsZY4ZB-aBevsL5iuS%3DmQuSWK_cw527zCMqzg%40mail.gmail.com?utm_medium=email&utm_source=footer).

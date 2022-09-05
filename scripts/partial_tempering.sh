@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # vim:ft=awk
 if [ "$1" = --description ] ; then
   echo "scale parameters in a gromacs topology to implement solute or partial tempering"
@@ -267,6 +267,25 @@ function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,tes
       printf("\n");
     }
    } else error("dihedrals should have at least 5 fields");
+# PAIRS
+  } else if(rec=="pairs" && ($3==1 || $3==2) && NF>3 ){
+    found1=0; found2=0;
+    for(j=0;j<n_of_atoms;j++) {
+      if($1==list_of_atoms[j]) found1=1;
+      if($2==list_of_atoms[j]) found2=1;
+    }
+    scaleq1=1.0;
+    scaleq2=1.0;
+    if(found1)scaleq1*=sqrt(scale);
+    if(found2)scaleq2*=sqrt(scale);
+    scale2=1.0; # scaling for second to last column
+    if(combrule==1) scale2=scaleq1*scaleq2;
+    if($3==1) {
+      print $1,$2,$3,scale2*$4,scaleq1*scaleq2*$5," ; scaled";
+    }
+    if($3==2) {
+      print $1,$2,$3,$4,scaleq1*$5,scaleq2*$6,scale2*$7,scaleq1*scaleq2*$8," ; scaled";
+    }
 # ATOMTYPES
   } else if(rec=="atomtypes" && NF>=4){
     scale2=1.0; # scaling for second to last column

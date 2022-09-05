@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,16 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <cmath>
 
 #include "Function.h"
 #include "ActionRegister.h"
-
-#include <string>
-#include <cstring>
-#include <iostream>
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -176,30 +169,30 @@ class FuncPathMSD : public Function {
   double lambda;
   int neigh_size;
   double neigh_stride;
-  vector< pair<Value *,double> > neighpair;
-  map<Value *,double > indexmap; // use double to allow isomaps
-  vector <Value*> allArguments;
+  std::vector< std::pair<Value *,double> > neighpair;
+  std::map<Value *,double > indexmap; // use double to allow isomaps
+  std::vector <Value*> allArguments;
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // this below is useful when one wants to sort a vector of double and have back the order
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // create a custom sorter
-  typedef vector<double>::const_iterator myiter;
+  typedef std::vector<double>::const_iterator myiter;
   struct ordering {
-    bool operator ()(pair<unsigned, myiter> const& a, pair<unsigned, myiter> const& b) {
+    bool operator ()(std::pair<unsigned, myiter> const& a, std::pair<unsigned, myiter> const& b) {
       return *(a.second) < *(b.second);
     }
   };
 // sorting utility
-  vector<int> increasingOrder( vector<double> &v) {
+  std::vector<int> increasingOrder( std::vector<double> &v) {
     // make a pair
-    vector< pair<unsigned, myiter> > order(v.size());
+    std::vector< std::pair<unsigned, myiter> > order(v.size());
     unsigned n = 0;
     for (myiter it = v.begin(); it != v.end(); ++it, ++n) {
       order[n] = make_pair(n, it); // note: heere i do not put the values but the addresses that point to the value
     }
     // now sort according the second value
-    sort(order.begin(), order.end(), ordering());
-    vector<int> vv(v.size()); n=0;
+    std::sort(order.begin(), order.end(), ordering());
+    std::vector<int> vv(v.size()); n=0;
     for (const auto & it : order) {
       vv[n]=it.first; n++;
     }
@@ -209,7 +202,7 @@ class FuncPathMSD : public Function {
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
   struct pairordering {
-    bool operator ()(pair<Value *, double> const& a, pair<Value*, double> const& b) {
+    bool operator ()(std::pair<Value *, double> const& a, std::pair<Value*, double> const& b) {
       return (a).second > (b).second;
     }
   };
@@ -292,7 +285,7 @@ void FuncPathMSD::calculate() {
   Value* val_z_path=getPntrToComponent("z");
 
   for(auto & it : neighpair) {
-    it.second=exp(-lambda*(it.first->get()));
+    it.second=std::exp(-lambda*(it.first->get()));
     s_path+=(indexmap[it.first])*it.second;
     partition+=it.second;
   }
@@ -326,7 +319,7 @@ void FuncPathMSD::prepare() {
   if (neigh_size>0) {
     if(neighpair.size()==allArguments.size()) { // I just did the complete round: need to sort, shorten and give it a go
       // sort the values
-      sort(neighpair.begin(),neighpair.end(),pairordering());
+      std::sort(neighpair.begin(),neighpair.end(),pairordering());
       // resize the effective list
       neighpair.resize(neigh_size);
       log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
@@ -344,7 +337,7 @@ void FuncPathMSD::prepare() {
       for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
     }
   }
-  vector<Value*> argstocall;
+  std::vector<Value*> argstocall;
 //log.printf("PREPARING \n");
   argstocall.clear();
   if(!neighpair.empty()) {

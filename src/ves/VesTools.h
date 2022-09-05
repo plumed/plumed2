@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -42,6 +42,8 @@ public:
   // Convert double into a string with more digits
   static void convertDbl2Str(const double value,std::string& str, unsigned int precision);
   static void convertDbl2Str(const double value,std::string& str);
+  // get log2 of unsigned int
+  static unsigned int log2(unsigned value);
   // copy grid values
   static void copyGridValues(GridBase* grid_pntr_orig, GridBase* grid_pntr_copy);
   static unsigned int getGridFileInfo(const std::string&, std::string&, std::vector<std::string>&, std::vector<std::string>&, std::vector<std::string>&, std::vector<bool>&, std::vector<unsigned int>&, bool&);
@@ -64,6 +66,14 @@ inline
 void VesTools::convertDbl2Str(const double value,std::string& str) {
   unsigned int precision = std::numeric_limits<double>::digits10 + 1;
   convertDbl2Str(value,str,precision);
+}
+
+
+inline
+unsigned int log2(unsigned value) {
+  unsigned int result = 0;
+  while(value >>= 1) result++;
+  return result;
 }
 
 

@@ -1,7 +1,13 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 if test -n "$PLUMED_PREPEND_PATH" ; then
   PATH="$PLUMED_PREPEND_PATH:$PATH"
+fi
+
+if test -n "$PLUMED_MAKE" ; then
+  make="$PLUMED_MAKE"
+else
+  make=make
 fi
 
 export valgrind=env
@@ -37,6 +43,8 @@ mpiprocs=0
 
 plumed_needs=
 plumed_modules=
+
+plumed_language=c++
 
 source ./config
 
@@ -79,7 +87,7 @@ mpi="$mpi -np $mpiprocs"
 
 if ! $plumed config -q has mpi
 then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
       else
@@ -99,7 +107,7 @@ fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
       else
@@ -116,7 +124,7 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($need NOT ENABLED)"
       else
@@ -134,7 +142,7 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
       else
@@ -149,7 +157,7 @@ done
 
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
-    if [ "$TRAVIS" = true ]; then
+    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLIABLE (plumed_custom_skip)"
       else
@@ -162,6 +170,11 @@ if type -t plumed_custom_skip 1>/dev/null ; then
   fi
 fi
 
+if $plumed --is-installed ; then
+  export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+else
+  export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+fi
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before
 fi
@@ -183,13 +196,66 @@ case "$type" in
 (make)
   $plumed info --configuration > Makefile.conf
   $plumed --is-installed || ln -s "$root/src" plumed
-  cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
-  if $plumed --is-installed ; then
-    export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c ; then
+    cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
   else
-    export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+    cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
   fi
-  make exe 1>out 2> err
+  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 ; then
+    if make print-fortran | grep "FC=$" 1>/dev/null ; then
+      echo "NOT_APPLICABLE (FC NOT FOUND)"
+      exit 0
+    else
+      if test "$plumed_language" = fortran08 ; then
+        cat > __test_fortran08.f90 << EOF
+module test_fortran08_a
+type b
+contains
+  final :: c
+end type b
+contains
+  impure elemental subroutine c(x)
+    type(b), intent(inout) :: x
+  end subroutine c
+end module test_fortran08_a
+EOF
+        if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
+          make exe-fortran08 1>out 2>err
+        else
+          echo "NOT_APPLICABLE (FC does not support f2008)"
+          exit 0
+        fi
+      else
+        make exe-fortran 1>out 2> err
+      fi
+    fi
+  elif test "$plumed_language" = c || test "$plumed_language" = c11 ; then
+    if test "$plumed_language" = c11 ; then
+      cat > __test_c11.c << EOF
+#ifdef __STDC_VERSION__
+#if __STDC_VERSION__ < 201112L
+error
+#endif
+#else
+error
+#endif
+int f(int a){
+  return a;
+}
+EOF
+      if make test-c11 2>err | grep SUCCESS=YES 1> /dev/null ; then
+        rm __test_c11.c
+        make exe-c 1>out 2> err
+      else
+          echo "NOT_APPLICABLE (CC does not support c11)"
+          exit 0
+      fi
+    else
+      make exe-c 1>out 2> err
+    fi
+  else
+    make exe 1>out 2> err
+  fi
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
 (plumed)
@@ -227,7 +293,7 @@ for file in *.reference ; do
 # (files are thought to be binary for some reason)
 # In this way, at least PLUMED native files (with fields) will be assumed to be
 # ASCII and diff will be shown in the log
-    test "$(cat "$file" | head -c 10)" = "#! FIELDS " && DIFFOPT="-a"
+    test "$(head -c 10 "$file")" = "#! FIELDS " && DIFFOPT="-a"
     out="$(diff $DIFFOPT "$file" "$new.zfix")"
     test -n "$out" && {
       echo FAILURE

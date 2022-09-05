@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <array>
 
 namespace PLMD {
 
@@ -131,8 +132,8 @@ E.g., in an external c++ code using PLUMED as a library, one can type
 \verbatim
   try{
     plumed.cmd("setPrecision",n);
-  } catch (std::exception & e) {
-    printf("ee %s",e.what());
+  } catch (const std::exception & e) {
+    std::printf("ee %s",e.what());
     exit(1);
   }
 \endverbatim
@@ -152,16 +153,20 @@ it later with a fixed size array placed on the stack.
 */
 class Exception : public std::exception
 {
-/// Reported message
+/// Reported message. Can be updated.
   std::string msg;
-/// Stack trace at exception
-  std::string stackString;
-/// Flag to remembed if we have to write the `+++ message follows +++` string.
+/// Flag to remember if we have to write the `+++ message follows +++` string.
 /// Needed so that the string appears only at the beginning of the message.
-  bool note;
+  bool note=true;
 /// Stream used to insert objects.
 /// It is not copied when the Exception is copied.
   std::stringstream stream;
+/// Stack trace, computed at construction
+  std::array<void*,128> callstack;
+/// Number of frames in stack, computed at construction
+  int callstack_n=0;
+/// Parsed stack trace. Built at first use, thus mutable.
+  mutable std::string stackTrace;
 
 public:
 
@@ -204,8 +209,10 @@ public:
 /// Needed to make sure stream is not copied
   Exception(const Exception & e):
     msg(e.msg),
-    stackString(e.stackString),
-    note(e.note)
+    note(e.note),
+    callstack(e.callstack),
+    callstack_n(e.callstack_n),
+    stackTrace(e.stackTrace)
   {
   }
 
@@ -213,8 +220,10 @@ public:
 /// Needed to make sure stream is not copied
   Exception & operator=(const Exception & e) {
     msg=e.msg;
-    stackString=e.stackString;
     note=e.note;
+    callstack=e.callstack;
+    callstack_n=e.callstack_n;
+    stackTrace=e.stackTrace;
     stream.str("");
     return *this;
   }
@@ -223,14 +232,21 @@ public:
 /// In case the environment variable PLUMED_STACK_TRACE was defined
 /// and equal to `yes` when the exception was raised,
 /// the error message will contain the stack trace as well.
-  virtual const char* what() const noexcept {return msg.c_str();}
+  const char* what() const noexcept override {return msg.c_str();}
 
-/// Returns the stack trace.
-/// Stack trace stored only if the required functions were found at configure time.
-  virtual const char* stack() const noexcept {return stackString.c_str();}
+/// Returns the stack trace as a string.
+/// This function is slow as it requires building a parsed string.
+/// If storing the stack for later usage, you might prefer to use trace().
+  const char* stack() const;
+
+/// Returns the callstack.
+  const std::array<void*,128> & trace() const noexcept {return callstack;}
+
+/// Returns the number of elements in the trace array
+  int trace_n() const noexcept {return callstack_n;}
 
 /// Destructor should be defined and should not throw other exceptions
-  virtual ~Exception() noexcept {}
+  ~Exception() noexcept override {}
 
 /// Insert location.
 /// Format the location properly.
@@ -263,7 +279,7 @@ public:
   using Exception::Exception;
   template<typename T>
   ExceptionError& operator<<(const T & x) {
-    *((Exception*) this) <<x;
+    *static_cast<Exception*>(this) <<x;
     return *this;
   }
 };
@@ -275,7 +291,19 @@ public:
   using Exception::Exception;
   template<typename T>
   ExceptionDebug& operator<<(const T & x) {
-    *((Exception*) this) <<x;
+    *static_cast<Exception*>(this) <<x;
+    return *this;
+  }
+};
+
+/// Class representing a type error in the PLMD::Plumed interface
+class ExceptionTypeError :
+  public Exception {
+public:
+  using Exception::Exception;
+  template<typename T>
+  ExceptionTypeError& operator<<(const T & x) {
+    *static_cast<Exception*>(this) <<x;
     return *this;
   }
 };
@@ -329,7 +357,7 @@ public:
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_assert, but only evaluates the condition if NDEBUG is not defined.
-#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test)
+#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test) << "(this check is enabled only in debug builds)\n"
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_massert, but only evaluates the condition if NDEBUG is not defined.

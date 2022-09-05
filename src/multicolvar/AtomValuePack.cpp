@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -78,7 +78,7 @@ void AtomValuePack::updateUsingIndices() {
   myvals.completeUpdate();
 }
 
-void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, CatomPack& catom_der ) {
+void AtomValuePack::addComDerivatives( const int& ind, const Vector& der, const CatomPack& catom_der ) {
   if( ind<0 ) {
     for(unsigned ider=0; ider<catom_der.getNumberOfAtomsWithDerivatives(); ++ider) {
       unsigned jder=3*catom_der.getIndex(ider);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -67,7 +65,8 @@ INCLUDE FILE=groups.dat
 c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.5
 METAD ARG=c HEIGHT=0.2 PACE=100 SIGMA=0.2 BIASFACTOR=5
 \endplumedfile
-Here `groups.dat` could be huge file containing group definitions such as
+Here `groups.dat` could be a huge file containing group definitions.  This groups.dat file might look something
+like the following example but with more atom indices in the groups.
 \plumedfile
 #SETTINGS FILENAME=groups.dat
 # this is groups.dat
@@ -76,7 +75,6 @@ groupa: GROUP ...
     10
     50
     60
-## imagine a long list here
     70
     80
     120
@@ -87,7 +85,6 @@ groupb: GROUP ...
     11
     51
     61
-## imagine a long list here
     71
     81
     121

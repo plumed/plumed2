@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2019,2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,15 +27,18 @@
 #include <csignal>
 #endif
 
-using namespace std;
 namespace PLMD {
+
+/// Retrieve PLUMED_ENABLE_SIGNALS.
+/// Inline static so that it can store a static variable (for quicker access)
+/// without adding a unique global symbol to a library including this header file.
+inline static bool SubprocessPidGetenvSignals() noexcept {
+  static const bool res=std::getenv("PLUMED_ENABLE_SIGNALS");
+  return res;
+}
 
 /// Small utility class, used to avoid inclusion of unistd.h> in a header file.
 class SubprocessPid {
-  static bool signals() noexcept {
-    static const bool res=std::getenv("PLUMED_ENABLE_SIGNALS");
-    return res;
-  }
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
   pid_t pid;
@@ -45,14 +48,14 @@ public:
     plumed_assert(pid!=0 && pid!=-1);
   }
   void stop() noexcept {
-    // signals give problems with MPI on Travis.
+    // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(signals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
   }
   void cont() noexcept {
-    // signals give problems with MPI on Travis.
+    // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(signals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
   }
   ~SubprocessPid() {
     // this is apparently working also with MPI on Travis.
@@ -93,7 +96,7 @@ Subprocess::Subprocess(const std::string & cmd) {
   }
 // PARENT::
   default:
-    this->pid.reset(new SubprocessPid(pid));
+    this->pid=Tools::make_unique<SubprocessPid>(pid);
     if(close(pc[0])<0) plumed_error()<<"error closing file";
     if(close(cp[1])<0) plumed_error()<<"error closing file";
     fpc=pc[1];

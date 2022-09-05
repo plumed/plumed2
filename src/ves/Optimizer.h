@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <memory>
 
 
 #define PLUMED_VES_OPTIMIZER_INIT(ao) Action(ao),Optimizer(ao)
@@ -80,19 +81,19 @@ private:
   std::string coeffssetid_prefix_;
   //
   unsigned int coeffs_wstride_;
-  std::vector<OFile*> coeffsOFiles_;
+  std::vector<std::unique_ptr<OFile>> coeffsOFiles_;
   std::string coeffs_output_fmt_;
   //
   unsigned int gradient_wstride_;
-  std::vector<OFile*> gradientOFiles_;
+  std::vector<std::unique_ptr<OFile>> gradientOFiles_;
   std::string gradient_output_fmt_;
   //
   unsigned int hessian_wstride_;
-  std::vector<OFile*> hessianOFiles_;
+  std::vector<std::unique_ptr<OFile>> hessianOFiles_;
   std::string hessian_output_fmt_;
   //
   unsigned int targetdist_averages_wstride_;
-  std::vector<OFile*> targetdist_averagesOFiles_;
+  std::vector<std::unique_ptr<OFile>> targetdist_averagesOFiles_;
   std::string targetdist_averages_output_fmt_;
   //
   unsigned int nbiases_;
@@ -100,11 +101,11 @@ private:
   //
   unsigned int ncoeffssets_;
   std::vector<CoeffsVector*> coeffs_pntrs_;
-  std::vector<CoeffsVector*> aux_coeffs_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> aux_coeffs_pntrs_;
   std::vector<CoeffsVector*> gradient_pntrs_;
-  std::vector<CoeffsVector*> aver_gradient_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> aver_gradient_pntrs_;
   std::vector<CoeffsMatrix*> hessian_pntrs_;
-  std::vector<CoeffsVector*> coeffs_mask_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> coeffs_mask_pntrs_;
   std::vector<CoeffsVector*> targetdist_averages_pntrs_;
   //
   bool identical_coeffs_shape_;
@@ -154,7 +155,7 @@ protected:
   void parseFilenames(const std::string&, std::vector<std::string>&, const std::string&);
   void parseFilenames(const std::string&, std::vector<std::string>&);
   void addCoeffsSetIDsToFilenames(std::vector<std::string>&, std::string&);
-  void setupOFiles(std::vector<std::string>&, std::vector<OFile*>&, const bool multi_sim_single_files=false);
+  void setupOFiles(std::vector<std::string>&, std::vector<std::unique_ptr<OFile>>&, const bool multi_sim_single_files=false);
 public:
   static void registerKeywords(Keywords&);
   static void useMultipleWalkersKeywords(Keywords&);
@@ -203,10 +204,10 @@ public:
   //
   std::vector<VesBias*> getBiasPntrs() const {return bias_pntrs_;}
   std::vector<CoeffsVector*> getCoeffsPntrs() const {return coeffs_pntrs_;}
-  std::vector<CoeffsVector*> getAuxCoeffsPntrs() const {return aux_coeffs_pntrs_;}
+  std::vector<CoeffsVector*> getAuxCoeffsPntrs() const {return Tools::unique2raw(aux_coeffs_pntrs_);}
   std::vector<CoeffsVector*> getGradientPntrs()const {return gradient_pntrs_;}
   std::vector<CoeffsMatrix*> getHessianPntrs() const {return hessian_pntrs_;}
-  std::vector<CoeffsVector*> getCoeffsMaskPntrs() const {return coeffs_mask_pntrs_;}
+  std::vector<CoeffsVector*> getCoeffsMaskPntrs() const {return Tools::unique2raw(coeffs_mask_pntrs_);}
   std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {return targetdist_averages_pntrs_;}
   //
   bool isBiasOutputActive() const {return bias_output_active_;}

@@ -1,0 +1,53 @@
+#! /usr/bin/env bash
+awk '
+BEGIN    {
+  _ord_init()
+  FS=""
+  newline=1
+}
+function _ord_init(    low, high, i, t)
+{
+    low = sprintf("%c", 7) # BEL is ascii 7
+    if (low == "\a") {    # regular ascii
+        low = 0
+        high = 127
+    } else if (sprintf("%c", 128 + 7) == "\a") {
+        # ascii, mark parity
+        low = 128
+        high = 255
+    } else {        # ebcdic(!)
+        low = 0
+        high = 255
+    }
+    for (i = low; i <= high; i++) {
+        t = sprintf("%c", i)
+        _ord_[t] = i
+    }
+}
+
+function add(x) {
+  if(newline==1){
+    printf(" ");
+    newline=0
+  }
+  if(j!=0 && j%12==0) {
+    print ","
+    printf(" ")
+  } else if(j!=0) {
+    printf(",")
+  }
+  printf(" 0x%.2x",_ord_[x]);
+  j++;
+}
+
+{
+  for(i=1;i<=NF;i++) add($i)
+  add("\n")
+}
+
+END{
+print ""
+}
+
+
+'

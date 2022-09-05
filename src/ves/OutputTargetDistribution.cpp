@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -146,11 +146,11 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
   parse("TARGET_DISTRIBUTION",targetdist_label);
   checkRead();
   //
-  std::vector<Value*> arguments(nargs);
+  std::vector<std::unique_ptr<Value>> arguments(nargs);
   for(unsigned int i=0; i < nargs; i++) {
     std::string is; Tools::convert(i+1,is);
     if(nargs==1) {is="";}
-    arguments[i]= new Value(NULL,"arg"+is,false);
+    arguments[i]= Tools::make_unique<Value>(nullptr,"arg"+is,false);
     if(grid_periodicity[i]=="YES") {
       arguments[i]->setDomain(grid_min[i],grid_max[i]);
     }
@@ -169,7 +169,7 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
   if(targetdist_pntr->isDynamic()) {
     plumed_merror(getName() + " only works for static target distributions");
   }
-  targetdist_pntr->setupGrids(arguments,grid_min,grid_max,grid_bins);
+  targetdist_pntr->setupGrids(Tools::unique2raw(arguments),grid_min,grid_max,grid_bins);
   targetdist_pntr->updateTargetDist();
   Grid* targetdist_grid_pntr = targetdist_pntr->getTargetDistGridPntr();
   Grid* log_targetdist_grid_pntr = targetdist_pntr->getLogTargetDistGridPntr();
@@ -215,13 +215,6 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
       marginal_grid.writeToFile(ofile3);
     }
   }
-
-  //
-  for(unsigned int i=0; i < nargs; i++) {
-    delete arguments[i];
-  }
-  arguments.clear();
-
 
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -103,7 +103,9 @@ void OutputBasisFunctions::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_MAX","the maximum of the grid for writing the basis function values and derivatives. By default it is the maximum of the interval on which the basis functions are defined.");
   keys.add("optional","FILE_VALUES","filename of the file on which the basis function values are written. By default it is BF_LABEL.values.data.");
   keys.add("optional","FILE_DERIVS","filename of the file on which the basis function derivatives are written. By default it is BF_LABEL.derivs.data.");
-  keys.add("optional","FORMAT_VALUES_DERIVS","the numerical format of the basis function values and derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","FORMAT_VALUES_DERIVS","the numerical format of the basis function values and derivatives written to file. By default it is %15.8f.\n. You can also use FORMAT_VALUES and FORMAT_DERIVS to give the numerical formats separately.");
+  keys.add("optional","FORMAT_VALUES","the numerical format of the basis function derivatives written to file. By default it is %15.8f.\n");
+  keys.add("optional","FORMAT_DERIVS","the numerical format of the basis function values written to file. By default it is %15.8f.\n");
   keys.add("optional","FILE_TARGETDIST_AVERAGES","filename of the file on which the averages over the target distributions are written. By default it is BF_LABEL.targetdist-averages.data.");
   keys.add("optional","FORMAT_TARGETDIST_AVERAGES","the numerical format of the target distribution averages written to file. By default it is %15.8f.\n");
   keys.add("optional","FILE_TARGETDIST","filename of the files on which the target distributions are written. By default it is BF_LABEL.targetdist-#.data.");
@@ -143,6 +145,11 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
 
   std::string fmt_values_derivs = "%15.8f";
   parse("FORMAT_VALUES_DERIVS",fmt_values_derivs);
+  std::string fmt_values = fmt_values_derivs;
+  std::string fmt_derivs = fmt_values_derivs;
+  parse("FORMAT_VALUES",fmt_values);
+  parse("FORMAT_DERIVS",fmt_derivs);
+
   std::string fmt_targetdist_aver = "%15.8f";
   parse("FORMAT_TARGETDIST_AVERAGES",fmt_targetdist_aver);
 
@@ -172,15 +179,15 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
   ofile_derivs.link(*this);
   ofile_derivs.enforceBackup();
   ofile_derivs.open(fname_derives);
-  bf_pntrs[0]->writeBasisFunctionsToFile(ofile_values,ofile_derivs,min_str,max_str,nbins,ignore_periodicity,fmt_values_derivs,numerical_deriv);
+  bf_pntrs[0]->writeBasisFunctionsToFile(ofile_values,ofile_derivs,min_str,max_str,nbins,ignore_periodicity,fmt_values,fmt_derivs,numerical_deriv);
   ofile_values.close();
   ofile_derivs.close();
   //
   std::vector<std::string> grid_min(1); grid_min[0]=bf_pntrs[0]->intervalMinStr();
   std::vector<std::string> grid_max(1); grid_max[0]=bf_pntrs[0]->intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins;
-  std::vector<Value*> arguments(1);
-  arguments[0]= new Value(NULL,"arg",false);
+  std::vector<std::unique_ptr<Value>> arguments(1);
+  arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
   if(bf_pntrs[0]->arePeriodic() && !ignore_periodicity) {
     arguments[0]->setDomain(bf_pntrs[0]->intervalMinStr(),bf_pntrs[0]->intervalMaxStr());
   }
@@ -197,13 +204,13 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
     std::string is; Tools::convert(i,is);
     //
     if(targetdist_pntrs[i]!=NULL) {
-      targetdist_pntrs[i]->setupGrids(arguments,grid_min,grid_max,grid_bins);
+      targetdist_pntrs[i]->setupGrids(Tools::unique2raw(arguments),grid_min,grid_max,grid_bins);
       plumed_massert(targetdist_pntrs[i]->getDimension()==1,"the target distribution must be one dimensional");
       targetdist_pntrs[i]->updateTargetDist();
     }
     //
     std::vector<double> bf_integrals = bf_pntrs[0]->getTargetDistributionIntegrals(targetdist_pntrs[i]);
-    CoeffsVector targetdist_averages = CoeffsVector("aver.targetdist-"+is,arguments,bf_pntrs,comm,false);
+    CoeffsVector targetdist_averages = CoeffsVector("aver.targetdist-"+is,Tools::unique2raw(arguments),bf_pntrs,comm,false);
     targetdist_averages.setValues(bf_integrals);
     if(fmt_targetdist_aver.size()>0) {targetdist_averages.setOutputFmt(fmt_targetdist_aver);}
     targetdist_averages.writeToFile(ofile_targetdist_aver,true);
@@ -219,8 +226,6 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
     }
   }
   ofile_targetdist_aver.close();
-  delete arguments[0]; arguments.clear();
-
 
 
 }

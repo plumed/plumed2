@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,12 +23,7 @@
 #include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/Pbc.h"
-
-#include <string>
-#include <cmath>
 #include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -80,8 +75,8 @@ private:
   bool             doratio;
   double           constant;
   double           inept;
-  vector<double>   rtwo;
-  vector<unsigned> nga;
+  std::vector<double>   rtwo;
+  std::vector<unsigned> nga;
   std::unique_ptr<NeighborList> nl;
   unsigned         tot_size;
 public:
@@ -126,12 +121,12 @@ PRE::PRE(const ActionOptions&ao):
   parseFlag("NORATIO",noratio);
   doratio=!noratio;
 
-  vector<AtomNumber> atom;
+  std::vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
   if(atom.size()!=1) error("Number of specified atom should be 1");
 
   // Read in the atoms
-  vector<AtomNumber> t, ga_lista, gb_lista;
+  std::vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPA", i, t );
     if( t.empty() ) break;
@@ -178,7 +173,7 @@ PRE::PRE(const ActionOptions&ao):
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
   // Optionally add an experimental value (like with RDCs)
-  vector<double> exppre;
+  std::vector<double> exppre;
   exppre.resize( nga.size() );
   unsigned ntarget=0;
   for(unsigned i=0; i<nga.size(); ++i) {
@@ -191,9 +186,9 @@ PRE::PRE(const ActionOptions&ao):
   if(getDoScore()&&!addexp) error("with DOSCORE you need to set the PREINT values");
 
   // Create neighbour lists
-  nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
+  nl=Tools::make_unique<NeighborList>(gb_lista,ga_lista,false,true,pbc,getPbc(),comm);
 
-  // Ouput details of all contacts
+  // Output details of all contacts
   unsigned index=0;
   for(unsigned i=0; i<nga.size(); ++i) {
     log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);
@@ -214,13 +209,13 @@ PRE::PRE(const ActionOptions&ao):
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
-        string num; Tools::convert(i,num);
+        std::string num; Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
         Value* comp=getPntrToComponent("exp-"+num);
@@ -229,12 +224,12 @@ PRE::PRE(const ActionOptions&ao):
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponent("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
+      std::string num; Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
       Value* comp=getPntrToComponent("exp-"+num);
@@ -253,8 +248,8 @@ PRE::PRE(const ActionOptions&ao):
 
 void PRE::calculate()
 {
-  vector<Vector> deriv(tot_size, Vector{0,0,0});
-  vector<double> fact(nga.size(), 0.);
+  std::vector<Vector> deriv(tot_size, Vector{0,0,0});
+  std::vector<double> fact(nga.size(), 0.);
 
   // cycle over the number of PRE
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
@@ -264,7 +259,7 @@ void PRE::calculate()
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=constant/static_cast<double>(nga[i]);
-    string num; Tools::convert(i,num);
+    std::string num; Tools::convert(i,num);
     Value* val=getPntrToComponent("pre-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -64,6 +64,8 @@ class Citations;
 class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
+class TypesafePtr;
+class IFile;
 
 /**
 Main plumed object.
@@ -191,8 +193,12 @@ private:
   bool doCheckPoint;
 
 
+private:
+/// Forward declaration.
+  ForwardDecl<TypesafePtr> stopFlag_fwd;
+public:
 /// Stuff to make plumed stop the MD code cleanly
-  int* stopFlag;
+  TypesafePtr& stopFlag=*stopFlag_fwd;
   bool stopNow;
 
 /// Stack for update flags.
@@ -238,13 +244,18 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL) override;
+  void cmd(const std::string&key,const TypesafePtr & val=nullptr) override;
   ~PlumedMain();
   /**
     Read an input file.
     \param str name of the file
   */
-  void readInputFile(std::string str);
+  void readInputFile(const std::string & str);
+  /**
+    Read an input file.
+    \param ifile
+  */
+  void readInputFile(IFile & ifile);
   /**
     Read an input string.
     \param str name of the string
@@ -257,6 +268,15 @@ public:
     At variance with readInputWords(), this is splitting the string into words
   */
   void readInputLine(const std::string & str);
+
+  /**
+    Read an input buffer.
+    \param str name of the string
+    Same as readInputFile, but first write str on a temporary file and then read
+    that files. At variance with readInputLine, it can take care of comments and
+    continuation lines.
+  */
+  void readInputLines(const std::string & str);
 
   /**
     Initialize the object.
@@ -292,6 +312,11 @@ public:
     Shortcut for: waitData() + justCalculate() + backwardPropagate()
   */
   void performCalcNoUpdate();
+  /**
+    Perform the calculation without backpropagation nor update()
+    Shortcut for: waitData() + justCalculate()
+  */
+  void performCalcNoForces();
   /**
     Complete PLUMED calculation.
     Shortcut for prepareCalc() + performCalc()

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,27 +29,20 @@
 #include <cstring>
 #include <cstdlib>
 
-using namespace std;
 namespace PLMD {
 
-Exception::Exception():
-  note(true)
+Exception::Exception()
 {
+  callstack.fill(nullptr);
 #ifdef __PLUMED_HAS_EXECINFO
-  {
-    void* callstack[128];
-    int frames = backtrace(callstack, 128);
-    char** strs = backtrace_symbols(callstack, frames);
-    for (int i = 0; i < frames; ++i) {stackString+=strs[i]; stackString+="\n";}
-    free(strs);
-  }
-#endif
-  const char* env=getenv("PLUMED_STACK_TRACE");
-  if(stackString.length()>0 && env && !strcmp(env,"yes")) {
+  callstack_n = backtrace(&callstack[0], callstack.size()-1);
+  const char* env=std::getenv("PLUMED_STACK_TRACE");
+  if(env && !std::strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
-    msg+=stackString;
+    msg+=stack();
     msg+="\n********** END STACK DUMP **********\n";
   }
+#endif
   msg+="\n+++ PLUMED error";
 }
 
@@ -67,7 +60,7 @@ Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
     char cline[1000];
-    sprintf(cline,"%u",loc.line);
+    std::sprintf(cline,"%u",loc.line);
     this->msg += "\n+++ at ";
     this->msg += loc.file;
     this->msg += ":";
@@ -89,6 +82,17 @@ Exception& Exception::operator<<(const Assertion&as)
   }
   note=true;
   return *this;
+}
+
+const char* Exception::stack() const {
+#ifdef __PLUMED_HAS_EXECINFO
+  if(stackTrace.length()==0) {
+    char** strs = backtrace_symbols(&callstack[0], callstack_n);
+    for (int i = 0; i < callstack_n; ++i) {stackTrace+=strs[i]; stackTrace+="\n";}
+    free(strs);
+  }
+#endif
+  return stackTrace.c_str();
 }
 
 }

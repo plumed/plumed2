@@ -2,3 +2,8 @@ type=driver
 plumed_needs=dlopen
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz ala12_trajectory.xyz --dump-forces ff --dump-full-virial --mc mc"
+
+function plumed_regtest_before(){
+  sed "s:@PLUMED_KERNEL@:$PLUMED_KERNEL:" plumed_template.dat > plumed.dat
+}
+

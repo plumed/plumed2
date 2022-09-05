@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,15 +31,13 @@
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 
 #include <vector>
 #include <string>
 #include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -218,7 +216,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   ActionWithValue(ao),
   nopbc(false)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
   type.assign("SIMPLE");
   parse("TYPE",type);
@@ -235,7 +233,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
     error("missing input file " + reference );
 
   requestAtoms(pdb.getAtomNumbers());
-  log.printf("  found %z atoms in input \n",pdb.getAtomNumbers().size());
+  log.printf("  found %zu atoms in input \n",pdb.getAtomNumbers().size());
   log.printf("  with indices : ");
   for(unsigned i=0; i<pdb.getAtomNumbers().size(); ++i) {
     if(i%25==0) log<<"\n";
@@ -257,7 +255,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
 
   // normalize weights for rmsd calculation
-  vector<double> weights_measure=pdb.getBeta();
+  std::vector<double> weights_measure=pdb.getBeta();
   n=0.0; for(unsigned i=0; i<weights_measure.size(); ++i) n+=weights_measure[i]; n=1.0/n;
   for(unsigned i=0; i<weights_measure.size(); ++i) weights_measure[i]*=n;
 
@@ -266,7 +264,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) positions[i]-=center;
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
-    rmsd.reset(new RMSD());
+    rmsd=Tools::make_unique<RMSD>();
     rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
     log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
   }

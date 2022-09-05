@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace isdb {
@@ -134,7 +132,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   pbc =! nopbc;
 
   // Read in the atoms
-  vector<AtomNumber> t, atoms;
+  std::vector<AtomNumber> t, atoms;
   for (int i = 1; ; ++i) {
     parseAtomList("ATOMS", i, t );
     if (t.empty()) {
@@ -162,7 +160,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   // Parse J-Coupling type, this will determine the Karplus parameters
   unsigned jtype_ = CUSTOM;
-  string string_type;
+  std::string string_type;
   parse("TYPE", string_type);
   if(string_type == "HAN") {
     jtype_ = HAN;
@@ -179,7 +177,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   }
 
   // Optionally add an experimental value (like with RDCs)
-  vector<double> coupl;
+  std::vector<double> coupl;
   coupl.resize( ncoupl_ );
   unsigned ntarget=0;
   for(unsigned i=0; i<ncoupl_; ++i) {
@@ -200,6 +198,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   }
 
   log << "  Bibliography ";
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
 
   // Set Karplus parameters
   switch (jtype_) {
@@ -208,43 +207,46 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kb_ = -0.61;
     kc_ = -0.27;
     kshift_ = pi / 3.0;
-    log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     log << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)");
+    log<<"\n";
+    log.printf("  J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   case HAHN:
     ka_ = 7.09;
     kb_ = -1.42;
     kc_ = 1.55;
     kshift_ = -pi / 3.0;
-    log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     log << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)");
+    log<<"\n";
+    log.printf("  J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   case CCG:
     ka_ = 2.31;
     kb_ = -0.87;
     kc_ = 0.55;
     kshift_ = (2.0 * pi) / 3.0;
-    log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
+    log<<"\n";
+    log.printf("  J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   case NCG:
     ka_ = 1.29;
     kb_ = -0.49;
     kc_ = 0.37;
     kshift_ = 0.0;
-    log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
+    log<<"\n";
+    log.printf("  J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   case CUSTOM:
-    log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    log<<"\n";
+    log.printf("  J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   }
-  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
-  log<<"\n";
 
   for (unsigned i = 0; i < ncoupl_; ++i) {
     log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",
-               i+1, atoms[2*i].serial(), atoms[2*i+1].serial(), atoms[2*i+2].serial(), atoms[2*i+3].serial());
+               i+1, atoms[6*i].serial(), atoms[6*i+1].serial(), atoms[6*i+3].serial(), atoms[6*i+5].serial());
     if (addcoupling) {
       log.printf(" Experimental J-Coupling is %f.", coupl[i]);
     }
@@ -293,8 +295,8 @@ JCoupling::JCoupling(const ActionOptions&ao):
 void JCoupling::calculate()
 {
   if (pbc) makeWhole();
-  vector<Vector> deriv(ncoupl_*6);
-  vector<double> j(ncoupl_,0.);
+  std::vector<Vector> deriv(ncoupl_*6);
+  std::vector<double> j(ncoupl_,0.);
 
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
@@ -316,8 +318,8 @@ void JCoupling::calculate()
 
       // Calculate the Karplus relation and its derivative
       double theta = torsion + kshift_;
-      double cos_theta = cos(theta);
-      double sin_theta = sin(theta);
+      double cos_theta = std::cos(theta);
+      double sin_theta = std::sin(theta);
       j[r] = ka_*cos_theta*cos_theta + kb_*cos_theta + kc_;
       double derj = -2.*ka_*sin_theta*cos_theta - kb_*sin_theta;
 
@@ -362,7 +364,7 @@ void JCoupling::calculate()
   } else {
     for (unsigned r=0; r<ncoupl_; r++) {
       const unsigned a0 = 6*r;
-      string num; Tools::convert(r,num);
+      std::string num; Tools::convert(r,num);
       Value* val=getPntrToComponent("j-"+num);
       val->set(j[r]);
       setAtomsDerivatives(val, a0, deriv[a0]);

@@ -1,0 +1,24 @@
+# vim:ft=plumed
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+Ftg: CUSTOM ARG=phi PERIODIC=NO FUNC=x^2
+bias: BIASVALUE ARG=Ftg
+
+opes: OPES_METAD ...
+  ARG=phi
+  EXTRA_BIAS=Ftg
+  PACE=5
+  TEMP=300.0
+  BARRIER=20
+  SIGMA=0.15
+  FMT=%f
+  CALC_WORK
+  BIASFACTOR=inf
+  STATE_WFILE=STATE
+...
+
+PRINT FMT=%g STRIDE=5 FILE=COLVAR ARG=phi,psi,Ftg,opes.bias,opes.rct,opes.neff,opes.nker,opes.work
+
+ENDPLUMED
+

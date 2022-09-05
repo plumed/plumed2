@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,8 +32,6 @@
 #endif
 
 #include <iostream>
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {
@@ -101,6 +99,7 @@ PRINT ARG=p.bias FILE=COLVAR
 \endplumedfile
 `plumed2.dat` can be an arbitrary plumed input file, for instance
 \plumedfile
+#SETTINGS FILENAME=plumed2.dat
 # plumed2.dat
 d: DISTANCE ATOMS=1,10
 RESTRAINT ARG=d KAPPA=10 AT=2
@@ -319,7 +318,7 @@ void Plumed::prepare() {
   if(ene) plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
   int n=0;
   if(root) p.cmd("createFullList",&n);
-  int *pointer=nullptr;
+  const int *pointer=nullptr;
   if(root) p.cmd("getFullList",&pointer);
   bool redo=(index.size()!=n);
   if(first) redo=true;
@@ -335,7 +334,7 @@ void Plumed::prepare() {
       index[i]=pointer[i];
     };
     p.cmd("setAtomsNlocal",&n);
-    p.cmd("setAtomsGatindex",index.data());
+    p.cmd("setAtomsGatindex",index.data(),index.size());
   }
   if(root) p.cmd("clearFullList");
   int tmp=0;
@@ -359,18 +358,18 @@ void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   if(root) p.cmd("setStopFlag",&stop);
   Tensor box=getPbc().getBox();
-  if(root) p.cmd("setBox",&box[0][0]);
+  if(root) p.cmd("setBox",&box[0][0],9);
 
   virial.zero();
   for(int i=0; i<forces.size(); i++) forces[i]=0.0;
   for(int i=0; i<masses.size(); i++) masses[i]=getMass(i);
   for(int i=0; i<charges.size(); i++) charges[i]=getCharge(i);
 
-  if(root) p.cmd("setMasses",masses.data());
-  if(root) p.cmd("setCharges",charges.data());
-  if(root) p.cmd("setPositions",positions.data());
-  if(root) p.cmd("setForces",forces.data());
-  if(root) p.cmd("setVirial",&virial[0][0]);
+  if(root) p.cmd("setMasses",masses.data(),masses.size());
+  if(root) p.cmd("setCharges",charges.data(),charges.size());
+  if(root) p.cmd("setPositions",positions.data(),positions.size());
+  if(root) p.cmd("setForces",forces.data(),forces.size());
+  if(root) p.cmd("setVirial",&virial[0][0],9);
 
 
   if(root) for(unsigned i=0; i<getNumberOfAtoms(); i++) {

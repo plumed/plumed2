@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,6 @@
 #include "Tools.h"
 #include <iostream>
 
-using namespace std;
 namespace PLMD {
 
 std::string Citations::cite(const std::string & item) {
@@ -32,7 +31,7 @@ std::string Citations::cite(const std::string & item) {
   for(i=0; i<items.size(); ++i) if(items[i]==item) break;
   if(i==items.size()) items.push_back(item);
   plumed_assert(i<items.size());
-  string ret;
+  std::string ret;
   Tools::convert(i+1,ret);
   ret="["+ret+"]";
   return ret;

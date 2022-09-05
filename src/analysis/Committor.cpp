@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -179,7 +179,7 @@ void Committor::calculate() {
   // then check if the simulation should be stopped
   if(inonebasin&&(!doNotStop)) {
     std::string num; Tools::convert( basin, num );
-    std::string str = "COMMITED TO BASIN " + num;
+    std::string str = "COMMITTED TO BASIN " + num;
     ofile.addConstantField(str);
     ofile.printField();
     ofile.flush();

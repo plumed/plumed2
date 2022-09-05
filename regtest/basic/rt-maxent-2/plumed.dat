@@ -52,5 +52,5 @@ TEMP=300
 PRINT ...
 ARG=j1,j2,j3,j4,j5,j6,j7 
 STRIDE=10 FILE=colvar
-FMT=%8.4f
+FMT=%8.3f
 ... PRINT

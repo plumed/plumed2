@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,9 +26,6 @@
 #include "reference/DRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
-#include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -138,7 +135,7 @@ void DRMSD::registerKeywords(Keywords& keys) {
 DRMSD::DRMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
 {
-  string reference;
+  std::string reference;
   parse("REFERENCE",reference);
   double lcutoff;
   parse("LOWER_CUTOFF",lcutoff);

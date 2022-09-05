@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ namespace crystallization {
 class GradientVessel : public vesselbase::FunctionVessel {
 private:
   bool isdens;
-  unsigned nweights, ncomponents;
+  size_t nweights, ncomponents;
   std::vector<unsigned> starts;
 public:
   static void registerKeywords( Keywords& keys );

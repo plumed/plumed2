@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 DIRS=$1
 
@@ -17,6 +17,7 @@ test "$dir" = blas && continue
 test "$dir" = molfile && continue
 test "$dir" = lepton && continue
 test "$dir" = asmjit && continue
+test "$dir" = xdrfile && continue
 
 cd $dir
 

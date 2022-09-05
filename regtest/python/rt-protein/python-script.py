@@ -42,9 +42,10 @@ import plumed
 def read_xyz(filename):
    xyz = open(filename)
    n_atoms = int(xyz.readline())
-   title, trajectory = xyz.readline(), []
+   xyz.readline() # skip line
+   trajectory = []
    while True :
-      atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms,3]) 
+      atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms,3])
       for i in range(0,n_atoms) :
           line = xyz.readline()
           atom,x,y,z = line.split()
@@ -54,8 +55,8 @@ def read_xyz(filename):
       nextline = xyz.readline()
       if( nextline=="" ) : break
       c_atoms = int(nextline)
-      if( c_atoms!=n_atoms ) : break 
-      title = xyz.readline()
+      if( c_atoms!=n_atoms ) : break
+      xyz.readline() # skip line
    xyz.close()
    return trajectory
 

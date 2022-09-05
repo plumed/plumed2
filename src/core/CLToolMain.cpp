@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,8 +35,6 @@
 #include <memory>
 #include <unordered_map>
 
-using namespace std;
-
 namespace PLMD {
 
 CLToolMain::CLToolMain():
@@ -52,7 +50,7 @@ CLToolMain::~CLToolMain() {
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
 
-void CLToolMain::cmd(const std::string& word,void*val) {
+void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -70,32 +68,32 @@ void CLToolMain::cmd(const std::string& word,void*val) {
     // do nothing
   } else {
     int iword=-1;
-    char**v;
-    char*vv;
+    const char*const*v;
+    const char*vv;
     const auto it=word_map.find(words[0]);
     if(it!=word_map.end()) iword=it->second;
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);
-      argc=*static_cast<int*>(val);
+      argc=val.get<int>();
       break;
     case cmd_setArgv:
       CHECK_NULL(val,word);
-      v=static_cast<char**>(val);
-      for(int i=0; i<argc; ++i) argv.push_back(string(v[i]));
+      v=val.get<const char*const*>(argc);
+      for(int i=0; i<argc; ++i) argv.push_back(std::string(v[i]));
       break;
     case cmd_setArgvLine:
       CHECK_NULL(val,word);
-      vv=static_cast<char*>(val);
+      vv=val.get<const char*>();
       argv=Tools::getWords(vv);
       break;
     case cmd_setIn:
       CHECK_NULL(val,word);
-      in=static_cast<FILE*>(val);
+      in=val.get<FILE*>();
       break;
     case cmd_setOut:
       CHECK_NULL(val,word);
-      out=static_cast<FILE*>(val);
+      out=val.get<FILE*>();
       break;
     case cmd_setMPIComm:
       comm.Set_comm(val);
@@ -118,8 +116,7 @@ void CLToolMain::cmd(const std::string& word,void*val) {
           }
           *ptr=0; ptr++;
         }
-        int ret=run(argc,&vvv[0],in,out,comm);
-        *static_cast<int*>(val)=ret;
+        val.set(int(run(argc,&vvv[0],in,out,comm)));
       }
       break;
     default:
@@ -140,13 +137,13 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
   DLLoader dlloader;
 
-  string root=config::getPlumedRoot();
+  std::string root=config::getPlumedRoot();
 
   bool standalone_executable=false;
 
 // Start parsing options
-  string prefix("");
-  string a("");
+  std::string prefix("");
+  std::string a("");
   for(i=1; i<argc; i++) {
     a=prefix+argv[i];
     if(a.length()==0) continue;
@@ -167,7 +164,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(a=="--has-zlib") {
       return (config::hasZlib()?0:1);
     } else if(a=="--has-xdrfile") {
-      return (config::hasXdrfile()?0:1);
+      return 0; // always ok
     } else if(a=="--is-installed") {
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi") {
@@ -183,46 +180,46 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       prefix="";
       void *p=dlloader.load(a);
       if(!p) {
-        fprintf(stderr,"ERROR: cannot load library %s\n",a.c_str());
-        fprintf(stderr,"ERROR: %s\n",dlloader.error().c_str());
+        std::fprintf(stderr,"ERROR: cannot load library %s\n",a.c_str());
+        std::fprintf(stderr,"ERROR: %s\n",dlloader.error().c_str());
         return 1;
       }
     } else if(a=="--load") {
       prefix="--load=";
     } else if(a[0]=='-') {
-      string msg="ERROR: Unknown option " +a;
-      fprintf(stderr,"%s\n",msg.c_str());
+      std::string msg="ERROR: Unknown option " +a;
+      std::fprintf(stderr,"%s\n",msg.c_str());
       return 1;
     } else break;
   }
 
 // Check if plumedRoot/patches/ directory exists (as a further check)
   if(!standalone_executable) {
-    vector<string> files=Tools::ls(root);
+    std::vector<std::string> files=Tools::ls(root);
     if(find(files.begin(),files.end(),"patches")==files.end()) {
-      string msg=
+      std::string msg=
         "WARNING: I cannot find "+root+"/patches/ directory. Set PLUMED_ROOT or reinstall PLUMED\n\n";
-      fprintf(stderr,"%s",msg.c_str());
+      std::fprintf(stderr,"%s",msg.c_str());
     }
   }
 
 // Build list of available C++ tools:
-  vector<string> availableCxx=cltoolRegister().list();
+  std::vector<std::string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
-  vector<string> availableShell;
+  std::vector<std::string> availableShell;
   if(!standalone_executable) {
-    vector<string> tmp;
-    tmp=Tools::ls(string(root+"/scripts"));
+    std::vector<std::string> tmp;
+    tmp=Tools::ls(std::string(root+"/scripts"));
     for(unsigned j=0; j<tmp.size(); ++j) {
       size_t ff=tmp[j].find(".sh");
-      if(ff==string::npos) tmp[j].erase();
+      if(ff==std::string::npos) tmp[j].erase();
       else                 tmp[j].erase(ff);
     }
     for(unsigned j=0; j<tmp.size(); ++j) if(tmp[j].length()>0) availableShell.push_back(tmp[j]);
   }
 
   if(printhelp) {
-    string msg=
+    std::string msg=
       "Usage: plumed [options] [command] [command options]\n"
       "  plumed [command] -h|--help: to print help for a specific command\n"
       "Options:\n"
@@ -233,31 +230,36 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
       "Commands:\n";
-    fprintf(out,"%s",msg.c_str());
+    std::fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
       auto cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
-      string manual=availableCxx[j]+" : "+cl->description();
-      fprintf(out,"  plumed %s\n", manual.c_str());
+      std::string manual=availableCxx[j]+" : "+cl->description();
+      std::fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0; j<availableShell.size(); ++j) {
-      string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
+      std::string manual;
+#ifdef __PLUMED_HAS_POPEN
+      std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
       FILE *fp=popen(cmd.c_str(),"r");
-      string line,manual;
+      std::string line;
       while(Tools::getline(fp,line))manual+=line;
       pclose(fp);
+#else
+      manual="(doc not avail)";
+#endif
       manual= availableShell[j]+" : "+manual;
-      fprintf(out,"  plumed %s\n", manual.c_str());
+      std::fprintf(out,"  plumed %s\n", manual.c_str());
     }
     return 0;
   }
   if(i==argc) {
-    fprintf(out,"%s","Nothing to do. Use 'plumed help' for help\n");
+    std::fprintf(out,"%s","Nothing to do. Use 'plumed help' for help\n");
     return 0;
   }
 
 // this is the command to be executed:
-  string command(argv[i]);
+  std::string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
     auto cl=cltoolRegister().create(CLToolOptions(command));
@@ -271,9 +273,9 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   if(find(availableShell.begin(),availableShell.end(),command)!=availableShell.end()) {
     plumed_massert(in==stdin,"shell tools can only work on stdin");
     plumed_massert(out==stdout,"shell tools can only work on stdin");
-    string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
-    for(int j=i+1; j<argc; j++) cmd+=string(" ")+argv[j];
-    int r=system(cmd.c_str());
+    std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
+    for(int j=i+1; j<argc; j++) cmd+=std::string(" ")+argv[j];
+    int r=std::system(cmd.c_str());
 // this is necessary since system seems to return numbers which are multiple
 // of 256. this would make the interpretation by the shell wrong
 // I just return 1 in case of failure and 0 in case of success
@@ -281,8 +283,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     else return 0;
   }
 
-  string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";
-  fprintf(stderr,"%s\n",msg.c_str());
+  std::string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";
+  std::fprintf(stderr,"%s\n",msg.c_str());
   return 1;
 
 }

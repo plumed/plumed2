@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <cstddef>
 
 namespace PLMD {
 
@@ -92,7 +93,7 @@ To have all files managed consistently, it is important to use OFile in the prop
 This should allow multi-replica plumed, restart and backups to work in
 the expected way. For this reason all the operations in OFile and IFile
 are synchronizing all the processors of the group, so call to OFile functions
-should always be performed by all processes; for this reason is also not usefull
+should always be performed by all processes; for this reason is also not useful
 to use Log for debugging because only master threads will actually write.
 For debugging is better to use the standard stderr.
 
@@ -113,7 +114,7 @@ int main(){
 // trajectory loop
   for(int i=0;i<nsteps;i++){
 
-// files should be writen in the update() method of an \ref Action
+// files should be written in the update() method of an \ref Action
 
 // write on growing file
     grw<<"data at step "<<i<<\n";
@@ -139,7 +140,7 @@ int main(){
 }
 
 \notice
-Notice that it is not necessary to explicitely close files, since they are closed implicitely
+Notice that it is not necessary to explicitely close files, since they are closed implicitly
 when the object goes out of scope. In case you need to explicitly close the file before it is
 destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
 statement.
@@ -165,7 +166,7 @@ class OFile:
     public FieldBase {
   };
 /// Low-level write
-  size_t llwrite(const char*,size_t);
+  std::size_t llwrite(const char*,std::size_t);
 /// True if fields has changed.
 /// This could be due to a change in the list of fields or a reset
 /// of a nominally constant field
@@ -226,8 +227,11 @@ public:
   OFile& fmtField();
 /// Set the value of a double precision field
   OFile& printField(const std::string&,double);
-/// Set the value of a int field
+/// Set the value of a int type field
   OFile& printField(const std::string&,int);
+  OFile& printField(const std::string&,long int);
+  OFile& printField(const std::string&,unsigned);
+  OFile& printField(const std::string&,long unsigned);
 /// Set the value of a string field
   OFile& printField(const std::string&,const std::string&);
 ///

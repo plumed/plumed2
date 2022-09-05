@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include <cmath>
 #include <iostream>
 #include "Tools.h"
-using namespace std;
+
 namespace PLMD {
 
 RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false) {}
@@ -35,12 +35,12 @@ RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),ref
 /// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the
 /// alignment and beta sets the weight that are used for calculating the displacement.
 ///
-void RMSD::set(const PDB&pdb, const string & mytype, bool remove_center, bool normalize_weights ) {
+void RMSD::set(const PDB&pdb, const std::string & mytype, bool remove_center, bool normalize_weights ) {
 
   set(pdb.getOccupancy(),pdb.getBeta(),pdb.getPositions(),mytype,remove_center,normalize_weights);
 
 }
-void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference, const string & mytype, bool remove_center, bool normalize_weights ) {
+void RMSD::set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference, const std::string & mytype, bool remove_center, bool normalize_weights ) {
 
   setReference(reference); // this by default remove the com and assumes uniform weights
   setAlign(align, normalize_weights, remove_center); // this recalculates the com with weights. If remove_center=false then it restore the center back
@@ -49,7 +49,7 @@ void RMSD::set(const std::vector<double> & align, const std::vector<double> & di
 
 }
 
-void RMSD::setType(const string & mytype) {
+void RMSD::setType(const std::string & mytype) {
 
   alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
   if (mytype=="SIMPLE") {
@@ -77,8 +77,8 @@ void RMSD::clear() {
   positions_center_is_removed=false;
 }
 
-string RMSD::getMethod() {
-  string mystring;
+std::string RMSD::getMethod() {
+  std::string mystring;
   switch(alignmentMethod) {
   case SIMPLE: mystring.assign("SIMPLE"); break;
   case OPTIMAL: mystring.assign("OPTIMAL"); break;
@@ -90,7 +90,7 @@ string RMSD::getMethod() {
 /// this calculates the center of mass for the reference and removes it from the reference itself
 /// considering uniform weights for alignment
 ///
-void RMSD::setReference(const vector<Vector> & reference) {
+void RMSD::setReference(const std::vector<Vector> & reference) {
   unsigned n=reference.size();
   this->reference=reference;
   plumed_massert(align.empty(),"you should first clear() an RMSD object, then set a new reference");
@@ -109,7 +109,7 @@ std::vector<Vector> RMSD::getReference() {
 ///
 /// the alignment weights are here normalized to 1 and  the center of the reference is removed accordingly
 ///
-void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool remove_center) {
+void RMSD::setAlign(const std::vector<double> & align, bool normalize_weights, bool remove_center) {
   unsigned n=reference.size();
   plumed_massert(this->align.size()==align.size(),"mismatch in dimension of align/displace arrays");
   this->align=align;
@@ -117,10 +117,15 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
     double w=0.0;
     #pragma omp simd reduction(+:w)
     for(unsigned i=0; i<n; i++) w+=this->align[i];
-    plumed_massert(w>epsilon,"It looks like weights used for alignment are zero. Check your reference PDB file.");
-    double inv=1.0/w;
-    #pragma omp simd
-    for(unsigned i=0; i<n; i++) this->align[i]*=inv;
+    if(w>epsilon) {
+      double inv=1.0/w;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->align[i]*=inv;
+    } else {
+      double inv=1.0/n;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->align[i]=inv;
+    }
   }
   // recalculate the center anyway
   // just remove the center if that is asked
@@ -144,18 +149,23 @@ std::vector<double> RMSD::getAlign() {
 ///
 /// here the weigth for normalized weighths are normalized and set
 ///
-void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights) {
+void RMSD::setDisplace(const std::vector<double> & displace, bool normalize_weights) {
   unsigned n=reference.size();
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
-  double w=0.0;
-  #pragma omp simd reduction(+:w)
-  for(unsigned i=0; i<n; i++) w+=this->displace[i];
-  plumed_massert(w>epsilon,"It looks like weights used for displacement are zero. Check your reference PDB file.");
-  double inv=1.0/w;
   if(normalize_weights) {
-    #pragma omp simd
-    for(unsigned i=0; i<n; i++) this->displace[i]*=inv;
+    double w=0.0;
+    #pragma omp simd reduction(+:w)
+    for(unsigned i=0; i<n; i++) w+=this->displace[i];
+    if(w>epsilon) {
+      double inv=1.0/w;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->displace[i]*=inv;
+    } else {
+      double inv=1.0/n;
+      #pragma omp simd
+      for(unsigned i=0; i<n; i++) this->displace[i]=inv;
+    }
   }
 }
 std::vector<double> RMSD::getDisplace() {
@@ -306,7 +316,7 @@ double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector>
   return ret;
 }
 
-double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
+double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
   double ret=0.;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -400,7 +410,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 
   if(!squared) {
     // sqrt
-    dist=sqrt(dist);
+    dist=std::sqrt(dist);
     ///// sqrt on derivatives
     for(unsigned i=0; i<n; i++) {derivatives[i]*=(0.5/dist);}
   }
@@ -547,7 +557,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 
   double prefactor=2.0;
 
-  if(!squared && alEqDis) prefactor*=0.5/sqrt(dist);
+  if(!squared && alEqDis) prefactor*=0.5/std::sqrt(dist);
 
 // if "safe", recompute dist here to a better accuracy
   if(safe || !alEqDis) dist=0.0;
@@ -590,7 +600,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     }
   }
   if(!squared) {
-    dist=sqrt(dist);
+    dist=std::sqrt(dist);
     if(!alEqDis) {
       double xx=0.5/dist;
       for(unsigned iat=0; iat<n; iat++) derivatives[iat]*=xx;
@@ -838,8 +848,8 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
     const std::vector<Vector> & positions,
     const std::vector<Vector> & reference,
     std::vector<Vector>  & derivatives,
-    Tensor & rotationPosClose,
-    Tensor & rotationRefClose,
+    const Tensor & rotationPosClose,
+    const Tensor & rotationRefClose,
     std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
     bool squared) const {
   //initialize the data into the structure
@@ -1081,18 +1091,20 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 
   // calculate rotation matrix derivatives and components distances needed for components only when align!=displacement
   if(!alEqDis)ddist_drotation.zero();
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
   }
   // ddist_drotation if needed
-  if(!alEqDis or !only_rotation)
+  if(!alEqDis or !only_rotation) {
     for (unsigned iat=0; iat<n; iat++)
       ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
 
-  if(!alEqDis or !only_rotation) {
     ddist_drr01.zero();
     for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
   }
@@ -1121,7 +1133,7 @@ double RMSDCoreData::getDistance( bool squared) {
     }
   }
   if(!squared) {
-    dist=sqrt(localDist);
+    dist=std::sqrt(localDist);
     distanceIsMSD=false;
   } else {
     dist=localDist;
@@ -1131,7 +1143,7 @@ double RMSDCoreData::getDistance( bool squared) {
   return dist;
 }
 
-void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
+void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, const Tensor & rotationPosClose, const Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
 
   unsigned natoms = reference.size();
   Tensor ddist_drxy;
@@ -1145,7 +1157,10 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
 
   Tensor rotation = matmul(rotationPosClose, rotationRefClose);
 
-  #pragma omp simd
+  // This pragma leads to incorrect results with INTEL compiler.
+  // Failures are seen in rt65-rmsd2, rt-close-structure, rt64-pca, and others.
+  // Not really clear why. GB
+  // #pragma omp simd
   for (unsigned iat=0; iat<natoms; iat++) {
     d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
   }
@@ -1154,9 +1169,6 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
       //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
       ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
     }
-  }
-
-  if (!alEqDis) {
     for(unsigned i=0; i<3; i++)
       for(unsigned j=0; j<3; j++)
         ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i][j];

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/Torsion.h"
-
-#include <string>
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -118,7 +113,7 @@ Torsion::Torsion(const ActionOptions&ao):
   pbc(true),
   do_cosine(false)
 {
-  vector<AtomNumber> atoms,v1,v2,axis;
+  std::vector<AtomNumber> atoms,v1,v2,axis;
   parseAtomList("ATOMS",atoms);
   parseAtomList("VECTOR1",v1);
   parseAtomList("VECTOR2",v2);
@@ -177,10 +172,10 @@ void Torsion::calculate() {
   PLMD::Torsion t;
   double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
   if(do_cosine) {
-    dd0 *= -sin(torsion);
-    dd1 *= -sin(torsion);
-    dd2 *= -sin(torsion);
-    torsion = cos(torsion);
+    dd0 *= -std::sin(torsion);
+    dd1 *= -std::sin(torsion);
+    dd2 *= -std::sin(torsion);
+    torsion = std::cos(torsion);
   }
   setAtomsDerivatives(0,dd0);
   setAtomsDerivatives(1,-dd0);

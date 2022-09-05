@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -43,10 +43,6 @@ VesBias::VesBias(const ActionOptions&ao):
   Action(ao),
   Bias(ao),
   ncoeffssets_(0),
-  coeffs_pntrs_(0),
-  targetdist_averages_pntrs_(0),
-  gradient_pntrs_(0),
-  hessian_pntrs_(0),
   sampled_averages(0),
   sampled_cross_averages(0),
   use_multiple_coeffssets_(false),
@@ -80,8 +76,8 @@ VesBias::VesBias(const ActionOptions&ao):
   bias_cutoff_active_(false),
   bias_cutoff_value_(0.0),
   bias_current_max_value(0.0),
-  bias_cutoff_swfunc_pntr_(NULL),
-  calc_reweightfactor_(false)
+  calc_reweightfactor_(false),
+  optimization_threshold_(0.0)
 {
   log.printf("  VES bias, please read and cite ");
   log << plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
@@ -225,26 +221,20 @@ VesBias::VesBias(const ActionOptions&ao):
     }
   }
 
+  if(keywords.exists("OPTIMIZATION_THRESHOLD")) {
+    parse("OPTIMIZATION_THRESHOLD",optimization_threshold_);
+    if(optimization_threshold_ < 0.0) {
+      plumed_merror("OPTIMIZATION_THRESHOLD should be a postive value");
+    }
+    if(optimization_threshold_!=0.0) {
+      log.printf("  Employing a threshold value of %e for optimization of localized basis functions.\n",optimization_threshold_);
+    }
+  }
 
 }
 
 
 VesBias::~VesBias() {
-  for(unsigned int i=0; i<coeffs_pntrs_.size(); i++) {
-    delete coeffs_pntrs_[i];
-  }
-  for(unsigned int i=0; i<targetdist_averages_pntrs_.size(); i++) {
-    delete targetdist_averages_pntrs_[i];
-  }
-  for(unsigned int i=0; i<gradient_pntrs_.size(); i++) {
-    delete gradient_pntrs_[i];
-  }
-  for(unsigned int i=0; i<hessian_pntrs_.size(); i++) {
-    delete hessian_pntrs_[i];
-  }
-  if(bias_cutoff_swfunc_pntr_!=NULL) {
-    delete bias_cutoff_swfunc_pntr_;
-  }
 }
 
 
@@ -276,6 +266,7 @@ void VesBias::registerKeywords( Keywords& keys ) {
   keys.reserve("numbered","PROJ_ARG","arguments for doing projections of the FES or the target distribution.");
   //
   keys.reserveFlag("CALC_REWEIGHT_FACTOR",false,"enable the calculation of the reweight factor c(t). You should also give a stride for updating the reweight factor in the optimizer by using the REWEIGHT_FACTOR_STRIDE keyword if the coefficients are updated.");
+  keys.add("optional","OPTIMIZATION_THRESHOLD","Threshold value to turn off optimization of localized basis functions.");
 
 }
 
@@ -326,23 +317,23 @@ void VesBias::useReweightFactorKeywords(Keywords& keys) {
 
 
 void VesBias::addCoeffsSet(const std::vector<std::string>& dimension_labels,const std::vector<unsigned int>& indices_shape) {
-  CoeffsVector* coeffs_pntr_tmp = new CoeffsVector("coeffs",dimension_labels,indices_shape,comm,true);
-  initializeCoeffs(coeffs_pntr_tmp);
+  auto coeffs_pntr_tmp = Tools::make_unique<CoeffsVector>("coeffs",dimension_labels,indices_shape,comm,true);
+  initializeCoeffs(std::move(coeffs_pntr_tmp));
 }
 
 
 void VesBias::addCoeffsSet(std::vector<Value*>& args,std::vector<BasisFunctions*>& basisf) {
-  CoeffsVector* coeffs_pntr_tmp = new CoeffsVector("coeffs",args,basisf,comm,true);
-  initializeCoeffs(coeffs_pntr_tmp);
+  auto coeffs_pntr_tmp = Tools::make_unique<CoeffsVector>("coeffs",args,basisf,comm,true);
+  initializeCoeffs(std::move(coeffs_pntr_tmp));
 }
 
 
-void VesBias::addCoeffsSet(CoeffsVector* coeffs_pntr_in) {
-  initializeCoeffs(coeffs_pntr_in);
+void VesBias::addCoeffsSet(std::unique_ptr<CoeffsVector> coeffs_pntr_in) {
+  initializeCoeffs(std::move(coeffs_pntr_in));
 }
 
 
-void VesBias::initializeCoeffs(CoeffsVector* coeffs_pntr_in) {
+void VesBias::initializeCoeffs(std::unique_ptr<CoeffsVector> coeffs_pntr_in) {
   //
   coeffs_pntr_in->linkVesBias(this);
   //
@@ -354,28 +345,29 @@ void VesBias::initializeCoeffs(CoeffsVector* coeffs_pntr_in) {
   label = getCoeffsSetLabelString("coeffs",ncoeffssets_);
   coeffs_pntr_in->setLabels(label);
 
-  coeffs_pntrs_.push_back(coeffs_pntr_in);
-  CoeffsVector* aver_ps_tmp = new CoeffsVector(*coeffs_pntr_in);
+  coeffs_pntrs_.emplace_back(std::move(coeffs_pntr_in));
+  auto aver_ps_tmp = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
   label = getCoeffsSetLabelString("targetdist_averages",ncoeffssets_);
   aver_ps_tmp->setLabels(label);
   aver_ps_tmp->setValues(0.0);
-  targetdist_averages_pntrs_.push_back(aver_ps_tmp);
+  targetdist_averages_pntrs_.emplace_back(std::move(aver_ps_tmp));
   //
-  CoeffsVector* gradient_tmp = new CoeffsVector(*coeffs_pntr_in);
+  auto gradient_tmp = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
   label = getCoeffsSetLabelString("gradient",ncoeffssets_);
   gradient_tmp->setLabels(label);
-  gradient_pntrs_.push_back(gradient_tmp);
+  gradient_pntrs_.emplace_back(std::move(gradient_tmp));
   //
   label = getCoeffsSetLabelString("hessian",ncoeffssets_);
-  CoeffsMatrix* hessian_tmp = new CoeffsMatrix(label,coeffs_pntr_in,comm,diagonal_hessian_);
-  hessian_pntrs_.push_back(hessian_tmp);
+  auto hessian_tmp = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_.back().get(),comm,diagonal_hessian_);
+
+  hessian_pntrs_.emplace_back(std::move(hessian_tmp));
   //
   std::vector<double> aver_sampled_tmp;
-  aver_sampled_tmp.assign(coeffs_pntr_in->numberOfCoeffs(),0.0);
+  aver_sampled_tmp.assign(coeffs_pntrs_.back()->numberOfCoeffs(),0.0);
   sampled_averages.push_back(aver_sampled_tmp);
   //
   std::vector<double> cross_aver_sampled_tmp;
-  cross_aver_sampled_tmp.assign(hessian_tmp->getSize(),0.0);
+  cross_aver_sampled_tmp.assign(hessian_pntrs_.back()->getSize(),0.0);
   sampled_cross_averages.push_back(cross_aver_sampled_tmp);
   //
   aver_counters.push_back(0);
@@ -434,6 +426,15 @@ void VesBias::updateGradientAndHessian(const bool use_mwalkers_mpi) {
     Gradient(k).setValues( TargetDistAverages(k) - sampled_averages[k] );
     Hessian(k) = computeCovarianceFromAverages(k);
     Hessian(k) *= getBeta();
+
+    if(optimization_threshold_ != 0.0) {
+      for(size_t c_id=0; c_id < sampled_averages[k].size(); ++c_id) {
+        if(fabs(sampled_averages[k][c_id]) < optimization_threshold_) {
+          Gradient(k).setValue(c_id, 0.0);
+          Hessian(k).setValue(c_id, c_id, 0.0);
+        }
+      }
+    }
     //
     Gradient(k).activate();
     Hessian(k).activate();
@@ -579,9 +580,8 @@ void VesBias::enableHessian(const bool diagonal_hessian) {
   diagonal_hessian_=diagonal_hessian;
   sampled_cross_averages.clear();
   for (unsigned int i=0; i<ncoeffssets_; i++) {
-    delete hessian_pntrs_[i];
     std::string label = getCoeffsSetLabelString("hessian",i);
-    hessian_pntrs_[i] = new CoeffsMatrix(label,coeffs_pntrs_[i],comm,diagonal_hessian_);
+    hessian_pntrs_[i] = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
     //
     std::vector<double> cross_aver_sampled_tmp;
     cross_aver_sampled_tmp.assign(hessian_pntrs_[i]->getSize(),0.0);
@@ -595,9 +595,8 @@ void VesBias::disableHessian() {
   diagonal_hessian_=true;
   sampled_cross_averages.clear();
   for (unsigned int i=0; i<ncoeffssets_; i++) {
-    delete hessian_pntrs_[i];
     std::string label = getCoeffsSetLabelString("hessian",i);
-    hessian_pntrs_[i] = new CoeffsMatrix(label,coeffs_pntrs_[i],comm,diagonal_hessian_);
+    hessian_pntrs_[i] = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
     //
     std::vector<double> cross_aver_sampled_tmp;
     cross_aver_sampled_tmp.assign(hessian_pntrs_[i]->getSize(),0.0);
@@ -617,8 +616,8 @@ std::string VesBias::getCoeffsSetLabelString(const std::string& type, const unsi
 }
 
 
-OFile* VesBias::getOFile(const std::string& filepath, const bool multi_sim_single_file, const bool enforce_backup) {
-  OFile* ofile_pntr = new OFile();
+std::unique_ptr<OFile> VesBias::getOFile(const std::string& filepath, const bool multi_sim_single_file, const bool enforce_backup) {
+  auto ofile_pntr = Tools::make_unique<OFile>();
   std::string fp = filepath;
   ofile_pntr->link(*static_cast<Action*>(this));
   if(enforce_backup) {ofile_pntr->enforceBackup();}
@@ -709,9 +708,8 @@ void VesBias::setupBiasCutoff(const double bias_cutoff_value, const double fermi
   std::string str_fermi_exp_max; VesTools::convertDbl2Str(fermi_exp_max,str_fermi_exp_max);
   std::string swfunc_keywords = "FERMI R_0=" + str_bias_cutoff_value + " FERMI_LAMBDA=" + str_fermi_lambda + " FERMI_EXP_MAX=" + str_fermi_exp_max;
   //
-  if(bias_cutoff_swfunc_pntr_!=NULL) {delete bias_cutoff_swfunc_pntr_;}
   std::string swfunc_errors="";
-  bias_cutoff_swfunc_pntr_ = new FermiSwitchingFunction();
+  bias_cutoff_swfunc_pntr_ = Tools::make_unique<FermiSwitchingFunction>();
   bias_cutoff_swfunc_pntr_->set(swfunc_keywords,swfunc_errors);
   if(swfunc_errors.size()>0) {
     plumed_merror("problem with setting up Fermi switching function: " + swfunc_errors);

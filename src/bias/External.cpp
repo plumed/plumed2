@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,11 +24,6 @@
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
-#include <memory>
-
-
-using namespace std;
-
 
 namespace PLMD {
 namespace bias {
@@ -137,7 +132,7 @@ void External::registerKeywords(Keywords& keys) {
 External::External(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao)
 {
-  string filename;
+  std::string filename;
   parse("FILE",filename);
   if( filename.length()==0 ) error("No external potential file was specified");
   bool sparsegrid=false;
@@ -167,7 +162,7 @@ External::External(const ActionOptions& ao):
 void External::calculate()
 {
   unsigned ncv=getNumberOfArguments();
-  vector<double> cv(ncv), der(ncv);
+  std::vector<double> cv(ncv), der(ncv);
 
   for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgument(i);}
 

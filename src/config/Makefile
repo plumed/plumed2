@@ -64,7 +64,7 @@ Config.o: Config.inc Makefile.conf.xxd version.h
 ConfigInstall.o: ConfigInstall.inc Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
-	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
+	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
 compile_options.sh: ../../Makefile.conf

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,27 +24,29 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
-#include <string>
-#include <cmath>
-
 namespace PLMD {
 namespace colvar {
 
 //+PLUMEDOC COLVAR ENERGY
 /*
-Calculate the total energy of the simulation box.
+Calculate the total potential energy of the simulation box.
 
-Total energy can be biased with umbrella sampling \cite bart-karp98jpcb or with well tempered metadynamics \cite Bonomi:2009p17935.
+The potential energy can be biased e.g. with umbrella sampling \cite bart-karp98jpcb or with well-tempered metadynamics \cite Bonomi:2009p17935.
 
 Notice that this CV could be unavailable with some MD code. When
 it is available, and when also replica exchange is available,
 metadynamics applied to ENERGY can be used to decrease the
 number of required replicas.
 
+\bug This \ref ENERGY does not include long tail corrections.
+Thus when using e.g. LAMMPS `"pair_modify tail yes"` or GROMACS `"DispCorr Ener"` (or `"DispCorr EnerPres"`),
+the potential energy from \ref ENERGY will be slightly different form the one of the MD code.
+You should still be able to use \ref ENERGY and then reweight your simulation with the correct MD energy value.
+
 \bug Acceptance for replica exchange when \ref ENERGY is biased
-is computed correctly only of all the replicas has the same
+is computed correctly only if all the replicas have the same
 potential energy function. This is for instance not true when
-using GROMACS with lambda replica exchange of with plumed-hrex branch.
+using GROMACS with lambda replica exchange or with plumed-hrex branch.
 
 \par Examples
 
@@ -68,9 +70,6 @@ public:
   unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
-
-
-using namespace std;
 
 
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")

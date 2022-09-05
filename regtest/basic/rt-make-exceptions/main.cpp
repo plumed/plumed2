@@ -93,10 +93,6 @@ int main(){
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 SWITCH={WRONGNAME R_0=1.0}");
   test_line(ofs,plumed,"d: RMSD REFERENCE=missing.pdb");
   test_line(ofs,plumed,"d: RMSD REFERENCE=test-too-many-atoms.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb");
-  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb");
   test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail
@@ -125,6 +121,7 @@ int main(){
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100");
 
 // these should not fail
   plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");
@@ -207,6 +204,9 @@ int main(){
     }
 #endif
     try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
+    }
+
+    try { p.cmd("throw","unknown_name"); } catch (PLMD::Plumed::Exception &e) {
     }
 
   }

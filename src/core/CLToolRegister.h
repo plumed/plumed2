@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -89,12 +89,12 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_CLTOOL(classname,directive) \
-  static class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return std::unique_ptr<classname>(new classname(ao));} \
+  namespace { class classname##RegisterMe{ \
+    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
   public: \
     classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);} \
-  } classname##RegisterMeObject;
+  } classname##RegisterMeObject; }
 
 
 #endif

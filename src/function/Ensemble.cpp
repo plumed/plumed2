@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -158,7 +156,7 @@ void Ensemble::calculate() {
 
   // calculate the weights either from BIAS
   if(do_reweight) {
-    vector<double> bias;
+    std::vector<double> bias;
     bias.resize(ens_dim);
     if(master) {
       bias[my_repl] = getArgument(narg);
@@ -179,8 +177,8 @@ void Ensemble::calculate() {
 
   const double fact_kbt = fact/kbt;
 
-  vector<double> mean(narg);
-  vector<double> dmean(narg,fact);
+  std::vector<double> mean(narg);
+  std::vector<double> dmean(narg,fact);
   // calculate the mean
   if(master) {
     for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
@@ -188,7 +186,7 @@ void Ensemble::calculate() {
   }
   comm.Sum(&mean[0], narg);
 
-  vector<double> v_moment, dv_moment;
+  std::vector<double> v_moment, dv_moment;
   // calculate other moments
   if(do_moments) {
     v_moment.resize(narg);
@@ -197,14 +195,14 @@ void Ensemble::calculate() {
     if(!do_central) {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(getArgument(i),moment-1);
+          const double tmp = fact*std::pow(getArgument(i),moment-1);
           v_moment[i]      = tmp*getArgument(i);
           dv_moment[i]     = moment*tmp;
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = fact*pow(getArgument(i),moment-1);
+          const double tmp = fact*std::pow(getArgument(i),moment-1);
           dv_moment[i]     = moment*tmp;
         }
       }
@@ -212,14 +210,14 @@ void Ensemble::calculate() {
     } else {
       if(master) {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(getArgument(i)-mean[i],moment-1);
+          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
           v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
         for(unsigned i=0; i<narg; ++i) {
-          const double tmp = pow(getArgument(i)-mean[i],moment-1);
+          const double tmp = std::pow(getArgument(i)-mean[i],moment-1);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
       }
@@ -230,11 +228,11 @@ void Ensemble::calculate() {
   // calculate powers of moments
   if(do_powers) {
     for(unsigned i=0; i<narg; ++i) {
-      const double tmp1 = pow(mean[i],power-1);
+      const double tmp1 = std::pow(mean[i],power-1);
       mean[i]          *= tmp1;
       dmean[i]         *= power*tmp1;
       if(do_moments) {
-        const double tmp2 = pow(v_moment[i],power-1);
+        const double tmp2 = std::pow(v_moment[i],power-1);
         v_moment[i]      *= tmp2;
         dv_moment[i]     *= power*tmp2;
       }

@@ -88,7 +88,7 @@ void checkList( const unsigned& num_x, const unsigned& num_y, const unsigned& nu
         }
      }
   }
-  ofs<<"LINK CELLS WORKED SUCESSFULLY FOR ATOM "<<alab<<" WITH PBC FOR "<<num_x<<"x"<<num_y<<"x"<<num_z<<" CELL"<<std::endl;
+  ofs<<"LINK CELLS WORKED SUCCESSFULLY FOR ATOM "<<alab<<" WITH PBC FOR "<<num_x<<"x"<<num_y<<"x"<<num_z<<" CELL"<<std::endl;
 }
 
 void buildCell( const unsigned& num_x, const unsigned& num_y, const unsigned& num_z, 

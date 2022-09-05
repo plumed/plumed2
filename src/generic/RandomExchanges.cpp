@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
 #include "core/ExchangePatterns.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace generic {

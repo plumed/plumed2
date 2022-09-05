@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,10 +38,7 @@
 
 #include <algorithm>
 
-using namespace std;
-
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC GENERIC EFFECTIVE_ENERGY_DRIFT
@@ -76,34 +73,34 @@ class EffectiveEnergyDrift:
   public ActionPilot {
   OFile output;
   long int printStride;
-  string fmt;
+  std::string fmt;
 
   double eed;
 
   Atoms& atoms;
-  vector<ActionWithValue*> biases;
+  std::vector<ActionWithValue*> biases;
 
   long int pDdStep;
   int nLocalAtoms;
   int pNLocalAtoms;
-  vector<int> pGatindex;
-  vector<Vector> positions;
-  vector<Vector> pPositions;
-  vector<Vector> forces;
-  vector<Vector> pForces;
+  std::vector<int> pGatindex;
+  std::vector<Vector> positions;
+  std::vector<Vector> pPositions;
+  std::vector<Vector> forces;
+  std::vector<Vector> pForces;
   Tensor box,pbox;
   Tensor fbox,pfbox;
 
   const int nProc;
-  vector<int> indexCnt;
-  vector<int> indexDsp;
-  vector<int> dataCnt;
-  vector<int> dataDsp;
-  vector<int> indexS;
-  vector<int> indexR;
-  vector<double> dataS;
-  vector<double> dataR;
-  vector<int> backmap;
+  std::vector<int> indexCnt;
+  std::vector<int> indexDsp;
+  std::vector<int> dataCnt;
+  std::vector<int> dataDsp;
+  std::vector<int> indexS;
+  std::vector<int> indexR;
+  std::vector<double> dataS;
+  std::vector<double> dataR;
+  std::vector<int> backmap;
 
   double initialBias;
   bool isFirstStep;
@@ -152,11 +149,11 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   if(getStride()!=1) error("EFFECTIVE_ENERGY_DRIFT must have STRIDE=1 to work properly");
 
   //parse and open FILE
-  string fileName;
+  std::string fileName;
   parse("FILE",fileName);
   if(fileName.length()==0) error("name out output file was not specified\n");
   output.link(*this);
-  output.open(fileName.c_str());
+  output.open(fileName);
 
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
@@ -177,7 +174,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
 
   //construct biases from ActionWithValue with a component named bias
-  vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
+  std::vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
   for(unsigned i=0; i<tmpActions.size(); i++) if(tmpActions[i]->exists(tmpActions[i]->getLabel()+".bias")) biases.push_back(tmpActions[i]);
 
   //resize counters and displacements useful to communicate with MPI_Allgatherv
@@ -198,8 +195,8 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 void EffectiveEnergyDrift::update() {
   bool pbc=atoms.getPbc().isSet();
 
-  //retrive data of local atoms
-  const vector<int>& gatindex = atoms.getGatindex();
+  //retrieve data of local atoms
+  const std::vector<int>& gatindex = atoms.getGatindex();
   nLocalAtoms = gatindex.size();
   atoms.getLocalPositions(positions);
   atoms.getLocalForces(forces);

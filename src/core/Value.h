@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -87,6 +87,8 @@ private:
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
+/// A constructor that can be used to make Vectors of named values
+  explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv);
 /// Set the value of the function

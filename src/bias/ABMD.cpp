@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,6 @@
 #include "tools/Random.h"
 #include "ActionRegister.h"
 #include <ctime>
-
-using namespace std;
 
 namespace PLMD {
 namespace bias {
@@ -87,7 +85,7 @@ class ABMD : public Bias {
   std::vector<double> kappa;
   std::vector<double> temp;
   std::vector<int> seed;
-  vector<Random> random;
+  std::vector<Random> random;
 public:
   explicit ABMD(const ActionOptions&);
   void calculate() override;
@@ -116,7 +114,7 @@ ABMD::ABMD(const ActionOptions&ao):
   min(getNumberOfArguments(),-1.0),
   kappa(getNumberOfArguments(),0.0),
   temp(getNumberOfArguments(),0.0),
-  seed(getNumberOfArguments(),time(0)),
+  seed(getNumberOfArguments(),std::time(0)),
   random(getNumberOfArguments())
 {
   // Note : parseVector will check that number of arguments is correct

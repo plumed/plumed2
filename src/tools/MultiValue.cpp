@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
+MultiValue::MultiValue( const size_t& nvals, const size_t& nder ):
   values(nvals),
   nderivatives(nder),
   derivatives(nvals*nder),
@@ -36,7 +36,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
   hasDerivatives.createIndexListFromVector( myind );
 }
 
-void MultiValue::resize( const unsigned& nvals, const unsigned& nder ) {
+void MultiValue::resize( const size_t& nvals, const size_t& nder ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;

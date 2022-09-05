@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2020 The plumed team
+   Copyright (c) 2018-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,7 @@ namespace PLMD {
 
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
+  keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
 }
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
@@ -41,7 +42,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
 }
 
 void ActionShortcut::readInputLine( const std::string& input ) {
-  std::string f_input = input;
+  std::string f_input = input; savedInputLines.push_back( input );
   if( update_from!=std::numeric_limits<double>::max() ) {
     std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
   }
@@ -57,6 +58,10 @@ void ActionShortcut::readInputLine( const std::string& input ) {
 
 const std::string & ActionShortcut::getShortcutLabel() const {
   return shortcutlabel;
+}
+
+std::vector<std::string> ActionShortcut::getSavedInputLines() const {
+  return savedInputLines;
 }
 
 }

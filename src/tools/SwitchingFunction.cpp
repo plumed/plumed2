@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,7 +28,6 @@
 
 #define PI 3.14159265358979323846
 
-using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC INTERNAL switchingfunction
@@ -178,17 +177,17 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
   keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
   keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
   keys.add("compulsory","MM","0","the value of m in the switching function (only needed for TYPE=RATIONAL); 0 implies 2*NN");
-  keys.add("compulsory","A","the value of a in the switching funciton (only needed for TYPE=SMAP)");
-  keys.add("compulsory","B","the value of b in the switching funciton (only needed for TYPE=SMAP)");
+  keys.add("compulsory","A","the value of a in the switching function (only needed for TYPE=SMAP)");
+  keys.add("compulsory","B","the value of b in the switching function (only needed for TYPE=SMAP)");
 }
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
-  vector<string> data=Tools::getWords(definition);
+  std::vector<std::string> data=Tools::getWords(definition);
   if( data.size()<1 ) {
     errormsg="missing all input for switching function";
     return;
   }
-  string name=data[0];
+  std::string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
   invr0_2=0.0;
@@ -239,7 +238,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     if(present && !Tools::parse(data,"A",a)) errormsg="could not parse A";
     present=Tools::findKeyword(data,"B");
     if(present && !Tools::parse(data,"B",b)) errormsg="could not parse B";
-    c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1;
+    c=std::pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1;
     d = -static_cast<double>(b) / static_cast<double>(a);
   }
   else if(name=="Q") {
@@ -439,21 +438,21 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
   } else {
     if(type==smap) {
       double sx=c*Tools::fastpow( rdist, a );
-      result=pow( 1.0 + sx, d );
+      result=std::pow( 1.0 + sx, d );
       dfunc=-b*sx/rdist*result/(1.0+sx);
     } else if(type==rational) {
       result=do_rational(rdist,dfunc,nn,mm);
     } else if(type==exponential) {
-      result=exp(-rdist);
+      result=std::exp(-rdist);
       dfunc=-result;
     } else if(type==nativeq) {
       double rdist2 = beta*(distance - lambda * ref);
-      double exprdist=exp(rdist2);
+      double exprdist=std::exp(rdist2);
       double exprmdist=1.0/exprdist;
       result=1./(1.+exprdist);
       dfunc=-1.0/(exprmdist+1.0)/(1.+exprdist);
     } else if(type==gaussian) {
-      result=exp(-0.5*rdist*rdist);
+      result=std::exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
     } else if(type==cubic) {
       double tmp1=rdist-1, tmp2=(1+2*rdist);
@@ -470,8 +469,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
         dfunc=0.0;
       } else if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
-        double tmpcos = cos ( rdist * PI );
-        double tmpsin = sin ( rdist * PI );
+        double tmpcos = std::cos ( rdist * PI );
+        double tmpsin = std::sin ( rdist * PI );
         result = 0.5 * (tmpcos + 1.0);
         dfunc=-0.5 * PI * tmpsin * invr0;
       } else {
@@ -508,7 +507,7 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   this->invr0=1.0/r0;
   this->invr0_2=this->invr0*this->invr0;
   this->d0=d0;
-  this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
+  this->dmax=d0+r0*std::pow(0.00001,1./(nn-mm));
   this->dmax_2=this->dmax*this->dmax;
   this->leptonx2=false;
   this->fastrational=(nn%2==0 && mm%2==0 && d0==0.0);

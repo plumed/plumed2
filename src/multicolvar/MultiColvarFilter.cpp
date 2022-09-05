@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,7 +55,7 @@ void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, 
   invals.copyValues( outvals );
   if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
 
-  // Retrive the value of the multicolvar and apply filter
+  // Retrieve the value of the multicolvar and apply filter
   double val=invals.get(1), df, weight=applyFilter( val, df );
 
   // Now propegate derivatives

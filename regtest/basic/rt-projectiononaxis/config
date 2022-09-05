@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed projection_test.dat --mf_xtc trial_path.xtc --pdb mc_file.pdb"

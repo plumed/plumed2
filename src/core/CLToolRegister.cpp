@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,12 +26,11 @@
 #include <iostream>
 
 
-using namespace std;
 namespace PLMD {
 
 CLToolRegister::~CLToolRegister() {
   if(m.size()>0) {
-    string names="";
+    std::string names="";
     for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: CLTools "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
@@ -50,18 +49,18 @@ void CLToolRegister::remove(creator_pointer f) {
   }
 }
 
-void CLToolRegister::add(string key,creator_pointer f,keywords_pointer kf) {
+void CLToolRegister::add(std::string key,creator_pointer f,keywords_pointer kf) {
   if(m.count(key)) {
     m.erase(key);
     disabled.insert(key);
   } else {
-    m.insert(pair<string,creator_pointer>(key,f));
+    m.insert(std::pair<std::string,creator_pointer>(key,f));
     Keywords keys; kf(keys);
-    mk.insert(pair<string,Keywords>(key,keys));
+    mk.insert(std::pair<std::string,Keywords>(key,keys));
   };
 }
 
-bool CLToolRegister::check(string key)const {
+bool CLToolRegister::check(std::string key)const {
   if(m.count(key)>0) return true;
   return false;
 }
@@ -78,12 +77,12 @@ std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
 
 
 std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar) {
-  vector<string> s(ar.list());
+  std::vector<std::string> s(ar.list());
   for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
   if(!ar.disabled.empty()) {
     s.assign(ar.disabled.size(),"");
-    copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
-    sort(s.begin(),s.end());
+    std::copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
+    std::sort(s.begin(),s.end());
     log<<"+++++++ WARNING +++++++\n";
     log<<"The following keywords have been registered more than once and will be disabled:\n";
     for(unsigned i=0; i<s.size(); i++) log<<"  - "<<s[i]<<"\n";
@@ -114,10 +113,10 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
 }
 
 
-vector<string> CLToolRegister::list()const {
-  vector<string> s;
+std::vector<std::string> CLToolRegister::list()const {
+  std::vector<std::string> s;
   for(const auto & it : m) s.push_back(it.first);
-  sort(s.begin(),s.end());
+  std::sort(s.begin(),s.end());
   return s;
 }
 

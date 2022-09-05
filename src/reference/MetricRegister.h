@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,12 +61,12 @@ public:
 MetricRegister& metricRegister();
 
 #define PLUMED_REGISTER_METRIC(classname,type) \
-  static class classname##RegisterMe{ \
-    static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return std::unique_ptr<ReferenceConfiguration>( new classname(ro) );} \
+  namespace { class classname##RegisterMe{ \
+    static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return PLMD::Tools::make_unique<classname>(ro);} \
   public: \
     classname##RegisterMe(){PLMD::metricRegister().add(type,create);}; \
     ~classname##RegisterMe(){PLMD::metricRegister().remove(create);}; \
-  } classname##RegisterMeObject;
+  } classname##RegisterMeObject; }
 
 template <class T>
 std::unique_ptr<T> MetricRegister::create( const std::string& type ) {

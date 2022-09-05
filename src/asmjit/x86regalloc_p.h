@@ -142,7 +142,7 @@ struct X86RAData : public RAData {
   //!
   //! Special register(s) restricted to one or more physical register. If there
   //! is more than one special register it means that we have to duplicate the
-  //! variable content to all of them (it means that the same varible was used
+  //! variable content to all of them (it means that the same variable was used
   //! by two or more operands). We forget about duplicates after the register
   //! allocation finishes and marks all duplicates as non-assigned.
   X86RegMask inRegs;

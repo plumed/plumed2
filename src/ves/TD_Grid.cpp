@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -162,9 +162,9 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
   }
 
   setDimension(arglabels.size());
-  std::vector<Value*> arguments(arglabels.size());
+  std::vector<std::unique_ptr<Value>> arguments(arglabels.size());
   for(unsigned int i=0; i < arglabels.size(); i++) {
-    arguments[i]= new Value(NULL,arglabels[i],false);
+    arguments[i]= Tools::make_unique<Value>(nullptr,arglabels[i],false);
     if(argperiodic[i]) {
       arguments[i]->setDomain(argmin[i],argmax[i]);
     }
@@ -175,10 +175,10 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
 
   IFile gridfile; gridfile.open(filename);
   if(has_deriv) {
-    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,true,true);
+    distGrid_=GridBase::create(gridlabel,Tools::unique2raw(arguments),gridfile,false,true,true);
   }
   else {
-    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,false,false);
+    distGrid_=GridBase::create(gridlabel,Tools::unique2raw(arguments),gridfile,false,false,false);
   }
   gridfile.close();
 
@@ -193,8 +193,6 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
     if(periodic_[i]) {maxima_[i]-=distGrid_->getDx()[i];}
   }
 
-  for(unsigned int i=0; i < arguments.size(); i++) {delete arguments[i];}
-  arguments.clear();
 }
 
 

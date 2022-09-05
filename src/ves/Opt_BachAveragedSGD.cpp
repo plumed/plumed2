@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -182,9 +182,9 @@ OPT_AVERAGED_SGD ...
 
 class Opt_BachAveragedSGD : public Optimizer {
 private:
-  std::vector<CoeffsVector*> combinedgradient_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> combinedgradient_pntrs_;
   unsigned int combinedgradient_wstride_;
-  std::vector<OFile*> combinedgradientOFiles_;
+  std::vector<std::unique_ptr<OFile>> combinedgradientOFiles_;
   double decaying_aver_tau_;
 private:
   CoeffsVector& CombinedGradient(const unsigned int c_id) const {return *combinedgradient_pntrs_[c_id];}
@@ -192,7 +192,6 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_BachAveragedSGD(const ActionOptions&);
-  ~Opt_BachAveragedSGD();
   void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
@@ -216,22 +215,10 @@ void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {
 }
 
 
-Opt_BachAveragedSGD::~Opt_BachAveragedSGD() {
-  for(unsigned int i=0; i<combinedgradient_pntrs_.size(); i++) {
-    delete combinedgradient_pntrs_[i];
-  }
-  for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
-    combinedgradientOFiles_[i]->close();
-    delete combinedgradientOFiles_[i];
-  }
-}
-
 
 Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
   PLUMED_VES_OPTIMIZER_INIT(ao),
-  combinedgradient_pntrs_(0),
   combinedgradient_wstride_(100),
-  combinedgradientOFiles_(0),
   decaying_aver_tau_(0.0)
 {
   log.printf("  Averaged stochastic gradient decent, see and cite ");
@@ -254,7 +241,7 @@ Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
   parse("COMBINED_GRADIENT_FMT",combinedgradient_fmt);
   if(combinedgradient_fnames.size()>0) {
     for(unsigned int i=0; i<numberOfCoeffsSets(); i++) {
-      CoeffsVector* combinedgradient_tmp = new CoeffsVector(*getGradientPntrs()[i]);
+      auto combinedgradient_tmp = Tools::make_unique<CoeffsVector>(*getGradientPntrs()[i]);
       std::string label = getGradientPntrs()[i]->getLabel();
       if(label.find("gradient")!=std::string::npos) {
         label.replace(label.find("gradient"), std::string("gradient").length(), "combined_gradient");
@@ -266,7 +253,7 @@ Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
       if(combinedgradient_fmt.size()>0) {
         combinedgradient_tmp->setOutputFmt(combinedgradient_fmt);
       }
-      combinedgradient_pntrs_.push_back(combinedgradient_tmp);
+      combinedgradient_pntrs_.emplace_back(std::move(combinedgradient_tmp));
     }
     //
     if(numberOfCoeffsSets()==1) {

@@ -12,5 +12,5 @@ DUMPATOMS FILE=helix.trr ATOMS=1-132
 DUMPATOMS FILE=helix.ttt TYPE=xtc
 
 # this is to test precision
-DUMPATOMS FILE=helix-pr.xtc ATOMS=1-132 PRECISION=6
+DUMPATOMS FILE=helix-pr.xtc ATOMS=1-132 PRECISION=5
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,17 +70,17 @@ CubicHarmonicBase::CubicHarmonicBase(const ActionOptions&ao):
   double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
   log.printf("  creating rotation matrix with Euler angles phi=%f, theta=%f and psi=%f\n",phi,theta,psi);
   // Calculate the rotation matrix http://mathworld.wolfram.com/EulerAngles.html
-  rotationmatrix[0][0]=cos(psi)*cos(phi)-cos(theta)*sin(phi)*sin(psi);
-  rotationmatrix[0][1]=cos(psi)*sin(phi)+cos(theta)*cos(phi)*sin(psi);
-  rotationmatrix[0][2]=sin(psi)*sin(theta);
+  rotationmatrix[0][0]=std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi);
+  rotationmatrix[0][1]=std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi);
+  rotationmatrix[0][2]=std::sin(psi)*std::sin(theta);
 
-  rotationmatrix[1][0]=-sin(psi)*cos(phi)-cos(theta)*sin(phi)*cos(psi);
-  rotationmatrix[1][1]=-sin(psi)*sin(phi)+cos(theta)*cos(phi)*cos(psi);
-  rotationmatrix[1][2]=cos(psi)*sin(theta);
+  rotationmatrix[1][0]=-std::sin(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::cos(psi);
+  rotationmatrix[1][1]=-std::sin(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::cos(psi);
+  rotationmatrix[1][2]=std::cos(psi)*std::sin(theta);
 
-  rotationmatrix[2][0]=sin(theta)*sin(phi);
-  rotationmatrix[2][1]=-sin(theta)*cos(phi);
-  rotationmatrix[2][2]=cos(theta);
+  rotationmatrix[2][0]=std::sin(theta)*std::sin(phi);
+  rotationmatrix[2][1]=-std::sin(theta)*std::cos(phi);
+  rotationmatrix[2][2]=std::cos(theta);
 
 
   log.printf("  measure crystallinity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );

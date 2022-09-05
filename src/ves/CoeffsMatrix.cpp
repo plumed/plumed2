@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -657,7 +657,7 @@ void CoeffsMatrix::writeDataDiagonalToFile(OFile& ofile) {
   std::string int_fmt = "%8d";
   std::string str_separate = "#!-------------------";
   //
-  char* s1 = new char[20];
+  std::vector<char> s1(20);
   std::vector<unsigned int> indices(numberOfDimensions());
   std::vector<std::string> ilabels(numberOfDimensions());
   for(unsigned int k=0; k<numberOfDimensions(); k++) {
@@ -667,11 +667,11 @@ void CoeffsMatrix::writeDataDiagonalToFile(OFile& ofile) {
   for(size_t i=0; i<numberOfCoeffs(); i++) {
     indices=getIndices(i);
     for(unsigned int k=0; k<numberOfDimensions(); k++) {
-      sprintf(s1,int_fmt.c_str(),indices[k]);
-      ofile.printField(ilabels[k],s1);
+      std::sprintf(s1.data(),int_fmt.c_str(),indices[k]);
+      ofile.printField(ilabels[k],s1.data());
     }
     ofile.fmtField(" "+getOutputFmt()).printField(field_coeffs,getValue(i,i));
-    sprintf(s1,int_fmt.c_str(),i); ofile.printField(field_index,s1);
+    std::sprintf(s1.data(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
     ofile.printField();
   }
   ofile.fmtField();
@@ -679,7 +679,6 @@ void CoeffsMatrix::writeDataDiagonalToFile(OFile& ofile) {
   ofile.printf("%s\n",str_separate.c_str());
   ofile.printf("\n");
   ofile.printf("\n");
-  delete [] s1;
 }
 
 
@@ -692,14 +691,14 @@ void CoeffsMatrix::writeDataFullToFile(OFile& ofile) {
   std::string int_fmt = "%8d";
   std::string str_separate = "#!-------------------";
   //
-  char* s1 = new char[20];
+  std::vector<char> s1(20);
   //
   for(size_t i=0; i<nrows_; i++) {
     for(size_t j=0; j<ncolumns_; j++) {
-      sprintf(s1,int_fmt.c_str(),i);
-      ofile.printField(field_index_row,s1);
-      sprintf(s1,int_fmt.c_str(),j);
-      ofile.printField(field_index_column,s1);
+      std::sprintf(s1.data(),int_fmt.c_str(),i);
+      ofile.printField(field_index_row,s1.data());
+      std::sprintf(s1.data(),int_fmt.c_str(),j);
+      ofile.printField(field_index_column,s1.data());
       ofile.fmtField(" "+getOutputFmt()).printField(field_coeffs,getValue(i,j));
       ofile.printField();
     }
@@ -709,7 +708,6 @@ void CoeffsMatrix::writeDataFullToFile(OFile& ofile) {
   ofile.printf("%s\n",str_separate.c_str());
   ofile.printf("\n");
   ofile.printf("\n");
-  delete [] s1;
 }
 
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,9 +23,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-#include <string>
-#include <cmath>
 
 namespace PLMD {
 namespace colvar {
@@ -61,10 +58,8 @@ PRINT ARG=sss.1
 */
 //+ENDPLUMEDOC
 
-using namespace std;
-
 class Constant : public Colvar {
-  vector<double> values;
+  std::vector<double> values;
 public:
   explicit Constant(const ActionOptions&);
   void calculate() override;
@@ -79,7 +74,7 @@ Constant::Constant(const ActionOptions&ao):
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
-  vector<double> value;
+  std::vector<double> value;
   parseVector("VALUE",value);
   if(values.size()==0&&value.size()==0) error("One should use either VALUE or VALUES");
   if(values.size()!=0&&value.size()!=0) error("One should use either VALUE or VALUES");

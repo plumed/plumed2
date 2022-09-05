@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -181,13 +181,13 @@ public:
   void calculate() override {};
   // calculate the value for the n-th basis function
   double getValue(const double, const unsigned int, double&, bool&) const;
-  // calcuate the values for all basis functions
+  // calculate the values for all basis functions
   virtual void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const = 0;
   //virtual void get2ndDerivatives(const double, std::vector<double>&)=0;
   void printInfo() const;
   //
   void getMultipleValue(const std::vector<double>&, std::vector<double>&, std::vector<std::vector<double> >&, std::vector<std::vector<double> >&, const bool numerical_deriv=false) const;
-  void writeBasisFunctionsToFile(OFile&, OFile&, const std::string& min_in, const std::string& max_in, unsigned int nbins=1000, const bool ignore_periodicity=false, const std::string& output_fmt="%15.8f", const bool numerical_deriv=false) const;
+  void writeBasisFunctionsToFile(OFile&, OFile&, const std::string& min_in, const std::string& max_in, unsigned int nbins=1000, const bool ignore_periodicity=false, const std::string& output_fmt_values="%15.8f", const std::string& output_fmt_derivs="%15.8f", const bool numerical_deriv=false) const;
 };
 
 

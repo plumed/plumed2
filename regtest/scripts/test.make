@@ -1,6 +1,6 @@
 
 test:
-	@../../scripts/run
+	@env PLUMED_MAKE=$(MAKE) ../../scripts/run
 
 reset:
 	../../scripts/reset
@@ -10,4 +10,8 @@ clean:
 
 valgrind:
 	../../scripts/run --valgrind
+
+testclean:
+	$(MAKE) test
+	rm -fr tmp/
 

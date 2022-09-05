@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -332,6 +332,10 @@ typedef VectorGeneric<5> Vector5d;
 /// \ingroup TOOLBOX
 /// Alias for three dimensional vectors
 typedef Vector3d Vector;
+
+static_assert(sizeof(VectorGeneric<2>)==2*sizeof(double), "code cannot work if this is not satisfied");
+static_assert(sizeof(VectorGeneric<3>)==3*sizeof(double), "code cannot work if this is not satisfied");
+static_assert(sizeof(VectorGeneric<4>)==4*sizeof(double), "code cannot work if this is not satisfied");
 
 }
 

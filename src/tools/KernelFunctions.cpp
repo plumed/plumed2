@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -93,6 +93,12 @@ slightly less that one because of the truncation of a function that should have 
 //+ENDPLUMEDOC
 
 KernelFunctions::KernelFunctions( const std::string& input ) {
+
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
+
   std::vector<std::string> data=Tools::getWords(input);
   std::string name=data[0];
   data.erase(data.begin());
@@ -122,6 +128,12 @@ KernelFunctions::KernelFunctions( const std::string& input ) {
 }
 
 KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
+
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
+
   setData( at, sig, type, mtype, w );
 }
 
@@ -132,6 +144,10 @@ KernelFunctions::KernelFunctions( const KernelFunctions* in ):
   width(in->width),
   height(in->height)
 {
+  if(!dp2cutoffNoStretch()) {
+    stretchA=dp2cutoffA;
+    stretchB=dp2cutoffB;
+  }
 }
 
 void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
@@ -147,6 +163,8 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian" ) {
     ktype=gaussian;
+  } else if(type=="STRETCHED-GAUSSIAN" || type=="stretched-gaussian" ) {
+    ktype=stretchedgaussian;
   } else if(type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
     ktype=truncatedgaussian;
   } else if(type=="UNIFORM" || type=="uniform") {
@@ -172,7 +190,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
   }
   if( dtype==diagonal || dtype==multi ) {
     double volume;
-    if( ktype==gaussian ) {
+    if( ktype==gaussian || ktype==stretchedgaussian ) {
       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
     } else if( ktype==truncatedgaussian ) {
       // This makes it so the gaussian integrates to one over the range over which it has support
@@ -257,7 +275,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
-  if( ktype==gaussian || ktype==truncatedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
+  if( ktype==gaussian || ktype==truncatedgaussian || ktype==stretchedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;
   else plumed_merror("No valid kernel type");
@@ -331,8 +349,8 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     std::vector<double> costmp( ndim() ), sintmp( ndim() ), sinout( ndim(), 0.0 );
     for(unsigned i=0; i<ndim(); ++i) {
       if( pos[i]->isPeriodic() ) {
-        sintmp[i]=sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
-        costmp[i]=cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+        sintmp[i]=std::sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+        costmp[i]=std::cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
       } else {
         sintmp[i]=pos[i]->get() - center[i];
         costmp[i]=1.0;
@@ -358,6 +376,16 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   double kderiv, kval;
   if(ktype==gaussian || ktype==truncatedgaussian) {
     kval=height*std::exp(-0.5*r2); kderiv=-kval;
+  } else if(ktype==stretchedgaussian) {
+    auto dp=0.5*r2;
+    if(dp<dp2cutoff) {
+      auto ee=std::exp(-0.5*r2);
+      kval=height*(stretchA*ee+stretchB);
+      kderiv=-height*stretchA*ee;
+    } else {
+      kval=0.0;
+      kderiv=0.0;
+    }
   } else {
     double r=sqrt(r2);
     if(ktype==triangular) {
@@ -388,7 +416,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   if( !ifile->scanField("height",h) ) return NULL;;
 
   std::string sss; ifile->scanField("multivariate",sss);
-  std::string ktype="gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+  std::string ktype="stretched-gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
   plumed_massert( sss=="false" || sss=="true" || sss=="von-misses", "multivariate flag must be either false, true or von-misses");
 
   // Read the position of the center
@@ -402,7 +430,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
       ifile->scanField("sigma_"+valnames[i],sig[i]);
       if( !cholesky ) sig[i]=sqrt(sig[i]);
     }
-    return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "DIAGONAL", h ) );
+    return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "DIAGONAL", h);
   }
 
   unsigned ncv=valnames.size();
@@ -420,8 +448,8 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   for(unsigned i=0; i<ncv; i++) {
     for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
   }
-  if( sss=="true" ) return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h ) );
-  return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
+  if( sss=="true" ) return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "MULTIVARIATE", h);
+  return Tools::make_unique<KernelFunctions>( cc, sig, ktype, "VON-MISSES", h );
 }
 
 }

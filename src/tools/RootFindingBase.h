@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@ namespace PLMD {
 template <class FCLASS>
 class RootFindingBase {
 private:
-/// This is the pointer to the member funciton in the energy
+/// This is the pointer to the member function in the energy
 /// calculating class that calculates the energy
   typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der ) const ;
   typedef double(FCLASS::*engfnc_pointer)( const std::vector<double>& p, std::vector<double>& der ) ;

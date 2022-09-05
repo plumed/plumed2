@@ -1,6 +1,12 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 source ../sourceme.sh
+
+if plumed --no-mpi config mpiexec ; then
+   mpirun=$(plumed --no-mpi config mpiexec)
+else
+   mpirun=mpirun
+fi
 
 LISTMORE=`ls *PP.md | grep -wvFf basic.list`
 
@@ -11,21 +17,21 @@ LIST="
  InstallationPP.md
  GettingStartedPP.md
  CollectiveVariablesPP.md
-   GroupPP.md
-   FunctionsPP.md
+ GroupPP.md
+ FunctionsPP.md
  AnalysisPP.md
  BiasPP.md
  AdditionalModulesPP.md
  $LISTMORE
  CommandLineToolsPP.md
  MiscelaneousPP.md
-   RegexPP.md
-   FilesPP.md
-   ModulesPP.md
-   TutorialsPP.md
+ RegexPP.md
+ FilesPP.md
+ ModulesPP.md
+ TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
- automatic tutorials tutorials/old_tutorials tutorials/others"
+ automatic"
 
 echo $LIST
 
@@ -45,11 +51,22 @@ if test "$TRAVIS" == true ; then
   version="${TRAVIS_BRANCH}"
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+  if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
+    version="${GITHUB_REF#refs/heads/}"
+  fi
+fi
+
 # THIS IS FOR DOXYGEN <= 1.8.10
 # I leave it here for the moment
-for file in html/*.html
+mkdir build_examples
+cd build_examples
+mkdir build
+cd build
+for file in ../../html/*.html
 do
-awk -v version="$version" '{
+echo final processing of html for file: $file
+gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
     sub("Page","("version")",$0);
@@ -58,11 +75,47 @@ awk -v version="$version" '{
     print "      <li><a href=\"_syntax.html\"><span>Getting&#160;Started</span></a></li>"
     print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
     print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
+  } else if(match($0,"<link href=\"doxygen.css\"")){
+    print 
+    print "<script>"
+    print "   var redpath = \"\";"
+    print "   "
+    print "   function showPath(eg,name) {"
+    print "     var i; var y = document.getElementsByName(redpath);"
+    print "     for (i=0; i < y.length; i++ ) { y[i].style.color=\"black\"; }"
+    print "     var x = document.getElementsByName(name); redpath=name;"
+    print "     for (i = 0; i < x.length; i++) { x[i].style.color=\"red\"; }"
+    print "     var valid=\"value_details_\".concat(eg);" 
+    print "     var valueField = document.getElementById(valid);"
+    print "     var dataField = document.getElementById(name);"
+    print "     valueField.innerHTML = dataField.innerHTML;"
+    print "   }"
+    print "   function swapInput(name) {"
+    print "     var btn = document.getElementById(name + \"_button\");"
+    print "     var mydiv = document.getElementById(\"input_\" + name);" 
+    print "     if( btn.textContent==\"expand shortcuts\" ) {" 
+    print "         btn.textContent = \"contract shortcuts\";"
+    print "         var dataField = document.getElementById(name + \"long\");" 
+    print "         mydiv.innerHTML = dataField.innerHTML;"
+    print "     } else if( btn.textContent==\"contract shortcuts\" ) {"
+    print "         btn.textContent = \"expand shortcuts\";" 
+    print "         var dataField = document.getElementById(name + \"short\");"
+    print "         mydiv.innerHTML = dataField.innerHTML;"
+    print "     }"
+    print "   }"
+    print "</script>"
   } else print
 }' $file |
-awk -f plumed-syntax.awk > $file.tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
+if [ $? -ne 0 ]; then
+   echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
+   exit
+fi
 mv $file.tmp $file
+rm -fr *
 done
+cd ../../
+rm -rf build_examples
 # end of DOXYGEN <=1.8.10
 
 # Same stuff for DOXYGEN >=1.8.12

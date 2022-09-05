@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,8 +27,6 @@
 #include "CatomPack.h"
 #include "BridgedMultiColvarFunction.h"
 #include "vesselbase/StoreDataVessel.h"
-
-using namespace std;
 
 //+PLUMEDOC VATOM CENTER_OF_MULTICOLVAR
 /*
@@ -152,11 +150,11 @@ void CenterOfMultiColvar::calculate() {
     Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) ) );
     // Now accumulate Berry phase averages
     for(unsigned j=0; j<3; ++j) {
-      stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] );
+      stmp[j] = std::sin( 2*pi*fpos[j] ); ctmp[j] = std::cos( 2*pi*fpos[j] );
       scom[j] += cvals[0]*cvals[comp]*stmp[j]; ccom[j] += cvals[0]*cvals[comp]*ctmp[j];
       double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
-      sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*cos( 2*pi*fpos[j] );
-      cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*sin( 2*pi*fpos[j] );
+      sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*std::cos( 2*pi*fpos[j] );
+      cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*std::sin( 2*pi*fpos[j] );
     }
     // Now accumulate derivatives
     for(unsigned k=0; k<tvals.getNumberActive(); ++k) {
@@ -187,7 +185,7 @@ void CenterOfMultiColvar::calculate() {
 
   // And now finish Berry phase average
   scom /= norm; ccom /=norm; Vector cpos;
-  for(unsigned j=0; j<3; ++j) cpos[j] = atan2( scom[j], ccom[j] ) / (2*pi);
+  for(unsigned j=0; j<3; ++j) cpos[j] = std::atan2( scom[j], ccom[j] ) / (2*pi);
   Vector cart_pos = pbc.scaledToReal( cpos );
   setPosition(cart_pos); setMass(1.0);   // This could be much cleverer but not without changing many things in PLMED
 
@@ -203,7 +201,7 @@ void CenterOfMultiColvar::calculate() {
       double sderv = inv_weight*myvals.getDerivative(1+j,ider) - inv_weight*scom[j]*myvals.getDerivative(0,ider);
       double cderv = inv_weight*myvals.getDerivative(4+j,ider) - inv_weight*ccom[j]*myvals.getDerivative(0,ider);
       myvals.setDerivative( 1+j, ider, tander[j]*(sderv/ccom[j]  - scom[j]*cderv/(ccom[j]*ccom[j])) );
-      //if( j==2 ) printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
+      //if( j==2 ) std::printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
     }
   }
 

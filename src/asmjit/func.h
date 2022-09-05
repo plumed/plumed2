@@ -494,6 +494,7 @@ struct FuncSignature {
 
 //! \internal
 #define T(TYPE) TypeIdOf<TYPE>::kTypeId
+namespace { // unnamed namespace to avoid unique global symbols
 
 //! Static function signature (no arguments).
 template<typename RET>
@@ -616,6 +617,7 @@ public:
 };
 #endif // ASMJIT_CC_HAS_VARIADIC_TEMPLATES
 
+}
 #undef T
 
 // ============================================================================

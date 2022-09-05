@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,7 +105,7 @@ public:
   }
 /// Project the displacement on a vector
   virtual double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& eigv, ReferenceValuePack& mypack ) const {
-    plumed_error(); return 1;
+    plumed_error();
   }
 /// Get the vector of alignment weights
   const std::vector<double> & getAlign() const ;

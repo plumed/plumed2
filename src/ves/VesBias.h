@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <memory>
 
 
 #define PLUMED_VES_VESBIAS_INIT(ao) Action(ao),VesBias(ao)
@@ -61,10 +62,10 @@ class VesBias:
 {
 private:
   unsigned int ncoeffssets_;
-  std::vector<CoeffsVector*> coeffs_pntrs_;
-  std::vector<CoeffsVector*> targetdist_averages_pntrs_;
-  std::vector<CoeffsVector*> gradient_pntrs_;
-  std::vector<CoeffsMatrix*> hessian_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> coeffs_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> targetdist_averages_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> gradient_pntrs_;
+  std::vector<std::unique_ptr<CoeffsMatrix>> hessian_pntrs_;
   std::vector<std::vector<double> > sampled_averages;
   std::vector<std::vector<double> > sampled_cross_averages;
   bool use_multiple_coeffssets_;
@@ -113,13 +114,15 @@ private:
   bool bias_cutoff_active_;
   double bias_cutoff_value_;
   double bias_current_max_value;
-  FermiSwitchingFunction* bias_cutoff_swfunc_pntr_;
+  std::unique_ptr<FermiSwitchingFunction> bias_cutoff_swfunc_pntr_;
   //
   std::vector< std::vector<std::string> > projection_args_;
   //
   bool calc_reweightfactor_;
+  //
+  double optimization_threshold_;
 private:
-  void initializeCoeffs(CoeffsVector*);
+  void initializeCoeffs(std::unique_ptr<CoeffsVector>);
   std::vector<double> computeCovarianceFromAverages(const unsigned int) const;
   void multiSimSumAverages(const unsigned int, const double walker_weight=1.0);
 protected:
@@ -128,7 +131,7 @@ protected:
   //
   void addCoeffsSet(const std::vector<std::string>&,const std::vector<unsigned int>&);
   void addCoeffsSet(std::vector<Value*>&,std::vector<BasisFunctions*>&);
-  void addCoeffsSet(CoeffsVector*);
+  void addCoeffsSet(std::unique_ptr<CoeffsVector>);
   //
   std::string getCoeffsSetLabelString(const std::string&, const unsigned int coeffs_id = 0) const;
   void clearCoeffsPntrsVector() {coeffs_pntrs_.clear();}
@@ -158,16 +161,16 @@ public:
   static void useProjectionArgKeywords(Keywords&);
   static void useReweightFactorKeywords(Keywords&);
   //
-  std::vector<CoeffsVector*> getCoeffsPntrs() const {return coeffs_pntrs_;}
-  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {return targetdist_averages_pntrs_;}
-  std::vector<CoeffsVector*> getGradientPntrs()const {return gradient_pntrs_;}
-  std::vector<CoeffsMatrix*> getHessianPntrs() const {return hessian_pntrs_;}
+  std::vector<CoeffsVector*> getCoeffsPntrs() const {return Tools::unique2raw(coeffs_pntrs_);}
+  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {return Tools::unique2raw(targetdist_averages_pntrs_);}
+  std::vector<CoeffsVector*> getGradientPntrs()const {return Tools::unique2raw(gradient_pntrs_);}
+  std::vector<CoeffsMatrix*> getHessianPntrs() const {return Tools::unique2raw(hessian_pntrs_);}
   std::vector<TargetDistribution*> getTargetDistributionPntrs() const {return targetdist_pntrs_;}
   //
-  CoeffsVector* getCoeffsPntr(const unsigned int coeffs_id = 0) const {return coeffs_pntrs_[coeffs_id];}
-  CoeffsVector* getTargetDistAveragesPntr(const unsigned int coeffs_id = 0) const {return targetdist_averages_pntrs_[coeffs_id];}
-  CoeffsVector* getGradientPntr(const unsigned int coeffs_id = 0)const {return gradient_pntrs_[coeffs_id];}
-  CoeffsMatrix* getHessianPntr(const unsigned int coeffs_id = 0) const {return hessian_pntrs_[coeffs_id];}
+  CoeffsVector* getCoeffsPntr(const unsigned int coeffs_id = 0) const {return coeffs_pntrs_[coeffs_id].get();}
+  CoeffsVector* getTargetDistAveragesPntr(const unsigned int coeffs_id = 0) const {return targetdist_averages_pntrs_[coeffs_id].get();}
+  CoeffsVector* getGradientPntr(const unsigned int coeffs_id = 0)const {return gradient_pntrs_[coeffs_id].get();}
+  CoeffsMatrix* getHessianPntr(const unsigned int coeffs_id = 0) const {return hessian_pntrs_[coeffs_id].get();}
   //
   unsigned int getNumberOfTargetDistributionPntrs() const {return targetdist_pntrs_.size();}
   //
@@ -270,7 +273,7 @@ public:
   void applyBiasCutoff(double&, std::vector<double>&) const;
   void applyBiasCutoff(double&, std::vector<double>&, std::vector<double>&) const;
   //
-  OFile* getOFile(const std::string& filename, const bool multi_sim_single_file=false, const bool enforce_backup=true);
+  std::unique_ptr<OFile> getOFile(const std::string& filename, const bool multi_sim_single_file=false, const bool enforce_backup=true);
   //
   virtual void setupBiasFileOutput() {};
   virtual void writeBiasToFile() {};

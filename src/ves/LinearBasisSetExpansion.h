@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 
 namespace PLMD {
@@ -65,7 +66,7 @@ private:
   //
   CoeffsVector* bias_coeffs_pntr_;
   size_t ncoeffs_;
-  CoeffsVector* targetdist_averages_pntr_;
+  std::unique_ptr<CoeffsVector> targetdist_averages_pntr_;
   //
   std::vector<std::string> grid_min_;
   std::vector<std::string> grid_max_;
@@ -77,9 +78,9 @@ private:
   long int step_of_last_biaswithoutcutoffgrid_update;
   long int step_of_last_fesgrid_update;
   //
-  Grid* bias_grid_pntr_;
-  Grid* bias_withoutcutoff_grid_pntr_;
-  Grid* fes_grid_pntr_;
+  std::unique_ptr<Grid> bias_grid_pntr_;
+  std::unique_ptr<Grid> bias_withoutcutoff_grid_pntr_;
+  std::unique_ptr<Grid> fes_grid_pntr_;
   Grid* log_targetdist_grid_pntr_;
   Grid* targetdist_grid_pntr_;
   //
@@ -91,7 +92,7 @@ public:
     const std::string&,
     const double,
     Communicator&,
-    std::vector<Value*>&,
+    const std::vector<Value*>&,
     std::vector<BasisFunctions*>&,
     CoeffsVector* bias_coeffs_pntr_in=NULL);
   //
@@ -104,7 +105,7 @@ public:
   std::vector<Value*> getPntrsToArguments() const {return args_pntrs_;}
   std::vector<BasisFunctions*> getPntrsToBasisFunctions() const {return basisf_pntrs_;}
   CoeffsVector* getPntrToBiasCoeffs() const {return bias_coeffs_pntr_;}
-  Grid* getPntrToBiasGrid() const {return bias_grid_pntr_;};
+  Grid* getPntrToBiasGrid() const {return bias_grid_pntr_.get();};
   //
   unsigned int getNumberOfArguments() const {return nargs_;};
   std::vector<unsigned int> getNumberOfBasisFunctions() const {return nbasisf_;};
@@ -184,7 +185,7 @@ public:
   //
 private:
   //
-  Grid* setupGeneralGrid(const std::string&, const bool usederiv=false);
+  std::unique_ptr<Grid> setupGeneralGrid(const std::string&, const bool usederiv=false);
   //
   void calculateTargetDistAveragesFromGrid(const Grid*);
   //

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Units.h"
 #include "Tools.h"
-
-using namespace std;
 
 namespace PLMD {
 
@@ -55,8 +53,8 @@ void Units::setEnergy(const std::string &s) {
   } else {
     energy=-1.0;
     energyString="";
-    if(!Tools::convert(s,energy)) {
-      plumed_merror("problem with setting the energy unit, either use give an numerical value or use one of the defined units: kj/mol, kcal/mol, j/mol, eV, Ha (case senstive)");
+    if(!Tools::convertNoexcept(s,energy)) {
+      plumed_merror("problem with setting the energy unit, either use give an numerical value or use one of the defined units: kj/mol, kcal/mol, j/mol, eV, Ha (case sensitive)");
     }
     plumed_massert(energy>0.0,"energy unit should be positive");
   }
@@ -75,7 +73,7 @@ void Units::setLength(const std::string &s) {
   } else {
     length=-1.0;
     lengthString="";
-    if(!Tools::convert(s,length)) {
+    if(!Tools::convertNoexcept(s,length)) {
       plumed_merror("problem with setting the length unit, either use a numerical value or use one of the defined units: nm, A, um, Bohr (case sensitive)");
     }
     plumed_massert(length>0.0,"length unit should be positive");
@@ -95,7 +93,7 @@ void Units::setTime(const std::string &s) {
   } else {
     time=-1.0;
     timeString="";
-    if(!Tools::convert(s,time)) {
+    if(!Tools::convertNoexcept(s,time)) {
       plumed_merror("problem with setting the time unit, either use a numerical value or use one of the defined units: ps, fs, atomic (case sensitive)");
     }
     plumed_massert(time>0.0,"time unit should be positive");
@@ -109,7 +107,7 @@ void Units::setCharge(const std::string &s) {
   } else {
     charge=-1.0;
     chargeString="";
-    if(!Tools::convert(s,charge)) {
+    if(!Tools::convertNoexcept(s,charge)) {
       plumed_merror("problem with setting the charge unit, either use a numerical value or use one of the defined units: e (case sensitive)");
     }
     plumed_massert(charge>0.0,"charge unit should be positive");
@@ -123,7 +121,7 @@ void Units::setMass(const std::string &s) {
   } else {
     mass=-1.0;
     massString="";
-    if(!Tools::convert(s,mass)) {
+    if(!Tools::convertNoexcept(s,mass)) {
       plumed_merror("problem with setting the mass unit, either use a numerical value or use one of the defined units: amu (case sensitive)");
     }
     plumed_massert(mass>0.0,"mass unit should be positive");

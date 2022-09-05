@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,10 +29,6 @@
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
 #include "tools/Grid.h"
-#include <iostream>
-#include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace function {
@@ -53,24 +49,24 @@ There are currently no examples for this keyword.
 //+ENDPLUMEDOC
 
 class FilesHandler {
-  vector <string> filenames;
-  vector <std::unique_ptr<IFile>>  ifiles;
+  std::vector <std::string> filenames;
+  std::vector <std::unique_ptr<IFile>>  ifiles;
   Action *action;
   Log *log;
   bool parallelread;
   unsigned beingread;
   bool isopen;
 public:
-  FilesHandler(const vector<string> &filenames, const bool &parallelread,  Action &myaction, Log &mylog);
+  FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread,  Action &myaction, Log &mylog);
   bool readBunch(BiasRepresentation *br, int stride);
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
-  void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
-  void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
+  void getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin);
+  void getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma);
 };
-FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
+FilesHandler::FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
   this->action=&action;
   for(unsigned i=0; i<filenames.size(); i++) {
-    std::unique_ptr<IFile> ifile(new IFile());
+    auto ifile=Tools::make_unique<IFile>();
     ifile->link(action);
     plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
     ifiles.emplace_back(std::move(ifile));
@@ -95,7 +91,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
       (*log)<<"  opening file "<<filenames[beingread]<<"\n";
       ff->open(filenames[beingread]); isopen=true;
     }
-    int n;
+    int n=0;
     while(true) {
       bool fileisover=true;
       while(scanOneHill(br,ff)) {
@@ -132,7 +128,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
   }
   return morefiles;
 }
-void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin) {
+void FilesHandler::getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin) {
   // create the representation (no grid)
   BiasRepresentation br(vals,cc);
   // read all the kernels
@@ -140,7 +136,7 @@ void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<do
   // loop over the kernels and get the support
   br.getMinMaxBin(vmin,vmax,vbin);
 }
-void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma) {
+void FilesHandler::getMinMaxBin(std::vector<Value*> vals, Communicator &cc, std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin, const std::vector<double> &histosigma) {
   BiasRepresentation br(vals,cc,histosigma);
   // read all the kernels
   readBunch(&br);
@@ -167,7 +163,7 @@ bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ) {
 
 
 double  mylog( double v1 ) {
-  return log(v1);
+  return std::log(v1);
 }
 
 double  mylogder( double v1 ) {
@@ -179,8 +175,8 @@ double  mylogder( double v1 ) {
 class FuncSumHills :
   public Function
 {
-  vector<string> hillsFiles,histoFiles;
-  vector<string> proj;
+  std::vector<std::string> hillsFiles,histoFiles;
+  std::vector<std::string> proj;
   int initstride;
   bool iscltool,integratehills,integratehisto,parallelread;
   bool negativebias;
@@ -190,13 +186,13 @@ class FuncSumHills :
   double lowI_;
   double uppI_;
   double beta;
-  string outhills,outhisto,fmt;
+  std::string outhills,outhisto,fmt;
   std::unique_ptr<BiasRepresentation> biasrep;
   std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
   void calculate() override; // this probably is not needed
-  bool checkFilesAreExisting(const vector<string> & hills );
+  bool checkFilesAreExisting(const std::vector<std::string> & hills );
   static void registerKeywords(Keywords& keys);
 };
 
@@ -250,16 +246,16 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   log<<"  Output format is "<<fmt<<"\n";
   // here read
   // Grid Stuff
-  vector<std::string> gmin;
+  std::vector<std::string> gmin;
   parseVector("GRID_MIN",gmin);
   if(gmin.size()!=getNumberOfArguments() && gmin.size()!=0) error("not enough values for GRID_MIN");
   plumed_massert(gmin.size()==getNumberOfArguments() || gmin.size()==0,"need GRID_MIN argument for this") ;
-  vector<std::string> gmax;
+  std::vector<std::string> gmax;
   parseVector("GRID_MAX",gmax);
   if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) error("not enough values for GRID_MAX");
   plumed_massert(gmax.size()==getNumberOfArguments() || gmax.size()==0,"need GRID_MAX argument for this") ;
-  vector<unsigned> gbin;
-  vector<double>   gspacing;
+  std::vector<unsigned> gbin;
+  std::vector<double>   gspacing;
   parseVector("GRID_BIN",gbin);
   plumed_massert(gbin.size()==getNumberOfArguments() || gbin.size()==0,"need GRID_BIN argument for this") ;
   if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
@@ -282,7 +278,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     }
 
   // Inteval keyword
-  vector<double> tmpI(2);
+  std::vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
   if(tmpI.size()!=2&&tmpI.size()!=0) error("both a lower and an upper limits must be provided with INTERVAL");
   else if(tmpI.size()==2) {
@@ -320,7 +316,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     integratehisto=true;
     for(unsigned i=0; i<histoFiles.size(); i++) log<<"  histofile  : "<<histoFiles[i]<<"\n";
   }
-  vector<double> histoSigma;
+  std::vector<double> histoSigma;
   if(integratehisto) {
     parseVector("HISTOSIGMA",histoSigma);
     for(unsigned i=0; i<histoSigma.size(); i++) log<<"  histosigma  : "<<histoSigma[i]<<"\n";
@@ -359,8 +355,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
     if(integratehills) {
       FilesHandler hillsHandler(hillsFiles,parallelread,*this, log);
-      vector<double> vmin,vmax;
-      vector<unsigned> vbin;
+      std::vector<double> vmin,vmax;
+      std::vector<unsigned> vbin;
       hillsHandler.getMinMaxBin(tmphillsvalues,comm,vmin,vmax,vbin);
       log<<"  found boundaries from hillsfile: \n";
       gmin.resize(vmin.size());
@@ -379,8 +375,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // if at this stage bins are not there then do it with histo
     if(gmin.size()==0) {
       FilesHandler histoHandler(histoFiles,parallelread,*this, log);
-      vector<double> vmin,vmax;
-      vector<unsigned> vbin;
+      std::vector<double> vmin,vmax;
+      std::vector<unsigned> vbin;
       histoHandler.getMinMaxBin(tmphistovalues,comm,vmin,vmax,vbin,histoSigma);
       log<<"  found boundaries from histofile: \n";
       gmin.resize(vmin.size());
@@ -458,7 +454,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // check if the files exists
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
-      biasrep.reset(new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_));
+      biasrep=Tools::make_unique<BiasRepresentation>(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -481,7 +477,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // the list of the collective variable one want to consider
     if(integratehisto) {
       checkFilesAreExisting(histoFiles);
-      historep.reset(new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma));
+      historep=Tools::make_unique<BiasRepresentation>(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
     }
 
     // decide how to source hills ( serial/parallel )
@@ -494,8 +490,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     std::unique_ptr<FilesHandler> hillsHandler;
     std::unique_ptr<FilesHandler> histoHandler;
 
-    if(integratehills)	hillsHandler.reset(new FilesHandler(hillsFiles,parallelread,*this, log));
-    if(integratehisto)	histoHandler.reset(new FilesHandler(histoFiles,parallelread,*this, log));
+    if(integratehills)	hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log);
+    if(integratehisto)	histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log);
 
 // Stopwatch is logged when it goes out of scope
     Stopwatch sw(log);
@@ -530,7 +526,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           Grid smallGrid=biasGrid.project(proj,&Bw);
           OFile gridfile; gridfile.link(*this);
           std::ostringstream ostr; ostr<<nfiles;
-          string myout;
+          std::string myout;
           if(initstride>0) { myout=outhills+ostr.str()+".dat" ;} else {myout=outhills;}
           log<<"  Bias: Writing subgrid on file "<<myout<<" \n";
           gridfile.open(myout);
@@ -548,7 +544,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
           OFile gridfile; gridfile.link(*this);
           std::ostringstream ostr; ostr<<nfiles;
-          string myout;
+          std::string myout;
           if(initstride>0) { myout=outhisto+ostr.str()+".dat" ;} else {myout=outhisto;}
           log<<"  Histo: Writing subgrid on file "<<myout<<" \n";
           gridfile.open(myout);
@@ -571,7 +567,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
           OFile gridfile; gridfile.link(*this);
           std::ostringstream ostr; ostr<<nfiles;
-          string myout;
+          std::string myout;
           if(initstride>0) { myout=outhills+ostr.str()+".dat" ;} else {myout=outhills;}
           log<<"  Writing full grid on file "<<myout<<" \n";
           gridfile.open(myout);
@@ -591,12 +587,12 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
           OFile gridfile; gridfile.link(*this);
           std::ostringstream ostr; ostr<<nfiles;
-          string myout;
+          std::string myout;
           if(initstride>0) { myout=outhisto+ostr.str()+".dat" ;} else {myout=outhisto;}
           log<<"  Writing full grid on file "<<myout<<" \n";
           gridfile.open(myout);
 
-          // also this is usefull only for free energy
+          // also this is useful only for free energy
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
@@ -624,9 +620,9 @@ void FuncSumHills::calculate() {
   plumed_merror("You should have never got here: this stuff is not yet implemented!");
 }
 
-bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ) {
+bool FuncSumHills::checkFilesAreExisting(const std::vector<std::string> & hills ) {
   plumed_massert(hills.size()!=0,"the number of  files provided should be at least one" );
-  std::unique_ptr<IFile> ifile(new IFile());
+  auto ifile=Tools::make_unique<IFile>();
   ifile->link(*this);
   for(unsigned i=0; i< hills.size(); i++) {
     plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);

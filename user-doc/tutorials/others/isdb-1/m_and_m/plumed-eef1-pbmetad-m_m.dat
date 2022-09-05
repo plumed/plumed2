@@ -138,7 +138,7 @@ JCOUPLING ...
 # Chemical shifts
 cs: CS2BACKBONE ATOMS=1-111 NRES=9 DATA=data TEMPLATE=egaawaass.pdb
 
-# the following are usefull for the analysis on-the-fly of the quality of the agreement with the experimentl data
+# the following are useful for the analysis on-the-fly of the quality of the agreement with the experimentl data
 ENSEMBLE ...
     ARG=(nh\.rdc_.*),(caha\.rdc_.*),(jhan\.j_.*),(jhahn\.j_.*),(jccg\.j_.*),(jncg\.j_.*),(cs\..._.*),pb.bias REWEIGHT
     LABEL=ens

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace vatom {
@@ -153,7 +151,7 @@ Center::Center(const ActionOptions&ao):
   first(true),
   phases(false)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
@@ -215,7 +213,7 @@ void Center::calculate() {
     first=false;
   }
 
-  vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   if( plumed.getAtoms().chargesWereSet() ) {
     double charge(0.0);

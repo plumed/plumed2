@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ void TargetDist::read( const PDB& pdb, std::vector<Value*> ar ) {
     (ar[i]->getPntrToAction())->clearDerivatives();
   }
 
-  // Caclulate target actions from input in PDB file
+  // Calculate target actions from input in PDB file
   std::vector<double> targ( ar.size() );
   for(unsigned i=0; i<ar.size(); ++i) {
     if( ar[i]->valueHasBeenSet() ) {

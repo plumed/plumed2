@@ -8,7 +8,7 @@ using namespace PLMD;
 int main(){
   Plumed* plumed=new Plumed;
 
-  int natoms=100;
+  const int natoms=100;
 
   std::vector<double> all_positions(3*natoms,0.0);
   for(unsigned i=0;i<natoms;i++) all_positions[i]=i;
@@ -40,7 +40,7 @@ int main(){
 
   for(int step=0;step<10;step++){
   for(unsigned i=0;i<3*natoms;i++) all_positions[i]=i+step;
-    int* p=nullptr;
+    const int* p=nullptr;
     int n=0;
     plumed->cmd("setStep",&step);
     plumed->cmd("prepareDependencies");

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -241,9 +241,7 @@ void AdaptivePath::update() {
     pathfile<<"# PATH AT STEP "<<getStep();
     pathfile.printf(" TIME %f \n",getTime());
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
-    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-    if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-    SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+    auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     std::vector<std::string> argument_names( getNumberOfArguments() );
     for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
     PDB mypdb; mypdb.setArgumentNames( argument_names );

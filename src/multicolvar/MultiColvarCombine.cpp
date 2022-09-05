@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -82,7 +82,7 @@ double MultiColvarCombine::compute( const unsigned& tindex, AtomValuePack& myato
     dot += coeff[i]*tval[1];
   }
   if( !doNotCalculateDerivatives() ) {
-    myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    std::vector<double> cc(2);
     for(unsigned i=0; i<coeff.size(); ++i) {
       cc[1]=coeff[i]; MultiValue& myder=getInputDerivatives( i, false, myatoms );
       splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );

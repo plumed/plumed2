@@ -1,11 +1,12 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 source ../sourceme.sh
 
 # initial cleanup
-rm -f errors
-rm -rf automatic
+rm -f errors example_errors
+rm -rf automatic example-check
 mkdir automatic
+mkdir example-check
 
 
 # Check for files that register actions with no documentation
@@ -191,6 +192,12 @@ Manual built on Travis CI for branch $TRAVIS_BRANCH.
 EOF
 fi
 
+if test "$GITHUB_ACTIONS" == true ; then
+cat >> automatic/VERSION.list << EOF
+Manual built on GitHub Actions on ref $GITHUB_REF.
+EOF
+fi
+
 if test -d regtests ; then
 cat >> automatic/VERSION.list << EOF
 
@@ -230,6 +237,12 @@ for file in ./tutorials/*.txt ; do
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
+    # This tests the examples in the tutorials
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname
+    ./test_examples automatic/$fname
 
 done
 
@@ -240,6 +253,13 @@ for file in ./tutorials/old_tutorials/*.txt ; do
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
+    # This tests the examples in the tutorials
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname 
+    ./test_examples automatic/$fname
+
 done
 
 # Generate links to websites
@@ -249,6 +269,12 @@ for file in ./tutorials/*.site; do
    describe=`grep description: $file | sed -e 's/description://'`
 
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
+   # This tests the examples in the tutorials
+   splits=`echo $file | sed -e 's/\// /g'`
+   nf=`echo $splits | awk '{print NF}'`
+   fname=`echo $splits | awk -v n=$nf '{print $n}'`
+   cp $file automatic/$fname 
+   ./test_examples automatic/$fname
 
 done
 
@@ -259,11 +285,16 @@ for file in ./tutorials/others/*.txt ; do
     temp=$(echo $arrIN | tr "-" "\n"); 
     modtut=$(echo $temp | awk '{print toupper($1)}')
 
-    link=`grep link: $file | sed -e 's/link://'`
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
 
+    splits=`echo $file | sed -e 's/\// /g'`
+    nf=`echo $splits | awk '{print NF}'`
+    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+    cp $file automatic/$fname 
+   ./test_examples automatic/$fname
 done
 
 
@@ -333,6 +364,8 @@ echo "</table>" >> automatic/MODULES.list
 # Generate all the documentation from keywords
 for file in automatic/*.tmp
 do
+  # Test the example input files
+  ./test_examples $file
   flag=${file#automatic/}
   flag=${flag/.tmp}
   if grep -q '//+PLUMEDOC INTERNAL' $file 1>/dev/null 2>/dev/null ; then
@@ -345,9 +378,8 @@ do
        echo There are no examples inside documentation for action: $flag >> errors
      fi
        { 
-        awk '/\\par Examples/{xx=1}{if(xx==0) printf("%s\n",$0)}' automatic/$flag.tmp
-        cat automatic/$flag.man
-        awk '/\\par Examples/{xx=1}{if(xx==1) printf("%s\n",$0)}' automatic/$flag.tmp
+        awk '{if($1!="*/"){print $0}}END{print "\\par Glossary of keywords and components"}' automatic/$flag.tmp
+        awk '{print $0}END{print "*/"}' automatic/$flag.man
        } > automatic/$flag.txt
    fi
 done
@@ -401,7 +433,7 @@ rm automatic/*.txte
 
 rm -f *PP.txt *PP.md
 
-keywords=`grep "@[A-Z_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
+keywords=`grep "@[A-Z0-9_]*@" *.md | awk -F"@" '{print $2}' | sort | uniq`
 
 for f in *.txt *.md
 do
@@ -416,6 +448,7 @@ file=${f%.$extension}
 # then grep out the special strings
 
 cp $f ${file}PP.$extension
+./test_examples ${file}PP.$extension
 
 for kk in $keywords
 do
@@ -425,7 +458,7 @@ do
 done
 rm -f *."$extension"e
 
-grep -Ev '^ *@[A-Z:_]*@ *$' ${file}PP.$extension > tmp;
+grep -Ev '^ *@[A-Z0-9:_]*@ *$' ${file}PP.$extension > tmp;
 mv tmp ${file}PP.$extension
 
 done

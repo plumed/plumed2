@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <memory>
 
 
 namespace PLMD {
@@ -66,7 +67,7 @@ public:
   //
   explicit CoeffsVector(
     const std::string&,
-    std::vector<Value*>&,
+    const std::vector<Value*>&,
     std::vector<BasisFunctions*>&,
     Communicator&,
     const bool use_counter=false);
@@ -123,9 +124,13 @@ public:
   void addToValue(const std::vector<unsigned int>&, const double);
   // scale all values
   void scaleAllValues(const double);
+  void multiplyWithValues(const std::vector<double>&);
   CoeffsVector& operator*=(const double);
   friend CoeffsVector operator*(const double, const CoeffsVector&);
   friend CoeffsVector operator*(const CoeffsVector&, const double);
+  CoeffsVector& operator*=(const std::vector<double>&);
+  friend CoeffsVector operator*(const std::vector<double>&, const CoeffsVector&);
+  friend CoeffsVector operator*(const CoeffsVector&, const std::vector<double>&);
   CoeffsVector& operator*=(const CoeffsVector&);
   CoeffsVector operator*(const CoeffsVector&) const;
   // set all values

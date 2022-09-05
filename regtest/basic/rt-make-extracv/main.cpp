@@ -16,7 +16,7 @@ int main(){
   std::vector<double> box(9,0.0);
   std::vector<double> virial(9,0.0);
 
-  plumed->cmd("setNatoms",&natoms);
+  plumed->cmd("setNatoms",natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
@@ -34,16 +34,16 @@ int main(){
     double extracvf=0.0;
     double extracv2=step;
     double extracvf2=-step;
-    plumed->cmd("setStep",&step);
-    plumed->cmd("setPositions",&positions[0]);
-    plumed->cmd("setBox",&box[0]);
-    plumed->cmd("setForces",&forces[0]);
-    plumed->cmd("setVirial",&virial[0]);
-    plumed->cmd("setExtraCV extra",&extracv);
-    plumed->cmd("setExtraCVForce extra",&extracvf);
-    plumed->cmd("setExtraCV extra2",&extracv2);
-    plumed->cmd("setExtraCVForce extra2",&extracvf2);
-    plumed->cmd("setMasses",&masses[0]);
+    plumed->cmd("setStep",step);
+    plumed->cmd("setPositions",&positions[0],3*natoms);
+    plumed->cmd("setBox",&box[0],9);
+    plumed->cmd("setForces",&forces[0],3*natoms);
+    plumed->cmd("setVirial",&virial[0],9);
+    plumed->cmd("setExtraCV extra",&extracv,1);
+    plumed->cmd("setExtraCVForce extra",&extracvf,1);
+    plumed->cmd("setExtraCV extra2",&extracv2,1);
+    plumed->cmd("setExtraCVForce extra2",&extracvf2,1);
+    plumed->cmd("setMasses",&masses[0],natoms);
 // first compute using modified positions:
     positions[0]=0.5;
     extracv2=100;
@@ -60,6 +60,21 @@ int main(){
     ofs<<"f_pre:";
     for(auto & f:forces) ofs<<" "<<f;
     ofs<<"\n";
+// thent compute using another modified positions, without updating forces
+    positions[0]=0.5;
+    extracv2=100;
+    for(auto & f:forces) f=0.0;
+    extracvf=0.0;
+    extracvf2=0.0;
+    plumed->cmd("prepareCalc");
+    plumed->cmd("performCalcNoForces");
+    plumed->cmd("getBias",&bias);
+    ofs<<"bias_pre: "<<bias<<"\n";
+    ofs<<"extracvf_pre: "<<extracvf<<"\n";
+    ofs<<"extracvf2_pre: "<<extracvf2<<"\n";
+    ofs<<"f_pre:";
+    for(auto & f:forces) ofs<<" "<<f;
+    ofs<<"\n";
 // then compute using regular positions:
     positions[0]=0;
     extracv2=0;
@@ -68,7 +83,7 @@ int main(){
     extracvf2=0.0;
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
-    plumed->cmd("getBias",&bias);
+    plumed->cmd("getBias",&bias,1);
     ofs<<"bias: "<<bias<<"\n";
     ofs<<"extracvf: "<<extracvf<<"\n";
     ofs<<"extracvf2: "<<extracvf2<<"\n";

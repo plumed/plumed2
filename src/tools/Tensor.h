@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -537,7 +537,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   std::array<int,2*m> isup;
   int nn=n;              // dimension of matrix
   double vl=0.0, vu=1.0; // ranges - not used
-  int one=1,mm=m;        // minimun and maximum index
+  int one=1,mm=m;        // minimum and maximum index
   double abstol=0.0;     // tolerance
   int mout=0;            // number of eigenvalues found (same as mm)
   int info=0;            // result
@@ -554,13 +554,14 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
-  for(int i=0; i<m; ++i) {
-    int j=0;
+  for(unsigned i=0; i<m; ++i) {
+    unsigned j=0;
     for(j=0; j<n; j++) if(evec(i,j)*evec(i,j)>1e-14) break;
     if(j<n) if(evec(i,j)<0.0) for(j=0; j<n; j++) evec(i,j)*=-1;
   }
 }
 
+static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 
 }
 

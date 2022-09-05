@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "SecondaryStructureRMSD.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/Atoms.h"
 #include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
@@ -109,8 +109,8 @@ void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const u
 }
 
 void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std::vector<unsigned>& chain_lengths ) {
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( ! moldat ) error("Unable to find MOLINFO in input");
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ) {
@@ -124,7 +124,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
     }
   }
   std::vector< std::vector<AtomNumber> > backatoms;
-  moldat[0]->getBackbone( resstrings, moltype, backatoms );
+  moldat->getBackbone( resstrings, moltype, backatoms );
 
   chain_lengths.resize( backatoms.size() );
   for(unsigned i=0; i<backatoms.size(); ++i) {

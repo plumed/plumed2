@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,9 +27,6 @@
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
-#include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -72,6 +69,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   {
     log<<"Opening reference file "<<reference.c_str()<<"\n";
     bool do_read=true;
+    unsigned nat=0;
     while (do_read) {
       PDB mypdb;
       RMSD mymsd;
@@ -79,11 +77,11 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
       if(do_read) {
         nframes++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat==0) nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) {
           aaa=mypdb.getAtomNumbers();
-          log.printf("  found %z atoms in input \n",aaa.size());
+          log.printf("  found %zu atoms in input \n",aaa.size());
           log.printf("  with indices : ");
           for(unsigned i=0; i<aaa.size(); ++i) {
             if(i%25==0) log<<"\n";
@@ -130,7 +128,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     log.printf(" Extensive debug info regarding close structure turned on\n");
 
   rotationRefClose.resize(nframes);
-  savedIndices = vector<unsigned>(nframes);
+  savedIndices = std::vector<unsigned>(nframes);
 
   if(nopbc) log.printf("  without periodic boundary conditions\n");
   else      log.printf("  using periodic boundary conditions\n");
@@ -162,7 +160,7 @@ void PathMSDBase::calculate() {
 // THIS IS THE HEAVY PART (RMSD STUFF)
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  unsigned nat=pdbv[0].size();
+  size_t nat=pdbv[0].size();
   plumed_assert(nat>0);
   plumed_assert(nframes>0);
   plumed_assert(imgVec.size()>0);
@@ -225,9 +223,9 @@ void PathMSDBase::calculate() {
           RMSD opt;
           opt.setType("OPTIMAL");
           opt.setReference(msdv[imgVec[i].index].getReference());
-          vector<Vector> ders;
+          std::vector<Vector> ders;
           double withoutclose = opt.calculate(getPositions(), ders, true);
-          float difference = fabs(withoutclose-withclose);
+          float difference = std::abs(withoutclose-withclose);
           log<<"PLUMED-CLOSE: difference original "<<withoutclose;
           log<<" - with close "<<withclose<<" = "<<difference<<", step "<<getStep()<<", i "<<i<<" imgVec[i].index "<<imgVec[i].index<<"\n";
         }
@@ -254,14 +252,14 @@ void PathMSDBase::calculate() {
     }
   }
 // assign imgVec[i].distance and imgVec[i].distder
-  for(unsigned i=0; i<imgVec.size(); i++) {
+  for(size_t i=0; i<imgVec.size(); i++) {
     imgVec[i].distance=tmp_distances[i];
     imgVec[i].distder.assign(&tmp_derivs2[i*nat],nat+&tmp_derivs2[i*nat]);
   }
 
 // END OF THE HEAVY PART
 
-  vector<Value*> val_s_path;
+  std::vector<Value*> val_s_path;
   if(labels.size()>0) {
     for(unsigned i=0; i<labels.size(); i++) { val_s_path.push_back(getPntrToComponent(labels[i].c_str()));}
   } else {
@@ -269,7 +267,7 @@ void PathMSDBase::calculate() {
   }
   Value* val_z_path=getPntrToComponent("zzz");
 
-  vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
+  std::vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
   double partition=0.;
   double tmp;
 
@@ -277,8 +275,7 @@ void PathMSDBase::calculate() {
   for(unsigned i=0; i< derivs_z.size(); i++) {derivs_z[i].zero();}
 
   for(auto & it : imgVec) {
-    it.similarity=exp(-lambda*(it.distance));
-    //log<<"DISTANCE "<<(*it).distance<<"\n";
+    it.similarity=std::exp(-lambda*(it.distance));
     for(unsigned i=0; i<s_path.size(); i++) {
       s_path[i]+=(it.property[i])*it.similarity;
     }

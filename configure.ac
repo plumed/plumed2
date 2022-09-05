@@ -231,6 +231,21 @@ PLUMED_CONFIG_ENABLE([doc],[documentation],[yes])
 PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
+AC_ARG_ENABLE([cxx],
+  AS_HELP_STRING([--enable-cxx], [11 or 14. To link libraries with headers that need this C++ level. Use --enable-cxx=none to remove -std=c++ flag]),
+  [
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) AC_MSG_ERROR([cxx level not supported])
+    esac
+    AC_MSG_NOTICE([Selected C++ level: $cxx_level])
+  ],
+  [
+    cxx_level="11"
+  ]
+)
 PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
@@ -244,7 +259,7 @@ PLUMED_CONFIG_ENABLE([bsymbolic],[use -Bsymbolic flag in making shared libraries
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
-PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[no])
+PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -258,16 +273,16 @@ PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
+PLUMED_CONFIG_ENABLE([popen],[search for popen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
-PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
-PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
-PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
-PLUMED_CONFIG_ENABLE([af_cpu],[arrayfire_cpu],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
+PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
+PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -341,7 +356,11 @@ if test $basic_warnings == true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  PLUMED_CHECK_CXXFLAG([-std=c++11])
+fi
+
+if test -n "$cxx_level"
+then
+  PLUMED_CHECK_CXXFLAG([-std=c++$cxx_level])
 fi
 
 if test $debug == true
@@ -657,6 +676,28 @@ fi
 AC_OPENMP
 
 if test $asmjit == true ; then
+  AC_MSG_CHECKING([whether architecture is X86/X64])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+      defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+      defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+this_is_not_x86_x64
+#endif
+  ])],
+  [AC_MSG_RESULT([yes])];
+  x86_x64=true,
+  [AC_MSG_RESULT([no]) ;
+  x86_x64=false])
+fi
+
+if test $asmjit == true && test $x86_x64 == false ; then
+  AC_MSG_WARN([asmjit does not support this architecture, it will be disabled])
+  asmjit=false
+fi
+
+if test $asmjit == true ; then
   found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
@@ -738,6 +779,10 @@ if test $getcwd == true ; then
   PLUMED_CHECK_PACKAGE([unistd.h],[getcwd],[__PLUMED_HAS_GETCWD])
 fi
 
+if test $popen == true ; then
+  PLUMED_CHECK_PACKAGE([cstdio],[popen],[__PLUMED_HAS_POPEN])
+fi
+
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
@@ -757,10 +802,6 @@ if test $gsl == true ; then
   else
     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
-fi
-
-if test $xdrfile == true ; then
-  PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
 
 if test $boost_graph == true ; then
@@ -890,10 +931,14 @@ if test "$debug" == false ; then
   AC_DEFINE([NDEBUG])
 fi
 
+AC_SUBST(use_debug_glibcxx)
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
 if test "$debug_glibcxx" == true ; then
   AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
   AC_DEFINE([_GLIBCXX_DEBUG])
+  use_debug_glibcxx=yes
 fi
 
 # this is necessary in many MPI implementations
@@ -965,7 +1010,7 @@ then
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
       else
         AC_MSG_WARN([-R option seems not working, disabling rpath])
       fi
@@ -1022,13 +1067,6 @@ then
 else
   AC_MSG_NOTICE([A PDF version of the manual will not be generated])
   make_pdfdoc=no
-fi
-
-### Look for xxd
-AC_CHECK_PROG([xxd],[xxd],[found])
-if test "$xxd" != found
-then
-  AC_MSG_ERROR([xxd should be installed for PLUMED to compile properly])
 fi
 
 AC_SUBST(program_can_run)
@@ -1133,7 +1171,7 @@ for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -
 do
   AC_MSG_CHECKING([whether C++ objects can be grouped with $test_LD_RO])
   
-  rm -f conftest-*
+  rm -f conftest*
   
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -1174,7 +1212,7 @@ for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
 do
   AC_MSG_CHECKING([whether static libraries can be created with $test_AR_CR])
   
-  rm -f conftest-*
+  rm -f conftest*
   
   cat << EOF > conftest-main.cpp
   void f(void);

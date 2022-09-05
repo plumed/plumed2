@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -56,26 +56,20 @@ Optimizer::Optimizer(const ActionOptions&ao):
   ustride_reweightfactor_(0),
   coeffssetid_prefix_(""),
   coeffs_wstride_(100),
-  coeffsOFiles_(0),
   coeffs_output_fmt_(""),
   gradient_wstride_(100),
-  gradientOFiles_(0),
   gradient_output_fmt_(""),
   hessian_wstride_(100),
   hessianOFiles_(0),
   hessian_output_fmt_(""),
   targetdist_averages_wstride_(0),
-  targetdist_averagesOFiles_(0),
   targetdist_averages_output_fmt_(""),
   nbiases_(0),
   bias_pntrs_(0),
   ncoeffssets_(0),
   coeffs_pntrs_(0),
-  aux_coeffs_pntrs_(0),
   gradient_pntrs_(0),
-  aver_gradient_pntrs_(0),
   hessian_pntrs_(0),
-  coeffs_mask_pntrs_(0),
   targetdist_averages_pntrs_(0),
   identical_coeffs_shape_(true),
   bias_output_active_(false),
@@ -118,7 +112,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       pntrs_targetdist_averages[k]->turnOnIterationCounter();
       targetdist_averages_pntrs_.push_back(pntrs_targetdist_averages[k]);
       //
-      CoeffsVector* aux_coeffs_tmp = new CoeffsVector(*pntrs_coeffs[k]);
+      auto aux_coeffs_tmp = Tools::make_unique<CoeffsVector>(*pntrs_coeffs[k]);
       std::string aux_label = pntrs_coeffs[k]->getLabel();
       if(aux_label.find("coeffs")!=std::string::npos) {
         aux_label.replace(aux_label.find("coeffs"), std::string("coeffs").length(), "aux_coeffs");
@@ -127,7 +121,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
         aux_label += "_aux";
       }
       aux_coeffs_tmp->setLabels(aux_label);
-      aux_coeffs_pntrs_.push_back(aux_coeffs_tmp);
+      aux_coeffs_pntrs_.emplace_back(std::move(aux_coeffs_tmp));
       AuxCoeffs(i).setValues( Coeffs(i) );
     }
   }
@@ -288,7 +282,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       parse("MONITOR_AVERAGES_GRADIENT_EXP_DECAY",averaging_exp_decay);
       aver_gradient_pntrs_.clear();
       for(unsigned int i=0; i<ncoeffssets_; i++) {
-        CoeffsVector* aver_gradient_tmp = new CoeffsVector(*gradient_pntrs_[i]);
+        auto aver_gradient_tmp = Tools::make_unique<CoeffsVector>(*gradient_pntrs_[i]);
         aver_gradient_tmp->clear();
         std::string aver_grad_label = aver_gradient_tmp->getLabel();
         if(aver_grad_label.find("gradient")!=std::string::npos) {
@@ -301,7 +295,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
         if(averaging_exp_decay>0) {
           aver_gradient_tmp->setupExponentiallyDecayingAveraging(averaging_exp_decay);
         }
-        aver_gradient_pntrs_.push_back(aver_gradient_tmp);
+        aver_gradient_pntrs_.emplace_back(std::move(aver_gradient_tmp));
       }
     }
   }
@@ -398,7 +392,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     }
     if(!getRestart()) {
       for(unsigned int i=0; i<coeffsOFiles_.size(); i++) {
-        coeffs_pntrs_[i]->writeToFile(*coeffsOFiles_[i],aux_coeffs_pntrs_[i],false);
+        coeffs_pntrs_[i]->writeToFile(*coeffsOFiles_[i],aux_coeffs_pntrs_[i].get(),false);
       }
     }
     if(coeffs_fnames.size()>0) {
@@ -494,7 +488,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
 
     coeffs_mask_pntrs_.resize(ncoeffssets_);
     for(unsigned int i=0; i<ncoeffssets_; i++) {
-      coeffs_mask_pntrs_[i] = new CoeffsVector(*coeffs_pntrs_[i]);
+      coeffs_mask_pntrs_[i] = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_[i]);
       coeffs_mask_pntrs_[i]->setLabels("mask");
       coeffs_mask_pntrs_[i]->setValues(1.0);
       coeffs_mask_pntrs_[i]->setOutputFmt("%f");
@@ -583,10 +577,6 @@ Optimizer::Optimizer(const ActionOptions&ao):
     }
 
     if(targetdist_averages_wstride_==0) {
-      for(unsigned int i=0; i<targetdist_averagesOFiles_.size(); i++) {
-        targetdist_averagesOFiles_[i]->close();
-        delete targetdist_averagesOFiles_[i];
-      }
       targetdist_averagesOFiles_.clear();
     }
 
@@ -765,7 +755,7 @@ Optimizer::~Optimizer() {
   //
   for(unsigned int i=0; i<ncoeffssets_; i++) {
     if(coeffsOFiles_.size()>0 && getIterationCounter()%coeffs_wstride_!=0) {
-      coeffs_pntrs_[i]->writeToFile(*coeffsOFiles_[i],aux_coeffs_pntrs_[i],false);
+      coeffs_pntrs_[i]->writeToFile(*coeffsOFiles_[i],aux_coeffs_pntrs_[i].get(),false);
     }
     if(targetdist_averagesOFiles_.size()>0 && iter_counter%targetdist_averages_wstride_!=0) {
       targetdist_averages_pntrs_[i]->writeToFile(*targetdist_averagesOFiles_[i]);
@@ -797,42 +787,6 @@ Optimizer::~Optimizer() {
   if(isTargetDistProjOutputActive() && getIterationCounter()%getTargetDistProjOutputStride()!=0) {
     writeTargetDistProjOutputFiles();
   }
-  //
-  for(unsigned int i=0; i<aux_coeffs_pntrs_.size(); i++) {
-    delete aux_coeffs_pntrs_[i];
-  }
-  aux_coeffs_pntrs_.clear();
-  //
-  for(unsigned int i=0; i<aver_gradient_pntrs_.size(); i++) {
-    delete aver_gradient_pntrs_[i];
-  }
-  aver_gradient_pntrs_.clear();
-  //
-  for(unsigned int i=0; i<coeffs_mask_pntrs_.size(); i++) {
-    delete coeffs_mask_pntrs_[i];
-  }
-  coeffs_mask_pntrs_.clear();
-  //
-  for(unsigned int i=0; i<coeffsOFiles_.size(); i++) {
-    coeffsOFiles_[i]->close();
-    delete coeffsOFiles_[i];
-  }
-  coeffsOFiles_.clear();
-  for(unsigned int i=0; i<gradientOFiles_.size(); i++) {
-    gradientOFiles_[i]->close();
-    delete gradientOFiles_[i];
-  }
-  gradientOFiles_.clear();
-  for(unsigned int i=0; i<hessianOFiles_.size(); i++) {
-    hessianOFiles_[i]->close();
-    delete hessianOFiles_[i];
-  }
-  hessianOFiles_.clear();
-  for(unsigned int i=0; i<targetdist_averagesOFiles_.size(); i++) {
-    targetdist_averagesOFiles_[i]->close();
-    delete targetdist_averagesOFiles_[i];
-  }
-  targetdist_averagesOFiles_.clear();
 }
 
 
@@ -992,10 +946,6 @@ void Optimizer::turnOffHessian() {
     bias_pntrs_[i]->disableHessian();
   }
   hessian_pntrs_.clear();
-  for(unsigned int i=0; i<hessianOFiles_.size(); i++) {
-    hessianOFiles_[i]->close();
-    delete hessianOFiles_[i];
-  }
   hessianOFiles_.clear();
 }
 
@@ -1144,24 +1094,20 @@ void Optimizer::updateOutputComponents() {
 
 
 void Optimizer::turnOffCoeffsOutputFiles() {
-  for(unsigned int i=0; i<coeffsOFiles_.size(); i++) {
-    coeffsOFiles_[i]->close();
-    delete coeffsOFiles_[i];
-  }
   coeffsOFiles_.clear();
 }
 
 
 void Optimizer::writeOutputFiles(const unsigned int coeffs_id) {
   if(coeffsOFiles_.size()>0 && iter_counter%coeffs_wstride_==0) {
-    coeffs_pntrs_[coeffs_id]->writeToFile(*coeffsOFiles_[coeffs_id],aux_coeffs_pntrs_[coeffs_id],false);
+    coeffs_pntrs_[coeffs_id]->writeToFile(*coeffsOFiles_[coeffs_id],aux_coeffs_pntrs_[coeffs_id].get(),false);
   }
   if(gradientOFiles_.size()>0 && iter_counter%gradient_wstride_==0) {
     if(aver_gradient_pntrs_.size()==0) {
       gradient_pntrs_[coeffs_id]->writeToFile(*gradientOFiles_[coeffs_id],false);
     }
     else {
-      gradient_pntrs_[coeffs_id]->writeToFile(*gradientOFiles_[coeffs_id],aver_gradient_pntrs_[coeffs_id],false);
+      gradient_pntrs_[coeffs_id]->writeToFile(*gradientOFiles_[coeffs_id],aver_gradient_pntrs_[coeffs_id].get(),false);
     }
   }
   if(hessianOFiles_.size()>0 && iter_counter%hessian_wstride_==0) {
@@ -1173,11 +1119,11 @@ void Optimizer::writeOutputFiles(const unsigned int coeffs_id) {
 }
 
 
-void Optimizer::setupOFiles(std::vector<std::string>& fnames, std::vector<OFile*>& OFiles, const bool multi_sim_single_files) {
+void Optimizer::setupOFiles(std::vector<std::string>& fnames, std::vector<std::unique_ptr<OFile>>& OFiles, const bool multi_sim_single_files) {
   plumed_assert(ncoeffssets_>0);
-  OFiles.resize(fnames.size(),NULL);
+  OFiles.resize(fnames.size());
   for(unsigned int i=0; i<fnames.size(); i++) {
-    OFiles[i] = new OFile();
+    OFiles[i] = Tools::make_unique<OFile>();
     OFiles[i]->link(*this);
     if(multi_sim_single_files) {
       unsigned int r=0;

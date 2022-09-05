@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -95,6 +95,76 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(GridBase*
 }
 
 
+double GridLinearInterpolation::getGridValueWithLinearInterpolation_ND(GridBase* grid_pntr, const std::vector<double>& arg) {
+  unsigned int dimension = grid_pntr->getDimension();
+  plumed_massert(dimension==arg.size(),"The grid dimensions do not match the the given arguments.");
+  // get points first
+  std::vector<std::vector<unsigned>> point_indices = GridLinearInterpolation::getAdjacentPoints(grid_pntr, arg);
+
+  unsigned npoints = point_indices.size();
+  // reserve space for the point vectors and values
+  std::vector<std::vector<double>> points(npoints, std::vector<double>(dimension));
+  std::vector<double> values(npoints);
+
+  // fill point and value vectors for all the grid points
+  for (unsigned i = 0; i < npoints; ++i) {
+    points[i] = grid_pntr->getPoint(point_indices[i]);
+    values[i] = grid_pntr->getValue(point_indices[i]);
+  }
+
+  return multiLinearInterpolation(arg, points, values, dimension);
+}
+
+
+double GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation_1D(GridBase* grid_pntr, const std::vector<double>& arg, std::vector<double>& der) {
+  plumed_massert(grid_pntr->getDimension()==1,"The grid is of the wrong dimension, should be one-dimensional");
+  plumed_massert(arg.size()==1,"input value is of the wrong size");
+
+  double x = arg[0];
+  double grid_dx = grid_pntr->getDx()[0];
+  double grid_min; Tools::convert( grid_pntr->getMin()[0], grid_min);
+
+  double xtoindex = (x-grid_min)/grid_dx;
+  std::vector<unsigned int> i0(1); i0[0] = unsigned(std::floor(xtoindex));
+  std::vector<unsigned int> i1(1); i1[0] = unsigned(std::ceil(xtoindex));
+  //
+  std::vector<double> d0 (1), d1 (1);
+  double x0 = grid_pntr->getPoint(i0)[0];
+  double x1 = grid_pntr->getPoint(i1)[0];
+  double y0 = grid_pntr->getValueAndDerivatives(i0, d0);
+  double y1 = grid_pntr->getValueAndDerivatives(i1, d1);
+  //
+  der.resize(1);
+  der[0] = linearInterpolation(arg[0],x0,x1,d0[0],d1[0]);
+  return linearInterpolation(arg[0],x0,x1,y0,y1);
+}
+
+
+double GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation_ND(GridBase* grid_pntr, const std::vector<double>& arg, std::vector<double>& der) {
+  unsigned int dimension = grid_pntr->getDimension();
+  plumed_massert(dimension==arg.size(),"The grid dimensions do not match the given arguments");
+  // get points first
+  std::vector<std::vector<unsigned>> point_indices = getAdjacentPoints(grid_pntr, arg);
+
+  unsigned npoints = point_indices.size();
+  // allocate space for the point vectors and values
+  std::vector<std::vector<double>> points(npoints, std::vector<double>(dimension));
+  std::vector<double> values(npoints);
+  std::vector<std::vector<double>> derivs(npoints, std::vector<double>(dimension));
+
+  // fill point, value and deriv vectors for all the grid points
+  for (unsigned i = 0; i < npoints; ++i) {
+    points[i] = grid_pntr->getPoint(point_indices[i]);
+    values[i] = grid_pntr->getValueAndDerivatives(point_indices[i], derivs[i]);
+  }
+
+  for (size_t i = 0; i < derivs.size(); ++i) {
+    der[i] = multiLinearInterpolation(arg, points, derivs[i], dimension);
+  }
+  return multiLinearInterpolation(arg, points, values, dimension);
+}
+
+
 double GridLinearInterpolation::getGridValueWithLinearInterpolation(GridBase* grid_pntr, const std::vector<double>& arg) {
   unsigned int dim = grid_pntr->getDimension();
   if(dim==1) {
@@ -104,9 +174,60 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation(GridBase* gr
     return getGridValueWithLinearInterpolation_2D(grid_pntr,arg);
   }
   else {
-    plumed_merror("GridLinearInterpolation::getGridValueWithLinearInterpolation only defined for 1D or 2D grids");
+    return getGridValueWithLinearInterpolation_ND(grid_pntr,arg);
   }
 }
+
+
+double GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation(GridBase* grid_pntr, const std::vector<double>& arg, std::vector<double>& der) {
+  unsigned int dim = grid_pntr->getDimension();
+  if(dim==1) {
+    return getGridValueAndDerivativesWithLinearInterpolation_1D(grid_pntr,arg,der);
+  }
+  return getGridValueAndDerivativesWithLinearInterpolation_ND(grid_pntr,arg,der);
+}
+
+
+// returns the adjacent Grid indices of all double arg as vector of vectors
+std::vector<std::vector<unsigned>> GridLinearInterpolation::getAdjacentIndices(GridBase* grid_pntr, const std::vector<double>& arg) {
+  unsigned int dimension = grid_pntr->getDimension();
+
+  std::vector<std::vector<unsigned>> indices(dimension, std::vector<unsigned>(2));
+  for (unsigned i=0; i<dimension; ++i) {
+    std::vector<unsigned> temp_indices(2);
+    //
+    double grid_dx = grid_pntr->getDx()[i];
+    double grid_min; Tools::convert( grid_pntr->getMin()[i], grid_min);
+    double xtoindex = (arg[i]-grid_min)/grid_dx;
+    temp_indices[0] = static_cast<unsigned>(std::floor(xtoindex));
+    temp_indices[1] = static_cast<unsigned>(std::ceil(xtoindex));
+    indices[i] = temp_indices;
+  }
+  return indices;
+}
+
+
+std::vector<std::vector<unsigned>> GridLinearInterpolation::getAdjacentPoints(GridBase* grid_pntr, const std::vector<double>& arg) {
+  // upper and lower grid indices as vectors for each dimension
+  std::vector<std::vector<unsigned>> grid_indices = getAdjacentIndices(grid_pntr, arg);
+  unsigned npoints = 1U << grid_pntr->getDimension();
+
+  // generate combination of grid indices if multidimensional to match the actual points
+  // the retrieved combinations will be in column-major order
+  std::vector<std::vector<unsigned>> point_indices(npoints);
+  for (unsigned i = 0; i < npoints; ++i) {
+    unsigned temp = i;
+    std::vector<unsigned> current_indices;
+    for (const auto& vec: grid_indices) {
+      unsigned j = temp % 2;
+      current_indices.push_back(vec[j]);
+      temp /= 2;
+    }
+    point_indices[i] = current_indices;
+  }
+  return point_indices;
+}
+
 
 
 

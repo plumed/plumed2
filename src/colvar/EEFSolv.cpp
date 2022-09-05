@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 
@@ -34,8 +34,6 @@
 #define KCAL_TO_KJ 4.184
 #define ANG_TO_NM 0.1
 #define ANG3_TO_NM3 0.001
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -59,15 +57,16 @@ The output from this collective variable, the free energy of solvation, can be u
 \par Examples
 
 \plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -86,12 +85,12 @@ private:
   double nl_buffer;
   unsigned nl_stride;
   unsigned nl_update;
-  vector<vector<unsigned> > nl;
-  vector<vector<bool> > nlexpo;
-  vector<vector<double> > parameter;
-  void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr);
-  map<string, map<string, string> > setupTypeMap();
-  map<string, vector<double> > setupValueMap();
+  std::vector<std::vector<unsigned> > nl;
+  std::vector<std::vector<bool> > nlexpo;
+  std::vector<std::vector<double> > parameter;
+  void setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr);
+  std::map<std::string, std::map<std::string, std::string> > setupTypeMap();
+  std::map<std::string, std::vector<double> > setupValueMap();
   void update_neighb();
 
 public:
@@ -120,7 +119,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   nl_stride(40),
   nl_update(0)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS", atoms);
   const unsigned size = atoms.size();
   bool tcorr = false;
@@ -140,7 +139,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 
   nl.resize(size);
   nlexpo.resize(size);
-  parameter.resize(size, vector<double>(4, 0));
+  parameter.resize(size, std::vector<double>(4, 0));
   setupConstants(atoms, parameter, tcorr);
 
   addValueWithDerivatives();
@@ -186,7 +185,7 @@ void EEFSolv::calculate() {
 
   const unsigned size=getNumberOfAtoms();
   double bias = 0.0;
-  vector<Vector> deriv(size, Vector(0,0,0));
+  std::vector<Vector> deriv(size, Vector(0,0,0));
 
   unsigned stride;
   unsigned rank;
@@ -203,7 +202,7 @@ void EEFSolv::calculate() {
 
   #pragma omp parallel num_threads(nt)
   {
-    vector<Vector> deriv_omp(size, Vector(0,0,0));
+    std::vector<Vector> deriv_omp(size, Vector(0,0,0));
     #pragma omp for reduction(+:bias) nowait
     for (unsigned i=rank; i<size; i+=stride) {
       const Vector posi = getPosition(i);
@@ -303,31 +302,31 @@ void EEFSolv::calculate() {
   }
 }
 
-void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
-  vector<vector<double> > parameter_temp;
-  parameter_temp.resize(atoms.size(), vector<double>(7,0));
-  map<string, vector<double> > valuemap;
-  map<string, map<string, string> > typemap;
+void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr) {
+  std::vector<std::vector<double> > parameter_temp;
+  parameter_temp.resize(atoms.size(), std::vector<double>(7,0));
+  std::map<std::string, std::vector<double> > valuemap;
+  std::map<std::string, std::map<std::string, std::string> > typemap;
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
-  vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  auto * moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   bool cter=false;
-  if (moldat.size() == 1) {
-    log << "  MOLINFO DATA found, using proper atom names\n";
+  if (moldat) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
 
       // Get atom and residue names
-      string Aname = moldat[0]->getAtomName(atoms[i]);
-      string Rname = moldat[0]->getResidueName(atoms[i]);
-      string Atype = typemap[Rname][Aname];
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      std::string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
+      if (Aname == "OT1" || Aname == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 2);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OB";
         } else {
@@ -336,11 +335,11 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
         }
         cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
+      if (Aname == "OT2" || (cter == true && Aname == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OH1";
         } else {
@@ -368,7 +367,7 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
       // Lookup atomtype in table or throw exception if its not there
       try {
         parameter_temp[i] = valuemap.at(Atype);
-      } catch (exception &e) {
+      } catch (const std::exception &e) {
         log << "Type: " << Atype << "  Name: " << Aname << "  Residue: " << Rname << "\n";
         error("Invalid atom type!\n");
       }
@@ -395,8 +394,8 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
   for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter_temp[i][1];
 }
 
-map<string, map<string, string> > EEFSolv::setupTypeMap()  {
-  map<string, map<string, string> > typemap;
+std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap()  {
+  std::map<std::string, std::map<std::string, std::string> > typemap;
   typemap = {
     { "ACE", {
         {"CH3", "CT3"},
@@ -900,9 +899,9 @@ map<string, map<string, string> > EEFSolv::setupTypeMap()  {
   return typemap;
 }
 
-map<string, vector<double> > EEFSolv::setupValueMap() {
+std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
   // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
-  map<string, vector<double> > valuemap;
+  std::map<std::string, std::vector<double> > valuemap;
   valuemap = {
     { "C", {
         ANG3_TO_NM3 * 14.720,

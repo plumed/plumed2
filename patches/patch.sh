@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 MANUAL="\
 
@@ -240,7 +240,7 @@ esac
 case "$action" in
   (patch)
     if [ ! -e "$diff" ] ; then
-      echo "ERROR: MD engine not supported (or mispelled)"
+      echo "ERROR: MD engine not supported (or misspelled)"
       exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
@@ -346,6 +346,11 @@ case "$action" in
       exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
+    for file in $PLUMED_PREPLUMED_IGNORE;
+    do
+      PREPLUMED=$(echo "$PREPLUMED" | grep -v "$file")
+    done
+
     if ! test "$PREPLUMED" ; then
       echo "ERROR: I cannot find any .preplumed file. There is nothing to save."
       exit 1
@@ -413,7 +418,7 @@ EOF
   ;;
   (revert)
     if [ ! -e "$diff" ] ; then
-      echo "ERROR: MD engine not supported (or mispelled)"
+      echo "ERROR: MD engine not supported (or misspelled)"
       exit 1
     fi
     if type -t plumed_before_revert 1>/dev/null ; then

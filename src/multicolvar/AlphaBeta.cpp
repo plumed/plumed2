@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2021 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,6 @@
 
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace multicolvar {
@@ -185,8 +183,8 @@ double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) cons
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   const double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  const double svalue = -0.5*coefficient[tindex]*sin(value-target[tindex]);
-  const double cvalue = coefficient[tindex]*(1.+cos(value-target[tindex]));
+  const double svalue = -0.5*coefficient[tindex]*std::sin(value-target[tindex]);
+  const double cvalue = coefficient[tindex]*(1.+std::cos(value-target[tindex]));
 
   dd0 *= svalue;
   dd1 *= svalue;
