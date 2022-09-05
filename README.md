@@ -45,11 +45,11 @@ Last tested with
 
 Software | Version
 ---------|---------
-PLUMED | 2.6.0
+PLUMED | 2.8.0
 Python | 3.7.7 (Homebrew)
-Jax | 0.1.68
-Jaxlib | 0.1.47
-Numpy | 1.17.0
+Jax | 0.2.17
+Jaxlib | 0.1.69
+Numpy | 1.19.5
 
 
 Copyright
