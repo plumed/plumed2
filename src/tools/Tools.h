@@ -101,10 +101,14 @@ public:
   static bool convertNoexcept(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
   static bool convertNoexcept(const std::string & str,long int & t);
+/// Convert a string to a long long int, reading it
+  static bool convertNoexcept(const std::string & str,long long int & t);
 /// Convert a string to an unsigned int, reading it
   static bool convertNoexcept(const std::string & str,unsigned & t);
 /// Convert a string to a long unsigned int, reading it
   static bool convertNoexcept(const std::string & str,long unsigned & t);
+/// Convert a string to a long long unsigned int, reading it
+  static bool convertNoexcept(const std::string & str,long long unsigned & t);
 /// Convert a string to a atom number, reading it
   static bool convertNoexcept(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)

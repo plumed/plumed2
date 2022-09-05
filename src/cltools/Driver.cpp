@@ -200,7 +200,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc) override;
-  void evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
+  void evaluateNumericalDerivatives( const long long int& step, PlumedMain& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
   std::string description()const override;
@@ -502,7 +502,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   PlumedMain p;
   p.cmd("setRealPrecision",(int)sizeof(real));
   int checknatoms=-1;
-  long int step=0;
+  long long int step=0;
   parse("--initial-step",step);
 
   if(restart) p.cmd("setRestart",1);
@@ -646,7 +646,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         char xa[9];
         int xb,xc,xd;
         double t;
-        std::sscanf(line.c_str(),"%8s %ld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
+        std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
         if (lstep) {
           p.cmd("setTimestep",real(t));
           lstep = false;
@@ -957,7 +957,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
       }
 
-      p.cmd("setStepLong",step);
+      p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
 
       if(debug_dd) {
@@ -984,7 +984,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       p.cmd("setBox",cell.data(),9);
       p.cmd("setVirial",virial.data(),9);
     } else {
-      p.cmd("setStepLong",step);
+      p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
     }
     p.cmd("calc");
@@ -1086,7 +1086,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 }
 
 template<typename real>
-void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
+void Driver<real>::evaluateNumericalDerivatives( const long long int& step, PlumedMain& p, const std::vector<real>& coordinates,
     const std::vector<real>& masses, const std::vector<real>& charges,
     std::vector<real>& cell, const double& base, std::vector<real>& numder ) {
 
@@ -1100,7 +1100,7 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
   for(int i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j) {
       pos[i][j]=pos[i][j]+delta;
-      p.cmd("setStepLong",step);
+      p.cmd("setStepLongLong",step);
       p.cmd("setPositions",&pos[0][0],3*natoms);
       p.cmd("setForces",&fake_forces[0],3*natoms);
       p.cmd("setMasses",&masses[0],natoms);
@@ -1124,7 +1124,7 @@ void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMai
       for(int j=0; j<natoms; ++j) pos[j]=pbc.realToScaled( pos[j] );
       cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box);
       for(int j=0; j<natoms; j++) pos[j]=pbc.scaledToReal( pos[j] );
-      p.cmd("setStepLong",step);
+      p.cmd("setStepLongLong",step);
       p.cmd("setPositions",&pos[0][0],3*natoms);
       p.cmd("setForces",&fake_forces[0],3*natoms);
       p.cmd("setMasses",&masses[0],natoms);

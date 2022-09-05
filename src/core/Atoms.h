@@ -138,7 +138,7 @@ class Atoms
   };
 
   DomainDecomposition dd;
-  long int ddStep;  //last step in which dd happened
+  long long int ddStep;  //last step in which dd happened
 
   void share(const std::vector<AtomNumber>&);
 
@@ -167,7 +167,7 @@ public:
   int getNatoms()const;
   int getNVirtualAtoms()const;
 
-  const long int& getDdStep()const;
+  const long long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
   void getLocalMasses(std::vector<double>&);
@@ -251,7 +251,7 @@ int Atoms::getNVirtualAtoms()const {
 }
 
 inline
-const long int& Atoms::getDdStep()const {
+const long long int& Atoms::getDdStep()const {
   return ddStep;
 }
 

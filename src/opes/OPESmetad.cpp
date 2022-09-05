@@ -174,7 +174,7 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned long counter_;
+  unsigned long long counter_;
   std::size_t ncv_;
 
   double kbt_;
@@ -184,7 +184,7 @@ private:
   std::vector<double> sigma0_;
   std::vector<double> sigma_min_;
   unsigned adaptive_sigma_stride_;
-  unsigned long adaptive_counter_;
+  unsigned long long adaptive_counter_;
   std::vector<double> av_cv_;
   std::vector<double> av_M2_;
   bool fixed_sigma_;
@@ -750,7 +750,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
+        log.printf("    a total of %llu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
         convertKernelsToState=true;
       }
       ifile.reset(false);
