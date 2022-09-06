@@ -309,6 +309,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         step=val.get<long int>();
         atoms.startStep();
         break;
+      case cmd_setStepLongLong:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        step=val.get<long long int>();
+        atoms.startStep();
+        break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);

@@ -74,9 +74,9 @@ private:
   //
   std::string targetdist_grid_label_;
   //
-  long int step_of_last_biasgrid_update;
-  long int step_of_last_biaswithoutcutoffgrid_update;
-  long int step_of_last_fesgrid_update;
+  long long int step_of_last_biasgrid_update;
+  long long int step_of_last_biaswithoutcutoffgrid_update;
+  long long int step_of_last_fesgrid_update;
   //
   std::unique_ptr<Grid> bias_grid_pntr_;
   std::unique_ptr<Grid> bias_withoutcutoff_grid_pntr_;
@@ -135,14 +135,14 @@ public:
   void setupBiasGrid(const bool usederiv=false);
   void updateBiasGrid();
   void resetStepOfLastBiasGridUpdate() {step_of_last_biasgrid_update = -1000;}
-  void setStepOfLastBiasGridUpdate(long int step) {step_of_last_biasgrid_update = step;}
-  long int getStepOfLastBiasGridUpdate() const {return step_of_last_biasgrid_update;}
+  void setStepOfLastBiasGridUpdate(long long int step) {step_of_last_biasgrid_update = step;}
+  long long int getStepOfLastBiasGridUpdate() const {return step_of_last_biasgrid_update;}
   void writeBiasGridToFile(OFile&, const bool append=false) const;
   //
   void updateBiasWithoutCutoffGrid();
   void resetStepOfLastBiasWithoutCutoffGridUpdate() {step_of_last_biaswithoutcutoffgrid_update = -1000;}
-  void setStepOfLastBiasWithoutCutoffGridUpdate(long int step) {step_of_last_biaswithoutcutoffgrid_update = step;}
-  long int getStepOfLastBiasWithoutCutoffGridUpdate() const {return step_of_last_biaswithoutcutoffgrid_update;}
+  void setStepOfLastBiasWithoutCutoffGridUpdate(long long int step) {step_of_last_biaswithoutcutoffgrid_update = step;}
+  long long int getStepOfLastBiasWithoutCutoffGridUpdate() const {return step_of_last_biaswithoutcutoffgrid_update;}
   void writeBiasWithoutCutoffGridToFile(OFile&, const bool append=false) const;
   //
   void setBiasMinimumToZero();
@@ -151,8 +151,8 @@ public:
   void setupFesGrid();
   void updateFesGrid();
   void resetStepOfLastFesGridUpdate() {step_of_last_fesgrid_update = -1000;}
-  void setStepOfLastFesGridUpdate(long int step) {step_of_last_fesgrid_update = step;}
-  long int getStepOfLastFesGridUpdate() const {return step_of_last_fesgrid_update;}
+  void setStepOfLastFesGridUpdate(long long int step) {step_of_last_fesgrid_update = step;}
+  long long int getStepOfLastFesGridUpdate() const {return step_of_last_fesgrid_update;}
   void writeFesGridToFile(OFile&, const bool append=false) const;
   //
   void setupFesProjGrid();

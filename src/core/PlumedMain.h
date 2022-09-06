@@ -137,7 +137,7 @@ private:
   Citations& citations=*citations_fwd;
 
 /// Present step number.
-  long int step;
+  long long int step;
 
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
@@ -359,7 +359,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const {return step;}
+  long long int getStep()const {return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library

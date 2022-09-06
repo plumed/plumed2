@@ -136,7 +136,7 @@ private:
   std::vector<double> norm_;
 
 //optimizer-related stuff
-  long unsigned mean_counter_;
+  long long unsigned mean_counter_;
   unsigned mean_weight_tau_;
   unsigned alpha_size_;
   unsigned sym_alpha_size_;
@@ -675,7 +675,7 @@ void VesDeltaF::update_alpha()
   }
 //calculate the increment and update alpha
   mean_counter_++;
-  long unsigned mean_weight=mean_counter_;
+  long long unsigned mean_weight=mean_counter_;
   if(mean_weight_tau_>0 && mean_weight_tau_<mean_counter_)
     mean_weight=mean_weight_tau_;
   std::vector<double> damping(alpha_size_);

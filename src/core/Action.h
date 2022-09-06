@@ -116,7 +116,7 @@ public:
   void clearDependencies();
 
 /// Return the present timestep
-  long int getStep()const;
+  long long int getStep()const;
 
 /// Return the present time
   double getTime()const;
