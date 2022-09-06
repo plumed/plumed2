@@ -26,7 +26,6 @@
 #include <cmath>
 #include <iostream>
 #include "Tools.h"
-#include "../isdb/tools/OpenMP.h"
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
@@ -34,7 +33,7 @@
 
 namespace PLMD {
 
-RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false) {}
+RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),reference_center_is_removed(false),positions_center_is_calculated(false),positions_center_is_removed(false),rr11(0.0) {}
 
 ///
 /// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the
@@ -56,7 +55,7 @@ void RMSD::set(const std::vector<double> & align, const std::vector<double> & di
   if (gpu) {
 #ifdef __PLUMED_HAS_ARRAYFIRE
     const unsigned n=reference.size();
-    setReference_gpu(reference_device, reference ,n);
+    setReference_gpu(reference_device, reference,n);
     setAlign_gpu(align_device, align, n);
     setDisplace_gpu(displace_device, displace, n);
     setrr11_gpu(rr11);
@@ -482,7 +481,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 #ifdef OLDRMSD
 // notice that in the current implementation the safe argument only makes sense for
 // align==displace
-void RMSD::optimalAlignment_gpu(const std::vector<Vector> & positions, 
+void RMSD::optimalAlignment_gpu(const std::vector<Vector> & positions,
                                 double & rr00, double & rr11, Tensor & rr01, Vector & cpositions, int deviceid)const {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   af::array positions_device;
@@ -506,7 +505,7 @@ void RMSD::optimalAlignment_gpu(const std::vector<Vector> & positions,
 // first expensive loop: compute centers on GPU
   // 3,1,1,1
   cpositions_device = af::sum((positions_device * af::tile(align_device,3,1)).T()).T();
-  
+
 // second expensive loop: compute second moments wrt centers on GPU
   // 1,1,1,1
   rr00 = af::sum<double>(af::sum((positions_device - af::tile(cpositions_device,1,n))*(positions_device - af::tile(cpositions_device,1,n)))*align_device);
@@ -536,7 +535,7 @@ void RMSD::optimalAlignment_cpu(const  std::vector<double>  & align,
                                 const std::vector<Vector> & positions,
                                 const std::vector<Vector> & reference,
                                 double & rr00, double & rr11, Tensor & rr01, Vector & cpositions)const {
-const unsigned n=reference.size();
+  const unsigned n=reference.size();
 // first expensive loop: compute centers
   for(unsigned iat=0; iat<n; iat++) {
     double w=align[iat];
@@ -1094,61 +1093,61 @@ void RMSDCoreData::doCoreCalc_gpu(bool safe,bool alEqDis,bool only_rotation) {
   // GPU
   // on gpu only the master rank run the calculation
   // if(comm_rank==0) {
-    std::vector<double> positions_host;
-    std::vector<double> reference_host;
-    std::vector<double> cp_host;
-    std::vector<double> cr_host;
-    std::vector<double> align_host;
-    positions_host.resize(3*n);
-    reference_host.resize(3*n);
-    cp_host.resize(3);
-    cr_host.resize(3);
-    align_host.resize(n);
-    cp_host[0] = cp[0];  cp_host[1] = cp[1];  cp_host[2] = cp[2];
-    cr_host[0] = cr[0];  cr_host[1] = cr[1];  cr_host[2] = cr[2];
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for (unsigned iat=0; iat<n; iat++) {
-      positions_host[3*iat]   = positions[iat][0];   // .d[0]是私有变量需要调用[]访问
-      positions_host[3*iat+1] = positions[iat][1];
-      positions_host[3*iat+2] = positions[iat][2];
-      reference_host[3*iat]   = reference[iat][0];
-      reference_host[3*iat+1] = reference[iat][1];
-      reference_host[3*iat+2] = reference[iat][2];
-      align_host[iat] = align[iat];
-    }
+  std::vector<double> positions_host;
+  std::vector<double> reference_host;
+  std::vector<double> cp_host;
+  std::vector<double> cr_host;
+  std::vector<double> align_host;
+  positions_host.resize(3*n);
+  reference_host.resize(3*n);
+  cp_host.resize(3);
+  cr_host.resize(3);
+  align_host.resize(n);
+  cp_host[0] = cp[0];  cp_host[1] = cp[1];  cp_host[2] = cp[2];
+  cr_host[0] = cr[0];  cr_host[1] = cr[1];  cr_host[2] = cr[2];
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned iat=0; iat<n; iat++) {
+    positions_host[3*iat]   = positions[iat][0];   // .d[0]是私有变量需要调用[]访问
+    positions_host[3*iat+1] = positions[iat][1];
+    positions_host[3*iat+2] = positions[iat][2];
+    reference_host[3*iat]   = reference[iat][0];
+    reference_host[3*iat+1] = reference[iat][1];
+    reference_host[3*iat+2] = reference[iat][2];
+    align_host[iat] = align[iat];
+  }
 
-    // //set GPU device no.
-    // af::setDevice(2);
-    //3,n,1,1
-    positions_device = af::array(3, n, &positions_host.front());
-    reference_device = af::array(3, n, &reference_host.front());
-    // 3,1,1,1
-    cp_device = af::array(3, 1, &cp_host.front());
-    cr_device = af::array(3, 1, &cr_host.front());
-    // 1,n,1,1
-    align_device = af::array(1, n, &align_host.front());
+  // //set GPU device no.
+  // af::setDevice(2);
+  //3,n,1,1
+  positions_device = af::array(3, n, &positions_host.front());
+  reference_device = af::array(3, n, &reference_host.front());
+  // 3,1,1,1
+  cp_device = af::array(3, 1, &cp_host.front());
+  cr_device = af::array(3, 1, &cr_host.front());
+  // 1,n,1,1
+  align_device = af::array(1, n, &align_host.front());
 
-    rr00 = af::sum<double>(af::sum((positions_device - af::tile(cp_device,1,n))*(positions_device - af::tile(cp_device,1,n)))*align_device);
-    rr11 = af::sum<double>(af::sum((reference_device - af::tile(cr_device,1,n))*(reference_device - af::tile(cr_device,1,n)))*align_device);
-    // 3,3,1,1 -> 9,1,1,1
-    rr01_device = af::flat( af::matmul((positions_device - af::tile(cp_device,1,n))*af::tile(align_device,3,1),(reference_device - af::tile(cr_device,1,n)).T()) );
-  
-    double * rr01_host = rr01_device.host<double>();
+  rr00 = af::sum<double>(af::sum((positions_device - af::tile(cp_device,1,n))*(positions_device - af::tile(cp_device,1,n)))*align_device);
+  rr11 = af::sum<double>(af::sum((reference_device - af::tile(cr_device,1,n))*(reference_device - af::tile(cr_device,1,n)))*align_device);
+  // 3,3,1,1 -> 9,1,1,1
+  rr01_device = af::flat( af::matmul((positions_device - af::tile(cp_device,1,n))*af::tile(align_device,3,1),(reference_device - af::tile(cr_device,1,n)).T()) );
 
-    rr01[0][0] = rr01_host[0];
-    rr01[1][0] = rr01_host[1];
-    rr01[2][0] = rr01_host[2];
-    rr01[0][1] = rr01_host[3];
-    rr01[1][1] = rr01_host[4];
-    rr01[2][1] = rr01_host[5];
-    rr01[0][2] = rr01_host[6];
-    rr01[1][2] = rr01_host[7];
-    rr01[2][2] = rr01_host[8];
+  double * rr01_host = rr01_device.host<double>();
 
-    delete[] rr01_host;
-  
+  rr01[0][0] = rr01_host[0];
+  rr01[1][0] = rr01_host[1];
+  rr01[2][0] = rr01_host[2];
+  rr01[0][1] = rr01_host[3];
+  rr01[1][1] = rr01_host[4];
+  rr01[2][1] = rr01_host[5];
+  rr01[0][2] = rr01_host[6];
+  rr01[1][2] = rr01_host[7];
+  rr01[2][2] = rr01_host[8];
+
+  delete[] rr01_host;
+
   // }
-  
+
   // the quaternion matrix: this is internal
   Tensor4d m;
 
@@ -1267,7 +1266,7 @@ void RMSDCoreData::doCoreCalc_gpu(bool safe,bool alEqDis,bool only_rotation) {
   rotation_device = af::array(3, 3, &rotation_host.front());
   // 3,n,1,1
   d_device = positions_device - af::tile(cp_device,1,n) - af::matmul(rotation_device, reference_device - af::tile(cr_device,1,n));
-  
+
 
   // ddist_drotation if needed
 
@@ -1495,6 +1494,8 @@ double RMSDCoreData::getDistance_gpu(bool squared) {
   }
   hasDistance=true;
   return dist;
+#else
+  return 0.0;
 #endif
 }
 double RMSDCoreData::getDistance_cpu(bool squared) {

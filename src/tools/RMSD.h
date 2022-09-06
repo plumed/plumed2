@@ -84,8 +84,8 @@ class RMSD
   bool positions_center_is_calculated;
   bool positions_center_is_removed;
 // arrayfire GPU variable for rmsd calculation
-#ifdef __PLUMED_HAS_ARRAYFIRE
   double rr11;
+#ifdef __PLUMED_HAS_ARRAYFIRE
   af::array reference_device;
   af::array align_device;
   af::array displace_device;
@@ -153,7 +153,7 @@ public:
                          std::vector<Vector>  & derivatives,
                          std::vector<Vector>  & displacement,
                          bool squared=false)const;
-  void optimalAlignment_gpu(const std::vector<Vector> & positions, 
+  void optimalAlignment_gpu(const std::vector<Vector> & positions,
                             double & rr00, double & rr11, Tensor & rr01, Vector & cpositions, int deviceid) const;
   void optimalAlignment_cpu(const  std::vector<double>  & align,
                             const std::vector<Vector> & positions,

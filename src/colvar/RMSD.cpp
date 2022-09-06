@@ -192,7 +192,7 @@ RMSD::RMSD(const ActionOptions&ao):
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
   parseFlag("NOPBC",nopbc);
-  
+
   std::string gpuuse;
   gpuuse.assign("off");
   parse("GPU",gpuuse);
