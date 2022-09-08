@@ -210,8 +210,7 @@ effsize=0
 
 ### Prepare the grid ###
 grid_bin_x=int(args_grid_bin.split(',')[0])
-if period_x==0:
-  grid_bin_x+=1 #same as plumed sum_hills
+grid_bin_x+=1 #same as plumed sum_hills
 if args_grid_min is None:
   if period_x==0: #otherwise is already set
     grid_min_x=min(cv_x)
@@ -229,6 +228,9 @@ else:
   else:
     grid_max_x=float(args_grid_max.split(',')[0])
 grid_cv_x=np.linspace(grid_min_x,grid_max_x,grid_bin_x)
+if period_x==grid_cv_x[-1]-grid_cv_x[0]: #first and last are the same if periodic
+  grid_cv_x=grid_cv_x[:-1]
+  grid_bin_x-=1
 fes=np.zeros(grid_bin_x)
 if calc_der:
   der_fes_x=np.zeros(grid_bin_x)
@@ -236,8 +238,7 @@ if dim2:
   if len(args_grid_bin.split(','))!=2:
     sys.exit(error%('two comma separated integers expected after --bin'))
   grid_bin_y=int(args_grid_bin.split(',')[1])
-  if period_y==0:
-    grid_bin_y+=1 #same as plumed sum_hills
+  grid_bin_y+=1 #same as plumed sum_hills
   if args_grid_min is None:
     if period_y==0: #otherwise is already set
       grid_min_y=min(cv_y)
@@ -259,7 +260,10 @@ if dim2:
     else:
       grid_max_y=float(args_grid_max.split(',')[1])
   grid_cv_y=np.linspace(grid_min_y,grid_max_y,grid_bin_y)
-  x,y=np.meshgrid(grid_cv_x,grid_cv_y,indexing='ij')
+  if period_y==grid_cv_y[-1]-grid_cv_y[0]: #first and last are the same if periodic
+    grid_cv_y=grid_cv_y[:-1]
+    grid_bin_y-=1
+  x,y=np.meshgrid(grid_cv_x,grid_cv_y)
   fes=np.zeros((grid_bin_x,grid_bin_y))
   if calc_der:
     der_fes_x=np.zeros((grid_bin_x,grid_bin_y))
