@@ -1,0 +1,7 @@
+2022年  7月 27日 水曜日 10:41:16 JST
+Running regtest in /home/watanabe/plumed2-master/regtest/logmfd/rt-logmfd-nve
+++ Test type: simplemd
+++ Arguments: --plumed plumed.dat < in
+++ Processors: 0
+/home/watanabe/plumed2-master/regtest/logmfd/rt-logmfd-nve/tmp
+Checking for logmfd
