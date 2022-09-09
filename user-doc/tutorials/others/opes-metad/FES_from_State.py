@@ -180,8 +180,7 @@ for n in range(len(fields_pos)-1):
 
 ### Prepare the grid ###
   grid_bin_x=int(args.grid_bin.split(',')[0])
-  if period_x==0:
-    grid_bin_x+=1 #same as plumed sum_hills
+  grid_bin_x+=1 #same as plumed sum_hills
   if args.grid_min is None:
     if period_x==0: #otherwise is already set
       grid_min_x=min(center_x)
@@ -199,12 +198,14 @@ for n in range(len(fields_pos)-1):
     else:
       grid_max_x=float(args.grid_max.split(',')[0])
   grid_cv_x=np.linspace(grid_min_x,grid_max_x,grid_bin_x)
+  if period_x==grid_cv_x[-1]-grid_cv_x[0]: #first and last are the same if periodic
+    grid_cv_x=grid_cv_x[:-1]
+    grid_bin_x-=1
   if dim2:
     if len(args.grid_bin.split(','))!=2:
       sys.exit('two comma separated integers expected after --bin')
     grid_bin_y=int(args.grid_bin.split(',')[1])
-    if period_y==0:
-      grid_bin_y+=1 #same as plumed sum_hills
+    grid_bin_y+=1 #same as plumed sum_hills
     if args.grid_min is None:
       if period_y==0: #otherwise is already set
         grid_min_y=min(center_y)
@@ -226,6 +227,9 @@ for n in range(len(fields_pos)-1):
       else:
         grid_max_y=float(args.grid_max.split(',')[1])
     grid_cv_y=np.linspace(grid_min_y,grid_max_y,grid_bin_y)
+    if period_y==grid_cv_y[-1]-grid_cv_y[0]: #first and last are the same if periodic
+      grid_cv_y=grid_cv_y[:-1]
+      grid_bin_y-=1
     x,y=np.meshgrid(grid_cv_x,grid_cv_y)
   if calc_deltaF and (ts<=grid_min_x or ts>=grid_max_x):
     print(' +++ WARNING: the provided --deltaFat is out of the CV grid +++')

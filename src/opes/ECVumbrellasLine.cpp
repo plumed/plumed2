@@ -33,7 +33,8 @@ Any set of collective variables \f$\mathbf{s}\f$ can be used as ARG.
 The Gaussian umbrellas are placed along a line, from CV_MIN to CV_MAX.
 The umbrellas are placed at a distance SIGMA*SPACING from each other, if you need more flexibility use \ref ECV_UMBRELLAS_FILE.
 The unbiased fluctuations in the basin usually are a reasonable guess for the value of SIGMA.
-The umbrellas can be multidimensional, but you should rescale the dimensions so that a single SIGMA can be used.
+Typically, a SPACING greater than 1 can lead to faster convergence, by reducing the total number of umbrellas.
+The umbrellas can be multidimensional, but the CVs dimensions should be rescaled since a single SIGMA must be used.
 
 The keyword BARRIER can be helpful to avoid breaking your system due to a too strong initial bias.
 If you think the placed umbrellas will not cover the whole unbiased probability distribution you should add it explicitly to the target, with the flag ADD_P0, for more robust convergence.

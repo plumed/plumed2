@@ -2,7 +2,7 @@
 \page masterclass-22-03 PLUMED Masterclass 22.3: OPES method
 
 \authors Michele Invernizzi
-\date Fabruary 28, 2022
+\date February 28, 2022
 
 \section masterclass-22-03-aims Aims
 
@@ -82,8 +82,7 @@ git clone https://github.com/invemichele/masterclass-22-03.git
 \endverbatim
 
 The repository contains all the data to run the simulations, together with the scripts to analyse them.
-It also contains some annotated **Jupyter notebooks**, that will guide us through this tutorial. Most of the information can be found there, and this page is mainly meant as an overview of the content of the notebooks.
-The notebooks will be updated with all the solutions after lecture II.
+It also contains some annotated [Jupyter notebooks](https://github.com/invemichele/masterclass-22-03/tree/master/notebooks), that will guide us through this tutorial. Most of the information can be found there, and this page is mainly meant as an overview of the content of the notebooks.
 
 As done in some previous masterclass, we will play with a toy system, the small alanine dipeptide molecule in vacuum (ala2).
 It has the advantage of being a well-known system, cheap to simulate and with a higher level of complexity compared to a 2D model potential as the one used in this other \ref opes-metad.
@@ -151,11 +150,11 @@ We also explain a simple procedure that is used to automatically set a reasonabl
 
 Next, we present another expanded ensemble that can also be sampled by replica exchange.
 We call it multiumbrella and it is composed by all the distributions sampled by a typical multiple windows umbrella sampling simulation.
-In this kind of umbrella sampling, one chooses a CV and runs several simulations each one with a parabolic bias potentials at a different CV location (see \ref masterclass-21-3).
+In this kind of umbrella sampling, one chooses a CV and runs several simulations each one with a parabolic bias potential at a different CV location (see \ref masterclass-21-3).
 We can use OPES to sample an expanded target distribution that is composed of all of these combined.
 
 In multiple windows umbrella sampling, the free energy difference between the windows is estimated during postprocessing (e.g. with WHAM), in OPES this is done on-the-fly at simulation time.
-The advantages of this is that choosing the number and location of the umbrellas becomes easier, and having a single longer simulation can also help with sampling orthogonal slow degrees of freedom.
+The main advantages are that choosing the number and location of the umbrellas becomes easier, and having a single longer simulation can also help with sampling orthogonal slow degrees of freedom.
 
 We choose as CV the \f$\phi\f$ angle.
 The ECVs we need for this type of expansion are the following:
@@ -196,7 +195,7 @@ However, while in a replica exchange scheme each ECV requires its own replica, w
 
 The way we combine expansions is to create a grid with all possible combinations of temperature ECVs and umbrella ECVs.
 So, if we have 10 ECVs for the temperature expansion and 20 for the multiumbrella one, we end up with 200 combined ECVs.
-This will become more clear once we look at the notebook and the simulation output.
+This will become clearer once we look at the notebook and the simulation output.
 
 From the point of view of the plumed input things are quite straightforward.
 For a combined multithermal-multiumbrella simulation it should look similar to this one:
@@ -235,7 +234,7 @@ This STATE file contains the compressed kernels used by OPES at a given time to 
 
 \subsection masterclass-22-03-ex-2-2 2.2 Biasing two good CVs
 
-Next we move to biasing both the Ramachandran angles of ala2.
+Next, we move to biasing both the Ramachandran angles of ala2.
 A minimal plumed input to do this is the following:
 
 \plumedfile
@@ -246,7 +245,7 @@ opes: OPES_METAD ARG=phi,psi PACE=500 BARRIER=40
 
 This example gives us a nice opportunity to visualize the kernel compression algorithm in action.
 We can also get an idea of the differences between \ref OPES_METAD and \ref OPES_METAD_EXPLORE methods.
-The plumed input are identical:
+The plumed inputs are identical:
 
 \plumedfile
 phi: TORSION ATOMS=5,7,9,15
