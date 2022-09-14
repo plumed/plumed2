@@ -162,7 +162,10 @@ PRINT ARG=sasa,bias.* STRIDE=1 FILE=colvar
 \section masterclass-22-13-system The system: Refolding of a model peptide
 
 For this tutorial we will work on a model peptide called (AAQAA)\f$_3\f$. (AAQAA)\f$_3\f$ is a short peptide with known \f$\alpha\f$-helix structure. 
-We will simulate this peptide starting from an unfolded conformation, and we will see in which conditions (of temperature, pressure, and solution composition) it folds back to a \f$\alpha\f$-helix, and which conditions promote instead an unfolded conformation. 
+We will simulate this peptide starting from an unfolded conformation, and we will see in which conditions (of temperature, pressure, and solution composition) it folds back to a \f$\alpha\f$-helix, and which conditions promote instead an unfolded conformation.
+
+\image html masterclass-22-13-aaqaa_min.png "Starting (unfolded) conformation of the model peptide used for the simulations."
+ 
 We will perform the simulations in implicit solvent, using the AMBER ff03 force field.
  
 For this tutorial, the following conditions will be explored:
@@ -319,6 +322,10 @@ The simulation should take 1-2 hours on a common laptop, so you should not need 
 At the end of the simulation, you will have a COLVAR file that lists the evolution of radius of gyration and secondary structure content of the protein as function of time. Try to plot the columns of the COLVAR file versus time. 
 Does the protein fold? If yes, how fast is the process? Do you think the process would be equally fast in explicit solvent?
 
+Here is the evolution of the helical content of (AAQAA)\f$_3\f$ over time during the simulation:
+
+\image html masterclass-22-13-tvsalpha.png "Evolution of helical content over time during the simulation of exercise 1."
+
 You can also use the script_rg_alpha.bash file provided to have a 2D representation of the conformational space explored by the protein during the simulation. Just type:
 
 \verbatim
@@ -326,7 +333,9 @@ chmod +x script_rg_alpha.bash
 ./script_rg_alpha.bash COLVAR
 \endverbatim
 
-The script generates a file called normFEL.dat that can be visualized in gnuplot using the picture_rg_alpha.gnu script provided.
+The script generates a file called normFEL.dat that can be visualized in gnuplot using the picture_rg_alpha.gnu script provided. You should obtain something similar to:
+
+\image html masterclass-22-13-FES_rg_alpha.png "Free energy surface showing radius of gyration and helical content of the protein during the simulation of exercise 1."
 
 \section masterclass-22-13-ex-2-5 Exercises 2-5: Introducing the free energy of transfer contribution to implicit solvent simulations
 
