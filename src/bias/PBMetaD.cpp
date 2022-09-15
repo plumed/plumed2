@@ -495,7 +495,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         double a,b;
         Tools::convert(gmin[i],a);
         Tools::convert(gmax[i],b);
-        unsigned n=((b-a)/gspacing[i])+1;
+        unsigned n=std::ceil(((b-a)/gspacing[i]));
         if(gbin[i]<n) gbin[i]=n;
       }
   }
