@@ -186,7 +186,7 @@ void gmx::LegacySimulator::do_md()
     gmx_global_stat_t           gstat;
     t_graph*                    graph = nullptr;
     gmx_shellfc_t*              shellfc;
-    gmx_bool                    bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool                    bSumEkinhOld, bDoReplEx, bDoReplExPrev, bExchanged, bNeedRepartition;
     gmx_bool                    bTemp, bPres, bTrotter;
     real                        dvdl_constr;
     std::vector<RVec>           cbuf;
@@ -744,6 +744,7 @@ void gmx::LegacySimulator::do_md()
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
+    bDoReplEx        = FALSE;
 
     step     = ir->init_step;
     step_rel = 0;
@@ -840,6 +841,7 @@ void gmx::LegacySimulator::do_md()
                            && (!bFirstStep));
         }
 
+        bDoReplExPrev = bDoReplEx;
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
                      && do_per_step(step, replExParams.exchangeInterval));
 
@@ -1041,7 +1043,7 @@ void gmx::LegacySimulator::do_md()
         }
         /* END PLUMED HREX */
 
-        checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
+        checkpointHandler->decideIfCheckpointingThisStep(bNS||bDoReplExPrev, bFirstStep, bLastStep);
 
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
