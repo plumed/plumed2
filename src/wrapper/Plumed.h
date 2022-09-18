@@ -3820,7 +3820,7 @@ plumed_safeptr plumed_f_safeptr_ ## type_ ## suffix(void*val,__PLUMED_WRAPPER_ST
   safe.ptr=val; \
   safe.nelem=nelem; \
   safe.shape=shape; \
-  safe.flags= (flags & (~0x1ffffff)) + 0x10000*code + size; \
+  safe.flags= (flags & (~0x1ffffffu)) + 0x10000*code + size; \
   safe.opt=opt; \
   return safe; \
 }
