@@ -120,9 +120,9 @@ public:
   }
 
 /// Macro that generate a constructor with given type and flags
-#define __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type_,flags_) \
+#define __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type,type_,flags_) \
   TypesafePtr(type_*ptr, std::size_t nelem=0, const std::size_t* shape=nullptr) : \
-    ptr((void*)const_cast<type_*>(ptr)), \
+    ptr((void*)const_cast<type*>(ptr)), \
     nelem(nelem), \
     flags(flags_) \
   { \
@@ -132,13 +132,13 @@ public:
 
 /// Macro that uses __PLUMED_WRAPPER_TYPESAFEPTR_INNER to generate constructors with
 /// all possible pointer-const combinations
-#define __PLUMED_WRAPPER_TYPESAFEPTR(type,code,size) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type,             size | (0x10000*(code)) | (0x2000000*2)) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const,       size | (0x10000*(code)) | (0x2000000*3)) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,            size | (0x10000*(code)) | (0x2000000*4)) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*const,       size | (0x10000*(code)) | (0x2000000*5)) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const*,      size | (0x10000*(code)) | (0x2000000*6)) \
-  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type const*const, size | (0x10000*(code)) | (0x2000000*7))
+#define __PLUMED_WRAPPER_TYPESAFEPTR(type, code,size) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type, type,             size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type, type const,       size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,type*,            size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,type*const,       size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,type const*,      size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_TYPESAFEPTR_INNER(type*,type const*const, size | (0x10000*(code)) | (0x2000000*7))
 
 /// Macro that generates the constructors from empy types (those of which sizeof cannot be computed)
 #define __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_TYPESAFEPTR(type,code,0)
