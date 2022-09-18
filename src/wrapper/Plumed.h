@@ -1094,9 +1094,9 @@ class Plumed {
     }
 
     /* interpret optional arguments */
-    const void** options=(const void**)opt;
+    const void*const* options=(const void*const*)opt;
     if(options) while(*options) {
-        if(*((char*)*options)=='c') h->error_code=*((int*)*(options+1));
+        if(*((const char*)*options)=='c') h->error_code=*((const int*)*(options+1));
         options+=2;
       }
 
@@ -2029,7 +2029,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   void* tmpptr;
   if(f) {
     if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) {
-      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",(void*)f);
+      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",(const void*)f);
       __PLUMED_CONVERT_FPTR(tmpptr,f->create);
       __PLUMED_FPRINTF(stderr,"%p,",tmpptr);
       __PLUMED_CONVERT_FPTR(tmpptr,f->cmd);
