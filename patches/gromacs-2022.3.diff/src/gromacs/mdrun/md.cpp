@@ -1170,30 +1170,28 @@ void gmx::LegacySimulator::do_md()
           if (!haveDDAtomOrdering(*cr)) {
             copy_state_serial(state_global, state);
           }
-          if(PAR(cr)){
-            if (haveDDAtomOrdering(*cr)) {
-                dd_partition_system(fplog,
-                                    mdlog,
-                                    step,
-                                    cr,
-                                    TRUE,
-                                    1,
-                                    state_global,
-                                    top_global,
-                                    *ir,
-                                    imdSession,
-                                    pull_work,
-                                    state,
-                                    &f,
-                                    mdAtoms,
-                                    top,
-                                    fr,
-                                    vsite,
-                                    constr,
-                                    nrnb,
-                                    wcycle,
-                                    do_verbose && !bPMETunePrinting);
-            }
+          if (haveDDAtomOrdering(*cr)) {
+              dd_partition_system(fplog,
+                                  mdlog,
+                                  step,
+                                  cr,
+                                  TRUE,
+                                  1,
+                                  state_global,
+                                  top_global,
+                                  *ir,
+                                  imdSession,
+                                  pull_work,
+                                  state,
+                                  &f,
+                                  mdAtoms,
+                                  top,
+                                  fr,
+                                  vsite,
+                                  constr,
+                                  nrnb,
+                                  wcycle,
+                                  do_verbose && !bPMETunePrinting);
           }
           do_force(fplog,
                    cr,
@@ -1251,33 +1249,31 @@ void gmx::LegacySimulator::do_md()
           if (!haveDDAtomOrdering(*cr)) {
             copy_state_serial(state_global, state);
           }
-          if(PAR(cr)){
-            if (haveDDAtomOrdering(*cr)) {
-                dd_partition_system(fplog,
-                                    mdlog,
-                                    step,
-                                    cr,
-                                    TRUE,
-                                    1,
-                                    state_global,
-                                    top_global,
-                                    *ir,
-                                    imdSession,
-                                    pull_work,
-                                    state,
-                                    &f,
-                                    mdAtoms,
-                                    top,
-                                    fr,
-                                    vsite,
-                                    constr,
-                                    nrnb,
-                                    wcycle,
-                                    do_verbose && !bPMETunePrinting);
-              int nat_home = dd_numHomeAtoms(*cr->dd);
-              plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
-              plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
-            }
+          if (haveDDAtomOrdering(*cr)) {
+              dd_partition_system(fplog,
+                                  mdlog,
+                                  step,
+                                  cr,
+                                  TRUE,
+                                  1,
+                                  state_global,
+                                  top_global,
+                                  *ir,
+                                  imdSession,
+                                  pull_work,
+                                  state,
+                                  &f,
+                                  mdAtoms,
+                                  top,
+                                  fr,
+                                  vsite,
+                                  constr,
+                                  nrnb,
+                                  wcycle,
+                                  do_verbose && !bPMETunePrinting);
+            int nat_home = dd_numHomeAtoms(*cr->dd);
+            plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+            plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
           }
           bNS=true;
         }

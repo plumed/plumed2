@@ -197,6 +197,9 @@ AC_ARG_ENABLE([modules],
        if test ! -f src/$modules_mod/module.type ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
+       if grep -q always src/$modules_mod/module.type ; then
+         AC_MSG_ERROR([trying to remove module $modules_mod which is always enabled])
+       fi
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
        rm -f src/$modules_mod.on
        touch src/$modules_mod.off ;;

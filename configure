@@ -2477,6 +2477,9 @@ $as_echo "$as_me: Resetting modules to default" >&6;}
        if test ! -f src/$modules_mod/module.type ; then
          as_fn_error $? "trying to remove module $modules_mod which does not exist" "$LINENO" 5
        fi
+       if grep -q always src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to remove module $modules_mod which is always enabled" "$LINENO" 5
+       fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
 $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
        rm -f src/$modules_mod.on
