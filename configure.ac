@@ -130,7 +130,7 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "$5" == "true"; then
+    if test "$5" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -150,7 +150,7 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
@@ -893,7 +893,7 @@ if test "$af_cpu" = true ; then
 fi
 
 #added by luigibonati
-if test $libtorch == true ; then 
+if test $libtorch = true ; then 
   # enable c++14 support
   PLUMED_CHECK_CXXFLAG([-std=c++14])
   # test program

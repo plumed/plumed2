@@ -7570,7 +7570,7 @@ if test $rtld_default = true ; then
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "" == "true"; then
+    if test "" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -7610,7 +7610,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
@@ -7776,7 +7776,7 @@ if test $subprocess = true ; then
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "" == "true"; then
+    if test "" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -7839,7 +7839,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
@@ -8799,7 +8799,7 @@ if test $boost_graph = true ; then
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "" == "true"; then
+    if test "" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -8841,7 +8841,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
@@ -8868,7 +8868,7 @@ if test $boost_serialization = true ; then
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "" == "true"; then
+    if test "" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -8908,7 +8908,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
@@ -9563,7 +9563,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
 fi
 
 #added by luigibonati
-if test $libtorch == true ; then
+if test $libtorch = true ; then
   # enable c++14 support
 
   save_CXXFLAGS="$CXXFLAGS"
@@ -9622,7 +9622,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     fi
     # check if multiple libraries are required
     multiple=no
-    if test "true" == "true"; then
+    if test "true" = "true"; then
       multiple=yes
     fi
     save_LIBS="$LIBS"
@@ -9661,7 +9661,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test $found = ok ; then
         break
       fi
-      if test "$multiple" == "no"; then # reset LIBS to initial one, otherwise add new libraries
+      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
         LIBS="$save_LIBS"
       fi
     done
