@@ -208,7 +208,7 @@ void DistanceFromContour::calculate() {
     if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 &&
         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ) {
       d2+=distance[dir]*distance[dir];
-      if( d2<mindist && fabs(distance[dir])>epsilon ) { pos2[dir]=distance[dir]; mindist = d2; }
+      if( d2<mindist && std::fabs(distance[dir])>epsilon ) { pos2[dir]=distance[dir]; mindist = d2; }
       taskFlags[j]=1;
     }
   }
@@ -252,7 +252,7 @@ void DistanceFromContour::calculate() {
   mymin.lsearch( dirv2, pos2, &DistanceFromContour::getDifferenceFromContour );
   // Calculate the separation between the two roots using PBC
   Vector root2; root2.zero(); root2[dir]=pval[dir]->get();
-  Vector sep = getSeparation( root1, root2 ); double spacing = fabs( sep[dir] ); plumed_assert( spacing>epsilon );
+  Vector sep = getSeparation( root1, root2 ); double spacing = std::fabs( sep[dir] ); plumed_assert( spacing>epsilon );
   getPntrToComponent("thickness")->set( spacing );
 
   // Make sure the sign is right
@@ -260,14 +260,14 @@ void DistanceFromContour::calculate() {
   // This deals with periodic boundary conditions - if we are inside the membrane the sum of the absolute
   // distances from the contours should add up to the spacing.  When this is not the case we must be outside
   // the contour
-  // if( predir==-1 && (fabs(root1[dir])+fabs(root2[dir]))>(spacing+pbc_param) ) predir=1;
+  // if( predir==-1 && (std::fabs(root1[dir])+std::fabs(root2[dir]))>(spacing+pbc_param) ) predir=1;
   // Set the final value to root that is closest to the "origin" = position of atom
-  if( fabs(root1[dir])<fabs(root2[dir]) ) {
-    getPntrToComponent("dist1")->set( predir*fabs(root1[dir]) );
-    getPntrToComponent("dist2")->set( fabs(root2[dir]) );
+  if( std::fabs(root1[dir])<std::fabs(root2[dir]) ) {
+    getPntrToComponent("dist1")->set( predir*std::fabs(root1[dir]) );
+    getPntrToComponent("dist2")->set( std::fabs(root2[dir]) );
   } else {
-    getPntrToComponent("dist1")->set( predir*fabs(root2[dir]) );
-    getPntrToComponent("dist2")->set( fabs(root1[dir]) );
+    getPntrToComponent("dist1")->set( predir*std::fabs(root2[dir]) );
+    getPntrToComponent("dist2")->set( std::fabs(root1[dir]) );
   }
   getPntrToComponent("qdist")->set( root2[dir]*root1[dir] );
 

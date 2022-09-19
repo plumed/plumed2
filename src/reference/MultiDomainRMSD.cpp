@@ -121,7 +121,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
   if( !myder.updateComplete() ) myder.updateDynamicLists();
 
   if( !squared ) {
-    totd=sqrt(totd); double xx=0.5/totd;
+    totd=std::sqrt(totd); double xx=0.5/totd;
     myder.scaleAllDerivatives( xx );
   }
   return totd;

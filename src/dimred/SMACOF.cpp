@@ -71,7 +71,7 @@ void SMACOF::run( const Matrix<double>& Weights, const Matrix<double>& Distances
     double newsig = calculateSigma( Weights, Distances, newZ, dists ) / totalWeight;
     //Computing whether the algorithm has converged (has the mass of the potato changed
     //when we put it back in the oven!)
-    if( fabs( newsig - myfirstsig )<tol ) break;
+    if( std::fabs( newsig - myfirstsig )<tol ) break;
     myfirstsig=newsig;
     InitialZ = newZ;
   }
@@ -82,7 +82,7 @@ double SMACOF::calculateSigma( const Matrix<double>& Weights, const Matrix<doubl
   for(unsigned i=1; i<M; ++i) {
     for(unsigned j=0; j<i; ++j) {
       double dlow=0; for(unsigned k=0; k<InitialZ.ncols(); ++k) { double tmp=InitialZ(i,k) - InitialZ(j,k); dlow+=tmp*tmp; }
-      dists(i,j)=dists(j,i)=sqrt(dlow); double tmp3 = Distances(i,j) - dists(i,j);
+      dists(i,j)=dists(j,i)=std::sqrt(dlow); double tmp3 = Distances(i,j) - dists(i,j);
       sigma += Weights(i,j)*tmp3*tmp3;
     }
   }

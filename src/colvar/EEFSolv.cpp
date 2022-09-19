@@ -234,7 +234,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.)
           {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ij;
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
             const Vector dd    = e_deriv*dist;
@@ -248,7 +248,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.)
           {
             const double e_arg = (rij - vdw_radius_j)*inv_lambda_j;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ji;
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_j);
             const Vector dd    = e_deriv*dist;
@@ -262,7 +262,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_i)
           {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*(fact_ij + fact_ji);
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
             const Vector dd    = e_deriv*dist;

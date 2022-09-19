@@ -63,7 +63,7 @@ double TargetDist::calculate( std::vector<double>& derivs ) {
     double tmp=args[i]->difference( target[i], args[i]->get() );
     derivs[i]=tmp; dist+=tmp*tmp;
   }
-  dist=sqrt(dist);
+  dist=std::sqrt(dist);
   for(unsigned i=0; i<args.size(); ++i) derivs[i]/=dist;
   return dist;
 }

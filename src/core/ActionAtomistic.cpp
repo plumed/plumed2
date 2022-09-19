@@ -105,7 +105,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
   std::vector<Vector> savedPositions(natoms);
-  const double delta=sqrt(epsilon);
+  const double delta=std::sqrt(epsilon);
 
   for(int i=0; i<natoms; i++) for(int k=0; k<3; k++) {
       savedPositions[i][k]=positions[i][k];

@@ -153,7 +153,7 @@ XYDistances::XYDistances(const ActionOptions&ao):
 double XYDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector distance;
   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  const double value=sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
+  const double value=std::sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
   const double invvalue=1.0/value;
 
   Vector myvec; myvec.zero();

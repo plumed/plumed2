@@ -280,7 +280,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   std::vector<double> value (nval*npar);
   for(int i=0; i<npar; i++) {
     double arg0=arguments[i]->get();
-    arguments[i]->set(arg0+sqrt(epsilon));
+    arguments[i]->set(arg0+std::sqrt(epsilon));
     a->calculate();
     arguments[i]->set(arg0);
     for(int j=0; j<nval; j++) {
@@ -291,7 +291,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   a->clearDerivatives();
   for(int j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
-    if( v->hasDerivatives() ) for(int i=0; i<npar; i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
+    if( v->hasDerivatives() ) for(int i=0; i<npar; i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
   }
 }
 

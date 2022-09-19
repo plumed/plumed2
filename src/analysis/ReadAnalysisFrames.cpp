@@ -122,7 +122,7 @@ void ReadAnalysisFrames::calculateWeights() {
         if(logweights[i]>maxweight) maxweight=logweights[i];
       }
       // Calculate weights (no memory) -- business here with maxweight is to prevent overflows
-      for(unsigned i=0; i<logweights.size(); ++i) weights[i]=exp( logweights[i]-maxweight );
+      for(unsigned i=0; i<logweights.size(); ++i) weights[i]=std::exp( logweights[i]-maxweight );
     }
   }
 }

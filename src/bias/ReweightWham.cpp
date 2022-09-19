@@ -142,7 +142,7 @@ void ReweightWham::calculateWeights( const unsigned& nframes ) {
   final_weights.resize( stored_biases.size() / nreplicas, 1.0 );
   // Offset and exponential of the bias
   std::vector<double> expv( stored_biases.size() );
-  for(unsigned i=0; i<expv.size(); ++i) expv[i] = exp( (-stored_biases[i]+minv) / simtemp );
+  for(unsigned i=0; i<expv.size(); ++i) expv[i] = std::exp( (-stored_biases[i]+minv) / simtemp );
   // Initialize Z
   std::vector<double> Z( nreplicas, 1.0 ), oldZ( nreplicas );
   // Now the iterative loop to calculate the WHAM weights

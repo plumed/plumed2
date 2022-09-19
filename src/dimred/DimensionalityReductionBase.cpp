@@ -117,7 +117,7 @@ double DimensionalityReductionBase::calculateStress( const std::vector<double>& 
     // Calculate distance in low dimensional space
     double dd=0;
     for(unsigned j=0; j<p.size(); ++j) { dtmp[j]=p[j]-projections(i,j); dd+=dtmp[j]*dtmp[j]; }
-    dd = sqrt(dd);
+    dd = std::sqrt(dd);
 
     // Now do transformations and calculate differences
     double ddiff = dd - dtargets[i];

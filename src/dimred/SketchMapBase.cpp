@@ -91,7 +91,7 @@ void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<
   double df; distances=0.; transformed=0.;
   for(unsigned i=1; i<distances.ncols(); ++i) {
     for(unsigned j=0; j<i; ++j) {
-      distances(i,j)=distances(j,i)=sqrt( targets(i,j) );
+      distances(i,j)=distances(j,i)=std::sqrt( targets(i,j) );
       transformed(i,j)=transformed(j,i)=transformHighDimensionalDistance( distances(i,j), df );
     }
   }
@@ -110,7 +110,7 @@ double SketchMapBase::calculateStress( const std::vector<double>& p, std::vector
     // Calculate distance in low dimensional space
     double dd=0;
     for(unsigned j=0; j<p.size(); ++j) { dtmp[j]=p[j]-projections(i,j); dd+=dtmp[j]*dtmp[j]; }
-    dd = sqrt(dd);
+    dd = std::sqrt(dd);
 
     // Now do transformations and calculate differences
     double df, fd = transformLowDimensionalDistance( dd, df );
@@ -139,7 +139,7 @@ double SketchMapBase::calculateFullStress( const std::vector<double>& p, std::ve
       // Calculate distance in low dimensional space
       double dd=0;
       for(unsigned k=0; k<nlow; ++k) { dtmp[k]=p[nlow*i+k] - p[nlow*j+k]; dd+=dtmp[k]*dtmp[k]; }
-      dd = sqrt(dd);
+      dd = std::sqrt(dd);
 
       // Now do transformations and calculate differences
       double df, fd = transformLowDimensionalDistance( dd, df );

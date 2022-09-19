@@ -85,7 +85,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
   double prevsum=0.;
   for(unsigned iter=0; iter<MAXCYCLES; ++iter) {
-    if( fabs(sumlen[iend] - prevsum)<=TOL ) break ;
+    if( std::fabs(sumlen[iend] - prevsum)<=TOL ) break ;
     prevsum = sumlen[iend];
     // If no target is set we redistribute length
     if( target<0 ) {

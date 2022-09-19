@@ -86,10 +86,10 @@ double Brent1DRootSearch<FCLASS>::search( eng_pointer eng ) {
   double cx=bx, d, e, min1, min2, fc=fb, p, q, r, s, tol1, xm;
   for(unsigned iter=0; iter<ITMAX; iter++) {
     if ( (fb>0.0 && fc>0.0) || (fb<0.0 && fc<0.0) ) { cx=ax; fc=fa; e=d=bx-ax; }
-    if( fabs(fc) < fabs(fb) ) { ax=bx; bx=cx; cx=ax; fa=fb; fb=fc; fc=fa; }
-    tol1=2*EPS*fabs(bx)+0.5*tol; xm=0.5*(cx-bx);
-    if( fabs(xm) <= tol1 || fb == 0.0 ) return bx;
-    if( fabs(e) >= tol1 && fabs(fa) > fabs(fb) ) {
+    if( std::fabs(fc) < std::fabs(fb) ) { ax=bx; bx=cx; cx=ax; fa=fb; fb=fc; fc=fa; }
+    tol1=2*EPS*std::fabs(bx)+0.5*tol; xm=0.5*(cx-bx);
+    if( std::fabs(xm) <= tol1 || fb == 0.0 ) return bx;
+    if( std::fabs(e) >= tol1 && std::fabs(fa) > std::fabs(fb) ) {
       s=fb/fa;
       if( ax==cx ) {
         p=2.0*xm*s; q=1.0-s;
@@ -97,7 +97,7 @@ double Brent1DRootSearch<FCLASS>::search( eng_pointer eng ) {
         q=fa/fc; r=fb/fc; p=s*(2.0*xm*q*(q-r)-(bx-ax)*(r-1.0)); q=(q-1.0)*(r-1.0)*(s-1.0);
       }
       if (p > 0.0) q = -q;
-      p=fabs(p); min1=3.0*xm*q-fabs(tol1*q); min2=fabs(e*q);
+      p=std::fabs(p); min1=3.0*xm*q-std::fabs(tol1*q); min2=std::fabs(e*q);
       if (2.0*p < (min1 < min2 ? min1 : min2)) {
         e=d; d=p/q;
       } else {
@@ -107,8 +107,8 @@ double Brent1DRootSearch<FCLASS>::search( eng_pointer eng ) {
       d=xm; e=d;
     }
     ax=bx; fa=fb;
-    if( fabs(d) > tol1 ) bx+=d;
-    else if(xm<0 ) bx -= fabs(tol1); // SIGN(tol1,xm);
+    if( std::fabs(d) > tol1 ) bx+=d;
+    else if(xm<0 ) bx -= std::fabs(tol1); // SIGN(tol1,xm);
     else bx += tol1;
     fb = (myclass_func.*eng)(bx);
   }

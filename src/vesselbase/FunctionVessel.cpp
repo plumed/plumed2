@@ -68,7 +68,7 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   buffer[bufstart] += contr;
 
   if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer );
-  if( getAction()->derivativesAreRequired() && fabs(dval)>0.0 ) myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
+  if( getAction()->derivativesAreRequired() && std::fabs(dval)>0.0 ) myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
 
   return;
 }

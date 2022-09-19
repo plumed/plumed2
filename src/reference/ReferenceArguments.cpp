@@ -51,7 +51,7 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
     weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
       if( !pdb.getArgumentValue("sigma_" + arg_names[i], weights[i]) ) error("value sigma_" + arg_names[i] + " was not set in pdb input");
-      sqrtweight[i] = sqrt( weights[i] );
+      sqrtweight[i] = std::sqrt( weights[i] );
     }
   } else if( hasmetric ) {
     plumed_massert( !hasweights, "should not have weights if we are using metric");
@@ -128,7 +128,7 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric() {
     unsigned k=0;
     for(unsigned i=0; i<reference_args.size(); ++i) {
       for(unsigned j=i; j<reference_args.size(); ++j) {
-        plumed_dbg_assert( fabs( metric(i,j)-metric(j,i) ) < epsilon );
+        plumed_dbg_assert( std::fabs( metric(i,j)-metric(j,i) ) < epsilon );
         trig_metric[k]=metric(i,j); k++;
       }
     }
@@ -164,7 +164,7 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
     }
   }
   if(!squared) {
-    r=sqrt(r); double ir=1.0/(2.0*r);
+    r=std::sqrt(r); double ir=1.0/(2.0*r);
     for(unsigned i=0; i<arg_ders.size(); ++i) myder.setArgumentDerivatives( i, arg_ders[i]*ir );
   } else {
     for(unsigned i=0; i<arg_ders.size(); ++i) myder.setArgumentDerivatives( i, arg_ders[i] );

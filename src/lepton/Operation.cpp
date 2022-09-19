@@ -347,7 +347,7 @@ ExpressionTreeNode Operation::Erf::differentiate(const std::vector<ExpressionTre
         return ExpressionTreeNode(new Operation::Constant(0.0));
     return ExpressionTreeNode(new Operation::Multiply(),
                               ExpressionTreeNode(new Operation::Multiply(),
-                                                 ExpressionTreeNode(new Operation::Constant(2.0/sqrt(M_PI))),
+                                                 ExpressionTreeNode(new Operation::Constant(2.0/std::sqrt(M_PI))),
                                                  ExpressionTreeNode(new Operation::Exp(),
                                                                     ExpressionTreeNode(new Operation::Negate(),
                                                                                        ExpressionTreeNode(new Operation::Square(), children[0])))),
@@ -359,7 +359,7 @@ ExpressionTreeNode Operation::Erfc::differentiate(const std::vector<ExpressionTr
         return ExpressionTreeNode(new Operation::Constant(0.0));
     return ExpressionTreeNode(new Operation::Multiply(),
                               ExpressionTreeNode(new Operation::Multiply(),
-                                                 ExpressionTreeNode(new Operation::Constant(-2.0/sqrt(M_PI))),
+                                                 ExpressionTreeNode(new Operation::Constant(-2.0/std::sqrt(M_PI))),
                                                  ExpressionTreeNode(new Operation::Exp(),
                                                                     ExpressionTreeNode(new Operation::Negate(),
                                                                                        ExpressionTreeNode(new Operation::Square(), children[0])))),

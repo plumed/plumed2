@@ -356,7 +356,7 @@ template <typename T> void cholesky( const Matrix<T>& A, Matrix<T>& B ) {
     for (unsigned k=0; k<i; ++k) D[i]-=L(i,k)*L(i,k)*D[k];
   }
 
-  for(unsigned i=0; i<A.rw; ++i) D[i]=(D[i]>0.?sqrt(D[i]):0.);
+  for(unsigned i=0; i<A.rw; ++i) D[i]=(D[i]>0.?std::sqrt(D[i]):0.);
   if( B.rw!=A.rw || B.cl!=A.cl ) { B.resize( A.rw, A.cl); }
   B=0.; for(unsigned i=0; i<A.rw; ++i) for(unsigned j=0; j<=i; ++j) B(i,j)+=L(i,j)*D[j];
 }

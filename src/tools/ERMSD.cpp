@@ -292,7 +292,7 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
     }
   }
 
-  ermsd = sqrt(ermsd/nresidues);
+  ermsd = std::sqrt(ermsd/nresidues);
   double iermsd = 1.0/(ermsd*nresidues);
   for(unsigned i=0; i<natoms; ++i) {derivatives[i] *= iermsd;}
 

@@ -194,7 +194,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
     } else if( ktype==truncatedgaussian ) {
       // This makes it so the gaussian integrates to one over the range over which it has support
-      const double DP2CUTOFF=sqrt(6.25);
+      const double DP2CUTOFF=std::sqrt(6.25);
       volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 ) * pow( 0.5 * ( erf(DP2CUTOFF) - erf(-DP2CUTOFF) ), ncv);
     } else if( ktype==uniform || ktype==triangular ) {
       if( ncv%2==1 ) {
@@ -275,7 +275,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
-  if( ktype==gaussian || ktype==truncatedgaussian || ktype==stretchedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
+  if( ktype==gaussian || ktype==truncatedgaussian || ktype==stretchedgaussian ) return std::sqrt(2.0*DP2CUTOFF)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;
   else plumed_merror("No valid kernel type");
@@ -298,7 +298,7 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
     for(unsigned i=0; i<ncv; ++i) {
-      double extent=fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
+      double extent=std::fabs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval));
       support[i]=getCutoff( extent );
     }
   } else {
@@ -387,11 +387,11 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
       kderiv=0.0;
     }
   } else {
-    double r=sqrt(r2);
+    double r=std::sqrt(r2);
     if(ktype==triangular) {
       if( r<1.0 ) {
         if(r==0) kderiv=0;
-        kderiv=-1; kval=height*( 1. - fabs(r) );
+        kderiv=-1; kval=height*( 1. - std::fabs(r) );
       } else {
         kval=0.; kderiv=0.;
       }
@@ -428,7 +428,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
     sig.resize( valnames.size() );
     for(unsigned i=0; i<valnames.size(); ++i) {
       ifile->scanField("sigma_"+valnames[i],sig[i]);
-      if( !cholesky ) sig[i]=sqrt(sig[i]);
+      if( !cholesky ) sig[i]=std::sqrt(sig[i]);
     }
     return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "DIAGONAL", h);
   }
