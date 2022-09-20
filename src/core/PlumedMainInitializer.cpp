@@ -38,6 +38,7 @@
 #include <future>
 #include <memory>
 #include <functional>
+#include <regex>
 #include "tools/TypesafePtr.h"
 #include "tools/Log.h"
 #include "tools/Tools.h"
@@ -160,9 +161,23 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::bad_typeid & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11000,msg,opt);
-    // not implemented yet: std::regex_error
-    // we do not allow regex yet due to portability problems with gcc 4.8
-    // as soon as we transition to using <regex> it should be straightforward to add
+  } catch(const std::regex_error & e) {
+    if(!msg) msg=e.what();
+    if(e.code()==std::regex_constants::error_collate) nothrow.handler(nothrow.ptr,10240,msg,opt);
+    else if(e.code()==std::regex_constants::error_ctype) nothrow.handler(nothrow.ptr,10241,msg,opt);
+    else if(e.code()==std::regex_constants::error_escape) nothrow.handler(nothrow.ptr,10242,msg,opt);
+    else if(e.code()==std::regex_constants::error_backref) nothrow.handler(nothrow.ptr,10243,msg,opt);
+    else if(e.code()==std::regex_constants::error_brack) nothrow.handler(nothrow.ptr,10244,msg,opt);
+    else if(e.code()==std::regex_constants::error_paren) nothrow.handler(nothrow.ptr,10245,msg,opt);
+    else if(e.code()==std::regex_constants::error_brace) nothrow.handler(nothrow.ptr,10246,msg,opt);
+    else if(e.code()==std::regex_constants::error_badbrace) nothrow.handler(nothrow.ptr,10247,msg,opt);
+    else if(e.code()==std::regex_constants::error_range) nothrow.handler(nothrow.ptr,10248,msg,opt);
+    else if(e.code()==std::regex_constants::error_space) nothrow.handler(nothrow.ptr,10249,msg,opt);
+    else if(e.code()==std::regex_constants::error_badrepeat) nothrow.handler(nothrow.ptr,10250,msg,opt);
+    else if(e.code()==std::regex_constants::error_complexity) nothrow.handler(nothrow.ptr,10251,msg,opt);
+    else if(e.code()==std::regex_constants::error_stack) nothrow.handler(nothrow.ptr,10252,msg,opt);
+    // fallback to generic runtime_error
+    else nothrow.handler(nothrow.ptr,10200,msg,opt);
   } catch(const std::ios_base::failure & e) {
     if(!msg) msg=e.what();
     int value=e.code().value();

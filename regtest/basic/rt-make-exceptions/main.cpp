@@ -171,6 +171,20 @@ int main(){
     TEST_STD_NOMSG(std::bad_array_new_length);
     TEST_STD_NOMSG(std::bad_exception);
 
+#define TEST_REGEX(type) try { p.cmd("throw", "std::regex_error std::regex_constants::error_" #type);} catch (std::regex_error & e) { plumed_assert(e.code()==std::regex_constants::error_ ##type); }
+    TEST_REGEX(collate);
+    TEST_REGEX(ctype);
+    TEST_REGEX(escape);
+    TEST_REGEX(backref);
+    TEST_REGEX(brack);
+    TEST_REGEX(paren);
+    TEST_REGEX(brace);
+    TEST_REGEX(badbrace);
+    TEST_REGEX(range);
+    TEST_REGEX(space);
+    TEST_REGEX(badrepeat);
+    TEST_REGEX(complexity);
+    TEST_REGEX(stack);
 
     try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
     }

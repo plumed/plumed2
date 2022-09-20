@@ -59,6 +59,7 @@
 #include <future>
 #include <memory>
 #include <functional>
+#include <regex>
 
 
 namespace PLMD {
@@ -98,6 +99,24 @@ namespace PLMD {
     if(words[1]=="std::system_category") throw std::system_error(error_code,std::system_category(),what);
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
+  }
+
+#define __PLUMED_THROW_REGEX(name) if(words[1]=="std::regex_constants::error_" #name) throw std::regex_error(std::regex_constants::error_ ##name)
+  if(words[0]=="std::regex_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_REGEX(collate);
+    __PLUMED_THROW_REGEX(ctype);
+    __PLUMED_THROW_REGEX(escape);
+    __PLUMED_THROW_REGEX(backref);
+    __PLUMED_THROW_REGEX(brack);
+    __PLUMED_THROW_REGEX(paren);
+    __PLUMED_THROW_REGEX(brace);
+    __PLUMED_THROW_REGEX(badbrace);
+    __PLUMED_THROW_REGEX(range);
+    __PLUMED_THROW_REGEX(space);
+    __PLUMED_THROW_REGEX(badrepeat);
+    __PLUMED_THROW_REGEX(complexity);
+    __PLUMED_THROW_REGEX(stack);
   }
 
   if(words[0]=="std::ios_base::failure") {
