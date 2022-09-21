@@ -33,7 +33,6 @@
 #include "tools/File.h"
 #include <ctime>
 #include <numeric>
-#include <iostream>
 #if defined(__PLUMED_HAS_GETCWD)
 #include <unistd.h>
 #endif
@@ -386,14 +385,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   walkers_mpi_(false), mpi_nw_(0),
   do_select_(false)
 {
-
-//  volatile int i = 0;
-//  char hostname[256];
-//  std::cerr<<"PID ready for attach" << getpid() << std::endl;
-//  while (0 == i) {
-//
-//  };
-
 
   // parse the flexible hills
   std::string adaptiveoption;
@@ -850,7 +841,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       ofile->enforceSuffix("");
     }
     if(mw_n_>1) ofile->enforceSuffix("");
-    std::cout << "RANK NUMBER " << mw_id_ << " WRITING " << mw_id_*hillsfname_.size()+i << std::endl;
     ofile->open(ifilesnames_[mw_id_*hillsfname_.size()+i]);
     if(fmt_.length()>0) ofile->fmtField(fmt_);
     ofile->addConstantField("multivariate");
