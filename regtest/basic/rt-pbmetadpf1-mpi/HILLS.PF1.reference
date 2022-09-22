@@ -1,6 +1,6 @@
 #! FIELDS time d3 sigma_d3 height biasf
 #! SET multivariate false
-#! SET kerneltype gaussian
+#! SET kerneltype stretched-gaussian
                   0.005      1.203184354540843                    0.2     0.4166666666666666                      5
                    0.01      1.205975816509584                    0.2      0.401904754351849                      5
                   0.015      1.215791771844345                    0.2     0.3874479700098087                      5
