@@ -619,12 +619,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
     }
 
-  } catch (const std::exception &e) {
+  } catch (...) {
     if(log.isOpen()) {
-      log<<"\n\n################################################################################\n\n";
-      log<<e.what();
-      log<<"\n\n################################################################################\n\n";
-      log.flush();
+      try {
+        log<<"\n################################################################################\n";
+        log<<Tools::concatenateExceptionMessages();
+        log<<"\n################################################################################\n";
+        log.flush();
+      } catch(...) {
+        // ignore errors here.
+        // in any case, we are rethrowing this below
+      }
     }
     throw;
   }
