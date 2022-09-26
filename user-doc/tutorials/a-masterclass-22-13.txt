@@ -377,6 +377,8 @@ Implicit solvent simulations with the SASA module are based on the concept of fr
 
 Implicit solvent simulations have the advantage, compared to their explicit solvent counterpart, to speed up conformational transitions, and allow a faster exploration of conformational space.
 
+NOTE: The Masterclass files with the solutions to the exercises are also avilable on [GitHub] (https://github.com/andrea-arsiccio/masterclass-22-13-results), but please do the exercises on your own before checking on the results!
+
 */
 
 link: @subpage masterclass-22-13
