@@ -88,7 +88,6 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
       addDependency( atoms.masses[i]->getPntrToAction() ); atoms.masses[i]->userdata.insert( getLabel() );
       addDependency( atoms.charges[i]->getPntrToAction() ); atoms.charges[i]->userdata.insert( getLabel() );
   }
-  updateUniqueLocal();
   atoms.unique.clear();
 }
 
@@ -292,17 +291,6 @@ void ActionAtomistic::makeWhole( const unsigned start, const unsigned end ) {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]); 
     second=first+pbcDistance(first,second);
-  }
-}
-
-void ActionAtomistic::updateUniqueLocal() {
-  unique_local.clear();
-  if(atoms.dd && atoms.shuffledAtoms>0) {
-    for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
-    }
-  } else {
-    unique_local.insert(unique.begin(),unique.end());
   }
 }
 
