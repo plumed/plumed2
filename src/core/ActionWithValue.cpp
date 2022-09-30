@@ -204,7 +204,7 @@ void ActionWithValue::propegateTaskListsForValue( const unsigned& valno, const u
       }
       ActionWithArguments* user=plumed.getActionSet().selectWithLabel<ActionWithArguments*>( p );
       if( user && !inchain ) {
-          user->buildTaskListFromArgumentRequests( ntasks, reduce, otasks );
+          if( user->isActive() ) user->buildTaskListFromArgumentRequests( ntasks, reduce, otasks );
       } else if( user && values[valno]->taskList.size()>0 ) user->buildTaskListFromArgumentValues( values[valno]->getName(), otasks );
   } 
 }
