@@ -39,7 +39,7 @@ import re
 import types
 
 if sys.version_info < (3,):
-    raise ImportError("PLUMED 2.6 only supports Python 3")
+    raise ImportError("PLUMED >=2.6 only supports Python 3")
 
 try:
      import numpy as np
