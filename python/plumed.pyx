@@ -29,13 +29,11 @@
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
 import array
-import ctypes
 import re
 import gzip
 import math
 import sys
 import warnings
-import re
 import types
 
 if sys.version_info < (3,):
