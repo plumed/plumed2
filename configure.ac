@@ -856,18 +856,14 @@ if test $python = true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (python3, setuptools, cython, subprocess, os, shutil)])
+    AC_MSG_CHECKING([support for required python modules (python3, setuptools, cython)])
 testimport="
 from setuptools import setup
 from setuptools import Extension
-import subprocess
-import os
-import os.path
-import sys
-from shutil import copyfile
 from Cython.Build import cythonize
+import sys
 if sys.version_info < (3,):
-    raise ImportError('PLUMED 2.6 only supports Python 3')
+    raise ImportError('PLUMED>= 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
