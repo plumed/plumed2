@@ -1,0 +1,120 @@
+/**
+\page masterclass-22-15 PLUMED Masterclass 22.15: FISST module and application of mechanical forces with PLUMED
+
+\authors Glen M. Hocky
+\date October 17, 2022
+
+\section masterclass-22-15-aims Aims
+
+This Masterclass explains how mechanical forces can be modeled using PLUMED, and the application of the FISST module for applying multiple forces simultaneously.
+
+\section masterclass-22-15-obj Objectives
+
+The objectives of this Masterclass are:
+- Learn how to apply a constant force in PLUMED
+- Learn how to perform steered-MD in PLUMED, and approximately get a free energy surface from repeating this calculation
+- Learn how to apply constant forces with FISST, and reweight to different intermediate forces
+
+\section masterclass-22-15-prereq Prerequisites
+
+We assume that the person that will follow this tutorial is familiar with the Linux terminal, Gromacs and basic functionality of PLUMED.
+Familiarity with python and matplotlib is recommended for FISST reweighting and plotting
+
+\section masterclass-22-15-install Setting up PLUMED
+
+We will use GROMACS, PLUMED, and PLUMED's pesmd function to perform the calculations.
+Conda packages with the software required for this class have been prepared and you can install them following the instructions in [this link](https://github.com/plumed/masterclass-2022).
+
+If you are compiling PLUMED on your own, you will need to install the FISST module manually by adding '--enable-modules=fisst' to your './configure' command when building PLUMED.
+
+The data needed to run the exercises of this Masterclass can be found on [GitHub](https://github.com/hockyg/masterclass-22-15).
+You can clone this repository locally on your machine using the following command:
+
+\verbatim
+git clone https://github.com/hockyg/masterclass-22-15
+\endverbatim
+
+\section masterclass-22-15-background Background
+A force along some direction here is defined as the negative gradient of the potential energy along that direction. 
+
+A constant force \f$F$\f on a scalar collective variable \f$Q(\vec{X})\f$ therefore is a simple addition to the system's energy function.
+
+\f[
+ U(\vec{X},F) = U(\vec{X}) - F Q(\vec{X}) 
+\f]
+
+Notice that, because of the negative sign, a postive value of \f$F$\f results in a lower energy for large values of \f$Q$\f, meaning \f$F\gt0$\f corresponds to a "pulling" force.
+
+A mechanical force would often in reality would correspond to pulling apart two atoms, and so \f$Q$\f would often be a simple distance coordinate.
+
+Note however, that other quantities could be used, such as an area which would mean \f$F$\f corresponds to a pressure.
+
+Dimensional analysis implies that the units of \f$F$\f must be [Energy]/[Q].
+
+The effect of constant force can be assessed using any enhanced sampling method.
+
+The work done by the bias in this case is very simple
+
+\f[
+W = \int_a^b F \cdot d Q = F ( Q_b - Q_a )
+\f]
+
+Constant forces can be applied in PLUMED with the SLOPE keyword of the RESTRAINT bias.
+
+\section masterclass-22-15-smd Steered MD
+Steered molecular dynamics (SMD) is one way of pulling on a molecular coordinate, and has a connection to experiments done where a molecule is attached via a "spring" to an object such as an optical tweezer or AFM tip. To represent this in simulation, instead of applying a constant force, we impose a Harmonic restraint on \f$Q$\f with a center that moves:
+
+\f[
+ U(\vec{X},F) = U(\vec{X}) + \frac{1}{2} k (Q-Q_0(t))^2
+\f]
+
+Typically \f$Q_0(t)$\f would move linearly, with \f$ Q_0(t) = Q_0(0)-\lambda t $\f although that is not a requirement. 
+
+At any given time, the force along \f$Q$\f from the moving bias is given as:
+
+\f[
+ F(t) = -\frac{\partial U}{\partial Q} = -k(Q-Q_0(t))
+\f]
+
+This force is positive (pulling) when \f$Q_0(t)$\f is bigger than \f$Q$\f, and it can get very large if the spring moves quickly to larger values.
+
+SMD is implemented in PLUMED using the MOVINGRESTRAINT bias, and the work is computed automatically.
+
+\f[
+W = \int_a^B F dQ \approx \sum_{i=1}^{N_{steps}} \bar{F}_i (Q_0(t_i)-Q_0(t_{i-1})) = \lambda dt \sum_{i=1}^{N_{steps}} \bar{F}_i, 
+\]
+
+\f[
+\bar{F_i}=\frac{1}{2}( F_{i}+F_{i-1} ) = -\frac{k}{2}( Q(t_i)-Q_0(t_i) -Q(t_{i-1})+Q_0(t_{i-1})) = -\frac{k}{2} (\Delta Q_i - \lambda d t)
+\]
+
+\section masterclass-22-15-fisst 
+Infinite Switch Simulated Tempering in Force (FISST) is a method implemented  in Ref. \cite Hartmann-FISST-2019
+
+This method takes advantage of the limit of changing a force from \f$F_{min}$\f to \f$F_{max}$\f and back infinitely quickly.
+
+In this limit, the system feels an average force \f$\bar{F}(Q)\f that depends on the current value of the pulling coordinate.
+
+\f[
+ U(\vec{X},F) = U(\vec{X}) - \bar{F}(Q) Q(\vec{X}) 
+\]
+
+In practice, this \f$\bar{F}(Q)\f is computed using weights \f$w(F)$\f for each force in the force range that are learned on the fly, and separate "observable weights" \f$W_F(Q_i)\f are used to compute the average of any quantity \f$A$\f at a given force.
+
+\f[
+\langle A \rangle_F = \frac{1}{N} \sum_{i=1}^{N_{steps}} A(X(t_i)) W_F(Q_i)
+\]
+
+where the observable weights are computed in a way that 
+
+\f[
+W_F(Q_i)\propto \left(\int_{F_{min}}^{F_{max}} dF' w(F') e^{\beta (F'-F) Q_i} \right)^{-1}
+\]
+
+The module writes out both the force weights and the observable weights to files.
+
+*/
+
+link: @subpage masterclass-22-06
+
+description: This Masterclass describes how to assess the effect of force on molecular systems using PLUMED and FISST.
