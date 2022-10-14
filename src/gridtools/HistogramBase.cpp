@@ -150,9 +150,7 @@ void HistogramBase::setupCurrentTaskList() {
         for(const auto & t : task_list ) {
             if( fabs(getPntrToArgument(grid_dimension)->get(t))>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(t);
         }
-    } else {
-        for(const auto & t : task_list ) getPntrToOutput(0)->addTaskToCurrentList(t);
-    }
+    } else { getPntrToOutput(0)->addTasksToCurrentList( task_list ); }
     norm = static_cast<double>( numberOfKernels );
   } else {
     std::vector<double> args( getNumberOfDerivatives() );

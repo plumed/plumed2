@@ -256,6 +256,7 @@ public:
   void setNumberOfTasks( const unsigned& nt );
   unsigned getNumberOfTasks() const ;
   void addTaskToCurrentList( const unsigned& itask );
+  void addTasksToCurrentList( const std::set<unsigned>& tasks );
 };
 
 inline
@@ -356,6 +357,11 @@ void Value::clearDerivatives() {
 inline
 void Value::addTaskToCurrentList( const unsigned& itask ) {
   taskList.insert( itask );
+}
+
+inline
+void Value::addTasksToCurrentList( const std::set<unsigned>& tasks ) {
+  taskList.insert( tasks.begin(), tasks.end() );
 }
 
 inline
