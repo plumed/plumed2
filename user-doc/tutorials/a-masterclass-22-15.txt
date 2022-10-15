@@ -115,6 +115,6 @@ The module writes out both the force weights and the observable weights to files
 
 */
 
-link: @subpage masterclass-22-06
+link: @subpage masterclass-22-15
 
 description: This Masterclass describes how to assess the effect of force on molecular systems using PLUMED and FISST.
