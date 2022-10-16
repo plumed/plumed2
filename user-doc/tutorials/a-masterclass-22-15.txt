@@ -187,6 +187,39 @@ python reweight_vshape.py observable_file cv_file
 
 \image html masterclass-22-15-vshape_animated.gif Animated gif of potential at different forces, sampled by FISST.
 
+\subsection masterclass-22-15-ex-helix Model bistable helix
+
+In this section, we will study a toy model of a a helix using a bead spring model in lammps. This model has lowest energy when it is in a left or right handed helix, but it is not chiral, so they must have the same free energy.
+
+First, run the system without any pulling, if you fisualize the trajectory, you will see that it is stuck in one configuration (epsilon sets the strength of the bonds, it can be studied at lower or higher stabilities by changing eps).
+
+\verbatim
+lmp -log helix_sf_example.log \
+           -var plumed_file helix_sf_f-4.5_eps7.5_10000000.plumed.dat  \
+           -var outprefix helix_sf_pull0 \
+           -var steps 10000000  \
+           -var eps 7.5 \
+           -in run_helix_plumed.lmp
+\endverbatim
+
+Now, run the system using FISST, suitibly modifying the plumed file to impose a force from -2 to 8 (as studied in the paper)
+\verbatim
+lmp -log helix_sf_example.log \
+           -var plumed_file helix_fisst_fmin-2.0_fmax8.0_eps7.5_50000000.plumed.dat  \
+           -var outprefix helix_fisst_fmin-2.0_fmax8.0_eps7.5_50000000 \
+           -var steps 50000000  \
+           -var eps 7.5 \
+           -in run_helix_plumed.lmp
+\endverbatim
+
+The included script 'compute_handedness.py' has an ad-hoc handedness calculation which is computed using RMSD to a left and right handed helix. 
+The end-end distance is already computed in the colvars file.
+
+Use the handedness calculation in this script to create a 2d FES from the unbiased simulation, and from the unweighted FISST data.
+
+Note that both sides are equally explored in this relatively long simulation. 
+Then compute plots reweighted to small/negative forces and large forces, and notice how the result mirrors that from the V-shaped potential.
+
 */
 
 link: @subpage masterclass-22-15
