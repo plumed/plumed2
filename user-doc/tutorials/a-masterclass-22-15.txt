@@ -147,6 +147,44 @@ plumed pesmd < doublewell_prod.pesmd.input
 
 Plot the free energy surface from the GRID or after using sum_hills to compute the surface, and zero the potential at the left minimum. What do you notice about the other minimum and barrier?
 
+\subsection masterclass-22-15-ex-2d-setup Effect of force on a 2-dimensional potential
+
+The following implements a "V-shaped" potential which has 2 minima at small y values and 1 minima at large y value. 
+
+Try plotting the potential to see.
+
+\plumedfile
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+ff: MATHEVAL ARG=d1.x,d1.y PERIODIC=NO FUNC=-8*log((exp(-(y-exp(-x))^2/2)+exp(-(y+exp(-x))^2/2))*exp(-x^2/2))
+bb: BIASVALUE ARG=ff
+
+PRINT ARG=* FILE=__FILL__ STRIDE=100
+\endplumedfile
+
+First run a simulation using the command, and make a 2d histogram of x and y to show that it is trapped on one side. 
+
+\verbatim
+plumed pesmd < doublewell_prod.pesmd.input
+\endverbatim
+
+If you have time, use RESTRAINT to add a constant force in the Y direction that favors the higher vertical state.
+
+Now add FISST in order to sample forces all at once:
+
+\plumedfile
+f: FISST MIN_FORCE=-15 MAX_FORCE=15.0 PERIOD=200 NINTERPOLATE=41 ARG=d1.x KBT=1.0 OUT_RESTART=__FILL__ OUT_OBSERVABLE=__FILL__ OBSERVABLE_FREQ=100 CENTER=0
+\endplumedfile
+
+We used forces -15 to 15 in the paper, but feel free to experiment with your own force range. Inspect the observable file and restart file to see what is in there.
+
+Now generate a histogram at each force using the following command, which will render it as an animated gif if you have the proper libraries installed.
+
+\verbatim
+python reweight_vshape.py observable_file cv_file
+\endverbatim
+
+\image html masterclass-22-15-vshape_animated.gif Animated gif of potential at different forces, sampled by FISST.
+
 */
 
 link: @subpage masterclass-22-15
