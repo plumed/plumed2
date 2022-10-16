@@ -147,6 +147,8 @@ plumed pesmd < doublewell_prod.pesmd.input
 
 Plot the free energy surface from the GRID or after using sum_hills to compute the surface, and zero the potential at the left minimum. What do you notice about the other minimum and barrier?
 
+\image html masterclass-22-15-doublewell_metad.jpg Pulling on a double well, sampled by metadynamics
+
 \subsection masterclass-22-15-ex-2d-setup Effect of force on a 2-dimensional potential
 
 The following implements a "V-shaped" potential which has 2 minima at small y values and 1 minima at large y value. 
