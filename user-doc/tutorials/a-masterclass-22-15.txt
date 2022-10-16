@@ -217,7 +217,7 @@ The end-end distance is already computed in the colvars file.
 
 Use the handedness calculation in this script to create a 2d FES from the unbiased simulation, and from the unweighted FISST data.
 
-\image html masterclass-22-15-helix-fisst-unweighted.jpg Helix data from FISST unweighted. 
+\image html masterclass-22-15-helix-fisst-unweighted.jpg Helix data from unweighted FISST. Dots on right side are from unbiased simulation.
 
 Note that both sides are equally explored in this relatively long simulation. 
 Then compute plots reweighted to small/negative forces and large forces, and notice how the result mirrors that from the V-shaped potential.
