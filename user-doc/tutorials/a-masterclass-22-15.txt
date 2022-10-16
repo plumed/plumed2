@@ -217,8 +217,33 @@ The end-end distance is already computed in the colvars file.
 
 Use the handedness calculation in this script to create a 2d FES from the unbiased simulation, and from the unweighted FISST data.
 
+\image html masterclass-22-15-helix-fisst-unweighted.jpg Helix data from FISST unweighted. 
+
 Note that both sides are equally explored in this relatively long simulation. 
 Then compute plots reweighted to small/negative forces and large forces, and notice how the result mirrors that from the V-shaped potential.
+
+\image html user-doc/figs/masterclass-22-15-helix-fisst-weighted.jpg Helix data reweighted to different forces. 
+
+\subsection masterclass-22-15-ex-peptide Solvated alanine-10
+
+We will now study the effect of force on a model peptide, alanine 10 in water. You can set this up to run yourself, but the colvar files are also included for a 200ns simulation of alanine 10 run with FISST from forces -10 to 10 pN and from -10 to 100 pN.
+
+Note, now we are using real units, a conversion factor is needed: 69.4786 pN = 1 kcal/mol/Angstrom
+
+To run yourself, modify ala10_fisst.plumed.dat
+
+\verbatim
+gmx_mpi -s ala10.tpr -plumed ala10_fisst.plumed.dat -nsteps 100000000 --deffnm OUTPUT_PREFIX
+\endverbatim
+
+Then analyze your files, or my files ala10_pull_fRange_fmin-10_fmax100.* to compute the end-end distance of Alanine 10 at different forces.
+Do your results from different FISST ranges agree?
+
+\image html masterclass-22-15-ala10-fisst-end-end-reweighted.jpg End-end distance for alanine-10 reweighted to different forces.
+
+Finally, use the observable weights to compute the Ramachandran plot (averaged over residues) at different forces (mine is from analyzing the gromacs structural output, but you may want to put the phi-psi calculation in the plumed file as in previous tutorials!)
+
+\image html masterclass-22-15-ala10-fisst-rama.jpg Ramachandran plots for alanine-10 reweighted to different forces.
 
 */
 
