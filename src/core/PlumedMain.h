@@ -205,6 +205,10 @@ private:
 /// Store information used in class \ref generic::UpdateIf
   std::stack<bool> updateFlags;
 
+/// A string that holds the name of the action that gets the energy from the MD
+/// code.  Set empty if energy is not used.
+  std::string name_of_energy;
+
 /// This sets up the values that are set from the MD code
   void startStep();
 
@@ -426,6 +430,8 @@ public:
 /// Transfer information
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);
+/// Used to set the name of the action that holds the energy
+  void setEnergyValue( const std::string& name, ActionToPutData* eact );
 };
 
 /////
@@ -508,7 +514,6 @@ bool PlumedMain::callErrorHandler(int code,const char* msg)const {
     return true;
   } else return false;
 }
-
 
 }
 

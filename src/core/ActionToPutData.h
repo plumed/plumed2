@@ -35,8 +35,8 @@ friend class PlumedMain;
 private:
 /// Action has been set
   bool wasset;
-/// Do the domains need to be summed
-  bool sum_domains;
+/// Do we need to broadcast to all domains
+  bool bcast_domains;
 /// Are we not applying forces on this values
   bool noforce;
 /// Is this quantity scattered over the domains
@@ -53,10 +53,11 @@ private:
   enum{n,e,l,m,q} unit;
 /// The unit to to use for the force
   enum{d,eng} funit;
-/// This is the list of forces that must be scaled
-  std::vector<ActionToPutData*> forces_to_scale;
 /// This holds the pointer that we getting data from
   std::unique_ptr<DataPassingObject> mydata;
+protected:
+/// Setup the units of the input value
+  void setUnit( const std::string& unitstr );
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
@@ -74,8 +75,8 @@ public:
   bool canChainFromThisAction() const { return false; }
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const { return 0; }
-/// Do we need to sum this over all the domains
-  bool sumOverDomains() const ;
+/// Do we need to broadcast to all domains
+  bool bcastToDomains() const ;
 /// Is this quantity scattered over the domains
   bool collectFromDomains() const;
 /// Do we always need to collect the atoms from all domains
@@ -91,7 +92,7 @@ public:
   void wait();
 /// Actually set the values for the output
   void calculate(){ firststep=false; wasscaled=false; }
-  void apply();
+  virtual void apply();
   void rescaleForces( const double& alpha );
 /// For replica exchange
   void writeBinary(std::ostream&o);
@@ -99,8 +100,8 @@ public:
 };
 
 inline
-bool ActionToPutData::sumOverDomains() const {
-  return sum_domains;
+bool ActionToPutData::bcastToDomains() const {
+ return bcast_domains;
 }
 
 inline

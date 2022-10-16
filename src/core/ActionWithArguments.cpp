@@ -219,7 +219,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
             bool found=false;
-            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
+            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); 
+            if( ap && ap->getName()!="ENERGY" ) continue;
             // Find an action created from the shortcut with this label that has a single action
             for(unsigned k=0; k<shortcuts.size(); ++k) {
                 if( shortcuts[k]->matchWildcard() && all[j]->getLabel()==shortcuts[k]->getShortcutLabel() && all[j]->getNumberOfComponents()==1 ) { found=true; break; }

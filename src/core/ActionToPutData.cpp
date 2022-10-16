@@ -34,11 +34,10 @@ void ActionToPutData::registerKeywords(Keywords& keys){
   keys.add("compulsory","SHAPE","0","the shape of the value that is being passed to PLUMED");
   keys.add("compulsory","UNIT","the unit of the quantity that is being passed to PLUMED through this value.  Can be either number, energy, length, mass or charge");
   keys.add("compulsory","FORCE_UNIT","default","the units to use for the force");
-  keys.add("optional","FORCES_FOR_POTENTIAL","If your input quantity is an energy this lists the input actions that hold the forces.  These are rescaled");
   keys.add("compulsory","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
                                    "to deal with pbc");
-  keys.addFlag("SUM_OVER_DOMAINS",false,"does this quantity need to be summed over domains");
+  keys.addFlag("BCAST_TO_DOMAINS",false,"does this quantity need to be broadcast to the other domains");
   keys.addFlag("NOFORCE",false,"always set the forces on this value to zero");
   keys.addFlag("SCATTERED",false,"is this vector scattered over the domains");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
@@ -48,44 +47,47 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 wasset(false),
+bcast_domains(false),
+noforce(false),
+scattered(false),
+fixed(false),
 firststep(true),
 dataCanBeSet(true),
 wasscaled(false),
 mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
-   std::vector<unsigned> shape; parseVector("SHAPE",shape);
-   if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
-   else { addValue( shape ); }    
+   if( getName()!="ENERGY" ) {
+       std::vector<unsigned> shape; parseVector("SHAPE",shape);
+       if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
+       else { addValue( shape ); }    
 
-   std::string unitstr; parse("UNIT",unitstr);
+       std::string unitstr; parse("UNIT",unitstr); setUnit( unitstr );
+       std::string funitstr; parse("FORCE_UNIT",funitstr);
+       if( funitstr=="default" ) funit=d;
+       else if( funitstr=="energy" ) funit=eng;
+       else error( funitstr + " is not a valid input force unit");
+
+       // Now sort out period
+       std::vector<std::string> period; parseVector("PERIODIC",period);
+       if( period.size()==1 ) {
+           if( period[0]!="NO") error("input to PERIODIC keyword does not make sense");
+           setNotPeriodic();
+       } else if( period.size()==2 ) setPeriodic( period[0], period[1] );    
+       else  error("input to PERIODIC keyword does not make sense");
+
+       parseFlag("BCAST_TO_DOMAINS",bcast_domains); parseFlag("NOFORCE", noforce); 
+       parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
+       parseFlag("SCATTERED",scattered);  if( scattered ) plumed_assert( shape.size()>0 );
+   }
+}
+
+void ActionToPutData::setUnit( const std::string& unitstr ) {
    if( unitstr=="number" ) unit=n;
    else if( unitstr=="energy" ) unit=e;
    else if( unitstr=="length" ) unit=l;
    else if( unitstr=="mass" ) unit=m;
    else if( unitstr=="charge" ) unit=q;
    else error( unitstr + " is not a valid input unit");
-   std::string funitstr; parse("FORCE_UNIT",funitstr);
-   if( funitstr=="default" ) funit=d;
-   else if( funitstr=="energy" ) funit=eng;
-   else error( funitstr + " is not a valid input force unit");
-
-   // Now sort out period
-   std::vector<std::string> period; parseVector("PERIODIC",period);
-   if( period.size()==1 ) {
-       if( period[0]!="NO") error("input to PERIODIC keyword does not make sense");
-       setNotPeriodic();
-   } else if( period.size()==2 ) setPeriodic( period[0], period[1] );    
-   else  error("input to PERIODIC keyword does not make sense");
-
-   parseFlag("SUM_OVER_DOMAINS",sum_domains); parseFlag("NOFORCE", noforce); 
-   parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
-   parseFlag("SCATTERED",scattered);  if( scattered ) plumed_assert( shape.size()>0 );
-   std::vector<std::string> toscale; parseVector("FORCES_FOR_POTENTIAL",toscale);
-   for(unsigned i=0;i<toscale.size();++i) {
-       plumed_assert( shape.size()==0 );
-       ActionToPutData* ap=plumed.getActionSet().selectWithLabel< ActionToPutData*>(toscale[i]);
-       plumed_assert(ap); forces_to_scale.push_back(ap); addDependency( ap );  
-   }
 }
 
 void ActionToPutData::setStride( const unsigned& sss ) {
@@ -133,9 +135,7 @@ void ActionToPutData::wait() {
 
 void ActionToPutData::apply() {
    if( getPntrToValue()->forcesWereAdded() && !noforce ) {
-       if( forces_to_scale.size()>0 ) {
-           for(unsigned i=0;i<forces_to_scale.size();++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0)); 
-       } else if( !scattered ) {
+       if( !scattered ) {
            mydata->add_force( getPntrToValue() );
        } else if( wasscaled || (int(plumed.getAtoms().getGatindex().size())==plumed.getAtoms().getNatoms() && plumed.getAtoms().shuffledAtoms==0) ) {
            mydata->add_force( plumed.getAtoms().getGatindex(), getPntrToValue() );

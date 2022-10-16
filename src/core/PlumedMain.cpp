@@ -138,6 +138,7 @@ PlumedMain::PlumedMain():
   doCheckPoint(false),
   stopFlag(NULL),
   stopNow(false),
+  name_of_energy(""),
   novirial(false),
   detailedTimers(false)
 {
@@ -220,7 +221,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        cmd("setValue Energy",val);
+        if( name_of_energy!="" ) cmd("setValue " + name_of_energy, val);
         break;
       case cmd_setForces:
         CHECK_INIT(initialized,word);
@@ -540,9 +541,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Energy");
-        if(ap->isActive()) *(static_cast<int*>(val))=1;
-        else               *(static_cast<int*>(val))=0;
+        if( name_of_energy =="" ) {
+            *(static_cast<int*>(val))=0;
+        } else {
+            ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(name_of_energy);
+            if(ap->isActive()) *(static_cast<int*>(val))=1;
+            else               *(static_cast<int*>(val))=0;
+        }
       }
         break;
       case cmd_getBias:
@@ -642,8 +647,6 @@ void PlumedMain::createAtomValues() {
   std::string noforce="";
   if( novirial || atoms.dd.Get_rank()!=0 ) noforce = " NOFORCE";
   cmd("createValue Box: PUT PERIODIC=NO UNIT=length FORCE_UNIT=energy SHAPE=3,3 " + noforce );
-  // Create holder for the energy
-  cmd("createValue Energy: PUT SUM_OVER_DOMAINS UNIT=energy FORCES_FOR_POTENTIAL=posx,posy,posz,Box PERIODIC=NO");
   // Create holder for the masses
   cmd("createValue Masses: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=mass CONSTANT PERIODIC=NO");
   // Create holder for the charges 
@@ -1113,6 +1116,10 @@ void PlumedMain::writeBinary(std::ostream&o)const {
 void PlumedMain::readBinary(std::istream&i) {
   for(const auto & ip : inputs) ip.second->readBinary(i);
   atoms.setPbcFromBox();
+}
+
+void PlumedMain::setEnergyValue( const std::string& name, ActionToPutData* eact ) {
+  name_of_energy = name; inputs.insert( std::pair<std::string,ActionToPutData*>(name,eact) );
 }
 
 

@@ -243,7 +243,6 @@ void Atoms::setPbcFromBox() {
   ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
   plumed_assert( apb ); Tensor box; Value* myval( apb->copyOutput(0) );
   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) box(i,j) = myval->get(3*i+j);
-  if(dd) dd.Bcast(box,0);
   pbc.setBox(box);
 }
 
@@ -254,6 +253,7 @@ void Atoms::wait() {
   std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions());
   for(const auto & ip : inputs) { 
       if( ip.second->collectFromDomains() ) { values_to_set.push_back(ip.second->copyOutput(0)); ndata++; }  
+      if( dd && ip.second->isActive() && ip.second->bcastToDomains() ) { dd.Bcast((ip.second->copyOutput(0))->data,0); }
   }
 
   setPbcFromBox();
@@ -279,7 +279,7 @@ void Atoms::wait() {
       asyncSent=false;
     }
     for(const auto & ip : inputs) {
-        if( ip.second->sumOverDomains() ) dd.Sum( (ip.second->copyOutput(0))->data  );
+        if( ip.second->isActive() && ip.second->getName()=="ENERGY" ) dd.Sum( (ip.second->copyOutput(0))->data  );
     }
   }
 }
