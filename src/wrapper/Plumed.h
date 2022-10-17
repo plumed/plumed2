@@ -1630,19 +1630,19 @@ class Plumed {
       throw ::std::runtime_error(msg);
     }
     /* "bad" errors */
-    if(h.code>=11000 && h.code<11100) throw Plumed::std_bad_typeid(msg);
-    if(h.code>=11100 && h.code<11200) throw Plumed::std_bad_cast(msg);
+    if(h.code>=11000 && h.code<11100) throw add_buffer_to< ::std::bad_typeid>(msg);
+    if(h.code>=11100 && h.code<11200) throw add_buffer_to< ::std::bad_cast>(msg);
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-    if(h.code>=11200 && h.code<11300) throw Plumed::std_bad_weak_ptr(msg);
-    if(h.code>=11300 && h.code<11400) throw Plumed::std_bad_function_call(msg);
+    if(h.code>=11200 && h.code<11300) throw add_buffer_to< ::std::bad_weak_ptr>(msg);
+    if(h.code>=11300 && h.code<11400) throw add_buffer_to< ::std::bad_function_call>(msg);
 #endif
     if(h.code>=11400 && h.code<11500) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-      if(h.code>=11410 && h.code<11420) throw Plumed::std_bad_array_new_length(msg);
+      if(h.code>=11410 && h.code<11420) throw add_buffer_to< ::std::bad_array_new_length>(msg);
 #endif
-      throw Plumed::std_bad_alloc(msg);
+      throw add_buffer_to< ::std::bad_alloc>(msg);
     }
-    if(h.code>=11500 && h.code<11600) throw Plumed::std_bad_exception(msg);
+    if(h.code>=11500 && h.code<11600) throw add_buffer_to< ::std::bad_exception>(msg);
     /* lepton error */
     if(h.code>=19900 && h.code<20000) throw Plumed::LeptonException(msg);
     /* plumed exceptions */
@@ -1656,7 +1656,7 @@ class Plumed {
       throw Plumed::Exception(msg);
     }
     /* fallback for any other exception */
-    throw Plumed::std_exception(msg);
+    throw add_buffer_to< ::std::exception>(msg);
   }
 
   /**
@@ -1670,23 +1670,23 @@ class Plumed {
     try {
       throw;
     } catch(const ::std::bad_exception & e) {
-      throw Plumed::std_bad_exception(e.what());
+      throw add_buffer_to< ::std::bad_exception>(e.what());
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
     } catch(const ::std::bad_array_new_length & e) {
-      throw Plumed::std_bad_array_new_length(e.what());
+      throw add_buffer_to< ::std::bad_array_new_length>(e.what());
 #endif
     } catch(const ::std::bad_alloc & e) {
-      throw Plumed::std_bad_alloc(e.what());
+      throw add_buffer_to< ::std::bad_alloc>(e.what());
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
     } catch(const ::std::bad_function_call & e) {
-      throw Plumed::std_bad_function_call(e.what());
+      throw add_buffer_to< ::std::bad_function_call>(e.what());
     } catch(const ::std::bad_weak_ptr & e) {
-      throw Plumed::std_bad_weak_ptr(e.what());
+      throw add_buffer_to< ::std::bad_weak_ptr>(e.what());
 #endif
     } catch(const ::std::bad_cast & e) {
-      throw Plumed::std_bad_cast(e.what());
+      throw add_buffer_to< ::std::bad_cast>(e.what());
     } catch(const ::std::bad_typeid & e) {
-      throw Plumed::std_bad_typeid(e.what());
+      throw add_buffer_to< ::std::bad_typeid>(e.what());
       // not implemented yet: std::regex_error
       // we do not allow regex yet due to portability problems with gcc 4.8
       // as soon as we transition to using <regex> it should be straightforward to add
@@ -1721,9 +1721,9 @@ class Plumed {
     } catch(const ::std::logic_error & e) {
       throw ::std::logic_error(e.what());
     } catch(const ::std::exception & e) {
-      throw Plumed::std_exception(e.what());
+      throw add_buffer_to< ::std::exception>(e.what());
     } catch(...) {
-      throw Plumed::std_bad_exception("plumed could not translate exception");
+      throw add_buffer_to< ::std::bad_exception>("plumed could not translate exception");
     }
   }
 
@@ -1833,43 +1833,34 @@ private:
     such they use a fixed size buffer.
   */
 
-#define __PLUMED_WRAPPER_NOSTRING_EXCEPTION(name) \
-  class std_ ## name : \
-    public ::std::name \
-  { \
+  template<typename T>
+  class add_buffer_to:
+    public T
+  {
     char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
-  public: \
-    __PLUMED_WRAPPER_CXX_EXPLICIT std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      this->msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
-    } \
-    std_ ## name(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-    } \
-    std_ ## name & operator=(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      if(this==&other) return *this;\
-      msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      return *this; \
-    } \
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;} \
-    ~std_ ## name() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {} \
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      this->msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
+    }
+    add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+    }
+    add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      if(this==&other) return *this;
+      msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      return *this;
+    }
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~add_buffer_to() throw() {}
+#endif
   };
-
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_typeid)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_cast)
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_weak_ptr)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_function_call)
-#endif
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_alloc)
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_array_new_length)
-#endif
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_exception)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(exception)
 
 private:
   /// Small class that wraps plumed_safeptr in order to make its initialization easier
