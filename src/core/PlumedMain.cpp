@@ -399,7 +399,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(9));
+        val.set(int(10));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -515,6 +515,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_throw:
         CHECK_NOTNULL(val,word);
         testThrow(val.get<const char*>());
+      /* ADDED WITH API==10 */
+      case cmd_setNestedExceptions:
+        CHECK_NOTNULL(val,word);
+        if(val.get<int>()!=0) nestedExceptions=true;
+        else nestedExceptions=false;
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);

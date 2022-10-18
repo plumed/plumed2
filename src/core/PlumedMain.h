@@ -110,6 +110,8 @@ private:
 
   plumed_error_handler error_handler= {NULL,NULL};
 
+  bool nestedExceptions=false;
+
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
   DLLoader& dlloader=*dlloader_fwd;
@@ -430,6 +432,10 @@ public:
   unsigned decreaseReferenceCounter() noexcept;
 /// Report the reference counter
   unsigned useCountReferenceCounter() const noexcept;
+  void enableNestedExceptions();
+  bool getNestedExceptions()const {
+    return nestedExceptions;
+  }
 };
 
 /////
