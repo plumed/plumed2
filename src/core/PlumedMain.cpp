@@ -120,6 +120,48 @@ namespace PLMD {
     throw std::ios_base::failure(what);
   }
 
+  if(words[0]=="int") {
+    int value=0;
+    if(words.size()>1) Tools::convert(words[1],value);
+    throw value;
+  }
+
+  if(words[0]=="test_nested1") {
+    try {
+      throw Exception(std::string("inner ")+what);
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested2") {
+    try {
+      throw std::bad_alloc();
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested3") {
+    try {
+      throw "inner";
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
   plumed_error() << "unknown exception " << what;
 }
 
