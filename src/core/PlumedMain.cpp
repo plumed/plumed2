@@ -874,39 +874,43 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    try {
+      if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
-      if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
-        const unsigned m=actionSet.size();
-        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        Stopwatch::Handler sw;
+        if(detailedTimers) {
+          std::string actionNumberLabel;
+          Tools::convert(iaction,actionNumberLabel);
+          const unsigned m=actionSet.size();
+          unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+          const int pad=k-actionNumberLabel.length();
+          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        }
+        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        {
+          if(av) av->clearInputForces();
+          if(av) av->clearDerivatives();
+        }
+        {
+          if(aa) aa->clearOutputForces();
+          if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        }
+        if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
+        else p->calculate();
+        // This retrieves components called bias
+        if(av) {
+          bias+=av->getOutputQuantity("bias");
+          work+=av->getOutputQuantity("work");
+          av->setGradientsIfNeeded();
+        }
+        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        if(avv)avv->setGradientsIfNeeded();
       }
-      ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
-      {
-        if(av) av->clearInputForces();
-        if(av) av->clearDerivatives();
-      }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
-      }
-      if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
-      else p->calculate();
-      // This retrieves components called bias
-      if(av) {
-        bias+=av->getOutputQuantity("bias");
-        work+=av->getOutputQuantity("work");
-        av->setGradientsIfNeeded();
-      }
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+    } catch(...) {
+      plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
     iaction++;
   }
