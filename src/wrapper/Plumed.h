@@ -807,7 +807,7 @@ typedef struct {
   The layout of this structure is subject to change, and functions manipulating it
   are defined as inline/static functions.
 */
-typedef struct {
+typedef struct plumed_error {
   /** code used for translating messages */
   int code;
   /** message */
@@ -816,6 +816,8 @@ typedef struct {
   int error_code;
   /** the buffer containing the message to be deallocated */
   char* what_buffer;
+  /** pointer to nested exception */
+  struct plumed_error* nested;
 } plumed_error;
 
 /** Initialize error (for internal usage) */
@@ -825,20 +827,30 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLU
   error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->error_code=0;
   error->what_buffer=__PLUMED_WRAPPER_CXX_NULLPTR;
+  error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
 }
 
 /** Finalize error - should be called when an error is raised to avoid leaks */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  if(error.nested) {
+    plumed_error_finalize(*error.nested);
+    __PLUMED_WRAPPER_STD free(error.nested);
+  }
   if(error.what_buffer) {
     __PLUMED_WRAPPER_STD free(error.what_buffer);
   }
+}
+
+/** Access message - more robust than directly accessing what ptr, for future extensibility */
+__PLUMED_WRAPPER_STATIC_INLINE const char* plumed_error_what(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  return error.what;
 }
 
 /** Callback (for internal usage) */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const char*what,const void* opt) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   plumed_error* error;
   __PLUMED_WRAPPER_STD size_t len;
-  const void*const* options;
+  void*const* options;
 
   error=(plumed_error*) ptr;
 
@@ -847,18 +859,26 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   len=__PLUMED_WRAPPER_STD strlen(what);
   error->what_buffer=(char*) __PLUMED_WRAPPER_STD malloc(len+1);
   if(!error->what_buffer) {
-    error->what="cannot allocate error object";
-    error->code=11400;
-    return;
+    error->what="[msg erased due to allocation failure]";
+  } else {
+    __PLUMED_WRAPPER_STD strncpy(error->what_buffer,what,len+1);
+    error->what=error->what_buffer;
   }
-  __PLUMED_WRAPPER_STD strncpy(error->what_buffer,what,len+1);
-
-  error->what=error->what_buffer;
 
   /* interpret optional arguments */
-  options=(const void*const*)opt;
+  options=(void*const*)opt;
   if(options) while(*options) {
-      if(*((const char*)*options)=='c') error->error_code=*((const int*)*(options+1));
+      /* c: error code */
+      if(*((const char*)*options)=='c' && *(options+1)) error->error_code=*((const int*)*(options+1));
+      /* n: nested exception */
+      if(*((const char*)*options)=='n' && *(options+1)) {
+        /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
+        error->nested=(plumed_error*) __PLUMED_WRAPPER_STD malloc(sizeof(plumed_error));
+        /* this is if malloc does not fail */
+        if(error->nested) plumed_error_init((plumed_error*)error->nested);
+        /* plumed will make sure to only use this if it is not null */
+        *(void**)*(options+1)=error->nested;
+      }
       options+=2;
     }
 }
