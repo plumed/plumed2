@@ -22,8 +22,10 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "core/PbcAction.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {
@@ -34,6 +36,7 @@ public ActionWithValue,
 public ActionWithArguments {
 private: 
   bool fractional;
+  PbcAction* pbc_action;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -108,15 +111,16 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
   addComponent("mass"); componentIsNotPeriodic("mass"); if( mass[0]->isConstant() ) getPntrToComponent(3)->setConstant();
   addComponent("charge"); componentIsNotPeriodic("charge"); if( charge[0]->isConstant() ) getPntrToComponent(4)->setConstant();
   plumed.getAtoms().addAtomValues( getLabel(), copyOutput(0), copyOutput(1), copyOutput(2), copyOutput(3), copyOutput(4) );
+  pbc_action = plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
 }
 
 void ArgsToVatom::calculate() {
   if( fractional ) {
-      if( plumed.getAtoms().getPbc().isSet() ) {
+      if( pbc_action->getPbc().isSet() ) {
           // Get the position in fractional coordinates
           Vector fpos; for(unsigned i=0;i<3;++i) fpos[i] = getPntrToArgument(i)->get();
           // Convert fractioanl coordinates to cartesian coordinates
-          Tensor box=plumed.getAtoms().getPbc().getBox(); Vector cpos=matmul(fpos,box);
+          Tensor box=pbc_action->getPbc().getBox(); Vector cpos=matmul(fpos,box);
           // Set the final position and derivatives
           for(unsigned i=0; i<3; ++i) {
               Value* vv=getPntrToOutput(i); vv->set( cpos[i] );

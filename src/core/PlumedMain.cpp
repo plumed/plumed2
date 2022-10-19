@@ -646,7 +646,8 @@ void PlumedMain::createAtomValues() {
   // Create holder for the cell
   std::string noforce="";
   if( novirial || atoms.dd.Get_rank()!=0 ) noforce = " NOFORCE";
-  cmd("createValue Box: PUT PERIODIC=NO UNIT=length FORCE_UNIT=energy SHAPE=3,3 " + noforce );
+  readInputLine( "Box: PBC " + noforce ); ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box"); 
+  inputs.insert( std::pair<std::string,ActionToPutData*>("Box",ap) );
   // Create holder for the masses
   cmd("createValue Masses: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=mass CONSTANT PERIODIC=NO");
   // Create holder for the charges 
@@ -1115,7 +1116,6 @@ void PlumedMain::writeBinary(std::ostream&o)const {
 
 void PlumedMain::readBinary(std::istream&i) {
   for(const auto & ip : inputs) ip.second->readBinary(i);
-  atoms.setPbcFromBox();
 }
 
 void PlumedMain::setEnergyValue( const std::string& name, ActionToPutData* eact ) {

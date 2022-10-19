@@ -37,17 +37,15 @@ void ActionToPutData::registerKeywords(Keywords& keys){
   keys.add("compulsory","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
                                    "to deal with pbc");
-  keys.addFlag("BCAST_TO_DOMAINS",false,"does this quantity need to be broadcast to the other domains");
-  keys.addFlag("NOFORCE",false,"always set the forces on this value to zero");
   keys.addFlag("SCATTERED",false,"is this vector scattered over the domains");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 wasset(false),
-bcast_domains(false),
 noforce(false),
 scattered(false),
 fixed(false),
@@ -56,16 +54,13 @@ dataCanBeSet(true),
 wasscaled(false),
 mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
-   if( getName()!="ENERGY" ) {
+   if( getName()!="ENERGY" && getName()!="PBC" ) {
        std::vector<unsigned> shape; parseVector("SHAPE",shape);
        if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
        else { addValue( shape ); }    
 
-       std::string unitstr; parse("UNIT",unitstr); setUnit( unitstr );
-       std::string funitstr; parse("FORCE_UNIT",funitstr);
-       if( funitstr=="default" ) funit=d;
-       else if( funitstr=="energy" ) funit=eng;
-       else error( funitstr + " is not a valid input force unit");
+       std::string unitstr, funitstr; parse("UNIT",unitstr); 
+       parse("FORCE_UNIT",funitstr); setUnit( unitstr, funitstr );
 
        // Now sort out period
        std::vector<std::string> period; parseVector("PERIODIC",period);
@@ -75,19 +70,23 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
        } else if( period.size()==2 ) setPeriodic( period[0], period[1] );    
        else  error("input to PERIODIC keyword does not make sense");
 
-       parseFlag("BCAST_TO_DOMAINS",bcast_domains); parseFlag("NOFORCE", noforce); 
        parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
        parseFlag("SCATTERED",scattered);  if( scattered ) plumed_assert( shape.size()>0 );
    }
+   if( keywords.exists("NOFORCE") ) parseFlag("NOFORCE", noforce);
 }
 
-void ActionToPutData::setUnit( const std::string& unitstr ) {
+void ActionToPutData::setUnit( const std::string& unitstr, const std::string& funitstr ) {
    if( unitstr=="number" ) unit=n;
    else if( unitstr=="energy" ) unit=e;
    else if( unitstr=="length" ) unit=l;
    else if( unitstr=="mass" ) unit=m;
    else if( unitstr=="charge" ) unit=q;
    else error( unitstr + " is not a valid input unit");
+   // Set the force units
+   if( funitstr=="default" ) funit=d;
+   else if( funitstr=="energy" ) funit=eng;
+   else error( funitstr + " is not a valid input force unit");
 }
 
 void ActionToPutData::setStride( const unsigned& sss ) {

@@ -24,7 +24,6 @@
 #include "PlumedMain.h"
 #include "ActionToPutData.h"
 #include "ActionSet.h"
-#include "tools/Pbc.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -239,13 +238,6 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   }
 }
 
-void Atoms::setPbcFromBox() {
-  ActionToPutData* apb=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-  plumed_assert( apb ); Tensor box; Value* myval( apb->copyOutput(0) );
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) box(i,j) = myval->get(3*i+j);
-  pbc.setBox(box);
-}
-
 void Atoms::wait() {
   if(getNatoms()==0) return;
 // How many double per atom should be scattered
@@ -253,10 +245,7 @@ void Atoms::wait() {
   std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions());
   for(const auto & ip : inputs) { 
       if( ip.second->collectFromDomains() ) { values_to_set.push_back(ip.second->copyOutput(0)); ndata++; }  
-      if( dd && ip.second->isActive() && ip.second->bcastToDomains() ) { dd.Bcast((ip.second->copyOutput(0))->data,0); }
   }
-
-  setPbcFromBox();
 
   if(dd && shuffledAtoms>0) {
 // receive toBeReceived
@@ -277,9 +266,6 @@ void Atoms::wait() {
         }
       }
       asyncSent=false;
-    }
-    for(const auto & ip : inputs) {
-        if( ip.second->isActive() && ip.second->getName()=="ENERGY" ) dd.Sum( (ip.second->copyOutput(0))->data  );
     }
   }
 }
@@ -450,5 +436,14 @@ double Atoms::getMDKBoltzmann()const {
   if(naturalUnits || MDnaturalUnits) return 1.0;
   else return kBoltzmann/MDUnits.getEnergy();
 }
+
+void Atoms::broadcastToDomains( Value* val ) {
+  if( dd ) dd.Bcast( val->data, 0 );
+}
+
+void Atoms::sumOverDomains( Value* val ) {
+  if( dd ) dd.Sum( val->data );
+}
+
 
 }

@@ -33,7 +33,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
+#include "core/PbcAction.h"
 #include "tools/File.h"
 #include "tools/Pbc.h"
 
@@ -109,7 +109,7 @@ class EffectiveEnergyDrift:
   bool isFirstStep;
 
   bool ensemble;
-
+  PbcAction* pbc_action;
 public:
   explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
@@ -198,8 +198,8 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   ActionToPutData* az=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posz");
   if( az ) { pos_values.push_back(az->copyOutput(0)); addDependency( az ); }
   // Retrieve the box
-  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-  if( ap ) { boxValue=ap->copyOutput(0); addDependency( ap ); }
+  pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  if( pbc_action ) { boxValue=pbc_action->copyOutput(0); addDependency( pbc_action ); }
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
@@ -207,7 +207,7 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 }
 
 void EffectiveEnergyDrift::update() {
-  bool pbc=atoms.getPbc().isSet();
+  Pbc & tpbc(pbc_action->getPbc()); bool pbc=tpbc.isSet();
 
   //retrive data of local atoms
   const std::vector<int>& gatindex = atoms.getGatindex(); nLocalAtoms = gatindex.size();
@@ -219,8 +219,8 @@ void EffectiveEnergyDrift::update() {
       }
   }
   if(pbc) {
-    Tensor B=atoms.getPbc().getBox();
-    Tensor IB=atoms.getPbc().getInvBox();
+    Tensor B=tpbc.getBox();
+    Tensor IB=tpbc.getInvBox();
     #pragma omp parallel for
     for(unsigned i=0; i<positions.size(); ++i) {
       positions[i]=matmul(positions[i],IB);

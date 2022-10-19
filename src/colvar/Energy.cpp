@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionToPutData.h"
 #include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 
@@ -68,6 +69,7 @@ public:
   explicit Energy(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
+  void wait() override;
   void apply() override;
 };
 
@@ -79,7 +81,7 @@ Energy::Energy(const ActionOptions&ao):
   ActionToPutData(ao)
 {
   plumed.setEnergyValue( getLabel(), this ); std::vector<unsigned> shape; 
-  addValue( shape ); setNotPeriodic(); setUnit( "energy" );
+  addValue( shape ); setNotPeriodic(); setUnit( "energy", "default" );
   ActionToPutData* px=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posx");
   plumed_assert(px); forces_to_scale.push_back(px); addDependency( px );
   ActionToPutData* py=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posy");
@@ -95,7 +97,11 @@ Energy::Energy(const ActionOptions&ao):
 }
 
 void Energy::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
+  Action::registerKeywords( keys ); 
+}
+
+void Energy::wait() {
+  ActionToPutData::wait(); plumed.getAtoms().sumOverDomains( getPntrToOutput(0) );
 }
 
 void Energy::apply() {

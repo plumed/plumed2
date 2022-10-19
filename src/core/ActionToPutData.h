@@ -35,8 +35,6 @@ friend class PlumedMain;
 private:
 /// Action has been set
   bool wasset;
-/// Do we need to broadcast to all domains
-  bool bcast_domains;
 /// Are we not applying forces on this values
   bool noforce;
 /// Is this quantity scattered over the domains
@@ -57,7 +55,7 @@ private:
   std::unique_ptr<DataPassingObject> mydata;
 protected:
 /// Setup the units of the input value
-  void setUnit( const std::string& unitstr );
+  void setUnit( const std::string& unitstr, const std::string& funitstr );
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
@@ -89,20 +87,15 @@ public:
   void share( const unsigned& j, const unsigned& k );
   void share( const std::set<AtomNumber>&index, const std::vector<unsigned>& i );
 /// Get the data to share
-  void wait();
+  virtual void wait();
 /// Actually set the values for the output
   void calculate(){ firststep=false; wasscaled=false; }
   virtual void apply();
   void rescaleForces( const double& alpha );
 /// For replica exchange
   void writeBinary(std::ostream&o);
-  void readBinary(std::istream&i);
+  virtual void readBinary(std::istream&i);
 };
-
-inline
-bool ActionToPutData::bcastToDomains() const {
- return bcast_domains;
-}
 
 inline
 bool ActionToPutData::hasBeenSet() const {

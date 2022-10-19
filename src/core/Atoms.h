@@ -39,7 +39,6 @@ namespace PLMD {
 //class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
-class Pbc;
 
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
@@ -57,8 +56,6 @@ class Atoms
 /// ones used in domain decomposition. However, it is now also used for the NAMD-like
 /// interface, where only a small number of atoms is passed to plumed.
   std::vector<int> g2l;
-  ForwardDecl<Pbc> pbc_fwd;
-  Pbc&   pbc=*pbc_fwd;
 
   unsigned shuffledAtoms;
 
@@ -145,8 +142,6 @@ public:
 
   void setRealPrecision(int);
 
-  void setPbcFromBox();
-
   void setTimeStep(const double tstep);
   double getTimeStep()const;
 
@@ -158,7 +153,6 @@ public:
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
-  const Pbc& getPbc()const;
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -197,6 +191,8 @@ public:
   std::string getAtomString( const AtomNumber& i ) const ;
   void getGradient( const AtomNumber& i, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ; 
   bool checkConstant( const AtomNumber& i, const std::string& name ) const ;
+  void broadcastToDomains( Value* val );
+  void sumOverDomains( Value* val );
 };
 
 inline
@@ -212,11 +208,6 @@ const long int& Atoms::getDdStep()const {
 inline
 const std::vector<int>& Atoms::getGatindex()const {
   return gatindex;
-}
-
-inline
-const Pbc& Atoms::getPbc()const {
-  return pbc;
 }
 
 inline

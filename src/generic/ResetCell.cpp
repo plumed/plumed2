@@ -30,6 +30,7 @@
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
 #include "core/Atoms.h"
+#include "core/PbcAction.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {
@@ -99,6 +100,7 @@ class ResetCell:
   std::string type;
   Tensor rotation,newbox;
   Value* boxValue;
+  PbcAction* pbc_action;
   std::vector<Value*> pos_values;
 public:
   explicit ResetCell(const ActionOptions&ao);
@@ -136,17 +138,14 @@ ResetCell::ResetCell(const ActionOptions&ao):
   ActionToPutData* az=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posz");
   if( !az ) error("cannot align posx has not been set");
   pos_values.push_back( az->copyOutput(0) );
-  ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box");
-  if( !ap ) error("cannot reset cell if box has not been set");
-  boxValue=ap->copyOutput(0); checkRead();
+  pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  if( !pbc_action ) error("cannot reset cell if box has not been set");
+  boxValue=pbc_action->copyOutput(0); checkRead();
 }
 
 
 void ResetCell::calculate() {
-
-  Pbc & pbc(modifyGlobalPbc());
-
-  Tensor box=pbc.getBox();
+  Pbc & pbc(pbc_action->getPbc()); Tensor box=pbc.getBox();
 
 // moduli of lattice vectors
   double a=modulo(box.getRow(0));

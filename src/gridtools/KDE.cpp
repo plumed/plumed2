@@ -24,6 +24,8 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "core/PbcAction.h"
+#include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -341,7 +343,8 @@ void KDE::setupNeighborsVector() {
 void KDE::actionsToDoBeforeFirstCalculate() {
   for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
     if( gmin[i]=="auto" ) {
-      double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
+      double lcoord, ucoord; 
+      PbcAction* bv = plumed.getActionSet().selectWithLabel<PbcAction*>("Box"); Tensor box( bv->getPbc().getBox() );
       std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
       std::string name = getPntrToArgument(i)->getName().substr(dot+1);
       if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }

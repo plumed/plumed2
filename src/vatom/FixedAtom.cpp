@@ -23,6 +23,9 @@
 #include "ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/Exception.h"
+#include "core/PbcAction.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace vatom {
@@ -87,6 +90,7 @@ class FixedAtom:
 {
   Vector coord;
   double mass,charge;
+  PbcAction* mypbc;
   bool scaled_components;
 public:
   explicit FixedAtom(const ActionOptions&ao);
@@ -106,7 +110,8 @@ void FixedAtom::registerKeywords(Keywords& keys) {
 
 FixedAtom::FixedAtom(const ActionOptions&ao):
   Action(ao),
-  ActionWithVirtualAtom(ao)
+  ActionWithVirtualAtom(ao),
+  mypbc(NULL)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -127,13 +132,17 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
 
   checkRead();
   log<<"  AT position "<<coord[0]<<" "<<coord[1]<<" "<<coord[2]<<"\n";
-  if(scaled_components) log<<"  position is in scaled components\n";
+  if(scaled_components) {
+     log<<"  position is in scaled components\n";
+     mypbc = plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  }
+ 
 }
 
 void FixedAtom::calculate() {
   std::vector<Tensor> deriv(getNumberOfAtoms());
   if(scaled_components) {
-    setPosition(getPbc().scaledToReal(coord));
+    setPosition(mypbc->getPbc().scaledToReal(coord));
   } else {
     setPosition(coord);
   }

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionAtomistic.h"
+#include "PbcAction.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "GenericMolInfo.h"
@@ -44,6 +45,7 @@ ActionAtomistic::~ActionAtomistic() {
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
+  boxValue(NULL),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
@@ -52,7 +54,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   atoms.add(this);
   if( atoms.getNatoms()>0 ) {
       ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
-      boxValue=bv->copyOutput(0); addDependency(bv); bv->copyOutput(0)->userdata.insert( getLabel() );
+      boxValue=bv->copyOutput(0); 
   }
 }
 
@@ -71,7 +73,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   int n=0; for(unsigned i=0;i<atoms.posx.size();++i) n += atoms.posx[i]->getNumberOfValues(); 
   if(clearDep) clearDependencies();
   unique.clear(); std::vector<bool> requirements( atoms.posx.size(), false ); 
-  if(a.size()>0 ) addDependency( boxValue->getPntrToAction() );
+  if( boxValue ) addDependency( boxValue->getPntrToAction() );
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     // Check from atoms which of the atom values are required
@@ -233,7 +235,9 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
 }
 
 void ActionAtomistic::retrieveAtoms() {
-  pbc=atoms.pbc;
+  if( !boxValue ) return;
+  PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
+  plumed_assert( pbca ); pbc=pbca->pbc;
   if(donotretrieve || indexes.size()==0 ) return;
   ActionToPutData* cv = dynamic_cast<ActionToPutData*>( atoms.charges[0]->getPntrToAction() );
   chargesWereSet=cv->hasBeenSet(); 
