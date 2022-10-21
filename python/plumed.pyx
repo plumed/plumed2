@@ -36,6 +36,8 @@ import sys
 import warnings
 import types
 
+from cython.operator import dereference
+
 if sys.version_info < (3,):
     raise ImportError("PLUMED >=2.6 only supports Python 3")
 
@@ -56,6 +58,12 @@ DEF type_pointer       = 0x2000000*2
 DEF type_const_pointer = 0x2000000*3
 
 DEF type_nocopy        = 0x10000000
+
+class PlumedError(RuntimeError):
+  pass
+
+class LeptonError(RuntimeError):
+  pass
 
 cdef class Plumed:
      cdef cplumed.plumed c_plumed
@@ -84,6 +92,10 @@ cdef class Plumed:
             self.c_plumed=cplumed.plumed_create_dlopen(ckernel)
             if not cplumed.plumed_valid(self.c_plumed):
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
+         api=array.array('i',[0])
+         self.cmd( "getApiVersion", api)
+         if(api[0]>=10):
+           self.cmd("setNestedExceptions",1)
          self.cmd( "setRealPrecision", 8)
      def finalize(self):
          """ Explicitly finalize a Plumed object.
@@ -108,6 +120,47 @@ cdef class Plumed:
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
+     cdef raise_exception(self,cplumed.plumed_error error):
+        if error.nested:
+          try:
+            self.raise_exception(dereference(<cplumed.plumed_error*> error.nested))
+          except Exception as e:
+            raise_from = e
+        else:
+          raise_from = None
+        msg = error.what
+        what = msg.decode("utf-8")
+        # this map is from cython doc
+        if error.code>=20300 and error.code<20400: # PLMD::Plumed::ExceptionTypeError
+           raise TypeError(what) from raise_from
+        elif error.code>=11400 and error.code<11500: # std::bad_alloc
+           raise MemoryError(what) from raise_from
+        elif error.code>=11000 and error.code<11100: # std::bad_typeid
+           raise TypeError(what) from raise_from
+        elif error.code>=11100 and error.code<11200: # std::bad_cast
+           raise TypeError(what) from raise_from
+        elif error.code>=10110 and error.code<10115: # std::domain_error
+           raise ValueError(what) from raise_from
+        elif error.code>=10105 and error.code<10110: # std::invalid_argument
+           raise ValueError(what) from raise_from
+        elif error.code>=10230 and error.code<10240: # std::ios_base::failure
+           # Unfortunately, in standard C++ we have no way of distinguishing EOF
+           # from other errors here; be careful with the exception mask
+           raise IOError(what) from raise_from
+        elif error.code>=10120 and error.code<10125: # std::out_of_range
+           raise IndexError(what) from raise_from
+        elif error.code>=10210 and error.code<10215: # std::overflow_error
+           raise OverflowError(what) from raise_from
+        elif error.code>=10205 and error.code<10210: # std::range_error
+           raise ArithmeticError(what) from raise_from
+        elif error.code>=10215 and error.code<10220: # std::underflow_error
+           raise ArithmeticError(what) from raise_from
+        elif error.code>=19900 and error.code<20000: # Lepton
+           raise LeptonError(what) from raise_from
+        elif error.code>=20000 and error.code<30000: # Plumed
+           raise PlumedError(what) from raise_from
+        else:
+           raise RuntimeError(what) from raise_from
      cdef cmd_low_level(self,const char* ckey, const void* val,size_t nelem, size_t* shape,size_t flags):
          cdef cplumed.plumed_safeptr safe
          cdef cplumed.plumed_nothrow_handler nothrow
@@ -121,36 +174,8 @@ cdef class Plumed:
          nothrow.handler=cplumed.plumed_error_set
          cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
          if(error.code):
-           msg = error.what
-           what = msg.decode("utf-8")
            try:
-             # this map is from cython doc
-             if error.code>=20300 and error.code<20400: # PLMD::Plumed::ExceptionTypeError
-                raise TypeError(what)
-             elif error.code>=11400 and error.code<11500: # std::bad_alloc
-                raise MemoryError(what)
-             elif error.code>=11000 and error.code<11100: # std::bad_typeid
-                raise TypeError(what)
-             elif error.code>=11100 and error.code<11200: # std::bad_cast
-                raise TypeError(what)
-             elif error.code>=10110 and error.code<10115: # std::domain_error
-                raise ValueError(what)
-             elif error.code>=10105 and error.code<10110: # std::invalid_argument
-                raise ValueError(what)
-             elif error.code>=10230 and error.code<10240: # std::ios_base::failure
-                # Unfortunately, in standard C++ we have no way of distinguishing EOF
-                # from other errors here; be careful with the exception mask
-                raise IOError(what)
-             elif error.code>=10120 and error.code<10125: # std::out_of_range
-                raise IndexError(what)
-             elif error.code>=10210 and error.code<10215: # std::overflow_error
-                raise OverflowError(what)
-             elif error.code>=10205 and error.code<10210: # std::range_error
-                raise ArithmeticError(what)
-             elif error.code>=10215 and error.code<10220: # std::underflow_error
-                raise ArithmeticError(what)
-             else:
-                raise RuntimeError(what)
+             self.raise_exception(error)
            finally:
              cplumed.plumed_error_finalize(error)
      cdef cmd_ndarray_double(self, ckey, val):

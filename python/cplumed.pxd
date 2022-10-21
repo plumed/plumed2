@@ -38,6 +38,7 @@ cdef extern from "Plumed.h":
     ctypedef struct plumed_error:
         int code
         const char* what
+        void* nested
         # ignore other members
     void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow)
     void plumed_error_set(void*ptr,int code,const char*what,const void* opt)
