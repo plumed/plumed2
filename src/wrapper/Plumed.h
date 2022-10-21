@@ -715,14 +715,32 @@
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstddef> /* size_t */
 #include <cstring> /* memcpy */
-#include <cstdlib> /* malloc free */
 #else
 #include <stddef.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h> /* FILE */
 #include <limits.h> /* CHAR_MIN */
 #endif
+
+/**
+  This is an internal tool, to make sure that all malloc calls inside the
+  plumed library refer to the same implementation. When compiling with
+  __PLUMED_WRAPPER_DEBUG_REFCOUNT=1 it is possible to log
+  allocations and deallocations, so as to debug the wrappers.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+void* plumed_malloc(__PLUMED_WRAPPER_STD size_t size);
+__PLUMED_WRAPPER_C_END
+
+/**
+  This is an internal tool, to make sure that all free calls inside the
+  plumed library refer to the same implementation. When compiling with
+  __PLUMED_WRAPPER_DEBUG_REFCOUNT=1 it is possible to log
+  allocations and deallocations, so as to debug the wrappers.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_free(void* ptr);
+__PLUMED_WRAPPER_C_END
 
 /**
   \brief Main plumed object
@@ -849,10 +867,10 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __
   if(!error.code) return;
   if(error.nested) {
     plumed_error_finalize(*error.nested);
-    __PLUMED_WRAPPER_STD free(error.nested);
+    plumed_free(error.nested);
   }
   if(error.what_buffer) {
-    __PLUMED_WRAPPER_STD free(error.what_buffer);
+    plumed_free(error.what_buffer);
   }
 }
 
@@ -910,7 +928,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   error->code=code;
   error->error_code=0;
   len=__PLUMED_WRAPPER_STD strlen(what);
-  error->what_buffer=(char*) __PLUMED_WRAPPER_STD malloc(len+1);
+  error->what_buffer=(char*) plumed_malloc(len+1);
   if(!error->what_buffer) {
     error->what="[msg erased due to allocation failure]";
   } else {
@@ -926,7 +944,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
       /* n: nested exception */
       if(*((const char*)*options)=='n' && *(options+1)) {
         /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
-        error->nested=(plumed_error*) __PLUMED_WRAPPER_STD malloc(sizeof(plumed_error));
+        error->nested=(plumed_error*) plumed_malloc(sizeof(plumed_error));
         /* this is if malloc does not fail */
         if(error->nested) plumed_error_init((plumed_error*)error->nested);
         /* plumed will make sure to only use this if it is not null */
@@ -3097,8 +3115,6 @@ typedef struct {
 
 #define __PLUMED_GETENV __PLUMED_WRAPPER_STD getenv
 #define __PLUMED_FPRINTF __PLUMED_WRAPPER_STD fprintf
-#define __PLUMED_MALLOC __PLUMED_WRAPPER_STD malloc
-#define __PLUMED_FREE __PLUMED_WRAPPER_STD free
 
 /**
   Historically (PLUMED<=2.4) register for plumedmain function pointers.
@@ -3166,7 +3182,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     */
     __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     strlenpath=__PLUMED_WRAPPER_STD strlen(path);
-    pathcopy=(char*) __PLUMED_MALLOC(strlenpath+1);
+    pathcopy=(char*) plumed_malloc(strlenpath+1);
     if(!pathcopy) {
       __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
       __PLUMED_WRAPPER_STD abort();
@@ -3181,7 +3197,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       fp=__PLUMED_WRAPPER_STD fopen(path,"r");
       if(!fp) {
         __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",pathcopy);
-        __PLUMED_FREE(pathcopy);
+        plumed_free(pathcopy);
         return __PLUMED_WRAPPER_CXX_NULLPTR;
       }
       __PLUMED_WRAPPER_STD fclose(fp);
@@ -3189,7 +3205,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       p=dlopen(pathcopy,mode);
       if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     }
-    __PLUMED_FREE(pathcopy);
+    plumed_free(pathcopy);
   }
   return p;
 }
@@ -3436,7 +3452,7 @@ __PLUMED_WRAPPER_INTERNALS_BEGIN
 plumed_implementation* plumed_malloc_pimpl() {
   plumed_implementation* pimpl;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
-  pimpl=(plumed_implementation*) __PLUMED_MALLOC(sizeof(plumed_implementation));
+  pimpl=(plumed_implementation*) plumed_malloc(sizeof(plumed_implementation));
   if(!pimpl) {
     __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
     __PLUMED_WRAPPER_STD abort();
@@ -3737,7 +3753,7 @@ void plumed_finalize(plumed p) {
   __PLUMED_FPRINTF(stderr,"refcount: delete at %p\n",(void*)pimpl);
 #endif
   /* free pimpl space */
-  __PLUMED_FREE(pimpl);
+  plumed_free(pimpl);
 }
 __PLUMED_WRAPPER_C_END
 
@@ -3775,6 +3791,26 @@ int plumed_installed(void) {
   result=plumed_valid(p);
   plumed_finalize(p);
   return result;
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void* plumed_malloc(__PLUMED_WRAPPER_STD size_t size) {
+  void* ptr;
+  ptr=__PLUMED_WRAPPER_STD malloc(size);
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
+  if(ptr) fprintf(stderr,"plumed_malloc: %p\n",ptr);
+#endif
+  return ptr;
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_free(void* ptr) {
+  __PLUMED_WRAPPER_STD free(ptr);
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
+  fprintf(stderr,"plumed_free: %p\n",ptr);
+#endif
 }
 __PLUMED_WRAPPER_C_END
 
