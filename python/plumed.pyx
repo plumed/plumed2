@@ -61,7 +61,14 @@ cdef class Plumed:
      cdef cplumed.plumed c_plumed
      cdef int initialized
      def __cinit__(self):
+         # this is guaranteed to be called once
+         # we use it to make sure c_plumed is initialized correctly
+         # in all other places we always finalize before resetting
          self.c_plumed=cplumed.plumed_create_invalid()
+     def __dealloc__(self):
+         # this is guaranteed to be called once
+         # we use it to make sure c_plumed is finalized correctly
+        cplumed.plumed_finalize(self.c_plumed)
      def __init__(self,kernel=None):
          cdef bytes py_kernel
          cdef char* ckernel
@@ -101,8 +108,6 @@ cdef class Plumed:
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
-     def __dealloc__(self):
-        cplumed.plumed_finalize(self.c_plumed)
      cdef cmd_low_level(self,const char* ckey, const void* val,size_t nelem, size_t* shape,size_t flags):
          cdef cplumed.plumed_safeptr safe
          cdef cplumed.plumed_nothrow_handler nothrow
