@@ -53,7 +53,7 @@ public:
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
 /// This checks for tasks in the parent class
-  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) override ;
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) override ;
 /// This is not used
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
@@ -171,7 +171,7 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 }
 
 template <class T>
-void FunctionOfMatrix<T>::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+void FunctionOfMatrix<T>::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) {
   // Check if this is the first element in a chain
   if( actionInChain() ) return;
   // If it is computed outside a chain get the tassks the daughter chain needs

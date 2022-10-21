@@ -100,7 +100,7 @@ private:
 /// Stores the labels of all the actions that are in this chain.  Used when setting up what to calculate
   std::vector<std::string> actionsLabelsInChain;
 /// The list of currently active tasks  
-  std::set<unsigned> taskSet;
+  std::set<AtomNumber> taskSet;
 /// This list is used to update the active tasks in the list
 //  std::vector<unsigned> taskFlags;
 /// The buffer that we use (we keep a copy here to avoid resizing)
@@ -148,8 +148,8 @@ protected:
 // -------- The action has multiple components ---------- //
 
 ///
-  void setTaskFlags( const unsigned& ntasks, std::set<unsigned>& pTaskList );
-  void mergeTaskList( bool& tasksWereSet, std::set<unsigned>& pTaskList );
+  void setTaskFlags( const unsigned& ntasks, std::set<AtomNumber>& pTaskList );
+  void mergeTaskList( bool& tasksWereSet, std::set<AtomNumber>& pTaskList );
 /// Run all the tasks in the list
   void runAllTasks();
 /// Run all calculations in serial
@@ -160,7 +160,7 @@ protected:
   void gatherMatrixRow( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                         const unsigned& bufstart, std::vector<double>& buffer ) const ;
 /// This transfers information about the values that are required for this calculation to other actions
-  void propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks );
+  void propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks );
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
@@ -179,7 +179,7 @@ public:
 /// Retrieve all the scalar values calculated in the loop
   void retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 ///
-  const std::set<unsigned>& getTaskSet() const ;
+  const std::set<AtomNumber>& getTaskSet() const ;
 protected:
 /// Get a pointer to the output value
   Value* getPntrToOutput( const unsigned& ind ) const ;
@@ -271,7 +271,7 @@ public:
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ; 
 /// Make sure all tasks required for loop are done before loop starts
-  virtual void prepareForTasks( const std::set<unsigned>& pTaskList ) {}
+  virtual void prepareForTasks( const std::set<AtomNumber>& pTaskList ) {}
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
@@ -364,7 +364,7 @@ bool ActionWithValue::actionInChain() const {
 }
 
 inline
-const std::set<unsigned>& ActionWithValue::getTaskSet() const {
+const std::set<AtomNumber>& ActionWithValue::getTaskSet() const {
   return taskSet;
 }
 

@@ -397,13 +397,13 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
 void KDE::buildSingleKernel( const double& height, std::vector<double>& args ) {
   if( kerneltype=="DISCRETE" ) {
     for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
-    getPntrToOutput(0)->addTaskToCurrentList( gridobject.getIndex( args ) ); return;
+    getPntrToOutput(0)->addTaskToCurrentList( AtomNumber::index( gridobject.getIndex( args ) ) ); return;
   } else { 
     cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
   } 
   unsigned num_neigh; std::vector<unsigned> neighbors;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
-  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( neighbors[i] );
+  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( AtomNumber::index(neighbors[i]) );
 }
 
 double KDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {

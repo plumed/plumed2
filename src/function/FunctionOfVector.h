@@ -63,7 +63,7 @@ public:
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
 /// This builds the task list for the action
-  void buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags );
+  void buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags );
   void calculate() override;
   void update() override;
   void runFinalJobs() override;
@@ -274,7 +274,7 @@ void FunctionOfVector<T>::actionsToDoBeforeFirstCalculate() {
 }
 
 template <class T>
-void FunctionOfVector<T>::buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags ) {
+void FunctionOfVector<T>::buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags ) {
   myfunc.buildTaskList( name, tflags, this );
 }
 

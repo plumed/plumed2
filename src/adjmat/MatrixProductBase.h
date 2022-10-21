@@ -53,7 +53,7 @@ public:
   bool canBeAfterInChain( ActionWithValue* av ) override;
   virtual unsigned getNumberOfColumns() const ;
   bool mustBeTreatedAsDistinctArguments() override ;
-  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks );
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks );
   void lockRequests() override;
   void unlockRequests() override;
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;

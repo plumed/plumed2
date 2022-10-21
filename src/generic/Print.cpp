@@ -488,12 +488,12 @@ void Print::update() {
         ofile.printf("\n");
       }
     } else {
-      std::set<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getTaskSet() );
+      std::set<AtomNumber> tasks ( getPntrToArgument(0)->getPntrToAction()->getTaskSet() );
       std::vector<double> argvals( getNumberOfArguments() );
       ofile.printf("%d\n",tasks.size()); ofile.printf("\n");
       for(const auto & t : tasks) {
         const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
-        for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(t); 
+        for(unsigned j=0;j<argvals.size();++j) argvals[j] = getPntrToArgument(j)->get(t.index()); 
         if( isInTargetRange( argvals ) ) {
           for(unsigned j=0; j<argvals.size(); ++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
           ofile.printf("\n");

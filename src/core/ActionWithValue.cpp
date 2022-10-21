@@ -193,7 +193,7 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
   if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
 }
 
-void ActionWithValue::propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+void ActionWithValue::propegateTaskListsForValue( const unsigned& valno, const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) {
   // Get all the actions in the current chain
   std::vector<std::string> actionsLabelsInChain; getAllActionLabelsInChain( actionsLabelsInChain );
   for(const auto & p : values[valno]->userdata) {
@@ -479,19 +479,19 @@ void ActionWithValue::prepareForTaskLoop() {
   if( action_to_do_after ) action_to_do_after->prepareForTaskLoop();
 }
 
-void ActionWithValue::mergeTaskList( bool& tasksWereSet, std::set<unsigned>& pTaskList ) {
+void ActionWithValue::mergeTaskList( bool& tasksWereSet, std::set<AtomNumber>& pTaskList ) {
   for(unsigned i=0;i<values.size();++i) {
       if( !values[i]->reducedTasks ) continue;
-      tasksWereSet=true; for(const auto & t : values[i]->taskList) pTaskList.insert(t);
+      tasksWereSet=true; pTaskList.insert(values[i]->taskList.begin(), values[i]->taskList.end() ); 
   }
   if( action_to_do_after ) action_to_do_after->mergeTaskList( tasksWereSet, pTaskList );
 }
 
-void ActionWithValue::setTaskFlags( const unsigned& ntasks, std::set<unsigned>& pTaskList ) {
+void ActionWithValue::setTaskFlags( const unsigned& ntasks, std::set<AtomNumber>& pTaskList ) {
   bool tasksWereSet=false; pTaskList.clear(); mergeTaskList( tasksWereSet, pTaskList );
   // If nothing in the stream set the tasks then active them all
   if( !tasksWereSet ) {
-      unsigned ntasks=0; getNumberOfTasks( ntasks ); for(unsigned i=0; i<ntasks; ++i) pTaskList.emplace_hint(pTaskList.end(),i);
+      unsigned ntasks=0; getNumberOfTasks( ntasks ); for(unsigned i=0; i<ntasks; ++i) pTaskList.emplace_hint(pTaskList.end(),AtomNumber::index(i));
   } 
 }
 
@@ -510,7 +510,7 @@ void ActionWithValue::runAllTasks() {
   // Get the number of tasks
   nactive_tasks = taskSet.size();
   // Create a vector from the task set 
-  std::vector<unsigned> partialTaskList( taskSet.begin(), taskSet.end() );
+  std::vector<AtomNumber> partialTaskList( taskSet.begin(), taskSet.end() );
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
@@ -543,13 +543,13 @@ void ActionWithValue::runAllTasks() {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      runTask( partialTaskList[i], myvals );
+      runTask( partialTaskList[i].index(), myvals );
 
       // Now transfer the data to the actions that accumulate values from the calculated quantities
       if( nt>1 ) {
-        gatherAccumulators( partialTaskList[i], myvals, omp_buffer );
+        gatherAccumulators( partialTaskList[i].index(), myvals, omp_buffer );
       } else {
-        gatherAccumulators( partialTaskList[i], myvals, buffer );
+        gatherAccumulators( partialTaskList[i].index(), myvals, buffer );
       }
 
       // Clear the value
@@ -825,7 +825,7 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
     if( nt==0 || no_openmp ) nt=1;
 
     // Create a vector from the task set 
-    std::vector<unsigned> partialTaskList( av->taskSet.begin(), av->taskSet.end() );
+    std::vector<AtomNumber> partialTaskList( av->taskSet.begin(), av->taskSet.end() );
     // Now determine how big the multivalue needs to be
     unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
     unsigned nquants=0, ncols=0, nmatrices=0; 
@@ -839,7 +839,7 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
 
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        unsigned itask = partialTaskList[i];
+        unsigned itask = partialTaskList[i].index();
         av->runTask( itask, myvals );
 
         // Now get the forces

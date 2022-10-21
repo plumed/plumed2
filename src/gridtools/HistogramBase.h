@@ -37,7 +37,7 @@ class HistogramBase :
   public ActionWithArguments
 {
 private:
-  std::set<unsigned> task_list;
+  std::set<AtomNumber> task_list;
   std::vector<double> forcesToApply;
   void setNumberOfKernels();
   void retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const ;

@@ -116,9 +116,9 @@ public:
 /// Convert a list of argument names into a list of pointers to the values
   static void interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* action, std::vector<Value*>&arg);
 /// Create the tasks from the requests put in by the various arguments
-  virtual void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& tflags );
+  virtual void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& tflags );
 /// Built the task list from the argument values that have been passed here
-  virtual void buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags );
+  virtual void buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags );
 /// This tells us which arguments must be treated as distinct in functions
   virtual bool mustBeTreatedAsDistinctArguments();
 /// Get the number of quantities that must be stored in input

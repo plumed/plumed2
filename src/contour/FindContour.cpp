@@ -164,7 +164,7 @@ void FindContour::setupCurrentTaskList() {
       else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
       else ind[j]+=1;
       double val2=getPntrToArgument(0)->get( getGridObject().getIndex(ind) ) - contour;
-      if( val1*val2<0 ) getPntrToOutput(0)->addTaskToCurrentList(gval->getRank()*i + j);
+      if( val1*val2<0 ) getPntrToOutput(0)->addTaskToCurrentList(AtomNumber::index(gval->getRank()*i + j));
       if( getGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
       else ind[j]-=1;
     }

@@ -72,7 +72,7 @@ void ActionVolume::setupCurrentTaskList() {
       double weight=calculateNumberInside( ActionAtomistic::getPosition(i), wdf, vir, refders );
       if( not_in ) weight = 1.0 - weight;
       // Now activate only those tasks that have a significant weight
-      if( weight>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(i);
+      if( weight>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(AtomNumber::index(i));
   }
 }
 

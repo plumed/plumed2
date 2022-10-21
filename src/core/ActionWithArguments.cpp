@@ -637,9 +637,9 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& tflags ) {}
+void ActionWithArguments::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& tflags ) {}
 
-void ActionWithArguments::buildTaskListFromArgumentValues( const std::string& name, const std::set<unsigned>& tflags ) {
+void ActionWithArguments::buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags ) {
   plumed_merror("should not be in this method.  Something that is not a function is being added to a chain");
 }
 

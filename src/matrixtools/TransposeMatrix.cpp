@@ -35,7 +35,7 @@ public:
 ///
   unsigned getNumberOfColumns() const override;
 ///
-  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) override ;
+  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) override ;
 /// Do the calculation
   void completeMatrixOperations() override;
 ///
@@ -79,7 +79,7 @@ std::vector<unsigned> TransposeMatrix::getValueShapeFromArguments() {
   return shape;
 }
 
-void TransposeMatrix::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+void TransposeMatrix::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) {
   // By calling this function here we ensure that if we are multiplying if we are calculating an lq6 in a particular volume
   // the calculation runs fast.  Only the parts of the matrix that we need to compute the dot products in the volume of interest
   // are computed.  There are lots of zeros in the matrix because we don't need all the elements in this case

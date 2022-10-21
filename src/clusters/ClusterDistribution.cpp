@@ -135,7 +135,7 @@ void ClusterDistribution::setupCurrentTaskList() {
     if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
   }
   unsigned ntasks = static_cast<unsigned>( csize );
-  for(unsigned i=0; i<ntasks; ++i) getPntrToOutput(0)->addTaskToCurrentList(i);
+  for(unsigned i=0; i<ntasks; ++i) getPntrToOutput(0)->addTaskToCurrentList(AtomNumber::index(i));
 }
 
 unsigned ClusterDistribution::getNumberOfDerivatives() const {

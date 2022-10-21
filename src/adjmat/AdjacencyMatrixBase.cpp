@@ -125,12 +125,12 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
 void AdjacencyMatrixBase::setupCurrentTaskList() {
   if( nl_stride>1 && getStep()%nl_stride==0 ) {
       for(unsigned i=0; i<getPntrToOutput(0)->getShape()[0]; ++i) {
-          for(unsigned j=0; j<getNumberOfComponents(); ++j) getPntrToOutput(j)->addTaskToCurrentList(i);
+          for(unsigned j=0; j<getNumberOfComponents(); ++j) getPntrToOutput(j)->addTaskToCurrentList(AtomNumber::index(i));
       } 
   } else ActionWithValue::setupCurrentTaskList();
 }
 
-void AdjacencyMatrixBase::prepareForTasks( const std::set<unsigned>& taskSet ) {
+void AdjacencyMatrixBase::prepareForTasks( const std::set<AtomNumber>& taskSet ) {
   // Build link cells here so that this is done in stream if it needed in stream
   if( getStep()%nl_stride==0 ) {
       // Build the link cells   
@@ -150,7 +150,7 @@ void AdjacencyMatrixBase::prepareForTasks( const std::set<unsigned>& taskSet ) {
       if( nt*stride*10>getPntrToOutput(0)->getShape()[0] ) nt=getPntrToOutput(0)->getShape()[0]/stride/10;
       if( nt==0 || runWithoutOpenMP() ) nt=1;
       // Create a vector from the input set of tasks
-      std::vector<unsigned> pTaskList( taskSet.begin(), taskSet.end() );
+      std::vector<AtomNumber> pTaskList( taskSet.begin(), taskSet.end() );
 
       #pragma omp parallel num_threads(nt)
       { 
@@ -167,9 +167,9 @@ void AdjacencyMatrixBase::prepareForTasks( const std::set<unsigned>& taskSet ) {
         for(unsigned i=rank;i<ntasks;i+=stride) {
             // Retrieve cells required from link cells - for matrix blocks
             unsigned ncells_required=0; 
-            linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i]) ), ncells_required, cells_required ); 
+            linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i].index()) ), ncells_required, cells_required ); 
             // Now get the indices of the atoms in the link cells positions
-            unsigned natoms=1; indices[0]=pTaskList[i];
+            unsigned natoms=1; indices[0]=pTaskList[i].index();
             linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
             if( nl_stride==1 ) {
                 if( nt>1 ) omp_nlist[indices[0]]=0; else nlist[indices[0]] = 0;
@@ -200,10 +200,10 @@ void AdjacencyMatrixBase::prepareForTasks( const std::set<unsigned>& taskSet ) {
         // Gather OMP stuff
         #pragma omp critical
         if(nt>1) {
-           for(unsigned i=0; i<ntasks; ++i) nlist[pTaskList[i]]+=omp_nlist[pTaskList[i]]; 
+           for(unsigned i=0; i<ntasks; ++i) nlist[pTaskList[i].index()]+=omp_nlist[pTaskList[i].index()]; 
            for(unsigned i=0; i<ntasks; ++i) {
-               unsigned lstart = getPntrToOutput(0)->getShape()[0] + pTaskList[i]*(1+natoms_per_list); 
-               for(unsigned j=0;j<omp_nlist[pTaskList[i]];++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ]; 
+               unsigned lstart = getPntrToOutput(0)->getShape()[0] + pTaskList[i].index()*(1+natoms_per_list); 
+               for(unsigned j=0;j<omp_nlist[pTaskList[i].index()];++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ]; 
            }
         } 
       }

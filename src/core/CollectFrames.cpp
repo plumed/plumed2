@@ -310,7 +310,7 @@ void CollectFrames::setupCurrentTaskList() {
    if( task_start==0 ) { ActionWithValue::setupCurrentTaskList(); return; }
    // Now switch on the relevant tasks
    for(unsigned j=0; j<getNumberOfComponents(); ++j ) {
-       for(unsigned i=task_start;i<getPntrToOutput(j)->getShape()[0];++i) getPntrToOutput(j)->addTaskToCurrentList(i);  
+       for(unsigned i=task_start;i<getPntrToOutput(j)->getShape()[0];++i) getPntrToOutput(j)->addTaskToCurrentList(AtomNumber::index(i));  
    }
 }
 

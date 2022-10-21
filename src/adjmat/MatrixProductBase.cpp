@@ -130,10 +130,10 @@ bool MatrixProductBase::mustBeTreatedAsDistinctArguments() {
   return true;
 }
 
-void MatrixProductBase::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<unsigned>& otasks ) {
+void MatrixProductBase::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) {
   if( ntasks!=getNumberOfOuterTasks() || skipCalculate() ) return;
   // Get the flags for this chain
-  getActionThatCalculates()->setupForCalculation(); std::set<unsigned> pTaskList; setTaskFlags( ntasks, pTaskList );
+  getActionThatCalculates()->setupForCalculation(); std::set<AtomNumber> pTaskList; setTaskFlags( ntasks, pTaskList );
   // Check if anything has been deactivated downstream
   if( pTaskList.size()==ntasks ) return;
   // And retrieve non zero elements of contact matrix we are multiplying this by
@@ -146,8 +146,8 @@ void MatrixProductBase::buildTaskListFromArgumentRequests( const unsigned& ntask
       // Get the neighbours of each of the active atoms
       std::vector<unsigned> indices( getPntrToOutput(0)->getShape()[0] );
       for(const auto & t : pTaskList) {
-          unsigned nneigh = ab->retrieveNeighbours( t, indices );
-          for(unsigned j=0;j<nneigh;++j) otasks.insert(indices[j]);
+          unsigned nneigh = ab->retrieveNeighbours( t.index(), indices );
+          for(unsigned j=0;j<nneigh;++j) otasks.insert(AtomNumber::index(indices[j]));
       }
       if( !reduce ) reduce=true;
   } else propegateTaskListsForValue( 0, ntasks, reduce, otasks );

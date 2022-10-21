@@ -196,7 +196,7 @@ void SecondaryStructureRMSD::setupCurrentTaskList() {
     for(unsigned i=0; i<getPntrToOutput(0)->getNumberOfValues(); ++i) {
       Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ),
                                    ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
-      if( distance.modulo2()<s_cutoff2 ) getPntrToOutput(0)->addTaskToCurrentList(i);
+      if( distance.modulo2()<s_cutoff2 ) getPntrToOutput(0)->addTaskToCurrentList(AtomNumber::index(i));
     }
   } else ActionWithValue::setupCurrentTaskList(); 
 }

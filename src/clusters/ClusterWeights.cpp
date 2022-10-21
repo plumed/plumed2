@@ -121,7 +121,7 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
 void ClusterWeights::setupCurrentTaskList() {
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); 
   for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) {
-    if( fabs(getPntrToArgument(0)->get(i)-clustr)<epsilon ) getPntrToOutput(0)->addTaskToCurrentList(i);
+    if( fabs(getPntrToArgument(0)->get(i)-clustr)<epsilon ) getPntrToOutput(0)->addTaskToCurrentList(AtomNumber::index(i));
   }
 }
 

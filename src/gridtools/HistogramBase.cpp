@@ -88,10 +88,10 @@ void HistogramBase::setNumberOfKernels() {
       if( symmetric ) { 
           std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
           for(unsigned j=1;j<shape[0];++j) {
-              for(unsigned k=0;k<j;++k) task_list.insert(j*shape[0]+k);
+              for(unsigned k=0;k<j;++k) task_list.insert(AtomNumber::index(j*shape[0]+k));
           } 
       } else {
-          for(unsigned i=0;i<numberOfKernels;++i) task_list.insert(i);
+          for(unsigned i=0;i<numberOfKernels;++i) task_list.insert(AtomNumber::index(i));
       }
   }
 }
@@ -148,7 +148,7 @@ void HistogramBase::setupCurrentTaskList() {
     getPntrToOutput(0)->setNumberOfTasks( numberOfKernels );
     if( hasheight && getPntrToArgument(grid_dimension)->getRank()>0 ) {
         for(const auto & t : task_list ) {
-            if( fabs(getPntrToArgument(grid_dimension)->get(t))>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(t);
+            if( fabs(getPntrToArgument(grid_dimension)->get(t.index()))>epsilon ) getPntrToOutput(0)->addTaskToCurrentList(t);
         }
     } else { getPntrToOutput(0)->addTasksToCurrentList( task_list ); }
     norm = static_cast<double>( numberOfKernels );

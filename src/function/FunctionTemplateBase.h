@@ -47,7 +47,7 @@ public:
 ////
   virtual std::vector<std::string> getComponentsPerLabel() const ;
   virtual bool getDerivativeZeroIfValueIsZero() const { return false; } 
-  virtual void buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const ; 
+  virtual void buildTaskList( const std::string& name, const std::set<AtomNumber>& tflags, ActionWithValue* av ) const ; 
   virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
@@ -109,10 +109,8 @@ std::string FunctionTemplateBase::getGraphInfo( const std::string& name ) const 
 }
 
 inline
-void FunctionTemplateBase::buildTaskList( const std::string& name, const std::set<unsigned>& tflags, ActionWithValue* av ) const {
-  for(unsigned i=0;i<av->getNumberOfComponents();++i) {
-      Value* output=av->copyOutput(i); for(const auto & t : tflags ) output->addTaskToCurrentList(t);
-  }
+void FunctionTemplateBase::buildTaskList( const std::string& name, const std::set<AtomNumber>& tflags, ActionWithValue* av ) const {
+  for(unsigned i=0;i<av->getNumberOfComponents();++i) (av->copyOutput(i))->addTasksToCurrentList( tflags ); 
 }
 
 }

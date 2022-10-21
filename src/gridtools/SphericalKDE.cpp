@@ -84,7 +84,7 @@ void SphericalKDE::buildSingleKernel( const double& height, std::vector<double>&
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
   hh=height; for(unsigned i=0; i<args.size(); ++i) center[i]=args[i];
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
-  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( neighbors[i] );
+  for(unsigned i=0; i<num_neigh; ++i) getPntrToOutput(0)->addTaskToCurrentList( AtomNumber::index(neighbors[i]) );
 }
 
 double SphericalKDE::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {

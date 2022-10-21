@@ -51,7 +51,7 @@ public:
   unsigned getNumberOfColumns() const override;
   void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const override;
   void setupCurrentTaskList() override;
-  void prepareForTasks( const std::set<unsigned>& pTaskList );
+  void prepareForTasks( const std::set<AtomNumber>& pTaskList );
   unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,

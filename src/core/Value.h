@@ -88,7 +88,7 @@ private:
   unsigned ntasks;
 /// The list of tasks that are being performed for this action
   bool reducedTasks;
-  std::set<unsigned> taskList;
+  std::set<AtomNumber> taskList;
 /// This is used if the action is a constant
   bool constant;
 /// This is used by actions that always store data.  They cannot operate without storing all values
@@ -255,8 +255,8 @@ public:
 ///
   void setNumberOfTasks( const unsigned& nt );
   unsigned getNumberOfTasks() const ;
-  void addTaskToCurrentList( const unsigned& itask );
-  void addTasksToCurrentList( const std::set<unsigned>& tasks );
+  void addTaskToCurrentList( const AtomNumber& itask );
+  void addTasksToCurrentList( const std::set<AtomNumber>& tasks );
 };
 
 inline
@@ -355,12 +355,12 @@ void Value::clearDerivatives() {
 }
 
 inline
-void Value::addTaskToCurrentList( const unsigned& itask ) {
+void Value::addTaskToCurrentList( const AtomNumber& itask ) {
   taskList.insert( itask );
 }
 
 inline
-void Value::addTasksToCurrentList( const std::set<unsigned>& tasks ) {
+void Value::addTasksToCurrentList( const std::set<AtomNumber>& tasks ) {
   taskList.insert( tasks.begin(), tasks.end() );
 }
 
