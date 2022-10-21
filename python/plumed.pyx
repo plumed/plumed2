@@ -103,7 +103,7 @@ cdef class Plumed:
         self.finalize()
      def __dealloc__(self):
         cplumed.plumed_finalize(self.c_plumed)
-     cdef plumed_cmd_safe_nothrow(self,cplumed.plumed p,const char* ckey, const void* val,size_t nelem, size_t* shape,size_t flags):
+     cdef cmd_low_level(self,const char* ckey, const void* val,size_t nelem, size_t* shape,size_t flags):
          cdef cplumed.plumed_safeptr safe
          cdef cplumed.plumed_nothrow_handler nothrow
          cdef cplumed.plumed_error error
@@ -156,7 +156,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_real +  type_pointer)
      cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -165,7 +165,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
      cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -174,30 +174,30 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
      cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
      cdef cmd_array_int(self, ckey, val):
          cdef int [:] abuffer = val
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_array_long(self, ckey, val):
          cdef long [:] abuffer = val
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_float(self, ckey, double val ):
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&val, 1, NULL, sizeof(val) + type_real +  type_value)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_real +  type_value)
      cdef cmd_int(self, ckey, int val):
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value)
      cdef cmd_mpi(self, ckey, val):
          import mpi4py.MPI as MPI
          cdef size_t comm_addr = MPI._addressof(val)
-         self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,<void*>comm_addr, 0, NULL, type_void +  type_const_pointer)
+         self.cmd_low_level(ckey,<void*>comm_addr, 0, NULL, type_void +  type_const_pointer)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
          if val is None :
-            self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,NULL,0,NULL,type_nullptr)
+            self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
             return
          if isinstance(val, (int,long) ):
             self.cmd_int(ckey, val)
@@ -230,7 +230,7 @@ cdef class Plumed:
             py_bytes = val.encode()
             cval = py_bytes
             # assume sizeof(char)=1
-            self.plumed_cmd_safe_nothrow(self.c_plumed,ckey,cval,0, NULL,1 + type_integral + type_const_pointer + type_nocopy)
+            self.cmd_low_level(ckey,cval,0, NULL,1 + type_integral + type_const_pointer + type_nocopy)
             return
          if 'mpi4py' in sys.modules:
             import mpi4py.MPI as MPI
