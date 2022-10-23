@@ -520,8 +520,8 @@ private:
 
     if(plumed) {
       plumed->cmd("setNoVirial");
-      plumed->cmd("setNatoms",&natoms);
       plumed->cmd("setMDEngine","simpleMD");
+      plumed->cmd("setNatoms",&natoms); 
       plumed->cmd("setTimestep",&tstep);
       plumed->cmd("setPlumedDat","plumed.dat");
       int pversion=0;

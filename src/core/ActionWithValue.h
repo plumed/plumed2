@@ -148,6 +148,7 @@ protected:
 // -------- The action has multiple components ---------- //
 
 ///
+  void clearTaskLists();
   void setTaskFlags( const unsigned& ntasks, std::set<AtomNumber>& pTaskList );
   void mergeTaskList( bool& tasksWereSet, std::set<AtomNumber>& pTaskList );
 /// Run all the tasks in the list

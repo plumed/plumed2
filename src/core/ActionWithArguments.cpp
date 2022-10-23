@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
-#include "ActionToPutData.h"
+#include "ActionForInterface.h"
 #include "ActionAtomistic.h"
 #include "ActionSetup.h"
 #include "tools/PDB.h"
@@ -153,7 +153,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=action_set.select<ActionWithValue*>();
           if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); if( ap ) continue;
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) all[j]->copyOutput(k)->use( action, arg ); 
           }
         } else if ( name=="*") {
@@ -219,7 +219,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           if( all.empty() ) action->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
             bool found=false;
-            ActionToPutData* ap=dynamic_cast<ActionToPutData*>( all[j] ); 
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); 
             if( ap && ap->getName()!="ENERGY" ) continue;
             // Find an action created from the shortcut with this label that has a single action
             for(unsigned k=0; k<shortcuts.size(); ++k) {

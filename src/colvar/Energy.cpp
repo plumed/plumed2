@@ -63,6 +63,8 @@ PRINT ARG=ene
 
 class Energy : public ActionToPutData {
 private: 
+/// This is used to sum the data
+  ActionForInterface* interface;
 /// This is the list of forces that must be scaled
   std::vector<ActionToPutData*> forces_to_scale;
 public:
@@ -78,8 +80,15 @@ PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
   Action(ao),
-  ActionToPutData(ao)
+  ActionToPutData(ao),
+  interface(NULL)
 {
+  std::vector<ActionForInterface*> allput=plumed.getActionSet().select<ActionForInterface*>();
+  for(unsigned i=0;i<allput.size();++i) {
+      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( allput[i] );
+      if( !ap && !interface ) interface = allput[i];
+      else if( !ap && interface ) warning("found more than one interface so don't know how to sum energy");
+  }
   plumed.setEnergyValue( getLabel(), this ); std::vector<unsigned> shape; 
   addValue( shape ); setNotPeriodic(); setUnit( "energy", "default" );
   ActionToPutData* px=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posx");
@@ -101,7 +110,7 @@ void Energy::registerKeywords( Keywords& keys ) {
 }
 
 void Energy::wait() {
-  ActionToPutData::wait(); plumed.getAtoms().sumOverDomains( getPntrToOutput(0) );
+  ActionToPutData::wait(); if( interface ) interface->sumOverDomains( getPntrToOutput(0) );
 }
 
 void Energy::apply() {

@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 #include "ActionRegister.h"
 
 namespace PLMD {
@@ -37,16 +38,24 @@ void PbcAction::registerKeywords( Keywords& keys ) {
 
 PbcAction::PbcAction(const ActionOptions&ao):
   Action(ao),
-  ActionToPutData(ao)
+  ActionToPutData(ao),
+  interface(NULL)
 {
   std::vector<unsigned> shape(2); shape[0]=shape[1]=3; 
   addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" ); 
   getPntrToOutput(0)->alwaysStoreValues();
+
+  std::vector<ActionForInterface*> allput=plumed.getActionSet().select<ActionForInterface*>();
+  for(unsigned i=0;i<allput.size();++i) {
+      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( allput[i] );
+      if( !ap && !interface ) interface = allput[i];
+      else if( !ap && interface ) warning("found more than one interface so don't know how to broadcast cell"); 
+  }
 }
 
 
 void PbcAction::setPbc() {
-  plumed.getAtoms().broadcastToDomains( getPntrToOutput(0) ); Tensor box;
+  Tensor box; if( interface ) interface->broadcastToDomains( getPntrToOutput(0) );
   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) box(i,j) = getPntrToOutput(0)->get(3*i+j);
   pbc.setBox(box);
 }

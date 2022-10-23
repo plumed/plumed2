@@ -19,25 +19,26 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_DataPassingTools_h
-#define __PLUMED_core_DataPassingTools_h
-
-#include <string>
-#include <map>
+#include "ActionForInterface.h"
+#include "ActionRegister.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "Atoms.h"
 
 namespace PLMD {
 
-class PlumedMain;
+void ActionForInterface::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys); ActionWithValue::registerKeywords( keys );
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+}
 
-class DataPassingTools {
-public:
-  static std::unique_ptr<DataPassingTools> create(unsigned n);
-  virtual int getRealPrecision() const = 0;
-  virtual double MD2double(const void*) const=0;
-  virtual void double2MD(const double&,void*) const=0;
-  virtual void setThreeVectorValues( const std::string& name, PlumedMain& plumed, void *pp )=0;
-  virtual void setThreeVectorForces( const std::string& name, PlumedMain& plumed, void *pp )=0;
-};
+ActionForInterface::ActionForInterface(const ActionOptions&ao):
+Action(ao),
+ActionWithValue(ao),
+firststep(true),
+wasscaled(false),
+wasset(false)
+{
+}
 
 }
-#endif

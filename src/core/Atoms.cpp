@@ -22,6 +22,7 @@
 #include "Atoms.h"
 #include "ActionAtomistic.h"
 #include "PlumedMain.h"
+#include "ActionForInterface.h"
 #include "ActionToPutData.h"
 #include "ActionSet.h"
 #include <algorithm>
@@ -39,15 +40,12 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
-  shuffledAtoms(0),
   plumed(plumed),
   naturalUnits(false),
   MDnaturalUnits(false),
   timestep(0.0),
   kbT(0.0),
-  asyncSent(false),
-  atomsNeeded(false),
-  ddStep(0)
+  asyncSent(false)
 {
 }
 
@@ -122,158 +120,8 @@ void Atoms::getGradient( const AtomNumber& i, Vector& deriv, std::map<AtomNumber
   posz[nn]->passGradients( deriv[2], gradients );
 }
 
-void Atoms::share() {
-// At first step I scatter all the atoms so as to store their mass and charge
-// Notice that this works with the assumption that charges and masses are
-// not changing during the simulation!
-  if( needsAllAtoms() ) {
-    shareAll();
-    return;
-  }
-
-  if(!(int(gatindex.size())==natoms && shuffledAtoms==0)) {
-    for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        if(!actions[i]->getUnique().empty()) {
-          atomsNeeded=true;
-          for(auto pp=actions[i]->getUnique().begin(); pp!=actions[i]->getUnique().end(); ++pp) {
-              if( g2l[pp->index()]>=0 ) unique.insert(*pp);
-          }
-        }
-      }
-    }
-  } else {
-    for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        if(!actions[i]->getUnique().empty()) {
-          atomsNeeded=true;
-        }
-      }
-    }
-
-  }
-
-  share(unique);
-}
-
-void Atoms::shareAll() {
-  unique.clear();
-  // keep in unique only those atoms that are local
-  if(dd && shuffledAtoms>0) {
-    for(int i=0; i<natoms; i++) if(g2l[i]>=0) unique.insert(AtomNumber::index(i));
-  } else {
-    for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
-  }
-  atomsNeeded=true;
-  share(unique);
-}
-
-void Atoms::share(const std::set<AtomNumber>& unique) {
-
-  if(!atomsNeeded) return;
-  atomsNeeded=false; 
-  // This is how many double per atom should be scattered and the values we are fetching
-  int ndata=0; std::vector<Value*> values_to_get; std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions());
-
-  if(int(gatindex.size())==natoms && shuffledAtoms==0) {
-// faster version, which retrieves all atoms
-    for(const auto & ip : inputs) {
-      if( ip.second->collectFromDomains() ) { ip.second->share( 0, natoms ); values_to_get.push_back(ip.second->copyOutput(0)); ndata++; }
-    }
-  } else {
-    uniq_index.clear();
-    uniq_index.reserve(unique.size());
-    if(shuffledAtoms>0) {
-      for(const auto & p : unique) uniq_index.push_back(g2l[p.index()]);
-    }
-    for(const auto & ip : inputs) {
-      if( ip.second->collectFromDomains() ) { ip.second->share( unique, uniq_index ); values_to_get.push_back(ip.second->copyOutput(0)); ndata++; }
-    }
-  }
-
-  if(dd && shuffledAtoms>0) {
-    if(dd.async) {
-      for(unsigned i=0; i<dd.mpi_request_positions.size(); i++) dd.mpi_request_positions[i].wait();
-      for(unsigned i=0; i<dd.mpi_request_index.size(); i++)     dd.mpi_request_index[i].wait();
-    }
-    int count=0;
-    for(const auto & p : unique) {
-      dd.indexToBeSent[count]=p.index(); int dpoint=0;
-      for(unsigned i=0;i<values_to_get.size();++i) { 
-          dd.positionsToBeSent[ndata*count+dpoint]=values_to_get[i]->get(p.index()); 
-          dpoint++; 
-      }
-      count++;
-    }
-    if(dd.async) {
-      asyncSent=true;
-      dd.mpi_request_positions.resize(dd.Get_size());
-      dd.mpi_request_index.resize(dd.Get_size());
-      for(int i=0; i<dd.Get_size(); i++) {
-        dd.mpi_request_index[i]=dd.Isend(&dd.indexToBeSent[0],count,i,666);
-        dd.mpi_request_positions[i]=dd.Isend(&dd.positionsToBeSent[0],ndata*count,i,667);
-      }
-    } else {
-      const int n=(dd.Get_size());
-      std::vector<int> counts(n);
-      std::vector<int> displ(n);
-      std::vector<int> counts5(n);
-      std::vector<int> displ5(n);
-      dd.Allgather(count,counts);
-      displ[0]=0;
-      for(int i=1; i<n; ++i) displ[i]=displ[i-1]+counts[i-1];
-      for(int i=0; i<n; ++i) counts5[i]=counts[i]*ndata;
-      for(int i=0; i<n; ++i) displ5[i]=displ[i]*ndata;
-      dd.Allgatherv(&dd.indexToBeSent[0],count,&dd.indexToBeReceived[0],&counts[0],&displ[0]);
-      dd.Allgatherv(&dd.positionsToBeSent[0],ndata*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
-      int tot=displ[n-1]+counts[n-1];
-      for(int i=0; i<tot; i++) {
-        int dpoint=0;
-        for(unsigned j=0;j<values_to_get.size();++j) {
-            values_to_get[j]->set( dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] ); 
-            dpoint++; 
-        }
-      }
-    }
-  }
-}
-
-void Atoms::wait() {
-  if(getNatoms()==0) return;
-// How many double per atom should be scattered
-  int ndata=0; std::vector<Value*> values_to_set;
-  std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions());
-  for(const auto & ip : inputs) { 
-      if( ip.second->collectFromDomains() ) { values_to_set.push_back(ip.second->copyOutput(0)); ndata++; }  
-  }
-
-  if(dd && shuffledAtoms>0) {
-// receive toBeReceived
-    if(asyncSent) {
-      Communicator::Status status;
-      std::size_t count=0;
-      for(int i=0; i<dd.Get_size(); i++) {
-        dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
-        int c=status.Get_count<int>();
-        dd.Recv(&dd.positionsToBeReceived[ndata*count],dd.positionsToBeReceived.size()-ndata*count,i,667);
-        count+=c;
-      }
-      for(int i=0; i<count; i++) {
-        int dpoint=0;
-        for(unsigned j=0;j<values_to_set.size();++j) {
-            values_to_set[j]->set(dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] ); 
-            dpoint++;
-        }
-      }
-      asyncSent=false;
-    }
-  }
-}
-
 void Atoms::setNatoms(int n) {
   natoms=n;
-  gatindex.resize(n);
-  for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=i;
 }
 
 
@@ -300,56 +148,6 @@ void Atoms::DomainDecomposition::enable(Communicator& c) {
   }
 }
 
-void Atoms::setAtomsNlocal(int n) {
-  gatindex.resize(n);
-  g2l.resize(natoms,-1);
-  if(dd) {
-// Since these vectors are sent with MPI by using e.g.
-// &dd.positionsToBeSent[0]
-// we make sure they are non-zero-sized so as to
-// avoid errors when doing boundary check
-    if(n==0) n++;
-    dd.positionsToBeSent.resize(n*5,0.0);
-    dd.positionsToBeReceived.resize(natoms*5,0.0);
-    dd.indexToBeSent.resize(n,0);
-    dd.indexToBeReceived.resize(natoms,0);
-  }
-}
-
-void Atoms::setAtomsGatindex(int*g,bool fortran) {
-  plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
-  ddStep=plumed.getStep();
-  if(fortran) {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i]-1;
-  } else {
-    for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i];
-  }
-  for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
-  if( gatindex.size()==natoms ) {
-    shuffledAtoms=0;
-    for(unsigned i=0; i<gatindex.size(); i++) {
-      if( gatindex[i]!=i ) { shuffledAtoms=1; break; }
-    }
-  } else {
-    shuffledAtoms=1;
-  }
-  if(dd) {
-    dd.Sum(shuffledAtoms);
-  }
-  for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
-
-  unique.clear();
-}
-
-void Atoms::setAtomsContiguous(int start) {
-  ddStep=plumed.getStep();
-  for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=start+i;
-  for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
-  for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
-  if(gatindex.size()<natoms) shuffledAtoms=1;
-  unique.clear();
-}
-
 void Atoms::setTimeStep(const double tstep) {
   timestep=tstep;
 // The following is to avoid extra digits in case the MD code uses floats
@@ -372,9 +170,10 @@ double Atoms::getKbT()const {
 }
 
 bool Atoms::needsAllAtoms() const {
-  std::map<std::string,ActionToPutData*> & inputs(plumed.getInputActions()); bool getall=false;
+  std::vector<ActionForInterface*> inputs(plumed.getActionSet().select<ActionForInterface*>()); bool getall=false;
   for(const auto & ip : inputs) {
-      if( ip.second->collectAllFromDomains() ) { getall=true; }
+      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( ip );
+      if( !ap && ip->firststep ) getall=true;
   } 
   return getall;
 }
@@ -392,7 +191,6 @@ void Atoms::createFullList(int*n) {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
-          atomsNeeded=true;
           // unique are the local atoms
           unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
         }
@@ -414,15 +212,6 @@ void Atoms::clearFullList() {
   fullList.resize(0);
 }
 
-void Atoms::init() {
-// Default: set domain decomposition to NO-decomposition, waiting for
-// further instruction
-  if(dd) {
-    setAtomsNlocal(natoms);
-    setAtomsContiguous(0);
-  }
-}
-
 void Atoms::setDomainDecomposition(Communicator& comm) {
   dd.enable(comm);
 }
@@ -436,14 +225,5 @@ double Atoms::getMDKBoltzmann()const {
   if(naturalUnits || MDnaturalUnits) return 1.0;
   else return kBoltzmann/MDUnits.getEnergy();
 }
-
-void Atoms::broadcastToDomains( Value* val ) {
-  if( dd ) dd.Bcast( val->data, 0 );
-}
-
-void Atoms::sumOverDomains( Value* val ) {
-  if( dd ) dd.Sum( val->data );
-}
-
 
 }

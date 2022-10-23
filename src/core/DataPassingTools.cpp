@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DataPassingTools.h"
+#include "PlumedMain.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 
@@ -29,10 +31,8 @@ public:
   int getRealPrecision() const override;
   double MD2double(const void*)const override;
   void double2MD(const double&d,void*m) const override;
-  void setThreeVectorValues( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
-  void setThreeVectorForces( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
-  void setVectorValues( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
-  void setVectorForces( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) override;
+  void setThreeVectorValues( const std::string& name, PlumedMain& plumed, void *pp ) override;
+  void setThreeVectorForces( const std::string& name, PlumedMain& plumed, void *pp ) override;
 };
 
 std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
@@ -62,50 +62,19 @@ void DataPassingToolsTyped<T>::double2MD(const double&d,void*m) const {
 }
 
 template <class T>
-void DataPassingToolsTyped<T>::setThreeVectorValues( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) {
+void DataPassingToolsTyped<T>::setThreeVectorValues( const std::string& name, PlumedMain& plumed, void *pp ) {
   T* p=static_cast<T*>(pp);
-  T* px=p; (inputs.find(name + "x")->second)->set_value(px); (inputs.find(name + "x")->second)->setStride(3);
-  T* py=p+1;(inputs.find(name + "y")->second)->set_value(py); (inputs.find(name + "y")->second)->setStride(3);
-  T* pz=p+2;(inputs.find(name + "z")->second)->set_value(pz); (inputs.find(name + "z")->second)->setStride(3);
+  T* px=p; plumed.setInputValue( name + "x", 3, px ); 
+  T* py=p+1; plumed.setInputValue( name + "y", 3, py );  
+  T* pz=p+2; plumed.setInputValue( name + "z", 3, pz );  
 }
 
 template <class T>
-void DataPassingToolsTyped<T>::setThreeVectorForces( const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) {
+void DataPassingToolsTyped<T>::setThreeVectorForces( const std::string& name, PlumedMain& plumed, void *pp ) {
   T* p=static_cast<T*>(pp);
-  T* px=p; (inputs.find(name + "x")->second)->set_force(px);
-  T* py=p+1;(inputs.find(name + "y")->second)->set_force(py);
-  T* pz=p+2;(inputs.find(name + "z")->second)->set_force(pz);
-}
-
-template <class T>
-void DataPassingToolsTyped<T>::setVectorValues( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) {
-  T* p=static_cast<T*>(pp); 
-  if( n>3 ) {
-      for(unsigned i=0;i<n;++i) { 
-          std::string num; Tools::convert(i+1,num); T* px=p+i; 
-          (inputs.find(name + num)->second)->set_value(px); 
-          (inputs.find(name + num)->second)->setStride(n);
-      }
-  } else {
-      if(n>0) { T* px=p; (inputs.find(name + "x")->second)->set_value(px); (inputs.find(name + "x")->second)->setStride(n); }
-      if(n>1) { T* py=p+1; (inputs.find(name + "y")->second)->set_value(py); (inputs.find(name + "y")->second)->setStride(n); }
-      if(n>2) { T* pz=p+2; (inputs.find(name + "z")->second)->set_value(pz); (inputs.find(name + "z")->second)->setStride(n); }
-  }
-}
-
-template <class T>
-void DataPassingToolsTyped<T>::setVectorForces( const unsigned& n, const std::string& name, std::map<std::string,ActionToPutData*>& inputs, void *pp ) {
-  T* p=static_cast<T*>(pp);
-  if( n>3 ) {
-      for(unsigned i=0;i<n;++i) {
-          std::string num; Tools::convert(i+1,num); T* px=p+i; 
-          (inputs.find(name + num)->second)->set_force(px);
-      }
-  } else {
-      if(n>0) { T* px=p; (inputs.find(name + "x")->second)->set_force(px); }
-      if(n>1) { T* py=p+1; (inputs.find(name + "y")->second)->set_force(py); }
-      if(n>2) { T* pz=p+2; (inputs.find(name + "z")->second)->set_force(pz); }
-  }
+  T* px=p; plumed.setInputForce( name + "x", px ); 
+  T* py=p+1; plumed.setInputForce( name + "y", py ); 
+  T* pz=p+2; plumed.setInputForce( name + "z", pz ); 
 }
 
 }

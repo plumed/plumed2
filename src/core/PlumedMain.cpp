@@ -41,6 +41,7 @@
 #include "tools/Stopwatch.h"
 #include "lepton/Exception.h"
 #include "ActionToGetData.h"
+#include "ActionForInterface.h"
 #include "ActionToPutData.h"
 #include "DataPassingTools.h"
 #include <cstdlib>
@@ -123,6 +124,7 @@ static void testThrow(const char* what) {
 
 PlumedMain::PlumedMain():
   initialized(false),
+  MDEngine("mdcode"),
 // automatically write on log in destructor
   stopwatch_fwd(log),
   step(0),
@@ -187,57 +189,57 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        (inputs.find("Box")->second)->set_value(val);
+        setInputValue( "Box", 1, val );
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
-        passtools->setThreeVectorValues( "pos", inputs, val );
+        passtools->setThreeVectorValues( "pos", *this, val );
         break;
       case cmd_setMasses:
         CHECK_INIT(initialized,word);
-        (inputs.find("Masses")->second)->set_value(val);
+        setInputValue("Masses", 1, val );
         break;
       case cmd_setCharges:
         CHECK_INIT(initialized,word);
-        (inputs.find("Charges")->second)->set_value(val); 
+        setInputValue("Charges", 1, val);
         break;
       case cmd_setPositionsX:
         CHECK_INIT(initialized,word);
-        (inputs.find("posx")->second)->set_value(val);
+        setInputValue("posx", 1, val);
         break;
       case cmd_setPositionsY:
         CHECK_INIT(initialized,word);
-        (inputs.find("posy")->second)->set_value(val);
+        setInputValue("posy", 1, val);
         break;
       case cmd_setPositionsZ:
         CHECK_INIT(initialized,word);
-        (inputs.find("posz")->second)->set_value(val);
+        setInputValue("posz", 1, val);
         break;
       case cmd_setVirial:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        cmd("setValueForces Box", val);
+        setInputForce("Box",val);
         break;
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if( name_of_energy!="" ) cmd("setValue " + name_of_energy, val);
+        if( name_of_energy!="" ) setInputValue( name_of_energy, 1,  val ); 
         break;
       case cmd_setForces:
         CHECK_INIT(initialized,word);
-        passtools->setThreeVectorForces( "pos", inputs, val );
+        passtools->setThreeVectorForces( "pos", *this, val );
         break;
       case cmd_setForcesX:
         CHECK_INIT(initialized,word);
-        (inputs.find("posx")->second)->set_force(val);
+        setInputForce("posx",val);
         break;
       case cmd_setForcesY:
         CHECK_INIT(initialized,word);
-        (inputs.find("posy")->second)->set_force(val);
+        setInputForce("posy",val);
         break;
       case cmd_setForcesZ:
         CHECK_INIT(initialized,word);
-        (inputs.find("posz")->second)->set_force(val);
+        setInputForce("posz",val); 
         break;
       case cmd_calc:
         CHECK_INIT(initialized,word);
@@ -282,35 +284,33 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API=7 */
       case cmd_setValue:
       {
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        (inputs.find(words[1])->second)->set_value(val);
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputValue( words[1], 1, val );
       }
         break;
       /* ADDED WITH API=7 */
       case cmd_setValueForces:
       {
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        (inputs.find(words[1])->second)->set_force(val);
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputForce( words[1], val ); 
       }
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(*static_cast<int*>(val));
+        for(const auto & pp : inputs ) pp->setAtomsNlocal(*static_cast<int*>(val));
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),false);
+        for(const auto & pp : inputs ) pp->setAtomsGatindex(static_cast<int*>(val),false); 
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),true);
+        for(const auto & pp : inputs ) pp->setAtomsGatindex(static_cast<int*>(val),true);
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(*static_cast<int*>(val));
+        for(const auto & pp : inputs ) pp->setAtomsContiguous(*static_cast<int*>(val)); 
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
@@ -375,15 +375,24 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         readInputLines(static_cast<char*>(val));
         break;
       case cmd_clear:
+      {
         CHECK_INIT(initialized,word);
         actionSet.clearDelete();
         inputs.clear();
         atoms.clearAtomValues();
+        std::string str_natoms; Tools::convert( atoms.getNatoms(), str_natoms );
+        if( atoms.getNatoms()>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
+                                                       " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False" +
+                                                       " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False" +
+                                                       " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False" +
+                                                       " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True" +
+                                                       " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True");
         initialized=false;
         createAtomValues();
         initialized=true;
         updateUnits();
         break;
+      }
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
         *(static_cast<int*>(val))=8;
@@ -442,11 +451,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
+        for(const auto & pp : inputs ) pp->Set_comm(comm);
         atoms.setDomainDecomposition(comm);
         break;
       case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
+        for(const auto & pp : inputs ) pp->Set_comm(comm);  
         atoms.setDomainDecomposition(comm);
         break;
       case cmd_setMPImultiSimComm:
@@ -454,9 +465,18 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         multi_sim_comm.Set_comm(val);
         break;
       case cmd_setNatoms:
+      {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         atoms.setNatoms(*static_cast<int*>(val));
+        std::string str_natoms; Tools::convert( *static_cast<int*>(val), str_natoms );
+        if( atoms.getNatoms()>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
+                                                       " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False" +
+                                                       " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False" +
+                                                       " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False" +
+                                                       " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True" +
+                                                       " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True"); 
+      }
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -562,11 +582,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_setExtraCV:
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        if( inputs.count(words[1]) ) (inputs.find(words[1])->second)->set_value(val);
+        setInputValue( words[1], 1, val ); 
         break;
       case cmd_setExtraCVForce:
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        if( inputs.count(words[1]) ) (inputs.find(words[1])->second)->set_force(val);
+        setInputForce( words[1], val ); 
         break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);
@@ -591,28 +611,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
          std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
          readInputLine( inpt ); std::size_t col=words[1].find_first_of(":"); std::string lab=words[1].substr(0,col);
-         ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(lab);
-         inputs.insert( std::pair<std::string,ActionToPutData*>(lab,ap) );
       }
         break;
-      case cmd_createVector:
-      {
-        CHECK_NOTINIT(initialized,words[0]); CHECK_NOTNULL(val,words[0]);
-        std::string inpt; for(unsigned i=2;i<words.size();++i) inpt += " " + words[i];
-        std::size_t col=words[1].find_first_of(":"); std::string lab=words[1].substr(0,col);
-        int* size= static_cast<int*>(val); 
-        if( size[0]<4 ) {
-            if( size[0]>0 ) cmd("createValue " + lab + "x: " + inpt );
-            if( size[0]>1 ) cmd("createValue " + lab + "y: " + inpt );
-            if( size[0]>2 ) cmd("createValue " + lab + "z: " + inpt );
-        } else {
-            for(unsigned i=0;i<size[0];++i ) {
-                std::string num; Tools::convert( i+1, num ); 
-                cmd("createValue " + lab + num + ": " + inpt );
-            }
-        }
-        break; 
-      }
       /* ADDED WITH API==7 */
       case cmd_convert:
       {
@@ -638,20 +638,29 @@ void PlumedMain::cmd(const std::string & word,void*val) {
   }
 }
 
+void PlumedMain::setInputValue( const std::string& name, const unsigned& stride, void* val ) {
+  bool found=false;
+  for(const auto & pp : inputs) {
+      if( pp->setValuePointer( name, val ) ) { pp->setStride(name, stride); found=true; break; }
+  }
+  plumed_massert( found, "found no action to set named " + name );
+}
+
+void PlumedMain::setInputForce( const std::string& name, void* val ) {
+  bool found=false;
+  for(const auto & pp : inputs) {
+      if( pp->setForcePointer( name, val ) ) { found=true; break; }
+  }
+  plumed_massert( found, "found no action to set named " + name );
+}
+
 void PlumedMain::createAtomValues() {
   if( atoms.getNatoms()==0 ) return ;
   // Create holders for the positions
-  std::string str_natoms; Tools::convert( atoms.getNatoms(), str_natoms ); int dim=3;
-  cmd("createVector pos: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=length PERIODIC=NO",&dim);
   // Create holder for the cell
   std::string noforce="";
   if( novirial || atoms.dd.Get_rank()!=0 ) noforce = " NOFORCE";
-  readInputLine( "Box: PBC " + noforce ); ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box"); 
-  inputs.insert( std::pair<std::string,ActionToPutData*>("Box",ap) );
-  // Create holder for the masses
-  cmd("createValue Masses: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=mass CONSTANT PERIODIC=NO");
-  // Create holder for the charges 
-  cmd("createValue Charges: PUT SHAPE=" + str_natoms + " SCATTERED UNIT=charge CONSTANT PERIODIC=NO");
+  readInputLine( "Box: PBC " + noforce ); 
   plumed_assert( atoms.posx.size()==0 );
   ActionWithValue* xv = actionSet.selectWithLabel<ActionWithValue*>("posx");
   ActionWithValue* yv = actionSet.selectWithLabel<ActionWithValue*>("posy");
@@ -662,18 +671,19 @@ void PlumedMain::createAtomValues() {
 }
 
 void PlumedMain::updateUnits() {
-  for(const auto & ip : inputs) ip.second->updateUnits();
+  std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>(); 
+  for(const auto & ip : idata) ip->updateUnits();
 }
 
 void PlumedMain::startStep() {
-  for(const auto & ip : inputs) { ip.second->dataCanBeSet=true; }
+  for(const auto & ip : inputs) ip->resetForStepStart(); 
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 void PlumedMain::init() {
 // check that initialization just happens once
-  atoms.init(); createAtomValues(); initialized=true;
+  createAtomValues(); initialized=true;
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
@@ -725,6 +735,14 @@ void PlumedMain::readInputFile(std::string str) {
   log.flush();
 
   pilots=actionSet.select<ActionPilot*>();
+  setupInterfaceActions(); 
+}
+
+void PlumedMain::setupInterfaceActions() {
+  inputs.clear(); std::vector<ActionForInterface*> ap=actionSet.select<ActionForInterface*>();
+  for(unsigned i=0;i<ap.size();++i) {
+      if( ap[i]->getName()=="ENERGY" || ap[i]->getDependencies().size()==0 ) inputs.push_back( ap[i] );
+  }
 }
 
 void PlumedMain::readInputLine(const std::string & str) {
@@ -792,6 +810,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   };
 
   pilots=actionSet.select<ActionPilot*>();
+  setupInterfaceActions();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -819,7 +838,6 @@ void PlumedMain::prepareCalc() {
 // they can be called individually, but the standard thing is to
 // traverse them in this order:
 void PlumedMain::prepareDependencies() {
-
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("1 Prepare dependencies");
 
@@ -853,12 +871,16 @@ void PlumedMain::prepareDependencies() {
   }
 }
 
+void PlumedMain::shareAll() {
+  for(const auto & ip : inputs) ip->shareAll();
+}
+
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("2 Sharing data");
-  if(atoms.getNatoms()>0) atoms.share();
+  for(const auto & ip : inputs) ip->share();
 }
 
 void PlumedMain::performCalcNoUpdate() {
@@ -876,13 +898,13 @@ void PlumedMain::performCalc() {
 
 void PlumedMain::waitData() {
   if(!active)return;
+
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
   for(const auto & ip : inputs) {
-      if( ip.second->isActive() && ip.second->hasBeenSet() ) ip.second->wait();
-      else if( ip.second->isActive() ) ip.second->warning("input requested but this quantity has not been set");
+      if( ip->isActive() && ip->hasBeenSet() ) ip->wait();
+      else if( ip->isActive() ) ip->warning("input requested but this quantity has not been set");
   }
-  atoms.wait();
 }
 
 void PlumedMain::justCalculate() {
@@ -896,7 +918,7 @@ void PlumedMain::justCalculate() {
   // depend on masses and charges
   bool firststep=false;
   for(const auto & ip : inputs) {
-      if( ip.second->fixed && ip.second->firststep ) firststep=true;
+      if( ip->firststep ) firststep=true;
   }
 
   int iaction=0;
@@ -928,6 +950,7 @@ void PlumedMain::justCalculate() {
       }
       if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
       else p->calculate();
+
       // This retrieves components called bias
       if(av) bias+=av->getOutputQuantity("bias");
       if(av) work+=av->getOutputQuantity("work");
@@ -1111,15 +1134,15 @@ std::string PlumedMain::getMDEngine() const {
 }
 
 void PlumedMain::writeBinary(std::ostream&o)const {
-  for(const auto & ip : inputs) ip.second->writeBinary(o);
+  for(const auto & ip : inputs) ip->writeBinary(o);
 }
 
 void PlumedMain::readBinary(std::istream&i) {
-  for(const auto & ip : inputs) ip.second->readBinary(i);
+  for(const auto & ip : inputs) ip->readBinary(i);
 }
 
-void PlumedMain::setEnergyValue( const std::string& name, ActionToPutData* eact ) {
-  name_of_energy = name; inputs.insert( std::pair<std::string,ActionToPutData*>(name,eact) );
+void PlumedMain::setEnergyValue( const std::string& name, ActionForInterface* eact ) {
+  name_of_energy = name; 
 }
 
 

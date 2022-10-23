@@ -48,7 +48,7 @@ class ActionAtomistic;
 /// objects.  However, if you find a use for a tempory PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
-  friend class Atoms;
+  friend class DomainDecomposition;
   friend class ActionWithValue;
   friend class ActionWithArguments;
   friend class ActionAtomistic;
@@ -257,6 +257,8 @@ public:
   unsigned getNumberOfTasks() const ;
   void addTaskToCurrentList( const AtomNumber& itask );
   void addTasksToCurrentList( const std::set<AtomNumber>& tasks );
+  const std::set<AtomNumber>& getTaskList() const ;
+  bool performAllTasks() const ;
 };
 
 inline
@@ -464,6 +466,16 @@ bool Value::storingData() const {
 inline
 void Value::setDerivativeIsZeroWhenValueIsZero() {
   derivativeIsZeroWhenValueIsZero=true;
+}
+
+inline
+const std::set<AtomNumber>& Value::getTaskList() const {
+  return taskList;
+}
+
+inline
+bool Value::performAllTasks() const {
+  return !reducedTasks;
 }
 
 }

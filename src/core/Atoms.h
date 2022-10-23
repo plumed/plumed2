@@ -47,17 +47,10 @@ class Atoms
   friend class ActionToPutData;
   friend class ActionAtomistic;
   friend class PlumedMain;
+  friend class DomainDecomposition;
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
-/// Map global indexes to local indexes
-/// E.g. g2l[i] is the position of atom i in the array passed from the MD engine.
-/// Called "global to local" since originally it was used to map global indexes to local
-/// ones used in domain decomposition. However, it is now also used for the NAMD-like
-/// interface, where only a small number of atoms is passed to plumed.
-  std::vector<int> g2l;
-
-  unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -81,10 +74,8 @@ class Atoms
   double kbT;
 
   std::vector<ActionAtomistic*> actions;
-  std::vector<int>    gatindex;
 
   bool asyncSent;
-  bool atomsNeeded;
 
 /// This holds the names of the values that contain the various atoms
   std::vector<std::string> names;
@@ -118,10 +109,8 @@ class Atoms
   };
 
   DomainDecomposition dd;
-  long int ddStep;  //last step in which dd happened
 
   bool needsAllAtoms() const;
-  void share(const std::set<AtomNumber>&);
 /// These are used to manipulate the atom values
   void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const;
   Vector getPosition( const AtomNumber& i ) const ;
@@ -134,14 +123,6 @@ public:
   explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
-  void init();
-
-  void share();
-  void shareAll();
-  void wait();
-
-  void setRealPrecision(int);
-
   void setTimeStep(const double tstep);
   double getTimeStep()const;
 
@@ -151,13 +132,7 @@ public:
   void setNatoms(int);
   int getNatoms()const;
 
-  const long int& getDdStep()const;
-  const std::vector<int>& getGatindex()const;
-
   void setDomainDecomposition(Communicator&);
-  void setAtomsGatindex(int*,bool);
-  void setAtomsContiguous(int);
-  void setAtomsNlocal(int);
 
   void setBox(void*);
 
@@ -191,23 +166,11 @@ public:
   std::string getAtomString( const AtomNumber& i ) const ;
   void getGradient( const AtomNumber& i, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ; 
   bool checkConstant( const AtomNumber& i, const std::string& name ) const ;
-  void broadcastToDomains( Value* val );
-  void sumOverDomains( Value* val );
 };
 
 inline
 int Atoms::getNatoms()const {
   return natoms;
-}
-
-inline
-const long int& Atoms::getDdStep()const {
-  return ddStep;
-}
-
-inline
-const std::vector<int>& Atoms::getGatindex()const {
-  return gatindex;
 }
 
 inline

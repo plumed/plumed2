@@ -187,7 +187,7 @@ void GREX::cmd(const std::string&key,void*val) {
 void GREX::savePositions() {
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
-  atoms.shareAll();
+  plumedMain.shareAll();
   plumedMain.waitData();
   std::ostringstream o;
   plumedMain.writeBinary(o);

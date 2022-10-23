@@ -209,6 +209,12 @@ void ActionWithValue::propegateTaskListsForValue( const unsigned& valno, const u
   } 
 }
 
+void ActionWithValue::clearTaskLists() {
+  for(unsigned i=0;i<values.size();++i) {
+      values[i]->reducedTasks=true; values[i]->taskList.clear();
+  }
+}
+
 void ActionWithValue::setupForCalculation( const bool& force ) {
   if( !force && action_to_do_before ) return ;
   // Check if this is putting data
@@ -220,9 +226,7 @@ void ActionWithValue::setupForCalculation( const bool& force ) {
       if( aa->isActive() ) aa->retrieveAtoms(); 
   } 
   // Setup the task lists that tell PLUMED what needs to be calculated
-  for(unsigned i=0;i<values.size();++i) {
-      values[i]->reducedTasks=true; values[i]->taskList.clear();
-  }
+  clearTaskLists();
   if( firststep ) { actionsToDoBeforeFirstCalculate(); firststep=false; }
   // Setup the task list for this action
   setupCurrentTaskList(); 

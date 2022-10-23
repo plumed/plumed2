@@ -54,7 +54,7 @@ namespace PLMD {
 
 class ActionAtomistic;
 class ActionPilot;
-class ActionToPutData;
+class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
@@ -166,7 +166,7 @@ private:
   std::unique_ptr<DataPassingTools> passtools;
 
 /// Map of actions that are passed data from the MD code
-  std::map<std::string,ActionToPutData*> inputs;
+  std::vector<ActionForInterface*> inputs;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -215,7 +215,15 @@ private:
 /// This creates the values that hold the atomic positions
   void createAtomValues(); 
 
+/// This sets up the vector that contains the interface to the MD code
+  void setupInterfaceActions();
 public:
+/// This sets the the value with a particular name to the pointer to the data in the MD code 
+  void setInputValue( const std::string& name, const unsigned& stride, void* val );
+
+/// This sets the the forces with a particular name to the pointer to the data in the MD code 
+  void setInputForce( const std::string& name, void* val );
+
 /// This updates the units of the input quantities
   void updateUnits();
 
@@ -304,6 +312,11 @@ public:
   */
   void prepareDependencies();
   /**
+    Ensure that all the atoms are shared.
+    This is used in GREX to ensure that we transfer all the positions from the MD code to PLUMED.
+  */
+  void shareAll();
+  /**
     Share the needed atoms.
     In asynchronous implementations, this method sends the required atoms to all the plumed processes,
     without waiting for the communication to complete.
@@ -361,8 +374,6 @@ public:
   const ActionSet & getActionSet()const;
 /// Get the real preicision
   int getRealPrecision() const;
-/// Reference to the list of input actions
-  std::map<std::string,ActionToPutData*> & getInputActions();
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
@@ -431,7 +442,7 @@ public:
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);
 /// Used to set the name of the action that holds the energy
-  void setEnergyValue( const std::string& name, ActionToPutData* eact );
+  void setEnergyValue( const std::string& name, ActionForInterface* eact );
 };
 
 /////
@@ -440,11 +451,6 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
-}
-
-inline
-std::map<std::string,ActionToPutData*> & PlumedMain::getInputActions() {
-  return inputs;
 }
 
 inline

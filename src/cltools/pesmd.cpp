@@ -187,8 +187,8 @@ public:
     if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
     plumed->cmd("setNoVirial");
     int natoms=( std::floor(dim/3) +  2 );
+    plumed->cmd("setMDEngine","pesmd"); 
     plumed->cmd("setNatoms",&natoms);
-    plumed->cmd("setMDEngine","pesmd");
     plumed->cmd("setTimestep",&tstep);
     plumed->cmd("setPlumedDat",plumedin.c_str());
     plumed->cmd("init");

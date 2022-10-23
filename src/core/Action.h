@@ -338,7 +338,7 @@ void Action::parse(const std::string&key,T&t) {
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convert(def,t) ) {
-        log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
+        if( log.isOpen() ) log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       }
     } else if( keywords.style(key,"compulsory") ) {

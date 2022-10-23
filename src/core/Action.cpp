@@ -273,12 +273,12 @@ void Action::prepare() {
 }
 
 void Action::error( const std::string & msg ) const {
-  log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
+  if( log.isOpen() ) log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 
 void Action::warning( const std::string & msg ) const {
-  log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() );
+  if( log.isOpen() ) log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() );
 }
 
 void Action::calculateFromPDB( const PDB& pdb ) {

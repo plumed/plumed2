@@ -30,31 +30,25 @@ namespace PLMD {
 PLUMED_REGISTER_ACTION(ActionToPutData,"PUT")
 
 void ActionToPutData::registerKeywords(Keywords& keys){
-  Action::registerKeywords(keys); ActionWithValue::registerKeywords( keys );
+  ActionForInterface::registerKeywords( keys );
   keys.add("compulsory","SHAPE","0","the shape of the value that is being passed to PLUMED");
   keys.add("compulsory","UNIT","the unit of the quantity that is being passed to PLUMED through this value.  Can be either number, energy, length, mass or charge");
   keys.add("compulsory","FORCE_UNIT","default","the units to use for the force");
   keys.add("compulsory","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
                                    "to deal with pbc");
-  keys.addFlag("SCATTERED",false,"is this vector scattered over the domains");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
-  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
-ActionWithValue(ao),
-wasset(false),
+ActionForInterface(ao),
 noforce(false),
-scattered(false),
 fixed(false),
-firststep(true),
 dataCanBeSet(true),
-wasscaled(false),
 mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
-   if( getName()!="ENERGY" && getName()!="PBC" ) {
+   if( getName()!="ENERGY" && getName()!="PBC" && getName()!="DOMAIN_DECOMPOSITION" ) {
        std::vector<unsigned> shape; parseVector("SHAPE",shape);
        if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
        else { addValue( shape ); }    
@@ -71,7 +65,6 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
        else  error("input to PERIODIC keyword does not make sense");
 
        parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
-       parseFlag("SCATTERED",scattered);  if( scattered ) plumed_assert( shape.size()>0 );
    }
    if( keywords.exists("NOFORCE") ) parseFlag("NOFORCE", noforce);
 }
@@ -89,8 +82,8 @@ void ActionToPutData::setUnit( const std::string& unitstr, const std::string& fu
    else error( funitstr + " is not a valid input force unit");
 }
 
-void ActionToPutData::setStride( const unsigned& sss ) {
-  mydata->setStride(sss);
+void ActionToPutData::setStride( const std::string& name, const unsigned& sss ) {
+  plumed_assert( name==getLabel() ); mydata->setStride(sss);
 }
 
 void ActionToPutData::updateUnits() {
@@ -109,43 +102,39 @@ void ActionToPutData::updateUnits() {
   else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
 }
 
-void ActionToPutData::set_value(void* val ) {
+bool ActionToPutData::setValuePointer( const std::string& name, void* val ) {
+   if( name!=getLabel() ) return false;
    wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time");
-   mydata->setValuePointer(val);
+   mydata->setValuePointer(val); return true;
 }
 
-void ActionToPutData::set_force(void* val ) {
+bool ActionToPutData::setForcePointer( const std::string& name, void* val ) {
+   if( name!=getLabel() ) return false;
    plumed_massert( dataCanBeSet, "force on " + getLabel() + " cannot be set at this time");
-   mydata->setForcePointer(val);
-}
-
-void ActionToPutData::share( const unsigned& j, const unsigned& k ) {
-  plumed_assert( scattered ); if( wasset ) mydata->share_data( j, k, getPntrToValue() ); 
-}
-
-void ActionToPutData::share( const std::set<AtomNumber>&index, const std::vector<unsigned>& i ) {
-   plumed_assert( scattered && getPntrToValue()->getRank()==1 ); if( wasset ) mydata->share_data( index, i,  getPntrToValue() );
+   mydata->setForcePointer(val); return true;
 }
 
 void ActionToPutData::wait() {
-   dataCanBeSet=false; if( fixed || scattered || !wasset ) { return; } plumed_assert( wasset ); 
+   if( fixed || !wasset ) { return; } plumed_assert( wasset ); 
    mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }
 
 void ActionToPutData::apply() {
    if( getPntrToValue()->forcesWereAdded() && !noforce ) {
-       if( !scattered ) {
-           mydata->add_force( getPntrToValue() );
-       } else if( wasscaled || (int(plumed.getAtoms().getGatindex().size())==plumed.getAtoms().getNatoms() && plumed.getAtoms().shuffledAtoms==0) ) {
-           mydata->add_force( plumed.getAtoms().getGatindex(), getPntrToValue() );
-       } else { mydata->add_force( plumed.getAtoms().unique, plumed.getAtoms().uniq_index, getPntrToValue() ); }
+       if( getName()=="ENERGY" || getDependencies().size()==0 ) mydata->add_force( getPntrToValue() );
    }
+}
+
+unsigned ActionToPutData::getNumberOfForcesToRescale() const {
+   if( getName()!="ENERGY" || getDependencies().size()>0 ) return getPntrToOutput(0)->getNumberOfValues();
+   plumed_assert( getDependencies().size()==1 ); ActionForInterface* ai = dynamic_cast<ActionForInterface*>( getDependencies()[0] );
+   return ai->getNumberOfForcesToRescale();
 }
 
 void ActionToPutData::rescaleForces( const double& alpha ) {
    if( noforce ) return; wasscaled=true;
-   if( scattered ) mydata->rescale_force( plumed.getAtoms().getGatindex().size(), alpha, getPntrToValue() );
-   else mydata->rescale_force( getPntrToValue()->getNumberOfValues(), alpha, getPntrToValue() );
+   mydata->rescale_force( getNumberOfForcesToRescale(), alpha, getPntrToValue() );
+    
 }
 
 void ActionToPutData::writeBinary(std::ostream&o) {
