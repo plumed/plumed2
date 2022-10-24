@@ -45,23 +45,46 @@ try:
 except ImportError:
      HAS_NUMPY=False
 
+# flags used to pass type information
+DEF type_void          = 0x10000*1
+DEF type_nullptr       = 0x10000*2
+DEF type_integral      = 0x10000*3
+DEF type_real          = 0x10000*4
+
+DEF type_value         = 0x2000000*1
+DEF type_pointer       = 0x2000000*2
+DEF type_const_pointer = 0x2000000*3
+
+DEF type_nocopy        = 0x10000000
+
 cdef class Plumed:
-     cdef cplumed.Plumed c_plumed
-     def __cinit__(self,kernel=None):
+     cdef cplumed.plumed c_plumed
+     cdef int initialized
+     def __cinit__(self):
+         # this is guaranteed to be called once
+         # we use it to make sure c_plumed is initialized correctly
+         # in all other places we always finalize before resetting
+         self.c_plumed=cplumed.plumed_create_invalid()
+     def __dealloc__(self):
+         # this is guaranteed to be called once
+         # we use it to make sure c_plumed is finalized correctly
+        cplumed.plumed_finalize(self.c_plumed)
+     def __init__(self,kernel=None):
          cdef bytes py_kernel
          cdef char* ckernel
          if kernel is None:
-            self.c_plumed=cplumed.Plumed.makeValid()
-            if not self.c_plumed.valid():
+            cplumed.plumed_finalize(self.c_plumed)
+            self.c_plumed=cplumed.plumed_create()
+            if not cplumed.plumed_valid(self.c_plumed):
                  raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
          else:
             py_kernel= kernel.encode()
             ckernel = py_kernel
-            self.c_plumed=cplumed.Plumed.dlopen(ckernel)
-            if not self.c_plumed.valid():
+            cplumed.plumed_finalize(self.c_plumed)
+            self.c_plumed=cplumed.plumed_create_dlopen(ckernel)
+            if not cplumed.plumed_valid(self.c_plumed):
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
-         cdef int pres = 8
-         self.c_plumed.cmd_int( "setRealPrecision", pres)
+         self.cmd( "setRealPrecision", 8)
      def finalize(self):
          """ Explicitly finalize a Plumed object.
 
@@ -79,11 +102,57 @@ cdef class Plumed:
              # p object will be finalized when exiting from this context
              ````
          """
-         self.c_plumed=cplumed.Plumed()
+         cplumed.plumed_finalize(self.c_plumed)
+         self.c_plumed=cplumed.plumed_create_invalid()
      def __enter__(self):
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
+     cdef cmd_low_level(self,const char* ckey, const void* val,size_t nelem, size_t* shape,size_t flags):
+         cdef cplumed.plumed_safeptr safe
+         cdef cplumed.plumed_nothrow_handler nothrow
+         cdef cplumed.plumed_error error
+         safe.ptr=val
+         safe.nelem=0
+         safe.shape=shape
+         safe.flags=flags
+         cplumed.plumed_error_init(&error)
+         nothrow.ptr=&error
+         nothrow.handler=cplumed.plumed_error_set
+         cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
+         if(error.code):
+           msg = error.what
+           what = msg.decode("utf-8")
+           try:
+             # this map is from cython doc
+             if error.code>=20300 and error.code<20400: # PLMD::Plumed::ExceptionTypeError
+                raise TypeError(what)
+             elif error.code>=11400 and error.code<11500: # std::bad_alloc
+                raise MemoryError(what)
+             elif error.code>=11000 and error.code<11100: # std::bad_typeid
+                raise TypeError(what)
+             elif error.code>=11100 and error.code<11200: # std::bad_cast
+                raise TypeError(what)
+             elif error.code>=10110 and error.code<10115: # std::domain_error
+                raise ValueError(what)
+             elif error.code>=10105 and error.code<10110: # std::invalid_argument
+                raise ValueError(what)
+             elif error.code>=10230 and error.code<10240: # std::ios_base::failure
+                # Unfortunately, in standard C++ we have no way of distinguishing EOF
+                # from other errors here; be careful with the exception mask
+                raise IOError(what)
+             elif error.code>=10120 and error.code<10125: # std::out_of_range
+                raise IndexError(what)
+             elif error.code>=10210 and error.code<10215: # std::overflow_error
+                raise OverflowError(what)
+             elif error.code>=10205 and error.code<10210: # std::range_error
+                raise ArithmeticError(what)
+             elif error.code>=10215 and error.code<10220: # std::underflow_error
+                raise ArithmeticError(what)
+             else:
+                raise RuntimeError(what)
+           finally:
+             cplumed.plumed_error_finalize(error)
      cdef cmd_ndarray_double(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -92,7 +161,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <double*>&abuffer[0], <size_t*> & ashape[0])
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_real +  type_pointer)
      cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -101,7 +170,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <int*>&abuffer[0], <size_t*> & ashape[0])
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
      cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -110,30 +179,30 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.c_plumed.cmd_shaped( ckey, <long*>&abuffer[0], <size_t*> & ashape[0])
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
      cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
-         self.c_plumed.cmd( ckey, <double*>&abuffer[0], len(abuffer))
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
      cdef cmd_array_int(self, ckey, val):
          cdef int [:] abuffer = val
-         self.c_plumed.cmd( ckey, <int*>&abuffer[0], len(abuffer))
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_array_long(self, ckey, val):
          cdef long [:] abuffer = val
-         self.c_plumed.cmd( ckey, <long*>&abuffer[0], len(abuffer))
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd_float( ckey, val)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_real +  type_value)
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd_int( ckey, val)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value)
      cdef cmd_mpi(self, ckey, val):
          import mpi4py.MPI as MPI
          cdef size_t comm_addr = MPI._addressof(val)
-         self.c_plumed.cmd_mpi( ckey, <const void*>comm_addr)
+         self.cmd_low_level(ckey,<void*>comm_addr, 0, NULL, type_void +  type_const_pointer)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval
          if val is None :
-            self.c_plumed.cmd( ckey)
+            self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
             return
          if isinstance(val, (int,long) ):
             self.cmd_int(ckey, val)
@@ -165,7 +234,8 @@ cdef class Plumed:
          if isinstance(val, str ) :
             py_bytes = val.encode()
             cval = py_bytes
-            self.c_plumed.cmd( ckey, <const char*>cval )
+            # assume sizeof(char)=1
+            self.cmd_low_level(ckey,cval,0, NULL,1 + type_integral + type_const_pointer + type_nocopy)
             return
          if 'mpi4py' in sys.modules:
             import mpi4py.MPI as MPI

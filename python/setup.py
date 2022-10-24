@@ -58,7 +58,7 @@ if plumedversion is None:
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
 
-extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_CXX=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0','-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID=1'] 
+extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0']
 
 defaultkernel=os.getenv("plumed_default_kernel")
 if defaultkernel is not None:
@@ -97,10 +97,10 @@ try:
 except KeyError:
     pass
 
-# if plumed.cpp is available, do not need cython
+# if plumed.c is available, do not need cython
 if not USE_CYTHON:
-    if not os.path.isfile("plumed.cpp"):
-        print('plumed.cpp not found, cython is needed')
+    if not os.path.isfile("plumed.c"):
+        print('plumed.c not found, cython is needed')
         USE_CYTHON = True
 
 # try to import cython
@@ -113,13 +113,13 @@ if USE_CYTHON:
         print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
         sys.exit(-1)
 else:
-    print('using available plumed.cpp file')
-    extension="cpp"
+    print('using available plumed.c file')
+    extension="c"
 
 ext_modules=[Extension(
      name=plumedname,
      sources=["plumed." + extension],
-     language="c++",
+     language="c",
      include_dirs=include_dirs,
      extra_compile_args=extra_compile_args
   )]
