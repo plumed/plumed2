@@ -99,7 +99,7 @@ jobs:
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        .ci/install.lcov v1.15
+        .ci/install.lcov v1.16
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
