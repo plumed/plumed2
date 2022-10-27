@@ -170,6 +170,7 @@ PlumedMain::PlumedMain():
   novirial(false),
   detailedTimers(false)
 {
+  increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
   //myregister.add(this);
@@ -1058,6 +1059,18 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
     p->runFinalJobs();
   }
+}
+
+unsigned PlumedMain::increaseReferenceCounter() noexcept {
+  return ++referenceCounter;
+}
+
+unsigned PlumedMain::decreaseReferenceCounter() noexcept {
+  return --referenceCounter;
+}
+
+unsigned PlumedMain::useCountReferenceCounter() const noexcept {
+  return referenceCounter;
 }
 
 #ifdef __PLUMED_HAS_PYTHON

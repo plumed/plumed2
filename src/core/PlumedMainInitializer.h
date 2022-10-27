@@ -63,6 +63,9 @@ typedef struct {
   void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow);
   void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr_x ptr);
   void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr_x,plumed_nothrow_handler_x);
+  unsigned (*create_reference)(void*plumed);
+  unsigned (*delete_reference)(void*plumed);
+  unsigned (*use_count)(void*plumed);
 } plumed_symbol_table_type_x;
 
 

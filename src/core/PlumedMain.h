@@ -31,6 +31,7 @@
 #include <stack>
 #include <memory>
 #include <map>
+#include <atomic>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -420,6 +421,15 @@ public:
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
+private:
+  std::atomic<unsigned> referenceCounter{};
+public:
+/// Atomically increase reference counter and return the new value
+  unsigned increaseReferenceCounter() noexcept;
+/// Atomically decrease reference counter and return the new value
+  unsigned decreaseReferenceCounter() noexcept;
+/// Report the reference counter
+  unsigned useCountReferenceCounter() const noexcept;
 };
 
 /////

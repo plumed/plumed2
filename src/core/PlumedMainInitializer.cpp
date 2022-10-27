@@ -79,6 +79,24 @@ extern "C" void*plumed_plumedmain_create() {
   }
 }
 
+extern "C" unsigned plumed_plumedmain_create_reference(void*plumed) {
+  plumed_massert(plumed,"trying to create a reference to a plumed object which is not initialized");
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  return p->increaseReferenceCounter();
+}
+
+extern "C" unsigned plumed_plumedmain_delete_reference(void*plumed) {
+  plumed_massert(plumed,"trying to delete a reference to a plumed object which is not initialized");
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  return p->decreaseReferenceCounter();
+}
+
+extern "C" unsigned plumed_plumedmain_use_count(void*plumed) {
+  plumed_massert(plumed,"trying to delete a reference to a plumed object which is not initialized");
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  return p->useCountReferenceCounter();
+}
+
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   auto p=static_cast<PLMD::PlumedMain*>(plumed);
@@ -223,22 +241,28 @@ extern "C" void plumed_plumedmain_finalize(void*plumed) {
 
 // values here should be consistent with those in plumed_symbol_table_init !!!!
 plumed_symbol_table_type_x plumed_symbol_table= {
-  3,
+  4,
   {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize},
   plumed_plumedmain_cmd_nothrow,
   plumed_plumedmain_cmd_safe,
-  plumed_plumedmain_cmd_safe_nothrow
+  plumed_plumedmain_cmd_safe_nothrow,
+  plumed_plumedmain_create_reference,
+  plumed_plumedmain_delete_reference,
+  plumed_plumedmain_use_count
 };
 
 // values here should be consistent with those above !!!!
 extern "C" void plumed_symbol_table_init() {
-  plumed_symbol_table.version=3;
+  plumed_symbol_table.version=4;
   plumed_symbol_table.functions.create=plumed_plumedmain_create;
   plumed_symbol_table.functions.cmd=plumed_plumedmain_cmd;
   plumed_symbol_table.functions.finalize=plumed_plumedmain_finalize;
   plumed_symbol_table.cmd_nothrow=plumed_plumedmain_cmd_nothrow;
   plumed_symbol_table.cmd_safe=plumed_plumedmain_cmd_safe;
   plumed_symbol_table.cmd_safe_nothrow=plumed_plumedmain_cmd_safe_nothrow;
+  plumed_symbol_table.create_reference=plumed_plumedmain_create_reference;
+  plumed_symbol_table.delete_reference=plumed_plumedmain_delete_reference;
+  plumed_symbol_table.use_count=plumed_plumedmain_use_count;
 }
 
 namespace PLMD {

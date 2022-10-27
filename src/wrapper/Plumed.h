@@ -98,6 +98,9 @@
   remember the following rule: for any `plumed_create*` call, there should be a corresponding
   `plumed_finalize` call. More examples can be found below.
 
+  Notice that up to PLUMED 2.8 the reference counter was not thread safe. This is fixed
+  when using PLUMED>=2.9 wrappers with a PLUMED>=2.9 kernel.
+
   The basic method to send a message to plumed is
 \verbatim
   (C) plumed_cmd
@@ -2899,6 +2902,11 @@ typedef struct {
   These are functions that accept a plumed_safeptr object, which can carry information about the passed type and size.
   Since new information should be passed at every cmd call, this can only be obtained by adding new cmd calls.
 
+  version=4, thread-safe reference counter
+
+  These functions allow to access a thread-safe reference counter that is stored within the PlumedMain object.
+  This allows avoiding to enable atomic access also the C compiler used build Plumed.c. It's added here and not as a new
+  cmd since this is a very low-level functionality.
 */
 typedef struct {
   /**
@@ -2933,6 +2941,24 @@ typedef struct {
   */
   void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr,plumed_nothrow_handler);
 
+  /**
+    Pointer to a function that increments the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*create_reference)(void*);
+  /**
+    Pointer to a function that decrements the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*delete_reference)(void*);
+  /**
+    Pointer to a function that returns the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*use_count)(void*);
 } plumed_symbol_table_type;
 
 /* Utility to convert function pointers to pointers, just for the sake of printing them */
@@ -3259,7 +3285,7 @@ __PLUMED_WRAPPER_INTERNALS_END
 typedef struct {
   /* allows errors with pointers to be found when debugging */
   char magic[6];
-  /* reference count */
+  /* reference count. this is only used with PLUMED<=2.8. Later versions have an internal thread-safe reference counter. */
   int refcount;
   /* handler to dlopened library. NULL if there was no library opened */
   void* dlhandle;
@@ -3429,7 +3455,12 @@ plumed plumed_create_reference(plumed p) {
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   /* increase reference count */
-  pimpl->refcount++;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    pimpl->table->create_reference(pimpl->p);
+  } else {
+    pimpl->refcount++;
+  }
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   __PLUMED_FPRINTF(stderr,"refcount: increase at %p\n",(void*)pimpl);
 #endif
@@ -3546,12 +3577,15 @@ void plumed_finalize(plumed p) {
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  /* decrease reference count */
-  pimpl->refcount--;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   __PLUMED_FPRINTF(stderr,"refcount: decrease at %p\n",(void*)pimpl);
 #endif
-  if(pimpl->refcount>0) return;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    if(pimpl->table->delete_reference(pimpl->p)>0) return;
+  } else {
+    if(--pimpl->refcount>0) return;
+  }
   /* to allow finalizing an invalid plumed object, we only call
      finalize if the object is valid */
   if(pimpl->p) {
@@ -3593,7 +3627,12 @@ int plumed_use_count(plumed p) {
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  return pimpl->refcount;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    return pimpl->table->use_count(pimpl->p);
+  } else {
+    return pimpl->refcount;
+  }
 }
 __PLUMED_WRAPPER_C_END
 
