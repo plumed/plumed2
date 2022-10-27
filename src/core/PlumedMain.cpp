@@ -123,6 +123,9 @@ namespace PLMD {
   plumed_error() << "unknown exception " << what;
 }
 
+#if 0
+// this is temporarily commented out since it makes
+// multithread calculations fail
 namespace {
 class Register {
   std::vector<PlumedMain*> instances;
@@ -146,6 +149,7 @@ public:
 static Register myregister;
 
 }
+#endif
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -168,12 +172,12 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  myregister.add(this);
+  //myregister.add(this);
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  myregister.remove(this);
+  //myregister.remove(this);
 }
 
 /////////////////////////////////////////////////////////////
