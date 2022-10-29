@@ -36,6 +36,7 @@
 #include <memory>
 #include <cstddef>
 #include <queue>
+#include <mutex>
 
 namespace PLMD {
 
@@ -344,6 +345,7 @@ public:
     }
 
   }
+  static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
 };
 
 template <class T>
