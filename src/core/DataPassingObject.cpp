@@ -33,6 +33,8 @@ private:
 /// A pointer to the force 
   T* f;
 public:
+/// This convers a number from the MD code into a double
+  double MD2double(const void*) const override ;
 /// Set the pointer to the value
   void setValuePointer( void* p ) override;
 /// Set the pointer to the force
@@ -60,6 +62,11 @@ std::unique_ptr<DataPassingObject> DataPassingObject::create(unsigned n) {
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
   return NULL;
+}
+
+template <class T>
+double DataPassingObjectTyped<T>::MD2double(const void*m) const {
+  double d=double(*(static_cast<const T*>(m))); return d;
 }
 
 template <class T>

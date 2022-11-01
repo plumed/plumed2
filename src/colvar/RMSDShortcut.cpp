@@ -51,7 +51,7 @@ ActionShortcut(ao)
 {
   std::string reference; parse("REFERENCE",reference);
   // Read the reference pdb file
-  PDB pdb; if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) plumed_merror("missing file " + reference );
+  PDB pdb; if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) plumed_merror("missing file " + reference );
   // Find out the position of the center of mass
   RMSD::createReferenceConfiguration( getShortcutLabel() + "_ref", reference, plumed, 1 ); 
   // Create the object that holds the atomic positions

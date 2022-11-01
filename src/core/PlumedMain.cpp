@@ -145,6 +145,7 @@ PlumedMain::PlumedMain():
   detailedTimers(false)
 {
   log.link(comm);
+  passtools->setNaturalUnits(false);
   log.setLinePrefix("PLUMED: ");
 }
 
@@ -390,7 +391,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         initialized=false;
         createAtomValues();
         initialized=true;
-        updateUnits();
+        setUnits( false );
         break;
       }
       case cmd_getApiVersion:
@@ -406,6 +407,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         passtools=DataPassingTools::create(*static_cast<int*>(val));
+        passtools->setNaturalUnits(false);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -437,7 +439,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
         // use as cmd("setNaturalUnits")
         CHECK_NOTINIT(initialized,word);
-        atoms.setMDNaturalUnits(true);
+        passtools->setNaturalUnits(true);
         break;
       case cmd_setNoVirial:
         CHECK_NOTINIT(initialized,word);
@@ -479,15 +481,25 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       }
         break;
       case cmd_setTimestep:
+      {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setTimeStep( passtools->MD2double(val) );
+        cmd("createValue timestep: TIMESTEP");
+        ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+        if( !ts->setValuePointer("timestep", val ) ) plumed_error();
+        ts->transferFixedValue(); 
+      }
         break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
+      {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setKbT( passtools->MD2double(val) );
+        cmd("createValue KbT: PUT CONSTANT PERIODIC=NO UNIT=energy");
+        ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
+        if( !kb->setValuePointer("KbT", val ) ) plumed_error();
+        kb->transferFixedValue(); 
+      }
         break;
       /* ADDED WITH API==3 */
       case cmd_setRestart:
@@ -610,7 +622,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_createValue:
       {
          std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
-         readInputLine( inpt ); std::size_t col=words[1].find_first_of(":"); std::string lab=words[1].substr(0,col);
+         readInputLine( inpt ); 
       }
         break;
       /* ADDED WITH API==7 */
@@ -670,7 +682,8 @@ void PlumedMain::createAtomValues() {
   atoms.addAtomValues( MDEngine, xv->copyOutput(0), yv->copyOutput(0), zv->copyOutput(0), mv->copyOutput(0), qv->copyOutput(0) );
 }
 
-void PlumedMain::updateUnits() {
+void PlumedMain::setUnits( const bool& natural ) {
+  passtools->setNaturalUnits( natural );
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>(); 
   for(const auto & ip : idata) ip->updateUnits();
 }
@@ -707,10 +720,12 @@ void PlumedMain::init() {
     readInputFile(plumedDat);
     plumedDat="";
   }
-  updateUnits();
-  log.printf("Timestep: %f\n",atoms.getTimeStep());
-  if(atoms.getKbT()>0.0)
-    log.printf("KbT: %f\n",atoms.getKbT());
+  setUnits( passtools->usingNaturalUnits() );
+  ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep"); 
+  if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
+  ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
+  if(kb)
+    log.printf("KbT: %f\n",(kb->copyOutput(0))->get());
   else {
     log.printf("KbT has not been set by the MD engine\n");
     log.printf("It should be set by hand where needed\n");
@@ -1143,6 +1158,22 @@ void PlumedMain::readBinary(std::istream&i) {
 
 void PlumedMain::setEnergyValue( const std::string& name, ActionForInterface* eact ) {
   name_of_energy = name; 
+}
+
+double PlumedMain::getKbT( const double& simtemp ) const {
+  if( simtemp>0 ) return simtemp*getKBoltzmann();
+  ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
+  if( kb ) return (kb->copyOutput(0))->get();
+  return 0;
+}
+
+double PlumedMain::getKBoltzmann()const {
+  if( usingNaturalUnits() ) return 1.0;
+  else return kBoltzmann/atoms.getUnits().getEnergy();
+}
+
+bool PlumedMain::usingNaturalUnits() const {
+  return passtools->usingNaturalUnits();
 }
 
 

@@ -550,7 +550,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
 
   /* Length conversion (parameters are tuned for angstrom) */
   double scale=1.;
-  if(!plumed.getAtoms().usingNaturalUnits()) {
+  if(!plumed.usingNaturalUnits()) {
     scale = 10.*atoms.getUnits().getLength();
   }
 
@@ -558,7 +558,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   db.parse(stringadb,scale);
 
   PDB pdb;
-  if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) plumed_merror("missing input file " + stringapdb);
+  if( !pdb.read(stringapdb,plumed.usingNaturalUnits(),1./scale) ) plumed_merror("missing input file " + stringapdb);
 
   // first of all we build the list of chemical shifts we want to predict
   log.printf("  Reading experimental data ...\n"); log.flush();

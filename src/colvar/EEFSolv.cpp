@@ -374,7 +374,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
         const double delta_h_ref_t0 = parameter_temp[i][3];
         const double delta_cp = parameter_temp[i][4];
         const double delta_s_ref_t0 = (delta_h_ref_t0 - delta_g_ref_t0) / t0;
-        const double t = plumed.getAtoms().getKbT() / plumed.getAtoms().getKBoltzmann();
+        const double t = plumed.getKbT(0) / plumed.getKBoltzmann();
         parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) - delta_cp * t * std::log(t / t0) + delta_cp * (t - t0);
         parameter_temp[i][2] *= parameter_temp[i][1] / delta_g_ref_t0;
       }

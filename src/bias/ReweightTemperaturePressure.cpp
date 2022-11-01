@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/ReweightBase.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_TEMP_PRESS
@@ -210,7 +209,7 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   parse("REWEIGHT_PRESSURE",rpress_);
   parse("PRESSURE",press_);
   parse("REWEIGHT_TEMP",rtemp_);
-  rtemp_*=plumed.getAtoms().getKBoltzmann();
+  rtemp_*=plumed.getKBoltzmann();
 
   parseArgumentList("ENERGY",myenergy);
   if(!myenergy.empty()) {
@@ -235,15 +234,15 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   // 4 possible cases
   // Case 1) Reweight from T to T' with V=const (canonical)
   if (rtemp_>=0 && press_<0 && rpress_<0 && !myenergy.empty() && myvol.empty() ) {
-    log.printf("  reweighting simulation from temperature %f to temperature %f at constant volume \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann() );
+    log.printf("  reweighting simulation from temperature %f to temperature %f at constant volume \n",simtemp/plumed.getKBoltzmann(),rtemp_/plumed.getKBoltzmann() );
     log.printf("  WARNING: If the simulation is performed at constant pressure add the keywords PRESSURE and VOLUME \n" );
   }
   // Case 2) Reweight from T to T' with P=const (isothermal-isobaric)
-  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann(), press_ );
+  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getKBoltzmann(),rtemp_/plumed.getKBoltzmann(), press_ );
   // Case 3) Reweight from P to P' with T=const (isothermal-isobaric)
-  else if (rtemp_<0 && press_>=0 && rpress_>=0 && myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from pressure %f to pressure %f at constant temperature %f\n",press_,rpress_,simtemp/plumed.getAtoms().getKBoltzmann() );
+  else if (rtemp_<0 && press_>=0 && rpress_>=0 && myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from pressure %f to pressure %f at constant temperature %f\n",press_,rpress_,simtemp/plumed.getKBoltzmann() );
   // Case 4) Reweight from T,P to T',P' (isothermal-isobaric)
-  else if (rtemp_>0 && press_>=0 && rpress_>=0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f and pressure %f to temperature %f and pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(), press_, rtemp_/plumed.getAtoms().getKBoltzmann(), rpress_);
+  else if (rtemp_>0 && press_>=0 && rpress_>=0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f and pressure %f to temperature %f and pressure %f \n",simtemp/plumed.getKBoltzmann(), press_, rtemp_/plumed.getKBoltzmann(), rpress_);
   else error("Combination of ENERGY, VOLUME, REWEIGHT_PRESSURE, PRESSURE and REWEIGHT_TEMP not supported. Please refer to the manual for supported combinations.");
 }
 

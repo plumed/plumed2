@@ -72,7 +72,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     while (do_read) {
       PDB mypdb;
       RMSD mymsd;
-      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+      do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/atoms.getUnits().getLength());
       if(do_read) {
         nframes++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");

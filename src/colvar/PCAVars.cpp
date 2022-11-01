@@ -81,7 +81,7 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   // Now read in the directions and create matheval objects to compute the pca components
   unsigned nfram=1;
   while( do_read ) {
-    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
     if( do_read ) {
         std::string num; Tools::convert( nfram, num ); nfram++;
         // Normalize the eigenvector in the input

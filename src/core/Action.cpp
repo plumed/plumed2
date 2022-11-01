@@ -61,6 +61,7 @@ Action::Action(const ActionOptions&ao):
   line(ao.line),
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
+  timestep(0),
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
@@ -71,6 +72,10 @@ Action::Action(const ActionOptions&ao):
   multi_sim_comm(plumed.multi_sim_comm),
   keywords(ao.keys)
 {
+  // Retrieve the timestep and save it
+  ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
+  if( ts ) timestep = (ts->copyOutput(0))->get();  
+
   line.erase(line.begin());
   if( !keywords.exists("NO_ACTION_LOG") ) log.printf("Action %s\n",name.c_str());
 
@@ -251,11 +256,11 @@ long int Action::getStep()const {
 }
 
 double Action::getTime()const {
-  return plumed.getAtoms().getTimeStep()*getStep();
+  return timestep*getStep();
 }
 
 double Action::getTimeStep()const {
-  return plumed.getAtoms().getTimeStep();
+  return timestep; 
 }
 
 

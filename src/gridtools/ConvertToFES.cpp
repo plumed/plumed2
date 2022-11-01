@@ -79,9 +79,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   double simtemp=0.; parse("TEMP",simtemp); bool minzero=false; parseFlag("MINTOZERO",minzero);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
-  if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
+  simtemp=plumed.getKbT(simtemp); if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
   std::vector<std::string> argv; parseVector("ARG",argv);
   if( argv.size()!=1 ) error("should only have one argument");

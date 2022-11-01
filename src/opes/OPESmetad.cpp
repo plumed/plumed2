@@ -17,7 +17,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
@@ -306,8 +305,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   std::string error_in_input2(" could not be read correctly");
 
 //set kbt_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  kbt_=plumed.getAtoms().getKbT();
+  const double Kb=plumed.getKBoltzmann();
+  kbt_=plumed.getKbT(0);
   double temp=-1;
   parse("TEMP",temp);
   if(temp>0)

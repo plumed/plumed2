@@ -41,10 +41,6 @@ class PlumedMain;
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   plumed(plumed),
-  naturalUnits(false),
-  MDnaturalUnits(false),
-  timestep(0.0),
-  kbT(0.0),
   asyncSent(false)
 {
 }
@@ -148,27 +144,6 @@ void Atoms::DomainDecomposition::enable(Communicator& c) {
   }
 }
 
-void Atoms::setTimeStep(const double tstep) {
-  timestep=tstep;
-// The following is to avoid extra digits in case the MD code uses floats
-// e.g.: float f=0.002 when converted to double becomes 0.002000000094995
-// To avoid this, we keep only up to 6 significant digits after first one
-  double magnitude=std::pow(10,std::floor(std::log10(timestep)));
-  timestep=std::floor(timestep/magnitude*1e6)/1e6*magnitude;
-}
-
-double Atoms::getTimeStep()const {
-  return timestep/units.getTime()*MDUnits.getTime();
-}
-
-void Atoms::setKbT(const double t) {
-  kbT=t;
-}
-
-double Atoms::getKbT()const {
-  return kbT/units.getEnergy()*MDUnits.getEnergy();
-}
-
 bool Atoms::needsAllAtoms() const {
   std::vector<ActionForInterface*> inputs(plumed.getActionSet().select<ActionForInterface*>()); bool getall=false;
   for(const auto & ip : inputs) {
@@ -214,16 +189,6 @@ void Atoms::clearFullList() {
 
 void Atoms::setDomainDecomposition(Communicator& comm) {
   dd.enable(comm);
-}
-
-double Atoms::getKBoltzmann()const {
-  if(naturalUnits || MDnaturalUnits) return 1.0;
-  else return kBoltzmann/units.getEnergy();
-}
-
-double Atoms::getMDKBoltzmann()const {
-  if(naturalUnits || MDnaturalUnits) return 1.0;
-  else return kBoltzmann/MDUnits.getEnergy();
 }
 
 }

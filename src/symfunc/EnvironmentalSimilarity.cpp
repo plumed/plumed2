@@ -59,7 +59,7 @@ EnvironmentalSimilarity::EnvironmentalSimilarity(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::string matlab; parse("MATRIX",matlab); std::string reffile; parse("REFERENCE",reffile); PDB pdb; std::string argstr; 
-  pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+  pdb.read(reffile,plumed.usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
   unsigned natoms=pdb.getPositions().size(); std::string str_natoms; Tools::convert( natoms, str_natoms ); 
   double sig; parse("SIGMA",sig); std::string sig2; Tools::convert( sig*sig, sig2 );
   for(unsigned i=0;i<natoms;++i) {

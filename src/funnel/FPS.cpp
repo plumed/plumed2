@@ -156,7 +156,7 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   pdb = new PDB();
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb->read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
+  if( !pdb->read(reference,plumed.usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
   alignment = new RMSD();

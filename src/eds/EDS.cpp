@@ -505,9 +505,7 @@ EDS::EDS(const ActionOptions&ao):
     readInRestart(b_mean);
   } else {
 
-    if(temp>=0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-    else kbt_ = plumed.getAtoms().getKbT();
-
+    kbt_ = plumed.getKbT( temp );
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {
       error("  Unable to determine valid kBT. "

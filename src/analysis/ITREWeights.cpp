@@ -76,11 +76,10 @@ ITREWeights::ITREWeights( const ActionOptions& ao ) :
   readInputLine( getShortcutLabel() + "_ctweight: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_www STRIDE=" + pace + " " + convertInputLineToString() );
   readInputLine( getShortcutLabel() + "_itre: ITRE ARG=" + getShortcutLabel() + "_ctweight.logweights" + tempstr ); 
   // Bring c(t) and reweighting weights together to get final weights
-  std::string spacing; double sss; Tools::convert( stride, sss ); Tools::convert( sss*plumed.getAtoms().getTimeStep(), spacing );
+  std::string spacing; double sss; Tools::convert( stride, sss ); Tools::convert( sss*getTimeStep(), spacing );
   readInputLine( getShortcutLabel() + "_fullct: INTERPOLATE_GRID INTERPOLATION_TYPE=floor ARG=" + getShortcutLabel() + "_itre GRID_SPACING=" + spacing );
-  std::string tempd; 
-  if( temp.length()>0 ) { double t; Tools::convert( temp, t ); Tools::convert( t*plumed.getAtoms().getKBoltzmann(), tempd ); } 
-  else { Tools::convert( plumed.getAtoms().getKbT(),tempd ); }
+  double t = 0; if( temp.length()>0 ) Tools::convert( temp, t ); 
+  std::string tempd; Tools::convert( plumed.getKbT(t),tempd );
   readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_bweight.logweights" + 
                                       " ARG2=" + getShortcutLabel() + "_fullct PERIODIC=NO FUNC=exp(x-y/" + tempd + ")" );
   // Input for PRINT (will just output at end of calc

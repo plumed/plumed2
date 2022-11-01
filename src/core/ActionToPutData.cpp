@@ -44,11 +44,11 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
 ActionForInterface(ao),
 noforce(false),
-fixed(false),
+fixed(getName()=="TIMESTEP"),
 dataCanBeSet(true),
 mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
-   if( getName()!="ENERGY" && getName()!="PBC" && getName()!="DOMAIN_DECOMPOSITION" ) {
+   if( getName()!="ENERGY" && getName()!="PBC" && getName()!="TIMESTEP" ) {
        std::vector<unsigned> shape; parseVector("SHAPE",shape);
        if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
        else { addValue( shape ); }    
@@ -75,6 +75,7 @@ void ActionToPutData::setUnit( const std::string& unitstr, const std::string& fu
    else if( unitstr=="length" ) unit=l;
    else if( unitstr=="mass" ) unit=m;
    else if( unitstr=="charge" ) unit=q;
+   else if( unitstr=="time" ) unit=t;
    else error( unitstr + " is not a valid input unit");
    // Set the force units
    if( funitstr=="default" ) funit=d;
@@ -97,9 +98,14 @@ void ActionToPutData::updateUnits() {
   else if( unit==l ) vunits = MDUnits.getLength()/units.getLength(); 
   else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();
   else if( unit==q ) vunits = MDUnits.getCharge()/units.getCharge();
-  mydata->setUnit(vunits); 
+  else if( unit==t ) vunits = MDUnits.getTime()/units.getTime();
+  mydata->setUnit(vunits); if( fixed ) transferFixedValue();
   if( funit==eng ) mydata->setForceUnit(units.getEnergy()/MDUnits.getEnergy());
   else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
+}
+
+double ActionToPutData::MD2double( void* val ) const {
+  return mydata->MD2double(val);
 }
 
 bool ActionToPutData::setValuePointer( const std::string& name, void* val ) {
@@ -112,6 +118,11 @@ bool ActionToPutData::setForcePointer( const std::string& name, void* val ) {
    if( name!=getLabel() ) return false;
    plumed_massert( dataCanBeSet, "force on " + getLabel() + " cannot be set at this time");
    mydata->setForcePointer(val); return true;
+}
+
+void ActionToPutData::transferFixedValue() {
+   plumed_assert( fixed ); if( !wasset ) return;
+   mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }
 
 void ActionToPutData::wait() {

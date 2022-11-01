@@ -187,7 +187,7 @@ void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std:
     if( name!="x" && name!="y" && name!="z" ) { isdists=false; break; }
   }
   if( isdists ) {
-    if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
+    if( plumed.usingNaturalUnits() ) units = 1.0/0.5292;
     else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
   if( !firststep ) { 

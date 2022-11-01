@@ -41,7 +41,7 @@ private:
 /// Are we allowed to set data at this time
   bool dataCanBeSet;
 /// The unit of the value that has been passed to plumed
-  enum{n,e,l,m,q} unit;
+  enum{n,e,l,m,q,t} unit;
 /// The unit to to use for the force
   enum{d,eng} funit;
 /// This holds the pointer that we getting data from
@@ -49,6 +49,8 @@ private:
 protected:
 /// Setup the units of the input value
   void setUnit( const std::string& unitstr, const std::string& funitstr );
+/// Conver a void pointer that is passed by the MD code to a double
+  double MD2double( void* val ) const ;
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
@@ -59,7 +61,7 @@ public:
 /// This is called at the start of the step
   void resetForStepStart() override { dataCanBeSet = true; }
 /// These are the actions that set the pointers to the approrpiate values 
-  bool setValuePointer( const std::string& name, void* val ) override ;
+  virtual bool setValuePointer( const std::string& name, void* val ) override ;
   bool setForcePointer( const std::string& name, void* val ) override ;
 /// There are no atoms n local to set here
   void Set_comm(Communicator& comm) override {}
@@ -68,6 +70,8 @@ public:
   void setAtomsContiguous(int start) override {}
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
+/// This transfers a constant value across from the MD code
+  void transferFixedValue();
 /// Share the data
   void share() override { dataCanBeSet=false; }
   void shareAll() override {}

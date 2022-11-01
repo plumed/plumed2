@@ -159,7 +159,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
   // store target_ distance
   std::vector <Vector> reference_positions;

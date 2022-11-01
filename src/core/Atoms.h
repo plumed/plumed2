@@ -61,17 +61,11 @@ class Atoms
   Units MDUnits;
   Units units;
 
-  bool naturalUnits;
-  bool MDnaturalUnits;
-
-  double timestep;
 
 /// if set to true, all the forces in the global array are zeroes
 /// at every step. It should not be necessary in general, but it is
 /// for actions accessing to modifyGlobalForce() (e.g. FIT_TO_TEMPLATE).
 //  bool zeroallforces;
-
-  double kbT;
 
   std::vector<ActionAtomistic*> actions;
 
@@ -123,12 +117,6 @@ public:
   explicit Atoms(PlumedMain&plumed);
   ~Atoms();
 
-  void setTimeStep(const double tstep);
-  double getTimeStep()const;
-
-  void setKbT(const double t);
-  double getKbT()const;
-
   void setNatoms(int);
   int getNatoms()const;
 
@@ -155,12 +143,6 @@ public:
   void setUnits(const Units&u) {units=u;}
   const Units& getUnits() {return units;}
 
-  double getKBoltzmann()const;
-  double getMDKBoltzmann()const;
-  bool usingNaturalUnits()const;
-  void setNaturalUnits(bool n) {naturalUnits=n;}
-  void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
-
   void clearAtomValues();
   void addAtomValues( const std::string& n, Value* x, Value* y, Value* z, Value* m, Value* q );
   std::string getAtomString( const AtomNumber& i ) const ;
@@ -171,11 +153,6 @@ public:
 inline
 int Atoms::getNatoms()const {
   return natoms;
-}
-
-inline
-bool Atoms::usingNaturalUnits() const {
-  return naturalUnits || MDnaturalUnits;
 }
 
 }

@@ -18,7 +18,6 @@
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "core/ActionRegister.h"
 #include "bias/Bias.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "DRR.h"
 #include "tools/Random.h"
@@ -421,9 +420,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
   if (temp >= 0.0)
-    kbt = plumed.getAtoms().getKBoltzmann() * temp;
+    kbt = plumed.getKbT( temp ); 
   else {
-    kbt = plumed.getAtoms().getKbT();
+    kbt = plumed.getKbT( 0 );
     if (kbt <= std::numeric_limits<double>::epsilon()) {
       error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
             "Please set it by the TEMP keyword manually.");
@@ -523,7 +522,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   log << "eABF/DRR: timestep = " << getTimeStep() << " ps with stride = " << getStride() << " steps\n";
   vector<double> ekbt(ndims, 0.0);
   if (etemp.size() != ndims) {
-    etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
+    etemp.assign(ndims, kbt / plumed.getKBoltzmann());
   }
   if (tau.size() != ndims) {
     tau.assign(ndims, 0.5);
@@ -541,7 +540,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
   for (size_t i = 0; i < ndims; ++i) {
-    ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
+    ekbt[i] = etemp[i] * plumed.getKBoltzmann();
     log << "eABF/DRR: The kbt(extended system) of [" << i << "] is " << ekbt[i]
         << '\n';
     log << "eABF/DRR: relaxation time tau [" << i << "] is " << tau[i] << '\n';
@@ -695,7 +694,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
     eabf_UI = UIestimator::UIestimator(
                 lowerboundary, upperboundary, width, kappa, outputprefix, int(outputfreq),
-                uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
+                uirestart, input_filename, kbt / plumed.getKBoltzmann());
   }
 }
 

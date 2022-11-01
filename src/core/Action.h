@@ -77,6 +77,8 @@ friend class ActionShortcut;
 /// Update only until this time.
   double update_until;
 
+/// Save the timestep here
+  double timestep;
 public:
 
 /// Check if action should be updated.

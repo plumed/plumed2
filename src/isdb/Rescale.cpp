@@ -264,10 +264,7 @@ Rescale::Rescale(const ActionOptions&ao):
   Biaspace_ *= MCstride_;
 
   // get temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt_=plumed.getAtoms().getKbT();
+  double temp=0.0; parse("TEMP",temp); kbt_ = plumed.getKbT( temp );
 
   checkRead();
 

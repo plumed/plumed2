@@ -225,7 +225,7 @@ public:
   void setInputForce( const std::string& name, void* val );
 
 /// This updates the units of the input quantities
-  void updateUnits();
+  void setUnits( const bool& natural );
 
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
@@ -443,6 +443,12 @@ public:
   void readBinary(std::istream&);
 /// Used to set the name of the action that holds the energy
   void setEnergyValue( const std::string& name, ActionForInterface* eact );
+/// Get the value of KbT
+  double getKbT( const double& simtemp ) const ; 
+/// Get Boltzmann's constant
+  double getKBoltzmann() const ;
+/// Are we using natural units 
+  bool usingNaturalUnits() const ;
 };
 
 /////

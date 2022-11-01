@@ -702,10 +702,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
   if( biasf_<1.0  && biasf_!=-1.0) error("well tempered bias factor is nonsensical");
   parse("DAMPFACTOR",dampfactor_);
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt_=plumed.getAtoms().getKbT();
+  double temp=0.0; parse("TEMP",temp); kbt_ = plumed.getKbT( temp );
   if(biasf_>=1.0) {
     if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;

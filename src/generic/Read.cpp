@@ -222,7 +222,7 @@ void Read::prepare() {
     double du_time;
     if( !ifile->scanField("time",du_time) ) {
       error("Reached end of file " + filename + " before end of trajectory");
-    } else if( std::abs( du_time-getTime() )>plumed.getAtoms().getTimeStep() && !ignore_time ) {
+    } else if( std::abs( du_time-getTime() )>getTimeStep() && !ignore_time ) {
       std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
       error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime + ". Add IGNORE_TIME to ignore error.");
     }

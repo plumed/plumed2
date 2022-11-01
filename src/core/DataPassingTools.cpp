@@ -46,6 +46,14 @@ std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
   return NULL;
 }
 
+void DataPassingTools::setNaturalUnits( const bool& u ) {
+  naturalUnits = u;
+}
+
+bool DataPassingTools::usingNaturalUnits() const {
+  return naturalUnits;
+}
+
 template <class T>
 int DataPassingToolsTyped<T>::getRealPrecision() const {
   return sizeof(T);

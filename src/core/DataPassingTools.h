@@ -30,8 +30,12 @@ namespace PLMD {
 class PlumedMain;
 
 class DataPassingTools {
+private: 
+  bool naturalUnits;
 public:
   static std::unique_ptr<DataPassingTools> create(unsigned n);
+  void setNaturalUnits( const bool& u );
+  bool usingNaturalUnits() const ;
   virtual int getRealPrecision() const = 0;
   virtual double MD2double(const void*) const=0;
   virtual void double2MD(const double&,void*) const=0;

@@ -41,6 +41,8 @@ protected:
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
   explicit DataPassingObject() : stride(1), unit(1), funit(1) {}
+/// Convert what comes from the MD code to a double
+  virtual double MD2double(const void*) const=0;
 /// Set the stride to use when getting data from the input array
   void setStride( const unsigned& s ) { stride=s; }
 /// Set the unit for the value

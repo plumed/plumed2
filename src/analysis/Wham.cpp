@@ -116,9 +116,7 @@ Wham::Wham(const ActionOptions&ao):
   wasUpdated(false)
 {
   // Read in the temperature
-  simtemp=0.; parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
+  simtemp=0.; parse("TEMP",simtemp); simtemp = plumed.getKbT( simtemp );
   if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
   // Now read in parameters of WHAM
   parse("MAXITER",maxiter); parse("WHAMTOL",thresh);

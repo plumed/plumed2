@@ -18,7 +18,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "tools/OpenMP.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -40,8 +39,8 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   , totNumECVs_(0)
 {
 //set kbt_
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  kbt_=plumed.getAtoms().getKbT();
+  const double Kb=plumed.getKBoltzmann();
+  kbt_=plumed.getKbT(0);
   double temp=-1;
   parse("TEMP",temp);
   if(temp>0)
