@@ -2199,7 +2199,7 @@ Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed&operator=(const Plumed&p) __PLUMED_WRAPPER_CXX_NOEXCEPT {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) decref();
+      if(main.p) plumed_finalize(main);
       main=plumed_create_reference(p.main);
     }
     return *this;
@@ -2226,7 +2226,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed& operator=(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) decref();
+      if(main.p) plumed_finalize(main);
       main=p.main;
       p.main.p=nullptr;
     }
@@ -2251,8 +2251,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   \endverbatim
   */
   static Plumed dlopen(const char* path)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen(path)).decref();
+    plumed p=plumed_create_dlopen(path);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
   /**
@@ -2261,8 +2263,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     Same as \ref dlopen(const char* path), but allows a dlopen mode to be chosen explicitly.
   */
   static Plumed dlopen(const char* path,int mode)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen2(path,mode)).decref();
+    plumed p=plumed_create_dlopen2(path,mode);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
   /**
     Create a PLUMED object loading from an already opened shared library. Available as of PLUMED 2.8.
@@ -2271,8 +2275,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     See \ref plumed_create_dlsym.
   */
   static Plumed dlsym(void* dlhandle)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_dlsym(dlhandle)).decref();
+    plumed p=plumed_create_dlsym(dlhandle);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
   /** Invalid constructor. Available as of PLUMED 2.5.
@@ -2303,8 +2309,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   \endverbatim
   */
   static Plumed makeInvalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_invalid()).decref();
+    plumed p=plumed_create_invalid();
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
   /**
@@ -2315,8 +2323,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
 
   static Plumed makeValid()__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create()).decref();
+    plumed p=plumed_create();
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
 
@@ -2527,7 +2537,7 @@ public:
 #endif
   ~Plumed() __PLUMED_WRAPPER_CXX_NOEXCEPT {
 // the check is needed to avoid calling plumed_finalize on moved objects
-    if(main.p) decref();
+    if(main.p) plumed_finalize(main);
   }
 
   /**
