@@ -50,6 +50,9 @@ public:
   explicit LandmarkSelectionBase( const ActionOptions& ao );
   unsigned getNumberOfDerivatives() const { return 0; }
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+// This is a pathetic fix for a corner case.  It is only called once.  I need to work out how to 
+// make values work without alwaysstore option for matrice
+  unsigned getNumberOfColumns() const override { return 0; }
   void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
   void calculate();
   void apply() {}

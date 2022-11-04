@@ -130,6 +130,8 @@ public:
   void set(double);
 /// Set the value of the stored data
   void set(const unsigned& n, const double& v );
+/// Add to the data array a value (used in collect_frames)
+  void push_back( const double& val );
 /// Add something to the value of the function
   void add(double);
 /// Add something to the stored data
@@ -270,6 +272,12 @@ void Value::set(double v) {
   value_set=true;
   data[0]=v;
   applyPeriodicity(0);
+}
+
+inline 
+void Value::push_back(const double& v) {
+  plumed_dbg_assert( shape.size()==1 && !hasDeriv );
+  value_set=true; shape[0]++; data.push_back( v );
 }
 
 inline

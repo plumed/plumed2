@@ -30,8 +30,7 @@ private:
   bool save_all_bias;
   std::vector<unsigned> task_counts;
   unsigned nvals, ndata, task_start;
-  std::vector<double> frame_weights, data, off_diag_bias, allweights, posdata;
-  std::vector<std::vector<double> > alldata, allposdata;
+  std::vector<double> frame_weights, data, posdata;
   void retrieveDataPoint( const unsigned& itime, std::vector<double>& old_data );
   void computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial, std::vector<double>& weights );
 public:
@@ -42,6 +41,7 @@ public:
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void turnOnBiasHistory();
+  unsigned getNumberOfColumns() const override ;
   void calculate();
   void finishComputations( const std::vector<double>& buf );
   void accumulate( const std::vector<std::vector<Vector> >& dir );

@@ -93,12 +93,17 @@ void CollectFrames::getGridPointIndicesAndCoordinates( const unsigned& ind, std:
   coords[0] = starttime + ind*getStride()*getTimeStep();
 }
 
+unsigned CollectFrames::getNumberOfColumns() const { 
+  if( clearstride>0 ) return ndata; 
+  return 0; 
+}
+
 void CollectFrames::turnOnBiasHistory() {
   if( getNumberOfArguments()==n_real_args ) error("cannot compute bias history if no bias is stored");
+  if( nvals>1 && clearstride==0 ) error("cannot compute bias histogram if storing vectors with weights");
   save_all_bias=true; std::vector<unsigned> shape(2);
   shape[0]=shape[1]=getPntrToOutput( getNumberOfComponents()-1 )->getShape()[0]; 
   getPntrToOutput( getNumberOfComponents()-1 )->setShape( shape );
-  getPntrToOutput( getNumberOfComponents()-1 )->alwaysStoreValues();
  
   const ActionSet & as=plumed.getActionSet(); task_counts.resize(0);
   bool foundbias=false; 
@@ -181,8 +186,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
   }
 
   if( save_all_bias ) {
-      unsigned nstored =  allweights.size(); if( clearstride>0 ) nstored = ndata;
-      std::vector<double> old_data( nvals*data.size() ), current_data( nvals*data.size() );
+      unsigned nstored = ndata; std::vector<double> old_data( nvals*data.size() ), current_data( nvals*data.size() );
       // Store the current values for all the arguments
       for(unsigned i=0;i<nvals;++i) {
           for(unsigned j=0;j<data.size();++j) current_data[j*nvals+i] = getPntrToArgument(j)->get(i);
@@ -209,7 +213,7 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
                  if( task_counts.size()>0 ) plumed_error();
                  for(unsigned j=0;j<nvals;++j) bval->set( bval->getShape()[0]*(ndata+j) + i + j,  new_old_bias[i] );
               } else {
-                 for(unsigned j=0;j<nvals;++j) off_diag_bias.push_back( new_old_bias[i] );
+                 for(unsigned j=0;j<nvals;++j) bval->push_back( new_old_bias[i] );
               }
           }
           // And recompute the current bias
@@ -244,63 +248,39 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
           if( dir.size()>0 ) {
               for(unsigned j=0;j<dir[i].size();++j) {
                   thispos = getReferencePosition(j) + dir[i][j];
-                  for(unsigned k=0;k<3;++k) getPntrToOutput(3*j+k)->set( ndata, thispos[k] );
+                  for(unsigned k=0;k<3;++k) getPntrToOutput(n_real_args+3*j+k)->set( ndata, thispos[k] );
               }
           }
           ndata++;
       }
       if( getStep()%clearstride==0 ) ndata=0;
   } else {
-      Vector thispos; 
+      Value* bval = getPntrToOutput( getNumberOfComponents()-1 ); Vector thispos;
       for(unsigned i=0;i<nvals;++i) {
-          allweights.push_back( frame_weights[i] );
+          if( bval->getRank()==2 ) bval->push_back( frame_weights[i] );
+          else bval->push_back( frame_weights[i] );
           if( n_real_args>0 ) { 
               for(unsigned j=0;j<data.size();++j ) {
-                  data[j] = getPntrToArgument(j)->get(i);
+                 getPntrToOutput(j)->push_back( getPntrToArgument(j)->get(i) );
               }
-              alldata.push_back( data );
           }
           if( dir.size()>0 ) {
               for(unsigned j=0;j<dir[i].size();++j) {
                   thispos = getReferencePosition(j) + dir[i][j];
-                  for(unsigned k=0;k<3;++k) posdata[3*j+k] = thispos[k];
+                  for(unsigned k=0;k<3;++k) getPntrToOutput(n_real_args+3*j+k)->push_back( thispos[k] );
               }
-              allposdata.push_back( posdata );
           }
+          ndata++;
       }
-  }
-
-  // This transfers all the information to the output values in the case of clearstride==0
-  if( clearstride==0 ) {
-      std::vector<unsigned> shape(1); shape[0]=allweights.size(); std::vector<double> sumoff( allweights.size(), 0 );
-      for(unsigned i=0;i<getNumberOfComponents()-1;++i) getPntrToOutput(i)->setShape( shape );
-      if( save_all_bias ) { getPntrToOutput(getNumberOfComponents()-1)->clearDerivatives(); shape.resize(2); shape[0]=shape[1]=allweights.size(); }
-      getPntrToOutput(getNumberOfComponents()-1)->setShape( shape ); unsigned k=0;
-      for(unsigned i=0;i<allweights.size();++i) {
-          for(unsigned j=0;j<data.size();++j) { getPntrToOutput(j)->set( i, alldata[i][j] ); }
-          for(unsigned j=0;j<posdata.size();++j) { getPntrToOutput(n_real_args+j)->set( i, allposdata[i][j] ); }
-          if( save_all_bias ) {
-              Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( allweights.size()*i + i, allweights[i] );
-              for(unsigned j=0;j<i;++j) { 
-                  if( task_counts.size()>0 ) {
-                      sumoff[j] += off_diag_bias[k]; myw->set( allweights.size()*i + j, sumoff[j] );
-                  } else myw->set( allweights.size()*i + j, off_diag_bias[k] );
-                  k++;
-              }   
-          } else getPntrToOutput(getNumberOfComponents()-1)->set( i, allweights[i] );
+      if( bval->getRank()==2 ) {
+          std::vector<unsigned> shape(2); shape[0]=shape[1]=ndata; bval->setShape( shape ); 
       }
   }
 }
 
 void CollectFrames::retrieveDataPoint( const unsigned& itime, std::vector<double>& old_data ) {
-  if( clearstride>0 ) {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned j=0;j<data.size();++j) old_data[j*nvals+i] = getPntrToOutput(j)->get( itime*nvals + i );
-      }
-  } else {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned j=0;j<data.size();++j) old_data[j*nvals+i] = alldata[itime*nvals + i][j];
-      }
+  for(unsigned i=0;i<nvals;++i) {
+      for(unsigned j=0;j<data.size();++j) old_data[j*nvals+i] = getPntrToOutput(j)->get( itime*nvals + i );
   }
 }
 

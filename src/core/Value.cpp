@@ -128,6 +128,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   // overhead on memory
   if( getRank()==2 ) {
       if( !hasDeriv && !alwaysstore && !istimeseries ) return;
+      if( !hasDeriv && !alwaysstore && istimeseries && getNumberOfColumns()==0 ) return;
   }
 
   if( (hasDeriv || storedata || istimeseries) && shape.size()>0 ) {
@@ -287,6 +288,12 @@ double Value::get(const unsigned& ival, const bool trueind) const {
 #endif
   if( shape.size()==2 && getNumberOfColumns()<shape[1] && trueind ) {
       unsigned irow = std::floor( ival / shape[0] ), jcol = ival%shape[0];
+      // This is a special treatment for the lower triangular matrices that are used when 
+      // we do ITRE with COLLECT_FRAMES
+      if( getNumberOfColumns()==0 ) {
+          if( jcol<=irow ) return data[0.5*irow*(irow+1) + jcol] / norm;
+          return 0;
+      }
       for(unsigned i=0; i<getRowLength(irow); ++i) {
           if( getRowIndex(irow,i)==jcol ) return data[irow*getNumberOfColumns()+i] / norm;
       }
@@ -347,7 +354,7 @@ unsigned Value::getPositionInMatrixStash() const {
 }
 
 unsigned Value::getNumberOfColumns() const {
-  plumed_assert( shape.size()==2 && !hasDeriv );
+  plumed_massert( shape.size()==2 && !hasDeriv, "failing in " + name );
   if( alwaysstore ) return shape[1];
   return action->getNumberOfColumns();
 }
