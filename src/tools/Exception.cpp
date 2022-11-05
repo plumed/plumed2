@@ -28,8 +28,59 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
 namespace PLMD {
+
+namespace {
+// see https://www.geeksforgeeks.org/simplify-directory-path-unix-like/
+
+// function to simplify a Unix - styled
+// absolute path
+std::string simplify(const std::string & path)
+{
+  // using vector in place of stack
+  std::vector<std::string> v;
+  int n = path.length();
+  std::string ans;
+  for (int i = 0; i < n; i++) {
+    std::string dir = "";
+    // forming the current directory.
+    while (i < n && path[i] != '/') {
+      dir += path[i];
+      i++;
+    }
+
+    // if ".." , we pop.
+    if (dir == "..") {
+      if (!v.empty())
+        v.pop_back();
+    }
+    else if (dir == "." || dir == "") {
+      // do nothing (added for better understanding.)
+    }
+    else {
+      // push the current directory into the vector.
+      v.push_back(dir);
+    }
+  }
+
+  // forming the ans
+  bool first=true;
+  for (auto i : v) {
+    if(!first) ans += "/";
+    first=false;
+    ans += i;
+  }
+
+  // vector is empty
+  if (ans == "")
+    return "/";
+
+  return ans;
+}
+
+}
 
 Exception::Exception()
 {
@@ -62,7 +113,11 @@ Exception& Exception::operator<<(const Location&loc)
     char cline[1000];
     std::sprintf(cline,"%u",loc.line);
     this->msg += "\n+++ at ";
-    this->msg += loc.file;
+    try {
+      this->msg += simplify(loc.file);
+    } catch(...) {
+      // ignore
+    }
     this->msg += ":";
     this->msg += cline;
     if(loc.pretty && loc.pretty[0]) {

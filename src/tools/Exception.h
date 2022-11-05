@@ -316,12 +316,16 @@ public:
 #define __PLUMED_FUNCNAME __func__
 #endif
 
+#ifndef PLUMED_MODULE_DIR
+#define PLUMED_MODULE_DIR ""
+#endif
+
 /// \relates PLMD::Exception
 /// Auxiliary macro that generates a PLMD::Exception::Location object.
 /// Might be useful if we want to use derived exceptions that could
 /// be thrown using `throw DerivedException()<<plumed_here<<" "<<other stuff"`.
 /// It is used in the macros below to throw PLMD::Exception.
-#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PLUMED_FUNCNAME)
+#define plumed_here PLMD::Exception::Location(PLUMED_MODULE_DIR __FILE__,__LINE__,__PLUMED_FUNCNAME)
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file.
