@@ -213,7 +213,14 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
                  if( task_counts.size()>0 ) plumed_error();
                  for(unsigned j=0;j<nvals;++j) bval->set( bval->getShape()[0]*(ndata+j) + i + j,  new_old_bias[i] );
               } else {
-                 for(unsigned j=0;j<nvals;++j) bval->push_back( new_old_bias[i] );
+                 if( task_counts.size()>0 ) {
+                     for(unsigned j=0;j<nvals;++j) {
+                         double prevval=0; if( nstored>(i+1) ) prevval = bval->get( (nstored-1)*nstored/2 + i + j, false ); 
+                         bval->push_back(prevval+new_old_bias[i]);
+                     }
+                 } else {
+                     for(unsigned j=0;j<nvals;++j) bval->push_back(new_old_bias[i]);
+                 }
               }
           }
           // And recompute the current bias

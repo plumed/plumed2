@@ -24,6 +24,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/CollectFrames.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include <numeric>
 
@@ -77,6 +78,10 @@ ITRE::ITRE(const ActionOptions&ao):
   if( getNumberOfArguments()!=1 ) error("should only have one argument");
   Value* arg0 = getPntrToArgument(0);
   if( arg0->getRank()!=1 || arg0->hasDerivatives() || arg0->getName().find("logweights")==std::string::npos ) error("input should logweights from action that collects frames");
+  //
+  for(const auto & ip : plumed.getActionSet() ) {
+      if( ip->getName()=="METAD" ) warning("ITRE with METAD is extremely slow as there is no way to optimise the calculation.  You are better using NEW_METAD");
+  }
   // Setup the object that is collecting the data
   CollectFrames* ab=dynamic_cast<CollectFrames*>( arg0->getPntrToAction() );
   if( !ab ) error("input should be calculated by an average base object");

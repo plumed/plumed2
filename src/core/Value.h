@@ -277,7 +277,7 @@ void Value::set(double v) {
 inline 
 void Value::push_back(const double& v) {
   plumed_dbg_assert( shape.size()==1 && !hasDeriv );
-  value_set=true; shape[0]++; data.push_back( v );
+  value_set=true; shape[0]++; ntasks=shape[0]; data.push_back( v );
 }
 
 inline
