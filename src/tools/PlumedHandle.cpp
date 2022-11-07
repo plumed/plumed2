@@ -82,7 +82,7 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
     safe.opt=nullptr;
-    Plumed(loaded).cmd(key.c_str(),safe);
+    plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
   } else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 
