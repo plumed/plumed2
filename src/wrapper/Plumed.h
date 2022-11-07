@@ -520,6 +520,19 @@
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 0
 #endif
 
+
+/*
+  1: throw exceptions such as PLMD::Exception
+  0: throw exceptions such as PLMD::Plumed::Exception (default)
+
+  This is useful when including Plumed.h within the plumed library
+  in anonymous mode, to make sure that the exception types from the
+  library are used.
+*/
+#ifndef __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS 0
+#endif
+
 /*
   1: make PLMD::Plumed class polymorphic (default)
   0: make PLMD::Plumed class non-polymorphic
@@ -1732,10 +1745,12 @@ class Plumed {
 
 public:
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using Exception = PLMD::Exception;
+#else
   /**
     Base class used to rethrow PLUMED exceptions.
   */
-
   class Exception :
     public ::std::exception
   {
@@ -1749,11 +1764,14 @@ public:
     ~Exception() throw() {}
 #endif
   };
+#endif
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionError = PLMD::ExceptionError;
+#else
   /**
     Used to rethrow a PLMD::ExceptionError
   */
-
   class ExceptionError :
     public Exception {
   public:
@@ -1764,11 +1782,14 @@ public:
     ~ExceptionError() throw() {}
 #endif
   };
+#endif
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionDebug = PLMD::ExceptionDebug;
+#else
   /**
     Used to rethrow a PLMD::ExceptionDebug
   */
-
   class ExceptionDebug :
     public Exception {
   public:
@@ -1779,6 +1800,7 @@ public:
     ~ExceptionDebug() throw() {}
 #endif
   };
+#endif
 
   /**
     Thrown when trying to access an invalid plumed object
@@ -1795,6 +1817,9 @@ public:
 #endif
   };
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionTypeError = PLMD::ExceptionTypeError;
+#else
   /**
     Thrown when a wrong pointer is passed to the PLUMED interface.
   */
@@ -1808,7 +1833,11 @@ public:
     ~ExceptionTypeError() throw() {}
 #endif
   };
+#endif
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using LeptonException = PLMD::lepton::Exception;
+#else
   /**
     Class used to rethrow Lepton exceptions.
   */
@@ -1826,6 +1855,7 @@ public:
     ~LeptonException() throw() {}
 #endif
   };
+#endif
 
 private:
   /*
