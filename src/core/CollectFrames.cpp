@@ -121,7 +121,7 @@ void CollectFrames::turnOnBiasHistory() {
 }
 
 void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values, const bool& runserial, std::vector<double>& weights ) {
-  const ActionSet & as=plumed.getActionSet(); CollectFrames* ab=NULL; bool foundbias=false;
+  const ActionSet & as=plumed.getActionSet(); bool foundbias=false;
   // Set the arguments equal to the values in the old frame
   for(unsigned i=0;i<data.size();++i) {
       Value* thisarg = getPntrToArgument(i); 
@@ -139,21 +139,17 @@ void CollectFrames::computeCurrentBiasForData( const std::vector<double>& values
      if( found || p->getName()=="READ" ) continue; 
      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(p);
      if( aa ) if( aa->getNumberOfAtoms()>0 ) continue;
-     if( task_counts.size()>0 ) {
-         ab=dynamic_cast<CollectFrames*>(p);
-         if(ab) { ab->task_start = task_counts[k]; k++; } 
-     }
+
      // Recalculate the action
      if( p->isActive() ) {
          ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
          if(av) { 
-           av->clearInputForces(); av->clearDerivatives(); av->setupForCalculation();
+           av->clearDerivatives(); 
            if( runserial ) { savemp = av->no_openmp; savempi = av->serial; av->no_openmp = true; av->serial = true; }
          }
          p->calculate();
          if( av && runserial ) { av->no_openmp=savemp; av->serial=savempi; }
       }
-      if(ab) ab->task_start = 0;
       // If this is the final bias then get the value and get out
       std::string name = getPntrToArgument(n_real_args)->getName(); std::size_t dot = name.find_first_of(".");
       if( name.substr(0,dot)==p->getLabel() ) {
@@ -197,13 +193,38 @@ void CollectFrames::accumulate( const std::vector<std::vector<Vector> >& dir ) {
       unsigned ntimes = nstored / nvals; plumed_assert( nstored%nvals==0 );
       std::vector<double> biasdata( nvals ), new_old_bias( nstored, 0 );
       if( nstored>0 ) {
+          unsigned k=0; const ActionSet & as=plumed.getActionSet(); 
+          for(const auto & pp : as ) {
+              Action* p(pp.get()); ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(p);
+              if( aa ) if( aa->getNumberOfAtoms()>0 ) continue;
+              if( task_counts.size()>0 ) {
+                  CollectFrames* ab=dynamic_cast<CollectFrames*>(p);
+                  if(ab) { ab->task_start = task_counts[k]; k++; } 
+              }
+              if(p->isActive() ) {
+                 ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+                 if(av) av->setupForCalculation();
+              }
+          }
           for(unsigned i=rank;i<ntimes-1;i+=stride) {
               retrieveDataPoint( i, old_data ); computeCurrentBiasForData( old_data, true, biasdata );
               for(unsigned j=0;j<biasdata.size();++j) new_old_bias[i*nvals+j] = biasdata[j];
           }
           if( !runInSerial() ) comm.Sum( new_old_bias );
           // Have to compute all Gaussians for final data point
-          for(unsigned j=0;j<task_counts.size();++j) task_counts[j] = 0;
+          for(const auto & pp : as ) {
+              Action* p(pp.get()); ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(p);
+              if( aa ) if( aa->getNumberOfAtoms()>0 ) continue;
+              if( task_counts.size()>0 ) {
+                  CollectFrames* ab=dynamic_cast<CollectFrames*>(p);
+                  if(ab) ab->task_start = 0;
+              }
+              if(p->isActive() ) {
+                 ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+                 if(av) { av->clearInputForces(); av->setupForCalculation(); }
+              }
+          } 
+          // for(unsigned j=0;j<task_counts.size();++j) task_counts[j] = 0;
           retrieveDataPoint( ntimes-1, old_data ); computeCurrentBiasForData( old_data, false, biasdata );
           for(unsigned j=0;j<biasdata.size();++j) new_old_bias[(nstored-1)*nvals+j] = biasdata[j];
 
