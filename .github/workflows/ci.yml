@@ -26,14 +26,14 @@ jobs:
         - -debug-mpi-
         - -intel-
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
       with:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.7
     - name: Set paths
@@ -166,7 +166,7 @@ jobs:
   codecheck:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set path
       run: |
          echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -190,7 +190,7 @@ jobs:
   centos7:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker centos7
@@ -214,8 +214,8 @@ jobs:
     env:
       PYVERS: "py37 py38"
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
       with:
         path: ~/.macports-ci-ccache
         key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
@@ -248,7 +248,7 @@ jobs:
   macsimple:
     runs-on: macos-11
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -276,7 +276,7 @@ jobs:
         os: [ubuntu-20.04 , macos-11]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install conda
       run: |
         curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
