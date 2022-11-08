@@ -180,6 +180,9 @@ jobs:
       run: |
         # this is required so as to have all the include files in place
         # notice that this is done automatically in build
+        # first make sure that dirslinks are generated for all modules
+        ./configure --enable-modules=all
+        # then generate the links
         make -C src/lib/ dirslinks
         make codecheck
 
