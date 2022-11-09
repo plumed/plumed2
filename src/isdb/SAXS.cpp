@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
  This class was originally written by Alexander Jussupow
- Arrayfire implementation by Alexander Jussupow and CC 
+ Arrayfire implementation by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
  Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
 */
