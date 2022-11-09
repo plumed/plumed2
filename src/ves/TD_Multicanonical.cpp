@@ -225,7 +225,7 @@ double TD_Multicanonical::getValue(const std::vector<double>& argument) const {
 
 void TD_Multicanonical::updateGrid() {
   if (getStep() == 0) {
-    if(targetDistGrid().getDimension()>2 && targetDistGrid().getDimension()<1) plumed_merror(getName()+" works only with 1 or 2 arguments, i.e. energy, or energy and CV");
+    if(targetDistGrid().getDimension()>2 || targetDistGrid().getDimension()<1) plumed_merror(getName()+" works only with 1 or 2 arguments, i.e. energy, or energy and CV");
     if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
