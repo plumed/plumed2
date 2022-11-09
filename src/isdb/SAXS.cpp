@@ -21,8 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
  This class was originally written by Alexander Jussupow
- Extension for the middleman algorithm by Max Muehlbauer
- Martini beads strucutre factor for Nucleic Acids by Cristina Paissoni
+ Arrayfire implementation by Alexander Jussupow and CC 
+ Extension for the middleman algorithm (now removed) by Max Muehlbauer
+ Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
 */
 
 #include "MetainferenceBase.h"
@@ -387,7 +388,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
     // 3,size,1,1
     af::array pos_a = af::array(3, size, &posi.front());
     // size,3,1,1
-    pos_a = af::moddims(pos_a.T(), size, 1, 3);
+    pos_a = af::moddims(pos_a.T(), size, 3, 1);
     // size,3,1,1
     af::array pos_b = pos_a(af::span, af::span);
     // size,1,3,1
@@ -396,7 +397,15 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
     pos_b = af::moddims(pos_b, 1, size, 3);
 
     // size,size,3,1
-    af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
+    af::array pos_a_t = af::tile(pos_a, 1, size, 1);
+    // size,size,3,1: for some reason we need this
+    pos_a_t = af::moddims(pos_a_t, size, size, 3);
+    // size,size,3,1
+    af::array pos_b_t = af::tile(pos_b, size, 1, 1);
+    // size,size,3,1: for some reason we need this
+    pos_b_t = af::moddims(pos_b_t, size, size, 3);
+    // size,size,3,1
+    af::array xyz_dist = pos_a_t - pos_b_t;
     // size,size,1,1
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // size,size,1,1
