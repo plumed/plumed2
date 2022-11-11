@@ -984,6 +984,10 @@ void PlumedMain::update() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("6 Update");
 
+// Pre-update step 
+  for(const auto & p : actionSet) {
+     if(p->isActive()) p->firstUpdate(); 
+  }
 // update step (for statistics, etc)
   updateFlags.push(true);
   for(const auto & p : actionSet) {

@@ -215,6 +215,13 @@ public:
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
 
+/// First update
+/// This is a special method that is called for all 
+/// active methods before the update() method. It can
+/// be used by actions that need to update some statistics
+/// before the final update state is completed elsewhere
+  virtual void firstUpdate() {}
+
 /// Before Update.
 /// This is a special method that is called just
 /// before the update() method. It can be used by

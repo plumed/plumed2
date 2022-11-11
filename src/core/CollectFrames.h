@@ -44,7 +44,8 @@ public:
   unsigned getNumberOfColumns() const override ;
   void calculate();
   void finishComputations( const std::vector<double>& buf );
-  void accumulate( const std::vector<std::vector<Vector> >& dir );
+  void firstUpdate() override ;
+  void accumulate( const std::vector<std::vector<Vector> >& dir ) override ;
   void setupCurrentTaskList() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };
