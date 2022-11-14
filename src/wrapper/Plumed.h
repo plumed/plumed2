@@ -842,10 +842,10 @@ typedef struct {
 typedef struct plumed_error {
   /** code used for translating messages */
   int code;
-  /** message */
-  const char* what;
   /** error code for system_error */
   int error_code;
+  /** message */
+  const char* what;
   /** the buffer containing the message to be deallocated */
   char* what_buffer;
   /** pointer to nested exception */
@@ -856,8 +856,8 @@ typedef struct plumed_error {
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   if(!error) return;
   error->code=0;
-  error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->error_code=0;
+  error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->what_buffer=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
 }
