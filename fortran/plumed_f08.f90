@@ -460,8 +460,7 @@ module plumed_f08_module
        type(c_ptr),                   intent(in)    :: val
        logical,                       intent(in)    :: const
        logical,                       intent(in)    :: nocopy
-       type(plumed_error), optional,  intent(out)   :: error
-       type(plumed_error), target :: myerror
+       type(plumed_error), optional,  target, intent(out)   :: error
        integer(kind=c_size_t) :: pass_shape(1)
        integer(kind=c_size_t) :: flags
        type(cplumed_nothrow_handler) :: nothrow
@@ -471,17 +470,15 @@ module plumed_f08_module
        flags=flags_ptr
        if (const) flags=flags_const_ptr
        if (nocopy) flags=flags+flags_nocopy
-       nothrow%ptr=c_loc(myerror)
        if(present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
+         nothrow%ptr = c_loc(error)
+         nothrow%handler = c_funloc(plumed_f_f08_eh)
        else
+         nothrow%ptr = c_null_ptr
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
          plumed_f_safeptr_ptr(val,nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
      end subroutine plumed_f_cmd_ptr
 
      subroutine plumed_f_cmd_char(p,key, val, const, nocopy, error)
@@ -490,8 +487,7 @@ module plumed_f08_module
        character(kind=c_char,len=*),  target, intent(in) :: val
        logical,                       intent(in)    :: const
        logical,                       intent(in)    :: nocopy
-       type(plumed_error), optional,  intent(out)   :: error
-       type(plumed_error), target :: myerror
+       type(plumed_error), optional, target, intent(out)   :: error
        integer(kind=c_size_t) :: pass_shape(2)
        integer(kind=c_size_t) :: flags
        type(cplumed_nothrow_handler) :: nothrow
@@ -501,17 +497,15 @@ module plumed_f08_module
        flags=flags_ptr
        if (const) flags=flags_const_ptr
        if (nocopy) flags=flags + flags_nocopy
-       nothrow%ptr=c_loc(myerror)
-       if (present(error)) then
-         nothrow%handler=c_funloc(plumed_f_f08_eh)
+       if(present(error)) then
+         nothrow%ptr=c_loc(error)
+         nothrow%handler = c_funloc(plumed_f_f08_eh)
        else
+         nothrow%ptr = c_null_ptr
          nothrow%handler=c_null_funptr
        endif
        call plumed_cmd_safe_nothrow(p,key, &
          plumed_f_safeptr_char(c_loc(val),nelem,pass_shape,flags,c_null_ptr),nothrow)
-       if(present(error)) then
-         error=myerror
-       endif
      end subroutine plumed_f_cmd_char
 
     subroutine plumed_f_cmd_integer_0(p, key, valptr, valshape, const, nocopy, error)
@@ -521,9 +515,8 @@ module plumed_f08_module
       integer,                       intent(in)    :: valshape(:)
       logical,                       intent(in)    :: const
       logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
+      type(plumed_error), optional, target, intent(out)   :: error
 
-      type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
@@ -538,17 +531,15 @@ module plumed_f08_module
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
       if(present(error)) then
+        nothrow%ptr = c_loc(error)
         nothrow%handler = c_funloc(plumed_f_f08_eh)
       else
+        nothrow%ptr = c_null_ptr
         nothrow%handler=c_null_funptr
       endif
       call plumed_cmd_safe_nothrow(p, key, &
          plumed_f_safeptr_int(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
 
     end subroutine plumed_f_cmd_integer_0
     subroutine plumed_f_cmd_integer_1(p, key, valptr, valshape, const, nocopy, error)
@@ -558,9 +549,8 @@ module plumed_f08_module
       integer,                       intent(in)    :: valshape(:)
       logical,                       intent(in)    :: const
       logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
+      type(plumed_error), optional, target, intent(out)   :: error
 
-      type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
@@ -575,17 +565,15 @@ module plumed_f08_module
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
       if(present(error)) then
+        nothrow%ptr = c_loc(error)
         nothrow%handler = c_funloc(plumed_f_f08_eh)
       else
+        nothrow%ptr = c_null_ptr
         nothrow%handler=c_null_funptr
       endif
       call plumed_cmd_safe_nothrow(p, key, &
          plumed_f_safeptr_short(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
 
     end subroutine plumed_f_cmd_integer_1
     subroutine plumed_f_cmd_integer_2(p, key, valptr, valshape, const, nocopy, error)
@@ -595,9 +583,8 @@ module plumed_f08_module
       integer,                       intent(in)    :: valshape(:)
       logical,                       intent(in)    :: const
       logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
+      type(plumed_error), optional, target, intent(out)   :: error
 
-      type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
@@ -612,17 +599,15 @@ module plumed_f08_module
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
       if(present(error)) then
+        nothrow%ptr = c_loc(error)
         nothrow%handler = c_funloc(plumed_f_f08_eh)
       else
+        nothrow%ptr = c_null_ptr
         nothrow%handler=c_null_funptr
       endif
       call plumed_cmd_safe_nothrow(p, key, &
          plumed_f_safeptr_long(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
 
     end subroutine plumed_f_cmd_integer_2
     subroutine plumed_f_cmd_real_0(p, key, valptr, valshape, const, nocopy, error)
@@ -632,9 +617,8 @@ module plumed_f08_module
       integer,                       intent(in)    :: valshape(:)
       logical,                       intent(in)    :: const
       logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
+      type(plumed_error), optional, target, intent(out)   :: error
 
-      type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
@@ -649,17 +633,15 @@ module plumed_f08_module
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
       if(present(error)) then
+        nothrow%ptr = c_loc(error)
         nothrow%handler = c_funloc(plumed_f_f08_eh)
       else
+        nothrow%ptr = c_null_ptr
         nothrow%handler=c_null_funptr
       endif
       call plumed_cmd_safe_nothrow(p, key, &
          plumed_f_safeptr_float(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
 
     end subroutine plumed_f_cmd_real_0
     subroutine plumed_f_cmd_real_1(p, key, valptr, valshape, const, nocopy, error)
@@ -669,9 +651,8 @@ module plumed_f08_module
       integer,                       intent(in)    :: valshape(:)
       logical,                       intent(in)    :: const
       logical,                       intent(in)    :: nocopy
-      type(plumed_error), optional,  intent(out)   :: error
+      type(plumed_error), optional, target, intent(out)   :: error
 
-      type(plumed_error), target :: myerror
       integer(kind=c_size_t) :: flags
       type(cplumed_nothrow_handler) :: nothrow
       integer(kind=c_size_t) :: nelem
@@ -686,17 +667,15 @@ module plumed_f08_module
       flags = flags_ptr
       if (const) flags = flags_const_ptr
       if(nocopy) flags = flags + flags_nocopy
-      nothrow%ptr = c_loc(myerror)
       if(present(error)) then
+        nothrow%ptr = c_loc(error)
         nothrow%handler = c_funloc(plumed_f_f08_eh)
       else
+        nothrow%ptr = c_null_ptr
         nothrow%handler=c_null_funptr
       endif
       call plumed_cmd_safe_nothrow(p, key, &
          plumed_f_safeptr_double(valptr, nelem, pass_shape, flags, c_null_ptr), nothrow)
-      if(present(error)) then
-         error = myerror
-      endif
 
     end subroutine plumed_f_cmd_real_1
 
@@ -2597,6 +2576,7 @@ module plumed_f08_module
        call plumed_f_cmd_real_1(this%handle, key // c_null_char, c_loc(val), valshape,&
            & const=.true., nocopy=.false., error=error)
     end subroutine pl_cmd_const_ptr_real_1_4
+
 
 
 end module plumed_f08_module
