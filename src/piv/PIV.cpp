@@ -23,6 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 #include "tools/Stopwatch.h"
+#include "core/ActionSet.h"
 
 #include <string>
 #include <cmath>
@@ -206,6 +207,22 @@ private:
   std::vector<Vector> m_deriv;
   Tensor m_virial;
   bool Svol,cross,direct,doneigh,test,CompDer,com;
+
+  /// Local structure, used to store data that should be
+  /// shared across multiple PIV instances
+  struct SharedData {
+    int prev_stp=-1;
+    int init_stp=1;
+    std:: vector<std:: vector<Vector> > prev_pos;
+    std:: vector<std:: vector<double> > cPIV;
+    std:: vector<std:: vector<int> > Atom0;
+    std:: vector<std:: vector<int> > Atom1;
+  };
+  /// Owning pointer. Will only be allocated by the first PIV instance
+  std::unique_ptr<SharedData> sharedData_unique;
+  /// Raw pointer. Will have the same value for all PIV instances
+  SharedData* sharedData=nullptr;
+
 public:
   static void registerKeywords( Keywords& keys );
   explicit PIV(const ActionOptions&);
@@ -279,6 +296,28 @@ PIV::PIV(const ActionOptions&ao):
   com(false)
 {
   log << "Starting PIV Constructor\n";
+
+  {
+    // look for another PIV instance previously allocated
+    auto* previous=plumed.getActionSet().selectLatest<PIV*>(this);
+
+    // Uncommenting the following line, it is possible to force
+    // a separate object per instance of the PIB object.
+    // Results are unaffected, but performance is worse.
+    // I think this is the expected behavior. GB
+    // previous=nullptr;
+
+    if(!previous) {
+      // if not found, allocate the shared data struct
+      sharedData_unique=Tools::make_unique<SharedData>();
+      // then set the raw pointer
+      sharedData=sharedData_unique.get();
+    } else {
+      // if found, use the previous raw pointer
+      sharedData=previous->sharedData;
+      log << "(a previous PIV action was found)\n";
+    }
+  }
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
@@ -723,13 +762,24 @@ void PIV::calculate()
 {
 
   // Local variables
-  // The following are probably needed as static arrays
-  static int prev_stp=-1;
-  static int init_stp=1;
-  static std:: vector<std:: vector<Vector> > prev_pos(Nlist);
-  static std:: vector<std:: vector<double> > cPIV(Nlist);
-  static std:: vector<std:: vector<int> > Atom0(Nlist);
-  static std:: vector<std:: vector<int> > Atom1(Nlist);
+
+  if(sharedData_unique) {
+    // This is executed by the first PIV instance.
+    // We initialize variables with the correct Nlist.
+    sharedData_unique->prev_pos.resize(Nlist);
+    sharedData_unique->cPIV.resize(Nlist);
+    sharedData_unique->Atom0.resize(Nlist);
+    sharedData_unique->Atom1.resize(Nlist);
+  }
+
+  // create references to minimize the impact of the code below
+  auto & prev_stp(sharedData->prev_stp);
+  auto & init_stp(sharedData->init_stp);
+  auto & prev_pos(sharedData->prev_pos);
+  auto & cPIV(sharedData->cPIV);
+  auto & Atom0(sharedData->Atom0);
+  auto & Atom1(sharedData->Atom1);
+
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   size_t stride=1;
