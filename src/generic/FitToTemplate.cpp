@@ -237,7 +237,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength()) )
     error("missing input file " + reference );
 
   requestAtoms(pdb.getAtomNumbers());

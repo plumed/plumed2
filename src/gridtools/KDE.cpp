@@ -22,8 +22,8 @@
 #include "KDE.h"
 #include "tools/OpenMP.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "tools/Matrix.h"
 #include "core/PbcAction.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
@@ -380,7 +380,7 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
   }
   if( isdists ) {
     if( plumed.usingNaturalUnits() ) units = 1.0/0.5292;
-    else units = plumed.getAtoms().getUnits().getLength()/.05929;
+    else units = plumed.getUnits().getLength()/.05929;
   }
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
     argn[i] = getPntrToArgument( i )->getName(); double gmin, gmax;

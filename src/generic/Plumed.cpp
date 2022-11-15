@@ -23,6 +23,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
+#include "core/Atoms.h"
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
 #include "core/PlumedMain.h"
@@ -275,18 +276,18 @@ API([&]() {
 
   if(root) p.cmd("setMDEngine","plumed");
 
-  double engunits=plumed.getAtoms().getUnits().getEnergy();
+  double engunits=plumed.getUnits().getEnergy();
   if(root) p.cmd("setMDEnergyUnits",&engunits);
 
-  double lenunits=plumed.getAtoms().getUnits().getLength();
+  double lenunits=plumed.getUnits().getLength();
   if(root) p.cmd("setMDLengthUnits",&lenunits);
 
-  double timunits=plumed.getAtoms().getUnits().getTime();
+  double timunits=plumed.getUnits().getTime();
   if(root) p.cmd("setMDTimeUnits",&timunits);
 
-  double chaunits=plumed.getAtoms().getUnits().getCharge();
+  double chaunits=plumed.getUnits().getCharge();
   if(root) p.cmd("setMDChargeUnits",&chaunits);
-  double masunits=plumed.getAtoms().getUnits().getMass();
+  double masunits=plumed.getUnits().getMass();
   if(root) p.cmd("setMDMassUnits",&masunits);
 
   double kbt=plumed.getKbT(0);

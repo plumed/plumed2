@@ -125,6 +125,7 @@ static void testThrow(const char* what) {
 PlumedMain::PlumedMain():
   initialized(false),
   MDEngine("mdcode"),
+  naturalUnits(false),
 // automatically write on log in destructor
   stopwatch_fwd(log),
   step(0),
@@ -145,7 +146,6 @@ PlumedMain::PlumedMain():
   detailedTimers(false)
 {
   log.link(comm);
-  passtools->setNaturalUnits(false);
   log.setLinePrefix("PLUMED: ");
 }
 
@@ -391,7 +391,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         initialized=false;
         createAtomValues();
         initialized=true;
-        setUnits( false );
+        setUnits( naturalUnits, units );
         break;
       }
       case cmd_getApiVersion:
@@ -407,39 +407,38 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         passtools=DataPassingTools::create(*static_cast<int*>(val));
-        passtools->setNaturalUnits(false);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setMDLengthUnits(passtools->MD2double(val));
+        MDUnits.setLength(passtools->MD2double(val));
         break;
       case cmd_setMDChargeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setMDChargeUnits(passtools->MD2double(val));
+        MDUnits.setCharge(passtools->MD2double(val));
         break;
       case cmd_setMDMassUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setMDMassUnits(passtools->MD2double(val));
+        MDUnits.setMass(passtools->MD2double(val));
         break;
       case cmd_setMDEnergyUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setMDEnergyUnits(passtools->MD2double(val));
+        MDUnits.setEnergy(passtools->MD2double(val));
         break;
       case cmd_setMDTimeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setMDTimeUnits(passtools->MD2double(val));
+        MDUnits.setTime(passtools->MD2double(val));
         break;
       case cmd_setNaturalUnits:
         // set the boltzman constant for MD in natural units (kb=1)
         // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
         // use as cmd("setNaturalUnits")
         CHECK_NOTINIT(initialized,word);
-        passtools->setNaturalUnits(true);
+        naturalUnits = true;
         break;
       case cmd_setNoVirial:
         CHECK_NOTINIT(initialized,word);
@@ -585,7 +584,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_getBias:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        passtools->double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+        passtools->double2MD(getBias()/getMDEnergyInPlumedUnits(),val);
         break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
@@ -622,7 +621,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_createValue:
       {
          std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
-         readInputLine( inpt ); 
+         readInputLine( inpt );
       }
         break;
       /* ADDED WITH API==7 */
@@ -682,10 +681,10 @@ void PlumedMain::createAtomValues() {
   atoms.addAtomValues( MDEngine, xv->copyOutput(0), yv->copyOutput(0), zv->copyOutput(0), mv->copyOutput(0), qv->copyOutput(0) );
 }
 
-void PlumedMain::setUnits( const bool& natural ) {
-  passtools->setNaturalUnits( natural );
+void PlumedMain::setUnits( const bool& natural, const Units& u ) {
+  naturalUnits = natural; units=u;
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>(); 
-  for(const auto & ip : idata) ip->updateUnits();
+  for(const auto & ip : idata) ip->updateUnits( MDUnits, units );
 }
 
 void PlumedMain::startStep() {
@@ -720,7 +719,7 @@ void PlumedMain::init() {
     readInputFile(plumedDat);
     plumedDat="";
   }
-  setUnits( passtools->usingNaturalUnits() );
+  setUnits( naturalUnits, units );
   ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep"); 
   if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
   ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
@@ -1168,12 +1167,20 @@ double PlumedMain::getKbT( const double& simtemp ) const {
 }
 
 double PlumedMain::getKBoltzmann()const {
-  if( usingNaturalUnits() ) return 1.0;
-  else return kBoltzmann/atoms.getUnits().getEnergy();
+  if( naturalUnits ) return 1.0;
+  else return kBoltzmann/units.getEnergy();
 }
 
 bool PlumedMain::usingNaturalUnits() const {
-  return passtools->usingNaturalUnits();
+  return naturalUnits; 
+}
+
+const Units& PlumedMain::getUnits() {
+  return units; 
+}
+
+double PlumedMain::getMDEnergyInPlumedUnits() const {
+  return MDUnits.getEnergy()/units.getEnergy();
 }
 
 

@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GenericMolInfo.h"
-#include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "PlumedMain.h"
@@ -86,7 +85,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   if( read_backbone.size()==0 ) {
     parse("STRUCTURE",reference);
 
-    if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()))plumed_merror("missing input file " + reference );
+    if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength()))plumed_merror("missing input file " + reference );
 
     std::vector<std::string> chains; pdb.getChainNames( chains );
     log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));

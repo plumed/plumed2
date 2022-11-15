@@ -24,6 +24,7 @@
 
 #include "WithCmd.h"
 #include "tools/ForwardDecl.h"
+#include "tools/Units.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -121,6 +122,10 @@ private:
   bool strideWasSet;
 /// Name of MD engine
   std::string MDEngine;
+/// The units used in the MD code and PLUMED
+  Units MDUnits;
+  Units units;
+  bool naturalUnits;
 
 /// Forward declaration.
   ForwardDecl<Log> log_fwd;
@@ -225,7 +230,7 @@ public:
   void setInputForce( const std::string& name, void* val );
 
 /// This updates the units of the input quantities
-  void setUnits( const bool& natural );
+  void setUnits( const bool& natural, const Units& u );
 
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
@@ -449,6 +454,10 @@ public:
   double getKBoltzmann() const ;
 /// Are we using natural units 
   bool usingNaturalUnits() const ;
+/// Get the units that are being used
+  const Units& getUnits();
+/// Get the conversion factor 1 Plumed energy unit equals this number of MD energy units
+  double getMDEnergyInPlumedUnits() const ;
 };
 
 /////

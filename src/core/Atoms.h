@@ -24,7 +24,6 @@
 
 #include "tools/Communicator.h"
 #include "tools/Tensor.h"
-#include "tools/Units.h"
 #include "tools/Exception.h"
 #include "tools/AtomNumber.h"
 #include "tools/ForwardDecl.h"
@@ -57,9 +56,6 @@ class Atoms
   std::vector<int> fullList;
 
   PlumedMain & plumed;
-
-  Units MDUnits;
-  Units units;
 
 
 /// if set to true, all the forces in the global array are zeroes
@@ -133,15 +129,6 @@ public:
 
   void add(ActionAtomistic*);
   void remove(ActionAtomistic*);
-
-  void setMDEnergyUnits(double d) {MDUnits.setEnergy(d);}
-  void setMDLengthUnits(double d) {MDUnits.setLength(d);}
-  void setMDTimeUnits(double d) {MDUnits.setTime(d);}
-  void setMDChargeUnits(double d) {MDUnits.setCharge(d);}
-  void setMDMassUnits(double d) {MDUnits.setMass(d);}
-  const Units& getMDUnits() {return MDUnits;}
-  void setUnits(const Units&u) {units=u;}
-  const Units& getUnits() {return units;}
 
   void clearAtomValues();
   void addAtomValues( const std::string& n, Value* x, Value* y, Value* z, Value* m, Value* q );

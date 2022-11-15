@@ -551,7 +551,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   /* Length conversion (parameters are tuned for angstrom) */
   double scale=1.;
   if(!plumed.usingNaturalUnits()) {
-    scale = 10.*atoms.getUnits().getLength();
+    scale = 10.*plumed.getUnits().getLength();
   }
 
   log.printf("  Initialization of the predictor ...\n");

@@ -185,7 +185,6 @@ Units::Units(const ActionOptions&ao):
 
   checkRead();
 
-  plumed.getAtoms().setUnits(u);
   if(natural) {
     log.printf("  using natural units\n");
   } else {
@@ -193,7 +192,7 @@ Units::Units(const ActionOptions&ao):
   }
   log.printf("  inside PLUMED, Boltzmann constant is %g\n",plumed.getKBoltzmann());
 
-  plumed.setUnits( natural );
+  plumed.setUnits( natural, u );
 }
 
 }

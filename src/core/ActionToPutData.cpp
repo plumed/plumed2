@@ -87,13 +87,11 @@ void ActionToPutData::setStride( const std::string& name, const unsigned& sss ) 
   plumed_assert( name==getLabel() ); mydata->setStride(sss);
 }
 
-void ActionToPutData::updateUnits() {
+void ActionToPutData::updateUnits( const Units& MDUnits, const Units& units ) {
   // Don't need to do anythign if this is just a number
   if( unit==n ) return ; 
 
   double vunits; 
-  const Units& MDUnits = plumed.getAtoms().getMDUnits();
-  const Units& units = plumed.getAtoms().getUnits();
   if( unit==e ) vunits = MDUnits.getEnergy()/units.getEnergy();  
   else if( unit==l ) vunits = MDUnits.getLength()/units.getLength(); 
   else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();

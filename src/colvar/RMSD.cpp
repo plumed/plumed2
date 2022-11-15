@@ -25,7 +25,6 @@
 #include "core/ActionSetup.h"
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -169,7 +168,7 @@ void RMSD::createReferenceConfiguration( const std::string& lab, const std::stri
   if(!fp) plumed_merror("could not open reference file " + input); unsigned natoms=0, nframes=0;
    
   while ( do_read ) {
-     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
      if( !do_read && nframes>0 ) break ;
 
      if( natoms==0 ) natoms = mypdb.getPositions().size();

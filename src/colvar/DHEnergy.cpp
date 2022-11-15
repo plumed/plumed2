@@ -115,8 +115,8 @@ DHEnergy::DHEnergy(const ActionOptions&ao):
   parse("EPSILON",epsilon);
   checkRead();
   if( plumed.usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
-  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
-  k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
+  constant=138.935458111/plumed.getUnits().getEnergy()/plumed.getUnits().getLength()*plumed.getUnits().getCharge()*plumed.getUnits().getCharge();
+  k=sqrt(I/(epsilon*T))*502.903741125*plumed.getUnits().getLength();
   checkRead();
   log<<"  with solvent dielectric constant "<<epsilon<<"\n";
   log<<"  at temperature "<<T<<" K\n";

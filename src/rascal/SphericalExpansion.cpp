@@ -24,7 +24,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 #include "rascal/representations/calculator_sorted_coulomb.hh"
 #include "rascal/representations/calculator_spherical_expansion.hh"
@@ -221,7 +220,7 @@ RascalSpherical<T>::RascalSpherical(const ActionOptions&ao):
   adaptors.emplace_back(ad1b);
   adaptors.emplace_back(ad2);
   // Convert cutoff from angrstroms to plumed units so we can use it to test if the cell is too small later
-  if( !plumed.usingNaturalUnits() ) cutoff = cutoff*(0.1/plumed.getAtoms().getUnits().getLength());
+  if( !plumed.usingNaturalUnits() ) cutoff = cutoff*(0.1/plumed.getUnits().getLength());
   // Create structure object.  This will be used to pass information to rascal
   structure["cell"]={{0,0,0},{0,0,0},{0,0,0}}; structure["pbc"]={true,true,true};
   // Now read in atoms that we are using
@@ -263,7 +262,7 @@ unsigned RascalSpherical<T>::getNumberOfDerivatives() const {
 template <class T>
 void RascalSpherical<T>::structureToJson() {
   // Conversion factor from PLUMED length units to angstroms
-  double lunit = 1.0; if( !plumed.usingNaturalUnits() ) lunit = 10*plumed.getAtoms().getUnits().getLength();
+  double lunit = 1.0; if( !plumed.usingNaturalUnits() ) lunit = 10*plumed.getUnits().getLength();
   // Set the atoms from the atomic positions 
   for(unsigned i=0;i<getNumberOfAtoms();++i) {
       Vector fpos = getPbc().realToScaled( getPosition(i) ); 
@@ -325,7 +324,7 @@ void RascalSpherical<T>::apply() {
 
   // Apply the forces on the atoms
   Value* outval=getPntrToOutput(0); Tensor vir; vir.zero();
-  double lunit = 1.0; if( !plumed.usingNaturalUnits() ) lunit = 10*plumed.getAtoms().getUnits().getLength();
+  double lunit = 1.0; if( !plumed.usingNaturalUnits() ) lunit = 10*plumed.getUnits().getLength();
   std::vector<unsigned> shape( outval->getShape() ); unsigned base=0;
   // Loop over environments (atoms)
   for(unsigned i=0; i<shape[0]; ++i) {

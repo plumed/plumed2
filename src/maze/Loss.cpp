@@ -26,6 +26,7 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "Loss.h"
+#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace maze {
@@ -102,7 +103,7 @@ double Loss::pairing(double distance) {
   double beta = params_[1];
   double gamma = params_[2];
 
-  if (atoms.getUnits().getLengthString() == "nm") {
+  if (plumed.getUnits().getLengthString() == "nm") {
     distance *= 10.0;
   }
 

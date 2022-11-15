@@ -238,7 +238,7 @@ Print::Print(const ActionOptions&ao):
       std::string unitname; parse("UNITS",unitname);
       if(unitname!="PLUMED") {
         Units myunit; myunit.setLength(unitname);
-        lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+        lenunit=plumed.getUnits().getLength()/myunit.getLength();
       }
     } else {
       if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
@@ -289,7 +289,7 @@ Print::Print(const ActionOptions&ao):
         std::string unitname; parse("UNITS",unitname);
         if(unitname!="PLUMED") {
           Units myunit; myunit.setLength(unitname);
-          lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+          lenunit=plumed.getUnits().getLength()/myunit.getLength();
         }
         log.printf("  printing xyz file containing poisitions of atoms in columns 1, 2 and 3\n");
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -694,7 +694,7 @@ void Print::runFinalJobs() {
 
 void Print::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const {
   std::array<char,6> at; const char* msg = h36::hy36encode(5,anum,&at[0]);
-  plumed_assert(msg==nullptr) << msg; at[5]=0; double lunits = atoms.getUnits().getLength()/0.1;
+  plumed_assert(msg==nullptr) << msg; at[5]=0; double lunits = plumed.getUnits().getLength()/0.1;
   opdbf.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                &at[0], anum, lunits*pos[0], lunits*pos[1], lunits*pos[2], m, q );
 }

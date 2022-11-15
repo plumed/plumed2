@@ -205,7 +205,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[28]=Vector(-0.229,  4.791,  1.038); // C
   reference[29]=Vector( 0.523,  5.771,  0.996); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setSecondaryStructure( reference, 0.17/plumed.getUnits().getLength(), 0.1/plumed.getUnits().getLength() );
 
   reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
   reference[1]=Vector(-0.816, -3.803, -1.013); // CA
@@ -238,7 +238,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[28]=Vector( 1.684,  4.331, -0.148); // C
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setSecondaryStructure( reference, 0.17/plumed.getUnits().getLength(), 0.1/plumed.getUnits().getLength() );
   setupValues();
 }
 

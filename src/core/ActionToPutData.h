@@ -24,6 +24,7 @@
 
 #include "ActionForInterface.h"
 #include "DataPassingObject.h"
+#include "tools/Units.h"
 
 namespace PLMD {
 
@@ -57,7 +58,7 @@ public:
 /// This resets the stride in the collection object
   void setStride( const std::string& name, const unsigned& sss ) override;
 /// Update the units on the input data
-  void updateUnits();
+  void updateUnits( const Units& MDUnits, const Units& units );
 /// This is called at the start of the step
   void resetForStepStart() override { dataCanBeSet = true; }
 /// These are the actions that set the pointers to the approrpiate values 
@@ -81,8 +82,8 @@ public:
   virtual void apply();
   void rescaleForces( const double& alpha );
 /// For replica exchange
-  void writeBinary(std::ostream&o);
-  virtual void readBinary(std::istream&i);
+  void writeBinary(std::ostream&o) override;
+  virtual void readBinary(std::istream&i) override;
 };
 
 }

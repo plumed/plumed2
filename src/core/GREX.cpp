@@ -131,14 +131,14 @@ void GREX::cmd(const std::string&key,void*val) {
     case cmd_getLocalDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      passtools->double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      passtools->double2MD(localDeltaBias/plumedMain.getMDEnergyInPlumedUnits(),val); 
       break;
     case cmd_cacheLocalUNow:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
         double x = passtools->MD2double(val);
-        localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUNow=x*plumedMain.getMDEnergyInPlumedUnits(); 
         intracomm.Sum(localUNow);
       }
       break;
@@ -147,14 +147,14 @@ void GREX::cmd(const std::string&key,void*val) {
       CHECK_NOTNULL(val,key);
       {
         double x = passtools->MD2double(val);
-        localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUSwap=x*plumedMain.getMDEnergyInPlumedUnits(); 
         intracomm.Sum(localUSwap);
       }
       break;
     case cmd_getForeignDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      passtools->double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      passtools->double2MD(foreignDeltaBias/plumedMain.getMDEnergyInPlumedUnits(),val);
       break;
     case cmd_shareAllDeltaBias:
       CHECK_INIT(initialized,key);
@@ -173,7 +173,7 @@ void GREX::cmd(const std::string&key,void*val) {
         unsigned rep;
         Tools::convert(words[1],rep);
         plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
-        double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        double d=allDeltaBias[rep]/plumedMain.getMDEnergyInPlumedUnits(); 
         passtools->double2MD(d,val);
       }
       break;

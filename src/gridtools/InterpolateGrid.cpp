@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "EvaluateGridFunction.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*
@@ -188,7 +187,7 @@ void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std:
   }
   if( isdists ) {
     if( plumed.usingNaturalUnits() ) units = 1.0/0.5292;
-    else units = plumed.getAtoms().getUnits().getLength()/.05929;
+    else units = plumed.getUnits().getLength()/.05929;
   }
   if( !firststep ) { 
     std::vector<unsigned> nn( output_grid.getNbin( false ) );
