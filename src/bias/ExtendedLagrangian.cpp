@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "tools/Random.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace bias {

@@ -26,7 +26,7 @@
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
-#include "Atoms.h"
+#include "tools/Communicator.h"
 #include "ActionSet.h"
 #include <iostream>
 

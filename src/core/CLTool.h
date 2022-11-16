@@ -26,6 +26,7 @@
 #include <string>
 #include <cstdio>
 #include "tools/Tools.h"
+#include "tools/Communicator.h"
 #include "tools/Keywords.h"
 
 namespace PLMD {

@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include "tools/IFile.h"
 #include <memory>
 
@@ -247,7 +246,7 @@ void Read::update() {
   if( !cloned_file ) {
     for(unsigned i=0; i<nlinesPerStep; ++i) {
       ifile->scanField(); double du_time;
-      if( !ifile->scanField("time",du_time) && plumed.getAtoms().getNatoms()==0 ) plumed.stop();
+      if( !ifile->scanField("time",du_time) && !plumed.inputsAreActive() ) plumed.stop();
     }
   }
 }

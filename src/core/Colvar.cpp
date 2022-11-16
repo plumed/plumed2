@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
 #include <vector>
 #include <string>
 

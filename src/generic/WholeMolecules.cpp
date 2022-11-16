@@ -25,7 +25,6 @@
 #include "tools/Vector.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"

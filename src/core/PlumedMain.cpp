@@ -25,7 +25,6 @@
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "ActionWithValue.h"
-#include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
 #include "GREX.h"
@@ -131,7 +130,6 @@ PlumedMain::PlumedMain():
   step(0),
   active(false),
   endPlumed(false),
-  atoms_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))),
   bias(0.0),
@@ -142,7 +140,6 @@ PlumedMain::PlumedMain():
   stopFlag(NULL),
   stopNow(false),
   name_of_energy(""),
-  novirial(false),
   detailedTimers(false)
 {
   log.link(comm);
@@ -314,18 +311,33 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         for(const auto & pp : inputs ) pp->setAtomsContiguous(*static_cast<int*>(val)); 
         break;
       case cmd_createFullList:
+      {
         CHECK_INIT(initialized,word);
-        CHECK_NOTNULL(val,word);
-        atoms.createFullList(static_cast<int*>(val));
+        CHECK_NOTNULL(val,word); unsigned nlists=0;
+        for(const auto & pp : inputs ) {
+            if( pp->hasFullList() ) { pp->createFullList(static_cast<int*>(val)); nlists++; }
+        }
+        plumed_assert( nlists==1 );
+      }
         break;
       case cmd_getFullList:
+      {
         CHECK_INIT(initialized,word);
-        CHECK_NOTNULL(val,word);
-        atoms.getFullList(static_cast<int**>(val));
+        CHECK_NOTNULL(val,word); unsigned nlists=0;
+        for(const auto & pp : inputs ) { 
+            if( pp->hasFullList() ) { pp->getFullList(static_cast<int**>(val)); nlists++; }
+        }
+        plumed_assert( nlists==1 );
+      }
         break;
       case cmd_clearFullList:
-        CHECK_INIT(initialized,word);
-        atoms.clearFullList();
+      {
+        CHECK_INIT(initialized,word); unsigned nlists=0;
+        for(const auto & pp : inputs ) { 
+            if( pp->hasFullList() ) { pp->clearFullList(); nlists++; }
+        }
+        plumed_assert( nlists==1 );
+      }
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
@@ -378,18 +390,21 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_clear:
       {
         CHECK_INIT(initialized,word);
+        int natoms = 0; 
+        ActionForInterface* ai = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
+        if( ai ) natoms = ai->copyOutput(0)->getShape()[0]; 
         actionSet.clearDelete();
         inputs.clear();
-        atoms.clearAtomValues();
-        std::string str_natoms; Tools::convert( atoms.getNatoms(), str_natoms );
-        if( atoms.getNatoms()>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
-                                                       " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False" +
-                                                       " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False" +
-                                                       " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False" +
-                                                       " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True" +
-                                                       " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True");
+        if( natoms>0 ) {
+            std::string str_natoms; Tools::convert( natoms, str_natoms );
+            if( natoms>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
+                                                           " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                                                           " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                                                           " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                                                           " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                                                           " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q");
+        }
         initialized=false;
-        createAtomValues();
         initialized=true;
         setUnits( naturalUnits, units );
         break;
@@ -441,9 +456,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         naturalUnits = true;
         break;
       case cmd_setNoVirial:
+      {
         CHECK_NOTINIT(initialized,word);
-        novirial=true;
-        break;
+        turnOffVirial();
+      }
+       break;
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
@@ -453,13 +470,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
         for(const auto & pp : inputs ) pp->Set_comm(comm);
-        atoms.setDomainDecomposition(comm);
         break;
       case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
         for(const auto & pp : inputs ) pp->Set_comm(comm);  
-        atoms.setDomainDecomposition(comm);
         break;
       case cmd_setMPImultiSimComm:
         CHECK_NOTINIT(initialized,word);
@@ -469,14 +484,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setNatoms(*static_cast<int*>(val));
-        std::string str_natoms; Tools::convert( *static_cast<int*>(val), str_natoms );
-        if( atoms.getNatoms()>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
-                                                       " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False" +
-                                                       " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False" +
-                                                       " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False" +
-                                                       " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True" +
-                                                       " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True"); 
+        int natoms = *static_cast<int*>(val); std::string str_natoms; Tools::convert( natoms, str_natoms );
+        if( natoms>0 ) cmd("createValue " + MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
+                                                       " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                                                       " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                                                       " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                                                       " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                                                       " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q"); 
       }
         break;
       case cmd_setTimestep:
@@ -665,22 +679,6 @@ void PlumedMain::setInputForce( const std::string& name, void* val ) {
   plumed_massert( found, "found no action to set named " + name );
 }
 
-void PlumedMain::createAtomValues() {
-  if( atoms.getNatoms()==0 ) return ;
-  // Create holders for the positions
-  // Create holder for the cell
-  std::string noforce="";
-  if( novirial || atoms.dd.Get_rank()!=0 ) noforce = " NOFORCE";
-  readInputLine( "Box: PBC " + noforce ); 
-  plumed_assert( atoms.posx.size()==0 );
-  ActionWithValue* xv = actionSet.selectWithLabel<ActionWithValue*>("posx");
-  ActionWithValue* yv = actionSet.selectWithLabel<ActionWithValue*>("posy");
-  ActionWithValue* zv = actionSet.selectWithLabel<ActionWithValue*>("posz");
-  ActionWithValue* mv = actionSet.selectWithLabel<ActionWithValue*>("Masses");
-  ActionWithValue* qv = actionSet.selectWithLabel<ActionWithValue*>("Charges");
-  atoms.addAtomValues( MDEngine, xv->copyOutput(0), yv->copyOutput(0), zv->copyOutput(0), mv->copyOutput(0), qv->copyOutput(0) );
-}
-
 void PlumedMain::setUnits( const bool& natural, const Units& u ) {
   naturalUnits = natural; units=u;
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>(); 
@@ -695,7 +693,7 @@ void PlumedMain::startStep() {
 
 void PlumedMain::init() {
 // check that initialization just happens once
-  createAtomValues(); initialized=true;
+  initialized=true;
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
@@ -712,7 +710,8 @@ void PlumedMain::init() {
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
-  log.printf("Number of atoms: %d\n",atoms.getNatoms());
+  ActionForInterface* ai = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
+  if(ai) log.printf("Number of atoms: %d\n",ai->copyOutput(0)->getShape()[0]);
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
   if(plumedDat.length()>0) {
@@ -874,8 +873,9 @@ void PlumedMain::prepareDependencies() {
       active=true;
     }
   };
+
 // This stops the driver calculation if there is not a read action
-  if( !active && atoms.getNatoms()==0 ) (*stopFlag)=1;
+  if( !active && !inputsAreActive() ) (*stopFlag)=1;
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   for(const auto & p : actionSet) {
@@ -883,6 +883,13 @@ void PlumedMain::prepareDependencies() {
       if(p->checkNeedsGradients()) p->setOption("GRADIENTS");
     }
   }
+}
+
+bool PlumedMain::inputsAreActive() const {
+  for(const auto & ip : inputs) { 
+      if( ip->onStep() ) return true;
+  }
+  return false;
 }
 
 void PlumedMain::shareAll() {
@@ -1181,6 +1188,15 @@ const Units& PlumedMain::getUnits() {
 
 double PlumedMain::getMDEnergyInPlumedUnits() const {
   return MDUnits.getEnergy()/units.getEnergy();
+}
+
+void PlumedMain::turnOffVirial() {
+  ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box");
+  if( ap ) ap->noforce=true; 
+  else {
+     ActionForInterface* af = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
+     if( af ) plumed_merror("setNoVirial should be called after number of atoms have been set");
+  }
 }
 
 

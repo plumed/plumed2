@@ -22,7 +22,6 @@
 #include "core/ActionRegister.h"
 #include "ContourFindingBase.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 //+PLUMEDOC GRIDANALYSIS FIND_CONTOUR
 /*

@@ -24,7 +24,6 @@
 
 #include "Action.h"
 #include "tools/Tensor.h"
-#include "Atoms.h"
 #include "tools/Pbc.h"
 #include "tools/ForwardDecl.h"
 #include <vector>
@@ -37,11 +36,18 @@ class Pbc;
 class PDB;
 class ActionWithVirtualAtom;
 
+namespace multicolvar {
+  class SelectMassCharge;
+}
+
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
   virtual public Action
 {
+  friend class Group;
+  friend class multicolvar::SelectMassCharge;
+private:
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::set<AtomNumber>  unique;
@@ -61,11 +67,11 @@ class ActionAtomistic :
 
   bool                  donotretrieve;
   bool                  donotforce;
-
+/// Values that hold information about atom positions and charges
+  std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
+  void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const ;
 protected:
   bool                  chargesWereSet;
-  Atoms&                atoms;
-
 public:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
@@ -158,7 +164,6 @@ public:
 // virtual functions:
 
   explicit ActionAtomistic(const ActionOptions&ao);
-  ~ActionAtomistic();
 
   static void registerKeywords( Keywords& keys );
 
@@ -176,6 +181,8 @@ public:
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb );
+/// Transfer the gradients 
+  void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
 };
 
 inline

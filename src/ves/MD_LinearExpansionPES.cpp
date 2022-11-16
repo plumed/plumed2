@@ -543,10 +543,10 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
   if(plumed) {
-    plumed->cmd("setNoVirial");
     int natoms=1;
+    plumed->cmd("setMDEngine","mdrunner_linearexpansion"); 
     plumed->cmd("setNatoms",&natoms);
-    plumed->cmd("setMDEngine","mdrunner_linearexpansion");
+    plumed->cmd("setNoVirial");
     plumed->cmd("setTimestep",&tstep);
     plumed->cmd("setPlumedDat",plumed_input.c_str());
     plumed->cmd("setLogFile",plumed_logfile.c_str());

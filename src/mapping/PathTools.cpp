@@ -145,9 +145,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   // Create a PLUMED object
   PlumedMain plmd; int s=sizeof(double);
   plmd.cmd("setRealPrecision",&s);
-  plmd.cmd("setNoVirial"); 
   plmd.cmd("setMDEngine","pathtools");
   int natoms = 1; plmd.cmd("setNatoms",&natoms);
+  plmd.cmd("setNoVirial");
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);
@@ -345,9 +345,9 @@ void PathTools::printLambda( const std::string& mtype, const std::vector<std::st
   // Create a PLUMED object
   PlumedMain plmd; int s=sizeof(double);
   plmd.cmd("setRealPrecision",&s);
-  plmd.cmd("setNoVirial");
   plmd.cmd("setMDEngine","pathtools");
   int natoms = 1; plmd.cmd("setNatoms",&natoms);
+  plmd.cmd("setNoVirial");
   double tstep=1.0; plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
   int step=1; plmd.cmd("setStep",&step);

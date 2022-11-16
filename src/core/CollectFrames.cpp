@@ -23,6 +23,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "ActionRegister.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 

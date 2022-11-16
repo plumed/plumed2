@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SphericalKDE.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Pbc.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"

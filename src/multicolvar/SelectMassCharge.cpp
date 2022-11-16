@@ -55,7 +55,9 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
   addValue(); setNotPeriodic(); getPntrToOutput(0)->buildDataStore( getLabel() );
   // Determine if any of the masses/charges are not constant
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-      if( !atoms.checkConstant( getAbsoluteIndex(i), getName() ) ) constant=false;
+      unsigned nn, kk; getValueIndices( getAbsoluteIndex(i), nn, kk ); 
+      if( getName()=="MASSES" && !masv[nn]->isConstant() ) constant=false;
+      if( getName()=="CHARGES" && !chargev[nn]->isConstant() ) constant=false;
   }
   if( constant ) getPntrToOutput(0)->setConstant();
 }

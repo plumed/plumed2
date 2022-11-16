@@ -27,7 +27,6 @@
 #include "tools/Exception.h"
 #include "tools/OFile.h"
 #include "tools/OpenMP.h"
-#include "Atoms.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
@@ -238,10 +237,9 @@ void Value::setGradients( ActionAtomistic* aa, unsigned& start ) {
   // Can't do gradients if we don't have derivatives
   if( !hasDeriv ) return;
   plumed_assert( shape.size()==0 );
-  Atoms&atoms((aa->plumed).getAtoms());
   for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
       Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
-      atoms.getGradient( aa->getAbsoluteIndex(j), der, gradients );
+      aa->getGradient( j, der, gradients );
   }
   start += aa->getNumberOfAtoms();
 }

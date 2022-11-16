@@ -20,10 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
+#include "tools/Communicator.h"
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"

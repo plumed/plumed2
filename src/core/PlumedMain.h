@@ -57,7 +57,6 @@ class ActionAtomistic;
 class ActionPilot;
 class ActionForInterface;
 class Log;
-class Atoms;
 class ActionSet;
 class DLLoader;
 class Communicator;
@@ -158,11 +157,6 @@ private:
   bool endPlumed;
 
 /// Forward declaration.
-  ForwardDecl<Atoms> atoms_fwd;
-/// Object containing information about atoms (such as positions,...).
-  Atoms&    atoms=*atoms_fwd;           // atomic coordinates
-
-/// Forward declaration.
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
@@ -217,9 +211,6 @@ private:
 /// This sets up the values that are set from the MD code
   void startStep();
 
-/// This creates the values that hold the atomic positions
-  void createAtomValues(); 
-
 /// This sets up the vector that contains the interface to the MD code
   void setupInterfaceActions();
 public:
@@ -231,9 +222,6 @@ public:
 
 /// This updates the units of the input quantities
   void setUnits( const bool& natural, const Units& u );
-
-/// Flag to switch off virial calculation (for debug and MD codes with no barostat)
-  bool novirial;
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
@@ -372,9 +360,9 @@ public:
     If there are calculations that need to be done at the very end of the calculations this
     makes sures they are done
   */
+/// Turn off the virial for the whole calculation
+  void turnOffVirial();
   void runJobsAtEndOfCalculation();
-/// Reference to atoms object
-  Atoms& getAtoms();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;
 /// Get the real preicision
@@ -458,6 +446,8 @@ public:
   const Units& getUnits();
 /// Get the conversion factor 1 Plumed energy unit equals this number of MD energy units
   double getMDEnergyInPlumedUnits() const ;
+/// Check if there is active input in the action set
+  bool inputsAreActive() const ;
 };
 
 /////
@@ -466,11 +456,6 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
-}
-
-inline
-Atoms& PlumedMain::getAtoms() {
-  return atoms;
 }
 
 inline

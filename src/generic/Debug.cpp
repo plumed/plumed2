@@ -85,7 +85,7 @@ Debug::Debug(const ActionOptions&ao):
   if(logRequestedAtoms) log.printf("  logging requested atoms\n");
   parseFlag("NOVIRIAL",novirial);
   if(novirial) log.printf("  Switching off virial contribution\n");
-  if(novirial) plumed.novirial=true;
+  if(novirial) plumed.turnOffVirial();
   parseFlag("DETAILED_TIMERS",detailedTimers);
   if(detailedTimers) {
     log.printf("  Detailed timing on\n");

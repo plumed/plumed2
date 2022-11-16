@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {

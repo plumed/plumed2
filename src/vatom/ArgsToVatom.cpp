@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/PbcAction.h"
 #include "tools/Pbc.h"
 
@@ -110,7 +109,6 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
   addComponent("mass"); componentIsNotPeriodic("mass"); if( mass[0]->isConstant() ) getPntrToComponent(3)->setConstant();
   addComponent("charge"); componentIsNotPeriodic("charge"); if( charge[0]->isConstant() ) getPntrToComponent(4)->setConstant();
-  plumed.getAtoms().addAtomValues( getLabel(), copyOutput(0), copyOutput(1), copyOutput(2), copyOutput(3), copyOutput(4) );
   pbc_action = plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
 }
 

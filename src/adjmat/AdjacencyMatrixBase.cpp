@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
 namespace PLMD {

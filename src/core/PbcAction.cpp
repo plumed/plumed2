@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PbcAction.h"
 #include "tools/Pbc.h"
-#include "Atoms.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "ActionRegister.h"
@@ -32,7 +31,6 @@ PLUMED_REGISTER_ACTION(PbcAction,"PBC")
 
 void PbcAction::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  keys.addFlag("NOFORCE",false,"always set the forces on this value to zero");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 

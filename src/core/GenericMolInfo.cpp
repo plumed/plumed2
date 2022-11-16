@@ -25,6 +25,7 @@
 #include "PlumedMain.h"
 #include "tools/MolDataClass.h"
 #include "tools/PDB.h"
+#include "tools/Communicator.h"
 #include "config/Config.h"
 
 namespace PLMD {

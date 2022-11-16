@@ -23,10 +23,11 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "tools/Communicator.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
@@ -245,7 +246,8 @@ API([&]() {
     }
   }
 
-  int natoms=plumed.getAtoms().getNatoms();
+  ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Masses");
+  int natoms=(mv->copyOutput(0))->getShape()[0];
 
   plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
 

@@ -15,7 +15,6 @@
 #include "tools/Tools.h"
 #include "tools/PDB.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include <iostream>
 #include "tools/RMSD.h"
 

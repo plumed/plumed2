@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "Atoms.h"
 
 namespace PLMD {
 
@@ -47,7 +46,6 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   // Store the derivatives with respect to the virial only even if there are no atoms
   for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
   addComponent("mass"); componentIsNotPeriodic("mass"); addComponent("charge"); componentIsNotPeriodic("charge");
-  atoms.addAtomValues( getLabel(), copyOutput(0), copyOutput(1), copyOutput(2), copyOutput(3), copyOutput(4) );
 }
 
 void ActionWithVirtualAtom::apply() {

@@ -29,7 +29,6 @@
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
 #include "tools/RMSD.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"

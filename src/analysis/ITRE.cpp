@@ -25,7 +25,6 @@
 #include "core/CollectFrames.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include <numeric>
 
 //+PLUMEDOC REWEIGHTING ITRE

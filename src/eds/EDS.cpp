@@ -17,7 +17,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "bias/Bias.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "tools/File.h"
 #include "tools/Matrix.h"

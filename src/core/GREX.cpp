@@ -22,7 +22,6 @@
 #include "GREX.h"
 #include "PlumedMain.h"
 #include "DataPassingTools.h"
-#include "Atoms.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
@@ -33,7 +32,6 @@ namespace PLMD {
 GREX::GREX(PlumedMain&p):
   initialized(false),
   plumedMain(p),
-  atoms(p.getAtoms()),
   passtools(DataPassingTools::create(p.getRealPrecision())),
   partner(-1), // = unset
   localDeltaBias(0),

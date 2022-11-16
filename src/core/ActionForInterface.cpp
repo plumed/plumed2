@@ -23,13 +23,13 @@
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Atoms.h"
 
 namespace PLMD {
 
 void ActionForInterface::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys); ActionWithValue::registerKeywords( keys );
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.add("optional","ROLE","Get the role this value plays in the code can be x/y/z/m/q to signify that this is x, y, z positions of atoms or masses or charges of atoms");
 }
 
 ActionForInterface::ActionForInterface(const ActionOptions&ao):
@@ -39,6 +39,11 @@ firststep(true),
 wasscaled(false),
 wasset(false)
 {
+  if( keywords.exists("ROLE") && getName()!="DOMAIN_DECOMPOSITION") parse("ROLE",role);
+}
+
+std::string ActionForInterface::getRole() const {
+  return role;
 }
 
 }

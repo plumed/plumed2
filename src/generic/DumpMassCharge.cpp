@@ -20,11 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/File.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "core/ActionSet.h"
 
 namespace PLMD
 {
@@ -136,7 +137,9 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-    for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
+    ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Masses");
+    unsigned natoms = (mv->copyOutput(0))->getShape()[0];
+    for(int i=0; i<natoms; i++) {
       atoms.push_back(AtomNumber::index(i));
     }
   }

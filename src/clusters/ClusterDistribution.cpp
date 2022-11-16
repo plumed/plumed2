@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "ClusteringBase.h"
 

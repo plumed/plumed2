@@ -28,6 +28,7 @@
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
 #include <initializer_list>
 
 #define INV_PI_SQRT_PI 0.179587122

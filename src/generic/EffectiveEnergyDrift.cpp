@@ -32,10 +32,10 @@
 #include "core/ActionToPutData.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/PbcAction.h"
 #include "tools/File.h"
 #include "tools/Pbc.h"
+#include "tools/Communicator.h"
 
 #include <algorithm>
 
@@ -78,7 +78,6 @@ class EffectiveEnergyDrift:
 
   double eed;
 
-  Atoms& atoms;
   std::vector<Value*> pos_values;
   Value* boxValue;
   std::vector<ActionWithValue*> biases;
@@ -143,7 +142,6 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   ActionPilot(ao),
   fmt("%f"),
   eed(0.0),
-  atoms(plumed.getAtoms()),
   boxValue(NULL),
   domain_decomposition(NULL),
   nProc(plumed.comm.Get_size()),
@@ -188,19 +186,6 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   indexDsp.resize(nProc);
   dataCnt.resize(nProc);
   dataDsp.resize(nProc);
-  //resize the received buffers
-  indexR.resize(atoms.getNatoms());
-  dataR.resize(atoms.getNatoms()*6);
-  backmap.resize(atoms.getNatoms());
-  // Get all the interface actions
-  std::vector<ActionForInterface*> af = plumed.getActionSet().select<ActionForInterface*>();
-  for(unsigned i=0;i<af.size();++i) {
-      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( af[i] );
-      if( !ap && !domain_decomposition ) domain_decomposition = af[i];
-      else if( !ap && domain_decomposition ) warning("found more than one interface so don't know how to sum energy");
-  }
-  if( !domain_decomposition ) error("found no DomainDecomposition action to use");
-  // Retrieve the positions
   ActionToPutData* ax=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posx");
   if( ax ) { pos_values.push_back(ax->copyOutput(0)); addDependency( ax ); }
   ActionToPutData* ay=plumed.getActionSet().selectWithLabel<ActionToPutData*>("posy");
@@ -210,6 +195,18 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   // Retrieve the box
   pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
   if( pbc_action ) { boxValue=pbc_action->copyOutput(0); addDependency( pbc_action ); }
+  //resize the received buffers
+  indexR.resize(ax->copyOutput(0)->getShape()[0]);
+  dataR.resize(6*ax->copyOutput(0)->getShape()[0]);
+  backmap.resize(ax->copyOutput(0)->getShape()[0]);
+  // Get all the interface actions
+  std::vector<ActionForInterface*> af = plumed.getActionSet().select<ActionForInterface*>();
+  for(unsigned i=0;i<af.size();++i) {
+      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( af[i] );
+      if( !ap && !domain_decomposition ) domain_decomposition = af[i];
+      else if( !ap && domain_decomposition ) warning("found more than one interface so don't know how to sum energy");
+  }
+  if( !domain_decomposition ) error("found no DomainDecomposition action to use");
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
@@ -256,7 +253,7 @@ void EffectiveEnergyDrift::update() {
   }
 
   //if the dd has changed we have to reshare the stored data
-  if(pDdStep<domain_decomposition->getDdStep() && nLocalAtoms<atoms.getNatoms()) {
+  if(pDdStep<domain_decomposition->getDdStep() && nLocalAtoms<indexR.size()) {
     //prepare the data to be sent
     indexS.resize(pNLocalAtoms);
     dataS.resize(pNLocalAtoms*6);

@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionToPutData.h"
-#include "Atoms.h"
 #include "ActionRegister.h"
 
 namespace PLMD {

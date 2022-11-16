@@ -27,7 +27,6 @@
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
 #include "tools/Tensor.h"
-#include "Atoms.h"
 
 namespace PLMD {
 

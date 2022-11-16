@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Atoms.h"
 
 namespace PLMD {
 
@@ -66,7 +65,6 @@ mydata(DataPassingObject::create(plumed.getRealPrecision()))
 
        parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; getPntrToOutput(0)->setConstant(); } 
    }
-   if( keywords.exists("NOFORCE") ) parseFlag("NOFORCE", noforce);
 }
 
 void ActionToPutData::setUnit( const std::string& unitstr, const std::string& funitstr ) {

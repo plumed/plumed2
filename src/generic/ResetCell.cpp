@@ -29,7 +29,6 @@
 #include "tools/Matrix.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
-#include "core/Atoms.h"
 #include "core/PbcAction.h"
 #include "tools/Pbc.h"
 

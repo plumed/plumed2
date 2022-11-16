@@ -23,7 +23,6 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
-#include "core/Atoms.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionShortcut.h"
 

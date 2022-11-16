@@ -36,6 +36,8 @@ protected:
   bool wasscaled;
 /// Action has been set
   bool wasset;
+/// The role this plays
+  std::string role;
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionForInterface(const ActionOptions&ao);
@@ -79,6 +81,13 @@ public:
   virtual void sumOverDomains( Value* val ) {}
   virtual const long int& getDdStep() const { plumed_merror("should not be in this function"); }
   virtual const std::vector<int>& getGatindex() const { plumed_merror("should not be in this function"); }
+///
+  virtual bool hasFullList() const { return false; }
+  virtual void createFullList(int*) { plumed_error(); }
+  virtual void getFullList(int**) { plumed_error(); }
+  virtual void clearFullList() { plumed_error(); }
+  virtual bool onStep() const = 0;
+  std::string getRole() const ;
 };
 
 inline

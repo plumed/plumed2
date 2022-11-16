@@ -27,6 +27,7 @@
 #include "core/ActionSet.h"
 #include "tools/File.h"
 #include "tools/Random.h"
+#include "tools/Communicator.h"
 
 #include <string>
 #include <map>

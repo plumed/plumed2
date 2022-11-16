@@ -31,7 +31,6 @@ namespace PLMD {
 
 class PlumedMain;
 class DataPassingTools;
-class Atoms;
 class Communicator;
 
 class GREX:
@@ -43,7 +42,6 @@ class GREX:
   ForwardDecl<Communicator> intercomm_fwd;
   Communicator& intercomm=*intercomm_fwd;
   PlumedMain& plumedMain;
-  Atoms&      atoms;
   std::unique_ptr<DataPassingTools> passtools;
   int partner;
   double localDeltaBias;

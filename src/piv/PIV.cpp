@@ -22,6 +22,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 #include "tools/Stopwatch.h"
+#include "tools/Communicator.h"
 
 #include <string>
 #include <cmath>

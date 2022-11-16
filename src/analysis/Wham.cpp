@@ -23,7 +23,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 
 //+PLUMEDOC REWEIGHTING WHAM

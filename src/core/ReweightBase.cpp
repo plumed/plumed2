@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReweightBase.h"
 #include "PlumedMain.h"
-#include "Atoms.h"
 
 namespace PLMD {
 

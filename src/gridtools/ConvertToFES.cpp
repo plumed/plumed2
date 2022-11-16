@@ -22,7 +22,6 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*

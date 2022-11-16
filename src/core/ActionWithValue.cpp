@@ -30,6 +30,7 @@
 #include "ActionRegister.h"
 #include "tools/Stopwatch.h"
 #include "tools/Exception.h"
+#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 
 namespace PLMD {

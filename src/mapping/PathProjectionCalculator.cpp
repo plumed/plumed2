@@ -58,9 +58,8 @@ mypath_obj(NULL)
   // Create a plumed main object to compute distances between reference configurations
   int s=sizeof(double);
   metric.cmd("setRealPrecision",&s);
-  metric.cmd("setNoVirial");
   metric.cmd("setMDEngine","plumed");
-  int nat=0; metric.cmd("setNatoms",&nat);
+  int nat=0; metric.cmd("setNatoms",&nat); metric.cmd("setNoVirial");
   unsigned nargs=refargs.size(); if( refargs[0]->getRank()==2 ) nargs = refargs[0]->getShape()[1];
   std::string str_nargs; Tools::convert( nargs, str_nargs ); std::string period_str=" PERIODIC=NO";
   if( mypath_obj && mypath_obj->isPeriodic() ) { std::string min, max; mypath_obj->getDomain( min, max ); period_str=" PERIODIC=" + min + "," + max; }

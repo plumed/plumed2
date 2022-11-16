@@ -31,7 +31,6 @@ namespace PLMD {
 class ActionToPutData : 
 public ActionForInterface 
 {
-friend class Atoms;
 friend class PlumedMain;
 friend class DomainDecomposition;
 private:
@@ -84,6 +83,7 @@ public:
 /// For replica exchange
   void writeBinary(std::ostream&o) override;
   virtual void readBinary(std::istream&i) override;
+  bool onStep() const override { return false; }
 };
 
 }

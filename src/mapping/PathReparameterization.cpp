@@ -24,8 +24,8 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "tools/Matrix.h"
 #include "PathProjectionCalculator.h"
 
 namespace PLMD {

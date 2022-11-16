@@ -28,6 +28,8 @@
 #include "core/PlumedMain.h"
 #include "tools/Random.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
+#include "tools/Matrix.h"
 
 #define PLUMED_METAINF_INIT(ao) Action(ao),MetainferenceBase(ao)
 
