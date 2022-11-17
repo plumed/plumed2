@@ -285,6 +285,12 @@ module plumed_f08_module
   type :: plumed_error
     integer                         :: code=0
     character(len = :), allocatable :: what
+    ! nested error, if present
+    type(plumed_error), allocatable :: nested
+  contains
+    private
+    generic,   public :: assignment(=) => pl_error_assign
+    procedure :: pl_error_assign
   end type plumed_error
 
   ! now there are interfaces to some of the classic C functions, only used internally
@@ -435,6 +441,9 @@ module plumed_f08_module
        type(c_ptr),         value :: opt_ptr
        type(plumed_error), pointer :: error
        character(len=1, kind=C_CHAR), pointer :: p_chars(:)
+       type(c_ptr),        pointer :: opt(:)
+       character(len=1, kind=C_CHAR), pointer :: opt_key
+       type(c_ptr),        pointer :: error_nested
        integer :: i,j
        call c_f_pointer(error_ptr,error)
        error%code=code
@@ -448,6 +457,20 @@ module plumed_f08_module
          allocate(character(i-1) :: error%what)
          do j = 1,i-1
            error%what(j:j)=p_chars(j)
+         enddo
+       endif
+       if (C_associated(opt_ptr)) then
+         call C_F_pointer(opt_ptr,opt, [huge(0)])
+         do i = 1, huge(0),2
+           if (.not. c_associated(opt(i))) exit
+           if (c_associated(opt(i+1))) then
+             call C_F_pointer(opt(i),opt_key)
+             if (opt_key == "n") then
+               call C_F_pointer(opt(i+1),error_nested)
+               allocate(error%nested)
+               error_nested=c_loc(error%nested)
+             endif
+           endif
          enddo
        endif
      end subroutine plumed_f_f08_eh
@@ -2578,5 +2601,24 @@ module plumed_f08_module
     end subroutine pl_cmd_const_ptr_real_1_4
 
 
+     ! copy, including deep copy of nested errors
+     ! this should be fortran default copy but
+     ! fails on gfortran, so it is reimplemented here
+     ! see https://godbolt.org/z/9dM6vj5bo
+     impure elemental subroutine pl_error_assign(this,that)
+       class(plumed_error),target,intent(out) :: this
+       class(plumed_error),target,intent(in)  :: that
+       type(plumed_error), pointer :: that_ptr, this_ptr
+       that_ptr => that
+       this_ptr => this
+       do
+         this_ptr%code = that_ptr%code
+         this_ptr%what = that_ptr%what
+         if(.not. allocated(that_ptr%nested)) exit
+         allocate(this_ptr%nested)
+         this_ptr => this_ptr%nested
+         that_ptr => that_ptr%nested
+       end do
+     end subroutine pl_error_assign
 
 end module plumed_f08_module
