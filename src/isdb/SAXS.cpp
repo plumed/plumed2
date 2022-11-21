@@ -277,6 +277,17 @@ SAXS::SAXS(const ActionOptions&ao):
     af::info();
   }
 #endif
+  
+  bool atomistic=false;
+  parseFlag("ATOMISTIC",atomistic);
+  bool martini=false;
+  parseFlag("MARTINI",martini);
+  onebead=false;
+  parseFlag("ONEBEAD",onebead);
+
+  if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
+  if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
+  if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
 
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
@@ -294,17 +305,6 @@ SAXS::SAXS(const ActionOptions&ao):
     if(i>0&&q_list[i]<q_list[i-1]) error("QVALUE must be in ascending order");
     log.printf("  my q: %lf \n",q_list[i]);
   }
-
-  bool atomistic=false;
-  parseFlag("ATOMISTIC",atomistic);
-  bool martini=false;
-  parseFlag("MARTINI",martini);
-  onebead=false;
-  parseFlag("ONEBEAD",onebead);
-
-  if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
-  if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
-  if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
 
   rho = 0.334;
   parse("SOLVDENS", rho);
