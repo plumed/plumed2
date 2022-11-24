@@ -35,7 +35,7 @@
 
 #include <map>
 #include <iterator>
-
+#include <iostream>
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
@@ -154,6 +154,10 @@ private:
   std::vector<std::vector<double> > FF_value_mixed;
   std::vector<std::vector<double> >    FF_value;
   std::vector<std::vector<float> >     FFf_value;
+  std::vector<std::vector<float> > FFf_value_vacuum;
+	std::vector<std::vector<float> > FFf_value_water;
+	std::vector<std::vector<float> > FFf_value_mixed;
+
 
   bool                        onebead;
   unsigned                    nres;
@@ -177,7 +181,7 @@ private:
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
-    void calculate_cpu_poveri(std::vector<Vector> &pos, std::vector<Vector> &deriv);
+  //  void calculate_cpu_poveri(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
@@ -375,13 +379,11 @@ SAXS::SAXS(const ActionOptions&ao):
           }
         }
       }
-      
       for(unsigned i=0;i<size;++i){
         Iq0_vac[i]=parameter_vac[atoi[i]][0];
         Iq0_mix[i]=parameter_mix[atoi[i]][0];
         Iq0_wat[i]=parameter_wat[atoi[i]][0];
       }
-
   } else if(martini) {
     //read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
@@ -416,15 +418,25 @@ SAXS::SAXS(const ActionOptions&ao):
 
   if(!gpu) {
     FF_rank.resize(numq);
-    unsigned n_atom_types=size;
+    unsigned n_atom_types; //=size;
     if(atomistic) n_atom_types=NTT;
     else if(martini) n_atom_types=NMARTINI;
+	  else if(onebead) n_atom_types=NONEBEAD;
+    FF_value.resize(size,std::vector<double>(numq));  /* con FF_value.resize(n_atom_types,std::vector<double>(numq)); ATOMISTIC muore */  
+    /*
     else if(onebead) n_atom_types=NONEBEAD;
     FF_value.resize(size,std::vector<double>(numq));
     FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
     FF_value_water.resize(n_atom_types,std::vector<double>(numq));
     FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
-    if(onebead) FF_value.resize((nres),std::vector<double>(numq));
+    if(onebead) FF_value.resize(nres,std::vector<double>(numq));
+    */
+    if(onebead) {
+      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      //FF_value.resize(nres,std::vector<double>(numq));       
+    } 
     for(unsigned k=0; k<numq; ++k) {
       if(!onebead) {
         for(unsigned i=0; i<size; ++i) FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
@@ -438,14 +450,40 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else {
+    unsigned n_atom_types; //=size;
+    if(atomistic) n_atom_types=NTT;
+    else if(martini) n_atom_types=NMARTINI;
+    else if(onebead) n_atom_types=NONEBEAD;
+    //FF_value.resize(size,std::vector<double>(numq)); //CPU_version
+    FFf_value.resize(numq,std::vector<float>(size));
+    if(onebead) {
+      //FF_value.resize(nres,std::vector<double>(numq));
+	    FFf_value_vacuum.resize(n_atom_types,std::vector<float>(numq));
+	    FFf_value_water.resize(n_atom_types,std::vector<float>(numq));
+	    FFf_value_mixed.resize(n_atom_types,std::vector<float>(numq));
+    }
+    for(unsigned k=0; k<numq; ++k) {
+      if(!onebead){
+	      for(unsigned i=0; i<size; ++i) {
+          //FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]]);
+          FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
+		    }
+      } else {
+		        for(unsigned i=0; i<n_atom_types; ++i) {
+		          FFf_value_vacuum[i][k] = static_cast<float>(FF_tmp_vac[k][i]); 
+		          FFf_value_mixed[i][k] = static_cast<float>(FF_tmp_mix[k][i]); 
+		          FFf_value_water[i][k] = static_cast<float>(FF_tmp_wat[k][i]); 
+		        }
+	    }
+	  }
+    /* ORIGINAL:
     FFf_value.resize(numq,std::vector<float>(size));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; ++i) {
         FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]]);
-      }
-    }
+      }*/
   }
-
+  
   if(!getDoScore()) {
     for(unsigned i=0; i<numq; ++i) {
       std::string num; Tools::convert(i,num);
@@ -740,7 +778,7 @@ void SAXS::calculate()
     }
   }
 
-  if(onebead) {
+  /*if(onebead) {
     for (unsigned i=0; i<nres; ++i) {
       for (unsigned k=0;k<numq;++k) {
         if(solv_res[i] == 0){ // buried
@@ -756,7 +794,35 @@ void SAXS::calculate()
         FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
       }
     }
-  }
+  }*/
+
+	  if(onebead){
+      for (unsigned k=0;k<numq;++k) {
+	      for (unsigned i=0; i<nres; ++i) {
+          if(!gpu){
+            if(solv_res[i] == 0){ // buried
+              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
+            } else { // surface
+                FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
+            }
+          } else {
+            if(solv_res[i] == 0){ // buried
+              FFf_value[k][i] = std::sqrt(FFf_value_vacuum[atoi[i]][k] + rho*rho*FFf_value_water[atoi[i]][k] - rho*FFf_value_mixed[atoi[i]][k])/Iq0;
+            } else { // surface
+              FFf_value[k][i] = std::sqrt(FFf_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FFf_value_water[atoi[i]][k] - rho_corr*FFf_value_mixed[atoi[i]][k])/Iq0;
+            }
+		      }	
+	      }
+	    }
+	    if(!gpu){
+	      for (unsigned k=0;k<numq;++k) {
+	        FF_rank[k]=0.;
+	        for (unsigned i=0; i<nres; ++i) {
+                  FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+	        }
+	      }
+	    }
+	  }  
 
 
   if(gpu) calculate_gpu(beads_pos, bd_deriv);
