@@ -351,7 +351,7 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
     }
-    for(unsigned i=0; i<nres; ++i) Iq0+=parameter[atoi[i]][0];
+    for(unsigned i=0; i<size; ++i) Iq0+=parameter[atoi[i]][0];
     Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
