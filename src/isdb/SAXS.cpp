@@ -119,92 +119,44 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-    enum { TRP,
-         TYR,
-         PHE,
-         HIS,
-         HIP,
-         HIE,
-         ARG,
-         LYS,
-         CYS,
-         ASP,
-         GLU,
-         ILE,
-         LEU,
-         MET,
-         ASN,
-         PRO,
-         GLN,
-         SER,
-         THR,
-         VAL,
-         ALA,
-         GLY, NONEBEAD
+  enum { TRP, TYR, PHE, HIS, HIP, HIE, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
+         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
        };
-  bool                       pbc;
-  bool                       serial;
-  bool                       gpu;
-  int                        deviceid;
-  std::vector<unsigned>           atoi;
-  std::vector<double>             q_list;
-  std::vector<double>             FF_rank;
+  bool pbc;
+  bool serial;
+  bool gpu;
+  bool onebead;
+  bool isFirstStep;
+  int  deviceid;
+  unsigned nres;
+  std::vector<unsigned> atoi;
+  std::vector<unsigned> atoms_per_bead;
+  std::vector<double>   atoms_masses;
+  std::vector<double>   q_list;
+  std::vector<double>   FF_rank;
   std::vector<std::vector<double> > FF_value_vacuum;
   std::vector<std::vector<double> > FF_value_water;
   std::vector<std::vector<double> > FF_value_mixed;
-  std::vector<std::vector<double> >    FF_value;
-  std::vector<std::vector<float> >     FFf_value;
-  std::vector<std::vector<float> > FFf_value_vacuum;
-	std::vector<std::vector<float> > FFf_value_water;
-	std::vector<std::vector<float> > FFf_value_mixed;
+  std::vector<std::vector<double> > FF_value;
+  std::vector<std::vector<float> >  FFf_value;
 
-
-  bool                        onebead;
-  unsigned                    nres;
-  unsigned                    first_res;
-  unsigned                    first_atom;
-  std::vector<unsigned>       atoms_per_bead;
-  std::vector<double>         atoms_masses;
-  double                      rho, rho_corr, correction;
-  unsigned                    solv_stride;
-  std::vector<bool>           solv_res;
+  double rho, rho_corr, correction;
+  unsigned solv_stride;
   std::vector<std::vector<long double> > parameter;
-  std::vector<std::vector<long double> > parameter_vac;
-  std::vector<std::vector<long double> > parameter_mix;
-  std::vector<std::vector<long double> > parameter_wat;
-  std::vector<double>         Iq0_vac;
-  std::vector<double>         Iq0_wat;
-  std::vector<double>         Iq0_mix;
-  double                      Iq0;  
-
-
+  std::vector<double> Iq0_vac;
+  std::vector<double> Iq0_wat;
+  std::vector<double> Iq0_mix;
+  double Iq0;
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const std::vector<AtomNumber> &atoms);
+  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_wat);
+  void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
-  
-  void                        getOnebeadMapping(const std::vector<AtomNumber> &atoms);
 
-  int sasa_type;
-  bool nopbc;
-  double rs;
-  std::string DeltaGValues;
-  int approach;
-  unsigned stride;
-  unsigned nl_update;
-  int firstStepFlag;
-  double Ti;
-  std::vector<AtomNumber> atoms;
-  std::vector< std::vector < std::string > > AtomResidueName;
-  std::vector < std::vector < double > > LCPOparam;
-  unsigned natoms;
-  std::vector < std::vector < double > > MaxSurf;
-  std::vector < std::vector < double > > DeltaG;
-  std::vector < std::vector < int > > Nlist;
-  std::vector < unsigned > residue_atom ;
-  std::vector <double> sasares;
+  std::vector<std::vector < double > > LCPOparam;
+  std::vector<unsigned > residue_atom ;
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -212,18 +164,10 @@ public:
   void calculate() override;
   void update() override;
 
-  void readPDB();
   std::map<std::string, std::vector<double> > setupLCPOparam();
-  void readLCPOparam();
-  void calcNlist();
-  std::map<std::string, std::vector<double> > setupMaxSurfMap();
-  void readMaxSurf();
-  void readDeltaG();
-  void computeDeltaG();
-  void sasa_calculate();
-  void calculateSolvation(const std::vector<AtomNumber> &atoms);
-
-
+  void readLCPOparam(std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
+  void calcNlist(std::vector<std::vector<int> > &Nlist, unsigned natoms);
+  void sasa_calculate(std::vector<bool> &solv_res);
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
@@ -245,7 +189,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors. (ONEBEAD only)");
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SOLVATION_STRIDE","1","Number of steps between every new check of the residues solvation via LCPO estimate.");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate.");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
@@ -255,8 +199,11 @@ SAXS::SAXS(const ActionOptions&ao):
   pbc(true),
   serial(false),
   gpu(false),
+  onebead(false),
+  isFirstStep(true),
   deviceid(0)
 {
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   unsigned size = atoms.size();
 
@@ -280,7 +227,7 @@ SAXS::SAXS(const ActionOptions&ao):
     af::info();
   }
 #endif
-  
+
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
   bool martini=false;
@@ -312,19 +259,18 @@ SAXS::SAXS(const ActionOptions&ao):
   rho = 0.334;
   parse("SOLVDENS", rho);
 
-  solv_stride = 1;
+  solv_stride = 100;
   parse("SOLVATION_STRIDE", solv_stride);
 
   correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
+  if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
   rho_corr=rho-correction;
 
-
   // Here we perform the preliminary mapping for onebead representation
-  if(onebead){
+  if(onebead) {
     getOnebeadMapping(atoms);
     size = nres;
-    solv_res.resize(size);
     Iq0_vac.resize(size);
     Iq0_wat.resize(size);
     Iq0_mix.resize(size);
@@ -356,33 +302,33 @@ SAXS::SAXS(const ActionOptions&ao):
     }
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
     Iq0 *= Iq0;
-  } else if(onebead){
-      //read in parameter std::vector
-      FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
-      FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
-      FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
-      parameter_vac.resize(NONEBEAD);
-      parameter_mix.resize(NONEBEAD);
-      parameter_wat.resize(NONEBEAD);
-      getOnebeadparam(atoms);
-      for(unsigned i=0; i<NONEBEAD; ++i) {
-        for(unsigned k=0; k<numq; ++k) {
-          for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
-            FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-          }
-          for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
-            FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-          }
-          for(unsigned j=0; j<parameter_wat[i].size(); ++j) {
-            FF_tmp_wat[k][i]+= parameter_wat[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-          }
+  } else if(onebead) {
+    //read in parameter std::vector
+    FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
+    FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
+    FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
+    std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
+    std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
+    std::vector<std::vector<long double> > parameter_wat(NONEBEAD);
+    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_wat);
+    for(unsigned i=0; i<NONEBEAD; ++i) {
+      for(unsigned k=0; k<numq; ++k) {
+        for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
+          FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        }
+        for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
+          FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        }
+        for(unsigned j=0; j<parameter_wat[i].size(); ++j) {
+          FF_tmp_wat[k][i]+= parameter_wat[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
-      for(unsigned i=0;i<size;++i){
-        Iq0_vac[i]=parameter_vac[atoi[i]][0];
-        Iq0_mix[i]=parameter_mix[atoi[i]][0];
-        Iq0_wat[i]=parameter_wat[atoi[i]][0];
-      }
+    }
+    for(unsigned i=0; i<size; ++i) {
+      Iq0_vac[i]=parameter_vac[atoi[i]][0];
+      Iq0_mix[i]=parameter_mix[atoi[i]][0];
+      Iq0_wat[i]=parameter_wat[atoi[i]][0];
+    }
   } else if(martini) {
     //read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
@@ -418,22 +364,22 @@ SAXS::SAXS(const ActionOptions&ao):
   if(!gpu) {
     FF_rank.resize(numq);
     unsigned n_atom_types;
-    FF_value.resize(size,std::vector<double>(numq));    
+    FF_value.resize(size,std::vector<double>(numq));
     if(onebead) {
       n_atom_types=NONEBEAD;
       FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
       FF_value_water.resize(n_atom_types,std::vector<double>(numq));
       FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
-    } 
+    }
     for(unsigned k=0; k<numq; ++k) {
       if(!onebead) {
         for(unsigned i=0; i<size; ++i) FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
         for(unsigned i=0; i<size; ++i) FF_rank[k] += FF_value[i][k]*FF_value[i][k];
       } else {
         for(unsigned i=0; i<n_atom_types; ++i) {
-          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]); 
-          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]); 
-          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]); 
+          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
         }
       }
     }
@@ -442,25 +388,25 @@ SAXS::SAXS(const ActionOptions&ao):
     FFf_value.resize(numq,std::vector<float>(size));
     if(onebead) {
       n_atom_types=NONEBEAD;
-	  FFf_value_vacuum.resize(n_atom_types,std::vector<float>(numq));
-	  FFf_value_water.resize(n_atom_types,std::vector<float>(numq));
-	  FFf_value_mixed.resize(n_atom_types,std::vector<float>(numq));
+      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
     }
     for(unsigned k=0; k<numq; ++k) {
-      if(!onebead){
-	      for(unsigned i=0; i<size; ++i) {
+      if(!onebead) {
+        for(unsigned i=0; i<size; ++i) {
           FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
-		    }
+        }
       } else {
-		        for(unsigned i=0; i<n_atom_types; ++i) {
-		          FFf_value_vacuum[i][k] = static_cast<float>(FF_tmp_vac[k][i]); 
-		          FFf_value_mixed[i][k] = static_cast<float>(FF_tmp_mix[k][i]); 
-		          FFf_value_water[i][k] = static_cast<float>(FF_tmp_wat[k][i]); 
-		        }
-	    }
-	  }
+        for(unsigned i=0; i<n_atom_types; ++i) {
+          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
+        }
+      }
+    }
   }
-  
+
   if(!getDoScore()) {
     for(unsigned i=0; i<numq; ++i) {
       std::string num; Tools::convert(i,num);
@@ -509,12 +455,137 @@ SAXS::SAXS(const ActionOptions&ao):
   log<<"\n";
 
   requestAtoms(atoms, false);
+
   if(getDoScore()) {
     setParameters(expint);
     Initialise(numq);
   }
   setDerivatives();
   checkRead();
+}
+
+//calculates SASA neighbor list
+void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist, unsigned natoms)
+{
+  for(unsigned i = 0; i < natoms; ++i) {
+    if (LCPOparam[i].size()>0) {
+      for (unsigned j = 0; j < i; ++j) {
+        if (LCPOparam[j].size()>0) {
+          const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
+          double Delta_ij_mod = Delta_ij_vec.modulo()*10;
+          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
+          if(Delta_ij_mod < overlapD) {
+            Nlist.at(i).push_back (j);
+            Nlist.at(j).push_back (i);
+          }
+        }
+      }
+    }
+  }
+
+}
+
+//calculates SASA according to LCPO algorithm
+void SAXS::sasa_calculate(std::vector<bool> &solv_res)
+{
+  unsigned natoms = getNumberOfAtoms();
+  std::vector<std::vector<int> > Nlist(natoms);
+  calcNlist(Nlist, natoms);
+  std::vector <double> sasares(nres, 0.);
+
+  for(unsigned i = 0; i < natoms; ++i) {
+    if(LCPOparam[i].size()>1) {
+      if(LCPOparam[i][1]>0.0) {
+        std::vector<double> dAijdc_2t(3);
+        std::vector<double> dSASA_2_neigh_dc(3);
+        std::vector<double> ddij_di(3);
+        std::vector<double> ddik_di(3);
+        double Aij = 0.0;
+        double Aijk = 0.0;
+        double Ajk = 0.0;
+        double ri = LCPOparam[i][0];
+        double S1 = 4*M_PI*ri*ri;
+        std::vector <double> dAijdc_2(3, 0);
+        std::vector <double> dAijdc_4(3, 0);
+        for (unsigned j = 0; j < Nlist[i].size(); ++j) {
+          const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
+          double d_ij = d_ij_vec.modulo()*10;
+          double rj = LCPOparam[Nlist[i][j]][0];
+          double Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+          double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+          double dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+          ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
+          ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
+          ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+          double Ajkt = 0.0;
+          double Aikt = 0.0;
+          std::vector <double> dSASA_3_neigh_dc(3, 0.0);
+          std::vector <double> dSASA_4_neigh_dc(3, 0.0);
+          std::vector <double> dSASA_3_neigh_dc2(3, 0.0);
+          std::vector <double> dSASA_4_neigh_dc2(3, 0.0);
+          dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
+          dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
+          dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
+          dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
+          dAijdc_2t[0] = dAdd * ddij_di[0];
+          dAijdc_2t[1] = dAdd * ddij_di[1];
+          dAijdc_2t[2] = dAdd * ddij_di[2];
+          for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
+            if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+              const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
+              const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
+              double d_jk = d_jk_vec.modulo()*10;
+              double d_ik = d_ik_vec.modulo()*10;
+              double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
+              double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+              Ajkt += sjk;
+              Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+              dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+              ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
+              ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
+              ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
+              dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
+              dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
+              dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
+              dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+              dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
+              dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
+              dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
+              dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
+              dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
+              dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
+            }
+          }
+          dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
+          dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
+          dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
+          dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
+          dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
+          dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
+          dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
+          dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
+          dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
+          Aijk += (Aijt * Ajkt);
+          Aij += Aijt;
+          Ajk += Ajkt;
+          dAijdc_2[0] += dAijdc_2t[0];
+          dAijdc_2[1] += dAijdc_2t[1];
+          dAijdc_2[2] += dAijdc_2t[2];
+          dAijdc_4[0] += Ajkt*dAijdc_2t[0];
+          dAijdc_4[1] += Ajkt*dAijdc_2t[1];
+          dAijdc_4[2] += Ajkt*dAijdc_2t[2];
+        }
+        double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+        if (sasai > 0 ) {
+          sasares[residue_atom[i]-1] += sasai/100.;
+        }
+      }
+    }
+  }
+  for(unsigned i=0; i<nres; ++i) {
+    if(sasares[i]>1.) solv_res[i] = 1;
+    else solv_res[i] = 0;
+  }
 }
 
 void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
@@ -657,8 +728,7 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
         for (unsigned k=0; k<numq; ++k) {
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
-          double FFF;
-	        FFF = 2.*FF_value[i][k]*FF_value[j][k]; 
+          double FFF = 2.*FF_value[i][k]*FF_value[j][k];
           double tsq = std::sin(qdist)/qdist;
           double tcq = std::cos(qdist);
           double tmp = FFF*(tcq-tsq);
@@ -689,15 +759,11 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
 
   for (unsigned k=0; k<numq; ++k) {
     sum[k]+=FF_rank[k];
-  }
-
-  for (unsigned k=0; k<numq; ++k) {
     std::string num; Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
     val->set(sum[k]);
     if(getDoScore()) setCalcData(k, sum[k]);
   }
-
 }
 
 void SAXS::calculate()
@@ -715,74 +781,73 @@ void SAXS::calculate()
   // these are the derivatives particle,q
   std::vector<Vector> bd_deriv(numq*beads_size);
 
-  // here we do the mapping
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
+    // mapping
     unsigned atom_id = 0;
-    for(unsigned i=0;i<nres;++i) {
+    for(unsigned i=0; i<nres; ++i) {
       /* calculate center and derivatives */
       double sum_mass = 0.;
       Vector sum_pos = Vector(0,0,0);
-      for(unsigned j=0;j<atoms_per_bead[i];++j) {
+      for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
         aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
         sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
         sum_mass += atoms_masses[atom_id];
-        // Here I update the atom_id to stay sync'd with masses vector	
-	      atom_id++;
+        // Here I update the atom_id to stay sync'd with masses vector
+        atom_id++;
       }
       beads_pos[i] = sum_pos/sum_mass;
-      for(unsigned j=atom_id-atoms_per_bead[i];j<atom_id;++j) {
+      for(unsigned j=atom_id-atoms_per_bead[i]; j<atom_id; ++j) {
         aa_deriv[j] /= sum_mass;
       }
     }
+    // SASA
+    std::vector<bool> solv_res(nres, false);
+    if(getStep()%solv_stride == 0 || isFirstStep) {
+      isFirstStep = 0;
+      if(rho_corr!=rho) sasa_calculate(solv_res);
+      Iq0=0.;
+      for(unsigned i=0; i<nres; ++i) {
+        if(solv_res[i] == 1 ) {
+          Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_wat[i]-rho_corr*Iq0_mix[i]));
+        } else {
+          Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_wat[i]-rho*Iq0_mix[i]));
+        }
+      }
+      // Form Factors
+      for(unsigned k=0; k<numq; ++k) {
+        for(unsigned i=0; i<nres; ++i) {
+          if(!gpu) {
+            if(solv_res[i] == 0) { // buried
+              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
+            } else { // surface
+              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
+            }
+          } else {
+            if(solv_res[i] == 0) { // buried
+              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0);
+            } else { // surface
+              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0);
+            }
+          }
+        }
+      }
+      if(!gpu) {
+        for(unsigned k=0; k<numq; ++k) {
+          FF_rank[k]=0.;
+          for(unsigned i=0; i<nres; ++i) {
+            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+          }
+        }
+      }
+    }
+    // not ONEBEAD
   } else {
-    for(unsigned i=0;i<size;++i) {
+    for(unsigned i=0; i<size; ++i) {
       beads_pos[i] = getPosition(i);
     }
     aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
   }
-
-  // SASA 
- if(getStep()%solv_stride == 0 and onebead){
-    sasa_calculate();
-    Iq0=0.;
-    for(unsigned i=0; i<nres; ++i){
-        if(solv_res[i] == 1 ){
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_wat[i]-rho_corr*Iq0_mix[i]));
-        } else {
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_wat[i]-rho*Iq0_mix[i]));
-        } 
-    }
-  }
-
-	  if(onebead){
-      for (unsigned k=0;k<numq;++k) {
-	      for (unsigned i=0; i<nres; ++i) {
-          if(!gpu){
-            if(solv_res[i] == 0){ // buried
-              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
-            } else { // surface
-                FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
-            }
-          } else {
-            if(solv_res[i] == 0){ // buried
-              FFf_value[k][i] = std::sqrt(FFf_value_vacuum[atoi[i]][k] + rho*rho*FFf_value_water[atoi[i]][k] - rho*FFf_value_mixed[atoi[i]][k])/Iq0;
-            } else { // surface
-              FFf_value[k][i] = std::sqrt(FFf_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FFf_value_water[atoi[i]][k] - rho_corr*FFf_value_mixed[atoi[i]][k])/Iq0;
-            }
-		      }	
-	      }
-	    }
-	    if(!gpu){
-	      for (unsigned k=0;k<numq;++k) {
-	        FF_rank[k]=0.;
-	        for (unsigned i=0; i<nres; ++i) {
-                  FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
-	        }
-	      }
-	    }
-	  }  
-
 
   if(gpu) calculate_gpu(beads_pos, bd_deriv);
   else calculate_cpu(beads_pos, bd_deriv);
@@ -792,7 +857,7 @@ void SAXS::calculate()
     double score = getScore();
     setScore(score);
   }
-  
+
   for (unsigned k=0; k<numq; ++k) {
     const unsigned kdx=k*beads_size;
     Tensor deriv_box;
@@ -803,21 +868,21 @@ void SAXS::calculate()
 
       for(unsigned i=0; i<beads_size; ++i) {
         setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-				                                   aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-					                                 aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+                                           aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
         deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                                                  aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                                                  aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+                            aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                            aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
       }
     } else {
       val=getPntrToComponent("score");
       for(unsigned i=0; i<beads_size; ++i) {
         setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-				                                   aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-					                                 aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+                                           aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
         deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                                  aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                                  aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+                            aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                            aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
       }
     }
     setBoxDerivatives(val, -deriv_box);
@@ -829,27 +894,26 @@ void SAXS::update() {
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms){
+void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // RC: Here we assume that we are with a continuous sequence; maybe we can extend it to
     // discontinuous ones.
-    first_res = moldat->getResidueNumber(atoms[0]);
-    first_atom = atoms[0].serial();
+    unsigned first_res = moldat->getResidueNumber(atoms[0]);
     nres = moldat->getResidueNumber(atoms[atoms.size()-1]) - moldat->getResidueNumber(atoms[0]) + 1;
     atoms_per_bead.resize(nres);
     atoms_masses.resize(atoms.size());
     residue_atom.resize(atoms.size());       //@MOD: add vector resize
-    sasares.resize(nres);
+    std::vector<std::vector < std::string > > AtomResidueName;
     AtomResidueName.resize(2);
 
     for(unsigned i=0; i<atoms.size(); ++i) {
       atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res]++;
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
-      AtomResidueName[0].push_back (Aname);
-      AtomResidueName[1].push_back (Rname);
+      AtomResidueName[0].push_back(Aname);
+      AtomResidueName[1].push_back(Rname);
       residue_atom[i] = moldat->getResidueNumber(atoms[i]);
       char type;
       char first = Aname.at(0);
@@ -872,11 +936,12 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms){
         error("Unknown element in mass extraction\n");
       }
     }
+    readLCPOparam(AtomResidueName, atoms.size());
   } else {
     error("MOLINFO DATA not found\n");
   }
 }
-   
+
 void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
 {
   parameter[ALA_BB].push_back(9.045);
@@ -2278,8 +2343,8 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
-{ 
+void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_wat)
+{
 
   parameter_wat[TRP].push_back(60737.602499880035);
   parameter_wat[TRP].push_back(423.3538118566174);
@@ -2360,7 +2425,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[ASP].push_back(54030.09941724955);
   parameter_wat[ASP].push_back(-41082.18951195315);
   parameter_wat[ASP].push_back(9822.373386145666);
-               
+
   parameter_wat[GLU].push_back(20443.28040011943);
   parameter_wat[GLU].push_back(-114.65211777672742);
   parameter_wat[GLU].push_back(-45705.214663013714);
@@ -2368,7 +2433,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[GLU].push_back(113297.5758640635);
   parameter_wat[GLU].push_back(-93999.34286496713);
   parameter_wat[GLU].push_back(24699.32337589366);
-               
+
   parameter_wat[ILE].push_back(27858.9481001196);
   parameter_wat[ILE].push_back(-160.09616278302047);
   parameter_wat[ILE].push_back(-61355.72128368112);
@@ -2376,7 +2441,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[ILE].push_back(142633.447400751);
   parameter_wat[ILE].push_back(-113273.08967375412);
   parameter_wat[ILE].push_back(28319.143796630207);
-               
+
   parameter_wat[LEU].push_back(27858.9481001196);
   parameter_wat[LEU].push_back(-164.2242755261456);
   parameter_wat[LEU].push_back(-62269.57074002018);
@@ -2392,7 +2457,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[MET].push_back(186430.47475376664);
   parameter_wat[MET].push_back(-165841.9203585998);
   parameter_wat[MET].push_back(46626.915939594095);
-               
+
   parameter_wat[ASN].push_back(14376.010000119086);
   parameter_wat[ASN].push_back(-67.13662191717502);
   parameter_wat[ASN].push_back(-28168.8210696101);
@@ -2400,7 +2465,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[ASN].push_back(56555.863212460674);
   parameter_wat[ASN].push_back(-42203.49388869736);
   parameter_wat[ASN].push_back(9840.827095275834);
-               
+
   parameter_wat[PRO].push_back(16866.21690011945);
   parameter_wat[PRO].push_back(-77.79313454249083);
   parameter_wat[PRO].push_back(-32625.357427339673);
@@ -2408,7 +2473,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[PRO].push_back(65875.36925812009);
   parameter_wat[PRO].push_back(-49499.88311947784);
   parameter_wat[PRO].push_back(11656.375656878794);
-               
+
   parameter_wat[GLN].push_back(21503.289600119013);
   parameter_wat[GLN].push_back(-130.80754689004655);
   parameter_wat[GLN].push_back(-49582.982827439504);
@@ -2424,7 +2489,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[SER].push_back(23773.483013633984);
   parameter_wat[SER].push_back(-15717.798552926966);
   parameter_wat[SER].push_back(3130.6799238799476);
-               
+
   parameter_wat[THR].push_back(15020.9536001194);
   parameter_wat[THR].push_back(-59.886795759067695);
   parameter_wat[THR].push_back(-27450.363696477114);
@@ -2432,7 +2497,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[THR].push_back(48176.41855470643);
   parameter_wat[THR].push_back(-33484.54045901642);
   parameter_wat[THR].push_back(7115.493498450939);
-               
+
   parameter_wat[VAL].push_back(19647.62890011937);
   parameter_wat[VAL].push_back(-90.37805699411572);
   parameter_wat[VAL].push_back(-38295.814997790214);
@@ -2440,7 +2505,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[VAL].push_back(74170.4723318485);
   parameter_wat[VAL].push_back(-54051.48501366292);
   parameter_wat[VAL].push_back(12214.226839424213);
-               
+
   parameter_wat[ALA].push_back(7515.156100119268);
   parameter_wat[ALA].push_back(-19.745812003651533);
   parameter_wat[ALA].push_back(-11691.3749145515);
@@ -2456,7 +2521,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_wat[GLY].push_back(5761.026162132836);
   parameter_wat[GLY].push_back(-3312.0647071906815);
   parameter_wat[GLY].push_back(531.6151440835663);
-  
+
   parameter_mix[TRP].push_back(48294.011756881504);
   parameter_mix[TRP].push_back(94.79679625134271);
   parameter_mix[TRP].push_back(-162545.8333320417);
@@ -2480,7 +2545,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[PHE].push_back(276747.9437420169);
   parameter_mix[PHE].push_back(-262851.9318112437);
   parameter_mix[PHE].push_back(78470.28300750244);
-               
+
   parameter_mix[HIS].push_back(21779.124723299235);
   parameter_mix[HIS].push_back(-125.81547101114079);
   parameter_mix[HIS].push_back(-51431.05749165743);
@@ -2496,7 +2561,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[HIP].push_back(158958.1762264112);
   parameter_mix[HIP].push_back(-141751.7818363874);
   parameter_mix[HIP].push_back(39997.324270833735);
-               
+
   parameter_mix[HIE].push_back(21779.124723299235);
   parameter_mix[HIE].push_back(-129.6552781944993);
   parameter_mix[HIE].push_back(-51660.59291329289);
@@ -2504,7 +2569,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[HIE].push_back(146341.19036764107);
   parameter_mix[HIE].push_back(-129182.83705926737);
   parameter_mix[HIE].push_back(36101.78353079046);
-               
+
   parameter_mix[ARG].push_back(31385.401600920548);
   parameter_mix[ARG].push_back(-107.823749853272);
   parameter_mix[ARG].push_back(-96081.57737897056);
@@ -2512,7 +2577,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[ARG].push_back(321119.58481540927);
   parameter_mix[ARG].push_back(-315674.66683333775);
   parameter_mix[ARG].push_back(96796.44214985141);
-               
+
   parameter_mix[LYS].push_back(25511.358126718373);
   parameter_mix[LYS].push_back(-95.24657818372829);
   parameter_mix[LYS].push_back(-72472.87199806623);
@@ -2528,7 +2593,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[CYS].push_back(23190.8240650359);
   parameter_mix[CYS].push_back(-14025.359913209422);
   parameter_mix[CYS].push_back(2432.996124564235);
-               
+
   parameter_mix[ASP].push_back(13713.858501879387);
   parameter_mix[ASP].push_back(-56.16981725896633);
   parameter_mix[ASP].push_back(-24467.359478081828);
@@ -2536,7 +2601,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[ASP].push_back(45409.799932497255);
   parameter_mix[ASP].push_back(-32675.494006878293);
   parameter_mix[ASP].push_back(7282.116459231734);
-               
+
   parameter_mix[GLU].push_back(19156.03660739948);
   parameter_mix[GLU].push_back(-112.77021473479914);
   parameter_mix[GLU].push_back(-40559.88365261396);
@@ -2544,7 +2609,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[GLU].push_back(97924.20440282047);
   parameter_mix[GLU].push_back(-78861.69840848455);
   parameter_mix[GLU].push_back(20003.69595126275);
-               
+
   parameter_mix[ILE].push_back(20693.062159179222);
   parameter_mix[ILE].push_back(-101.97290141036149);
   parameter_mix[ILE].push_back(-40831.78703482502);
@@ -2552,7 +2617,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[ILE].push_back(83296.23989690492);
   parameter_mix[ILE].push_back(-62017.47308548058);
   parameter_mix[ILE].push_back(14368.398225275843);
-               
+
   parameter_mix[LEU].push_back(20693.062159179222);
   parameter_mix[LEU].push_back(-111.80857619890668);
   parameter_mix[LEU].push_back(-42131.62507792151);
@@ -2560,7 +2625,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[LEU].push_back(91220.93610257414);
   parameter_mix[LEU].push_back(-69456.39325237977);
   parameter_mix[LEU].push_back(16496.74666112724);
-               
+
   parameter_mix[MET].push_back(22400.800002738917);
   parameter_mix[MET].push_back(-133.76891528562035);
   parameter_mix[MET].push_back(-50562.14461060515);
@@ -2568,7 +2633,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[MET].push_back(131078.39403549655);
   parameter_mix[MET].push_back(-110255.40033841228);
   parameter_mix[MET].push_back(29347.828056519662);
-               
+
   parameter_mix[ASN].push_back(14384.287416519466);
   parameter_mix[ASN].push_back(-54.368319093741725);
   parameter_mix[ASN].push_back(-25264.7008339227);
@@ -2576,7 +2641,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[ASN].push_back(43726.56856322167);
   parameter_mix[ASN].push_back(-30312.120416038917);
   parameter_mix[ASN].push_back(6426.928446443609);
-               
+
   parameter_mix[PRO].push_back(13503.79714565913);
   parameter_mix[PRO].push_back(-48.81691245595872);
   parameter_mix[PRO].push_back(-22749.678192064708);
@@ -2592,7 +2657,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[GLN].push_back(108716.8543788976);
   parameter_mix[GLN].push_back(-88501.68147616273);
   parameter_mix[GLN].push_back(22682.521341667303);
-               
+
   parameter_mix[SER].push_back(8813.67020471935);
   parameter_mix[SER].push_back(-19.037976334608356);
   parameter_mix[SER].push_back(-12699.254690509915);
@@ -2600,7 +2665,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[SER].push_back(15784.762074798347);
   parameter_mix[SER].push_back(-9235.432880294426);
   parameter_mix[SER].push_back(1509.3565114265857);
-               
+
   parameter_mix[THR].push_back(13233.997179639066);
   parameter_mix[THR].push_back(-37.56509776445388);
   parameter_mix[THR].push_back(-21203.56789307223);
@@ -2608,7 +2673,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[THR].push_back(30208.83306033092);
   parameter_mix[THR].push_back(-18848.577186687486);
   parameter_mix[THR].push_back(3411.913197678857);
-               
+
   parameter_mix[VAL].push_back(15135.438016299164);
   parameter_mix[VAL].push_back(-52.635094911968245);
   parameter_mix[VAL].push_back(-26030.01153963802);
@@ -2616,7 +2681,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[VAL].push_back(42022.56035826398);
   parameter_mix[VAL].push_back(-28010.86180138724);
   parameter_mix[VAL].push_back(5612.649276643284);
-               
+
   parameter_mix[ALA].push_back(6586.942863819189);
   parameter_mix[ALA].push_back(-10.500985041159272);
   parameter_mix[ALA].push_back(-8682.564064794862);
@@ -2624,15 +2689,15 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_mix[ALA].push_back(9157.822632690133);
   parameter_mix[ALA].push_back(-4869.150402902164);
   parameter_mix[ALA].push_back(660.7127436699247);
-               
+
   parameter_mix[GLY].push_back(3596.0718542192735);
   parameter_mix[GLY].push_back(-3.872148741667527);
   parameter_mix[GLY].push_back(-4049.533333393464);
   parameter_mix[GLY].push_back(-426.8550732879424);
   parameter_mix[GLY].push_back(3595.6814286066124);
   parameter_mix[GLY].push_back(-1755.3404133215586);
-  parameter_mix[GLY].push_back(199.02655960598142); 
-               
+  parameter_mix[GLY].push_back(199.02655960598142);
+
   parameter_vac[TRP].push_back(9599.949107129776);
   parameter_vac[TRP].push_back(-30.858609190810583);
   parameter_vac[TRP].push_back(-28551.048759771413);
@@ -2640,7 +2705,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[TRP].push_back(96031.95748027436);
   parameter_vac[TRP].push_back(-94814.69691650089);
   parameter_vac[TRP].push_back(29200.454883200917);
-               
+
   parameter_vac[TYR].push_back(7393.553846413058);
   parameter_vac[TYR].push_back(-47.23837907229961);
   parameter_vac[TYR].push_back(-18490.21435843763);
@@ -2664,7 +2729,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[HIS].push_back(29212.72548906728);
   parameter_vac[HIS].push_back(-24529.701112742892);
   parameter_vac[HIS].push_back(6495.940243992503);
-               
+
   parameter_vac[HIP].push_back(5325.791987063724);
   parameter_vac[HIP].push_back(-35.05625337809874);
   parameter_vac[HIP].push_back(-11441.518343889265);
@@ -2680,7 +2745,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[HIE].push_back(29107.17290177237);
   parameter_vac[HIE].push_back(-24328.802993028898);
   parameter_vac[HIE].push_back(6407.227555283756);
-               
+
   parameter_vac[ARG].push_back(7220.306892486492);
   parameter_vac[ARG].push_back(-45.02676906795456);
   parameter_vac[ARG].push_back(-20987.6312443252);
@@ -2688,7 +2753,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[ARG].push_back(74884.77524133732);
   parameter_vac[ARG].push_back(-72540.00466456635);
   parameter_vac[ARG].push_back(21959.97615859096);
-               
+
   parameter_vac[LYS].push_back(5038.613120729024);
   parameter_vac[LYS].push_back(-30.37838672252398);
   parameter_vac[LYS].push_back(-13422.897999177683);
@@ -2696,7 +2761,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[LYS].push_back(46835.63074102061);
   parameter_vac[LYS].push_back(-45089.04698246694);
   parameter_vac[LYS].push_back(13600.678970015228);
-               
+
   parameter_vac[CYS].push_back(2915.0458981763995);
   parameter_vac[CYS].push_back(-3.595827832254589);
   parameter_vac[CYS].push_back(-3592.4507607863125);
@@ -2712,7 +2777,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[ASP].push_back(9245.650898756234);
   parameter_vac[ASP].push_back(-6156.207160613609);
   parameter_vac[ASP].push_back(1218.5833934642021);
-               
+
   parameter_vac[GLU].push_back(4487.461543955492);
   parameter_vac[GLU].push_back(-27.373885533538896);
   parameter_vac[GLU].push_back(-8941.928757023);
@@ -2720,7 +2785,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[GLU].push_back(21083.486308601627);
   parameter_vac[GLU].push_back(-16307.701537949622);
   parameter_vac[GLU].push_back(3909.6886537322757);
-               
+
   parameter_vac[ILE].push_back(3842.5968201937767);
   parameter_vac[ILE].push_back(-13.4621492233332);
   parameter_vac[ILE].push_back(-6414.466724440508);
@@ -2728,7 +2793,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[ILE].push_back(10618.037884226278);
   parameter_vac[ILE].push_back(-7154.041016270302);
   parameter_vac[ILE].push_back(1452.4947569272492);
-               
+
   parameter_vac[LEU].push_back(3842.5968201937767);
   parameter_vac[LEU].push_back(-15.681457814419176);
   parameter_vac[LEU].push_back(-6771.789004604622);
@@ -2736,7 +2801,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[LEU].push_back(12139.114106034092);
   parameter_vac[LEU].push_back(-8383.262864959117);
   parameter_vac[LEU].push_back(1747.4810835193168);
-               
+
   parameter_vac[MET].push_back(4898.51289296739);
   parameter_vac[MET].push_back(-25.18325080293945);
   parameter_vac[MET].push_back(-9467.48983449123);
@@ -2744,7 +2809,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[MET].push_back(20961.877825984124);
   parameter_vac[MET].push_back(-16179.791857572387);
   parameter_vac[MET].push_back(3909.4934716887474);
-               
+
   parameter_vac[ASN].push_back(3598.142399811549);
   parameter_vac[ASN].push_back(-10.193740412650593);
   parameter_vac[ASN].push_back(-5570.433196260574);
@@ -2752,7 +2817,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[ASN].push_back(8108.239221259332);
   parameter_vac[ASN].push_back(-5084.052169945779);
   parameter_vac[ASN].push_back(922.5084812557318);
-               
+
   parameter_vac[PRO].push_back(2702.925890807491);
   parameter_vac[PRO].push_back(-6.344885973773661);
   parameter_vac[PRO].push_back(-3723.804313180885);
@@ -2760,7 +2825,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[PRO].push_back(5083.307369521012);
   parameter_vac[PRO].push_back(-3153.6282584491305);
   parameter_vac[PRO].push_back(568.1054247577542);
-               
+
   parameter_vac[GLN].push_back(4621.773132292558);
   parameter_vac[GLN].push_back(-29.611357037564705);
   parameter_vac[GLN].push_back(-9427.140597349113);
@@ -2776,7 +2841,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[SER].push_back(2385.5343165459967);
   parameter_vac[SER].push_back(-1156.9360917654067);
   parameter_vac[SER].push_back(122.17917481954323);
-               
+
   parameter_vac[THR].push_back(2914.906170715884);
   parameter_vac[THR].push_back(-4.775628956452242);
   parameter_vac[THR].push_back(-3871.750382748967);
@@ -2784,7 +2849,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[THR].push_back(4136.791177465494);
   parameter_vac[THR].push_back(-2169.9772449584666);
   parameter_vac[THR].push_back(279.42678356526335);
-               
+
   parameter_vac[VAL].push_back(2914.8744247581994);
   parameter_vac[VAL].push_back(-6.0787188044112375);
   parameter_vac[VAL].push_back(-4122.984089016234);
@@ -2792,7 +2857,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[VAL].push_back(5048.30676770002);
   parameter_vac[VAL].push_back(-2909.0035370830888);
   parameter_vac[VAL].push_back(460.72939731819946);
-               
+
   parameter_vac[ALA].push_back(1443.3438146824442);
   parameter_vac[ALA].push_back(-1.079460116756403);
   parameter_vac[ALA].push_back(-1483.196871651843);
@@ -2800,7 +2865,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
   parameter_vac[ALA].push_back(1109.6163998427003);
   parameter_vac[ALA].push_back(-462.4259514425249);
   parameter_vac[ALA].push_back(28.21768859752687);
-               
+
   parameter_vac[GLY].push_back(899.5356000422943);
   parameter_vac[GLY].push_back(-0.4467373920268132);
   parameter_vac[GLY].push_back(-765.5891570102108);
@@ -2839,7 +2904,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIE;
       } else if(Rname=="HIP") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
-      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
       } else if(Rname=="HSD") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
       } else if(Rname=="HSE") {
@@ -2849,7 +2914,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms)
       } else if(Rname=="ILE") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ILE;
       } else if(Rname=="LEU") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LEU;        
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LEU;
       } else if(Rname=="LYS") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LYS;
       } else if(Rname=="MET") {
@@ -3009,7 +3074,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ALA_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ALA_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ALA_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["ASP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["ASP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3022,7 +3087,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["ASN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["ASN_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3035,7 +3100,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["ARG_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ARG_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["ARG_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3051,7 +3116,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ARG_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ARG_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ARG_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["CYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["CYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["CYS_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3062,7 +3127,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["CYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["GLU_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3076,7 +3141,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["GLN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["GLN_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3099,7 +3164,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLY_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLY_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLY_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["HIS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["HIS_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3138,7 +3203,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["HID_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HID_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["HID_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3164,7 +3229,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSD_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSD_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSD_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["HIP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["HIP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3190,7 +3255,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["ILE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ILE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["ILE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3204,7 +3269,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ILE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ILE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ILE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["LEU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["LEU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["LEU_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3231,7 +3296,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["LYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["LYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["LYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["MET_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["MET_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["MET_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3244,7 +3309,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["MET_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["MET_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["MET_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["PHE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PHE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["PHE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3260,7 +3325,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PHE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PHE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PHE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["PRO_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PRO_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["PRO_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3272,7 +3337,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PRO_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PRO_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PRO_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["SER_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["SER_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["SER_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3283,7 +3348,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["SER_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["SER_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["SER_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["THR_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["THR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["THR_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3295,7 +3360,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["THR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["THR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["THR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["TRP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["TRP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["TRP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3314,7 +3379,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TRP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TRP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TRP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["TYR_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["TYR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["TYR_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3331,7 +3396,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TYR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TYR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TYR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
-  
+
   lcpomap["VAL_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["VAL_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
   lcpomap["VAL_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
@@ -3347,12 +3412,10 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
 }
 
 //assigns LCPO parameters to each atom reading from database
-void SAXS::readLCPOparam() {
-  rs = 0.14;
-
-  for(unsigned i=0; i<natoms; ++i) {
-    LCPOparam[i].clear();
-  }
+void SAXS::readLCPOparam(std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
+{
+  LCPOparam.resize(natoms);
+  double rs = 0.14;
 
   std::map<std::string, std::vector<double> > lcpomap;
   lcpomap = setupLCPOparam();
@@ -3363,11 +3426,11 @@ void SAXS::readLCPOparam() {
     if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
       identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
       LCPOparamVector = lcpomap.at(identifier);
-      LCPOparam[i].push_back (LCPOparamVector[0]+rs*10);
-      LCPOparam[i].push_back (LCPOparamVector[1]);
-      LCPOparam[i].push_back (LCPOparamVector[2]);
-      LCPOparam[i].push_back (LCPOparamVector[3]);
-      LCPOparam[i].push_back (LCPOparamVector[4]);
+      LCPOparam[i].push_back(LCPOparamVector[0]+rs*10);
+      LCPOparam[i].push_back(LCPOparamVector[1]);
+      LCPOparam[i].push_back(LCPOparamVector[2]);
+      LCPOparam[i].push_back(LCPOparamVector[3]);
+      LCPOparam[i].push_back(LCPOparamVector[4]);
     }
   }
 
@@ -3396,150 +3459,7 @@ void SAXS::readLCPOparam() {
 }
 
 
-
-//calculates neighbor list
-void SAXS::calcNlist() {
-  makeWhole();
-
-  for(unsigned i = 0; i < natoms; ++i) {
-    Nlist[i].clear();
-  }
-
-  for(unsigned i = 0; i < natoms; ++i) {
-    if (LCPOparam[i].size()>0) {
-      for (unsigned j = 0; j < i; ++j) {
-        if (LCPOparam[j].size()>0) {
-          const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
-          double Delta_ij_mod = Delta_ij_vec.modulo()*10;
-          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
-          if (Delta_ij_mod < overlapD) {
-            Nlist.at(i).push_back (j);
-            Nlist.at(j).push_back (i);
-          }
-        }
-      }
-    }
-  }
-}
-
-
-//calculates SASA according to LCPO algorithm
-void SAXS::sasa_calculate() {
-
-  natoms = getNumberOfAtoms();
-  LCPOparam.resize(natoms);
-  MaxSurf.resize(natoms);
-  Nlist.resize(natoms);
-
-  readLCPOparam();
-  
-  calcNlist();
-  
-  double S1, Aij, Ajk, Aijk, Aijt, Ajkt, Aikt;
-  double dAdd;
-  std::vector <double> dAijdc_2t(3);
-  std::vector <double> dSASA_2_neigh_dc(3);
-  std::vector <double> ddij_di(3);
-  std::vector <double> ddik_di(3);
-  AtomNumber dummy;
-
-  // Reset sasares
-  for(unsigned i=0; i<nres; ++i){
-    sasares[i] = 0.;
-  }
-
-for(unsigned i = 0; i < natoms; ++i) {
-  if ( LCPOparam[i].size()>1) {
-    if (LCPOparam[i][1]>0.0) {
-      Aij = 0.0;
-      Aijk = 0.0;
-      Ajk = 0.0;
-      double ri = LCPOparam[i][0];
-      S1 = 4*M_PI*ri*ri;
-      std::vector <double> dAijdc_2(3, 0);
-      std::vector <double> dAijdc_4(3, 0);
-      for (unsigned j = 0; j < Nlist[i].size(); ++j) {
-        const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-        double d_ij = d_ij_vec.modulo()*10;
-        double rj = LCPOparam[Nlist[i][j]][0];
-        Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-        double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
-        dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
-        ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
-        ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-        ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
-        Ajkt = 0.0;
-        Aikt = 0.0;
-        std::vector <double> dSASA_3_neigh_dc(3, 0.0);
-        std::vector <double> dSASA_4_neigh_dc(3, 0.0);
-        std::vector <double> dSASA_3_neigh_dc2(3, 0.0);
-        std::vector <double> dSASA_4_neigh_dc2(3, 0.0);
-        dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
-        dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
-        dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
-        dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
-        dAijdc_2t[0] = dAdd * ddij_di[0];
-        dAijdc_2t[1] = dAdd * ddij_di[1];
-        dAijdc_2t[2] = dAdd * ddij_di[2];
-        for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
-          if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
-            const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
-            const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
-            double d_jk = d_jk_vec.modulo()*10;
-            double d_ik = d_ik_vec.modulo()*10;
-            double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-            double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
-            Ajkt += sjk;
-            Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
-            dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
-            ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
-            ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
-            ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
-            dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
-            dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
-            dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
-            dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
-            dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
-            dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
-            dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
-            dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
-            dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
-            dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
-          }
-        }
-        dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
-        dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
-        dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
-        dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
-        dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
-        dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
-        dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
-        dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
-        dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
-        Aijk += (Aijt * Ajkt);
-        Aij += Aijt;
-        Ajk += Ajkt;
-        dAijdc_2[0] += dAijdc_2t[0];
-        dAijdc_2[1] += dAijdc_2t[1];
-        dAijdc_2[2] += dAijdc_2t[2];
-        dAijdc_4[0] += Ajkt*dAijdc_2t[0];
-        dAijdc_4[1] += Ajkt*dAijdc_2t[1];
-        dAijdc_4[2] += Ajkt*dAijdc_2t[2];
-      }
-      double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
-      if (sasai > 0 ) {
-        sasares[residue_atom[i]-1] += sasai/100.;
-      }
-    }
-  }
-}
-for(unsigned i=0; i<nres; ++i){
-  if(sasares[i]>1.) solv_res[i] = 1;
-  else solv_res[i] = 0;
-}
-}
-
-}//namespace sasa
+}//namespace isdb
 }//namespace PLMD
 
 
