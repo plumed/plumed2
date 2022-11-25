@@ -65,7 +65,7 @@ if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities for a martini model are calculated. structure factors
+in the following example the SAXS intensities are calculated using the single bead per residue approximation. structure factors
 are obtained from the pdb file indicated in the MOLINFO.
 
 \plumedfile
@@ -74,8 +74,7 @@ MOLINFO STRUCTURE=template.pdb
 SAXS ...
 LABEL=SAXS
 ATOMS=1-355
-SCALEINT=3920000
-MARTINI
+ONEBEAD
 QVALUE1=0.02 EXPINT1=1.0902
 QVALUE2=0.05 EXPINT2=0.790632
 QVALUE3=0.08 EXPINT3=0.453808
@@ -140,9 +139,11 @@ private:
   std::vector<std::vector<double> > FF_value;
   std::vector<std::vector<float> >  FFf_value;
 
-  double rho, rho_corr, correction;
+  std::vector<std::vector<double> > LCPOparam;
+  std::vector<unsigned> residue_atom;
+
+  double rho, rho_corr, sasa_cutoff;
   unsigned solv_stride;
-  std::vector<std::vector<long double> > parameter;
   std::vector<double> Iq0_vac;
   std::vector<double> Iq0_wat;
   std::vector<double> Iq0_mix;
@@ -154,20 +155,16 @@ private:
   void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_wat);
   void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
-
-  std::vector<std::vector < double > > LCPOparam;
-  std::vector<unsigned > residue_atom ;
+  std::map<std::string, std::vector<double> > setupLCPOparam();
+  void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
+  void calcNlist(std::vector<std::vector<int> > &Nlist);
+  void sasa_calculate(std::vector<bool> &solv_res);
 
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
   void calculate() override;
   void update() override;
-
-  std::map<std::string, std::vector<double> > setupLCPOparam();
-  void readLCPOparam(std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
-  void calcNlist(std::vector<std::vector<int> > &Nlist, unsigned natoms);
-  void sasa_calculate(std::vector<bool> &solv_res);
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
@@ -182,12 +179,12 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
-
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
   keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors. (ONEBEAD only)");
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction.");
+  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
   keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate.");
   keys.addOutputComponent("q","default","the # SAXS of q");
@@ -230,10 +227,13 @@ SAXS::SAXS(const ActionOptions&ao):
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
+  if(atomistic) log.printf("  using atomistic structure factors\n");
   bool martini=false;
   parseFlag("MARTINI",martini);
+  if(martini) log.printf("  using Martini structure factors\n");
   onebead=false;
   parseFlag("ONEBEAD",onebead);
+  if(martini) log.printf("  using Single Bead structure factors\n");
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
@@ -258,22 +258,32 @@ SAXS::SAXS(const ActionOptions&ao):
 
   rho = 0.334;
   parse("SOLVDENS", rho);
+  log.printf("  Solvent density of %lf\n", rho);
 
   solv_stride = 100;
   parse("SOLVATION_STRIDE", solv_stride);
+  if(onebead) log.printf("  SASA calculated every %u steps\n", solv_stride);
 
-  correction = 0.00;
+  double correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
   if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
   rho_corr=rho-correction;
+  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", rho_corr);
+
+  sasa_cutoff = 1.0;
+  parse("SASA_CUTOFF", sasa_cutoff);
+  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0.");
 
   // Here we perform the preliminary mapping for onebead representation
   if(onebead) {
+    LCPOparam.resize(size);
     getOnebeadMapping(atoms);
-    size = nres;
-    Iq0_vac.resize(size);
-    Iq0_wat.resize(size);
-    Iq0_mix.resize(size);
+    Iq0_vac.resize(nres);
+    Iq0_wat.resize(nres);
+    Iq0_mix.resize(nres);
+    atoi.resize(nres);
+  } else {
+    atoi.resize(size);
   }
 
   Iq0=0;
@@ -281,7 +291,7 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp_vac;
   std::vector<std::vector<long double> > FF_tmp_mix;
   std::vector<std::vector<long double> > FF_tmp_wat;
-  atoi.resize(size);
+  std::vector<std::vector<long double> > parameter;
   if(!atomistic&&!martini&&!onebead) {
     //read in parameter std::vector
     parameter.resize(size);
@@ -324,7 +334,7 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
     }
-    for(unsigned i=0; i<size; ++i) {
+    for(unsigned i=0; i<nres; ++i) {
       Iq0_vac[i]=parameter_vac[atoi[i]][0];
       Iq0_mix[i]=parameter_mix[atoi[i]][0];
       Iq0_wat[i]=parameter_wat[atoi[i]][0];
@@ -341,7 +351,7 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
     }
-    for(unsigned i=0; i<size; ++i) Iq0+=parameter[atoi[i]][0];
+    for(unsigned i=0; i<nres; ++i) Iq0+=parameter[atoi[i]][0];
     Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
@@ -364,12 +374,14 @@ SAXS::SAXS(const ActionOptions&ao):
   if(!gpu) {
     FF_rank.resize(numq);
     unsigned n_atom_types;
-    FF_value.resize(size,std::vector<double>(numq));
     if(onebead) {
+      FF_value.resize(nres,std::vector<double>(numq));
       n_atom_types=NONEBEAD;
       FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
       FF_value_water.resize(n_atom_types,std::vector<double>(numq));
       FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+    } else {
+      FF_value.resize(size,std::vector<double>(numq));
     }
     for(unsigned k=0; k<numq; ++k) {
       if(!onebead) {
@@ -385,12 +397,14 @@ SAXS::SAXS(const ActionOptions&ao):
     }
   } else {
     unsigned n_atom_types;
-    FFf_value.resize(numq,std::vector<float>(size));
     if(onebead) {
+      FFf_value.resize(numq,std::vector<float>(nres));
       n_atom_types=NONEBEAD;
       FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
       FF_value_water.resize(n_atom_types,std::vector<double>(numq));
       FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+    } else {
+      FFf_value.resize(numq,std::vector<float>(size));
     }
     for(unsigned k=0; k<numq; ++k) {
       if(!onebead) {
@@ -465,18 +479,18 @@ SAXS::SAXS(const ActionOptions&ao):
 }
 
 //calculates SASA neighbor list
-void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist, unsigned natoms)
+void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 {
+  unsigned natoms = getNumberOfAtoms();
   for(unsigned i = 0; i < natoms; ++i) {
     if (LCPOparam[i].size()>0) {
       for (unsigned j = 0; j < i; ++j) {
         if (LCPOparam[j].size()>0) {
-          const Vector Delta_ij_vec = delta( getPosition(i), getPosition(j) );
-          double Delta_ij_mod = Delta_ij_vec.modulo()*10;
+          double Delta_ij_mod = modulo(delta(getPosition(i), getPosition(j)))*10.;
           double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
           if(Delta_ij_mod < overlapD) {
-            Nlist.at(i).push_back (j);
-            Nlist.at(j).push_back (i);
+            Nlist.at(i).push_back(j);
+            Nlist.at(j).push_back(i);
           }
         }
       }
@@ -490,100 +504,43 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res)
 {
   unsigned natoms = getNumberOfAtoms();
   std::vector<std::vector<int> > Nlist(natoms);
-  calcNlist(Nlist, natoms);
-  std::vector <double> sasares(nres, 0.);
+  calcNlist(Nlist);
+  std::vector<double> sasares(nres, 0.);
 
   for(unsigned i = 0; i < natoms; ++i) {
     if(LCPOparam[i].size()>1) {
       if(LCPOparam[i][1]>0.0) {
-        std::vector<double> dAijdc_2t(3);
-        std::vector<double> dSASA_2_neigh_dc(3);
-        std::vector<double> ddij_di(3);
-        std::vector<double> ddik_di(3);
         double Aij = 0.0;
         double Aijk = 0.0;
         double Ajk = 0.0;
         double ri = LCPOparam[i][0];
-        double S1 = 4*M_PI*ri*ri;
-        std::vector <double> dAijdc_2(3, 0);
-        std::vector <double> dAijdc_4(3, 0);
+        double S1 = 4.*M_PI*ri*ri;
         for (unsigned j = 0; j < Nlist[i].size(); ++j) {
-          const Vector d_ij_vec = delta( getPosition(i), getPosition(Nlist[i][j]) );
-          double d_ij = d_ij_vec.modulo()*10;
+          double d_ij = modulo(delta( getPosition(i), getPosition(Nlist[i][j]) ))*10.;
           double rj = LCPOparam[Nlist[i][j]][0];
-          double Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-          double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
-          double dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
-          ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
-          ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
-          ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
+          double Aijt = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
           double Ajkt = 0.0;
-          double Aikt = 0.0;
-          std::vector <double> dSASA_3_neigh_dc(3, 0.0);
-          std::vector <double> dSASA_4_neigh_dc(3, 0.0);
-          std::vector <double> dSASA_3_neigh_dc2(3, 0.0);
-          std::vector <double> dSASA_4_neigh_dc2(3, 0.0);
-          dSASA_2_neigh_dc[0] = dAdd * ddij_di[0];
-          dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
-          dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
-          dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
-          dAijdc_2t[0] = dAdd * ddij_di[0];
-          dAijdc_2t[1] = dAdd * ddij_di[1];
-          dAijdc_2t[2] = dAdd * ddij_di[2];
           for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
             if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
-              const Vector d_jk_vec = delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) );
-              const Vector d_ik_vec = delta( getPosition(i), getPosition(Nlist[Nlist[i][j]][k]) );
-              double d_jk = d_jk_vec.modulo()*10;
-              double d_ik = d_ik_vec.modulo()*10;
+              double d_jk = modulo(delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) ))*10.;
               double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-              double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+              double sjk =  (2.*M_PI*rj*(rj-d_jk/2.-((rj*rj-rk*rk)/(2.*d_jk))));
               Ajkt += sjk;
-              Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
-              dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
-              ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
-              ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
-              ddik_di[2] = -10*(getPosition(Nlist[Nlist[i][j]][k])[2]-getPosition(i)[2])/d_ik;
-              dSASA_3_neigh_dc[0] += dAdd*ddik_di[0];
-              dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
-              dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
-              dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
-              dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
-              dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
-              dSASA_3_neigh_dc2[2] += dAdd*ddik_di[2];
-              dSASA_4_neigh_dc2[0] += sjk*dAdd*ddik_di[0];
-              dSASA_4_neigh_dc2[1] += sjk*dAdd*ddik_di[1];
-              dSASA_4_neigh_dc2[2] += sjk*dAdd*ddik_di[2];
             }
           }
-          dSASA_4_neigh_dc[0] = sji*dSASA_3_neigh_dc[0] + dSASA_4_neigh_dc2[0];
-          dSASA_4_neigh_dc[1] = sji*dSASA_3_neigh_dc[1] + dSASA_4_neigh_dc2[1];
-          dSASA_4_neigh_dc[2] = sji*dSASA_3_neigh_dc[2] + dSASA_4_neigh_dc2[2];
-          dSASA_3_neigh_dc[0] += dSASA_3_neigh_dc2[0];
-          dSASA_3_neigh_dc[1] += dSASA_3_neigh_dc2[1];
-          dSASA_3_neigh_dc[2] += dSASA_3_neigh_dc2[2];
-          dSASA_4_neigh_dc[0] += dSASA_2_neigh_dc[0] * Aikt;
-          dSASA_4_neigh_dc[1] += dSASA_2_neigh_dc[1] * Aikt;
-          dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
           Aijk += (Aijt * Ajkt);
           Aij += Aijt;
           Ajk += Ajkt;
-          dAijdc_2[0] += dAijdc_2t[0];
-          dAijdc_2[1] += dAijdc_2t[1];
-          dAijdc_2[2] += dAijdc_2t[2];
-          dAijdc_4[0] += Ajkt*dAijdc_2t[0];
-          dAijdc_4[1] += Ajkt*dAijdc_2t[1];
-          dAijdc_4[2] += Ajkt*dAijdc_2t[2];
         }
         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
         if (sasai > 0 ) {
-          sasares[residue_atom[i]-1] += sasai/100.;
+          sasares[residue_atom[i]] += sasai/100.;
         }
       }
     }
   }
   for(unsigned i=0; i<nres; ++i) {
-    if(sasares[i]>1.) solv_res[i] = 1;
+    if(sasares[i]>sasa_cutoff) solv_res[i] = 1;
     else solv_res[i] = 0;
   }
 }
@@ -802,7 +759,7 @@ void SAXS::calculate()
       }
     }
     // SASA
-    std::vector<bool> solv_res(nres, false);
+    std::vector<bool> solv_res(nres, 0);
     if(getStep()%solv_stride == 0 || isFirstStep) {
       isFirstStep = 0;
       if(rho_corr!=rho) sasa_calculate(solv_res);
@@ -905,8 +862,10 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
     atoms_per_bead.resize(nres);
     atoms_masses.resize(atoms.size());
     residue_atom.resize(atoms.size());       //@MOD: add vector resize
-    std::vector<std::vector < std::string > > AtomResidueName;
+    std::vector<std::vector<std::string> > AtomResidueName;
     AtomResidueName.resize(2);
+
+    log.printf("  Onebead residue mapping on %u residues\n", nres);
 
     for(unsigned i=0; i<atoms.size(); ++i) {
       atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res]++;
@@ -914,7 +873,7 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
       std::string Rname = moldat->getResidueName(atoms[i]);
       AtomResidueName[0].push_back(Aname);
       AtomResidueName[1].push_back(Rname);
-      residue_atom[i] = moldat->getResidueNumber(atoms[i]);
+      residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res;
       char type;
       char first = Aname.at(0);
 
@@ -2876,7 +2835,6 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     unsigned init_resnum = moldat -> getResidueNumber(atoms[0]);
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -3047,18 +3005,6 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
 
   return Iq0;
 }
-
-
-template <class Container>
-void split(const std::string& str, Container& cont)
-{
-  std::istringstream iss(str);
-  std::copy(std::istream_iterator<std::string>(iss),
-            std::istream_iterator<std::string>(),
-            std::back_inserter(cont));
-}
-
-
 
 std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   std::map<std::string, std::vector<double> > lcpomap;
@@ -3408,25 +3354,22 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["VAL_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["VAL_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["VAL_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
   return lcpomap;
 }
 
 //assigns LCPO parameters to each atom reading from database
-void SAXS::readLCPOparam(std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
+void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
 {
-  LCPOparam.resize(natoms);
-  double rs = 0.14;
+  std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
 
-  std::map<std::string, std::vector<double> > lcpomap;
-  lcpomap = setupLCPOparam();
-  std::vector<double> LCPOparamVector;
-  std::string identifier;
-  for(unsigned i=0; i<natoms; ++i) {
-
+  for(unsigned i=0; i<natoms; ++i)
+  {
     if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
-      identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
-      LCPOparamVector = lcpomap.at(identifier);
-      LCPOparam[i].push_back(LCPOparamVector[0]+rs*10);
+      std::string identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
+      std::vector<double> LCPOparamVector = lcpomap.at(identifier);
+      double rs = 0.14;
+      LCPOparam[i].push_back(LCPOparamVector[0]+rs*10.);
       LCPOparam[i].push_back(LCPOparamVector[1]);
       LCPOparam[i].push_back(LCPOparamVector[2]);
       LCPOparam[i].push_back(LCPOparamVector[3]);
