@@ -277,9 +277,9 @@ SAXS::SAXS(const ActionOptions&ao):
   parse("SCALEINT",tmp_scale_int);
 
   if(tmp_scale_int!=1) scale_int /= tmp_scale_int;
-  else {
-    if(exp) scale_int /= expint[0];
-  }
+  //else {
+  //  if(exp) scale_int /= expint[0];
+  //}
 
   if(!gpu) {
     FF_rank.resize(numq);
