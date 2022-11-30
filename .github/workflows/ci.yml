@@ -213,7 +213,7 @@ jobs:
   fedora36:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker fedora36
@@ -222,7 +222,7 @@ jobs:
   rocky8:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker rocky8
