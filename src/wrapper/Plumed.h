@@ -937,10 +937,18 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   }
 
   /* interpret optional arguments */
-  options=(void*const*)opt;
-  if(options) while(*options) {
+  if(opt) {
+    options=(void*const*)opt;
+    while(*options) {
       /* c: error code */
-      if(*((const char*)*options)=='c' && *(options+1)) error->error_code=*((const int*)*(options+1));
+      if(*((const char*)*options)=='c' && *(options+1)) {
+        error->error_code=*((const int*)*(options+1));
+        break;
+      }
+      options+=2;
+    }
+    options=(void*const*)opt;
+    while(*options) {
       /* n: nested exception */
       if(*((const char*)*options)=='n' && *(options+1)) {
         /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
@@ -949,9 +957,11 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
         if(error->nested) plumed_error_init((plumed_error*)error->nested);
         /* plumed will make sure to only use this if it is not null */
         *(void**)*(options+1)=error->nested;
+        break;
       }
       options+=2;
     }
+  }
 }
 
 /** \relates plumed

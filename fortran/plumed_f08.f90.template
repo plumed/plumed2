@@ -237,6 +237,7 @@ module plumed_f08_module
                call C_F_pointer(opt(i+1),error_nested)
                allocate(error%nested)
                error_nested=c_loc(error%nested)
+               exit ! make sure only the first "n" pointer is used
              endif
            endif
          enddo
