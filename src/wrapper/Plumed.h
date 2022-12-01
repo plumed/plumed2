@@ -836,8 +836,14 @@ typedef struct {
   }
 \endverbatim
 
-  The layout of this structure is subject to change, and functions manipulating it
-  are defined as inline/static functions.
+  The layout of this structure is subject to change, thus all the functions manipulating it
+  are defined as inline/static functions. In the future, we might reach some form
+  of ABI stability, and these functions might be moved below to the implementation
+  file.
+
+  Notice that there is a macro plumed_error() defined in the PLUMED source code
+  (at tools/Exception.h). There is no conflict with this type since C preprocessor
+  distinguishes macros and function-like macros.
 */
 typedef struct plumed_error {
   /** code used for translating messages */
@@ -1663,7 +1669,9 @@ private:
   */
   template<typename F>
   __PLUMED_WRAPPER_CXX_NORETURN static void exception_dispatch(plumed_error&h,F f) {
+    /* this is required to make sure h is finalized when leaving this function */
     finalize_plumed_error finalize(h);
+    /* grab the message */
     const char* msg=plumed_error_what(h);
     if(h.code==1) f(Plumed::Invalid(msg));
     /* logic errors */
@@ -1729,6 +1737,7 @@ private:
   }
 
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS
+  /** Internal class used by exception_dispatch. */
   class rethrow_nested {
   public:
     template<typename E>
@@ -1738,6 +1747,7 @@ private:
   };
 #endif
 
+  /** Internal class used by exception_dispatch. */
   class rethrow_not_nested {
   public:
     template<typename E>
