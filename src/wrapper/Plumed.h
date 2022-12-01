@@ -715,11 +715,16 @@
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstddef> /* size_t */
 #include <cstring> /* memcpy */
+#include <cstdio> /* fprintf */
+#include <cstdlib> /* abort */
+#include <cassert> /* assert */
 #else
 #include <stddef.h>
 #include <string.h>
-#include <stdio.h> /* FILE */
+#include <stdio.h> /* FILE and fprintf */
+#include <stdlib.h> /* abort */
 #include <limits.h> /* CHAR_MIN */
+#include <assert.h> /* assert */
 #endif
 
 /**
@@ -860,7 +865,7 @@ typedef struct plumed_error {
 
 /** Initialize error (for internal usage) */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-  if(!error) return;
+  assert(error);
   error->code=0;
   error->error_code=0;
   error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
@@ -885,6 +890,18 @@ __PLUMED_WRAPPER_STATIC_INLINE const char* plumed_error_what(plumed_error error)
   return error.what;
 }
 
+/** Set error to bad_alloc (for internal usage).
+    At variance with plumed_error_init, it also finalizes the error, possibly
+    deallocating any buffer.
+*/
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set_bad_alloc(plumed_error*error) {
+  assert(error);
+  plumed_error_finalize(*error);
+  plumed_error_init(error);
+  error->what="[msg erased due to allocation failure]";
+  error->code=11400;
+}
+
 /** Recursive merge (for internal usage) */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* error,char*buffer,const char*join) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   if(error->nested) plumed_error_recursive_merge(error->nested,buffer,join);
@@ -896,10 +913,17 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* e
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   __PLUMED_WRAPPER_STD size_t len;
   __PLUMED_WRAPPER_STD size_t len_join;
+  /* The is temporarily holding the new message */
   char* new_buffer;
+  /* This is the string used to concatenate messages */
   const char* join="\n\nThe above exception was the direct cause of the following exception:\n";
+  /* This is used to iterate over the linked list of nested exceptions */
   plumed_error*e;
+
+  /* If exception is not nested, nothing to do */
   if(!error->nested) return;
+
+  /* Accumulate the total length of the concatenated message */
   len_join=__PLUMED_WRAPPER_STD strlen(join);
   e=error;
   len=__PLUMED_WRAPPER_STD strlen(plumed_error_what(*e));
@@ -907,20 +931,42 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
     e=e->nested;
     len+=len_join+__PLUMED_WRAPPER_STD strlen(plumed_error_what(*e));
   }
+
+  /* Allocate the new message */
   new_buffer=(char*)plumed_malloc(len+1);
   if(new_buffer) {
+    /* If allocation was successful, merge the messages */
     new_buffer[0]='\0';
-    if(error->nested) plumed_error_recursive_merge(error->nested,new_buffer,join);
+    /* Notice that we have a forward linked list but we need to go through that in backward order
+       (inner to outer). To do that without allocating an additional array, we use a recursive
+       function.
+    */
+    assert(error->nested);
+    plumed_error_recursive_merge(error->nested,new_buffer,join);
     __PLUMED_WRAPPER_STD strcat(new_buffer,plumed_error_what(*error));
-    error->what=new_buffer;
-  } else {
-    error->what="[msg erased due to allocation failure]";
   }
+  error->what=new_buffer;
+
+  /* Deallocate the previous message */
   if(error->what_buffer) plumed_free(error->what_buffer);
   error->what_buffer=new_buffer;
+
+  /* Finalize the chain of nested exceptions */
   plumed_error_finalize(*error->nested);
   plumed_free(error->nested);
   error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
+
+  if(!error->what) {
+    /* If allocation was not successful, reset to bad_alloc */
+    plumed_error_set_bad_alloc(error);
+  }
+}
+
+/** Rethrow error (calling abort) */
+__PLUMED_WRAPPER_CXX_NORETURN __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_rethrow(plumed_error h) {
+  if(h.nested) plumed_error_merge_with_nested(&h);
+  __PLUMED_WRAPPER_STD fprintf(stderr,"Terminate due to exception. Code: %d\n%s\n",h.code,plumed_error_what(h));
+  __PLUMED_WRAPPER_STD abort();
 }
 
 /** Callback (for internal usage) */
@@ -936,11 +982,12 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   len=__PLUMED_WRAPPER_STD strlen(what);
   error->what_buffer=(char*) plumed_malloc(len+1);
   if(!error->what_buffer) {
-    error->what="[msg erased due to allocation failure]";
-  } else {
-    __PLUMED_WRAPPER_STD strncpy(error->what_buffer,what,len+1);
-    error->what=error->what_buffer;
+    plumed_error_set_bad_alloc(error);
+    return;
   }
+
+  __PLUMED_WRAPPER_STD strncpy(error->what_buffer,what,len+1);
+  error->what=error->what_buffer;
 
   /* interpret optional arguments */
   if(opt) {
@@ -959,8 +1006,12 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
       if(*((const char*)*options)=='n' && *(options+1)) {
         /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
         error->nested=(plumed_error*) plumed_malloc(sizeof(plumed_error));
-        /* this is if malloc does not fail */
-        if(error->nested) plumed_error_init((plumed_error*)error->nested);
+        /* this is if malloc fails */
+        if(!error->nested) {
+          plumed_error_set_bad_alloc(error);
+          break;
+        }
+        plumed_error_init((plumed_error*)error->nested);
         /* plumed will make sure to only use this if it is not null */
         *(void**)*(options+1)=error->nested;
         break;
@@ -1586,14 +1637,12 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <cstdlib> /* NULL getenv */
 #include <cstddef> /* nullptr_t */
 #include <cstring> /* strncat strlen */
-#include <cstdio> /* fprintf */
 #include <cassert> /* assert */
 #include <climits> /* CHAR_MIN */
 #else
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <assert.h>
 #include <limits.h>
 #endif
@@ -1756,6 +1805,7 @@ private:
     }
   };
 
+  /** Internal class to simplify plumed_error finalization */
   class finalize_plumed_error {
     plumed_error&e;
     finalize_plumed_error(const finalize_plumed_error&); //not implemented
@@ -1775,24 +1825,46 @@ private:
     In order to do so, we start throwing from the first exception that was originally thrown
     and recursively throw the others using throw_with_nested.
 
-    plumed_error h is finalized at exit, to avoid memory leaks
+    plumed_error h is finalized at exit by the exception_dispatch function, to avoid memory leaks
   */
   __PLUMED_WRAPPER_CXX_NORETURN static void rethrow(plumed_error&h) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS
-    if(h.nested) {
-      try {
-        rethrow(*h.nested); /* recursive throw */
-      } catch(...) {
-        exception_dispatch(h,rethrow_nested());
-      }
+    /*
+      When using C++11 nested exceptions, we need to rethrow recursively
+    */
+    try {
+      if(h.nested) rethrow(*h.nested); /* recursive throw */
+    } catch(...) {
+      exception_dispatch(h,rethrow_nested());
     }
-#else
-    plumed_error_merge_with_nested(&h);
-#endif
     exception_dispatch(h,rethrow_not_nested());
+#else
+    /*
+      When using C++<11 exceptions, we merge the message and then throw the resulting exception
+    */
+    if(h.nested) plumed_error_merge_with_nested(&h);
+    exception_dispatch(h,rethrow_not_nested());
+#endif
   }
 
 public:
+  /**
+    This is a tool to rethrow an error as an exception and finalize the error.
+
+    In practice, this makes it possible to write a code like this:
+    ```
+    Plumed p;
+    plumed_error e;
+    // store error in e if something wrong happes
+    // notice that Plumed (C++) is implicitly converted to plumed (C) when calling plumed_cmd
+    plumed_cmd(p,"init",&e);
+    // do other things here
+    // then throw the exception
+    if(e.code) plumed_error_rethrow(e);
+
+    It should be used through the macro plumed_error_rethrow.
+    ```
+  */
   __PLUMED_WRAPPER_CXX_NORETURN static void plumed_error_rethrow_cxx(plumed_error h) {
     rethrow(h);
   }
@@ -3016,7 +3088,7 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #include <cstdio>  /* fprintf */
 #include <cstring> /* memcpy strlen strncpy memcmp memmove strcmp memcpy */
 #include <cassert> /* assert */
-#include <cstdlib> /* getenv malloc free abort exit */
+#include <cstdlib> /* getenv malloc free abort */
 #include <climits> /* CHAR_BIT */
 #else
 #include <stdio.h>
@@ -3666,7 +3738,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
     if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
-    __PLUMED_WRAPPER_STD exit(1);
+    __PLUMED_WRAPPER_STD abort();
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
@@ -3726,7 +3798,7 @@ void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr safe) {
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
     if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
-    __PLUMED_WRAPPER_STD exit(1);
+    __PLUMED_WRAPPER_STD abort();
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
