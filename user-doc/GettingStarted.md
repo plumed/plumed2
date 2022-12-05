@@ -1,6 +1,10 @@
 \page Syntax Getting Started 
 
-To run PLUMED you need to provide one input file.  In this file you specify what it
+To run PLUMED you need to provide one input file. 
+
+You can follow the \ref masterclass-21-1 to learn more about it.
+
+In this input file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
 one or more collective variables, perhaps calculating a function of these CVs
  and then doing some analysis of values of your collective variables/functions or running
