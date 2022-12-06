@@ -53,30 +53,30 @@ namespace isdb {
 /*
 Calculates SAXS intensity.
 
-SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting 
+SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
 from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
 keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
 Alternatively to the atomistic representation, two types of coarse-grained mapping are available:
-- MARTINI (based on the 2.2 non-polarizable version). The user should provide a mapping file represented by a PDB 
+- MARTINI (based on the 2.2 non-polarizable version). The user should provide a mapping file represented by a PDB
 file that contains both the all-atom and MARTINI representations;
 - ONEBEAD. The user should provide an all-atom PDB file via MOLINFO before the SAXS instruction. In this case,
 PLUMED computes the COM of every residue and creates a virtual bead on which the SAXS calculations are performed.
 
-Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the SAXS intensity by 
-adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA 
+Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the SAXS intensity by
+adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA
 (computed via LCPO algorithm) larger than a user-defined threshold are corrected according to a user-defined electron
-density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps, 
-while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$. 
-The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using 
+density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps,
+while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$.
+The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using
 the SOLVDENS keyword.
 
 Experimental reference intensities can be added using the EXPINT keywords.
-By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a 
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
 GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities are calculated using the single bead per residue approximation. 
+in the following example the SAXS intensities are calculated using the single bead per residue approximation.
 structure factors are obtained from the pdb file indicated in the MOLINFO.
 
 \plumedfile
